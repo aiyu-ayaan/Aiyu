@@ -144,13 +144,13 @@ const SnakeGamePortfolio = () => {
           <p className="text-blue-400 text-xl mb-8">&gt; Android developer</p>
           
           <div className="space-y-2 font-mono text-sm">
-            <p className="text-gray-400">// complete the game to continue</p>
-            <p className="text-gray-400">// find my profile on Github:</p>
+          <p className="text-gray-400">{`// complete the game to continue`}</p>
+          <p className="text-gray-400">{`// find my profile on Github:`}</p>
             <p>
               <span className="text-blue-400">const</span>{' '}
               <span className="text-cyan-400">githubLink</span>{' '}
               <span className="text-white">=</span>{' '}
-              <span className="text-orange-400">"https://github.com/aiyu-ayaan"</span>
+              <span className="text-orange-400">&quot;https://github.com/aiyu-ayaan&quot;</span>
             </p>
           </div>
         </div>
@@ -168,8 +168,8 @@ const SnakeGamePortfolio = () => {
             {/* Controls */}
             <div className="flex justify-between items-center mb-4">
               <div className="text-white text-sm">
-                <p className="text-gray-400">// use keyboard</p>
-                <p className="text-gray-400">// arrows to play</p>
+              <p className="text-gray-400">{`// use keyboard`}</p>
+              <p className="text-gray-400">{`// arrows to play`}</p>
               </div>
               <div className="grid grid-cols-3 gap-6">
                 <div></div>
@@ -183,7 +183,7 @@ const SnakeGamePortfolio = () => {
 
             {/* Food left indicator */}
             <div className="mb-4">
-              <p className="text-gray-400 text-sm mb-2">// food left</p>
+            <p className="text-gray-400 text-sm mb-2">{`// food left`}</p>
               <div className="flex flex-wrap gap-1">
                 {Array.from({ length: 10 }, (_, i) => (
                   <div
