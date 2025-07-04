@@ -18,7 +18,7 @@ const SnakeGamePortfolio = () => {
 
   const timeoutRef = useRef(null);
   const cursorIntervalRef = useRef(null);
-  
+
   // Typewriter effect
   useEffect(() => {
     const currentRole = roles[currentIndex];
@@ -111,7 +111,7 @@ const SnakeGamePortfolio = () => {
       setSnake(currentSnake => {
         const newSnake = [...currentSnake];
         const head = { ...newSnake[0] };
-        
+
         head.x += direction.x;
         head.y += direction.y;
 
@@ -196,7 +196,7 @@ const SnakeGamePortfolio = () => {
     for (let y = 0; y < BOARD_SIZE; y++) {
       for (let x = 0; x < BOARD_SIZE; x++) {
         let cellType = 'empty';
-        
+
         if (snake.some(segment => segment.x === x && segment.y === y)) {
           cellType = snake[0].x === x && snake[0].y === y ? 'head' : 'body';
         } else if (food.x === x && food.y === y) {
@@ -206,12 +206,11 @@ const SnakeGamePortfolio = () => {
         board.push(
           <div
             key={`${x}-${y}`}
-            className={`aspect-square ${
-              cellType === 'head' ? 'bg-cyan-400' :
+            className={`aspect-square ${cellType === 'head' ? 'bg-cyan-400' :
               cellType === 'body' ? 'bg-cyan-500' :
-              cellType === 'food' ? 'bg-green-400' :
-              'bg-gray-800'
-            }`}
+                cellType === 'food' ? 'bg-green-400' :
+                  'bg-gray-800'
+              }`}
           />
         );
       }
@@ -244,7 +243,7 @@ const SnakeGamePortfolio = () => {
         </div>
 
         {/* Mobile Device Frame */}
-        <div className="relative order-2 lg:order-2">
+        <div className="relative order-2 lg:order-2 px-4 sm:px-0">
           {/* Phone frame */}
           <div className="relative bg-gray-800 rounded-[2.5rem] p-3 shadow-2xl">
             {/* Screen bezel */}
@@ -264,7 +263,7 @@ const SnakeGamePortfolio = () => {
               </div>
 
               {/* Game content */}
-              <div className="w-80 bg-teal-500/30 rounded-lg shadow-2xl backdrop-blur-md">
+              <div className="w-64 sm:w-80 bg-teal-500/30 rounded-lg shadow-2xl backdrop-blur-md">
                 <div className="bg-gray-900 rounded-lg p-4">
                   {/* Game area */}
                   <div className="relative mb-4">
@@ -273,53 +272,31 @@ const SnakeGamePortfolio = () => {
                     </div>
                   </div>
 
-                  {/* Controls section for desktop */}
-                  <div className="hidden sm:flex justify-between items-center mb-4">
-                    <div className="text-white text-xs">
-                      <p className="text-gray-400">{`// use WASD or`}</p>
-                      <p className="text-gray-400">{`// arrow keys to play`}</p>
-                    </div>
-                    <div className="flex flex-col gap-2">
-                      <div className="flex gap-2 justify-center">
-                        <div className="w-8 h-8 bg-gray-700 rounded border border-gray-600 flex items-center justify-center text-white text-xs">W</div>
-                        <div className="w-8 h-8 bg-gray-700 rounded border border-gray-600 flex items-center justify-center text-white text-xs">↑</div>
-                      </div>
-                      <div className="flex gap-2">
-                        <div className="w-8 h-8 bg-gray-700 rounded border border-gray-600 flex items-center justify-center text-white text-xs">A</div>
-                        <div className="w-8 h-8 bg-gray-700 rounded border border-gray-600 flex items-center justify-center text-white text-xs">S</div>
-                        <div className="w-8 h-8 bg-gray-700 rounded border border-gray-600 flex items-center justify-center text-white text-xs">D</div>
-                        <div className="w-8 h-8 bg-gray-700 rounded border border-gray-600 flex items-center justify-center text-white text-xs">←</div>
-                        <div className="w-8 h-8 bg-gray-700 rounded border border-gray-600 flex items-center justify-center text-white text-xs">↓</div>
-                        <div className="w-8 h-8 bg-gray-700 rounded border border-gray-600 flex items-center justify-center text-white text-xs">→</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Touch controls - always show arrow keys */}
+                  {/* Touch controls - arrow keys */}
                   <div className="mb-4">
                     <p className="text-gray-400 text-xs mb-2 text-center">{`// tap arrows to play`}</p>
                     <div className="grid grid-cols-3 gap-2 max-w-32 mx-auto">
                       <div></div>
-                      <button 
+                      <button
                         onClick={() => handleDirectionChange({ x: 0, y: -1 })}
                         className="w-10 h-10 bg-gray-700 rounded border border-gray-600 flex items-center justify-center text-white text-sm active:bg-gray-600 transition-colors"
                       >
                         ↑
                       </button>
                       <div></div>
-                      <button 
+                      <button
                         onClick={() => handleDirectionChange({ x: -1, y: 0 })}
                         className="w-10 h-10 bg-gray-700 rounded border border-gray-600 flex items-center justify-center text-white text-sm active:bg-gray-600 transition-colors"
                       >
                         ←
                       </button>
-                      <button 
+                      <button
                         onClick={() => handleDirectionChange({ x: 0, y: 1 })}
                         className="w-10 h-10 bg-gray-700 rounded border border-gray-600 flex items-center justify-center text-white text-sm active:bg-gray-600 transition-colors"
                       >
                         ↓
                       </button>
-                      <button 
+                      <button
                         onClick={() => handleDirectionChange({ x: 1, y: 0 })}
                         className="w-10 h-10 bg-gray-700 rounded border border-gray-600 flex items-center justify-center text-white text-sm active:bg-gray-600 transition-colors"
                       >
@@ -335,9 +312,8 @@ const SnakeGamePortfolio = () => {
                       {Array.from({ length: 10 }, (_, i) => (
                         <div
                           key={i}
-                          className={`w-2 h-2 rounded-full ${
-                            i < (10 - score) ? 'bg-green-400' : 'bg-gray-700'
-                          }`}
+                          className={`w-2 h-2 rounded-full ${i < (10 - score) ? 'bg-green-400' : 'bg-gray-700'
+                            }`}
                         />
                       ))}
                     </div>
@@ -354,13 +330,13 @@ const SnakeGamePortfolio = () => {
                           start-game
                         </button>
                       )}
-                      
+
                       {gameState === 'playing' && (
                         <div className="text-green-400 font-mono text-sm text-center">
                           Score: {score}
                         </div>
                       )}
-                      
+
                       {gameState === 'gameOver' && (
                         <div className="flex flex-col items-center gap-2">
                           <span className="text-red-400 font-mono text-sm">Game Over!</span>
@@ -373,7 +349,7 @@ const SnakeGamePortfolio = () => {
                         </div>
                       )}
                     </div>
-                    
+
                     <button
                       onClick={() => setGameState('menu')}
                       className="bg-gray-700 hover:bg-gray-600 active:bg-gray-500 text-white px-4 py-2 rounded font-mono text-xs transition-colors"

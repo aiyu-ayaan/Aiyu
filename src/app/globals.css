@@ -1,6 +1,5 @@
 @import "tailwindcss";
 
-
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -24,21 +23,46 @@
   }
 }
 
+/* Add these essential mobile fixes */
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  overflow-x: hidden; /* Prevent horizontal scroll */
+}
+
 body {
   background: radial-gradient(circle at bottom left, var(--background-color-1), var(--background-color-2));
   color: #ffffff;
   font-family: 'Fira Code', monospace;
+  position: relative;
 }
 
 body::before {
   content: "";
   position: absolute;
-  top: 50%;
-  left: 20%;
-  width: 400px;
-  height: 400px;
+  top: 20%;
+  left: 30%; /* Reduced from 20% */
+  width: min(400px, 80vw); /* Responsive width */
+  height: min(400px, 80vw); /* Responsive height */
+  max-width: 400px; /* Cap the maximum size */
   background: radial-gradient(circle, rgba(0, 255, 255, 0.2), transparent 70%);
   pointer-events: none;
   z-index: 0;
   filter: blur(80px);
+  transform: translateX(-50%); /* Center it properly */
+}
+
+/* Additional mobile-specific adjustments */
+@media (max-width: 768px) {
+  body::before {
+    left: 50%; /* Center on mobile */
+    width: 250px; /* Smaller on mobile */
+    height: 250px;
+    filter: blur(60px); /* Less blur on mobile */
+  }
 }
