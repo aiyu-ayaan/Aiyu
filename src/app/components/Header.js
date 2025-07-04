@@ -1,10 +1,19 @@
 "use client";
 
 import Link from 'next/link';
+import { useState } from 'react';
+import WorkInProgressComponent from './WorkInProgressComponent';
+import clsx from 'clsx';
 
 export default function Header() {
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+    const toggleMenu = () => {
+        setIsMenuOpen(!isMenuOpen);
+    };
+
     return (
-        <header className="w-full px-6 py-4 border-b border-gray-600">
+        <header className="relative w-full px-4 sm:px-6 py-4 border-b border-gray-600">
             <nav className="flex items-center justify-between max-w-full mx-auto">
                 {/* Logo/Brand - Left */}
                 <div className="flex-shrink-0">
@@ -13,8 +22,19 @@ export default function Header() {
                     </Link>
                 </div>
 
-                {/* Navigation Links - Center */}
-                <div className="absolute left-1/2 transform -translate-x-1/2">
+                {/* Mobile Menu Button */}
+                <button
+                    className="md:hidden text-white hover:text-orange-400 transition-colors duration-200"
+                    onClick={toggleMenu}
+                    aria-label="Toggle menu"
+                >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={isMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
+                    </svg>
+                </button>
+
+                {/* Navigation Links - Desktop Center */}
+                <div className="hidden md:block absolute left-1/2 transform -translate-x-1/2">
                     <div className="flex space-x-8">
                         <Link 
                             href="/" 
@@ -23,13 +43,13 @@ export default function Header() {
                             _hello
                         </Link>
                         <Link 
-                            href="/" 
+                            href="/work-in-progress" 
                             className="text-white hover:text-orange-400 transition-colors duration-200"
                         >
                             _about-me
                         </Link>
                         <Link 
-                            href="/" 
+                            href="/work-in-progress" 
                             className="text-white hover:text-orange-400 transition-colors duration-200"
                         >
                             _projects
@@ -37,16 +57,55 @@ export default function Header() {
                     </div>
                 </div>
 
-                {/* Contact Link - Right */}
-                <div className="flex-shrink-0">
+                {/* Contact Link - Desktop Right */}
+                <div className="hidden md:block flex-shrink-0">
                     <Link 
-                        href="/" 
+                        href="http://bento.me/aiyu" 
                         className="text-white hover:text-orange-400 transition-colors duration-200"
                     >
                         contact-me
                     </Link>
                 </div>
             </nav>
+
+            {/* Animated Mobile Menu (bg removed) */}
+            <div
+                className={clsx(
+                    "md:hidden overflow-hidden transition-all duration-300 border-t border-gray-600 z-50",
+                    isMenuOpen ? "max-h-96 opacity-100 py-4" : "max-h-0 opacity-0 py-0"
+                )}
+            >
+                <div className="px-4 space-y-4">
+                    <Link 
+                        href="/" 
+                        className="block text-white hover:text-orange-400 transition-colors duration-200 border-b-2 border-orange-400 pb-1"
+                        onClick={() => setIsMenuOpen(false)}
+                    >
+                        _hello
+                    </Link>
+                    <Link 
+                        href="/work-in-progress" 
+                        className="block text-white hover:text-orange-400 transition-colors duration-200"
+                        onClick={() => setIsMenuOpen(false)}
+                    >
+                        _about-me
+                    </Link>
+                    <Link 
+                        href="/work-in-progress" 
+                        className="block text-white hover:text-orange-400 transition-colors duration-200"
+                        onClick={() => setIsMenuOpen(false)}
+                    >
+                        _projects
+                    </Link>
+                    <Link 
+                        href="http://bento.me/aiyu" 
+                        className="block text-white hover:text-orange-400 transition-colors duration-200 pt-2 border-t border-gray-600"
+                        onClick={() => setIsMenuOpen(false)}
+                    >
+                        contact-me
+                    </Link>
+                </div>
+            </div>
         </header>
     );
 }
