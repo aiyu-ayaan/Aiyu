@@ -15,7 +15,7 @@ export default function Footer() {
                     {/* Social Links - Inline with text */}
                     <div className="flex items-center gap-2">
                         <Link 
-                            href="https://github.com" 
+                            href="https://github.com/aiyu-ayaan" 
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-gray-400 hover:text-white transition-colors duration-200 p-1"
@@ -25,7 +25,7 @@ export default function Footer() {
                             </svg>
                         </Link>
                         <Link 
-                            href="https://linkedin.com" 
+                            href="https://linkedin.com/aiyu" 
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-gray-400 hover:text-white transition-colors duration-200 p-1"

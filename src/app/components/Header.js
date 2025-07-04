@@ -17,19 +17,19 @@ export default function Header() {
                 <div className="absolute left-1/2 transform -translate-x-1/2">
                     <div className="flex space-x-8">
                         <Link 
-                            href="/hello" 
+                            href="/" 
                             className="text-white hover:text-orange-400 transition-colors duration-200 border-b-2 border-orange-400 pb-1"
                         >
                             _hello
                         </Link>
                         <Link 
-                            href="/about-me" 
+                            href="/" 
                             className="text-white hover:text-orange-400 transition-colors duration-200"
                         >
                             _about-me
                         </Link>
                         <Link 
-                            href="/projects" 
+                            href="/" 
                             className="text-white hover:text-orange-400 transition-colors duration-200"
                         >
                             _projects
@@ -40,7 +40,7 @@ export default function Header() {
                 {/* Contact Link - Right */}
                 <div className="flex-shrink-0">
                     <Link 
-                        href="/contact-me" 
+                        href="/" 
                         className="text-white hover:text-orange-400 transition-colors duration-200"
                     >
                         contact-me
