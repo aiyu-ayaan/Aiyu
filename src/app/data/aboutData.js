@@ -1,10 +1,29 @@
 export const skills = [
+  { name: 'Android Development (Advanced)', level: 90 },
+  { name: 'Jetpack Compose (Advanced)', level: 90 },
   { name: 'Kotlin (Advanced)', level: 90 },
+  { name: 'MVVM Architecture (Advanced)', level: 90 },
+
+  { name: 'Dependency Injection (Intermediate)', level: 70 },
+  { name: 'Firebase (Intermediate)', level: 70 },
   { name: 'Java (Intermediate)', level: 70 },
+  { name: 'Kotlin Multiplatform (Intermediate)', level: 70 },
+
+  { name: 'Git (Intermediate)', level: 60 },
+  { name: 'HTML/CSS (Intermediate)', level: 60 },
+  { name: 'JavaScript (Intermediate)', level: 60 },
+  { name: 'Next.js (Intermediate)', level: 60 },
   { name: 'Python (Intermediate)', level: 60 },
+  { name: 'React (Intermediate)', level: 60 },
+  { name: 'REST APIs (Intermediate)', level: 60 },
+  { name: 'SQL (Intermediate)', level: 60 },
+
   { name: 'C# (Basic)', level: 40 },
-  { name: 'JavaScript (Basic)', level: 50 },
+  { name: 'Docker (Basic)', level: 40 },
+  { name: 'DotNet Framework (Basic)', level: 40 },
+  { name: 'WordPress (Basic)', level: 40 },
 ];
+
 
 export const experiences = [
   {
