@@ -19,7 +19,7 @@ const ProjectDialog = ({ project, onClose }) => {
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.9, opacity: 0 }}
-          className="bg-gray-800 rounded-lg overflow-hidden max-w-2xl w-11/12 max-h-[60vh] overflow-y-auto m-4 relative"
+          className="bg-gray-800 rounded-3xl overflow-hidden max-w-2xl w-11/12 max-h-[60vh] overflow-y-auto m-4 relative hide-scrollbar"
           onClick={(e) => e.stopPropagation()}
         >
           <button
@@ -42,14 +42,16 @@ const ProjectDialog = ({ project, onClose }) => {
             </div>
             <p className="text-gray-400 text-sm mb-4">Year: {project.year}</p>
             <p className="text-gray-300">{project.description}</p>
-            <motion.a
-              href={project.codeLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-block mt-6 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors"
-            >
-              View Code
-            </motion.a>
+            {project.codeLink && (
+              <motion.a
+                href={project.codeLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block mt-6 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors"
+              >
+                View Code
+              </motion.a>
+            )}
             </div>  
         </motion.div>
       </motion.div>
