@@ -1,12 +1,15 @@
 "use client";
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import WorkInProgressComponent from './WorkInProgressComponent';
 import clsx from 'clsx';
 
 export default function Header() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+    const pathname = usePathname();
 
     const toggleMenu = () => {
         setIsMenuOpen(!isMenuOpen);
@@ -38,19 +41,33 @@ export default function Header() {
                     <div className="flex space-x-8">
                         <Link 
                             href="/" 
-                            className="text-white hover:text-orange-400 transition-colors duration-200 border-b-2 border-orange-400 pb-1"
+                            className={clsx(
+                            "text-white hover:text-orange-400 transition-colors duration-200 pb-1",
+                            {
+                                "border-b-2 border-orange-400": pathname === '/',
+                            }
+                        )}
                         >
                             _hello
                         </Link>
                         <Link 
-                            href="/work-in-progress" 
-                            className="text-white hover:text-orange-400 transition-colors duration-200"
-                        >
+                                                        href="/about-me" 
+                                                        className={clsx(
+                                                        "text-white hover:text-orange-400 transition-colors duration-200 pb-1",
+                                                        {
+                                                            "border-b-2 border-orange-400": pathname === '/about-me',
+                                                        }
+                                                    )}                        >
                             _about-me
                         </Link>
                         <Link 
                             href="/work-in-progress" 
-                            className="text-white hover:text-orange-400 transition-colors duration-200"
+                            className={clsx(
+                            "text-white hover:text-orange-400 transition-colors duration-200 pb-1",
+                            {
+                                "border-b-2 border-orange-400": pathname === '/work-in-progress',
+                            }
+                        )}
                         >
                             _projects
                         </Link>
@@ -78,21 +95,35 @@ export default function Header() {
                 <div className="px-4 space-y-4">
                     <Link 
                         href="/" 
-                        className="block text-white hover:text-orange-400 transition-colors duration-200 border-b-2 border-orange-400 pb-1"
+                        className={clsx(
+                        "block text-white hover:text-orange-400 transition-colors duration-200 pb-1",
+                        {
+                            "border-b-2 border-orange-400": pathname === '/',
+                        }
+                    )}
                         onClick={() => setIsMenuOpen(false)}
                     >
                         _hello
                     </Link>
                     <Link 
-                        href="/work-in-progress" 
-                        className="block text-white hover:text-orange-400 transition-colors duration-200"
-                        onClick={() => setIsMenuOpen(false)}
+                        href="/about-me" 
+                        className={clsx(
+                                                "block text-white hover:text-orange-400 transition-colors duration-200 pb-1",
+                                                {
+                                                    "border-b-2 border-orange-400": pathname === '/about-me',
+                                                }
+                                            )}                        onClick={() => setIsMenuOpen(false)}
                     >
                         _about-me
                     </Link>
                     <Link 
                         href="/work-in-progress" 
-                        className="block text-white hover:text-orange-400 transition-colors duration-200"
+                        className={clsx(
+                        "block text-white hover:text-orange-400 transition-colors duration-200 pb-1",
+                        {
+                            "border-b-2 border-orange-400": pathname === '/work-in-progress',
+                        }
+                    )}
                         onClick={() => setIsMenuOpen(false)}
                     >
                         _projects
