@@ -3,11 +3,11 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import ProjectDialog from './ProjectDialog';
-import ProjectCard from './ProjectCard';
+import Timeline from './Timeline';
 
 const Projects = () => {
   const [selectedProject, setSelectedProject] = React.useState(null);
-  const [selectedTag, setSelectedTag] = React.useState('All');
+  
 
   const openDialog = (project) => {
     setSelectedProject(project);
@@ -28,6 +28,15 @@ const Projects = () => {
       codeLink: '#',
     },
     {
+      name: 'Project Alpha',
+      image: 'https://via.placeholder.com/400x250',
+      techStack: ['React', 'Node.js', 'MongoDB'],
+      year: '2025',
+      status: 'Working',
+      description: 'A dummy project for testing the timeline.',
+      codeLink: '#',
+    },
+    {
       name: 'Research Hub',
       image: 'https://via.placeholder.com/400x250',
       techStack: ['Kotlin Multiplatform', 'Compose', 'Koin', 'Retrofit'],
@@ -37,10 +46,19 @@ const Projects = () => {
       codeLink: '#',
     },
     {
+      name: 'Project Beta',
+      image: 'https://via.placeholder.com/400x250',
+      techStack: ['Vue.js', 'Express', 'PostgreSQL'],
+      year: '2024',
+      status: 'Done',
+      description: 'Another dummy project for testing.',
+      codeLink: '#',
+    },
+    {
       name: 'BIT App',
       image: 'https://via.placeholder.com/400x250',
       techStack: ['Android', 'Kotlin', 'Firebase', 'MVVM'],
-      year: '2021 - Present',
+      year: '2023',
       status: 'Working',
       description: 'An app used by 1000+ university students with a 4.7/5 rating on the Google Play Store. Utilized WorkManager for background tasks and Room for local data storage. Implemented a custom analytics dashboard to monitor usage patterns and inform feature development.',
       codeLink: '#',
@@ -56,9 +74,16 @@ const Projects = () => {
     },
   ];
 
-  const allTechStacks = ['All', ...new Set(projects.flatMap((p) => p.techStack))];
+  const projectsByYear = projects.reduce((acc, project) => {
+    const year = project.year.split(' - ')[0];
+    if (!acc[year]) {
+      acc[year] = [];
+    }
+    acc[year].push(project);
+    return acc;
+  }, {});
 
-  const filteredProjects = selectedTag === 'All' ? projects : projects.filter((p) => p.techStack.includes(selectedTag));
+  const years = Object.keys(projectsByYear).sort((a, b) => b - a);
 
   return (
     <motion.div
@@ -78,28 +103,9 @@ const Projects = () => {
           <p className="text-blue-400 text-lg sm:text-xl">&gt; A collection of my work</p>
         </motion.div>
 
-        <div className="relative inline-block text-left mb-8 w-full md:w-auto">
-            <select
-              className="appearance-none w-full bg-gray-800 border border-gray-700 text-white py-3 px-4 pr-8 rounded-lg leading-tight focus:outline-none focus:bg-gray-700 focus:border-gray-500"
-              onChange={(e) => setSelectedTag(e.target.value)}
-              value={selectedTag}
-            >
-              {allTechStacks.map((tag) => (
-                <option key={tag} value={tag}>
-                  {tag}
-                </option>
-              ))}
-            </select>
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400">
-              <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
-            </div>
-          </div>
+        
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredProjects.map((project, index) => (
-            <ProjectCard key={index} project={project} onCardClick={openDialog} />
-          ))}
-        </div>
+        <Timeline projectsByYear={projectsByYear} years={years} onCardClick={openDialog} />
 
         <ProjectDialog project={selectedProject} onClose={closeDialog} />
       </div>

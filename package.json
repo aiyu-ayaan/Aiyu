@@ -13,7 +13,8 @@
     "framer-motion": "^12.23.0",
     "next": "15.3.5",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "react-vertical-timeline-component": "^3.5.3"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
