@@ -61,11 +61,11 @@ export default function Header() {
                             _about-me
                         </Link>
                         <Link 
-                            href="/work-in-progress" 
+                            href="/projects" 
                             className={clsx(
                             "text-white hover:text-orange-400 transition-colors duration-200 pb-1",
                             {
-                                "border-b-2 border-orange-400": pathname === '/work-in-progress',
+                                "border-b-2 border-orange-400": pathname === '/projects',
                             }
                         )}
                         >
@@ -117,11 +117,11 @@ export default function Header() {
                         _about-me
                     </Link>
                     <Link 
-                        href="/work-in-progress" 
+                        href="/projects" 
                         className={clsx(
                         "block text-white hover:text-orange-400 transition-colors duration-200 pb-1",
                         {
-                            "border-b-2 border-orange-400": pathname === '/work-in-progress',
+                            "border-b-2 border-orange-400": pathname === '/projects',
                         }
                     )}
                         onClick={() => setIsMenuOpen(false)}
