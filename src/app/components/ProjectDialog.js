@@ -44,7 +44,7 @@ const ProjectDialog = ({ project, onClose }) => {
             >
               View Code
             </motion.a>
-          </div>
+            </div>  
         </motion.div>
       </motion.div>
     </AnimatePresence>

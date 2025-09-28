@@ -3,6 +3,7 @@
 import React from 'react';
 import { VerticalTimeline, VerticalTimelineElement }  from 'react-vertical-timeline-component';
 import 'react-vertical-timeline-component/style.min.css';
+import { FaCalendarAlt } from 'react-icons/fa';
 import ProjectCard from './ProjectCard';
 
 const Timeline = ({ projectsByYear, years, onCardClick }) => {
@@ -16,6 +17,7 @@ const Timeline = ({ projectsByYear, years, onCardClick }) => {
             contentStyle={{ background: 'rgb(249 115 22)', color: '#fff' }}
             contentArrowStyle={{ borderRight: '7px solid  rgb(249 115 22)' }}
             iconStyle={{ background: 'rgb(249 115 22)', color: '#fff' }}
+            icon={<FaCalendarAlt />}
           >
             <h3 className="vertical-timeline-element-title">{year}</h3>
           </VerticalTimelineElement>
