@@ -30,7 +30,7 @@ const ProjectCard = ({ project, onCardClick }) => {
       onClick={() => onCardClick(project)}
     >
       <motion.div layout className="relative">
-        <img src={project.image} alt={project.name} className="w-full h-48 object-cover" />
+        {project.image && <img src={project.image} alt={project.name} className="w-full h-48 object-cover" />}
         <div className="absolute top-2 right-2">
           <span
             className={`px-2 py-1 text-xs font-semibold rounded-full ${

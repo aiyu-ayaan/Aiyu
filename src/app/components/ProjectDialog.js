@@ -12,18 +12,24 @@ const ProjectDialog = ({ project, onClose }) => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
         onClick={onClose}
       >
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.9, opacity: 0 }}
-          className="bg-gray-800 rounded-lg overflow-hidden max-w-2xl w-full m-4"
+          className="bg-gray-800 rounded-lg overflow-hidden max-w-2xl w-11/12 max-h-[60vh] overflow-y-auto m-4 relative"
           onClick={(e) => e.stopPropagation()}
         >
+          <button
+            onClick={onClose}
+            className="absolute top-2 right-2 text-gray-400 hover:text-white text-2xl font-bold p-2 z-10"
+          >
+            &times;
+          </button>
           <div className="relative">
-            <img src={project.image} alt={project.name} className="w-full h-64 object-cover" />
+            {project.image && <img src={project.image} alt={project.name} className="w-full h-64 object-cover" />}
           </div>
           <div className="p-6">
             <h3 className="text-2xl font-bold mb-2 text-orange-400">{project.name}</h3>
