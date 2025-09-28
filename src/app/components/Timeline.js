@@ -1,26 +1,24 @@
+
 "use client";
 import React from 'react';
 import { VerticalTimeline, VerticalTimelineElement }  from 'react-vertical-timeline-component';
 import 'react-vertical-timeline-component/style.min.css';
-import StartNode from './StartNode';
-import YearNode from './YearNode';
-import EndNode from './EndNode';
 import ProjectCard from './ProjectCard';
 
 const Timeline = ({ projectsByYear, years, onCardClick }) => {
   return (
     <VerticalTimeline>
-      <VerticalTimelineElement
-        iconStyle={{ background: 'transparent', boxShadow: 'none' }}
-        icon={<StartNode />}
-      />
+      
 
-      {years.map((year) => (
+{years.map((year) => (
         <React.Fragment key={year}>
           <VerticalTimelineElement
-            iconStyle={{ background: 'transparent', boxShadow: 'none' }}
-            icon={<YearNode year={year} />}
-          />
+            contentStyle={{ background: 'rgb(249 115 22)', color: '#fff' }}
+            contentArrowStyle={{ borderRight: '7px solid  rgb(249 115 22)' }}
+            iconStyle={{ background: 'rgb(249 115 22)', color: '#fff' }}
+          >
+            <h3 className="vertical-timeline-element-title">{year}</h3>
+          </VerticalTimelineElement>
           {projectsByYear[year].map((project, index) => (
             <VerticalTimelineElement
               key={index}
@@ -34,10 +32,6 @@ const Timeline = ({ projectsByYear, years, onCardClick }) => {
         </React.Fragment>
       ))}
 
-      <VerticalTimelineElement
-        iconStyle={{ background: 'transparent', boxShadow: 'none' }}
-        icon={<EndNode />}
-      />
     </VerticalTimeline>
   );
 };
