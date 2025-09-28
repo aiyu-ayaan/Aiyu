@@ -2,6 +2,9 @@
 "use client";
 import React from 'react';
 import { motion } from 'framer-motion';
+import { VerticalTimeline, VerticalTimelineElement } from 'react-vertical-timeline-component';
+import 'react-vertical-timeline-component/style.min.css';
+import { FaBriefcase, FaGraduationCap } from 'react-icons/fa';
 import { skills, experiences, education } from '../data/aboutData';
 
 const About = () => {
@@ -75,24 +78,23 @@ const About = () => {
           className="mt-8"
         >
           <h2 className="text-3xl font-bold mb-6 text-center text-cyan-400">Professional Experience</h2>
-          <div className="space-y-6">
+          <VerticalTimeline>
             {experiences.map((exp, index) => (
-              <motion.div
+              <VerticalTimelineElement
                 key={index}
-                initial={{ opacity: 0, x: -50 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5, delay: 0.2 * index }}
-                className="bg-gray-800 p-6 rounded-lg"
+                className="vertical-timeline-element--work"
+                contentStyle={{ background: 'rgb(31 41 55)', color: '#fff' }}
+                contentArrowStyle={{ borderRight: '7px solid  rgb(31 41 55)' }}
+                iconStyle={{ background: 'rgb(249 115 22)', color: '#fff' }}
+                icon={<FaBriefcase />}
               >
-                <div className="flex justify-between items-center mb-2">
-                  <h3 className="text-xl font-bold text-orange-400">{exp.role}</h3>
-                  <span className="text-gray-400">{exp.duration}</span>
-                </div>
-                <p className="text-gray-500 mb-4">{exp.company}</p>
+                <h3 className="vertical-timeline-element-title text-xl font-bold text-orange-400">{exp.role}</h3>
+                <h4 className="vertical-timeline-element-subtitle text-gray-400">{exp.company}</h4>
+                <p className="text-gray-300">{exp.duration}</p>
                 <p className="text-gray-300">{exp.description}</p>
-              </motion.div>
+              </VerticalTimelineElement>
             ))}
-          </div>
+          </VerticalTimeline>
         </motion.div>
 
         <motion.div
@@ -102,22 +104,23 @@ const About = () => {
           className="mt-8"
         >
           <h2 className="text-3xl font-bold mb-6 text-center text-cyan-400">Education</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <VerticalTimeline>
             {education.map((edu, index) => (
-              <motion.div
+              <VerticalTimelineElement
                 key={index}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5, delay: 0.2 * index }}
-                className="bg-gray-800 p-6 rounded-lg"
+                className="vertical-timeline-element--education"
+                contentStyle={{ background: 'rgb(31 41 55)', color: '#fff' }}
+                contentArrowStyle={{ borderRight: '7px solid  rgb(31 41 55)' }}
+                iconStyle={{ background: 'rgb(249 115 22)', color: '#fff' }}
+                icon={<FaGraduationCap />}
               >
-                <h3 className="text-xl font-bold text-orange-400">{edu.institution}</h3>
-                <p className="text-gray-300">{edu.degree}</p>
+                <h3 className="vertical-timeline-element-title text-xl font-bold text-orange-400">{edu.institution}</h3>
+                <h4 className="vertical-timeline-element-subtitle text-gray-300">{edu.degree}</h4>
                 <p className="text-gray-400">{edu.duration}</p>
                 <p className="text-gray-500">{edu.cgpa}</p>
-              </motion.div>
+              </VerticalTimelineElement>
             ))}
-          </div>
+          </VerticalTimeline>
         </motion.div>
       </div>
     </motion.div>
