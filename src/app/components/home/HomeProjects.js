@@ -1,12 +1,22 @@
-
 "use client";
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import projects from '../../data/projectsData';
 import ProjectCard from '../ProjectCard';
+import ProjectDialog from '../ProjectDialog';
 
 const HomeProjects = () => {
+  const [selectedProject, setSelectedProject] = useState(null);
+
+  const openDialog = (project) => {
+    setSelectedProject(project);
+  };
+
+  const closeDialog = () => {
+    setSelectedProject(null);
+  };
+
   const latestProjects = projects.slice(0, 2);
 
   return (
@@ -21,7 +31,7 @@ const HomeProjects = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {latestProjects.map((project, index) => (
-            <ProjectCard key={index} project={project} />
+            <ProjectCard key={index} project={project} onCardClick={openDialog} />
           ))}
         </div>
         <div className="text-center mt-8">
@@ -30,6 +40,7 @@ const HomeProjects = () => {
           </Link>
         </div>
       </div>
+      <ProjectDialog project={selectedProject} onClose={closeDialog} />
     </motion.div>
   );
 };
