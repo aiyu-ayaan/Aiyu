@@ -63,3 +63,23 @@ export const education = [
     cgpa: '8.2/10.0',
   },
 ];
+
+export const certifications = [
+  {
+    name: 'Google Associate Android Developer',
+    issuer: 'Google',
+    date: 'Jan 2023',
+    url: 'https://www.credential.net/xxxxxxxxxx', // Dummy URL
+  },
+  {
+    name: 'AWS Certified Cloud Practitioner',
+    issuer: 'Amazon Web Services',
+    date: 'Mar 2024',
+    url: 'https://www.credly.com/badges/xxxxxxxxxx', // Dummy URL
+  },
+  {
+    name: 'Android Basics in Kotlin',
+    issuer: 'Google',
+    date: 'Dec 2022',
+  },
+];

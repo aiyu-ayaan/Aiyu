@@ -4,9 +4,10 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { VerticalTimeline, VerticalTimelineElement } from 'react-vertical-timeline-component';
 import 'react-vertical-timeline-component/style.min.css';
-import { name, roles, professionalSummary, skills, experiences, education } from '../data/aboutData';
-import { FaBriefcase, FaGraduationCap } from 'react-icons/fa';
+import { FaBriefcase, FaGraduationCap, FaCertificate } from 'react-icons/fa';
 import TypewriterEffect from './TypewriterEffect';
+import { name, roles, professionalSummary, skills, experiences, education, certifications } from '../data/aboutData';
+import Link from 'next/link';
 
 const About = () => {
 
@@ -92,6 +93,39 @@ const About = () => {
                 <h4 className="vertical-timeline-element-subtitle text-gray-400">{exp.company}</h4>
                 <p className="text-gray-300">{exp.duration}</p>
                 <p className="text-gray-300">{exp.description}</p>
+              </VerticalTimelineElement>
+            ))}
+          </VerticalTimeline>
+        </motion.div>
+
+        <motion.div
+          initial={{ y: 50, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.8, delay: 0.6 }}
+          className="mt-8"
+        >
+          <h2 className="text-3xl font-bold mb-6 text-center text-cyan-400">Certifications</h2>
+          <VerticalTimeline>
+            {certifications.map((cert, index) => (
+              <VerticalTimelineElement
+                key={index}
+                className="vertical-timeline-element--education"
+                contentStyle={{ background: 'rgb(31 41 55)', color: '#fff' }}
+                contentArrowStyle={{ borderRight: '7px solid  rgb(31 41 55)' }}
+                iconStyle={{ background: 'rgb(249 115 22)', color: '#fff' }}
+                icon={<FaCertificate />}
+              >
+                {cert.url ? (
+                  <Link href={cert.url} target="_blank" rel="noopener noreferrer" legacyBehavior>
+                    <a>
+                      <h3 className="vertical-timeline-element-title text-xl font-bold text-orange-400 hover:underline cursor-pointer">{cert.name}</h3>
+                    </a>
+                  </Link>
+                ) : (
+                  <h3 className="vertical-timeline-element-title text-xl font-bold text-orange-400">{cert.name}</h3>
+                )}
+                <h4 className="vertical-timeline-element-subtitle text-gray-300">{cert.issuer}</h4>
+                <p className="text-gray-400">{cert.date}</p>
               </VerticalTimelineElement>
             ))}
           </VerticalTimeline>
