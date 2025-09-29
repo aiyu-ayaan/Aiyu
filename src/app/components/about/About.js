@@ -71,15 +71,27 @@ const About = () => {
 
         <div class="grid grid-cols-1 md:grid-cols-1 gap-8 mt-8">
           <motion.div
+            layout
             initial={{ x: 50, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.4 }}
+            transition={{ duration: 0.8, delay: 0.4, layout: { duration: 0.3 } }}
             className="bg-gray-800 p-6 rounded-lg"
           >
             <h2 className="text-2xl font-bold mb-4 text-cyan-400">Skills</h2>
             <div className="space-y-4">
-              {(isSkillsExpanded ? skills : skills.slice(0, 5)).map((skill) => (
-                <div key={skill.name}>
+              {skills.map((skill, index) => (
+                <motion.div
+                  key={skill.name}
+                  layout
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{
+                    opacity: isSkillsExpanded || index < 5 ? 1 : 0,
+                    y: isSkillsExpanded || index < 5 ? 0 : -20,
+                    height: isSkillsExpanded || index < 5 ? 'auto' : 0,
+                    marginBottom: isSkillsExpanded || index < 5 ? '1rem' : 0,
+                  }}
+                  transition={{ duration: 0.3, delay: index * 0.05 }}
+                >
                   <div className="flex justify-between mb-1">
                     <span className="text-base font-medium text-gray-300">{skill.name}</span>
                     <span className="text-sm font-medium text-gray-400">{skill.level}%</span>
@@ -93,7 +105,7 @@ const About = () => {
                       transition={{ duration: 1, delay: 0.5 }}
                     />
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
             {skills.length > 5 && (
