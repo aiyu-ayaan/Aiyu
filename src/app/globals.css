@@ -36,7 +36,7 @@ html, body {
 }
 
 body {
-  background: radial-gradient(circle at bottom left, var(--background-color-1), var(--background-color-2));
+  background: #111827;
   color: #ffffff;
   font-family: 'Fira Code', monospace;
   position: relative;

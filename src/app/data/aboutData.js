@@ -1,3 +1,5 @@
+export const professionalSummary = "Android Developer with 2+ years of experience building innovative mobile applications with Kotlin and Jetpack Compose. Proven track record of implementing responsive UIs, integrating APIs, and delivering user-focused solutions. Passionate about creating high-performance, scalable mobile experiences with modern architecture patterns.";
+
 export const skills = [
   { name: 'Android Development (Advanced)', level: 90 },
   { name: 'Jetpack Compose (Advanced)', level: 90 },
