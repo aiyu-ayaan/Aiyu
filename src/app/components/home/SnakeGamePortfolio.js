@@ -47,7 +47,7 @@ const SnakeGamePortfolio = ({ onUnlock = () => {} }) => {
       onUnlock();
       setTimeout(() => {
         setShowConfetti(false);
-      }, 5000);
+      }, 15000);
     }
   }, [score, onUnlock]);
 
