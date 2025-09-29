@@ -75,3 +75,24 @@ body::before {
   -ms-overflow-style: none;  /* IE and Edge */
   scrollbar-width: none;  /* Firefox */
 }
+
+.line-hover-effect {
+  position: relative;
+  cursor: pointer;
+  display: inline-block;
+}
+
+.line-hover-effect::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 2px;
+  bottom: -5px;
+  left: 0;
+  background-color: #F97316;
+  transition: width 0.3s ease-in-out;
+}
+
+.line-hover-effect:hover::after {
+  width: 100%;
+}

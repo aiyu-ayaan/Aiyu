@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import WorkInProgressComponent from './shared/WorkInProgressComponent';
 import clsx from 'clsx';
+import { motion } from 'framer-motion';
 
 export default function Header() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -21,7 +22,12 @@ export default function Header() {
                 {/* Logo/Brand - Left */}
                 <div className="flex-shrink-0">
                     <Link href="/" className="text-xl font-semibold text-white">
-                        aiyu
+                        <motion.div
+                            whileHover={{ scale: 1.1, color: '#F97316' }}
+                            transition={{ duration: 0.3 }}
+                        >
+                            aiyu
+                        </motion.div>
                     </Link>
                 </div>
 

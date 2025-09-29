@@ -179,7 +179,7 @@ const SnakeGamePortfolio = ({ onUnlock = () => {} }) => {
             initial={{ y: -20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.6, delay: 0.4 }}
-            className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4"
+            className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 line-hover-effect"
           >
             Ayaan Ansari
           </motion.h1>
