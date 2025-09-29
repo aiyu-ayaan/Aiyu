@@ -2,12 +2,14 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import Confetti from 'react-confetti';
 
 const TicTacToe = ({ onBack }) => {
   const [board, setBoard] = useState(Array(9).fill(null));
   const [isXNext, setIsXNext] = useState(true);
   const [mode, setMode] = useState(null); // 'pvp' or 'pva'
   const [difficulty, setDifficulty] = useState(null); // 'easy', 'medium', 'impossible'
+  const [showConfetti, setShowConfetti] = useState(false);
 
   const findBestMove = (board) => {
     // Easy mode: Random valid move
@@ -135,6 +137,15 @@ const TicTacToe = ({ onBack }) => {
   let status;
   let statusColor = 'text-white';
 
+  useEffect(() => {
+    if (winner) {
+      setShowConfetti(true);
+      setTimeout(() => {
+        setShowConfetti(false);
+      }, 5000);
+    }
+  }, [winner]);
+
   if (winner) {
     status = `Winner: ${winner}`;
     statusColor = winner === 'X' ? 'text-cyan-400' : 'text-orange-400';
@@ -155,6 +166,7 @@ const TicTacToe = ({ onBack }) => {
   if (!mode) {
     return (
       <div className="bg-gray-900 p-8 rounded-lg">
+        {showConfetti && <Confetti recycle={false} />}
         <div className="flex flex-col items-center gap-4">
           <h2 className="text-4xl font-bold text-white mb-4 font-mono">Choose Game Mode</h2>
           <motion.button
@@ -230,6 +242,7 @@ const TicTacToe = ({ onBack }) => {
 
   return (
     <div className="bg-gray-900 p-8 rounded-lg">
+      {showConfetti && <Confetti recycle={false} />}
       <div className="flex flex-col items-center">
         <div className={`text-3xl font-bold mb-6 font-mono ${statusColor}`}>{status}</div>
         {difficulty && (
