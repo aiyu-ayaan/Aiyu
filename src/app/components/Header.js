@@ -71,6 +71,14 @@ export default function Header() {
                         >
                             _projects
                         </Link>
+                        <Link 
+                            href="/resume.pdf" 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="text-white hover:text-orange-400 transition-colors duration-200 pb-1"
+                        >
+                            _resume
+                        </Link>
                     </div>
                 </div>
 
@@ -127,6 +135,15 @@ export default function Header() {
                         onClick={() => setIsMenuOpen(false)}
                     >
                         _projects
+                    </Link>
+                    <Link 
+                        href="/resume.pdf" 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="block text-white hover:text-orange-400 transition-colors duration-200 pb-1"
+                        onClick={() => setIsMenuOpen(false)}
+                    >
+                        _resume
                     </Link>
                     <Link 
                         href="http://bento.me/aiyu" 
