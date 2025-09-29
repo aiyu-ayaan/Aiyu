@@ -4,9 +4,9 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { VerticalTimeline, VerticalTimelineElement } from 'react-vertical-timeline-component';
 import 'react-vertical-timeline-component/style.min.css';
+import { name, roles, professionalSummary, skills, experiences, education } from '../data/aboutData';
 import { FaBriefcase, FaGraduationCap } from 'react-icons/fa';
 import TypewriterEffect from './TypewriterEffect';
-import { skills, experiences, education } from '../data/aboutData';
 
 const About = () => {
 
@@ -24,23 +24,22 @@ const About = () => {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="text-center mb-12"
         >
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-2">Ayaan Ansari</h1>
-          <TypewriterEffect roles={['Android Developer', 'Learner']} />
-        </motion.div>
-
-        <div class="grid grid-cols-1 md:grid-cols-1 gap-8">
-          <motion.div
-            initial={{ x: -50, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.4 }}
-            className="bg-gray-800 p-6 rounded-lg"
-          >
-            <h2 className="text-2xl font-bold mb-4 text-cyan-400">Summary</h2>
-            <p className="text-gray-300">
-              Android Developer with 2+ years of experience building innovative mobile applications with Kotlin and Jetpack Compose. Proven track record of implementing responsive UIs, integrating APIs, and delivering user-focused solutions. Passionate about creating high-performance, scalable mobile experiences with modern architecture patterns.
-            </p>
-          </motion.div>
-
+                    <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-2">{name}</h1>
+                    <TypewriterEffect roles={roles} />
+                  </motion.div>
+          
+                  <div class="grid grid-cols-1 md:grid-cols-1 gap-8">
+                    <motion.div
+                      initial={{ x: -50, opacity: 0 }}
+                      animate={{ x: 0, opacity: 1 }}
+                      transition={{ duration: 0.8, delay: 0.4 }}
+                      className="bg-gray-800 p-6 rounded-lg"
+                    >
+                      <h2 className="text-2xl font-bold mb-4 text-cyan-400">Summary</h2>
+                      <p className="text-gray-300">
+                        {professionalSummary}
+                      </p>
+                    </motion.div>
           <motion.div
             initial={{ x: 50, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}

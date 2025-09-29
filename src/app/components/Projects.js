@@ -2,10 +2,10 @@
 "use client";
 import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
+import projects, { roles } from '../data/projectsData';
 import ProjectDialog from './ProjectDialog';
 import TypewriterEffect from './TypewriterEffect';
 import Timeline from './Timeline';
-import projects from '../data/projects';
 
 const Projects = () => {
   const [selectedProject, setSelectedProject] = useState(null);
@@ -71,7 +71,7 @@ const Projects = () => {
           className="text-center mb-12"
         >
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-2">Projects</h1>
-          <TypewriterEffect roles={['A collection of my work', 'Click on a project to learn more']} />
+<TypewriterEffect roles={roles} />
         </motion.div>
 
         <div className="flex flex-col sm:flex-row justify-center gap-4 mb-8">

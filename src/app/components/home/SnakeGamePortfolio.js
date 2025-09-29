@@ -1,7 +1,9 @@
+
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { homeRoles as roles, githubLink } from '../../data/siteData';
 import TypewriterEffect from '../TypewriterEffect';
 
 const BOARD_SIZE = 20;
@@ -20,8 +22,6 @@ const SnakeGamePortfolio = () => {
   const [direction, setDirection] = useState({ x: 0, y: 1 });
   const [score, setScore] = useState(0);
   const [gameSpeed, setGameSpeed] = useState(150);
-
-  const roles = ['Android Developer', 'Learner'];
 
   const resetGame = () => {
     setSnake([{ x: 10, y: 10 }]);
@@ -182,7 +182,7 @@ const SnakeGamePortfolio = () => {
               <span className="text-cyan-400">githubLink</span>{' '}
               <span className="text-white">=</span>
               <br className="sm:hidden" />
-              <span className="sm:ml-1 text-orange-400">&quot;https://github.com/aiyu-ayaan&quot;</span>
+              <span className="sm:ml-1 text-orange-400">{`"${githubLink}"`}</span>
             </p>
           </motion.div>
         </motion.div>

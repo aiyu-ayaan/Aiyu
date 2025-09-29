@@ -3,7 +3,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import projects from '../../data/projects';
+import projects from '../../data/projectsData';
 import ProjectCard from '../ProjectCard';
 
 const HomeProjects = () => {

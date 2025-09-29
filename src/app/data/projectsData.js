@@ -1,3 +1,5 @@
+export const roles = ['A collection of my work', 'Click on a project to learn more'];
+
 const projects = [
   {
     name: 'ExpenseSync',

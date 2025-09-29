@@ -1,3 +1,5 @@
+export const name = "Ayaan Ansari";
+export const roles = ['Android Developer', 'Learner'];
 export const professionalSummary = "Android Developer with 2+ years of experience building innovative mobile applications with Kotlin and Jetpack Compose. Proven track record of implementing responsive UIs, integrating APIs, and delivering user-focused solutions. Passionate about creating high-performance, scalable mobile experiences with modern architecture patterns.";
 
 export const skills = [
@@ -25,7 +27,6 @@ export const skills = [
   { name: 'DotNet Framework (Basic)', level: 40 },
   { name: 'WordPress (Basic)', level: 40 },
 ];
-
 
 export const experiences = [
   {
