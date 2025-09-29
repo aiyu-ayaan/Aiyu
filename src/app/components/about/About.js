@@ -7,6 +7,7 @@ import { FaBriefcase, FaGraduationCap, FaCertificate } from 'react-icons/fa';
 import TypewriterEffect from '../shared/TypewriterEffect';
 import { name, roles, professionalSummary, skills, experiences, education, certifications } from '../../data/aboutData';
 import Link from 'next/link';
+import Divider from '../landing/Divider';
 
 const About = () => {
   const [isSkillsExpanded, setIsSkillsExpanded] = useState(false);
@@ -43,6 +44,8 @@ const About = () => {
                     </motion.div>
         </div>
 
+        <Divider />
+
         <motion.div
           initial={{ y: 50, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -68,6 +71,8 @@ const About = () => {
             ))}
           </VerticalTimeline>
         </motion.div>
+
+        <Divider />
 
         <div class="grid grid-cols-1 md:grid-cols-1 gap-8 mt-8">
           <motion.div
@@ -119,6 +124,8 @@ const About = () => {
           </motion.div>
         </div>
 
+        <Divider />
+
         <motion.div
           initial={{ y: 50, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -144,6 +151,8 @@ const About = () => {
             ))}
           </VerticalTimeline>
         </motion.div>
+
+        <Divider />
 
         <motion.div
           initial={{ y: 50, opacity: 0 }}

@@ -66,16 +66,25 @@ export const education = [
 
 export const certifications = [
   {
-    name: 'Google Associate Android Developer',
-    issuer: 'Google',
-    date: 'Jan 2023',
-    url: 'https://www.credential.net/xxxxxxxxxx', // Dummy URL
+    name: 'The Ultimate React Course 2025: React, Next.js, Redux & More',
+    issuer: 'Udemy',
+    date: 'Aug 2025',
+    url: 'https://www.udemy.com/certificate/UC-8abbf26d-c6b6-467e-8ee6-cf21e56b9b21/',
+    skills: ['React', 'Next.js', 'Redux.js']
   },
   {
-    name: 'AWS Certified Cloud Practitioner',
-    issuer: 'Amazon Web Services',
-    date: 'Mar 2024',
-    url: 'https://www.credly.com/badges/xxxxxxxxxx', // Dummy URL
+    name: 'C# Basics for Beginners: Learn C# Fundamentals by Coding',
+    issuer: 'Udemy',
+    date: 'Jun 2025',
+    url: 'https://www.udemy.com/certificate/UC-c3981284-fc96-41d2-ab80-cc799a8e5da6/',
+    skills: ['C#']
+  },
+  {
+    name: 'C# Intermediate: Classes, Interfaces and OOP',
+    issuer: 'Udemy',
+    date: 'Jun 2025',
+    url: 'https://udemy-certificate.s3.amazonaws.com/pdf/UC-c1beb4a9-0937-4546-b07c-278e1f760f1e.pdf',
+    skills: ['C#']
   },
   {
     name: 'Android Basics in Kotlin',
