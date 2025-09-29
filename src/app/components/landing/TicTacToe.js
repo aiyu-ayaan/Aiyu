@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
-const TicTacToe = () => {
+const TicTacToe = ({ onBack }) => {
   const [board, setBoard] = useState(Array(9).fill(null));
   const [isXNext, setIsXNext] = useState(true);
   const [mode, setMode] = useState(null); // 'pvp' or 'pva'
@@ -172,6 +172,14 @@ const TicTacToe = () => {
             className="bg-cyan-500 hover:bg-cyan-600 active:bg-cyan-700 text-white px-8 py-4 rounded-lg font-mono text-xl transition-colors shadow-lg"
           >
             🤖 Player vs AI
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={onBack}
+            className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-mono text-base transition-colors mt-4"
+          >
+            ← Back
           </motion.button>
         </div>
       </div>

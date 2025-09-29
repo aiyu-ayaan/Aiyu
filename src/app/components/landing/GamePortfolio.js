@@ -15,7 +15,7 @@ const GamePortfolio = ({ onUnlock = () => {} }) => {
       case 'snake':
         return <SnakeGame onUnlock={onUnlock} />;
       case 'tictactoe':
-        return <TicTacToe />;
+        return <TicTacToe onBack={() => setSelectedGame(null)} />;
       default:
         return (
           <div className="flex flex-col items-center gap-4">
