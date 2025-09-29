@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import ProjectDialog from './ProjectDialog';
+import TypewriterEffect from './TypewriterEffect';
 import Timeline from './Timeline';
 import projects from '../data/projects';
 
@@ -70,7 +71,7 @@ const Projects = () => {
           className="text-center mb-12"
         >
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-2">Projects</h1>
-          <p className="text-blue-400 text-lg sm:text-xl">&gt; A collection of my work</p>
+          <TypewriterEffect roles={['A collection of my work', 'Click on a project to learn more']} />
         </motion.div>
 
         <div className="flex flex-col sm:flex-row justify-center gap-4 mb-8">

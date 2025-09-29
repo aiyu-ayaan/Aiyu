@@ -18,9 +18,6 @@ const HomeProjects = () => {
     >
       <div className="max-w-6xl mx-auto">
         <motion.div
-          initial={{ y: -20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
           className="text-center mb-12"
         >
           <h2 className="text-3xl font-bold mb-6 text-center text-cyan-400">Latest Projects</h2>

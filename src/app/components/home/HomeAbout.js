@@ -17,9 +17,6 @@ const HomeAbout = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-1 gap-8">
           <motion.div
-            initial={{ x: -50, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.4 }}
             className="bg-gray-900 p-6 rounded-lg"
           >
             <h2 className="text-2xl font-bold mb-4 text-cyan-400">Summary</h2>

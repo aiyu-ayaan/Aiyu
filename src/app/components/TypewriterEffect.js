@@ -1,5 +1,4 @@
 "use client";
-
 import React, { useState, useEffect, useRef } from 'react';
 
 const TypewriterEffect = ({ roles }) => {
@@ -10,7 +9,6 @@ const TypewriterEffect = ({ roles }) => {
   const timeoutRef = useRef(null);
   const cursorIntervalRef = useRef(null);
 
-  // Typewriter effect
   useEffect(() => {
     const currentRole = roles[currentIndex];
     let charIndex = 0;
@@ -52,10 +50,9 @@ const TypewriterEffect = ({ roles }) => {
     };
   }, [currentIndex, roles]);
 
-  // Cursor blinking effect
   useEffect(() => {
     cursorIntervalRef.current = setInterval(() => {
-      setShowCursor(prev => !prev);
+      setShowCursor((prev) => !prev);
     }, 500);
 
     return () => {
@@ -66,10 +63,10 @@ const TypewriterEffect = ({ roles }) => {
   }, []);
 
   return (
-    <>
-      {displayedText}
+    <p className="text-blue-400 text-lg sm:text-xl">
+      &gt; {displayedText}
       <span className={`${showCursor ? 'opacity-100' : 'opacity-0'} transition-opacity duration-100`}>|</span>
-    </>
+    </p>
   );
 };
 

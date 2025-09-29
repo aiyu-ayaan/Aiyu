@@ -1,0 +1,12 @@
+@keyframes move {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-100px);
+  }
+}
+
+.wave-animation {
+  animation: move 5s linear infinite;
+}

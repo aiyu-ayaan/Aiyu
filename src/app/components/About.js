@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { VerticalTimeline, VerticalTimelineElement } from 'react-vertical-timeline-component';
 import 'react-vertical-timeline-component/style.min.css';
 import { FaBriefcase, FaGraduationCap } from 'react-icons/fa';
+import TypewriterEffect from './TypewriterEffect';
 import { skills, experiences, education } from '../data/aboutData';
 
 const About = () => {
@@ -24,7 +25,7 @@ const About = () => {
           className="text-center mb-12"
         >
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-2">Ayaan Ansari</h1>
-          <p className="text-blue-400 text-lg sm:text-xl">&gt; Mobile Android Developer</p>
+          <TypewriterEffect roles={['Android Developer', 'Learner']} />
         </motion.div>
 
         <div class="grid grid-cols-1 md:grid-cols-1 gap-8">

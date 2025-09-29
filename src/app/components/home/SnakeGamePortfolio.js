@@ -1,34 +1,28 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import TypewriterEffect from '../TypewriterEffect';
+
+const BOARD_SIZE = 20;
+
+const generateFood = () => {
+  return {
+    x: Math.floor(Math.random() * BOARD_SIZE),
+    y: Math.floor(Math.random() * BOARD_SIZE)
+  };
+};
 
 const SnakeGamePortfolio = () => {
   const [gameState, setGameState] = useState('menu');
   const [snake, setSnake] = useState([{ x: 10, y: 10 }]);
-  const [food, setFood] = useState({ x: 15, y: 15 });
+  const [food, setFood] = useState(generateFood());
   const [direction, setDirection] = useState({ x: 0, y: 1 });
   const [score, setScore] = useState(0);
   const [gameSpeed, setGameSpeed] = useState(150);
-  const [displayedText, setDisplayedText] = useState('');
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [showCursor, setShowCursor] = useState(true);
 
   const roles = ['Android Developer', 'Learner'];
-  const BOARD_SIZE = 20;
 
-  const timeoutRef = React.useRef(null);
-  const cursorIntervalRef = React.useRef(null);
-
-  // Generate random food position
-  const generateFood = React.useCallback(() => {
-    return {
-      x: Math.floor(Math.random() * BOARD_SIZE),
-      y: Math.floor(Math.random() * BOARD_SIZE)
-    };
-  }, []);
-
-  // Reset game
   const resetGame = () => {
     setSnake([{ x: 10, y: 10 }]);
     setFood(generateFood());
@@ -37,69 +31,12 @@ const SnakeGamePortfolio = () => {
     setGameSpeed(150);
   };
 
-  // Start game
   const startGame = () => {
     resetGame();
     setGameState('playing');
   };
 
-  // Typewriter effect
-  React.useEffect(() => {
-    const currentRole = roles[currentIndex];
-    let charIndex = 0;
-    let isDeleting = false;
-
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-
-    const typeWriter = () => {
-      if (!isDeleting) {
-        if (charIndex < currentRole.length) {
-          setDisplayedText(currentRole.substring(0, charIndex + 1));
-          charIndex++;
-          timeoutRef.current = setTimeout(typeWriter, 100);
-        } else {
-          timeoutRef.current = setTimeout(() => {
-            isDeleting = true;
-            typeWriter();
-          }, 2000);
-        }
-      } else {
-        if (charIndex > 0) {
-          setDisplayedText(currentRole.substring(0, charIndex - 1));
-          charIndex--;
-          timeoutRef.current = setTimeout(typeWriter, 50);
-        } else {
-          setCurrentIndex((prev) => (prev + 1) % roles.length);
-        }
-      }
-    };
-
-    typeWriter();
-
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    };
-  }, [currentIndex]);
-
-  // Cursor blinking effect
-  React.useEffect(() => {
-    cursorIntervalRef.current = setInterval(() => {
-      setShowCursor(prev => !prev);
-    }, 500);
-
-    return () => {
-      if (cursorIntervalRef.current) {
-        clearInterval(cursorIntervalRef.current);
-      }
-    };
-  }, []);
-
-  // Game loop
-  React.useEffect(() => {
+  useEffect(() => {
     if (gameState !== 'playing') return;
 
     const gameLoop = setInterval(() => {
@@ -110,13 +47,11 @@ const SnakeGamePortfolio = () => {
         head.x += direction.x;
         head.y += direction.y;
 
-        // Check wall collision
         if (head.x < 0 || head.x >= BOARD_SIZE || head.y < 0 || head.y >= BOARD_SIZE) {
           setGameState('gameOver');
           return currentSnake;
         }
 
-        // Check self collision
         if (newSnake.some(segment => segment.x === head.x && segment.y === head.y)) {
           setGameState('gameOver');
           return currentSnake;
@@ -124,7 +59,6 @@ const SnakeGamePortfolio = () => {
 
         newSnake.unshift(head);
 
-        // Check food collision
         if (head.x === food.x && head.y === food.y) {
           setScore(prev => prev + 1);
           setFood(generateFood());
@@ -138,10 +72,9 @@ const SnakeGamePortfolio = () => {
     }, gameSpeed);
 
     return () => clearInterval(gameLoop);
-  }, [direction, food, gameSpeed, gameState, generateFood]);
+  }, [direction, food, gameSpeed, gameState]);
 
-  // Handle keyboard input
-  React.useEffect(() => {
+  useEffect(() => {
     const handleKeyPress = (e) => {
       if (gameState === 'playing') {
         switch (e.key.toLowerCase()) {
@@ -173,7 +106,6 @@ const SnakeGamePortfolio = () => {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [gameState]);
 
-  // Handle touch controls
   const handleDirectionChange = (newDirection) => {
     if (gameState === 'playing') {
       setDirection(prev => {
@@ -221,7 +153,6 @@ const SnakeGamePortfolio = () => {
       className="min-h-screen bg-gray-900 flex flex-col lg:flex-row items-center justify-center p-4 lg:p-8"
     >
       <div className="w-full max-w-6xl flex flex-col lg:flex-row items-center justify-center gap-6 lg:gap-8">
-        {/* Portfolio info - First on mobile, First on desktop */}
         <motion.div
           initial={{ x: -50, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
@@ -236,15 +167,7 @@ const SnakeGamePortfolio = () => {
           >
             Ayaan Ansari
           </motion.h1>
-          <motion.p
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.6 }}
-            className="text-blue-400 text-lg sm:text-xl mb-6 lg:mb-8"
-          >
-            &gt; {displayedText}
-            <span className={`${showCursor ? 'opacity-100' : 'opacity-0'} transition-opacity duration-100`}>|</span>
-          </motion.p>
+          <TypewriterEffect roles={roles} />
           <motion.div
             initial={{ y: 30, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -264,28 +187,24 @@ const SnakeGamePortfolio = () => {
           </motion.div>
         </motion.div>
 
-        {/* Mobile Device Frame - Second on mobile, Second on desktop */}
         <motion.div
           initial={{ x: 50, opacity: 0, rotateY: 15 }}
           animate={{ x: 0, opacity: 1, rotateY: 0 }}
           transition={{ duration: 1, delay: 0.4, ease: "easeOut" }}
           className="flex-shrink-0 order-2"
         >
-          {/* Phone frame */}
           <motion.div
             initial={{ scale: 0.8 }}
             animate={{ scale: 1 }}
             transition={{ duration: 0.8, delay: 0.6, ease: "easeOut" }}
             className="relative bg-gray-800 rounded-[2.5rem] p-3 shadow-2xl w-72 sm:w-80"
           >
-            {/* Screen bezel */}
             <motion.div
               initial={{ backgroundColor: "#000000" }}
               animate={{ backgroundColor: "#000000" }}
               transition={{ duration: 0.6, delay: 0.8 }}
               className="bg-black rounded-[2rem] p-4 relative"
             >
-              {/* Status bar */}
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -304,7 +223,6 @@ const SnakeGamePortfolio = () => {
                 </div>
               </motion.div>
 
-              {/* Game content */}
               <motion.div
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
@@ -312,7 +230,6 @@ const SnakeGamePortfolio = () => {
                 className="bg-teal-500/30 rounded-lg shadow-2xl backdrop-blur-md"
               >
                 <div className="bg-gray-900 rounded-lg p-4">
-                  {/* Game area */}
                   <motion.div
                     initial={{ scale: 0.8 }}
                     animate={{ scale: 1 }}
@@ -324,7 +241,6 @@ const SnakeGamePortfolio = () => {
                     </div>
                   </motion.div>
 
-                  {/* Touch controls */}
                   <motion.div
                     initial={{ y: 20, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
@@ -370,7 +286,6 @@ const SnakeGamePortfolio = () => {
                     </div>
                   </motion.div>
 
-                  {/* Food left indicator */}
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
@@ -392,7 +307,6 @@ const SnakeGamePortfolio = () => {
                     </div>
                   </motion.div>
 
-                  {/* Game controls */}
                   <motion.div
                     initial={{ y: 20, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
@@ -462,7 +376,6 @@ const SnakeGamePortfolio = () => {
                 </div>
               </motion.div>
 
-              {/* Home indicator */}
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
