@@ -27,14 +27,14 @@ const About = () => {
           <p className="text-blue-400 text-lg sm:text-xl">&gt; Mobile Android Developer</p>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div class="grid grid-cols-1 md:grid-cols-1 gap-8">
           <motion.div
             initial={{ x: -50, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             transition={{ duration: 0.8, delay: 0.4 }}
             className="bg-gray-800 p-6 rounded-lg"
           >
-            <h2 className="text-2xl font-bold mb-4 text-cyan-400">Professional Summary</h2>
+            <h2 className="text-2xl font-bold mb-4 text-cyan-400">Summary</h2>
             <p className="text-gray-300">
               Android Developer with 2+ years of experience building innovative mobile applications with Kotlin and Jetpack Compose. Proven track record of implementing responsive UIs, integrating APIs, and delivering user-focused solutions. Passionate about creating high-performance, scalable mobile experiences with modern architecture patterns.
             </p>
@@ -46,7 +46,7 @@ const About = () => {
             transition={{ duration: 0.8, delay: 0.4 }}
             className="bg-gray-800 p-6 rounded-lg"
           >
-            <h2 className="text-2xl font-bold mb-4 text-cyan-400">Technical Skills</h2>
+            <h2 className="text-2xl font-bold mb-4 text-cyan-400">Skills</h2>
             <div className="space-y-4">
               {skills.map((skill) => (
                 <div key={skill.name}>
