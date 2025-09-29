@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Confetti from 'react-confetti';
 import { homeRoles as roles, githubLink } from '../../data/siteData';
 import TypewriterEffect from '../TypewriterEffect';
 
@@ -15,13 +16,14 @@ const generateFood = () => {
   };
 };
 
-const SnakeGamePortfolio = () => {
+const SnakeGamePortfolio = ({ onUnlock = () => {} }) => {
   const [gameState, setGameState] = useState('menu');
   const [snake, setSnake] = useState([{ x: 10, y: 10 }]);
   const [food, setFood] = useState(generateFood());
   const [direction, setDirection] = useState({ x: 0, y: 1 });
   const [score, setScore] = useState(0);
   const [gameSpeed, setGameSpeed] = useState(150);
+  const [showConfetti, setShowConfetti] = useState(false);
 
   const resetGame = () => {
     setSnake([{ x: 10, y: 10 }]);
@@ -29,12 +31,25 @@ const SnakeGamePortfolio = () => {
     setDirection({ x: 0, y: 1 });
     setScore(0);
     setGameSpeed(150);
+    setGameState('menu');
   };
 
   const startGame = () => {
     resetGame();
     setGameState('playing');
   };
+
+
+  useEffect(() => {
+    if (score === 10) {
+      setGameState('win');
+      setShowConfetti(true);
+      onUnlock();
+      setTimeout(() => {
+        setShowConfetti(false);
+      }, 5000);
+    }
+  }, [score, onUnlock]);
 
   useEffect(() => {
     if (gameState !== 'playing') return;
@@ -152,6 +167,7 @@ const SnakeGamePortfolio = () => {
       transition={{ duration: 0.8, ease: "easeOut" }}
       className="min-h-screen bg-gray-900 flex flex-col lg:flex-row items-center justify-center p-4 lg:p-8"
     >
+      {showConfetti && <Confetti recycle={false} />}
       <div className="w-full max-w-6xl flex flex-col lg:flex-row items-center justify-center gap-6 lg:gap-8">
         <motion.div
           initial={{ x: -50, opacity: 0 }}
@@ -361,17 +377,30 @@ const SnakeGamePortfolio = () => {
                             </motion.button>
                           </motion.div>
                         )}
+
+                        {gameState === 'win' && (
+                          <motion.div
+                            key="win"
+                            initial={{ scale: 0.8, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.8, opacity: 0 }}
+                            className="flex flex-col items-center gap-2"
+                          >
+                            <span className="text-green-400 font-mono text-sm">You Win!</span>
+                            <motion.button
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              onClick={resetGame}
+                              className="bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white px-4 py-2 rounded font-mono text-xs transition-colors"
+                            >
+                              Play Again
+                            </motion.button>
+                          </motion.div>
+                        )}
                       </AnimatePresence>
                     </div>
 
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => setGameState('menu')}
-                      className="bg-gray-700 hover:bg-gray-600 active:bg-gray-500 text-white px-4 py-2 rounded font-mono text-xs transition-colors"
-                    >
-                      skip
-                    </motion.button>
+
                   </motion.div>
                 </div>
               </motion.div>
