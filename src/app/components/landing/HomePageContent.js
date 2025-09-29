@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import HomeAbout from "./HomeAbout";
 import HomeProjects from "./HomeProjects";
-import SnakeGamePortfolio from "./SnakeGamePortfolio";
+import GamePortfolio from "./GamePortfolio";
 import Divider from "./Divider";
 
 export default function HomePageContent() {
@@ -15,7 +15,7 @@ export default function HomePageContent() {
 
   return(
     <div>
-      <SnakeGamePortfolio onUnlock={handleUnlock} isUnlocked={isUnlocked} />
+      <GamePortfolio onUnlock={handleUnlock} isUnlocked={isUnlocked} />
       <Divider />
       <HomeAbout isUnlocked={isUnlocked} />
       <Divider />
