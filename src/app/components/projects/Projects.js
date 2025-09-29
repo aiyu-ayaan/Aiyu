@@ -39,7 +39,8 @@ const Projects = () => {
   }, [projects, selectedTechStack, selectedProjectType]);
 
   const projectsByYear = filteredProjects.reduce((acc, project) => {
-    const year = project.year.split(' - ')[0];
+    const yearParts = project.year.split(' - ');
+    const year = yearParts.length > 1 ? yearParts[1] : yearParts[0];
     if (!acc[year]) {
       acc[year] = [];
     }
