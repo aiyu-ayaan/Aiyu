@@ -1,8 +1,5 @@
 import { FaGithub, FaLinkedin, FaInstagram, FaEnvelope } from 'react-icons/fa';
 
-export const homeRoles = ['Android Developer', 'Learner'];
-export const githubLink = "https://github.com/aiyu-ayaan";
-
 export const socials = [
   {
     name: 'GitHub',

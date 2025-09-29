@@ -1,10 +1,9 @@
-
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Confetti from 'react-confetti';
-import { homeRoles as roles, githubLink } from '../../data/siteData';
+import { name, homeRoles, githubLink, codeSnippets } from '../../data/homeScreenData';
 import TypewriterEffect from '../shared/TypewriterEffect';
 
 const BOARD_SIZE = 20;
@@ -181,18 +180,18 @@ const SnakeGamePortfolio = ({ onUnlock = () => {} }) => {
             transition={{ duration: 0.6, delay: 0.4 }}
             className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 line-hover-effect"
           >
-            Ayaan Ansari
+            {name}
           </motion.h1>
-          <TypewriterEffect roles={roles} />
+          <TypewriterEffect roles={homeRoles} />
           <motion.div
             initial={{ y: 30, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.8, delay: 0.8 }}
             className="space-y-2 font-mono text-xs sm:text-sm text-left"
           >
-            <p className="text-gray-400">{`// Hi all. I am`}</p>
-            <p className="text-gray-400">{`// complete the game to continue`}</p>
-            <p className="text-gray-400">{`// find my profile on Github:`}</p>
+            {codeSnippets.map((snippet, index) => (
+              <p key={index} className="text-gray-400">{`// ${snippet}`}</p>
+            ))}
             <p className="break-all">
               <span className="text-blue-400">const</span>{' '}
               <span className="text-cyan-400">githubLink</span>{' '}

@@ -3,9 +3,9 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
-import WorkInProgressComponent from './shared/WorkInProgressComponent';
 import clsx from 'clsx';
 import { motion } from 'framer-motion';
+import { navLinks, contactLink } from '../data/headerData';
 
 export default function Header() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -45,56 +45,32 @@ export default function Header() {
                 {/* Navigation Links - Desktop Center */}
                 <div className="hidden md:block absolute left-1/2 transform -translate-x-1/2">
                     <div className="flex space-x-8">
-                        <Link 
-                            href="/" 
-                            className={clsx(
-                            "text-white hover:text-orange-400 transition-colors duration-200 pb-1",
-                            {
-                                "border-b-2 border-orange-400": pathname === '/',
-                            }
-                        )}
-                        >
-                            _hello
-                        </Link>
-                        <Link 
-                                                        href="/about-me" 
-                                                        className={clsx(
-                                                        "text-white hover:text-orange-400 transition-colors duration-200 pb-1",
-                                                        {
-                                                            "border-b-2 border-orange-400": pathname === '/about-me',
-                                                        }
-                                                    )}                        >
-                            _about-me
-                        </Link>
-                        <Link 
-                            href="/projects" 
-                            className={clsx(
-                            "text-white hover:text-orange-400 transition-colors duration-200 pb-1",
-                            {
-                                "border-b-2 border-orange-400": pathname === '/projects',
-                            }
-                        )}
-                        >
-                            _projects
-                        </Link>
-                        <Link 
-                            href="/resume.pdf" 
-                            target="_blank" 
-                            rel="noopener noreferrer" 
-                            className="text-white hover:text-orange-400 transition-colors duration-200 pb-1"
-                        >
-                            _resume
-                        </Link>
+                        {navLinks.map((link) => (
+                            <Link
+                                key={link.name}
+                                href={link.href}
+                                target={link.target}
+                                rel={link.target === '_blank' ? 'noopener noreferrer' : undefined}
+                                className={clsx(
+                                    "text-white hover:text-orange-400 transition-colors duration-200 pb-1",
+                                    {
+                                        "border-b-2 border-orange-400": pathname === link.href,
+                                    }
+                                )}
+                            >
+                                {link.name}
+                            </Link>
+                        ))}
                     </div>
                 </div>
 
                 {/* Contact Link - Desktop Right */}
                 <div className="hidden md:block flex-shrink-0">
-                    <Link 
-                        href="http://bento.me/aiyu" 
+                    <Link
+                        href={contactLink.href}
                         className="text-white hover:text-orange-400 transition-colors duration-200"
                     >
-                        contact-me
+                        {contactLink.name}
                     </Link>
                 </div>
             </nav>
@@ -107,56 +83,29 @@ export default function Header() {
                 )}
             >
                 <div className="px-4 space-y-4">
-                    <Link 
-                        href="/" 
-                        className={clsx(
-                        "block text-white hover:text-orange-400 transition-colors duration-200 pb-1",
-                        {
-                            "border-b-2 border-orange-400": pathname === '/',
-                        }
-                    )}
-                        onClick={() => setIsMenuOpen(false)}
-                    >
-                        _hello
-                    </Link>
-                    <Link 
-                        href="/about-me" 
-                        className={clsx(
-                                                "block text-white hover:text-orange-400 transition-colors duration-200 pb-1",
-                                                {
-                                                    "border-b-2 border-orange-400": pathname === '/about-me',
-                                                }
-                                            )}                        onClick={() => setIsMenuOpen(false)}
-                    >
-                        _about-me
-                    </Link>
-                    <Link 
-                        href="/projects" 
-                        className={clsx(
-                        "block text-white hover:text-orange-400 transition-colors duration-200 pb-1",
-                        {
-                            "border-b-2 border-orange-400": pathname === '/projects',
-                        }
-                    )}
-                        onClick={() => setIsMenuOpen(false)}
-                    >
-                        _projects
-                    </Link>
-                    <Link 
-                        href="/resume.pdf" 
-                        target="_blank" 
-                        rel="noopener noreferrer" 
-                        className="block text-white hover:text-orange-400 transition-colors duration-200 pb-1"
-                        onClick={() => setIsMenuOpen(false)}
-                    >
-                        _resume
-                    </Link>
-                    <Link 
-                        href="http://bento.me/aiyu" 
+                    {navLinks.map((link) => (
+                        <Link
+                            key={link.name}
+                            href={link.href}
+                            target={link.target}
+                            rel={link.target === '_blank' ? 'noopener noreferrer' : undefined}
+                            className={clsx(
+                                "block text-white hover:text-orange-400 transition-colors duration-200 pb-1",
+                                {
+                                    "border-b-2 border-orange-400": pathname === link.href,
+                                }
+                            )}
+                            onClick={() => setIsMenuOpen(false)}
+                        >
+                            {link.name}
+                        </Link>
+                    ))}
+                    <Link
+                        href={contactLink.href}
                         className="block text-white hover:text-orange-400 transition-colors duration-200 pt-2 border-t border-gray-600"
                         onClick={() => setIsMenuOpen(false)}
                     >
-                        contact-me
+                        {contactLink.name}
                     </Link>
                 </div>
             </div>
