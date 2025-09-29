@@ -5,7 +5,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Confetti from 'react-confetti';
 import { homeRoles as roles, githubLink } from '../../data/siteData';
-import TypewriterEffect from '../TypewriterEffect';
+import TypewriterEffect from '../shared/TypewriterEffect';
 
 const BOARD_SIZE = 20;
 

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
-import WorkInProgressComponent from './WorkInProgressComponent';
+import WorkInProgressComponent from './shared/WorkInProgressComponent';
 import clsx from 'clsx';
 
 export default function Header() {

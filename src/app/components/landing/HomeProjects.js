@@ -3,8 +3,8 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import projects from '../../data/projectsData';
-import ProjectCard from '../ProjectCard';
-import ProjectDialog from '../ProjectDialog';
+import ProjectCard from '../projects/ProjectCard';
+import ProjectDialog from '../projects/ProjectDialog';
 
 const HomeProjects = () => {
   const [selectedProject, setSelectedProject] = useState(null);

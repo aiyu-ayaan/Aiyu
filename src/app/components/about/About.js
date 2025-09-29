@@ -5,8 +5,8 @@ import { motion } from 'framer-motion';
 import { VerticalTimeline, VerticalTimelineElement } from 'react-vertical-timeline-component';
 import 'react-vertical-timeline-component/style.min.css';
 import { FaBriefcase, FaGraduationCap, FaCertificate } from 'react-icons/fa';
-import TypewriterEffect from './TypewriterEffect';
-import { name, roles, professionalSummary, skills, experiences, education, certifications } from '../data/aboutData';
+import TypewriterEffect from '../shared/TypewriterEffect';
+import { name, roles, professionalSummary, skills, experiences, education, certifications } from '../../data/aboutData';
 import Link from 'next/link';
 
 const About = () => {

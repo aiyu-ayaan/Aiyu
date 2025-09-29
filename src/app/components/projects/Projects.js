@@ -2,9 +2,9 @@
 "use client";
 import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import projects, { roles } from '../data/projectsData';
+import projects, { roles } from '../../data/projectsData';
 import ProjectDialog from './ProjectDialog';
-import TypewriterEffect from './TypewriterEffect';
+import TypewriterEffect from '../shared/TypewriterEffect';
 import Timeline from './Timeline';
 
 const Projects = () => {
