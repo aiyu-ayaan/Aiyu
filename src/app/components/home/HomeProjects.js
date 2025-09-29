@@ -17,11 +17,7 @@ const HomeProjects = () => {
       className="bg-gray-900 text-white p-4 lg:p-8"
     >
       <div className="max-w-6xl mx-auto">
-        <motion.div
-          className="text-center mb-12"
-        >
-          <h2 className="text-3xl font-bold mb-6 text-center text-cyan-400">Latest Projects</h2>
-        </motion.div>
+        <h2 className="text-2xl font-bold mb-4 text-cyan-400">Latest Projects</h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {latestProjects.map((project, index) => (
