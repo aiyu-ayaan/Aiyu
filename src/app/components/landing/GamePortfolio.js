@@ -13,7 +13,7 @@ const GamePortfolio = ({ onUnlock = () => {} }) => {
   const renderGame = () => {
     switch (selectedGame) {
       case 'snake':
-        return <SnakeGame onUnlock={onUnlock} />;
+        return <SnakeGame onUnlock={onUnlock} onBack={() => setSelectedGame(null)} />;
       case 'tictactoe':
         return <TicTacToe onBack={() => setSelectedGame(null)} />;
       default:

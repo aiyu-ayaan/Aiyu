@@ -13,8 +13,8 @@ const generateFood = () => {
   };
 };
 
-const SnakeGame = ({ onUnlock = () => {} }) => {
-  const [gameState, setGameState] = useState('menu');
+const SnakeGame = ({ onUnlock = () => {}, onBack }) => {
+  const [gameState, setGameState] = useState('playing');
   const [snake, setSnake] = useState([{ x: 10, y: 10 }]);
   const [food, setFood] = useState(generateFood());
   const [direction, setDirection] = useState({ x: 0, y: 1 });
@@ -28,12 +28,11 @@ const SnakeGame = ({ onUnlock = () => {} }) => {
     setDirection({ x: 0, y: 1 });
     setScore(0);
     setGameSpeed(150);
-    setGameState('menu');
+    setGameState('playing');
   };
 
   const startGame = () => {
     resetGame();
-    setGameState('playing');
   };
 
 
@@ -158,12 +157,13 @@ const SnakeGame = ({ onUnlock = () => {} }) => {
   };
 
   return (
-    <motion.div
-      initial={{ scale: 0.8 }}
-      animate={{ scale: 1 }}
-      transition={{ duration: 0.8, delay: 0.6, ease: "easeOut" }}
-      className="relative bg-gray-800 rounded-[2.5rem] p-3 shadow-2xl w-72 sm:w-80"
-    >
+    <div className="flex flex-col items-center">
+      <motion.div
+        initial={{ scale: 0.8 }}
+        animate={{ scale: 1 }}
+        transition={{ duration: 0.8, delay: 0.6, ease: "easeOut" }}
+        className="relative bg-gray-800 rounded-[2.5rem] p-3 shadow-2xl w-72 sm:w-80"
+      >
       {showConfetti && <Confetti recycle={false} />}
       <motion.div
         initial={{ backgroundColor: "#000000" }}
@@ -281,21 +281,6 @@ const SnakeGame = ({ onUnlock = () => {} }) => {
             >
               <div>
                 <AnimatePresence mode="wait">
-                  {gameState === 'menu' && (
-                    <motion.button
-                      key="start"
-                      initial={{ scale: 0.8, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      exit={{ scale: 0.8, opacity: 0 }}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={startGame}
-                      className="bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white px-4 py-2 rounded font-mono text-xs transition-colors"
-                    >
-                      start-game
-                    </motion.button>
-                  )}
-
                   {gameState === 'playing' && (
                     <motion.div
                       key="playing"
@@ -365,6 +350,18 @@ const SnakeGame = ({ onUnlock = () => {} }) => {
         </motion.div>
       </motion.div>
     </motion.div>
+      <motion.button
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        onClick={() => {
+          resetGame();
+          onBack();
+        }}
+        className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-mono text-base transition-colors mt-8"
+      >
+        ← Back
+      </motion.button>
+    </div>
   );
 };
 
