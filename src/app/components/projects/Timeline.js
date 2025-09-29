@@ -3,7 +3,7 @@
 import React from 'react';
 import { VerticalTimeline, VerticalTimelineElement }  from 'react-vertical-timeline-component';
 import 'react-vertical-timeline-component/style.min.css';
-import { FaCalendarAlt, FaLaptopCode, FaBoxes } from 'react-icons/fa';
+import { FaCalendarAlt, FaLaptopCode, FaBoxes, FaWrench } from 'react-icons/fa';
 import ProjectCard from './ProjectCard';
 
 const Timeline = ({ projectsByYear, years, onCardClick }) => {
@@ -27,7 +27,7 @@ const Timeline = ({ projectsByYear, years, onCardClick }) => {
               contentStyle={{ background: 'rgb(31 41 55)', color: '#fff' }}
               contentArrowStyle={{ borderRight: '7px solid  rgb(31 41 55)' }}
               iconStyle={{ background: 'rgb(55 65 81)', color: '#fff' }}
-              icon={project.projectType === 'application' ? <FaLaptopCode /> : <FaBoxes />}
+              icon={project.projectType === 'application' ? <FaLaptopCode /> : project.projectType === 'skill' ? <FaWrench /> : <FaBoxes />}
             >
               <ProjectCard project={project} onCardClick={onCardClick} />
             </VerticalTimelineElement>

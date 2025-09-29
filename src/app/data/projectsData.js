@@ -2,12 +2,30 @@ export const roles = ['A collection of my work', 'Click on a project to learn mo
 
 const projects = [
   {
+    name: 'BetweenUs-Server',
+    techStack: ['Kotlin', 'Ktor', 'Exposed', 'MySql', 'MongoDB', 'JWT', 'Docker'],
+    year: '2025',
+    status: 'Working',
+    projectType: 'application',
+    description: 'BetweenUsServer is the backend powering the chat application. It is built with a modern technology stack to ensure scalability, reliability, and maintainability. The server handles user authentication, real-time messaging, and data storage, providing a seamless experience for users across multiple platforms.',
+    codeLink: 'https://github.com/Btw-Us/BetweenUsServer',
+  },
+  {
+    name: 'Azure-Function-Start',
+    techStack: ['C#', 'Azure Function', 'Gemini'],
+    year: '2025',
+    status: 'Done',
+    projectType: 'application',
+    description: 'A starter template for creating Azure Functions with C# and Gemini. This project provides a boilerplate code structure to quickly set up serverless functions on Microsoft Azure, enabling developers to focus on building features rather than configuration.',
+    codeLink: 'https://github.com/aiyu-ayaan/Azure-Function-Start',
+  },
+  {
     name: 'ExpenseSync',
     techStack: ['Kotlin', 'Jetpack Compose', 'Firebase', 'Koin', 'MVVM'],
     year: '2025',
     status: 'Done',
     projectType: 'application',
-    description: 'A cross-platform expense management application with 500+ active users and a 4.6/5 average rating. Architected with MVVM, Clean Architecture, and Repository Pattern for maintainable, testable code. Implemented real-time data synchronization with Firebase Firestore reducing sync delays by 75%. Created desktop version with WhatsApp Web-style QR authentication, increasing multi-device usage by 45%.',
+    description: 'Engineered a scalable, testable application that cut data sync delays by 75% and boosted multi-device usage by 45% through real-time Firebase sync and QR-based desktop authentication.',
     codeLink: 'https://github.com/aiyu-ayaan/ExpenseSync',
   },
   {
@@ -20,11 +38,29 @@ const projects = [
     codeLink: 'https://github.com/ResearchHub24/Research-Hub-KMP',
   },
   {
+    name: 'Gemini CLI',
+    techStack: ['Python', 'Google Gemini API', 'YouTube API', 'PDF Processing'],
+    year: '2024',
+    status: 'Done',
+    projectType: 'application',
+    description: 'A Python-based command-line interface for Google\'s Gemini AI featuring text generation, YouTube video summarization, and PDF content extraction. Supports customizable word limits, document export to DOCX format, and page-specific PDF processing with an intuitive argument-based interface.',
+    codeLink: 'https://github.com/aiyu-ayaan/Gemini-CLI',
+  },
+  {
+    name: 'Gemini-in-Alexa',
+    techStack: ['JavaScript', 'Node.js', 'Alexa Skills Kit', 'AWS Lambda', 'Gemini API'],
+    year: '2024',
+    status: 'Done',
+    projectType: 'skill',
+    description: 'Custom Alexa skill that connects to the Gemini API. Features include automatic setup with modelconfig.json and API key management via config.js. Allows users to interact with Google\'s Gemini AI through voice commands on Alexa devices.',
+    codeLink: 'https://github.com/aiyu-ayaan/Gemini-in-Alexa',
+  },
+  {
     name: 'BIT App',
     image: 'https://aiyu-ayaan.github.io/BIT-App/assets/poster.png',
     techStack: ['Android', 'Kotlin', 'Firebase', 'MVVM'],
     year: '2023',
-    status: 'Working',
+    status: 'Done',
     projectType: 'application',
     description: 'An app used by 1000+ university students with a 4.7/5 rating on the Google Play Store. Utilized WorkManager for background tasks and Room for local data storage. Implemented a custom analytics dashboard to monitor usage patterns and inform feature development.',
     codeLink: 'https://github.com/aiyu-ayaan/BIT-App',
@@ -38,6 +74,25 @@ const projects = [
     description: 'An Android library for Text-to-Speech with real-time text highlighting and lifecycle-aware functionality. Published to JitPack with 500+ downloads and integration in 5+ production applications.',
     codeLink: 'https://github.com/aiyu-ayaan/tts-engine',
   },
-];
+  {
+    name: 'Movie-Recommendation-System',
+    techStack: ['Python', 'Machine Learning', 'Pandas', 'NumPy', 'Scikit-learn', 'Flask'],
+    year: '2023',
+    status: 'Done',
+    projectType: 'application',
+    description: 'Intelligent movie recommendation system using collaborative filtering and content-based algorithms. Built with machine learning techniques to suggest personalized movie recommendations based on user preferences and viewing history.',
+    codeLink: 'https://github.com/aiyu-ayaan/Movie-Recommendation-System',
+  },
+  {
+    name: 'Weather-App-Android',
+    techStack: ['Kotlin', 'Android', 'Retrofit', 'MVVM', 'Weather API', 'Location Services'],
+    year: '2023',
+    status: 'Done',
+    projectType: 'application',
+    description: 'Modern Android weather application with real-time weather data, location-based forecasts, and beautiful Material Design UI. Features current weather conditions, 7-day forecast, and detailed weather metrics.',
+    codeLink: 'https://github.com/aiyu-ayaan/Weather-App-Android',
+  }
+]
+
 
 export default projects;
