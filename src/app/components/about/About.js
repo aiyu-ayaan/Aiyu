@@ -1,6 +1,5 @@
-
 "use client";
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { VerticalTimeline, VerticalTimelineElement } from 'react-vertical-timeline-component';
 import 'react-vertical-timeline-component/style.min.css';
@@ -10,6 +9,7 @@ import { name, roles, professionalSummary, skills, experiences, education, certi
 import Link from 'next/link';
 
 const About = () => {
+  const [isSkillsExpanded, setIsSkillsExpanded] = useState(false);
 
   return (
     <motion.div
@@ -41,37 +41,8 @@ const About = () => {
                         {professionalSummary}
                       </p>
                     </motion.div>
-          <motion.div
-            initial={{ x: 50, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.4 }}
-            className="bg-gray-800 p-6 rounded-lg"
-          >
-            <h2 className="text-2xl font-bold mb-4 text-cyan-400">Skills</h2>
-            <div className="space-y-4">
-              {skills.map((skill) => (
-                <div key={skill.name}>
-                  <div className="flex justify-between mb-1">
-                    <span className="text-base font-medium text-gray-300">{skill.name}</span>
-                    <span className="text-sm font-medium text-gray-400">{skill.level}%</span>
-                  </div>
-                  <div className="w-full bg-gray-700 rounded-full h-2.5">
-                    <motion.div
-                      className="bg-blue-500 h-2.5 rounded-full"
-                      style={{ width: `${skill.level}%` }}
-                      initial={{ width: 0 }}
-                      animate={{ width: `${skill.level}%` }}
-                      transition={{ duration: 1, delay: 0.5 }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </motion.div>
         </div>
 
-        
-        
         <motion.div
           initial={{ y: 50, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -93,6 +64,70 @@ const About = () => {
                 <h4 className="vertical-timeline-element-subtitle text-gray-400">{exp.company}</h4>
                 <p className="text-gray-300">{exp.duration}</p>
                 <p className="text-gray-300">{exp.description}</p>
+              </VerticalTimelineElement>
+            ))}
+          </VerticalTimeline>
+        </motion.div>
+
+        <div class="grid grid-cols-1 md:grid-cols-1 gap-8 mt-8">
+          <motion.div
+            initial={{ x: 50, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ duration: 0.8, delay: 0.4 }}
+            className="bg-gray-800 p-6 rounded-lg"
+          >
+            <h2 className="text-2xl font-bold mb-4 text-cyan-400">Skills</h2>
+            <div className="space-y-4">
+              {(isSkillsExpanded ? skills : skills.slice(0, 5)).map((skill) => (
+                <div key={skill.name}>
+                  <div className="flex justify-between mb-1">
+                    <span className="text-base font-medium text-gray-300">{skill.name}</span>
+                    <span className="text-sm font-medium text-gray-400">{skill.level}%</span>
+                  </div>
+                  <div className="w-full bg-gray-700 rounded-full h-2.5">
+                    <motion.div
+                      className="bg-blue-500 h-2.5 rounded-full"
+                      style={{ width: `${skill.level}%` }}
+                      initial={{ width: 0 }}
+                      animate={{ width: `${skill.level}%` }}
+                      transition={{ duration: 1, delay: 0.5 }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+            {skills.length > 5 && (
+              <button
+                onClick={() => setIsSkillsExpanded(!isSkillsExpanded)}
+                className="text-cyan-400 hover:underline mt-4"
+              >
+                {isSkillsExpanded ? 'Show Less' : 'Show More'}
+              </button>
+            )}
+          </motion.div>
+        </div>
+
+        <motion.div
+          initial={{ y: 50, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.8, delay: 0.6 }}
+          className="mt-8"
+        >
+          <h2 className="text-3xl font-bold mb-6 text-center text-cyan-400">Education</h2>
+          <VerticalTimeline>
+            {education.map((edu, index) => (
+              <VerticalTimelineElement
+                key={index}
+                className="vertical-timeline-element--education"
+                contentStyle={{ background: 'rgb(31 41 55)', color: '#fff' }}
+                contentArrowStyle={{ borderRight: '7px solid  rgb(31 41 55)' }}
+                iconStyle={{ background: 'rgb(249 115 22)', color: '#fff' }}
+                icon={<FaGraduationCap />}
+              >
+                <h3 className="vertical-timeline-element-title text-xl font-bold text-orange-400">{edu.institution}</h3>
+                <h4 className="vertical-timeline-element-subtitle text-gray-300">{edu.degree}</h4>
+                <p className="text-gray-400">{edu.duration}</p>
+                <p className="text-gray-500">{edu.cgpa}</p>
               </VerticalTimelineElement>
             ))}
           </VerticalTimeline>
@@ -126,32 +161,6 @@ const About = () => {
                 )}
                 <h4 className="vertical-timeline-element-subtitle text-gray-300">{cert.issuer}</h4>
                 <p className="text-gray-400">{cert.date}</p>
-              </VerticalTimelineElement>
-            ))}
-          </VerticalTimeline>
-        </motion.div>
-
-        <motion.div
-          initial={{ y: 50, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.8, delay: 0.6 }}
-          className="mt-8"
-        >
-          <h2 className="text-3xl font-bold mb-6 text-center text-cyan-400">Education</h2>
-          <VerticalTimeline>
-            {education.map((edu, index) => (
-              <VerticalTimelineElement
-                key={index}
-                className="vertical-timeline-element--education"
-                contentStyle={{ background: 'rgb(31 41 55)', color: '#fff' }}
-                contentArrowStyle={{ borderRight: '7px solid  rgb(31 41 55)' }}
-                iconStyle={{ background: 'rgb(249 115 22)', color: '#fff' }}
-                icon={<FaGraduationCap />}
-              >
-                <h3 className="vertical-timeline-element-title text-xl font-bold text-orange-400">{edu.institution}</h3>
-                <h4 className="vertical-timeline-element-subtitle text-gray-300">{edu.degree}</h4>
-                <p className="text-gray-400">{edu.duration}</p>
-                <p className="text-gray-500">{edu.cgpa}</p>
               </VerticalTimelineElement>
             ))}
           </VerticalTimeline>
