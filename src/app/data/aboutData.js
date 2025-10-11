@@ -3,6 +3,8 @@ export const roles = ['Android Developer', 'Learner'];
 export const professionalSummary = "Android Developer with 2+ years of experience building innovative mobile applications with Kotlin and Jetpack Compose. Proven track record of implementing responsive UIs, integrating APIs, and delivering user-focused solutions. Passionate about creating high-performance, scalable mobile experiences with modern architecture patterns.";
 
 export const skills = [
+  { name: 'N8N', level: 40 },
+  { name: 'Docker (Basic)', level: 40 },
   { name: 'Android Development (Advanced)', level: 90 },
   { name: 'Jetpack Compose (Advanced)', level: 90 },
   { name: 'Kotlin (Advanced)', level: 90 },
@@ -23,9 +25,9 @@ export const skills = [
   { name: 'SQL (Intermediate)', level: 60 },
 
   { name: 'C# (Basic)', level: 40 },
-  { name: 'Docker (Basic)', level: 40 },
   { name: 'DotNet Framework (Basic)', level: 40 },
   { name: 'WordPress (Basic)', level: 40 },
+
 ];
 
 export const experiences = [
