@@ -2,6 +2,15 @@ export const roles = ['A collection of my work', 'Click on a project to learn mo
 
 const projects = [
   {
+    name:'Neon Cyberpunk',
+    techStack: ['JavaScript', 'VS Code Theme', 'JSON'],
+    year: '2025',
+    status: 'Done',
+    projectType: 'theme',
+    description: 'A dark, vibrant, and futuristic theme for Visual Studio Code, inspired by the neon-drenched streets and high-tech aesthetics of the cyberpunk genre.',
+    codeLink: 'https://github.com/aiyu-ayaan/Neon-Cyberpunk.git',
+  },
+  {
     name: 'BetweenUs-Server',
     techStack: ['Kotlin', 'Ktor', 'Exposed', 'MySql', 'MongoDB', 'JWT', 'Docker'],
     year: '2025',
