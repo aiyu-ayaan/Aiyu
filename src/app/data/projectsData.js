@@ -8,7 +8,7 @@ const projects = [
     status: 'Done',
     projectType: 'theme',
     description: 'A dark, vibrant, and futuristic theme for Visual Studio Code, inspired by the neon-drenched streets and high-tech aesthetics of the cyberpunk genre.',
-    codeLink: 'https://github.com/aiyu-ayaan/Neon-Cyberpunk.git',
+    codeLink: 'https://marketplace.visualstudio.com/items?itemName=AiyuAyaan.neon-cyberpunk',
   },
   {
     name: 'BetweenUs-Server',
