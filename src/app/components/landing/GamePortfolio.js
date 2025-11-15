@@ -42,23 +42,24 @@ const GamePortfolio = ({ onUnlock = () => {} }) => {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.8, ease: "easeOut" }}
-      className="min-h-screen bg-gray-900 flex flex-col lg:flex-row items-center justify-center p-4 lg:p-8"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 1, ease: "easeOut" }}
+      className="min-h-screen bg-gray-900 flex flex-col lg:flex-row items-center justify-center p-4 lg:p-8 relative overflow-hidden"
     >
       <div className="w-full max-w-6xl flex flex-col lg:flex-row items-center justify-center gap-6 lg:gap-8">
         <motion.div
           initial={{ x: -50, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-          className="flex-1 text-white text-center lg:text-left order-1 max-w-lg"
+          transition={{ duration: 0.8, delay: 0.3 }}
+          className="flex-1 text-white text-center lg:text-left order-1 max-w-lg z-10"
         >
           <motion.h1
             initial={{ y: -20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
+            transition={{ duration: 0.6, delay: 0.5 }}
             className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 line-hover-effect"
+            whileHover={{ scale: 1.02 }}
           >
             {name}
           </motion.h1>
@@ -66,8 +67,8 @@ const GamePortfolio = ({ onUnlock = () => {} }) => {
           <motion.div
             initial={{ y: 30, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.8 }}
-            className="space-y-2 font-mono text-xs sm:text-sm text-left"
+            transition={{ duration: 0.8, delay: 1 }}
+            className="space-y-2 font-mono text-xs sm:text-sm text-left glass-card p-4 rounded-lg mt-6"
           >
             {codeSnippets.map((snippet, index) => (
               <p key={index} className="text-gray-400">{`// ${snippet}`}</p>
@@ -83,10 +84,10 @@ const GamePortfolio = ({ onUnlock = () => {} }) => {
         </motion.div>
 
         <motion.div
-          initial={{ x: 50, opacity: 0, rotateY: 15 }}
-          animate={{ x: 0, opacity: 1, rotateY: 0 }}
-          transition={{ duration: 1, delay: 0.4, ease: "easeOut" }}
-          className="flex-shrink-0 order-2"
+          initial={{ x: 50, opacity: 0, scale: 0.9 }}
+          animate={{ x: 0, opacity: 1, scale: 1 }}
+          transition={{ duration: 1, delay: 0.6, ease: "easeOut" }}
+          className="flex-shrink-0 order-2 z-10"
         >
           {renderGame()}
         </motion.div>

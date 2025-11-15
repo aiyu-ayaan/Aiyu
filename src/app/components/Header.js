@@ -17,7 +17,12 @@ export default function Header() {
     };
 
     return (
-        <header className="relative w-full px-4 sm:px-6 py-4 border-b border-gray-600">
+        <motion.header 
+            initial={{ y: -100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            className="relative w-full px-4 sm:px-6 py-4 border-b border-gray-600/50 backdrop-blur-sm bg-gray-900/80 sticky top-0 z-40"
+        >
             <nav className="flex items-center justify-between max-w-full mx-auto">
                 {/* Logo/Brand - Left */}
                 <div className="flex-shrink-0">
@@ -46,69 +51,96 @@ export default function Header() {
                 <div className="hidden md:block absolute left-1/2 transform -translate-x-1/2">
                     <div className="flex space-x-8">
                         {navLinks.map((link) => (
-                            <Link
+                            <motion.div
                                 key={link.name}
-                                href={link.href}
-                                target={link.target}
-                                rel={link.target === '_blank' ? 'noopener noreferrer' : undefined}
-                                className={clsx(
-                                    "text-white hover:text-orange-400 transition-colors duration-200 pb-1",
-                                    {
-                                        "border-b-2 border-orange-400": pathname === link.href,
-                                    }
-                                )}
+                                whileHover={{ scale: 1.05, y: -2 }}
+                                whileTap={{ scale: 0.95 }}
                             >
-                                {link.name}
-                            </Link>
+                                <Link
+                                    href={link.href}
+                                    target={link.target}
+                                    rel={link.target === '_blank' ? 'noopener noreferrer' : undefined}
+                                    className={clsx(
+                                        "text-white hover:text-orange-400 transition-colors duration-200 pb-1 font-medium",
+                                        {
+                                            "border-b-2 border-orange-400": pathname === link.href,
+                                        }
+                                    )}
+                                >
+                                    {link.name}
+                                </Link>
+                            </motion.div>
                         ))}
                     </div>
                 </div>
 
                 {/* Contact Link - Desktop Right */}
                 <div className="hidden md:block flex-shrink-0">
-                    <Link
-                        href={contactLink.href}
-                        className="text-white hover:text-orange-400 transition-colors duration-200"
+                    <motion.div
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
                     >
-                        {contactLink.name}
-                    </Link>
+                        <Link
+                            href={contactLink.href}
+                            className="text-white hover:text-orange-400 transition-colors duration-200 px-4 py-2 border border-orange-400 rounded-lg hover:bg-orange-400 hover:text-gray-900 font-medium"
+                        >
+                            {contactLink.name}
+                        </Link>
+                    </motion.div>
                 </div>
             </nav>
 
-            {/* Animated Mobile Menu (bg removed) */}
-            <div
-                className={clsx(
-                    "md:hidden overflow-hidden transition-all duration-300 border-t border-gray-600 z-50",
-                    isMenuOpen ? "max-h-96 opacity-100 py-4" : "max-h-0 opacity-0 py-0"
-                )}
+            {/* Animated Mobile Menu */}
+            <motion.div
+                initial={false}
+                animate={{
+                    height: isMenuOpen ? "auto" : 0,
+                    opacity: isMenuOpen ? 1 : 0
+                }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+                className="md:hidden overflow-hidden border-t border-gray-600/50 backdrop-blur-sm bg-gray-900/80"
             >
-                <div className="px-4 space-y-4">
-                    {navLinks.map((link) => (
-                        <Link
-                            key={link.name}
-                            href={link.href}
-                            target={link.target}
-                            rel={link.target === '_blank' ? 'noopener noreferrer' : undefined}
-                            className={clsx(
-                                "block text-white hover:text-orange-400 transition-colors duration-200 pb-1",
-                                {
-                                    "border-b-2 border-orange-400": pathname === link.href,
-                                }
-                            )}
-                            onClick={() => setIsMenuOpen(false)}
+                {isMenuOpen && (
+                    <div className="px-4 py-4 space-y-4">
+                        {navLinks.map((link, index) => (
+                            <motion.div
+                                key={link.name}
+                                initial={{ x: -20, opacity: 0 }}
+                                animate={{ x: 0, opacity: 1 }}
+                                transition={{ delay: index * 0.1 }}
+                            >
+                                <Link
+                                    href={link.href}
+                                    target={link.target}
+                                    rel={link.target === '_blank' ? 'noopener noreferrer' : undefined}
+                                    className={clsx(
+                                        "block text-white hover:text-orange-400 transition-colors duration-200 pb-1 font-medium",
+                                        {
+                                            "border-b-2 border-orange-400": pathname === link.href,
+                                        }
+                                    )}
+                                    onClick={() => setIsMenuOpen(false)}
+                                >
+                                    {link.name}
+                                </Link>
+                            </motion.div>
+                        ))}
+                        <motion.div
+                            initial={{ x: -20, opacity: 0 }}
+                            animate={{ x: 0, opacity: 1 }}
+                            transition={{ delay: navLinks.length * 0.1 }}
                         >
-                            {link.name}
-                        </Link>
-                    ))}
-                    <Link
-                        href={contactLink.href}
-                        className="block text-white hover:text-orange-400 transition-colors duration-200 pt-2 border-t border-gray-600"
-                        onClick={() => setIsMenuOpen(false)}
-                    >
-                        {contactLink.name}
-                    </Link>
-                </div>
-            </div>
-        </header>
+                            <Link
+                                href={contactLink.href}
+                                className="block text-white hover:text-orange-400 transition-colors duration-200 pt-2 border-t border-gray-600/50 font-medium"
+                                onClick={() => setIsMenuOpen(false)}
+                            >
+                                {contactLink.name}
+                            </Link>
+                        </motion.div>
+                    </div>
+                )}
+            </motion.div>
+        </motion.header>
     );
 }

@@ -5,6 +5,7 @@ import "./styles/custom-timeline.css";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import N8nChat from "./components/shared/N8nChat";
+import ScrollProgress from "./components/shared/ScrollProgress";
 import Head from 'next/head'
 
 
@@ -46,6 +47,7 @@ export default function RootLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <ScrollProgress />
         <Header/>
         {children}
         <Footer/>

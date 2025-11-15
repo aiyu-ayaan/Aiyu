@@ -6,6 +6,7 @@ import projects, { roles } from '../../data/projectsData';
 import ProjectDialog from './ProjectDialog';
 import TypewriterEffect from '../shared/TypewriterEffect';
 import Timeline from './Timeline';
+import ScrollReveal from '../shared/ScrollReveal';
 
 const Projects = () => {
   const [selectedProject, setSelectedProject] = useState(null);
@@ -58,62 +59,72 @@ const Projects = () => {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.8, ease: 'easeOut' }}
-      className="min-h-screen bg-gray-900 text-white p-4 lg:p-8"
-    >
+    <div className="min-h-screen bg-gray-900 text-white p-4 lg:p-8">
       <div className="max-w-6xl mx-auto">
         <motion.div
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
           className="text-center mb-12"
         >
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-2">Projects</h1>
-<TypewriterEffect roles={roles} />
+          <motion.h1 
+            className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-2"
+            whileHover={{ scale: 1.02 }}
+          >
+            Projects
+          </motion.h1>
+          <TypewriterEffect roles={roles} />
         </motion.div>
 
-        <div className="flex flex-col sm:flex-row justify-center gap-4 mb-8">
-          <div className="flex flex-col items-center">
-            <label htmlFor="techStackFilter" className="text-gray-300 text-lg mb-2">Filter by Tech Stack:</label>
-            <select
-              id="techStackFilter"
-              className="bg-gray-800 text-white p-2 rounded-md border border-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500 w-full md:w-auto"
-              value={selectedTechStack}
-              onChange={(e) => setSelectedTechStack(e.target.value)}
+        <ScrollReveal direction="up" delay={0.2}>
+          <div className="flex flex-col sm:flex-row justify-center gap-4 mb-8">
+            <motion.div 
+              className="flex flex-col items-center"
+              whileHover={{ scale: 1.02 }}
             >
-              {uniqueTechStacks.map((tech) => (
-                <option key={tech} value={tech}>
-                  {toPascalCase(tech)}
-                </option>
-              ))}
-            </select>
-          </div>
+              <label htmlFor="techStackFilter" className="text-gray-300 text-lg mb-2 font-semibold">Filter by Tech Stack:</label>
+              <select
+                id="techStackFilter"
+                className="glass-card text-white p-3 rounded-lg border border-cyan-500/30 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent w-full md:w-auto cursor-pointer transition-all"
+                value={selectedTechStack}
+                onChange={(e) => setSelectedTechStack(e.target.value)}
+              >
+                {uniqueTechStacks.map((tech) => (
+                  <option key={tech} value={tech} className="bg-gray-800">
+                    {toPascalCase(tech)}
+                  </option>
+                ))}
+              </select>
+            </motion.div>
 
-          <div className="flex flex-col items-center">
-            <label htmlFor="projectTypeFilter" className="text-gray-300 text-lg mb-2">Filter by Project Type:</label>
-            <select
-              id="projectTypeFilter"
-              className="bg-gray-800 text-white p-2 rounded-md border border-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500 w-full md:w-auto"
-              value={selectedProjectType}
-              onChange={(e) => setSelectedProjectType(e.target.value)}
+            <motion.div 
+              className="flex flex-col items-center"
+              whileHover={{ scale: 1.02 }}
             >
-              {uniqueProjectTypes.map((type) => (
-                <option key={type} value={type}>
-                  {toPascalCase(type)}
-                </option>
-              ))}
-            </select>
+              <label htmlFor="projectTypeFilter" className="text-gray-300 text-lg mb-2 font-semibold">Filter by Project Type:</label>
+              <select
+                id="projectTypeFilter"
+                className="glass-card text-white p-3 rounded-lg border border-orange-500/30 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent w-full md:w-auto cursor-pointer transition-all"
+                value={selectedProjectType}
+                onChange={(e) => setSelectedProjectType(e.target.value)}
+              >
+                {uniqueProjectTypes.map((type) => (
+                  <option key={type} value={type} className="bg-gray-800">
+                    {toPascalCase(type)}
+                  </option>
+                ))}
+              </select>
+            </motion.div>
           </div>
-        </div>
+        </ScrollReveal>
 
-        <Timeline projectsByYear={projectsByYear} years={years} onCardClick={openDialog} />
+        <ScrollReveal direction="up" delay={0.3}>
+          <Timeline projectsByYear={projectsByYear} years={years} onCardClick={openDialog} />
+        </ScrollReveal>
 
         <ProjectDialog project={selectedProject} onClose={closeDialog} />
       </div>
-    </motion.div>
+    </div>
   );
 };
 
