@@ -12,6 +12,7 @@
     "@n8n/chat": "^0.60.0",
     "clsx": "^2.1.1",
     "framer-motion": "^12.23.0",
+    "gsap": "^3.13.0",
     "next": "15.3.5",
     "react": "^19.0.0",
     "react-confetti": "^6.4.0",

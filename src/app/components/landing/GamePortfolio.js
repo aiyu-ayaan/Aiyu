@@ -1,14 +1,54 @@
 "use client";
 
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, useInView } from 'framer-motion';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { name, homeRoles, githubLink, codeSnippets } from '../../data/homeScreenData';
 import TypewriterEffect from '../shared/TypewriterEffect';
 import SnakeGame from './SnakeGame';
 import TicTacToe from './TicTacToe';
 
+gsap.registerPlugin(ScrollTrigger);
+
 const GamePortfolio = ({ onUnlock = () => {} }) => {
   const [selectedGame, setSelectedGame] = useState(null);
+  const sectionRef = useRef(null);
+  const leftContentRef = useRef(null);
+  const rightContentRef = useRef(null);
+
+  useEffect(() => {
+    const section = sectionRef.current;
+    const leftContent = leftContentRef.current;
+    const rightContent = rightContentRef.current;
+
+    if (!section || !leftContent || !rightContent) return;
+
+    // Parallax effect on scroll
+    gsap.to(leftContent, {
+      y: -30,
+      scrollTrigger: {
+        trigger: section,
+        start: 'top bottom',
+        end: 'bottom top',
+        scrub: 1,
+      }
+    });
+
+    gsap.to(rightContent, {
+      y: -50,
+      scrollTrigger: {
+        trigger: section,
+        start: 'top bottom',
+        end: 'bottom top',
+        scrub: 1,
+      }
+    });
+
+    return () => {
+      ScrollTrigger.getAll().forEach(trigger => trigger.kill());
+    };
+  }, []);
 
   const renderGame = () => {
     switch (selectedGame) {
@@ -42,13 +82,22 @@ const GamePortfolio = ({ onUnlock = () => {} }) => {
 
   return (
     <motion.div
+      ref={sectionRef}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.8, ease: "easeOut" }}
-      className="min-h-screen bg-gray-900 flex flex-col lg:flex-row items-center justify-center p-4 lg:p-8"
+      className="min-h-screen bg-gray-900 flex flex-col lg:flex-row items-center justify-center p-4 lg:p-8 relative overflow-hidden"
     >
-      <div className="w-full max-w-6xl flex flex-col lg:flex-row items-center justify-center gap-6 lg:gap-8">
+      {/* Animated background gradient */}
+      <div className="absolute inset-0 opacity-30">
+        <div className="absolute top-10 left-10 w-72 h-72 bg-cyan-500 rounded-full mix-blend-multiply filter blur-xl animate-blob"></div>
+        <div className="absolute top-10 right-10 w-72 h-72 bg-orange-500 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-2000"></div>
+        <div className="absolute bottom-10 left-1/2 w-72 h-72 bg-pink-500 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-4000"></div>
+      </div>
+
+      <div className="w-full max-w-6xl flex flex-col lg:flex-row items-center justify-center gap-6 lg:gap-8 relative z-10">
         <motion.div
+          ref={leftContentRef}
           initial={{ x: -50, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.2 }}
@@ -83,6 +132,7 @@ const GamePortfolio = ({ onUnlock = () => {} }) => {
         </motion.div>
 
         <motion.div
+          ref={rightContentRef}
           initial={{ x: 50, opacity: 0, rotateY: 15 }}
           animate={{ x: 0, opacity: 1, rotateY: 0 }}
           transition={{ duration: 1, delay: 0.4, ease: "easeOut" }}
