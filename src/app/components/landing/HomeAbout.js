@@ -2,9 +2,10 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { professionalSummary } from '../../data/aboutData';
+import { professionalSummary as defaultSummary } from '../../data/aboutData';
 
-const HomeAbout = () => {
+const HomeAbout = ({ aboutData }) => {
+  const professionalSummary = aboutData?.professionalSummary || defaultSummary;
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}

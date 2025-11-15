@@ -2,15 +2,19 @@
 "use client";
 import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import projects, { roles } from '../../data/projectsData';
+import defaultProjects, { roles as defaultRoles } from '../../data/projectsData';
 import ProjectDialog from './ProjectDialog';
 import TypewriterEffect from '../shared/TypewriterEffect';
 import Timeline from './Timeline';
 
-const Projects = () => {
+const Projects = ({ projects: propProjects, roles: propRoles }) => {
   const [selectedProject, setSelectedProject] = useState(null);
   const [selectedTechStack, setSelectedTechStack] = useState('All');
   const [selectedProjectType, setSelectedProjectType] = useState('All');
+  
+  // Use props data or fallback to local data
+  const projects = propProjects || defaultProjects;
+  const roles = propRoles || defaultRoles;
 
   const openDialog = (project) => {
     setSelectedProject(project);

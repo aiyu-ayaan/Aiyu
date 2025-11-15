@@ -5,9 +5,12 @@ import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import clsx from 'clsx';
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { navLinks, contactLink } from '../data/headerData';
+import { navLinks as defaultNavLinks, contactLink as defaultContactLink } from '../data/headerData';
 
-export default function Header() {
+export default function Header({ headerData }) {
+    // Use props data or fallback to local data
+    const navLinks = headerData?.navLinks || defaultNavLinks;
+    const contactLink = headerData?.contactLink || defaultContactLink;
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
     const pathname = usePathname();

@@ -2,13 +2,19 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { name, homeRoles, githubLink, codeSnippets } from '../../data/homeScreenData';
+import { name as defaultName, homeRoles as defaultRoles, githubLink as defaultLink, codeSnippets as defaultSnippets } from '../../data/homeScreenData';
 import TypewriterEffect from '../shared/TypewriterEffect';
 import SnakeGame from './SnakeGame';
 import TicTacToe from './TicTacToe';
 
-const GamePortfolio = ({ onUnlock = () => {} }) => {
+const GamePortfolio = ({ homeData, onUnlock = () => {} }) => {
   const [selectedGame, setSelectedGame] = useState(null);
+  
+  // Use props data or fallback to local data
+  const name = homeData?.name || defaultName;
+  const homeRoles = homeData?.homeRoles || defaultRoles;
+  const githubLink = homeData?.githubLink || defaultLink;
+  const codeSnippets = homeData?.codeSnippets || defaultSnippets;
 
   const renderGame = () => {
     switch (selectedGame) {

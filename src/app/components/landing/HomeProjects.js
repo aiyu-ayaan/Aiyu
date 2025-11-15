@@ -2,12 +2,15 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import projects from '../../data/projectsData';
+import defaultProjects from '../../data/projectsData';
 import ProjectCard from '../projects/ProjectCard';
 import ProjectDialog from '../projects/ProjectDialog';
 
-const HomeProjects = () => {
+const HomeProjects = ({ projects: propProjects }) => {
   const [selectedProject, setSelectedProject] = useState(null);
+  
+  // Use props data or fallback to local data
+  const projects = propProjects || defaultProjects;
 
   const openDialog = (project) => {
     setSelectedProject(project);

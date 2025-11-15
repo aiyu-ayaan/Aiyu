@@ -3,7 +3,7 @@ import pb from './pocketbase';
 /**
  * Fetch settings data from PocketBase
  * @param {string} key - The settings key (e.g., 'about', 'header', 'homeScreen')
- * @returns {Promise<Object>} The settings data
+ * @returns {Promise<Object|null>} The settings data or null if not found
  */
 export async function getSettings(key) {
   try {
@@ -12,19 +12,20 @@ export async function getSettings(key) {
     });
     
     if (records.length === 0) {
-      throw new Error(`Settings not found for key: ${key}`);
+      console.warn(`Settings not found for key: ${key}, falling back to local data`);
+      return null;
     }
     
     return records[0].data;
   } catch (error) {
-    console.error(`Error fetching settings for ${key}:`, error);
-    throw error;
+    console.error(`Error fetching settings for ${key}:`, error.message);
+    return null;
   }
 }
 
 /**
  * Fetch all projects from PocketBase
- * @returns {Promise<Array>} List of projects
+ * @returns {Promise<Array|null>} List of projects or null if not found
  */
 export async function getProjects() {
   try {
@@ -33,8 +34,8 @@ export async function getProjects() {
     });
     return projects;
   } catch (error) {
-    console.error('Error fetching projects:', error);
-    throw error;
+    console.error('Error fetching projects:', error.message);
+    return null;
   }
 }
 

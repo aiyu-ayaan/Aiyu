@@ -3,9 +3,11 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { socials } from '../data/siteData';
+import { socials as defaultSocials } from '../data/siteData';
 
-export default function Footer() {
+export default function Footer({ siteData }) {
+    // Use props data or fallback to local data
+    const socials = siteData?.socials || defaultSocials;
     return (
         <footer className="w-full px-4 sm:px-6 py-6 sm:py-4 border-t border-cyan-500/30 bg-gradient-to-b from-gray-900 to-gray-950">
             <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-between max-w-6xl mx-auto gap-4 sm:gap-0">

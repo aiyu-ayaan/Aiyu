@@ -5,12 +5,21 @@ import { VerticalTimeline, VerticalTimelineElement } from 'react-vertical-timeli
 import 'react-vertical-timeline-component/style.min.css';
 import { FaBriefcase, FaGraduationCap, FaCertificate } from 'react-icons/fa';
 import TypewriterEffect from '../shared/TypewriterEffect';
-import { name, roles, professionalSummary, skills, experiences, education, certifications } from '../../data/aboutData';
+import { name as defaultName, roles as defaultRoles, professionalSummary as defaultSummary, skills as defaultSkills, experiences as defaultExperiences, education as defaultEducation, certifications as defaultCertifications } from '../../data/aboutData';
 import Link from 'next/link';
 import Divider from '../landing/Divider';
 
-const About = () => {
+const About = ({ aboutData }) => {
   const [isSkillsExpanded, setIsSkillsExpanded] = useState(false);
+  
+  // Use props data or fallback to local data
+  const name = aboutData?.name || defaultName;
+  const roles = aboutData?.roles || defaultRoles;
+  const professionalSummary = aboutData?.professionalSummary || defaultSummary;
+  const skills = aboutData?.skills || defaultSkills;
+  const experiences = aboutData?.experiences || defaultExperiences;
+  const education = aboutData?.education || defaultEducation;
+  const certifications = aboutData?.certifications || defaultCertifications;
 
   return (
     <motion.div

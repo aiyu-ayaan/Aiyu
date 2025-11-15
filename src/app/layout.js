@@ -5,19 +5,12 @@ import "./styles/custom-timeline.css";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import N8nChat from "./components/shared/N8nChat";
-import Head from 'next/head'
-
+import { getHeaderData, getSiteData } from "@/lib/api";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
 });
-
-
-// For Pages Router (_app.js)
-<Head>
-  <link rel="icon" href="/favicon.ico" />
-</Head>
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
@@ -37,7 +30,20 @@ export const viewport = {
   width: 'device-width',
   initialScale: 1,
 }
-export default function RootLayout({ children }) {
+
+export default async function RootLayout({ children }) {
+  // Fetch header and footer data
+  let headerData = null;
+  let siteData = null;
+  
+  try {
+    headerData = await getHeaderData();
+    siteData = await getSiteData();
+  } catch (error) {
+    console.error('Failed to fetch layout data:', error);
+    // Will fallback to default data in components
+  }
+
   return (
     <html lang="en">
       <head>
@@ -46,9 +52,9 @@ export default function RootLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <Header/>
+        <Header headerData={headerData} />
         {children}
-        <Footer/>
+        <Footer siteData={siteData} />
         <N8nChat />
       </body>
     </html>
