@@ -22,25 +22,48 @@ const About = () => {
       <div className="max-w-6xl mx-auto">
         <motion.div
           initial={{ y: -20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
+          whileInView={{ y: 0, opacity: 1 }}
+          viewport={{ once: true }}
           transition={{ duration: 0.6, delay: 0.2 }}
           className="text-center mb-12"
         >
-                    <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-2">{name}</h1>
+                    <motion.h1 
+                      initial={{ scale: 0.9, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ duration: 0.8, ease: "easeOut" }}
+                      className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-2"
+                    >
+                      {name}
+                    </motion.h1>
                     <TypewriterEffect roles={roles} />
                   </motion.div>
           
-                  <div class="grid grid-cols-1 md:grid-cols-1 gap-8">
+                  <div className="grid grid-cols-1 md:grid-cols-1 gap-8">
                     <motion.div
                       initial={{ x: -50, opacity: 0 }}
-                      animate={{ x: 0, opacity: 1 }}
+                      whileInView={{ x: 0, opacity: 1 }}
+                      viewport={{ once: true, amount: 0.3 }}
                       transition={{ duration: 0.8, delay: 0.4 }}
-                      className="bg-gray-800 p-6 rounded-lg"
+                      className="bg-gray-800 p-6 rounded-lg shadow-xl border border-gray-700 hover:border-cyan-500 transition-all duration-300"
                     >
-                      <h2 className="text-2xl font-bold mb-4 text-cyan-400">Summary</h2>
-                      <p className="text-gray-300">
+                      <motion.h2 
+                        initial={{ opacity: 0, y: -10 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.6, delay: 0.5 }}
+                        className="text-2xl font-bold mb-4 text-cyan-400"
+                      >
+                        Summary
+                      </motion.h2>
+                      <motion.p 
+                        initial={{ opacity: 0 }}
+                        whileInView={{ opacity: 1 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.8, delay: 0.7 }}
+                        className="text-gray-300 leading-relaxed"
+                      >
                         {professionalSummary}
-                      </p>
+                      </motion.p>
                     </motion.div>
         </div>
 
@@ -48,17 +71,26 @@ const About = () => {
 
         <motion.div
           initial={{ y: 50, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.8, delay: 0.6 }}
+          whileInView={{ y: 0, opacity: 1 }}
+          viewport={{ once: true, amount: 0.1 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
           className="mt-8"
         >
-          <h2 className="text-3xl font-bold mb-6 text-center text-cyan-400">Professional Experience</h2>
+          <motion.h2 
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="text-3xl font-bold mb-6 text-center text-cyan-400"
+          >
+            Professional Experience
+          </motion.h2>
           <VerticalTimeline>
             {experiences.map((exp, index) => (
               <VerticalTimelineElement
                 key={index}
                 className="vertical-timeline-element--work"
-                contentStyle={{ background: 'rgb(31 41 55)', color: '#fff' }}
+                contentStyle={{ background: 'rgb(31 41 55)', color: '#fff', boxShadow: '0 3px 0 rgb(249 115 22)' }}
                 contentArrowStyle={{ borderRight: '7px solid  rgb(31 41 55)' }}
                 iconStyle={{ background: 'rgb(249 115 22)', color: '#fff' }}
                 icon={<FaBriefcase />}
@@ -74,52 +106,73 @@ const About = () => {
 
         <Divider />
 
-        <div class="grid grid-cols-1 md:grid-cols-1 gap-8 mt-8">
+        <div className="grid grid-cols-1 md:grid-cols-1 gap-8 mt-8">
           <motion.div
             layout
             initial={{ x: 50, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.4, layout: { duration: 0.3 } }}
-            className="bg-gray-800 p-6 rounded-lg"
+            whileInView={{ x: 0, opacity: 1 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: 0.8, delay: 0.2, layout: { duration: 0.3 } }}
+            className="bg-gray-800 p-6 rounded-lg shadow-xl border border-gray-700 hover:border-cyan-500 transition-all duration-300"
           >
-            <h2 className="text-2xl font-bold mb-4 text-cyan-400">Skills</h2>
+            <motion.h2 
+              initial={{ opacity: 0, y: -10 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="text-2xl font-bold mb-4 text-cyan-400"
+            >
+              Skills
+            </motion.h2>
             <div className="space-y-4">
               {skills.map((skill, index) => (
                 <motion.div
                   key={skill.name}
                   layout
                   initial={{ opacity: 0, y: -20 }}
-                  animate={{
+                  whileInView={{
                     opacity: isSkillsExpanded || index < 5 ? 1 : 0,
                     y: isSkillsExpanded || index < 5 ? 0 : -20,
                     height: isSkillsExpanded || index < 5 ? 'auto' : 0,
                     marginBottom: isSkillsExpanded || index < 5 ? '1rem' : 0,
                   }}
+                  viewport={{ once: true, amount: 0.5 }}
                   transition={{ duration: 0.3, delay: index * 0.05 }}
                 >
                   <div className="flex justify-between mb-1">
                     <span className="text-base font-medium text-gray-300">{skill.name}</span>
-                    <span className="text-sm font-medium text-gray-400">{skill.level}%</span>
+                    <motion.span 
+                      initial={{ opacity: 0 }}
+                      whileInView={{ opacity: 1 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: 0.5 + index * 0.05 }}
+                      className="text-sm font-medium text-cyan-400"
+                    >
+                      {skill.level}%
+                    </motion.span>
                   </div>
                   <div className="w-full bg-gray-700 rounded-full h-2.5">
                     <motion.div
-                      className="bg-blue-500 h-2.5 rounded-full"
+                      className="bg-gradient-to-r from-blue-500 to-cyan-400 h-2.5 rounded-full"
                       style={{ width: `${skill.level}%` }}
                       initial={{ width: 0 }}
-                      animate={{ width: `${skill.level}%` }}
-                      transition={{ duration: 1, delay: 0.5 }}
+                      whileInView={{ width: `${skill.level}%` }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 1, delay: 0.3 + index * 0.05, ease: "easeOut" }}
                     />
                   </div>
                 </motion.div>
               ))}
             </div>
             {skills.length > 5 && (
-              <button
+              <motion.button
                 onClick={() => setIsSkillsExpanded(!isSkillsExpanded)}
-                className="text-cyan-400 hover:underline mt-4"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="text-cyan-400 hover:text-cyan-300 hover:underline mt-4 transition-colors duration-300"
               >
-                {isSkillsExpanded ? 'Show Less' : 'Show More'}
-              </button>
+                {isSkillsExpanded ? 'Show Less ↑' : 'Show More ↓'}
+              </motion.button>
             )}
           </motion.div>
         </div>
@@ -128,17 +181,26 @@ const About = () => {
 
         <motion.div
           initial={{ y: 50, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.8, delay: 0.6 }}
+          whileInView={{ y: 0, opacity: 1 }}
+          viewport={{ once: true, amount: 0.1 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
           className="mt-8"
         >
-          <h2 className="text-3xl font-bold mb-6 text-center text-cyan-400">Education</h2>
+          <motion.h2 
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="text-3xl font-bold mb-6 text-center text-cyan-400"
+          >
+            Education
+          </motion.h2>
           <VerticalTimeline>
             {education.map((edu, index) => (
               <VerticalTimelineElement
                 key={index}
                 className="vertical-timeline-element--education"
-                contentStyle={{ background: 'rgb(31 41 55)', color: '#fff' }}
+                contentStyle={{ background: 'rgb(31 41 55)', color: '#fff', boxShadow: '0 3px 0 rgb(249 115 22)' }}
                 contentArrowStyle={{ borderRight: '7px solid  rgb(31 41 55)' }}
                 iconStyle={{ background: 'rgb(249 115 22)', color: '#fff' }}
                 icon={<FaGraduationCap />}
@@ -156,17 +218,26 @@ const About = () => {
 
         <motion.div
           initial={{ y: 50, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.8, delay: 0.6 }}
+          whileInView={{ y: 0, opacity: 1 }}
+          viewport={{ once: true, amount: 0.1 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
           className="mt-8"
         >
-          <h2 className="text-3xl font-bold mb-6 text-center text-cyan-400">Certifications</h2>
+          <motion.h2 
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="text-3xl font-bold mb-6 text-center text-cyan-400"
+          >
+            Certifications
+          </motion.h2>
           <VerticalTimeline>
             {certifications.map((cert, index) => (
               <VerticalTimelineElement
                 key={index}
                 className="vertical-timeline-element--education"
-                contentStyle={{ background: 'rgb(31 41 55)', color: '#fff' }}
+                contentStyle={{ background: 'rgb(31 41 55)', color: '#fff', boxShadow: '0 3px 0 rgb(249 115 22)' }}
                 contentArrowStyle={{ borderRight: '7px solid  rgb(31 41 55)' }}
                 iconStyle={{ background: 'rgb(249 115 22)', color: '#fff' }}
                 icon={<FaCertificate />}
@@ -174,7 +245,7 @@ const About = () => {
                 {cert.url ? (
                   <Link href={cert.url} target="_blank" rel="noopener noreferrer" legacyBehavior>
                     <a>
-                      <h3 className="vertical-timeline-element-title text-xl font-bold text-orange-400 hover:underline cursor-pointer">{cert.name}</h3>
+                      <h3 className="vertical-timeline-element-title text-xl font-bold text-orange-400 hover:text-orange-300 hover:underline cursor-pointer transition-colors duration-300">{cert.name}</h3>
                     </a>
                   </Link>
                 ) : (

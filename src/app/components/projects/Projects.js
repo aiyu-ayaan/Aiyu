@@ -67,20 +67,40 @@ const Projects = () => {
       <div className="max-w-6xl mx-auto">
         <motion.div
           initial={{ y: -20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
+          whileInView={{ y: 0, opacity: 1 }}
+          viewport={{ once: true }}
           transition={{ duration: 0.6, delay: 0.2 }}
           className="text-center mb-12"
         >
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-2">Projects</h1>
-<TypewriterEffect roles={roles} />
+          <motion.h1 
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+            className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-2"
+          >
+            Projects
+          </motion.h1>
+          <TypewriterEffect roles={roles} />
         </motion.div>
 
-        <div className="flex flex-col sm:flex-row justify-center gap-4 mb-8">
-          <div className="flex flex-col items-center">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+          className="flex flex-col sm:flex-row justify-center gap-4 mb-8"
+        >
+          <motion.div 
+            initial={{ opacity: 0, x: -20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.4 }}
+            className="flex flex-col items-center"
+          >
             <label htmlFor="techStackFilter" className="text-gray-300 text-lg mb-2">Filter by Tech Stack:</label>
             <select
               id="techStackFilter"
-              className="bg-gray-800 text-white p-2 rounded-md border border-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500 w-full md:w-auto"
+              className="bg-gray-800 text-white p-2 rounded-md border border-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500 w-full md:w-auto hover:border-orange-500 transition-colors duration-300"
               value={selectedTechStack}
               onChange={(e) => setSelectedTechStack(e.target.value)}
             >
@@ -90,13 +110,19 @@ const Projects = () => {
                 </option>
               ))}
             </select>
-          </div>
+          </motion.div>
 
-          <div className="flex flex-col items-center">
+          <motion.div 
+            initial={{ opacity: 0, x: 20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.5 }}
+            className="flex flex-col items-center"
+          >
             <label htmlFor="projectTypeFilter" className="text-gray-300 text-lg mb-2">Filter by Project Type:</label>
             <select
               id="projectTypeFilter"
-              className="bg-gray-800 text-white p-2 rounded-md border border-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500 w-full md:w-auto"
+              className="bg-gray-800 text-white p-2 rounded-md border border-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500 w-full md:w-auto hover:border-orange-500 transition-colors duration-300"
               value={selectedProjectType}
               onChange={(e) => setSelectedProjectType(e.target.value)}
             >
@@ -106,8 +132,8 @@ const Projects = () => {
                 </option>
               ))}
             </select>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
 
         <Timeline projectsByYear={projectsByYear} years={years} onCardClick={openDialog} />
 
