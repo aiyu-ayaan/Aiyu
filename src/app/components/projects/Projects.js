@@ -71,16 +71,19 @@ const Projects = () => {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="text-center mb-12"
         >
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-2">Projects</h1>
-<TypewriterEffect roles={roles} />
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent">Projects Portfolio</h1>
+          <TypewriterEffect roles={roles} />
         </motion.div>
 
         <div className="flex flex-col sm:flex-row justify-center gap-4 mb-8">
-          <div className="flex flex-col items-center">
-            <label htmlFor="techStackFilter" className="text-gray-300 text-lg mb-2">Filter by Tech Stack:</label>
+          <motion.div 
+            className="flex flex-col items-center"
+            whileHover={{ scale: 1.02 }}
+          >
+            <label htmlFor="techStackFilter" className="text-gray-300 text-lg mb-2 font-semibold">Filter by Tech Stack:</label>
             <select
               id="techStackFilter"
-              className="bg-gray-800 text-white p-2 rounded-md border border-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500 w-full md:w-auto"
+              className="bg-gradient-to-br from-gray-800 to-gray-900 text-white p-3 rounded-lg border-2 border-gray-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 w-full md:w-auto cursor-pointer hover:border-cyan-600 transition-all duration-300"
               value={selectedTechStack}
               onChange={(e) => setSelectedTechStack(e.target.value)}
             >
@@ -90,13 +93,16 @@ const Projects = () => {
                 </option>
               ))}
             </select>
-          </div>
+          </motion.div>
 
-          <div className="flex flex-col items-center">
-            <label htmlFor="projectTypeFilter" className="text-gray-300 text-lg mb-2">Filter by Project Type:</label>
+          <motion.div 
+            className="flex flex-col items-center"
+            whileHover={{ scale: 1.02 }}
+          >
+            <label htmlFor="projectTypeFilter" className="text-gray-300 text-lg mb-2 font-semibold">Filter by Project Type:</label>
             <select
               id="projectTypeFilter"
-              className="bg-gray-800 text-white p-2 rounded-md border border-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500 w-full md:w-auto"
+              className="bg-gradient-to-br from-gray-800 to-gray-900 text-white p-3 rounded-lg border-2 border-gray-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 w-full md:w-auto cursor-pointer hover:border-cyan-600 transition-all duration-300"
               value={selectedProjectType}
               onChange={(e) => setSelectedProjectType(e.target.value)}
             >
@@ -106,7 +112,7 @@ const Projects = () => {
                 </option>
               ))}
             </select>
-          </div>
+          </motion.div>
         </div>
 
         <Timeline projectsByYear={projectsByYear} years={years} onCardClick={openDialog} />

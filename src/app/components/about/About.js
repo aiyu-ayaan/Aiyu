@@ -14,9 +14,9 @@ const About = () => {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.8, ease: 'easeOut' }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.6 }}
       className="min-h-screen bg-gray-900 text-white p-4 lg:p-8"
     >
       <div className="max-w-6xl mx-auto">
@@ -26,19 +26,23 @@ const About = () => {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="text-center mb-12"
         >
-                    <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-2">{name}</h1>
+                    <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent">{name}</h1>
                     <TypewriterEffect roles={roles} />
                   </motion.div>
           
-                  <div class="grid grid-cols-1 md:grid-cols-1 gap-8">
+                  <div className="grid grid-cols-1 md:grid-cols-1 gap-8">
                     <motion.div
                       initial={{ x: -50, opacity: 0 }}
                       animate={{ x: 0, opacity: 1 }}
                       transition={{ duration: 0.8, delay: 0.4 }}
-                      className="bg-gray-800 p-6 rounded-lg"
+                      className="bg-gradient-to-br from-gray-800 to-gray-900 p-8 rounded-2xl shadow-2xl border border-gray-700 hover:border-cyan-500 transition-all duration-300"
+                      whileHover={{ scale: 1.02, y: -5 }}
                     >
-                      <h2 className="text-2xl font-bold mb-4 text-cyan-400">Summary</h2>
-                      <p className="text-gray-300">
+                      <h2 className="text-3xl font-bold mb-6 text-cyan-400 flex items-center gap-3">
+                        <span className="text-orange-500">{"</>"}</span>
+                        Professional Summary
+                      </h2>
+                      <p className="text-gray-300 text-lg leading-relaxed">
                         {professionalSummary}
                       </p>
                     </motion.div>
@@ -52,7 +56,11 @@ const About = () => {
           transition={{ duration: 0.8, delay: 0.6 }}
           className="mt-8"
         >
-          <h2 className="text-3xl font-bold mb-6 text-center text-cyan-400">Professional Experience</h2>
+          <h2 className="text-4xl font-bold mb-8 text-center text-cyan-400 flex items-center justify-center gap-3">
+            <span className="text-orange-500">{"<"}</span>
+            Professional Experience
+            <span className="text-orange-500">{"/>"}</span>
+          </h2>
           <VerticalTimeline>
             {experiences.map((exp, index) => (
               <VerticalTimelineElement
@@ -74,15 +82,19 @@ const About = () => {
 
         <Divider />
 
-        <div class="grid grid-cols-1 md:grid-cols-1 gap-8 mt-8">
+        <div className="grid grid-cols-1 md:grid-cols-1 gap-8 mt-8">
           <motion.div
             layout
             initial={{ x: 50, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             transition={{ duration: 0.8, delay: 0.4, layout: { duration: 0.3 } }}
-            className="bg-gray-800 p-6 rounded-lg"
+            className="bg-gradient-to-br from-gray-800 to-gray-900 p-8 rounded-2xl shadow-2xl border border-gray-700 hover:border-cyan-500 transition-all duration-300"
           >
-            <h2 className="text-2xl font-bold mb-4 text-cyan-400">Skills</h2>
+            <h2 className="text-3xl font-bold mb-6 text-cyan-400 flex items-center gap-3">
+              <span className="text-orange-500">{"<"}</span>
+              Technical Skills
+              <span className="text-orange-500">{"/>"}</span>
+            </h2>
             <div className="space-y-4">
               {skills.map((skill, index) => (
                 <motion.div
@@ -97,29 +109,39 @@ const About = () => {
                   }}
                   transition={{ duration: 0.3, delay: index * 0.05 }}
                 >
-                  <div className="flex justify-between mb-1">
+                  <div className="flex justify-between mb-2">
                     <span className="text-base font-medium text-gray-300">{skill.name}</span>
-                    <span className="text-sm font-medium text-gray-400">{skill.level}%</span>
+                    <span className="text-sm font-medium text-cyan-400">{skill.level}%</span>
                   </div>
-                  <div className="w-full bg-gray-700 rounded-full h-2.5">
+                  <div className="w-full bg-gray-700 rounded-full h-3 overflow-hidden shadow-inner">
                     <motion.div
-                      className="bg-blue-500 h-2.5 rounded-full"
+                      className="h-3 rounded-full bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-600 relative"
                       style={{ width: `${skill.level}%` }}
                       initial={{ width: 0 }}
                       animate={{ width: `${skill.level}%` }}
-                      transition={{ duration: 1, delay: 0.5 }}
-                    />
+                      transition={{ duration: 1.5, delay: 0.5, ease: "easeOut" }}
+                    >
+                      <motion.div
+                        className="absolute inset-0 bg-white"
+                        initial={{ x: '-100%' }}
+                        animate={{ x: '100%' }}
+                        transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 2, ease: "easeInOut" }}
+                        style={{ opacity: 0.3 }}
+                      />
+                    </motion.div>
                   </div>
                 </motion.div>
               ))}
             </div>
             {skills.length > 5 && (
-              <button
+              <motion.button
                 onClick={() => setIsSkillsExpanded(!isSkillsExpanded)}
-                className="text-cyan-400 hover:underline mt-4"
+                className="text-cyan-400 hover:text-cyan-300 font-semibold mt-6 px-4 py-2 border border-cyan-400 rounded-lg hover:bg-cyan-400 hover:bg-opacity-10 transition-all duration-300"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
-                {isSkillsExpanded ? 'Show Less' : 'Show More'}
-              </button>
+                {isSkillsExpanded ? '↑ Show Less' : '↓ Show More Skills'}
+              </motion.button>
             )}
           </motion.div>
         </div>
@@ -132,7 +154,11 @@ const About = () => {
           transition={{ duration: 0.8, delay: 0.6 }}
           className="mt-8"
         >
-          <h2 className="text-3xl font-bold mb-6 text-center text-cyan-400">Education</h2>
+          <h2 className="text-4xl font-bold mb-8 text-center text-cyan-400 flex items-center justify-center gap-3">
+            <span className="text-orange-500">{"<"}</span>
+            Education
+            <span className="text-orange-500">{"/>"}</span>
+          </h2>
           <VerticalTimeline>
             {education.map((edu, index) => (
               <VerticalTimelineElement
@@ -160,7 +186,11 @@ const About = () => {
           transition={{ duration: 0.8, delay: 0.6 }}
           className="mt-8"
         >
-          <h2 className="text-3xl font-bold mb-6 text-center text-cyan-400">Certifications</h2>
+          <h2 className="text-4xl font-bold mb-8 text-center text-cyan-400 flex items-center justify-center gap-3">
+            <span className="text-orange-500">{"<"}</span>
+            Certifications
+            <span className="text-orange-500">{"/>"}</span>
+          </h2>
           <VerticalTimeline>
             {certifications.map((cert, index) => (
               <VerticalTimelineElement
