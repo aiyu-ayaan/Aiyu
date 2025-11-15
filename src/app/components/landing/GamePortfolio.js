@@ -42,10 +42,9 @@ const GamePortfolio = ({ onUnlock = () => {} }) => {
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      whileInView={{ opacity: 1 }}
-      viewport={{ once: true, margin: "-100px" }}
-      transition={{ duration: 0.6 }}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.8, ease: "easeOut" }}
       className="min-h-screen bg-gray-900 flex flex-col lg:flex-row items-center justify-center p-4 lg:p-8 relative"
     >
       {/* Animated background gradient */}
@@ -58,9 +57,8 @@ const GamePortfolio = ({ onUnlock = () => {} }) => {
       <div className="w-full max-w-6xl flex flex-col lg:flex-row items-center justify-center gap-6 lg:gap-8 relative z-10">
         <motion.div
           initial={{ x: -50, opacity: 0 }}
-          whileInView={{ x: 0, opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6, delay: 0.2 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
           className="flex-1 text-white text-center lg:text-left order-1 max-w-lg"
         >
           <motion.h1
@@ -92,10 +90,9 @@ const GamePortfolio = ({ onUnlock = () => {} }) => {
         </motion.div>
 
         <motion.div
-          initial={{ x: 50, opacity: 0 }}
-          whileInView={{ x: 0, opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6, delay: 0.4 }}
+          initial={{ x: 50, opacity: 0, rotateY: 15 }}
+          animate={{ x: 0, opacity: 1, rotateY: 0 }}
+          transition={{ duration: 1, delay: 0.4, ease: "easeOut" }}
           className="flex-shrink-0 order-2"
         >
           {renderGame()}

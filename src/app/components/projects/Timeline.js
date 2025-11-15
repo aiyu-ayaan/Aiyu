@@ -1,7 +1,6 @@
 
 "use client";
 import React from 'react';
-import { motion } from 'framer-motion';
 import { VerticalTimeline, VerticalTimelineElement }  from 'react-vertical-timeline-component';
 import 'react-vertical-timeline-component/style.min.css';
 import { FaCalendarAlt, FaLaptopCode, FaBoxes, FaWrench } from 'react-icons/fa';
@@ -40,15 +39,9 @@ const Timeline = ({ projectsByYear, years, onCardClick }) => {
             }}
             icon={<FaCalendarAlt />}
           >
-            <motion.h3 
-              className="vertical-timeline-element-title text-2xl font-bold"
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-            >
+            <h3 className="vertical-timeline-element-title text-2xl font-bold">
               {year}
-            </motion.h3>
+            </h3>
           </VerticalTimelineElement>
           {projectsByYear[year].map((project, index) => (
             <VerticalTimelineElement
@@ -70,14 +63,7 @@ const Timeline = ({ projectsByYear, years, onCardClick }) => {
               }}
               icon={getProjectIcon(project.projectType)}
             >
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-              >
-                <ProjectCard project={project} onCardClick={onCardClick} />
-              </motion.div>
+              <ProjectCard project={project} onCardClick={onCardClick} />
             </VerticalTimelineElement>
           ))}
         </React.Fragment>

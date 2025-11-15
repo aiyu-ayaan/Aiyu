@@ -32,10 +32,9 @@ const About = () => {
           
                   <div className="grid grid-cols-1 md:grid-cols-1 gap-8">
                     <motion.div
-                      initial={{ x: -30, opacity: 0 }}
-                      whileInView={{ x: 0, opacity: 1 }}
-                      viewport={{ once: true }}
-                      transition={{ duration: 0.6 }}
+                      initial={{ x: -50, opacity: 0 }}
+                      animate={{ x: 0, opacity: 1 }}
+                      transition={{ duration: 0.8, delay: 0.4 }}
                       className="bg-gradient-to-br from-gray-800 to-gray-900 p-8 rounded-2xl shadow-2xl border border-gray-700 hover:border-cyan-500 transition-all duration-300"
                       whileHover={{ scale: 1.02, y: -5 }}
                     >
@@ -52,10 +51,9 @@ const About = () => {
         <Divider />
 
         <motion.div
-          initial={{ y: 30, opacity: 0 }}
-          whileInView={{ y: 0, opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
+          initial={{ y: 50, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.8, delay: 0.6 }}
           className="mt-8"
         >
           <h2 className="text-4xl font-bold mb-8 text-center text-cyan-400 flex items-center justify-center gap-3">
@@ -87,10 +85,9 @@ const About = () => {
         <div className="grid grid-cols-1 md:grid-cols-1 gap-8 mt-8">
           <motion.div
             layout
-            initial={{ x: 30, opacity: 0 }}
-            whileInView={{ x: 0, opacity: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, layout: { duration: 0.3 } }}
+            initial={{ x: 50, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ duration: 0.8, delay: 0.4, layout: { duration: 0.3 } }}
             className="bg-gradient-to-br from-gray-800 to-gray-900 p-8 rounded-2xl shadow-2xl border border-gray-700 hover:border-cyan-500 transition-all duration-300"
           >
             <h2 className="text-3xl font-bold mb-6 text-cyan-400 flex items-center gap-3">
@@ -152,10 +149,9 @@ const About = () => {
         <Divider />
 
         <motion.div
-          initial={{ y: 30, opacity: 0 }}
-          whileInView={{ y: 0, opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
+          initial={{ y: 50, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.8, delay: 0.6 }}
           className="mt-8"
         >
           <h2 className="text-4xl font-bold mb-8 text-center text-cyan-400 flex items-center justify-center gap-3">
@@ -185,10 +181,9 @@ const About = () => {
         <Divider />
 
         <motion.div
-          initial={{ y: 30, opacity: 0 }}
-          whileInView={{ y: 0, opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
+          initial={{ y: 50, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.8, delay: 0.6 }}
           className="mt-8"
         >
           <h2 className="text-4xl font-bold mb-8 text-center text-cyan-400 flex items-center justify-center gap-3">

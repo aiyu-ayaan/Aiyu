@@ -21,36 +21,21 @@ const HomeProjects = () => {
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      whileInView={{ opacity: 1 }}
-      viewport={{ once: true, margin: "-100px" }}
-      transition={{ duration: 0.6 }}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.8, ease: 'easeOut' }}
       className="bg-gray-900 text-white p-4 lg:p-8"
     >
       <div className="max-w-6xl mx-auto">
-        <motion.h2 
-          initial={{ x: -30, opacity: 0 }}
-          whileInView={{ x: 0, opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="text-4xl font-bold mb-8 text-cyan-400 flex items-center gap-3"
-        >
+        <h2 className="text-4xl font-bold mb-8 text-cyan-400 flex items-center gap-3">
           <span className="text-orange-500">{"<"}</span>
           Latest Projects
           <span className="text-orange-500">{"/>"}</span>
-        </motion.h2>
+        </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {latestProjects.map((project, index) => (
-            <motion.div
-              key={index}
-              initial={{ y: 30, opacity: 0 }}
-              whileInView={{ y: 0, opacity: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: index * 0.2 }}
-            >
-              <ProjectCard project={project} onCardClick={openDialog} />
-            </motion.div>
+            <ProjectCard key={index} project={project} onCardClick={openDialog} />
           ))}
         </div>
         <div className="text-center mt-12">

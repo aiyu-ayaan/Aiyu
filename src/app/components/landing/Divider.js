@@ -1,17 +1,11 @@
 "use client";
 
 import React from 'react';
-import { motion } from 'framer-motion';
 import '../../styles/Divider.css';
 
 const Divider = () => {
   return (
-    <motion.div 
-      initial={{ scaleX: 0, opacity: 0 }}
-      whileInView={{ scaleX: 1, opacity: 1 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.6 }}
-      className="w-full flex justify-center my-12"
+    <div className="w-full flex justify-center my-12"
     >
       <svg className="w-2/5 md:w-1/3" height="40" viewBox="0 0 400 40" fill="none" xmlns="http://www.w3.org/2000/svg">
         <defs>
@@ -26,7 +20,7 @@ const Divider = () => {
           <path d="M400 20 C 410 0, 420 40, 430 20 C 440 0, 450 40, 460 20 C 470 0, 480 40, 490 20 C 500 0, 510 40, 520 20 C 530 0, 540 40, 550 20 C 560 0, 570 40, 580 20 C 590 0, 600 40, 610 20 C 620 0, 630 40, 640 20 C 650 0, 660 40, 670 20 C 680 0, 690 40, 700 20 C 710 0, 720 40, 730 20 C 740 0, 750 40, 760 20 C 770 0, 780 40, 790 20 C 795 10, 800 30, 800 20" stroke="url(#waveGradient)" strokeWidth="3" fill="transparent"/>
         </g>
       </svg>
-    </motion.div>
+    </div>
   );
 };
 

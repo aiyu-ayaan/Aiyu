@@ -59,9 +59,9 @@ const Projects = () => {
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.6 }}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.8, ease: 'easeOut' }}
       className="min-h-screen bg-gray-900 text-white p-4 lg:p-8"
     >
       <div className="max-w-6xl mx-auto">
@@ -75,12 +75,7 @@ const Projects = () => {
           <TypewriterEffect roles={roles} />
         </motion.div>
 
-        <motion.div 
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-          className="flex flex-col sm:flex-row justify-center gap-4 mb-8"
-        >
+        <div className="flex flex-col sm:flex-row justify-center gap-4 mb-8">
           <motion.div 
             className="flex flex-col items-center"
             whileHover={{ scale: 1.02 }}
@@ -118,16 +113,9 @@ const Projects = () => {
               ))}
             </select>
           </motion.div>
-        </motion.div>
+        </div>
 
-        <motion.div
-          initial={{ y: 30, opacity: 0 }}
-          whileInView={{ y: 0, opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-        >
-          <Timeline projectsByYear={projectsByYear} years={years} onCardClick={openDialog} />
-        </motion.div>
+        <Timeline projectsByYear={projectsByYear} years={years} onCardClick={openDialog} />
 
         <ProjectDialog project={selectedProject} onClose={closeDialog} />
       </div>

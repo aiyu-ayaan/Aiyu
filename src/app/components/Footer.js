@@ -10,25 +10,13 @@ export default function Footer() {
         <footer className="w-full px-4 sm:px-6 py-6 sm:py-4 border-t border-cyan-500/30 bg-gradient-to-b from-gray-900 to-gray-950">
             <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-between max-w-6xl mx-auto gap-4 sm:gap-0">
                 <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-6">
-                    <motion.span 
-                        className="text-cyan-400 text-base font-semibold text-center sm:text-left"
-                        initial={{ opacity: 0, x: -20 }}
-                        whileInView={{ opacity: 1, x: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 0.5 }}
-                    >
+                    <span className="text-cyan-400 text-base font-semibold text-center sm:text-left">
                         {"<"} find me in: {"/>"}
-                    </motion.span>
+                    </span>
                     
                     <div className="flex items-center gap-4 sm:gap-3">
                         {socials.filter(social => social.url).map((social, index) => (
-                            <motion.div
-                                key={index}
-                                initial={{ opacity: 0, y: 20 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ delay: index * 0.1, duration: 0.5 }}
-                            >
+                            <div key={index}>
                                 <Link 
                                     href={social.url} 
                                     target="_blank"
@@ -43,20 +31,14 @@ export default function Footer() {
                                         <social.icon className="w-6 h-6 sm:w-5 sm:h-5" />
                                     </motion.div>
                                 </Link>
-                            </motion.div>
+                            </div>
                         ))}
                     </div>
                 </div>
                 
-                <motion.div
-                    className="text-gray-500 text-sm text-center sm:text-right"
-                    initial={{ opacity: 0, x: 20 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.5, delay: 0.3 }}
-                >
+                <div className="text-gray-500 text-sm text-center sm:text-right">
                     <p>© 2025 Ayaan Ansari. All rights reserved.</p>
-                </motion.div>
+                </div>
             </div>
         </footer>
     );
