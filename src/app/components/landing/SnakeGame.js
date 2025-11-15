@@ -17,7 +17,7 @@ const SnakeGame = ({ onUnlock = () => {}, onBack }) => {
   const [gameState, setGameState] = useState('playing');
   const [snake, setSnake] = useState([{ x: 10, y: 10 }]);
   const [food, setFood] = useState(generateFood());
-  const [direction, setDirection] = useState({ x: 0, y: 1 });
+  const [direction, setDirection] = useState({ x: 0, y: 0 });
   const [score, setScore] = useState(0);
   const [gameSpeed, setGameSpeed] = useState(150);
   const [showConfetti, setShowConfetti] = useState(false);
@@ -25,7 +25,7 @@ const SnakeGame = ({ onUnlock = () => {}, onBack }) => {
   const resetGame = () => {
     setSnake([{ x: 10, y: 10 }]);
     setFood(generateFood());
-    setDirection({ x: 0, y: 1 });
+    setDirection({ x: 0, y: 0 });
     setScore(0);
     setGameSpeed(150);
     setGameState('playing');
@@ -49,6 +49,9 @@ const SnakeGame = ({ onUnlock = () => {}, onBack }) => {
 
   useEffect(() => {
     if (gameState !== 'playing') return;
+    
+    // Don't move if direction is not set (both x and y are 0)
+    if (direction.x === 0 && direction.y === 0) return;
 
     const gameLoop = setInterval(() => {
       setSnake(currentSnake => {
