@@ -1,46 +1,17 @@
 "use client";
 
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import '../../styles/Divider.css';
 
-gsap.registerPlugin(ScrollTrigger);
-
 const Divider = () => {
-  const dividerRef = useRef(null);
-
-  useEffect(() => {
-    const divider = dividerRef.current;
-    if (!divider) return;
-
-    gsap.fromTo(
-      divider,
-      { scaleX: 0, opacity: 0 },
-      {
-        scaleX: 1,
-        opacity: 1,
-        duration: 1,
-        ease: 'power2.out',
-        scrollTrigger: {
-          trigger: divider,
-          start: 'top 90%',
-          toggleActions: 'play none none reverse',
-        },
-      }
-    );
-
-    return () => {
-      ScrollTrigger.getAll().forEach(trigger => trigger.kill());
-    };
-  }, []);
-
   return (
     <motion.div 
-      ref={dividerRef}
-      className="w-full flex justify-center my-12 overflow-hidden"
       initial={{ scaleX: 0, opacity: 0 }}
+      whileInView={{ scaleX: 1, opacity: 1 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.6 }}
+      className="w-full flex justify-center my-12"
     >
       <svg className="w-2/5 md:w-1/3" height="40" viewBox="0 0 400 40" fill="none" xmlns="http://www.w3.org/2000/svg">
         <defs>

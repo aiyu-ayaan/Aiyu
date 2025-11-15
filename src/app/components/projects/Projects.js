@@ -1,23 +1,16 @@
 
 "use client";
-import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { motion, useInView } from 'framer-motion';
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import React, { useState, useMemo } from 'react';
+import { motion } from 'framer-motion';
 import projects, { roles } from '../../data/projectsData';
 import ProjectDialog from './ProjectDialog';
 import TypewriterEffect from '../shared/TypewriterEffect';
 import Timeline from './Timeline';
 
-gsap.registerPlugin(ScrollTrigger);
-
 const Projects = () => {
   const [selectedProject, setSelectedProject] = useState(null);
   const [selectedTechStack, setSelectedTechStack] = useState('All');
   const [selectedProjectType, setSelectedProjectType] = useState('All');
-  const headerRef = useRef(null);
-  const filtersRef = useRef(null);
-  const timelineRef = useRef(null);
 
   const openDialog = (project) => {
     setSelectedProject(project);
@@ -64,73 +57,15 @@ const Projects = () => {
       .join(' ');
   };
 
-  useEffect(() => {
-    const header = headerRef.current;
-    const filters = filtersRef.current;
-    const timeline = timelineRef.current;
-
-    // Animate header
-    if (header) {
-      gsap.fromTo(
-        header,
-        { opacity: 0, y: -50 },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 1,
-          ease: 'power3.out',
-        }
-      );
-    }
-
-    // Animate filters
-    if (filters) {
-      gsap.fromTo(
-        filters,
-        { opacity: 0, y: 30 },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 0.8,
-          delay: 0.3,
-          ease: 'power3.out',
-        }
-      );
-    }
-
-    // Animate timeline
-    if (timeline) {
-      gsap.fromTo(
-        timeline,
-        { opacity: 0, y: 50 },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 0.8,
-          scrollTrigger: {
-            trigger: timeline,
-            start: 'top 80%',
-            toggleActions: 'play none none reverse',
-          },
-        }
-      );
-    }
-
-    return () => {
-      ScrollTrigger.getAll().forEach(trigger => trigger.kill());
-    };
-  }, [selectedTechStack, selectedProjectType]);
-
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.8, ease: 'easeOut' }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.6 }}
       className="min-h-screen bg-gray-900 text-white p-4 lg:p-8"
     >
       <div className="max-w-6xl mx-auto">
         <motion.div
-          ref={headerRef}
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.2 }}
@@ -140,7 +75,12 @@ const Projects = () => {
           <TypewriterEffect roles={roles} />
         </motion.div>
 
-        <div ref={filtersRef} className="flex flex-col sm:flex-row justify-center gap-4 mb-8">
+        <motion.div 
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+          className="flex flex-col sm:flex-row justify-center gap-4 mb-8"
+        >
           <motion.div 
             className="flex flex-col items-center"
             whileHover={{ scale: 1.02 }}
@@ -178,11 +118,16 @@ const Projects = () => {
               ))}
             </select>
           </motion.div>
-        </div>
+        </motion.div>
 
-        <div ref={timelineRef}>
+        <motion.div
+          initial={{ y: 30, opacity: 0 }}
+          whileInView={{ y: 0, opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+        >
           <Timeline projectsByYear={projectsByYear} years={years} onCardClick={openDialog} />
-        </div>
+        </motion.div>
 
         <ProjectDialog project={selectedProject} onClose={closeDialog} />
       </div>
