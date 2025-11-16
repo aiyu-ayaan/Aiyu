@@ -36,20 +36,18 @@ export default function Header() {
             className={clsx(
                 "sticky top-0 z-50 w-full px-4 sm:px-6 py-4 border-b transition-all duration-300",
                 scrolled 
-                    ? theme === 'dark'
-                        ? "backdrop-blur-lg shadow-lg"
-                        : "backdrop-blur-lg shadow-lg"
+                    ? "backdrop-blur-lg shadow-lg"
                     : "backdrop-blur-sm"
             )}
             style={{ 
                 opacity: headerOpacity,
                 backgroundColor: scrolled 
                     ? theme === 'dark' 
-                        ? 'rgba(26, 15, 46, 0.8)' 
-                        : 'rgba(248, 250, 252, 0.8)'
+                        ? 'rgba(13, 17, 23, 0.95)' // --bg-primary with opacity
+                        : 'rgba(255, 255, 255, 0.95)' // --bg-primary with opacity
                     : theme === 'dark'
-                        ? 'rgba(26, 15, 46, 0.5)'
-                        : 'rgba(248, 250, 252, 0.5)',
+                        ? 'rgba(13, 17, 23, 0.7)' // --bg-primary with lower opacity
+                        : 'rgba(255, 255, 255, 0.7)', // --bg-primary with lower opacity
                 borderColor: scrolled 
                     ? 'var(--border-cyan)' 
                     : 'var(--border-secondary)',
@@ -177,8 +175,8 @@ export default function Header() {
                     className="px-4 py-4 space-y-4 backdrop-blur-lg"
                     style={{
                         backgroundColor: theme === 'dark'
-                            ? 'rgba(26, 15, 46, 0.95)'
-                            : 'rgba(248, 250, 252, 0.95)',
+                            ? 'rgba(13, 17, 23, 0.98)' // --bg-primary with high opacity for mobile
+                            : 'rgba(255, 255, 255, 0.98)', // --bg-primary with high opacity for mobile
                     }}
                 >
                     {navLinks.map((link, index) => (
