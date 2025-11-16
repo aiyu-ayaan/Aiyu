@@ -1,6 +1,10 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import HomescreenForm from '../components/HomescreenForm';
+import ProjectsForm from '../components/ProjectsForm';
+import AboutForm from '../components/AboutForm';
+import SiteForm from '../components/SiteForm';
 
 export default function AdminDashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -39,7 +43,7 @@ export default function AdminDashboard() {
     }
   };
 
-  const saveData = async () => {
+  const saveData = async (formData) => {
     setSaving(true);
     setMessage('');
     try {
@@ -50,11 +54,12 @@ export default function AdminDashboard() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(formData),
       });
 
       if (response.ok) {
         setMessage('Data saved successfully!');
+        setData(formData);
         setTimeout(() => setMessage(''), 3000);
       } else {
         const error = await response.json();
@@ -78,8 +83,21 @@ export default function AdminDashboard() {
     router.push('/admin/login');
   };
 
-  const handleDataChange = (newData) => {
-    setData(newData);
+  const renderForm = () => {
+    if (!data) return null;
+
+    switch (activeTab) {
+      case 'homescreen':
+        return <HomescreenForm data={data} onSave={saveData} />;
+      case 'projects':
+        return <ProjectsForm data={data} onSave={saveData} />;
+      case 'about':
+        return <AboutForm data={data} onSave={saveData} />;
+      case 'site':
+        return <SiteForm data={data} onSave={saveData} />;
+      default:
+        return null;
+    }
   };
 
   if (!isAuthenticated) {
@@ -149,59 +167,35 @@ export default function AdminDashboard() {
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400"></div>
               <p className="mt-2 text-gray-400">Loading data...</p>
             </div>
+          ) : saving ? (
+            <div className="text-center py-8">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400"></div>
+              <p className="mt-2 text-gray-400">Saving changes...</p>
+            </div>
           ) : (
             <>
-              <div className="mb-4">
+              <div className="mb-6">
                 <h2 className="text-xl font-semibold text-cyan-400 mb-2">
                   Edit {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Data
                 </h2>
                 <p className="text-gray-400 text-sm">
-                  Edit the JSON data below. Be careful to maintain valid JSON format.
+                  Use the form below to edit your portfolio content. All fields marked with * are required.
                 </p>
               </div>
 
-              <textarea
-                value={data ? JSON.stringify(data, null, 2) : ''}
-                onChange={(e) => {
-                  try {
-                    const parsed = JSON.parse(e.target.value);
-                    handleDataChange(parsed);
-                  } catch (err) {
-                    // Allow invalid JSON while typing
-                    setData(e.target.value);
-                  }
-                }}
-                className="w-full h-96 p-4 bg-gray-900 border border-gray-600 rounded-lg text-gray-200 font-mono text-sm focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
-                spellCheck={false}
-              />
-
-              <div className="mt-4 flex gap-4">
-                <button
-                  onClick={saveData}
-                  disabled={saving}
-                  className="px-6 py-3 bg-cyan-500 hover:bg-cyan-600 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {saving ? 'Saving...' : 'Save Changes'}
-                </button>
-                <button
-                  onClick={() => loadData(activeTab)}
-                  className="px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-lg transition-colors"
-                >
-                  Reload Data
-                </button>
-              </div>
+              {renderForm()}
             </>
           )}
         </div>
 
         {/* Help Section */}
         <div className="mt-6 bg-gray-800 rounded-lg p-6 border border-gray-700">
-          <h3 className="text-lg font-semibold text-cyan-400 mb-3">💡 Tips</h3>
+          <h3 className="text-lg font-semibold text-cyan-400 mb-3">💡 Quick Tips</h3>
           <ul className="space-y-2 text-gray-400 text-sm">
-            <li>• Make sure to maintain valid JSON format when editing</li>
-            <li>• Use the "Reload Data" button to discard unsaved changes</li>
-            <li>• Changes are saved to the data folder and will be immediately visible on the website</li>
-            <li>• You can edit projects, skills, experiences, and other content from their respective tabs</li>
+            <li>• All changes are saved to the data folder and will be immediately visible on the website</li>
+            <li>• Use the form fields to easily edit your content without worrying about JSON syntax</li>
+            <li>• You can add or remove items using the + Add and Remove buttons</li>
+            <li>• For projects, use the arrow buttons to reorder them</li>
           </ul>
         </div>
       </div>
