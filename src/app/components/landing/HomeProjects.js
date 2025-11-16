@@ -5,8 +5,10 @@ import Link from 'next/link';
 import projects from '../../data/projectsData';
 import ProjectCard from '../projects/ProjectCard';
 import ProjectDialog from '../projects/ProjectDialog';
+import { useTheme } from '../../context/ThemeContext';
 
 const HomeProjects = () => {
+  const { theme } = useTheme();
   const [selectedProject, setSelectedProject] = useState(null);
 
   const openDialog = (project) => {
@@ -24,13 +26,20 @@ const HomeProjects = () => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.8, ease: 'easeOut' }}
-      className="bg-gray-900 text-white p-4 lg:p-8"
+      className="p-4 lg:p-8 transition-colors duration-300"
+      style={{ 
+        backgroundColor: 'var(--bg-primary)',
+        color: 'var(--text-primary)',
+      }}
     >
       <div className="max-w-6xl mx-auto">
-        <h2 className="text-4xl font-bold mb-8 text-cyan-400 flex items-center gap-3">
-          <span className="text-orange-500">{"<"}</span>
+        <h2 
+          className="text-4xl font-bold mb-8 flex items-center gap-3"
+          style={{ color: 'var(--accent-cyan)' }}
+        >
+          <span style={{ color: 'var(--accent-orange)' }}>{"<"}</span>
           Latest Projects
-          <span className="text-orange-500">{"/>"}</span>
+          <span style={{ color: 'var(--accent-orange)' }}>{"/>"}</span>
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -41,8 +50,17 @@ const HomeProjects = () => {
         <div className="text-center mt-12">
           <Link href="/projects" legacyBehavior>
             <motion.a 
-              className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 font-semibold text-lg px-6 py-3 rounded-lg border-2 border-cyan-400 hover:border-cyan-300 transition-all duration-300 group"
-              whileHover={{ scale: 1.05, boxShadow: "0 0 20px rgba(34, 211, 238, 0.5)" }}
+              className="inline-flex items-center gap-2 font-semibold text-lg px-6 py-3 rounded-lg border-2 transition-all duration-300 group"
+              style={{
+                color: 'var(--accent-cyan)',
+                borderColor: 'var(--accent-cyan)',
+              }}
+              whileHover={{ 
+                scale: 1.05, 
+                boxShadow: theme === 'dark'
+                  ? "0 0 20px rgba(34, 211, 238, 0.5)"
+                  : "0 0 20px rgba(8, 145, 178, 0.4)",
+              }}
               whileTap={{ scale: 0.95 }}
             >
               View All Projects

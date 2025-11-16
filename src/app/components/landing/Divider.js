@@ -2,17 +2,19 @@
 
 import React from 'react';
 import '../../styles/Divider.css';
+import { useTheme } from '../../context/ThemeContext';
 
 const Divider = () => {
+  const { theme } = useTheme();
+  
   return (
-    <div className="w-full flex justify-center my-12"
-    >
+    <div className="w-full flex justify-center my-12">
       <svg className="w-2/5 md:w-1/3" height="40" viewBox="0 0 400 40" fill="none" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <linearGradient id="waveGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#06b6d4" />
-            <stop offset="50%" stopColor="#3b82f6" />
-            <stop offset="100%" stopColor="#8b5cf6" />
+            <stop offset="0%" stopColor={theme === 'dark' ? '#22d3ee' : '#0891b2'} />
+            <stop offset="50%" stopColor={theme === 'dark' ? '#3b82f6' : '#2563eb'} />
+            <stop offset="100%" stopColor={theme === 'dark' ? '#8b5cf6' : '#7c3aed'} />
           </linearGradient>
         </defs>
         <g className="wave-animation">
