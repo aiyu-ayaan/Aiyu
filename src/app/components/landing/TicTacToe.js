@@ -175,18 +175,14 @@ const TicTacToe = ({ onBack }) => {
 
   if (!mode) {
     return (
-      <div 
-        className="p-8 rounded-lg"
-        style={{ backgroundColor: 'var(--bg-secondary)' }}
-      >
+      <div className="flex flex-col items-center gap-4">
         {showConfetti && <Confetti recycle={false} />}
-        <div className="flex flex-col items-center gap-4">
-          <h2 
-            className="text-4xl font-bold mb-4 font-mono"
-            style={{ color: 'var(--text-bright)' }}
-          >
-            Choose Game Mode
-          </h2>
+        <h2 
+          className="text-4xl font-bold mb-4 font-mono"
+          style={{ color: 'var(--text-bright)' }}
+        >
+          Choose Game Mode
+        </h2>
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -203,32 +199,27 @@ const TicTacToe = ({ onBack }) => {
           >
             🤖 Player vs AI
           </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={onBack}
-            className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-mono text-base transition-colors mt-4"
-          >
-            ← Back
-          </motion.button>
-        </div>
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={onBack}
+          className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-mono text-base transition-colors mt-4"
+        >
+          ← Back
+        </motion.button>
       </div>
     );
   }
 
   if (mode === 'pva' && !difficulty) {
     return (
-      <div 
-        className="p-8 rounded-lg"
-        style={{ backgroundColor: 'var(--bg-secondary)' }}
-      >
-        <div className="flex flex-col items-center gap-4">
-          <h2 
-            className="text-4xl font-bold mb-4 font-mono"
-            style={{ color: 'var(--text-bright)' }}
-          >
-            Choose Difficulty
-          </h2>
+      <div className="flex flex-col items-center gap-4">
+        <h2 
+          className="text-4xl font-bold mb-4 font-mono"
+          style={{ color: 'var(--text-bright)' }}
+        >
+          Choose Difficulty
+        </h2>
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -253,49 +244,43 @@ const TicTacToe = ({ onBack }) => {
           >
             💀 IMPOSSIBLE 💀
           </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setMode(null)}
-            className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-mono text-base transition-colors mt-4"
-          >
-            ← Back
-          </motion.button>
-        </div>
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setMode(null)}
+          className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-mono text-base transition-colors mt-4"
+        >
+          ← Back
+        </motion.button>
       </div>
     );
   }
 
   return (
-    <div 
-      className="p-8 rounded-lg"
-      style={{ backgroundColor: 'var(--bg-secondary)' }}
-    >
+    <div className="flex flex-col items-center">
       {showConfetti && <Confetti recycle={false} />}
-      <div className="flex flex-col items-center">
-        <div className={`text-3xl font-bold mb-6 font-mono ${statusColor}`}>{status}</div>
-        {difficulty && (
-          <div 
-            className="text-lg mb-4 font-mono"
-            style={{ color: 'var(--text-tertiary)' }}
-          >
-            Difficulty: <span className={
-              difficulty === 'easy' ? 'text-green-400' :
-                difficulty === 'medium' ? 'text-yellow-400' :
-                  'text-red-400'
-            }>{difficulty.toUpperCase()}</span>
-          </div>
-        )}
-        <div className="grid grid-cols-3 gap-2 mb-6">
-          {Array(9).fill(null).map((_, i) => renderSquare(i))}
-        </div>
-        <button
-          className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg font-mono text-lg transition-colors shadow-lg"
-          onClick={handleRestart}
+      <div className={`text-3xl font-bold mb-6 font-mono ${statusColor}`}>{status}</div>
+      {difficulty && (
+        <div 
+          className="text-lg mb-4 font-mono"
+          style={{ color: 'var(--text-tertiary)' }}
         >
-          🔄 Restart
-        </button>
+          Difficulty: <span className={
+            difficulty === 'easy' ? 'text-green-400' :
+              difficulty === 'medium' ? 'text-yellow-400' :
+                'text-red-400'
+          }>{difficulty.toUpperCase()}</span>
+        </div>
+      )}
+      <div className="grid grid-cols-3 gap-2 mb-6">
+        {Array(9).fill(null).map((_, i) => renderSquare(i))}
       </div>
+      <button
+        className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg font-mono text-lg transition-colors shadow-lg"
+        onClick={handleRestart}
+      >
+        🔄 Restart
+      </button>
     </div>
   );
 };
