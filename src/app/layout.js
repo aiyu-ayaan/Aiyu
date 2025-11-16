@@ -5,6 +5,7 @@ import "./styles/custom-timeline.css";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import N8nChat from "./components/shared/N8nChat";
+import { ThemeProvider } from "./context/ThemeContext";
 import Head from 'next/head'
 
 
@@ -46,10 +47,12 @@ export default function RootLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <Header/>
-        {children}
-        <Footer/>
-        <N8nChat />
+        <ThemeProvider>
+          <Header/>
+          {children}
+          <Footer/>
+          <N8nChat />
+        </ThemeProvider>
       </body>
     </html>
   );
