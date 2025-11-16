@@ -25,7 +25,12 @@ A dynamic portfolio website built with [Next.js](https://nextjs.org) featuring a
 cp .env.example .env
 ```
 
-2. Edit `.env` and set your credentials:
+2. Generate secure credentials (optional but recommended):
+```bash
+npm run generate-creds
+```
+
+3. Edit `.env` and set your credentials:
 ```env
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD=your_secure_password

@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "generate-creds": "node scripts/generate-credentials.js"
   },
   "dependencies": {
     "@n8n/chat": "^0.60.0",
