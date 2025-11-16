@@ -352,3 +352,17 @@ html {
 .animate-spin {
   animation: spin 1s linear infinite;
 }
+
+/* Vertical Timeline Theming */
+/* Override the react-vertical-timeline-component default line color */
+.vertical-timeline::before {
+  background: var(--border-secondary) !important;
+}
+
+[data-theme="light"] .vertical-timeline::before {
+  background: var(--border-secondary) !important;
+}
+
+[data-theme="dark"] .vertical-timeline::before {
+  background: var(--border-secondary) !important;
+}

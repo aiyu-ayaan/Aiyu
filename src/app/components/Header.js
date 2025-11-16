@@ -79,22 +79,19 @@ export default function Header() {
                     </Link>
                 </div>
 
-                {/* Theme Toggle and Mobile Menu Button */}
-                <div className="flex items-center gap-3">
-                    <ThemeToggle />
-                    <motion.button
-                        className="md:hidden transition-colors duration-200"
-                        style={{ color: 'var(--text-bright)' }}
-                        onClick={toggleMenu}
-                        aria-label="Toggle menu"
-                        whileHover={{ scale: 1.1, color: 'var(--accent-cyan)' }}
-                        whileTap={{ scale: 0.9 }}
-                    >
-                        <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d={isMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
-                        </svg>
-                    </motion.button>
-                </div>
+                {/* Mobile Menu Button */}
+                <motion.button
+                    className="md:hidden transition-colors duration-200"
+                    style={{ color: 'var(--text-bright)' }}
+                    onClick={toggleMenu}
+                    aria-label="Toggle menu"
+                    whileHover={{ scale: 1.1, color: 'var(--accent-cyan)' }}
+                    whileTap={{ scale: 0.9 }}
+                >
+                    <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d={isMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
+                    </svg>
+                </motion.button>
 
                 {/* Navigation Links - Desktop Center */}
                 <div className="hidden md:block absolute left-1/2 transform -translate-x-1/2">
@@ -230,6 +227,15 @@ export default function Header() {
                         >
                             {contactLink.name}
                         </Link>
+                    </motion.div>
+                    <motion.div
+                        initial={{ x: -20, opacity: 0 }}
+                        animate={isMenuOpen ? { x: 0, opacity: 1 } : { x: -20, opacity: 0 }}
+                        transition={{ delay: (navLinks.length + 1) * 0.1 }}
+                        className="flex items-center justify-center pt-4 border-t"
+                        style={{ borderColor: 'var(--border-secondary)' }}
+                    >
+                        <ThemeToggle />
                     </motion.div>
                 </div>
             </motion.div>
