@@ -5,8 +5,11 @@ import { VerticalTimeline, VerticalTimelineElement }  from 'react-vertical-timel
 import 'react-vertical-timeline-component/style.min.css';
 import { FaCalendarAlt, FaLaptopCode, FaBoxes, FaWrench } from 'react-icons/fa';
 import ProjectCard from './ProjectCard';
+import { useTheme } from '../../context/ThemeContext';
 
 const Timeline = ({ projectsByYear, years, onCardClick }) => {
+  const { theme } = useTheme();
+  
   const getProjectIcon = (projectType) => {
     switch (projectType) {
       case 'application':
@@ -24,18 +27,28 @@ const Timeline = ({ projectsByYear, years, onCardClick }) => {
         <React.Fragment key={year}>
           <VerticalTimelineElement
             contentStyle={{ 
-              background: 'linear-gradient(135deg, rgb(6 182 212) 0%, rgb(59 130 246) 100%)',
+              background: theme === 'dark'
+                ? 'linear-gradient(135deg, rgb(34 211 238) 0%, rgb(59 130 246) 100%)'
+                : 'linear-gradient(135deg, rgb(8 145 178) 0%, rgb(37 99 235) 100%)',
               color: '#fff',
-              boxShadow: '0 10px 30px rgba(6, 182, 212, 0.3)',
+              boxShadow: theme === 'dark'
+                ? '0 10px 30px rgba(34, 211, 238, 0.3)'
+                : '0 10px 30px rgba(8, 145, 178, 0.3)',
               border: 'none'
             }}
             contentArrowStyle={{ 
-              borderRight: '7px solid rgb(6 182 212)'
+              borderRight: theme === 'dark'
+                ? '7px solid rgb(34 211 238)'
+                : '7px solid rgb(8 145 178)',
             }}
             iconStyle={{ 
-              background: 'linear-gradient(135deg, rgb(6 182 212) 0%, rgb(59 130 246) 100%)',
+              background: theme === 'dark'
+                ? 'linear-gradient(135deg, rgb(34 211 238) 0%, rgb(59 130 246) 100%)'
+                : 'linear-gradient(135deg, rgb(8 145 178) 0%, rgb(37 99 235) 100%)',
               color: '#fff',
-              boxShadow: '0 0 20px rgba(6, 182, 212, 0.5)'
+              boxShadow: theme === 'dark'
+                ? '0 0 20px rgba(34, 211, 238, 0.5)'
+                : '0 0 20px rgba(8, 145, 178, 0.5)',
             }}
             icon={<FaCalendarAlt />}
           >
@@ -47,19 +60,29 @@ const Timeline = ({ projectsByYear, years, onCardClick }) => {
             <VerticalTimelineElement
               key={index}
               contentStyle={{ 
-                background: 'linear-gradient(135deg, rgb(31 41 55) 0%, rgb(17 24 39) 100%)',
-                color: '#fff',
-                boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)',
-                border: '1px solid rgb(55 65 81)',
+                background: theme === 'dark'
+                  ? 'linear-gradient(135deg, rgb(31 41 55) 0%, rgb(17 24 39) 100%)'
+                  : 'linear-gradient(135deg, rgb(241 245 249) 0%, rgb(226 232 240) 100%)',
+                color: theme === 'dark' ? '#fff' : '#1e293b',
+                boxShadow: theme === 'dark'
+                  ? '0 10px 30px rgba(0, 0, 0, 0.3)'
+                  : '0 10px 30px rgba(0, 0, 0, 0.1)',
+                border: theme === 'dark' ? '1px solid rgb(55 65 81)' : '1px solid rgb(203 213 225)',
                 borderRadius: '16px'
               }}
               contentArrowStyle={{ 
-                borderRight: '7px solid rgb(31 41 55)'
+                borderRight: theme === 'dark'
+                  ? '7px solid rgb(31 41 55)'
+                  : '7px solid rgb(241 245 249)',
               }}
               iconStyle={{ 
-                background: 'linear-gradient(135deg, rgb(249 115 22) 0%, rgb(251 146 60) 100%)',
+                background: theme === 'dark'
+                  ? 'linear-gradient(135deg, rgb(249 115 22) 0%, rgb(251 146 60) 100%)'
+                  : 'linear-gradient(135deg, rgb(234 88 12) 0%, rgb(249 115 22) 100%)',
                 color: '#fff',
-                boxShadow: '0 0 20px rgba(249, 115, 22, 0.5)'
+                boxShadow: theme === 'dark'
+                  ? '0 0 20px rgba(249, 115, 22, 0.5)'
+                  : '0 0 20px rgba(234, 88, 12, 0.5)',
               }}
               icon={getProjectIcon(project.projectType)}
             >

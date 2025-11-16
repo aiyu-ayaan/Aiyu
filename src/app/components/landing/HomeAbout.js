@@ -3,26 +3,48 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { professionalSummary } from '../../data/aboutData';
+import { useTheme } from '../../context/ThemeContext';
 
 const HomeAbout = () => {
+  const { theme } = useTheme();
+  
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.8, ease: 'easeOut' }}
-      className="bg-gray-900 text-white p-4 lg:p-8 relative"
+      className="p-4 lg:p-8 relative transition-colors duration-300"
+      style={{ backgroundColor: 'var(--bg-primary)' }}
     >
       <div className="max-w-6xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-1 gap-8">
           <motion.div
-            className="bg-gradient-to-br from-gray-800 to-gray-900 p-8 rounded-2xl shadow-2xl border border-gray-700 hover:border-cyan-500 transition-all duration-300"
-            whileHover={{ scale: 1.02, y: -5 }}
+            className="p-8 rounded-2xl shadow-2xl transition-all duration-300"
+            style={{
+              background: theme === 'dark'
+                ? 'linear-gradient(to bottom right, #1f2937, #111827)'
+                : 'linear-gradient(to bottom right, #f1f5f9, #e2e8f0)',
+              borderWidth: '1px',
+              borderStyle: 'solid',
+              borderColor: 'var(--border-secondary)',
+            }}
+            whileHover={{ 
+              scale: 1.02, 
+              y: -5,
+              borderColor: 'var(--accent-cyan)',
+            }}
           >
-            <h2 className="text-3xl font-bold mb-6 text-cyan-400 flex items-center gap-3">
-              <span className="text-orange-500">{"</>"}</span>
+            <h2 
+              className="text-3xl font-bold mb-6 flex items-center gap-3"
+              style={{ color: 'var(--accent-cyan)' }}
+            >
+              <span style={{ color: 'var(--accent-orange)' }}>{"</>"}</span>
               Summary
             </h2>
-            <p className="text-gray-300 text-lg leading-relaxed">
+            <p 
+              className="text-lg leading-relaxed"
+              style={{ color: 'var(--text-secondary)' }}
+            >
               {professionalSummary}
             </p>
           </motion.div>
@@ -30,7 +52,8 @@ const HomeAbout = () => {
         <div className="text-center mt-8">
           <Link href="/about-me" legacyBehavior>
             <motion.a 
-              className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 font-semibold text-lg group"
+              className="inline-flex items-center gap-2 font-semibold text-lg group"
+              style={{ color: 'var(--accent-cyan)' }}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >

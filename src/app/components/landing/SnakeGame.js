@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Confetti from 'react-confetti';
+import { useTheme } from '../../context/ThemeContext';
 
 const BOARD_SIZE = 20;
 
@@ -14,6 +15,7 @@ const generateFood = () => {
 };
 
 const SnakeGame = ({ onUnlock = () => {}, onBack }) => {
+  const { theme } = useTheme();
   const [gameState, setGameState] = useState('playing');
   const [snake, setSnake] = useState([{ x: 10, y: 10 }]);
   const [food, setFood] = useState(generateFood());
@@ -141,14 +143,18 @@ const SnakeGame = ({ onUnlock = () => {}, onBack }) => {
           cellType = 'food';
         }
 
+        const getCellStyle = () => {
+          if (cellType === 'head') return { backgroundColor: theme === 'dark' ? '#22d3ee' : '#0891b2' };
+          if (cellType === 'body') return { backgroundColor: theme === 'dark' ? '#06b6d4' : '#0e7490' };
+          if (cellType === 'food') return { backgroundColor: theme === 'dark' ? '#4ade80' : '#16a34a' };
+          return { backgroundColor: theme === 'dark' ? '#1f2937' : '#e5e7eb' };
+        };
+        
         board.push(
           <div
             key={`${x}-${y}`}
-            className={`aspect-square ${cellType === 'head' ? 'bg-cyan-400' :
-              cellType === 'body' ? 'bg-cyan-500' :
-                cellType === 'food' ? 'bg-green-400' :
-                  'bg-gray-800'
-              }`}
+            className="aspect-square"
+            style={getCellStyle()}
           />
         );
       }
@@ -162,14 +168,16 @@ const SnakeGame = ({ onUnlock = () => {}, onBack }) => {
         initial={{ scale: 0.8 }}
         animate={{ scale: 1 }}
         transition={{ duration: 0.8, delay: 0.6, ease: "easeOut" }}
-        className="relative bg-gray-800 rounded-[2.5rem] p-3 shadow-2xl w-72 sm:w-80"
+        className="relative rounded-[2.5rem] p-3 shadow-2xl w-72 sm:w-80"
+        style={{ backgroundColor: theme === 'dark' ? '#1f2937' : '#cbd5e1' }}
       >
       {showConfetti && <Confetti recycle={false} />}
       <motion.div
-        initial={{ backgroundColor: "#000000" }}
-        animate={{ backgroundColor: "#000000" }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
         transition={{ duration: 0.6, delay: 0.8 }}
-        className="bg-black rounded-[2rem] p-4 relative"
+        className="rounded-[2rem] p-4 relative"
+        style={{ backgroundColor: theme === 'dark' ? '#000000' : '#1e293b' }}
       >
         <motion.div
           initial={{ opacity: 0 }}
@@ -193,16 +201,23 @@ const SnakeGame = ({ onUnlock = () => {}, onBack }) => {
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ duration: 0.6, delay: 1.2 }}
-          className="bg-teal-500/30 rounded-lg shadow-2xl backdrop-blur-md"
+          className="rounded-lg shadow-2xl backdrop-blur-md"
+          style={{ backgroundColor: theme === 'dark' ? 'rgba(20, 184, 166, 0.3)' : 'rgba(13, 148, 136, 0.2)' }}
         >
-          <div className="bg-gray-900 rounded-lg p-4">
+          <div 
+            className="rounded-lg p-4"
+            style={{ backgroundColor: theme === 'dark' ? '#111827' : '#334155' }}
+          >
             <motion.div
               initial={{ scale: 0.8 }}
               animate={{ scale: 1 }}
               transition={{ duration: 0.6, delay: 1.4 }}
               className="relative mb-4"
             >
-              <div className="grid grid-cols-20 gap-0 bg-gray-800 p-2 aspect-square w-full max-w-64 mx-auto">
+              <div 
+                className="grid grid-cols-20 gap-0 p-2 aspect-square w-full max-w-64 mx-auto"
+                style={{ backgroundColor: theme === 'dark' ? '#1f2937' : '#cbd5e1' }}
+              >
                 {renderGameBoard()}
               </div>
             </motion.div>
@@ -213,14 +228,23 @@ const SnakeGame = ({ onUnlock = () => {}, onBack }) => {
               transition={{ duration: 0.6, delay: 1.6 }}
               className="mb-4"
             >
-              <p className="text-gray-400 text-xs mb-2 text-center">{`// tap arrows to play`}</p>
+              <p 
+                className="text-xs mb-2 text-center"
+                style={{ color: 'var(--text-tertiary)' }}
+              >
+                {`// tap arrows to play`}
+              </p>
               <div className="grid grid-cols-3 gap-2 max-w-32 mx-auto">
                 <div></div>
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => handleDirectionChange({ x: 0, y: -1 })}
-                  className="w-10 h-10 bg-gray-700 rounded border border-gray-600 flex items-center justify-center text-white text-sm active:bg-gray-600 transition-colors"
+                  className="w-10 h-10 rounded border flex items-center justify-center text-white text-sm transition-colors"
+                  style={{
+                    backgroundColor: theme === 'dark' ? '#374151' : '#94a3b8',
+                    borderColor: theme === 'dark' ? '#4b5563' : '#64748b',
+                  }}
                 >
                   ↑
                 </motion.button>
@@ -229,7 +253,11 @@ const SnakeGame = ({ onUnlock = () => {}, onBack }) => {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => handleDirectionChange({ x: -1, y: 0 })}
-                  className="w-10 h-10 bg-gray-700 rounded border border-gray-600 flex items-center justify-center text-white text-sm active:bg-gray-600 transition-colors"
+                  className="w-10 h-10 rounded border flex items-center justify-center text-white text-sm transition-colors"
+                  style={{
+                    backgroundColor: theme === 'dark' ? '#374151' : '#94a3b8',
+                    borderColor: theme === 'dark' ? '#4b5563' : '#64748b',
+                  }}
                 >
                   ←
                 </motion.button>
@@ -237,7 +265,11 @@ const SnakeGame = ({ onUnlock = () => {}, onBack }) => {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => handleDirectionChange({ x: 0, y: 1 })}
-                  className="w-10 h-10 bg-gray-700 rounded border border-gray-600 flex items-center justify-center text-white text-sm active:bg-gray-600 transition-colors"
+                  className="w-10 h-10 rounded border flex items-center justify-center text-white text-sm transition-colors"
+                  style={{
+                    backgroundColor: theme === 'dark' ? '#374151' : '#94a3b8',
+                    borderColor: theme === 'dark' ? '#4b5563' : '#64748b',
+                  }}
                 >
                   ↓
                 </motion.button>
@@ -245,7 +277,11 @@ const SnakeGame = ({ onUnlock = () => {}, onBack }) => {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => handleDirectionChange({ x: 1, y: 0 })}
-                  className="w-10 h-10 bg-gray-700 rounded border border-gray-600 flex items-center justify-center text-white text-sm active:bg-gray-600 transition-colors"
+                  className="w-10 h-10 rounded border flex items-center justify-center text-white text-sm transition-colors"
+                  style={{
+                    backgroundColor: theme === 'dark' ? '#374151' : '#94a3b8',
+                    borderColor: theme === 'dark' ? '#4b5563' : '#64748b',
+                  }}
                 >
                   →
                 </motion.button>
@@ -258,7 +294,12 @@ const SnakeGame = ({ onUnlock = () => {}, onBack }) => {
               transition={{ duration: 0.6, delay: 1.8 }}
               className="mb-4"
             >
-              <p className="text-gray-400 text-xs mb-2">{`// food left`}</p>
+              <p 
+                className="text-xs mb-2"
+                style={{ color: 'var(--text-tertiary)' }}
+              >
+                {`// food left`}
+              </p>
               <div className="flex flex-wrap gap-1 justify-center">
                 {Array.from({ length: 10 }, (_, i) => (
                   <motion.div
@@ -266,8 +307,12 @@ const SnakeGame = ({ onUnlock = () => {}, onBack }) => {
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ duration: 0.3, delay: 2.0 + i * 0.05 }}
-                    className={`w-2 h-2 rounded-full ${i < (10 - score) ? 'bg-green-400' : 'bg-gray-700'
-                      }`}
+                    className="w-2 h-2 rounded-full"
+                    style={{
+                      backgroundColor: i < (10 - score) 
+                        ? (theme === 'dark' ? '#4ade80' : '#16a34a')
+                        : (theme === 'dark' ? '#374151' : '#94a3b8')
+                    }}
                   />
                 ))}
               </div>
@@ -346,7 +391,10 @@ const SnakeGame = ({ onUnlock = () => {}, onBack }) => {
           transition={{ duration: 0.4, delay: 2.4 }}
           className="flex justify-center mt-4"
         >
-          <div className="w-32 h-1 bg-gray-600 rounded-full"></div>
+          <div 
+            className="w-32 h-1 rounded-full"
+            style={{ backgroundColor: theme === 'dark' ? '#4b5563' : '#94a3b8' }}
+          ></div>
         </motion.div>
       </motion.div>
     </motion.div>

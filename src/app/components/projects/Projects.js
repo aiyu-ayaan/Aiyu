@@ -6,8 +6,10 @@ import projects, { roles } from '../../data/projectsData';
 import ProjectDialog from './ProjectDialog';
 import TypewriterEffect from '../shared/TypewriterEffect';
 import Timeline from './Timeline';
+import { useTheme } from '../../context/ThemeContext';
 
 const Projects = () => {
+  const { theme } = useTheme();
   const [selectedProject, setSelectedProject] = useState(null);
   const [selectedTechStack, setSelectedTechStack] = useState('All');
   const [selectedProjectType, setSelectedProjectType] = useState('All');
@@ -62,7 +64,11 @@ const Projects = () => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.8, ease: 'easeOut' }}
-      className="min-h-screen bg-gray-900 text-white p-4 lg:p-8"
+      className="min-h-screen p-4 lg:p-8 transition-colors duration-300"
+      style={{ 
+        backgroundColor: 'var(--bg-primary)',
+        color: 'var(--text-primary)',
+      }}
     >
       <div className="max-w-6xl mx-auto">
         <motion.div
@@ -71,7 +77,16 @@ const Projects = () => {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="text-center mb-12"
         >
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent">Projects Portfolio</h1>
+          <h1 
+            className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4 bg-gradient-to-r bg-clip-text text-transparent"
+            style={{
+              backgroundImage: theme === 'dark'
+                ? 'linear-gradient(to right, #22d3ee, #3b82f6, #8b5cf6)'
+                : 'linear-gradient(to right, #0891b2, #2563eb, #7c3aed)',
+            }}
+          >
+            Projects Portfolio
+          </h1>
           <TypewriterEffect roles={roles} />
         </motion.div>
 
@@ -80,10 +95,23 @@ const Projects = () => {
             className="flex flex-col items-center"
             whileHover={{ scale: 1.02 }}
           >
-            <label htmlFor="techStackFilter" className="text-gray-300 text-lg mb-2 font-semibold">Filter by Tech Stack:</label>
+            <label 
+              htmlFor="techStackFilter" 
+              className="text-lg mb-2 font-semibold"
+              style={{ color: 'var(--text-secondary)' }}
+            >
+              Filter by Tech Stack:
+            </label>
             <select
               id="techStackFilter"
-              className="bg-gradient-to-br from-gray-800 to-gray-900 text-white p-3 rounded-lg border-2 border-gray-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 w-full md:w-auto cursor-pointer hover:border-cyan-600 transition-all duration-300"
+              className="p-3 rounded-lg border-2 focus:outline-none focus:ring-2 w-full md:w-auto cursor-pointer transition-all duration-300"
+              style={{
+                background: theme === 'dark'
+                  ? 'linear-gradient(to bottom right, #1f2937, #111827)'
+                  : 'linear-gradient(to bottom right, #f1f5f9, #e2e8f0)',
+                color: 'var(--text-primary)',
+                borderColor: 'var(--border-secondary)',
+              }}
               value={selectedTechStack}
               onChange={(e) => setSelectedTechStack(e.target.value)}
             >
@@ -99,10 +127,23 @@ const Projects = () => {
             className="flex flex-col items-center"
             whileHover={{ scale: 1.02 }}
           >
-            <label htmlFor="projectTypeFilter" className="text-gray-300 text-lg mb-2 font-semibold">Filter by Project Type:</label>
+            <label 
+              htmlFor="projectTypeFilter" 
+              className="text-lg mb-2 font-semibold"
+              style={{ color: 'var(--text-secondary)' }}
+            >
+              Filter by Project Type:
+            </label>
             <select
               id="projectTypeFilter"
-              className="bg-gradient-to-br from-gray-800 to-gray-900 text-white p-3 rounded-lg border-2 border-gray-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 w-full md:w-auto cursor-pointer hover:border-cyan-600 transition-all duration-300"
+              className="p-3 rounded-lg border-2 focus:outline-none focus:ring-2 w-full md:w-auto cursor-pointer transition-all duration-300"
+              style={{
+                background: theme === 'dark'
+                  ? 'linear-gradient(to bottom right, #1f2937, #111827)'
+                  : 'linear-gradient(to bottom right, #f1f5f9, #e2e8f0)',
+                color: 'var(--text-primary)',
+                borderColor: 'var(--border-secondary)',
+              }}
               value={selectedProjectType}
               onChange={(e) => setSelectedProjectType(e.target.value)}
             >

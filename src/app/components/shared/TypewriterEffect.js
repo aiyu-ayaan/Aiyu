@@ -1,7 +1,9 @@
 "use client";
 import React, { useState, useEffect, useRef } from 'react';
+import { useTheme } from '../../context/ThemeContext';
 
 const TypewriterEffect = ({ roles }) => {
+  const { theme } = useTheme();
   const [displayedText, setDisplayedText] = useState('');
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showCursor, setShowCursor] = useState(true);
@@ -63,7 +65,10 @@ const TypewriterEffect = ({ roles }) => {
   }, []);
 
   return (
-    <p className="text-blue-400 text-lg sm:text-xl">
+    <p 
+      className="text-lg sm:text-xl"
+      style={{ color: theme === 'dark' ? '#3b82f6' : '#2563eb' }}
+    >
       &gt; {displayedText}
       <span className={`${showCursor ? 'opacity-100' : 'opacity-0'} transition-opacity duration-100`}>|</span>
     </p>

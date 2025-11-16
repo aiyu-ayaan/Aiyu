@@ -6,8 +6,10 @@ import { name, homeRoles, githubLink, codeSnippets } from '../../data/homeScreen
 import TypewriterEffect from '../shared/TypewriterEffect';
 import SnakeGame from './SnakeGame';
 import TicTacToe from './TicTacToe';
+import { useTheme } from '../../context/ThemeContext';
 
 const GamePortfolio = ({ onUnlock = () => {} }) => {
+  const { theme } = useTheme();
   const [selectedGame, setSelectedGame] = useState(null);
 
   const renderGame = () => {
@@ -23,7 +25,10 @@ const GamePortfolio = ({ onUnlock = () => {} }) => {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setSelectedGame('snake')}
-              className="bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white px-6 py-3 rounded-lg font-mono text-lg transition-colors"
+              className="text-white px-6 py-3 rounded-lg font-mono text-lg transition-colors"
+              style={{
+                backgroundColor: theme === 'dark' ? '#f97316' : '#ea580c',
+              }}
             >
               Play Snake
             </motion.button>
@@ -31,7 +36,10 @@ const GamePortfolio = ({ onUnlock = () => {} }) => {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setSelectedGame('tictactoe')}
-              className="bg-cyan-500 hover:bg-cyan-600 active:bg-cyan-700 text-white px-6 py-3 rounded-lg font-mono text-lg transition-colors"
+              className="text-white px-6 py-3 rounded-lg font-mono text-lg transition-colors"
+              style={{
+                backgroundColor: theme === 'dark' ? '#22d3ee' : '#0891b2',
+              }}
             >
               Play Tic-Tac-Toe
             </motion.button>
@@ -45,13 +53,23 @@ const GamePortfolio = ({ onUnlock = () => {} }) => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.8, ease: "easeOut" }}
-      className="min-h-screen bg-gray-900 flex flex-col lg:flex-row items-center justify-center p-4 lg:p-8 relative"
+      className="min-h-screen flex flex-col lg:flex-row items-center justify-center p-4 lg:p-8 relative transition-colors duration-300"
+      style={{ backgroundColor: 'var(--bg-primary)' }}
     >
       {/* Animated background gradient */}
       <div className="absolute inset-0 opacity-30 pointer-events-none">
-        <div className="absolute top-10 left-10 w-72 h-72 bg-cyan-500 rounded-full mix-blend-multiply filter blur-xl animate-blob"></div>
-        <div className="absolute top-10 right-10 w-72 h-72 bg-orange-500 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-2000"></div>
-        <div className="absolute bottom-10 left-1/2 w-72 h-72 bg-pink-500 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-4000"></div>
+        <div 
+          className="absolute top-10 left-10 w-72 h-72 rounded-full mix-blend-multiply filter blur-xl animate-blob"
+          style={{ backgroundColor: 'var(--accent-cyan)' }}
+        ></div>
+        <div 
+          className="absolute top-10 right-10 w-72 h-72 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-2000"
+          style={{ backgroundColor: 'var(--accent-orange)' }}
+        ></div>
+        <div 
+          className="absolute bottom-10 left-1/2 w-72 h-72 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-4000"
+          style={{ backgroundColor: 'var(--accent-pink)' }}
+        ></div>
       </div>
 
       <div className="w-full max-w-6xl flex flex-col lg:flex-row items-center justify-center gap-6 lg:gap-8 relative z-10">
@@ -59,13 +77,15 @@ const GamePortfolio = ({ onUnlock = () => {} }) => {
           initial={{ x: -50, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.2 }}
-          className="flex-1 text-white text-center lg:text-left order-1 max-w-lg"
+          className="flex-1 text-center lg:text-left order-1 max-w-lg"
+          style={{ color: 'var(--text-primary)' }}
         >
           <motion.h1
             initial={{ y: -20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.6, delay: 0.4 }}
             className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 line-hover-effect"
+            style={{ color: 'var(--text-bright)' }}
           >
             {name}
           </motion.h1>
@@ -77,14 +97,14 @@ const GamePortfolio = ({ onUnlock = () => {} }) => {
             className="space-y-2 font-mono text-xs sm:text-sm text-left"
           >
             {codeSnippets.map((snippet, index) => (
-              <p key={index} className="text-gray-400">{`// ${snippet}`}</p>
+              <p key={index} style={{ color: 'var(--text-tertiary)' }}>{`// ${snippet}`}</p>
             ))}
             <p className="break-all">
-              <span className="text-blue-400">const</span>{' '}
-              <span className="text-cyan-400">githubLink</span>{' '}
-              <span className="text-white">=</span>
+              <span style={{ color: 'var(--syntax-keyword)' }}>const</span>{' '}
+              <span style={{ color: 'var(--syntax-variable)' }}>githubLink</span>{' '}
+              <span style={{ color: 'var(--text-bright)' }}>=</span>
               <br className="sm:hidden" />
-              <span className="sm:ml-1 text-orange-400">{`"${githubLink}"`}</span>
+              <span className="sm:ml-1" style={{ color: 'var(--syntax-string)' }}>{`"${githubLink}"`}</span>
             </p>
           </motion.div>
         </motion.div>

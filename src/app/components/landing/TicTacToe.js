@@ -3,8 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Confetti from 'react-confetti';
+import { useTheme } from '../../context/ThemeContext';
 
 const TicTacToe = ({ onBack }) => {
+  const { theme } = useTheme();
   const [board, setBoard] = useState(Array(9).fill(null));
   const [isXNext, setIsXNext] = useState(true);
   const [mode, setMode] = useState(null); // 'pvp' or 'pva'
@@ -121,9 +123,17 @@ const TicTacToe = ({ onBack }) => {
   const renderSquare = (i) => {
     return (
       <motion.button
-        className="w-20 h-20 bg-gray-800 border-2 border-gray-700 flex items-center justify-center text-3xl font-bold text-white hover:bg-gray-700 transition-colors"
+        className="w-20 h-20 border-2 flex items-center justify-center text-3xl font-bold transition-colors"
+        style={{
+          backgroundColor: theme === 'dark' ? '#1f2937' : '#e2e8f0',
+          borderColor: theme === 'dark' ? '#374151' : '#cbd5e1',
+          color: 'var(--text-bright)',
+        }}
         onClick={() => handleClick(i)}
-        whileHover={{ scale: 1.05 }}
+        whileHover={{ 
+          scale: 1.05,
+          backgroundColor: theme === 'dark' ? '#374151' : '#cbd5e1',
+        }}
         whileTap={{ scale: 0.95 }}
       >
         <span className={board[i] === 'X' ? 'text-cyan-400' : 'text-orange-400'}>
@@ -165,10 +175,14 @@ const TicTacToe = ({ onBack }) => {
 
   if (!mode) {
     return (
-      <div className="bg-gray-900 p-8 rounded-lg">
+      <div className="flex flex-col items-center gap-4">
         {showConfetti && <Confetti recycle={false} />}
-        <div className="flex flex-col items-center gap-4">
-          <h2 className="text-4xl font-bold text-white mb-4 font-mono">Choose Game Mode</h2>
+        <h2 
+          className="text-4xl font-bold mb-4 font-mono"
+          style={{ color: 'var(--text-bright)' }}
+        >
+          Choose Game Mode
+        </h2>
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -185,24 +199,27 @@ const TicTacToe = ({ onBack }) => {
           >
             🤖 Player vs AI
           </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={onBack}
-            className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-mono text-base transition-colors mt-4"
-          >
-            ← Back
-          </motion.button>
-        </div>
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={onBack}
+          className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-mono text-base transition-colors mt-4"
+        >
+          ← Back
+        </motion.button>
       </div>
     );
   }
 
   if (mode === 'pva' && !difficulty) {
     return (
-      <div className="bg-gray-900 p-8 rounded-lg">
-        <div className="flex flex-col items-center gap-4">
-          <h2 className="text-4xl font-bold text-white mb-4 font-mono">Choose Difficulty</h2>
+      <div className="flex flex-col items-center gap-4">
+        <h2 
+          className="text-4xl font-bold mb-4 font-mono"
+          style={{ color: 'var(--text-bright)' }}
+        >
+          Choose Difficulty
+        </h2>
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -227,43 +244,43 @@ const TicTacToe = ({ onBack }) => {
           >
             💀 IMPOSSIBLE 💀
           </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setMode(null)}
-            className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-mono text-base transition-colors mt-4"
-          >
-            ← Back
-          </motion.button>
-        </div>
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setMode(null)}
+          className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-mono text-base transition-colors mt-4"
+        >
+          ← Back
+        </motion.button>
       </div>
     );
   }
 
   return (
-    <div className="bg-gray-900 p-8 rounded-lg">
+    <div className="flex flex-col items-center">
       {showConfetti && <Confetti recycle={false} />}
-      <div className="flex flex-col items-center">
-        <div className={`text-3xl font-bold mb-6 font-mono ${statusColor}`}>{status}</div>
-        {difficulty && (
-          <div className="text-lg text-gray-400 mb-4 font-mono">
-            Difficulty: <span className={
-              difficulty === 'easy' ? 'text-green-400' :
-                difficulty === 'medium' ? 'text-yellow-400' :
-                  'text-red-400'
-            }>{difficulty.toUpperCase()}</span>
-          </div>
-        )}
-        <div className="grid grid-cols-3 gap-2 mb-6">
-          {Array(9).fill(null).map((_, i) => renderSquare(i))}
-        </div>
-        <button
-          className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg font-mono text-lg transition-colors shadow-lg"
-          onClick={handleRestart}
+      <div className={`text-3xl font-bold mb-6 font-mono ${statusColor}`}>{status}</div>
+      {difficulty && (
+        <div 
+          className="text-lg mb-4 font-mono"
+          style={{ color: 'var(--text-tertiary)' }}
         >
-          🔄 Restart
-        </button>
+          Difficulty: <span className={
+            difficulty === 'easy' ? 'text-green-400' :
+              difficulty === 'medium' ? 'text-yellow-400' :
+                'text-red-400'
+          }>{difficulty.toUpperCase()}</span>
+        </div>
+      )}
+      <div className="grid grid-cols-3 gap-2 mb-6">
+        {Array(9).fill(null).map((_, i) => renderSquare(i))}
       </div>
+      <button
+        className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg font-mono text-lg transition-colors shadow-lg"
+        onClick={handleRestart}
+      >
+        🔄 Restart
+      </button>
     </div>
   );
 };

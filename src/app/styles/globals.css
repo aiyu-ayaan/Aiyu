@@ -1,26 +1,139 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-  --background-color-1: #0e1a2b;
-  --background-color-2: #0a0f1c;
-  --primary-color: #f4b370;
-  --text-color-on-primary: #060a22;
+/* Dark Theme - Based on VS Code theme */
+[data-theme="dark"] {
+  /* Background Colors */
+  --bg-primary: #0d1117;
+  --bg-secondary: #0a1929;
+  --bg-tertiary: #080a0e;
+  --bg-surface: #1e1433;
+  --bg-elevated: #1a0f2e;
+  --bg-hover: #1e3a5f;
+  
+  /* Text Colors */
+  --text-primary: #e5e7eb;
+  --text-secondary: #cbd5e1;
+  --text-tertiary: #94a3b8;
+  --text-muted: #64748b;
+  --text-bright: #ffffff;
+  
+  /* Accent Colors */
+  --accent-cyan: #22d3ee;
+  --accent-cyan-bright: #00ffff;
+  --accent-purple: #c084fc;
+  --accent-purple-dark: #7c3aed;
+  --accent-purple-darker: #4c1d95;
+  --accent-pink: #ec4899;
+  --accent-pink-bright: #f472b6;
+  --accent-pink-hot: #ff0080;
+  --accent-orange: #f97316;
+  --accent-orange-bright: #ff9500;
+  
+  /* Border Colors */
+  --border-primary: #1e293b;
+  --border-secondary: #374151;
+  --border-accent: #4c1d95;
+  --border-cyan: #22d3ee;
+  
+  /* Status Colors */
+  --status-error: #f87171;
+  --status-warning: #fbbf24;
+  --status-success: #34d399;
+  --status-info: #22d3ee;
+  
+  /* Syntax Colors */
+  --syntax-comment: #a78bfa;
+  --syntax-keyword: #d946ef;
+  --syntax-control: #ff0080;
+  --syntax-function: #00ffff;
+  --syntax-class: #c084fc;
+  --syntax-string: #00ff88;
+  --syntax-number: #ff9500;
+  --syntax-variable: #a5f3fc;
+  --syntax-property: #38bdf8;
+  --syntax-operator: #a855f7;
+  --syntax-punctuation: #fde047;
+  
+  /* Shadow Colors */
+  --shadow-sm: rgba(0, 0, 0, 0.3);
+  --shadow-md: rgba(0, 0, 0, 0.5);
+  --shadow-lg: rgba(34, 211, 238, 0.3);
+  
+  /* Overlay Colors */
+  --overlay-bg: rgba(0, 0, 0, 0.5);
+  --overlay-hover: rgba(34, 211, 238, 0.15);
 }
 
+/* Light Theme - Complementary palette */
+[data-theme="light"] {
+  /* Background Colors */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8fafc;
+  --bg-tertiary: #f1f5f9;
+  --bg-surface: #e2e8f0;
+  --bg-elevated: #f0f4f8;
+  --bg-hover: #dbeafe;
+  
+  /* Text Colors */
+  --text-primary: #1e293b;
+  --text-secondary: #475569;
+  --text-tertiary: #64748b;
+  --text-muted: #94a3b8;
+  --text-bright: #0f172a;
+  
+  /* Accent Colors */
+  --accent-cyan: #0891b2;
+  --accent-cyan-bright: #0284c7;
+  --accent-purple: #7c3aed;
+  --accent-purple-dark: #6d28d9;
+  --accent-purple-darker: #5b21b6;
+  --accent-pink: #db2777;
+  --accent-pink-bright: #ec4899;
+  --accent-pink-hot: #be185d;
+  --accent-orange: #ea580c;
+  --accent-orange-bright: #f97316;
+  
+  /* Border Colors */
+  --border-primary: #e2e8f0;
+  --border-secondary: #cbd5e1;
+  --border-accent: #c084fc;
+  --border-cyan: #22d3ee;
+  
+  /* Status Colors */
+  --status-error: #dc2626;
+  --status-warning: #f59e0b;
+  --status-success: #10b981;
+  --status-info: #0891b2;
+  
+  /* Syntax Colors */
+  --syntax-comment: #7c3aed;
+  --syntax-keyword: #be185d;
+  --syntax-control: #be0077;
+  --syntax-function: #0891b2;
+  --syntax-class: #7c3aed;
+  --syntax-string: #059669;
+  --syntax-number: #ea580c;
+  --syntax-variable: #0e7490;
+  --syntax-property: #0284c7;
+  --syntax-operator: #7c3aed;
+  --syntax-punctuation: #ca8a04;
+  
+  /* Shadow Colors */
+  --shadow-sm: rgba(0, 0, 0, 0.1);
+  --shadow-md: rgba(0, 0, 0, 0.15);
+  --shadow-lg: rgba(14, 165, 233, 0.2);
+  
+  /* Overlay Colors */
+  --overlay-bg: rgba(15, 23, 42, 0.4);
+  --overlay-hover: rgba(14, 165, 233, 0.1);
+}
+
+/* Default theme variables for Tailwind */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-background: var(--bg-primary);
+  --color-foreground: var(--text-primary);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 /* Add these essential mobile fixes */
@@ -36,10 +149,11 @@ html, body {
 }
 
 body {
-  background: #111827;
-  color: #ffffff;
+  background: var(--bg-primary);
+  color: var(--text-primary);
   font-family: 'Fira Code', monospace;
   position: relative;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 body::before {
@@ -50,11 +164,13 @@ body::before {
   width: min(400px, 80vw); /* Responsive width */
   height: min(400px, 80vw); /* Responsive height */
   max-width: 400px; /* Cap the maximum size */
-  background: radial-gradient(circle, rgba(0, 255, 255, 0.2), transparent 70%);
+  background: radial-gradient(circle, var(--accent-cyan), transparent 70%);
+  opacity: 0.2;
   pointer-events: none;
   z-index: 0;
   filter: blur(80px);
   transform: translateX(-50%); /* Center it properly */
+  transition: opacity 0.3s ease;
 }
 
 /* Additional mobile-specific adjustments */
@@ -235,4 +351,18 @@ html {
 
 .animate-spin {
   animation: spin 1s linear infinite;
+}
+
+/* Vertical Timeline Theming */
+/* Override the react-vertical-timeline-component default line color */
+.vertical-timeline::before {
+  background: var(--border-secondary) !important;
+}
+
+[data-theme="light"] .vertical-timeline::before {
+  background: var(--border-secondary) !important;
+}
+
+[data-theme="dark"] .vertical-timeline::before {
+  background: var(--border-secondary) !important;
 }
