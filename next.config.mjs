@@ -1,7 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    output: 'export'
-  };
-  
-  export default nextConfig; // ✅ ES Module export
+  output: 'standalone',
+  images: {
+    unoptimized: true,
+  },
+};
+
+export default nextConfig;
   

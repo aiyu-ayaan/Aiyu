@@ -1,0 +1,47 @@
+{
+  "navLinks": [
+    {
+      "name": "_hello",
+      "href": "/"
+    },
+    {
+      "name": "_about-me",
+      "href": "/about-me"
+    },
+    {
+      "name": "_projects",
+      "href": "/projects"
+    },
+    {
+      "name": "_resume",
+      "href": "/resume.pdf",
+      "target": "_blank"
+    }
+  ],
+  "contactLink": {
+    "name": "contact-me",
+    "href": "http://bento.me/aiyu"
+  },
+  "socials": [
+    {
+      "name": "GitHub",
+      "url": "https://github.com/aiyu-ayaan",
+      "icon": "FaGithub"
+    },
+    {
+      "name": "LinkedIn",
+      "url": "https://www.linkedin.com/in/aiyu/",
+      "icon": "FaLinkedin"
+    },
+    {
+      "name": "Instagram",
+      "url": "https://www.instagram.com/aiyu.dev_/",
+      "icon": "FaInstagram"
+    },
+    {
+      "name": "Email",
+      "url": "mailto:aiyu.ayaan@gmail.com",
+      "icon": "FaEnvelope"
+    }
+  ]
+}
