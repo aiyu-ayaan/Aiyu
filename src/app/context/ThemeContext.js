@@ -15,40 +15,38 @@ export const useTheme = () => {
   return context;
 };
 
+// Helper function to get initial theme
+const getInitialTheme = () => {
+  if (typeof window === 'undefined') return 'dark';
+  
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme) {
+    return savedTheme;
+  }
+  
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  return prefersDark ? 'dark' : 'light';
+};
+
 export const ThemeProvider = ({ children }) => {
-  const [theme, setTheme] = useState('dark');
-  const [mounted, setMounted] = useState(false);
+  const [theme, setTheme] = useState(getInitialTheme);
 
   useEffect(() => {
-    setMounted(true);
-    // Load theme from localStorage or use system preference
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) {
-      setTheme(savedTheme);
-      document.documentElement.setAttribute('data-theme', savedTheme);
-    } else {
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      const initialTheme = prefersDark ? 'dark' : 'light';
-      setTheme(initialTheme);
-      document.documentElement.setAttribute('data-theme', initialTheme);
-    }
+    // Set initial theme attribute on mount
+    const root = document.documentElement;
+    root.setAttribute('data-theme', theme);
   }, []);
 
   useEffect(() => {
-    if (mounted) {
-      document.documentElement.setAttribute('data-theme', theme);
-      localStorage.setItem('theme', theme);
-    }
-  }, [theme, mounted]);
+    // Update theme when it changes
+    const root = document.documentElement;
+    root.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
 
   const toggleTheme = () => {
     setTheme(prev => prev === 'dark' ? 'light' : 'dark');
   };
-
-  // Prevent flash of unstyled content
-  if (!mounted) {
-    return null;
-  }
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>
