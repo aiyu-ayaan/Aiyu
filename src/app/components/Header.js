@@ -34,11 +34,23 @@ export default function Header() {
     return (
         <motion.header 
             className={clsx(
-                "sticky top-0 z-50 w-full px-4 sm:px-6 py-4 border-b transition-all duration-300"
+                "sticky top-0 z-50 w-full px-4 sm:px-6 py-4 m3-rounded-lg transition-all duration-300",
+                scrolled 
+                    ? "backdrop-blur-lg m3-elevation-2"
+                    : "backdrop-blur-sm"
             )}
             style={{ 
-                backgroundColor: 'var(--bg-primary)',
-                borderColor: 'var(--border-secondary)',
+                opacity: headerOpacity,
+                backgroundColor: scrolled 
+                    ? theme === 'dark' 
+                        ? 'rgba(28, 27, 31, 0.95)'
+                        : 'rgba(255, 251, 254, 0.95)'
+                    : theme === 'dark'
+                        ? 'rgba(28, 27, 31, 0.7)'
+                        : 'rgba(255, 251, 254, 0.7)',
+                borderBottom: scrolled 
+                    ? '1px solid var(--m3-outline)'
+                    : '1px solid var(--m3-outline)',
             }}
         >
             <nav className="flex items-center justify-between max-w-full mx-auto">
@@ -46,28 +58,31 @@ export default function Header() {
                 <div className="flex-shrink-0">
                     <Link href="/">
                         <motion.div
-                            className="text-2xl font-bold"
+                            className="text-2xl font-bold bg-gradient-to-r bg-clip-text text-transparent"
                             style={{
-                                color: 'var(--text-primary)',
+                                backgroundImage: theme === 'dark'
+                                    ? 'linear-gradient(to right, #22d3ee, #f97316)'
+                                    : 'linear-gradient(to right, #0891b2, #ea580c)',
                             }}
-                            whileHover={{ opacity: 0.7 }}
-                            transition={{ duration: 0.2 }}
+                            whileHover={{ scale: 1.1 }}
+                            transition={{ duration: 0.3 }}
                         >
-                            aiyu
+                            {"<"} aiyu {"/>"}
                         </motion.div>
                     </Link>
                 </div>
 
                 {/* Mobile Menu Button */}
                 <motion.button
-                    className="md:hidden transition-opacity duration-200"
-                    style={{ color: 'var(--text-primary)' }}
+                    className="md:hidden transition-colors duration-200"
+                    style={{ color: 'var(--text-bright)' }}
                     onClick={toggleMenu}
                     aria-label="Toggle menu"
-                    whileHover={{ opacity: 0.7 }}
+                    whileHover={{ scale: 1.1, color: 'var(--accent-cyan)' }}
+                    whileTap={{ scale: 0.9 }}
                 >
                     <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={isMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d={isMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
                     </svg>
                 </motion.button>
 
@@ -86,15 +101,15 @@ export default function Header() {
                                     target={link.target}
                                     rel={link.target === '_blank' ? 'noopener noreferrer' : undefined}
                                     className={clsx(
-                                        "relative transition-colors duration-200 pb-1 font-medium",
+                                        "relative transition-colors duration-300 pb-1 font-medium",
                                         {
                                             "": pathname === link.href,
                                         }
                                     )}
                                     style={{
                                         color: pathname === link.href 
-                                            ? 'var(--text-primary)' 
-                                            : 'var(--text-secondary)',
+                                            ? 'var(--accent-cyan)' 
+                                            : 'var(--text-bright)',
                                     }}
                                 >
                                     {link.name}
@@ -102,7 +117,9 @@ export default function Header() {
                                         <motion.div
                                             className="absolute bottom-0 left-0 right-0 h-0.5"
                                             style={{
-                                                background: 'var(--text-tertiary)',
+                                                background: theme === 'dark'
+                                                    ? 'linear-gradient(to right, #22d3ee, #3b82f6)'
+                                                    : 'linear-gradient(to right, #0891b2, #2563eb)',
                                             }}
                                             layoutId="navbar-indicator"
                                             transition={{ type: "spring", stiffness: 300, damping: 30 }}
@@ -119,13 +136,14 @@ export default function Header() {
                     <ThemeToggle />
                     <Link href={contactLink.href}>
                         <motion.div
-                            className="px-4 py-2 rounded font-semibold transition-opacity duration-200"
+                            className="px-4 py-2 rounded-lg font-semibold transition-all duration-300 shadow-lg"
                             style={{
-                                background: 'var(--bg-surface)',
-                                color: 'var(--text-primary)',
-                                border: '1px solid var(--border-secondary)',
+                                background: 'var(--m3-primary)',
+                                color: 'var(--m3-on-primary)',
+                                boxShadow: 'var(--m3-elevation-2)',
                             }}
-                            whileHover={{ opacity: 0.7 }}
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
                         >
                             {contactLink.name}
                         </motion.div>
@@ -145,9 +163,11 @@ export default function Header() {
                 transition={{ duration: 0.3, ease: "easeInOut" }}
             >
                 <div 
-                    className="px-4 py-4 space-y-4"
+                    className="px-4 py-4 space-y-4 backdrop-blur-lg"
                     style={{
-                        backgroundColor: 'var(--bg-primary)',
+                        backgroundColor: theme === 'dark'
+                            ? 'rgba(13, 17, 23, 0.98)' // --bg-primary with high opacity for mobile
+                            : 'rgba(255, 255, 255, 0.98)', // --bg-primary with high opacity for mobile
                     }}
                 >
                     {navLinks.map((link, index) => (
@@ -164,14 +184,14 @@ export default function Header() {
                                 className={clsx(
                                     "block transition-colors duration-200 pb-2 font-medium text-lg",
                                     {
-                                        "border-b": pathname === link.href,
+                                        "border-b-2": pathname === link.href,
                                     }
                                 )}
                                 style={{
                                     color: pathname === link.href 
-                                        ? 'var(--text-primary)' 
-                                        : 'var(--text-secondary)',
-                                    borderColor: pathname === link.href ? 'var(--text-tertiary)' : 'transparent',
+                                        ? 'var(--accent-cyan)' 
+                                        : 'var(--text-bright)',
+                                    borderColor: pathname === link.href ? 'var(--accent-cyan)' : 'transparent',
                                 }}
                                 onClick={() => setIsMenuOpen(false)}
                             >
@@ -186,11 +206,10 @@ export default function Header() {
                     >
                         <Link
                             href={contactLink.href}
-                            className="block w-full text-center font-semibold py-3 rounded transition-opacity duration-200 mt-4"
+                            className="block w-full text-center font-semibold py-3 m3-rounded transition-all duration-300 mt-4 m3-elevation-1"
                             style={{
-                                background: 'var(--bg-surface)',
-                                color: 'var(--text-primary)',
-                                border: '1px solid var(--border-secondary)',
+                                background: 'var(--m3-primary)',
+                                color: 'var(--m3-on-primary)',
                             }}
                             onClick={() => setIsMenuOpen(false)}
                         >

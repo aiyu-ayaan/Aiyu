@@ -35,11 +35,11 @@ const HomeProjects = () => {
       <div className="max-w-6xl mx-auto">
         <h2 
           className="text-4xl font-bold mb-8 flex items-center gap-3"
-          style={{ color: 'var(--text-primary)' }}
+          style={{ color: 'var(--accent-cyan)' }}
         >
-          <span style={{ color: 'var(--text-tertiary)' }}>{"<"}</span>
+          <span style={{ color: 'var(--accent-orange)' }}>{"<"}</span>
           Latest Projects
-          <span style={{ color: 'var(--text-tertiary)' }}>{"/>"}</span>
+          <span style={{ color: 'var(--accent-orange)' }}>{"/>"}</span>
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -50,18 +50,26 @@ const HomeProjects = () => {
         <div className="text-center mt-12">
           <Link href="/projects" legacyBehavior>
             <motion.a 
-              className="inline-flex items-center gap-2 font-semibold text-lg px-6 py-3 rounded border transition-opacity group"
+              className="inline-flex items-center gap-2 font-semibold text-lg px-6 py-3 rounded-lg border-2 transition-all duration-300 group"
               style={{
-                color: 'var(--text-primary)',
-                borderColor: 'var(--border-secondary)',
-                backgroundColor: 'var(--bg-surface)',
+                color: 'var(--accent-cyan)',
+                borderColor: 'var(--accent-cyan)',
               }}
               whileHover={{ 
-                opacity: 0.7,
+                scale: 1.05, 
+                boxShadow: theme === 'dark'
+                  ? "0 0 20px rgba(34, 211, 238, 0.5)"
+                  : "0 0 20px rgba(8, 145, 178, 0.4)",
               }}
+              whileTap={{ scale: 0.95 }}
             >
               View All Projects
-              <span>→</span>
+              <motion.span
+                animate={{ x: [0, 5, 0] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+              >
+                →
+              </motion.span>
             </motion.a>
           </Link>
         </div>

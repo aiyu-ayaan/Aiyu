@@ -19,22 +19,26 @@ const HomeAbout = () => {
       <div className="max-w-6xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-1 gap-8">
           <motion.div
-            className="p-8 rounded transition-all duration-200"
+            className="p-8 rounded-2xl shadow-2xl transition-all duration-300"
             style={{
-              background: 'var(--bg-surface)',
+              background: theme === 'dark'
+                ? 'linear-gradient(to bottom right, #1f2937, #111827)'
+                : 'linear-gradient(to bottom right, #f1f5f9, #e2e8f0)',
               borderWidth: '1px',
               borderStyle: 'solid',
               borderColor: 'var(--border-secondary)',
             }}
             whileHover={{ 
-              boxShadow: '0 2px 8px var(--shadow-sm)',
+              scale: 1.02, 
+              y: -5,
+              borderColor: 'var(--accent-cyan)',
             }}
           >
             <h2 
               className="text-3xl font-bold mb-6 flex items-center gap-3"
-              style={{ color: 'var(--text-primary)' }}
+              style={{ color: 'var(--accent-cyan)' }}
             >
-              <span style={{ color: 'var(--text-tertiary)' }}>{"</>"}</span>
+              <span style={{ color: 'var(--accent-orange)' }}>{"</>"}</span>
               Summary
             </h2>
             <p 
@@ -48,12 +52,18 @@ const HomeAbout = () => {
         <div className="text-center mt-8">
           <Link href="/about-me" legacyBehavior>
             <motion.a 
-              className="inline-flex items-center gap-2 font-semibold text-lg group transition-opacity"
-              style={{ color: 'var(--text-secondary)' }}
-              whileHover={{ opacity: 0.7 }}
+              className="inline-flex items-center gap-2 font-semibold text-lg group"
+              style={{ color: 'var(--accent-cyan)' }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
               View Full Resume
-              <span>→</span>
+              <motion.span
+                animate={{ x: [0, 5, 0] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+              >
+                →
+              </motion.span>
             </motion.a>
           </Link>
         </div>

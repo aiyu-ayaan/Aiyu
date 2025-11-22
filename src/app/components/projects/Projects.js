@@ -78,9 +78,11 @@ const Projects = () => {
           className="text-center mb-12"
         >
           <h1 
-            className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4"
+            className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4 bg-gradient-to-r bg-clip-text text-transparent"
             style={{
-              color: 'var(--text-primary)',
+              backgroundImage: theme === 'dark'
+                ? 'linear-gradient(to right, #22d3ee, #3b82f6, #8b5cf6)'
+                : 'linear-gradient(to right, #0891b2, #2563eb, #7c3aed)',
             }}
           >
             Projects Portfolio
@@ -102,9 +104,11 @@ const Projects = () => {
             </label>
             <select
               id="techStackFilter"
-              className="p-3 rounded border focus:outline-none w-full md:w-auto cursor-pointer transition-all duration-200"
+              className="p-3 rounded-lg border-2 focus:outline-none focus:ring-2 w-full md:w-auto cursor-pointer transition-all duration-300"
               style={{
-                background: 'var(--bg-surface)',
+                background: theme === 'dark'
+                  ? 'linear-gradient(to bottom right, #1f2937, #111827)'
+                  : 'linear-gradient(to bottom right, #f1f5f9, #e2e8f0)',
                 color: 'var(--text-primary)',
                 borderColor: 'var(--border-secondary)',
               }}
@@ -132,9 +136,11 @@ const Projects = () => {
             </label>
             <select
               id="projectTypeFilter"
-              className="p-3 rounded border focus:outline-none w-full md:w-auto cursor-pointer transition-all duration-200"
+              className="p-3 rounded-lg border-2 focus:outline-none focus:ring-2 w-full md:w-auto cursor-pointer transition-all duration-300"
               style={{
-                background: 'var(--bg-surface)',
+                background: theme === 'dark'
+                  ? 'linear-gradient(to bottom right, #1f2937, #111827)'
+                  : 'linear-gradient(to bottom right, #f1f5f9, #e2e8f0)',
                 color: 'var(--text-primary)',
                 borderColor: 'var(--border-secondary)',
               }}

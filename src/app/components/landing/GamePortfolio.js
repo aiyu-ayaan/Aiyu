@@ -22,25 +22,23 @@ const GamePortfolio = ({ onUnlock = () => {} }) => {
         return (
           <div className="flex flex-col items-center gap-4">
             <motion.button
-              whileHover={{ opacity: 0.7 }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={() => setSelectedGame('snake')}
-              className="px-6 py-3 rounded font-mono text-lg transition-opacity"
+              className="text-white px-6 py-3 rounded-lg font-mono text-lg transition-colors"
               style={{
-                backgroundColor: 'var(--bg-surface)',
-                color: 'var(--text-primary)',
-                border: '1px solid var(--border-secondary)',
+                backgroundColor: theme === 'dark' ? '#f97316' : '#ea580c',
               }}
             >
               Play Snake
             </motion.button>
             <motion.button
-              whileHover={{ opacity: 0.7 }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={() => setSelectedGame('tictactoe')}
-              className="px-6 py-3 rounded font-mono text-lg transition-opacity"
+              className="text-white px-6 py-3 rounded-lg font-mono text-lg transition-colors"
               style={{
-                backgroundColor: 'var(--bg-surface)',
-                color: 'var(--text-primary)',
-                border: '1px solid var(--border-secondary)',
+                backgroundColor: theme === 'dark' ? '#22d3ee' : '#0891b2',
               }}
             >
               Play Tic-Tac-Toe
@@ -58,7 +56,21 @@ const GamePortfolio = ({ onUnlock = () => {} }) => {
       className="min-h-screen flex flex-col lg:flex-row items-center justify-center p-4 lg:p-8 relative transition-colors duration-300"
       style={{ backgroundColor: 'var(--bg-primary)' }}
     >
-      {/* Minimal background - removed animated blobs for Daktilo theme */}
+      {/* Animated background gradient */}
+      <div className="absolute inset-0 opacity-30 pointer-events-none">
+        <div 
+          className="absolute top-10 left-10 w-72 h-72 rounded-full mix-blend-multiply filter blur-xl animate-blob"
+          style={{ backgroundColor: 'var(--accent-cyan)' }}
+        ></div>
+        <div 
+          className="absolute top-10 right-10 w-72 h-72 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-2000"
+          style={{ backgroundColor: 'var(--accent-orange)' }}
+        ></div>
+        <div 
+          className="absolute bottom-10 left-1/2 w-72 h-72 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-4000"
+          style={{ backgroundColor: 'var(--accent-pink)' }}
+        ></div>
+      </div>
 
       <div className="w-full max-w-6xl flex flex-col lg:flex-row items-center justify-center gap-6 lg:gap-8 relative z-10">
         <motion.div
