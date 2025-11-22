@@ -1,131 +1,131 @@
 @import "tailwindcss";
 
-/* Dark Theme - Based on VS Code theme */
+/* Dark Theme - Daktilo inspired minimal theme */
 [data-theme="dark"] {
-  /* Background Colors */
-  --bg-primary: #0d1117;
-  --bg-secondary: #0a1929;
-  --bg-tertiary: #080a0e;
-  --bg-surface: #1e1433;
-  --bg-elevated: #1a0f2e;
-  --bg-hover: #1e3a5f;
+  /* Background Colors - Inverted Daktilo (dark background for dark mode) */
+  --bg-primary: #1a1a1a;
+  --bg-secondary: #242424;
+  --bg-tertiary: #2e2e2e;
+  --bg-surface: #333333;
+  --bg-elevated: #3a3a3a;
+  --bg-hover: #404040;
   
-  /* Text Colors */
-  --text-primary: #e5e7eb;
-  --text-secondary: #cbd5e1;
-  --text-tertiary: #94a3b8;
-  --text-muted: #64748b;
-  --text-bright: #ffffff;
+  /* Text Colors - Daktilo inspired */
+  --text-primary: #e0e0e0;
+  --text-secondary: #b0b0b0;
+  --text-tertiary: #828282;
+  --text-muted: #666666;
+  --text-bright: #f5f5f5;
   
-  /* Accent Colors */
-  --accent-cyan: #22d3ee;
-  --accent-cyan-bright: #00ffff;
-  --accent-purple: #c084fc;
-  --accent-purple-dark: #7c3aed;
-  --accent-purple-darker: #4c1d95;
-  --accent-pink: #ec4899;
-  --accent-pink-bright: #f472b6;
-  --accent-pink-hot: #ff0080;
-  --accent-orange: #f97316;
-  --accent-orange-bright: #ff9500;
+  /* Accent Colors - Minimal, muted tones */
+  --accent-cyan: #828282;
+  --accent-cyan-bright: #999999;
+  --accent-purple: #828282;
+  --accent-purple-dark: #666666;
+  --accent-purple-darker: #4d4d4d;
+  --accent-pink: #828282;
+  --accent-pink-bright: #999999;
+  --accent-pink-hot: #828282;
+  --accent-orange: #828282;
+  --accent-orange-bright: #999999;
   
   /* Border Colors */
-  --border-primary: #1e293b;
-  --border-secondary: #374151;
-  --border-accent: #4c1d95;
-  --border-cyan: #22d3ee;
+  --border-primary: #333333;
+  --border-secondary: #404040;
+  --border-accent: #828282;
+  --border-cyan: #828282;
   
-  /* Status Colors */
-  --status-error: #f87171;
-  --status-warning: #fbbf24;
-  --status-success: #34d399;
-  --status-info: #22d3ee;
+  /* Status Colors - Minimal */
+  --status-error: #999999;
+  --status-warning: #b0b0b0;
+  --status-success: #b0b0b0;
+  --status-info: #828282;
   
-  /* Syntax Colors */
-  --syntax-comment: #a78bfa;
-  --syntax-keyword: #d946ef;
-  --syntax-control: #ff0080;
-  --syntax-function: #00ffff;
-  --syntax-class: #c084fc;
-  --syntax-string: #00ff88;
-  --syntax-number: #ff9500;
-  --syntax-variable: #a5f3fc;
-  --syntax-property: #38bdf8;
-  --syntax-operator: #a855f7;
-  --syntax-punctuation: #fde047;
+  /* Syntax Colors - Minimal monochrome */
+  --syntax-comment: #828282;
+  --syntax-keyword: #b0b0b0;
+  --syntax-control: #999999;
+  --syntax-function: #b0b0b0;
+  --syntax-class: #999999;
+  --syntax-string: #999999;
+  --syntax-number: #b0b0b0;
+  --syntax-variable: #b0b0b0;
+  --syntax-property: #999999;
+  --syntax-operator: #828282;
+  --syntax-punctuation: #b0b0b0;
   
   /* Shadow Colors */
-  --shadow-sm: rgba(0, 0, 0, 0.3);
-  --shadow-md: rgba(0, 0, 0, 0.5);
-  --shadow-lg: rgba(34, 211, 238, 0.3);
+  --shadow-sm: rgba(0, 0, 0, 0.2);
+  --shadow-md: rgba(0, 0, 0, 0.3);
+  --shadow-lg: rgba(0, 0, 0, 0.4);
   
   /* Overlay Colors */
-  --overlay-bg: rgba(0, 0, 0, 0.5);
-  --overlay-hover: rgba(34, 211, 238, 0.15);
+  --overlay-bg: rgba(0, 0, 0, 0.6);
+  --overlay-hover: rgba(130, 130, 130, 0.1);
 }
 
-/* Light Theme - Complementary palette */
+/* Light Theme - Daktilo original colors */
 [data-theme="light"] {
-  /* Background Colors */
-  --bg-primary: #ffffff;
-  --bg-secondary: #f8fafc;
-  --bg-tertiary: #f1f5f9;
-  --bg-surface: #e2e8f0;
-  --bg-elevated: #f0f4f8;
-  --bg-hover: #dbeafe;
+  /* Background Colors - Daktilo original */
+  --bg-primary: #f5f5f5;
+  --bg-secondary: #eeeeee;
+  --bg-tertiary: #e8e8e8;
+  --bg-surface: #e0e0e0;
+  --bg-elevated: #fafafa;
+  --bg-hover: #e0e0e0;
   
-  /* Text Colors */
-  --text-primary: #1e293b;
-  --text-secondary: #475569;
-  --text-tertiary: #64748b;
-  --text-muted: #94a3b8;
-  --text-bright: #0f172a;
+  /* Text Colors - Daktilo inspired */
+  --text-primary: #333333;
+  --text-secondary: #4d4d4d;
+  --text-tertiary: #828282;
+  --text-muted: #999999;
+  --text-bright: #1a1a1a;
   
-  /* Accent Colors */
-  --accent-cyan: #0891b2;
-  --accent-cyan-bright: #0284c7;
-  --accent-purple: #7c3aed;
-  --accent-purple-dark: #6d28d9;
-  --accent-purple-darker: #5b21b6;
-  --accent-pink: #db2777;
-  --accent-pink-bright: #ec4899;
-  --accent-pink-hot: #be185d;
-  --accent-orange: #ea580c;
-  --accent-orange-bright: #f97316;
+  /* Accent Colors - Minimal, muted tones */
+  --accent-cyan: #828282;
+  --accent-cyan-bright: #666666;
+  --accent-purple: #828282;
+  --accent-purple-dark: #666666;
+  --accent-purple-darker: #4d4d4d;
+  --accent-pink: #828282;
+  --accent-pink-bright: #666666;
+  --accent-pink-hot: #828282;
+  --accent-orange: #828282;
+  --accent-orange-bright: #666666;
   
   /* Border Colors */
-  --border-primary: #e2e8f0;
-  --border-secondary: #cbd5e1;
-  --border-accent: #c084fc;
-  --border-cyan: #22d3ee;
+  --border-primary: #d0d0d0;
+  --border-secondary: #c0c0c0;
+  --border-accent: #828282;
+  --border-cyan: #828282;
   
-  /* Status Colors */
-  --status-error: #dc2626;
-  --status-warning: #f59e0b;
-  --status-success: #10b981;
-  --status-info: #0891b2;
+  /* Status Colors - Minimal */
+  --status-error: #666666;
+  --status-warning: #828282;
+  --status-success: #828282;
+  --status-info: #828282;
   
-  /* Syntax Colors */
-  --syntax-comment: #7c3aed;
-  --syntax-keyword: #be185d;
-  --syntax-control: #be0077;
-  --syntax-function: #0891b2;
-  --syntax-class: #7c3aed;
-  --syntax-string: #059669;
-  --syntax-number: #ea580c;
-  --syntax-variable: #0e7490;
-  --syntax-property: #0284c7;
-  --syntax-operator: #7c3aed;
-  --syntax-punctuation: #ca8a04;
+  /* Syntax Colors - Minimal monochrome */
+  --syntax-comment: #828282;
+  --syntax-keyword: #4d4d4d;
+  --syntax-control: #666666;
+  --syntax-function: #4d4d4d;
+  --syntax-class: #666666;
+  --syntax-string: #666666;
+  --syntax-number: #4d4d4d;
+  --syntax-variable: #4d4d4d;
+  --syntax-property: #666666;
+  --syntax-operator: #828282;
+  --syntax-punctuation: #4d4d4d;
   
   /* Shadow Colors */
-  --shadow-sm: rgba(0, 0, 0, 0.1);
-  --shadow-md: rgba(0, 0, 0, 0.15);
-  --shadow-lg: rgba(14, 165, 233, 0.2);
+  --shadow-sm: rgba(0, 0, 0, 0.05);
+  --shadow-md: rgba(0, 0, 0, 0.08);
+  --shadow-lg: rgba(0, 0, 0, 0.12);
   
   /* Overlay Colors */
-  --overlay-bg: rgba(15, 23, 42, 0.4);
-  --overlay-hover: rgba(14, 165, 233, 0.1);
+  --overlay-bg: rgba(0, 0, 0, 0.3);
+  --overlay-hover: rgba(130, 130, 130, 0.1);
 }
 
 /* Default theme variables for Tailwind */
@@ -151,36 +151,9 @@ html, body {
 body {
   background: var(--bg-primary);
   color: var(--text-primary);
-  font-family: 'Fira Code', monospace;
+  font-family: 'Inconsolata', 'Courier New', monospace;
   position: relative;
   transition: background-color 0.3s ease, color 0.3s ease;
-}
-
-body::before {
-  content: "";
-  position: absolute;
-  top: 20%;
-  left: 30%; /* Reduced from 20% */
-  width: min(400px, 80vw); /* Responsive width */
-  height: min(400px, 80vw); /* Responsive height */
-  max-width: 400px; /* Cap the maximum size */
-  background: radial-gradient(circle, var(--accent-cyan), transparent 70%);
-  opacity: 0.2;
-  pointer-events: none;
-  z-index: 0;
-  filter: blur(80px);
-  transform: translateX(-50%); /* Center it properly */
-  transition: opacity 0.3s ease;
-}
-
-/* Additional mobile-specific adjustments */
-@media (max-width: 768px) {
-  body::before {
-    left: 50%; /* Center on mobile */
-    width: 250px; /* Smaller on mobile */
-    height: 250px;
-    filter: blur(60px); /* Less blur on mobile */
-  }
 }
 
 /* Custom scrollbar hiding for dialogs */
@@ -202,78 +175,25 @@ body::before {
   content: '';
   position: absolute;
   width: 0;
-  height: 2px;
-  bottom: -5px;
+  height: 1px;
+  bottom: -3px;
   left: 0;
-  background-color: #F97316;
-  transition: width 0.3s ease-in-out;
+  background-color: var(--text-tertiary);
+  transition: width 0.2s ease-in-out;
 }
 
 .line-hover-effect:hover::after {
   width: 100%;
 }
 
-/* Blob animations */
-@keyframes blob {
-  0%, 100% {
-    transform: translate(0, 0) scale(1);
-  }
-  25% {
-    transform: translate(20px, -50px) scale(1.1);
-  }
-  50% {
-    transform: translate(-20px, 20px) scale(0.9);
-  }
-  75% {
-    transform: translate(50px, 50px) scale(1.05);
-  }
-}
-
-.animate-blob {
-  animation: blob 20s infinite;
-}
-
-.animation-delay-2000 {
-  animation-delay: 2s;
-}
-
-.animation-delay-4000 {
-  animation-delay: 4s;
-}
+/* Minimal animations removed for Daktilo theme */
 
 /* Smooth scroll behavior */
 html {
   scroll-behavior: smooth;
 }
 
-/* Gradient text animation */
-@keyframes gradient-x {
-  0%, 100% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-}
-
-.animate-gradient-x {
-  background-size: 200% 200%;
-  animation: gradient-x 3s ease infinite;
-}
-
-/* Pulse glow effect */
-@keyframes pulse-glow {
-  0%, 100% {
-    box-shadow: 0 0 20px rgba(34, 211, 238, 0.3);
-  }
-  50% {
-    box-shadow: 0 0 40px rgba(34, 211, 238, 0.6);
-  }
-}
-
-.animate-pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
-}
+/* Minimal effects - no flashy gradients or glows */
 
 /* Fade in up animation */
 @keyframes fadeInUp {
@@ -291,55 +211,22 @@ html {
   animation: fadeInUp 0.8s ease-out;
 }
 
-/* Scale on hover */
+/* Minimal hover effects */
 .hover-scale {
-  transition: transform 0.3s ease;
+  transition: opacity 0.2s ease;
 }
 
 .hover-scale:hover {
-  transform: scale(1.05);
+  opacity: 0.7;
 }
 
-/* Shimmer effect */
-@keyframes shimmer {
-  0% {
-    background-position: -1000px 0;
-  }
-  100% {
-    background-position: 1000px 0;
-  }
-}
-
-.shimmer {
-  background: linear-gradient(
-    to right,
-    transparent 0%,
-    rgba(255, 255, 255, 0.3) 50%,
-    transparent 100%
-  );
-  background-size: 1000px 100%;
-  animation: shimmer 2s infinite;
-}
-
-/* Card hover effects */
+/* Card hover effects - minimal */
 .card-hover {
-  transition: all 0.3s ease;
+  transition: box-shadow 0.2s ease;
 }
 
 .card-hover:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-}
-
-/* Responsive improvements */
-@media (max-width: 640px) {
-  .animate-blob {
-    animation: blob 15s infinite;
-  }
-  
-  body::before {
-    filter: blur(50px);
-  }
+  box-shadow: 0 2px 8px var(--shadow-sm);
 }
 
 /* Loading spinner */

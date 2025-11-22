@@ -34,28 +34,11 @@ export default function Header() {
     return (
         <motion.header 
             className={clsx(
-                "sticky top-0 z-50 w-full px-4 sm:px-6 py-4 border-b transition-all duration-300",
-                scrolled 
-                    ? "backdrop-blur-lg shadow-lg"
-                    : "backdrop-blur-sm"
+                "sticky top-0 z-50 w-full px-4 sm:px-6 py-4 border-b transition-all duration-300"
             )}
             style={{ 
-                opacity: headerOpacity,
-                backgroundColor: scrolled 
-                    ? theme === 'dark' 
-                        ? 'rgba(13, 17, 23, 0.95)' // --bg-primary with opacity
-                        : 'rgba(255, 255, 255, 0.95)' // --bg-primary with opacity
-                    : theme === 'dark'
-                        ? 'rgba(13, 17, 23, 0.7)' // --bg-primary with lower opacity
-                        : 'rgba(255, 255, 255, 0.7)', // --bg-primary with lower opacity
-                borderColor: scrolled 
-                    ? 'var(--border-cyan)' 
-                    : 'var(--border-secondary)',
-                boxShadow: scrolled && theme === 'dark'
-                    ? '0 10px 30px rgba(34, 211, 238, 0.1)'
-                    : scrolled 
-                        ? '0 10px 30px rgba(8, 145, 178, 0.1)'
-                        : 'none',
+                backgroundColor: 'var(--bg-primary)',
+                borderColor: 'var(--border-secondary)',
             }}
         >
             <nav className="flex items-center justify-between max-w-full mx-auto">
@@ -63,31 +46,28 @@ export default function Header() {
                 <div className="flex-shrink-0">
                     <Link href="/">
                         <motion.div
-                            className="text-2xl font-bold bg-gradient-to-r bg-clip-text text-transparent"
+                            className="text-2xl font-bold"
                             style={{
-                                backgroundImage: theme === 'dark'
-                                    ? 'linear-gradient(to right, #22d3ee, #f97316)'
-                                    : 'linear-gradient(to right, #0891b2, #ea580c)',
+                                color: 'var(--text-primary)',
                             }}
-                            whileHover={{ scale: 1.1 }}
-                            transition={{ duration: 0.3 }}
+                            whileHover={{ opacity: 0.7 }}
+                            transition={{ duration: 0.2 }}
                         >
-                            {"<"} aiyu {"/>"}
+                            aiyu
                         </motion.div>
                     </Link>
                 </div>
 
                 {/* Mobile Menu Button */}
                 <motion.button
-                    className="md:hidden transition-colors duration-200"
-                    style={{ color: 'var(--text-bright)' }}
+                    className="md:hidden transition-opacity duration-200"
+                    style={{ color: 'var(--text-primary)' }}
                     onClick={toggleMenu}
                     aria-label="Toggle menu"
-                    whileHover={{ scale: 1.1, color: 'var(--accent-cyan)' }}
-                    whileTap={{ scale: 0.9 }}
+                    whileHover={{ opacity: 0.7 }}
                 >
                     <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d={isMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={isMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
                     </svg>
                 </motion.button>
 
@@ -106,15 +86,15 @@ export default function Header() {
                                     target={link.target}
                                     rel={link.target === '_blank' ? 'noopener noreferrer' : undefined}
                                     className={clsx(
-                                        "relative transition-colors duration-300 pb-1 font-medium",
+                                        "relative transition-colors duration-200 pb-1 font-medium",
                                         {
                                             "": pathname === link.href,
                                         }
                                     )}
                                     style={{
                                         color: pathname === link.href 
-                                            ? 'var(--accent-cyan)' 
-                                            : 'var(--text-bright)',
+                                            ? 'var(--text-primary)' 
+                                            : 'var(--text-secondary)',
                                     }}
                                 >
                                     {link.name}
@@ -122,9 +102,7 @@ export default function Header() {
                                         <motion.div
                                             className="absolute bottom-0 left-0 right-0 h-0.5"
                                             style={{
-                                                background: theme === 'dark'
-                                                    ? 'linear-gradient(to right, #22d3ee, #3b82f6)'
-                                                    : 'linear-gradient(to right, #0891b2, #2563eb)',
+                                                background: 'var(--text-tertiary)',
                                             }}
                                             layoutId="navbar-indicator"
                                             transition={{ type: "spring", stiffness: 300, damping: 30 }}
@@ -141,18 +119,13 @@ export default function Header() {
                     <ThemeToggle />
                     <Link href={contactLink.href}>
                         <motion.div
-                            className="px-4 py-2 rounded-lg font-semibold transition-all duration-300 shadow-lg"
+                            className="px-4 py-2 rounded font-semibold transition-opacity duration-200"
                             style={{
-                                background: theme === 'dark'
-                                    ? 'linear-gradient(to right, #22d3ee, #3b82f6)'
-                                    : 'linear-gradient(to right, #0891b2, #2563eb)',
-                                color: '#ffffff',
-                                boxShadow: theme === 'dark'
-                                    ? '0 10px 30px rgba(34, 211, 238, 0.3)'
-                                    : '0 10px 30px rgba(8, 145, 178, 0.3)',
+                                background: 'var(--bg-surface)',
+                                color: 'var(--text-primary)',
+                                border: '1px solid var(--border-secondary)',
                             }}
-                            whileHover={{ scale: 1.05, y: -2 }}
-                            whileTap={{ scale: 0.95 }}
+                            whileHover={{ opacity: 0.7 }}
                         >
                             {contactLink.name}
                         </motion.div>
@@ -172,11 +145,9 @@ export default function Header() {
                 transition={{ duration: 0.3, ease: "easeInOut" }}
             >
                 <div 
-                    className="px-4 py-4 space-y-4 backdrop-blur-lg"
+                    className="px-4 py-4 space-y-4"
                     style={{
-                        backgroundColor: theme === 'dark'
-                            ? 'rgba(13, 17, 23, 0.98)' // --bg-primary with high opacity for mobile
-                            : 'rgba(255, 255, 255, 0.98)', // --bg-primary with high opacity for mobile
+                        backgroundColor: 'var(--bg-primary)',
                     }}
                 >
                     {navLinks.map((link, index) => (
@@ -193,14 +164,14 @@ export default function Header() {
                                 className={clsx(
                                     "block transition-colors duration-200 pb-2 font-medium text-lg",
                                     {
-                                        "border-b-2": pathname === link.href,
+                                        "border-b": pathname === link.href,
                                     }
                                 )}
                                 style={{
                                     color: pathname === link.href 
-                                        ? 'var(--accent-cyan)' 
-                                        : 'var(--text-bright)',
-                                    borderColor: pathname === link.href ? 'var(--accent-cyan)' : 'transparent',
+                                        ? 'var(--text-primary)' 
+                                        : 'var(--text-secondary)',
+                                    borderColor: pathname === link.href ? 'var(--text-tertiary)' : 'transparent',
                                 }}
                                 onClick={() => setIsMenuOpen(false)}
                             >
@@ -215,11 +186,11 @@ export default function Header() {
                     >
                         <Link
                             href={contactLink.href}
-                            className="block w-full text-center text-white font-semibold py-3 rounded-lg transition-all duration-300 mt-4"
+                            className="block w-full text-center font-semibold py-3 rounded transition-opacity duration-200 mt-4"
                             style={{
-                                background: theme === 'dark'
-                                    ? 'linear-gradient(to right, #22d3ee, #3b82f6)'
-                                    : 'linear-gradient(to right, #0891b2, #2563eb)',
+                                background: 'var(--bg-surface)',
+                                color: 'var(--text-primary)',
+                                border: '1px solid var(--border-secondary)',
                             }}
                             onClick={() => setIsMenuOpen(false)}
                         >
