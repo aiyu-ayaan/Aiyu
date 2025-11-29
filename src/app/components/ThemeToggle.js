@@ -3,6 +3,18 @@
 import { motion } from 'framer-motion';
 import { useTheme } from '../context/ThemeContext';
 
+// Theme toggle color constants
+const TOGGLE_COLORS = {
+  dark: {
+    background: '#4c1d95',
+    knob: '#c084fc',
+  },
+  light: {
+    background: '#e0e7ff',
+    knob: '#6366f1',
+  },
+};
+
 export default function ThemeToggle() {
   const { theme, toggleTheme, mounted } = useTheme();
 
@@ -11,25 +23,26 @@ export default function ThemeToggle() {
     return (
       <div
         className="relative w-14 h-7 rounded-full p-1"
-        style={{ backgroundColor: '#4c1d95' }}
+        style={{ backgroundColor: TOGGLE_COLORS.dark.background }}
         aria-label="Loading theme toggle"
       >
         <div
           className="w-5 h-5 rounded-full"
-          style={{ backgroundColor: '#c084fc' }}
+          style={{ backgroundColor: TOGGLE_COLORS.dark.knob }}
         />
       </div>
     );
   }
 
   const isDark = theme === 'dark';
+  const colors = isDark ? TOGGLE_COLORS.dark : TOGGLE_COLORS.light;
 
   return (
     <motion.button
       onClick={toggleTheme}
       className="relative w-14 h-7 rounded-full p-1 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
       style={{
-        backgroundColor: isDark ? '#4c1d95' : '#e0e7ff',
+        backgroundColor: colors.background,
       }}
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
@@ -40,7 +53,7 @@ export default function ThemeToggle() {
       <motion.div
         className="w-5 h-5 rounded-full flex items-center justify-center shadow-md"
         style={{
-          backgroundColor: isDark ? '#c084fc' : '#6366f1',
+          backgroundColor: colors.knob,
         }}
         initial={false}
         animate={{

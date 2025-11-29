@@ -2,8 +2,14 @@
 
 import { createContext, useContext, useState, useEffect } from 'react';
 
+// Theme configuration constants
+const VALID_THEMES = ['dark', 'light'];
+const DEFAULT_THEME = 'dark';
+
+const isValidTheme = (theme) => VALID_THEMES.includes(theme);
+
 const ThemeContext = createContext({
-  theme: 'dark',
+  theme: DEFAULT_THEME,
   toggleTheme: () => {},
   mounted: false,
 });
@@ -17,14 +23,13 @@ export const useTheme = () => {
 };
 
 export const ThemeProvider = ({ children }) => {
-  // Start with null to indicate we haven't read from localStorage yet
-  const [theme, setTheme] = useState('dark');
+  const [theme, setTheme] = useState(DEFAULT_THEME);
   const [mounted, setMounted] = useState(false);
 
   // Initialize theme from localStorage on mount (client-side only)
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
-    if (savedTheme && (savedTheme === 'dark' || savedTheme === 'light')) {
+    if (savedTheme && isValidTheme(savedTheme)) {
       setTheme(savedTheme);
     } else {
       // Check system preference if no saved theme
