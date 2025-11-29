@@ -3,27 +3,61 @@
 import { motion } from 'framer-motion';
 import { useTheme } from '../context/ThemeContext';
 
+// Theme toggle color constants
+const TOGGLE_COLORS = {
+  dark: {
+    background: '#4c1d95',
+    knob: '#c084fc',
+  },
+  light: {
+    background: '#e0e7ff',
+    knob: '#6366f1',
+  },
+};
+
 export default function ThemeToggle() {
-  const { theme, toggleTheme } = useTheme();
+  const { theme, toggleTheme, mounted } = useTheme();
+
+  // Prevent hydration mismatch by rendering a placeholder until mounted
+  if (!mounted) {
+    return (
+      <div
+        className="relative w-14 h-7 rounded-full p-1"
+        style={{ backgroundColor: TOGGLE_COLORS.dark.background }}
+        aria-label="Loading theme toggle"
+      >
+        <div
+          className="w-5 h-5 rounded-full"
+          style={{ backgroundColor: TOGGLE_COLORS.dark.knob }}
+        />
+      </div>
+    );
+  }
+
+  const isDark = theme === 'dark';
+  const colors = isDark ? TOGGLE_COLORS.dark : TOGGLE_COLORS.light;
 
   return (
     <motion.button
       onClick={toggleTheme}
-      className="relative w-14 h-7 rounded-full p-1 transition-colors duration-300"
+      className="relative w-14 h-7 rounded-full p-1 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
       style={{
-        backgroundColor: theme === 'dark' ? '#4c1d95' : '#e0e7ff',
+        backgroundColor: colors.background,
       }}
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
-      aria-label="Toggle theme"
+      aria-label={`Switch to ${isDark ? 'light' : 'dark'} theme`}
+      role="switch"
+      aria-checked={isDark}
     >
       <motion.div
-        className="w-5 h-5 rounded-full flex items-center justify-center"
+        className="w-5 h-5 rounded-full flex items-center justify-center shadow-md"
         style={{
-          backgroundColor: theme === 'dark' ? '#c084fc' : '#6366f1',
+          backgroundColor: colors.knob,
         }}
+        initial={false}
         animate={{
-          x: theme === 'dark' ? 0 : 28,
+          x: isDark ? 0 : 28,
         }}
         transition={{
           type: "spring",
@@ -31,7 +65,7 @@ export default function ThemeToggle() {
           damping: 30,
         }}
       >
-        {theme === 'dark' ? (
+        {isDark ? (
           <svg
             className="w-3 h-3 text-white"
             fill="currentColor"

@@ -2,9 +2,16 @@
 
 import { createContext, useContext, useState, useEffect } from 'react';
 
+// Theme configuration constants
+const VALID_THEMES = ['dark', 'light'];
+const DEFAULT_THEME = 'dark';
+
+const isValidTheme = (theme) => VALID_THEMES.includes(theme);
+
 const ThemeContext = createContext({
-  theme: 'dark',
+  theme: DEFAULT_THEME,
   toggleTheme: () => {},
+  mounted: false,
 });
 
 export const useTheme = () => {
@@ -15,41 +22,40 @@ export const useTheme = () => {
   return context;
 };
 
-// Helper function to get initial theme
-const getInitialTheme = () => {
-  if (typeof window === 'undefined') return 'dark';
-  
-  const savedTheme = localStorage.getItem('theme');
-  if (savedTheme) {
-    return savedTheme;
-  }
-  
-  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  return prefersDark ? 'dark' : 'light';
-};
-
 export const ThemeProvider = ({ children }) => {
-  const [theme, setTheme] = useState(getInitialTheme);
+  const [theme, setTheme] = useState(DEFAULT_THEME);
+  const [mounted, setMounted] = useState(false);
 
+  // Initialize theme from localStorage on mount (client-side only)
   useEffect(() => {
-    // Set initial theme attribute on mount
-    const root = document.documentElement;
-    root.setAttribute('data-theme', theme);
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme && isValidTheme(savedTheme)) {
+      setTheme(savedTheme);
+    } else {
+      // Check system preference if no saved theme
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const systemTheme = prefersDark ? 'dark' : 'light';
+      setTheme(systemTheme);
+      localStorage.setItem('theme', systemTheme);
+    }
+    setMounted(true);
   }, []);
 
+  // Update DOM and localStorage when theme changes
   useEffect(() => {
-    // Update theme when it changes
-    const root = document.documentElement;
-    root.setAttribute('data-theme', theme);
-    localStorage.setItem('theme', theme);
-  }, [theme]);
+    if (mounted) {
+      const root = document.documentElement;
+      root.setAttribute('data-theme', theme);
+      localStorage.setItem('theme', theme);
+    }
+  }, [theme, mounted]);
 
   const toggleTheme = () => {
     setTheme(prev => prev === 'dark' ? 'light' : 'dark');
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme, toggleTheme, mounted }}>
       {children}
     </ThemeContext.Provider>
   );
