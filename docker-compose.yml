@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: aiyu-mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: aiyu-portfolio
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - aiyu-network
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aiyu-app
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017/aiyu-portfolio
+      - NODE_ENV=production
+    depends_on:
+      - mongodb
+    networks:
+      - aiyu-network
+
+volumes:
+  mongodb_data:
+    driver: local
+
+networks:
+  aiyu-network:
+    driver: bridge
