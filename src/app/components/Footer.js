@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useSiteData } from '../../hooks/usePortfolioData';
-import { FaGithub, FaLinkedin, FaInstagram, FaEnvelope } from 'react-icons/fa';
+import { FaGithub, FaLinkedin, FaInstagram, FaEnvelope, FaLink } from 'react-icons/fa';
 import { useTheme } from '../context/ThemeContext';
 
 const iconMap = {
@@ -12,6 +12,7 @@ const iconMap = {
   'LinkedIn': FaLinkedin,
   'Instagram': FaInstagram,
   'Email': FaEnvelope,
+  'Twitter': FaLink, // Generic link icon for unknown social media
 };
 
 export default function Footer() {
@@ -41,7 +42,7 @@ export default function Footer() {
                     
                     <div className="flex items-center gap-4 sm:gap-3">
                         {socials.filter(social => social.url).map((social, index) => {
-                            const IconComponent = iconMap[social.icon] || iconMap[social.name] || FaGithub;
+                            const IconComponent = iconMap[social.icon] || iconMap[social.name] || FaLink;
                             return (
                             <div key={index}>
                                 <Link 

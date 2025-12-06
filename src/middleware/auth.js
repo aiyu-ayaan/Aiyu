@@ -1,9 +1,19 @@
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'default-secret-key';
+function getJWTSecret() {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error('JWT_SECRET environment variable is not set. Please configure it in your .env.local file.');
+  }
+  if (secret.length < 32) {
+    throw new Error('JWT_SECRET must be at least 32 characters long for security.');
+  }
+  return secret;
+}
 
 export function verifyToken(token) {
   try {
+    const JWT_SECRET = getJWTSecret();
     return jwt.verify(token, JWT_SECRET);
   } catch (error) {
     return null;
@@ -11,6 +21,7 @@ export function verifyToken(token) {
 }
 
 export function generateToken(payload) {
+  const JWT_SECRET = getJWTSecret();
   return jwt.sign(payload, JWT_SECRET, { expiresIn: '24h' });
 }
 
