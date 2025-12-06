@@ -88,10 +88,18 @@ async function seedDatabase() {
 
     // Seed Site data (socials)
     console.log('Seeding Site data...');
+    // Map icon components to icon names for database storage
+    const iconNameMap = {
+      'FaGithub': 'GitHub',
+      'FaLinkedin': 'LinkedIn',
+      'FaInstagram': 'Instagram',
+      'FaEnvelope': 'Email',
+    };
     const socialsWithIconNames = siteData.socials.map(social => ({
       name: social.name,
       url: social.url,
-      icon: social.name, // Store the icon name as a string
+      // Use the icon name from the map, fallback to social.name
+      icon: iconNameMap[social.icon?.name] || social.name,
     }));
     const siteDoc = new Site({
       socials: socialsWithIconNames,

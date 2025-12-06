@@ -42,6 +42,18 @@ export function useAboutData() {
     }).then((result) => {
       setData(result);
       setLoading(false);
+    }).catch((error) => {
+      console.error('Error in useAboutData:', error);
+      setData({
+        name: aboutDataFallback.name,
+        roles: aboutDataFallback.roles,
+        professionalSummary: aboutDataFallback.professionalSummary,
+        skills: aboutDataFallback.skills,
+        experiences: aboutDataFallback.experiences,
+        education: aboutDataFallback.education,
+        certifications: aboutDataFallback.certifications,
+      });
+      setLoading(false);
     });
   }, []);
 
@@ -58,6 +70,13 @@ export function useProjectsData() {
       roles: ['A collection of my work', 'Click on a project to learn more'],
     }).then((result) => {
       setData(result);
+      setLoading(false);
+    }).catch((error) => {
+      console.error('Error in useProjectsData:', error);
+      setData({
+        projects: Array.isArray(projectsDataFallback) ? projectsDataFallback : [projectsDataFallback],
+        roles: ['A collection of my work', 'Click on a project to learn more'],
+      });
       setLoading(false);
     });
   }, []);
@@ -76,6 +95,13 @@ export function useHeaderData() {
     }).then((result) => {
       setData(result);
       setLoading(false);
+    }).catch((error) => {
+      console.error('Error in useHeaderData:', error);
+      setData({
+        navLinks: headerDataFallback.navLinks,
+        contactLink: headerDataFallback.contactLink,
+      });
+      setLoading(false);
     });
   }, []);
 
@@ -91,6 +117,12 @@ export function useSiteData() {
       socials: siteDataFallback.socials,
     }).then((result) => {
       setData(result);
+      setLoading(false);
+    }).catch((error) => {
+      console.error('Error in useSiteData:', error);
+      setData({
+        socials: siteDataFallback.socials,
+      });
       setLoading(false);
     });
   }, []);
@@ -110,6 +142,15 @@ export function useHomeScreenData() {
       codeSnippets: homeScreenDataFallback.codeSnippets,
     }).then((result) => {
       setData(result);
+      setLoading(false);
+    }).catch((error) => {
+      console.error('Error in useHomeScreenData:', error);
+      setData({
+        name: homeScreenDataFallback.name,
+        homeRoles: homeScreenDataFallback.homeRoles,
+        githubLink: homeScreenDataFallback.githubLink,
+        codeSnippets: homeScreenDataFallback.codeSnippets,
+      });
       setLoading(false);
     });
   }, []);
