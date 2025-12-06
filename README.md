@@ -8,6 +8,7 @@ This is a [Next.js](https://nextjs.org) portfolio project with MongoDB backend s
 - 🎨 Beautiful dark/light theme support
 - 🎮 Interactive mini-games (Snake & Tic-Tac-Toe)
 - 🗄️ MongoDB backend for dynamic content
+- 🔐 Built-in admin panel for content management
 - 🐳 Docker & Docker Compose support
 - 📱 Fully responsive design
 - 🚀 Optimized for production
@@ -73,6 +74,29 @@ npm run dev
 - Get connection string
 - Update `.env.local`
 - Run `npm run seed`
+
+## Admin Panel
+
+Manage your portfolio content dynamically through the built-in admin panel.
+
+### Quick Access
+
+1. Visit `http://localhost:3000/admin/login`
+2. Login with credentials from `.env.local`:
+   - Username: `ADMIN_USERNAME`
+   - Password: `ADMIN_PASSWORD`
+3. Edit content in real-time through the dashboard
+
+### Setup
+
+Add admin credentials to `.env.local`:
+```env
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=your-secure-password
+JWT_SECRET=your-secret-jwt-key
+```
+
+📚 **[Full Admin Panel Documentation](./ADMIN_PANEL.md)**
 
 You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
 

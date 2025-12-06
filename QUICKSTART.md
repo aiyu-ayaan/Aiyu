@@ -175,10 +175,28 @@ docker system prune -a
 docker-compose up -d
 ```
 
+## Admin Panel
+
+Your portfolio includes a built-in admin panel for easy content management!
+
+### Access the Admin Panel
+
+1. **Login**: Visit `http://localhost:3000/admin/login`
+2. **Credentials**: Use the username/password from your `.env.local`:
+   ```env
+   ADMIN_USERNAME=admin
+   ADMIN_PASSWORD=changeme123
+   JWT_SECRET=your-secret-key
+   ```
+3. **Edit**: Update content through the dashboard
+4. **Save**: Changes are instant - no redeployment needed!
+
+📚 **See [ADMIN_PANEL.md](./ADMIN_PANEL.md) for detailed documentation**
+
 ## Next Steps
 
-- ✅ Update your data in `src/app/data/` files
-- ✅ Run `npm run seed` to update the database
+- ✅ Access the admin panel at `/admin/login`
+- ✅ Update content through the dashboard (easier than seed scripts!)
 - ✅ Customize the theme in `src/app/styles/globals.css`
 - ✅ Deploy to Vercel, Railway, or your preferred platform
 
