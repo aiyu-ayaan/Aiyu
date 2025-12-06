@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import clsx from 'clsx';
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { navLinks, contactLink } from '../data/headerData';
+import { useHeaderData } from '../../hooks/usePortfolioData';
 import ThemeToggle from './ThemeToggle';
 import { useTheme } from '../context/ThemeContext';
 
@@ -17,6 +17,10 @@ export default function Header() {
     const { scrollY } = useScroll();
     const headerOpacity = useTransform(scrollY, [0, 100], [1, 0.95]);
     const headerBlur = useTransform(scrollY, [0, 100], [0, 10]);
+    const { data: headerData, loading } = useHeaderData();
+
+    const navLinks = headerData?.navLinks || [];
+    const contactLink = headerData?.contactLink || { name: 'contact-me', href: '#' };
 
     const toggleMenu = () => {
         setIsMenuOpen(!isMenuOpen);

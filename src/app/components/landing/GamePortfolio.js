@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { name, homeRoles, githubLink, codeSnippets } from '../../data/homeScreenData';
+import { useHomeScreenData } from '../../../hooks/usePortfolioData';
 import TypewriterEffect from '../shared/TypewriterEffect';
 import SnakeGame from './SnakeGame';
 import TicTacToe from './TicTacToe';
@@ -11,6 +11,17 @@ import { useTheme } from '../../context/ThemeContext';
 const GamePortfolio = ({ onUnlock = () => {} }) => {
   const { theme } = useTheme();
   const [selectedGame, setSelectedGame] = useState(null);
+  const { data: homeScreenData, loading } = useHomeScreenData();
+
+  if (loading || !homeScreenData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--bg-primary)' }}>
+        <div className="text-xl" style={{ color: 'var(--text-primary)' }}>Loading...</div>
+      </div>
+    );
+  }
+
+  const { name, homeRoles, githubLink, codeSnippets } = homeScreenData;
 
   const renderGame = () => {
     switch (selectedGame) {

@@ -5,7 +5,7 @@ import { VerticalTimeline, VerticalTimelineElement } from 'react-vertical-timeli
 import 'react-vertical-timeline-component/style.min.css';
 import { FaBriefcase, FaGraduationCap, FaCertificate } from 'react-icons/fa';
 import TypewriterEffect from '../shared/TypewriterEffect';
-import { name, roles, professionalSummary, skills, experiences, education, certifications } from '../../data/aboutData';
+import { useAboutData } from '../../../hooks/usePortfolioData';
 import Link from 'next/link';
 import Divider from '../landing/Divider';
 import { useTheme } from '../../context/ThemeContext';
@@ -13,6 +13,17 @@ import { useTheme } from '../../context/ThemeContext';
 const About = () => {
   const { theme } = useTheme();
   const [isSkillsExpanded, setIsSkillsExpanded] = useState(false);
+  const { data: aboutData, loading } = useAboutData();
+
+  if (loading || !aboutData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--bg-primary)' }}>
+        <div className="text-xl" style={{ color: 'var(--text-primary)' }}>Loading...</div>
+      </div>
+    );
+  }
+
+  const { name, roles, professionalSummary, skills, experiences, education, certifications } = aboutData;
 
   return (
     <motion.div

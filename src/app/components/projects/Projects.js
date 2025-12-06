@@ -2,7 +2,7 @@
 "use client";
 import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import projects, { roles } from '../../data/projectsData';
+import { useProjectsData } from '../../../hooks/usePortfolioData';
 import ProjectDialog from './ProjectDialog';
 import TypewriterEffect from '../shared/TypewriterEffect';
 import Timeline from './Timeline';
@@ -13,6 +13,7 @@ const Projects = () => {
   const [selectedProject, setSelectedProject] = useState(null);
   const [selectedTechStack, setSelectedTechStack] = useState('All');
   const [selectedProjectType, setSelectedProjectType] = useState('All');
+  const { data: projectsData, loading } = useProjectsData();
 
   const openDialog = (project) => {
     setSelectedProject(project);
@@ -21,6 +22,17 @@ const Projects = () => {
   const closeDialog = () => {
     setSelectedProject(null);
   };
+
+  if (loading || !projectsData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--bg-primary)' }}>
+        <div className="text-xl" style={{ color: 'var(--text-primary)' }}>Loading...</div>
+      </div>
+    );
+  }
+
+  const projects = projectsData.projects || [];
+  const roles = projectsData.roles || [];
 
   const uniqueTechStacks = useMemo(() => {
     const allTechStacks = projects.flatMap(project => project.techStack);

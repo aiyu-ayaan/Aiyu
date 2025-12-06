@@ -2,11 +2,22 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { professionalSummary } from '../../data/aboutData';
+import { useAboutData } from '../../../hooks/usePortfolioData';
 import { useTheme } from '../../context/ThemeContext';
 
 const HomeAbout = () => {
   const { theme } = useTheme();
+  const { data: aboutData, loading } = useAboutData();
+
+  if (loading || !aboutData) {
+    return (
+      <div className="min-h-[200px] flex items-center justify-center" style={{ backgroundColor: 'var(--bg-primary)' }}>
+        <div className="text-xl" style={{ color: 'var(--text-primary)' }}>Loading...</div>
+      </div>
+    );
+  }
+
+  const { professionalSummary } = aboutData;
   
   return (
     <motion.div

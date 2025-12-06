@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import projects from '../../data/projectsData';
+import { useProjectsData } from '../../../hooks/usePortfolioData';
 import ProjectCard from '../projects/ProjectCard';
 import ProjectDialog from '../projects/ProjectDialog';
 import { useTheme } from '../../context/ThemeContext';
@@ -10,6 +10,7 @@ import { useTheme } from '../../context/ThemeContext';
 const HomeProjects = () => {
   const { theme } = useTheme();
   const [selectedProject, setSelectedProject] = useState(null);
+  const { data: projectsData, loading } = useProjectsData();
 
   const openDialog = (project) => {
     setSelectedProject(project);
@@ -19,6 +20,15 @@ const HomeProjects = () => {
     setSelectedProject(null);
   };
 
+  if (loading || !projectsData) {
+    return (
+      <div className="min-h-[300px] flex items-center justify-center" style={{ backgroundColor: 'var(--bg-primary)' }}>
+        <div className="text-xl" style={{ color: 'var(--text-primary)' }}>Loading...</div>
+      </div>
+    );
+  }
+
+  const projects = projectsData.projects || [];
   const latestProjects = projects.slice(0, 2);
 
   return (

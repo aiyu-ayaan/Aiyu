@@ -3,11 +3,22 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { socials } from '../data/siteData';
+import { useSiteData } from '../../hooks/usePortfolioData';
+import { FaGithub, FaLinkedin, FaInstagram, FaEnvelope } from 'react-icons/fa';
 import { useTheme } from '../context/ThemeContext';
+
+const iconMap = {
+  'GitHub': FaGithub,
+  'LinkedIn': FaLinkedin,
+  'Instagram': FaInstagram,
+  'Email': FaEnvelope,
+};
 
 export default function Footer() {
     const { theme } = useTheme();
+    const { data: siteData, loading } = useSiteData();
+
+    const socials = siteData?.socials || [];
     
     return (
         <footer 
@@ -29,7 +40,9 @@ export default function Footer() {
                     </span>
                     
                     <div className="flex items-center gap-4 sm:gap-3">
-                        {socials.filter(social => social.url).map((social, index) => (
+                        {socials.filter(social => social.url).map((social, index) => {
+                            const IconComponent = iconMap[social.icon] || iconMap[social.name] || FaGithub;
+                            return (
                             <div key={index}>
                                 <Link 
                                     href={social.url} 
@@ -50,11 +63,11 @@ export default function Footer() {
                                         }}
                                         whileTap={{ scale: 0.9 }}
                                     >
-                                        <social.icon className="w-6 h-6 sm:w-5 sm:h-5" />
+                                        <IconComponent className="w-6 h-6 sm:w-5 sm:h-5" />
                                     </motion.div>
                                 </Link>
                             </div>
-                        ))}
+                        )}))}
                     </div>
                 </div>
                 
