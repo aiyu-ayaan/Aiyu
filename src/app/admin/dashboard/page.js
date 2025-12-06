@@ -5,6 +5,11 @@ import { useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import AboutForm from '../components/AboutForm';
+import ProjectsForm from '../components/ProjectsForm';
+import HeaderForm from '../components/HeaderForm';
+import SiteForm from '../components/SiteForm';
+import HomeScreenForm from '../components/HomeScreenForm';
 
 export default function AdminDashboard() {
   const [authenticated, setAuthenticated] = useState(false);
@@ -39,7 +44,7 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleSave = async () => {
+  const handleSave = async (formData) => {
     setSaving(true);
     setMessage('');
 
@@ -51,14 +56,17 @@ export default function AdminDashboard() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(formData),
       });
 
       const result = await response.json();
 
       if (response.ok && result.success) {
         setMessage('✓ Saved successfully!');
-        setTimeout(() => setMessage(''), 3000);
+        setTimeout(() => {
+          setMessage('');
+          loadData(activeTab); // Reload data after save
+        }, 2000);
       } else {
         setMessage('✗ Failed to save: ' + (result.error || 'Unknown error'));
       }
@@ -163,9 +171,9 @@ export default function AdminDashboard() {
           </motion.div>
         )}
 
-        {/* Editor */}
+        {/* Forms */}
         <div 
-          className="p-6 rounded-2xl shadow-xl"
+          className="rounded-2xl shadow-xl"
           style={{
             background: 'linear-gradient(to bottom right, #1f2937, #111827)',
             borderWidth: '1px',
@@ -173,61 +181,13 @@ export default function AdminDashboard() {
             borderColor: 'var(--border-secondary)',
           }}
         >
-          <div className="mb-4">
-            <label 
-              className="block mb-2 font-medium"
-              style={{ color: 'var(--text-secondary)' }}
-            >
-              JSON Data (edit carefully)
-            </label>
-            <textarea
-              value={JSON.stringify(data, null, 2)}
-              onChange={(e) => {
-                try {
-                  setData(JSON.parse(e.target.value));
-                } catch (err) {
-                  // Invalid JSON, don't update
-                }
-              }}
-              rows={20}
-              className="w-full p-4 rounded-lg font-mono text-sm"
-              style={{
-                backgroundColor: 'var(--bg-secondary)',
-                borderColor: 'var(--border-secondary)',
-                color: 'var(--text-primary)',
-                borderWidth: '1px',
-                borderStyle: 'solid',
-              }}
-            />
+          <div className="p-6">
+            {activeTab === 'about' && <AboutForm data={data} onSave={handleSave} saving={saving} />}
+            {activeTab === 'projects' && <ProjectsForm data={data} onSave={handleSave} saving={saving} />}
+            {activeTab === 'header' && <HeaderForm data={data} onSave={handleSave} saving={saving} />}
+            {activeTab === 'site' && <SiteForm data={data} onSave={handleSave} saving={saving} />}
+            {activeTab === 'homescreen' && <HomeScreenForm data={data} onSave={handleSave} saving={saving} />}
           </div>
-
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={handleSave}
-            disabled={saving}
-            className="w-full py-3 rounded-lg font-semibold transition-all"
-            style={{
-              backgroundColor: 'var(--accent-cyan)',
-              color: '#111827',
-            }}
-          >
-            {saving ? 'Saving...' : 'Save Changes'}
-          </motion.button>
-        </div>
-
-        {/* Instructions */}
-        <div 
-          className="mt-6 p-4 rounded-lg"
-          style={{
-            backgroundColor: 'rgba(59, 130, 246, 0.1)',
-            color: 'var(--text-secondary)',
-          }}
-        >
-          <p className="text-sm">
-            <strong>Note:</strong> Edit the JSON data carefully. Invalid JSON will not be saved. 
-            Make sure to validate your changes before saving. Changes take effect immediately on the frontend.
-          </p>
         </div>
       </div>
     </div>
