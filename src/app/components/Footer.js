@@ -67,7 +67,7 @@ export default function Footer() {
                                     </motion.div>
                                 </Link>
                             </div>
-                        )}))}
+                        )})}
                     </div>
                 </div>
                 

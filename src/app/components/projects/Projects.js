@@ -15,24 +15,8 @@ const Projects = () => {
   const [selectedProjectType, setSelectedProjectType] = useState('All');
   const { data: projectsData, loading } = useProjectsData();
 
-  const openDialog = (project) => {
-    setSelectedProject(project);
-  };
-
-  const closeDialog = () => {
-    setSelectedProject(null);
-  };
-
-  if (loading || !projectsData) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--bg-primary)' }}>
-        <div className="text-xl" style={{ color: 'var(--text-primary)' }}>Loading...</div>
-      </div>
-    );
-  }
-
-  const projects = projectsData.projects || [];
-  const roles = projectsData.roles || [];
+  const projects = projectsData?.projects || [];
+  const roles = projectsData?.roles || [];
 
   const uniqueTechStacks = useMemo(() => {
     const allTechStacks = projects.flatMap(project => project.techStack);
@@ -51,6 +35,22 @@ const Projects = () => {
       return matchesTechStack && matchesProjectType;
     });
   }, [projects, selectedTechStack, selectedProjectType]);
+
+  const openDialog = (project) => {
+    setSelectedProject(project);
+  };
+
+  const closeDialog = () => {
+    setSelectedProject(null);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--bg-primary)' }}>
+        <div className="text-xl" style={{ color: 'var(--text-primary)' }}>Loading...</div>
+      </div>
+    );
+  }
 
   const projectsByYear = filteredProjects.reduce((acc, project) => {
     const yearParts = project.year.split(' - ');
