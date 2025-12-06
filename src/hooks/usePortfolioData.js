@@ -9,7 +9,10 @@ import * as homeScreenDataFallback from '../app/data/homeScreenData';
 import projectsDataFallback from '../app/data/projectsData';
 import * as siteDataFallback from '../app/data/siteData';
 
-const API_BASE_URL = typeof window !== 'undefined' ? '' : 'http://localhost:3000';
+// Use environment variable or dynamic URL detection
+const API_BASE_URL = typeof window !== 'undefined' 
+  ? '' // Client-side: use relative URLs
+  : process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'; // Server-side: configurable
 
 // Helper function to fetch data with fallback
 async function fetchWithFallback(endpoint, fallbackData) {

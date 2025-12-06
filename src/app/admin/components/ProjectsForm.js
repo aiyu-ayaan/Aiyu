@@ -39,7 +39,9 @@ export default function ProjectsForm({ data, onSave, saving }) {
       if (editingProject._id) {
         setProjects(projects.map(p => p._id === editingProject._id ? editingProject : p));
       } else {
-        setProjects([...projects, { ...editingProject, _id: Date.now().toString() }]);
+        // Use crypto.randomUUID() for better unique ID generation (MongoDB will assign proper _id on save)
+        const tempId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `temp-${Date.now()}-${Math.random()}`;
+        setProjects([...projects, { ...editingProject, _id: tempId }]);
       }
       setEditingProject(null);
     }

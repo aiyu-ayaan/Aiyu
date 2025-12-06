@@ -2,7 +2,16 @@ import mongoose from 'mongoose';
 
 const SkillSchema = new mongoose.Schema({
   name: { type: String, required: true },
-  level: { type: Number, required: true, min: 0, max: 100 },
+  level: { 
+    type: Number, 
+    required: true, 
+    min: 0, 
+    max: 100,
+    validate: {
+      validator: Number.isInteger,
+      message: '{VALUE} is not an integer value for skill level'
+    }
+  },
 });
 
 const ExperienceSchema = new mongoose.Schema({

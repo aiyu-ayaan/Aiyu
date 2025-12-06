@@ -28,6 +28,16 @@ export async function POST(request) {
     });
   } catch (error) {
     console.error('Error creating project:', error);
+    
+    // Handle validation errors specifically
+    if (error.name === 'ValidationError') {
+      const validationErrors = Object.values(error.errors).map(e => e.message);
+      return NextResponse.json(
+        { error: 'Validation failed', details: validationErrors.join(', ') },
+        { status: 400 }
+      );
+    }
+    
     return NextResponse.json(
       { error: 'Failed to create project', details: error.message },
       { status: 500 }
