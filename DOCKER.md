@@ -34,11 +34,12 @@ Edit the `.env` file with your configuration:
 
 ```bash
 # MongoDB Configuration (for Docker Compose)
-MONGODB_URI=mongodb://admin:CHANGE_THIS_PASSWORD@mongodb:27017/aiyu?authSource=admin
+MONGODB_URI=mongodb://admin:YOUR_STRONG_PASSWORD@mongodb:27017/aiyu?authSource=admin
 
 # MongoDB Root Credentials
+# WARNING: Use a strong, unique password - this creates the MongoDB root user
 MONGO_ROOT_USERNAME=admin
-MONGO_ROOT_PASSWORD=CHANGE_THIS_PASSWORD
+MONGO_ROOT_PASSWORD=YOUR_STRONG_PASSWORD
 
 # N8N Webhook URL
 NEXT_PUBLIC_N8N_WEBHOOK_URL=https://your-n8n-instance.com/webhook/your-id
@@ -150,26 +151,30 @@ docker compose up -d
 
 ```bash
 # Access MongoDB shell (from within container)
-docker exec -it aiyu-mongodb mongosh -u admin -p CHANGE_THIS_PASSWORD --authenticationDatabase admin
+# Replace YOUR_PASSWORD with the value from MONGO_ROOT_PASSWORD in .env
+docker exec -it aiyu-mongodb mongosh -u admin -p YOUR_PASSWORD --authenticationDatabase admin
+
+# Alternative: Use environment variable (more secure)
+docker exec -it aiyu-mongodb sh -c 'mongosh -u $MONGO_INITDB_ROOT_USERNAME -p $MONGO_INITDB_ROOT_PASSWORD --authenticationDatabase admin'
 
 # If you need external MongoDB access, uncomment the ports section in docker-compose.yml:
 # ports:
 #   - "27017:27017"
 
-# Backup database
-docker exec aiyu-mongodb mongodump --uri="mongodb://admin:CHANGE_THIS_PASSWORD@localhost:27017/aiyu?authSource=admin" --out=/backup
+# Backup database (replace YOUR_PASSWORD with actual password from .env)
+docker exec aiyu-mongodb mongodump --uri="mongodb://admin:YOUR_PASSWORD@localhost:27017/aiyu?authSource=admin" --out=/backup
 
-# Restore database
-docker exec aiyu-mongodb mongorestore --uri="mongodb://admin:CHANGE_THIS_PASSWORD@localhost:27017/aiyu?authSource=admin" /backup/aiyu
+# Restore database (replace YOUR_PASSWORD with actual password from .env)
+docker exec aiyu-mongodb mongorestore --uri="mongodb://admin:YOUR_PASSWORD@localhost:27017/aiyu?authSource=admin" /backup/aiyu
 ```
 
 ## Environment Variables Reference
 
 | Variable | Description | Required | Example |
 |----------|-------------|----------|---------|
-| MONGODB_URI | MongoDB connection string | Yes | mongodb://admin:CHANGE_THIS_PASSWORD@mongodb:27017/aiyu?authSource=admin |
+| MONGODB_URI | MongoDB connection string | Yes | mongodb://admin:YOUR_STRONG_PASSWORD@mongodb:27017/aiyu?authSource=admin |
 | MONGO_ROOT_USERNAME | MongoDB root username | Yes | admin |
-| MONGO_ROOT_PASSWORD | MongoDB root password | Yes | CHANGE_THIS_PASSWORD |
+| MONGO_ROOT_PASSWORD | MongoDB root password | Yes | Use strong unique password |
 | NEXT_PUBLIC_N8N_WEBHOOK_URL | N8N webhook endpoint | No | https://n8n.example.com/webhook/id |
 | ADMIN_USERNAME | Admin panel username | Yes | admin |
 | ADMIN_PASSWORD | Admin panel password | Yes | secure_password |

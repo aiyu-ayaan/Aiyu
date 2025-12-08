@@ -19,13 +19,13 @@ COPY . .
 # Set build-time environment variables
 # Next.js requires MONGODB_URI during build because db module is imported at top level
 # However, it doesn't actually connect during build - it just needs a valid string
-# NEXT_PUBLIC_ variables are embedded in the client bundle so they're needed at build time
-# Sensitive variables (ADMIN_PASSWORD, JWT_SECRET) are NOT passed here for security
-ARG MONGODB_URI
+# We use a dummy value here to prevent credentials from being baked into image layers
+# The real MONGODB_URI will be provided at runtime via docker-compose environment
 ARG NEXT_PUBLIC_N8N_WEBHOOK_URL
 
 # Set environment variables for build process
-ENV MONGODB_URI=${MONGODB_URI}
+# Use dummy MongoDB URI during build (no actual connection is made)
+ENV MONGODB_URI=mongodb://dummy:dummy@dummy:27017/dummy
 ENV NEXT_PUBLIC_N8N_WEBHOOK_URL=${NEXT_PUBLIC_N8N_WEBHOOK_URL}
 
 # Set dummy values for build-time checks (not used, only runtime matters)

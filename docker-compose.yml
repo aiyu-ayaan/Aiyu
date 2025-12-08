@@ -29,9 +29,9 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        # Only pass non-sensitive variables as build args
-        # Sensitive credentials are provided at runtime via environment section
-        - MONGODB_URI=${MONGODB_URI}
+        # Only pass public variables as build args
+        # MONGODB_URI uses dummy value in Dockerfile to prevent credentials in image layers
+        # All sensitive credentials are provided at runtime via environment section below
         - NEXT_PUBLIC_N8N_WEBHOOK_URL=${NEXT_PUBLIC_N8N_WEBHOOK_URL}
     container_name: aiyu-app
     restart: unless-stopped
