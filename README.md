@@ -50,10 +50,11 @@ This project includes Docker support for easy deployment and development.
    - Configure `ADMIN_USERNAME` and `ADMIN_PASSWORD` with secure values
    - Generate a secure `JWT_SECRET` (e.g., using `openssl rand -base64 32`)
    - Set other required environment variables
+   - **Important**: All variables must be set before building, as they're needed during the build process
 
 3. **Start the application:**
    ```bash
-   docker-compose up -d
+   docker compose up -d --build
    ```
 
 4. **Access the application:**

@@ -58,11 +58,14 @@ APP_PORT=3000
 
 ```bash
 # Start all services in detached mode
-docker compose up -d
+# The --build flag is recommended for first run or after code changes
+docker compose up -d --build
 
 # View logs (optional)
 docker compose logs -f
 ```
+
+**Note**: The build process requires environment variables from your `.env` file. Make sure it's properly configured before building.
 
 ### 4. Access the Application
 
@@ -77,13 +80,14 @@ docker compose logs -f
 The Dockerfile uses a three-stage build process:
 
 1. **deps**: Installs dependencies using npm ci
-2. **builder**: Builds the Next.js application
+2. **builder**: Builds the Next.js application with environment variables passed as build args
 3. **runner**: Minimal production image with only necessary files
 
 This approach:
 - Reduces final image size
 - Improves security by excluding build tools
 - Runs as non-root user (nextjs:1001)
+- Passes environment variables during build for Next.js data collection
 
 ### Services
 
@@ -134,9 +138,12 @@ docker compose ps
 # Rebuild after code changes
 docker compose up -d --build
 
-# Force rebuild without cache
+# Force rebuild without cache (useful after dependency changes)
 docker compose build --no-cache
 docker compose up -d
+
+# If you get build errors about missing environment variables:
+# Make sure your .env file exists and contains all required variables
 ```
 
 ### Database Management
@@ -171,9 +178,25 @@ docker exec aiyu-mongodb mongorestore --uri="mongodb://admin:YOUR_PASSWORD@local
 
 ## Troubleshooting
 
+### Build Error: "Please define the MONGODB_URI environment variable"
+
+This error occurs when the `.env` file is missing or incomplete during build.
+
+**Solution**:
+```bash
+# 1. Ensure .env file exists
+cp .env.example .env
+
+# 2. Fill in all required variables in .env
+# 3. Rebuild
+docker compose up -d --build
+```
+
+The Next.js build process requires environment variables to collect page data. Docker passes these as build arguments from your `.env` file.
+
 ### Port Already in Use
 
-If port 3000 or 27017 is already in use:
+If port 3000 is already in use:
 
 ```bash
 # Change APP_PORT in .env

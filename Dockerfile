@@ -16,8 +16,25 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+# Set build-time environment variables
+# Next.js requires these during build to collect page data and pre-render routes
+# These are passed from docker-compose.yml build args (which reads from .env file)
+# Note: These values are only used during build and won't be in the final image
+# Runtime values will be provided via docker-compose.yml environment section
+ARG MONGODB_URI
+ARG NEXT_PUBLIC_N8N_WEBHOOK_URL
+ARG ADMIN_USERNAME
+ARG ADMIN_PASSWORD
+ARG JWT_SECRET
+
+# Set environment variables for build process
+ENV MONGODB_URI=${MONGODB_URI}
+ENV NEXT_PUBLIC_N8N_WEBHOOK_URL=${NEXT_PUBLIC_N8N_WEBHOOK_URL}
+ENV ADMIN_USERNAME=${ADMIN_USERNAME}
+ENV ADMIN_PASSWORD=${ADMIN_PASSWORD}
+ENV JWT_SECRET=${JWT_SECRET}
+
 # Build the application
-# Environment variables will be read from .env file at runtime
 RUN npm run build
 
 # Stage 3: Runner
