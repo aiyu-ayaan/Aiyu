@@ -16,6 +16,11 @@ export const metadata = {
     description: "Admin Dashboard",
 };
 
+// Force dynamic rendering for all admin pages
+// This prevents Next.js from trying to pre-render admin pages during build
+// Admin pages require authentication and database access, so they must be dynamic
+export const dynamic = 'force-dynamic';
+
 export default function AdminLayout({ children }) {
     return (
         <html lang="en">
