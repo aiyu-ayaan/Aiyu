@@ -29,6 +29,54 @@ To learn more about Next.js, take a look at the following resources:
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
+## Docker Setup
+
+This project includes Docker support for easy deployment and development.
+
+### Prerequisites
+
+- Docker (version 20.10 or higher)
+- Docker Compose (version 2.0 or higher)
+
+### Quick Start with Docker
+
+1. **Copy the environment file:**
+   ```bash
+   cp .env.example .env
+   ```
+
+2. **Update the .env file with your credentials:**
+   - Set `MONGODB_URI` to `mongodb://admin:password@mongodb:27017/aiyu?authSource=admin` (for Docker Compose)
+   - Configure `ADMIN_USERNAME` and `ADMIN_PASSWORD`
+   - Generate a secure `JWT_SECRET`
+   - Set other required environment variables
+
+3. **Start the application:**
+   ```bash
+   docker-compose up -d
+   ```
+
+4. **Access the application:**
+   - Application: [http://localhost:3000](http://localhost:3000)
+   - Admin Panel: [http://localhost:3000/admin/login](http://localhost:3000/admin/login)
+   - MongoDB: `localhost:27017`
+
+### Docker Commands
+
+- **Start services:** `docker-compose up -d`
+- **Stop services:** `docker-compose down`
+- **View logs:** `docker-compose logs -f`
+- **Rebuild application:** `docker-compose up -d --build`
+- **Stop and remove volumes (WARNING: deletes database):** `docker-compose down -v`
+
+### Development with Docker
+
+For development, you can mount the source code as a volume to enable hot-reloading:
+
+```bash
+docker-compose -f docker-compose.yml up
+```
+
 ## Database & Migrations
 
 This project uses a MongoDB database. For instructions on how to seed the database with initial data (or reset it), please refer to [Migration.md](Migration.md).
