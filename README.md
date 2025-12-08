@@ -46,11 +46,12 @@ This project includes Docker support for easy deployment and development.
    ```
 
 2. **Update the .env file with your credentials:**
-   - Set `MONGODB_URI` to `mongodb://admin:YOUR_PASSWORD@mongodb:27017/aiyu?authSource=admin` (for Docker Compose)
+   - Set `MONGODB_URI` to `mongodb://admin:CHANGE_THIS_PASSWORD@mongodb:27017/aiyu?authSource=admin` (for Docker Compose)
+   - Replace `CHANGE_THIS_PASSWORD` with a strong password
    - Configure `ADMIN_USERNAME` and `ADMIN_PASSWORD` with secure values
    - Generate a secure `JWT_SECRET` (e.g., using `openssl rand -base64 32`)
    - Set other required environment variables
-   - **Important**: All variables must be set before building, as they're needed during the build process
+   - **Important**: MONGODB_URI is needed during the build process
 
 3. **Start the application:**
    ```bash
@@ -65,11 +66,11 @@ This project includes Docker support for easy deployment and development.
 
 ### Docker Commands
 
-- **Start services:** `docker-compose up -d`
-- **Stop services:** `docker-compose down`
-- **View logs:** `docker-compose logs -f`
-- **Rebuild application:** `docker-compose up -d --build`
-- **Stop and remove volumes (WARNING: deletes database):** `docker-compose down -v`
+- **Start services:** `docker compose up -d`
+- **Stop services:** `docker compose down`
+- **View logs:** `docker compose logs -f`
+- **Rebuild application:** `docker compose up -d --build`
+- **Stop and remove volumes (WARNING: deletes database):** `docker compose down -v`
 
 ### Development with Docker
 
