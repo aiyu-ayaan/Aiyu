@@ -199,16 +199,20 @@ docker compose up -d --build
 
 The Next.js build process requires MONGODB_URI environment variable because the database connection module is imported at the top level in API routes.
 
-### Build Error: "Error occurred prerendering page"
+### Build Error: "Error occurred prerendering page" or "MongooseServerSelectionError: getaddrinfo EAI_AGAIN dummy"
 
-This error can occur if Next.js tries to pre-render pages that require database access during build.
+This error occurs when Next.js tries to pre-render pages that require database access during the Docker build process. The dummy MongoDB URI used during build causes connection failures.
 
-**Solution**: The admin pages are configured with `export const dynamic = 'force-dynamic'` in the layout to prevent pre-rendering. If you add new pages that require database access, make sure they're marked as dynamic:
+**Solution**: Both the site layout (`src/app/(site)/layout.js`) and admin layout (`src/app/admin/layout.js`) are configured with `export const dynamic = 'force-dynamic'` to prevent pre-rendering. This forces all pages to be rendered dynamically at runtime when the real database is available.
+
+If you add new layouts or pages that require database access, make sure they're marked as dynamic:
 
 ```javascript
-// Add this to any page that needs database access
+// Add this to any layout or page that needs database access
 export const dynamic = 'force-dynamic';
 ```
+
+**Why this happens**: Next.js standalone output tries to statically generate pages during build. Server components that fetch data from the database will attempt to connect, but the dummy MongoDB URI (`mongodb://dummy:27017/dummy`) used during build cannot be reached, causing timeouts and build failures.
 
 ### Port Already in Use
 

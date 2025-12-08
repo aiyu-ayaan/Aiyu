@@ -9,6 +9,11 @@ import AboutModel from "@/models/About";
 
 import ConfigModel from "@/models/Config";
 
+// Force dynamic rendering for all site pages
+// This prevents Next.js from trying to pre-render pages during Docker build
+// Site pages require database access, so they must be rendered at runtime
+export const dynamic = 'force-dynamic';
+
 export default async function SiteLayout({ children }) {
     await dbConnect();
     // Fetch data for Header and Footer
