@@ -227,6 +227,24 @@ APP_PORT=3001
 
 ### Database Connection Issues
 
+#### Error: "MongooseServerSelectionError: connect ECONNREFUSED ::1:27017"
+
+This error occurs when the application tries to connect to `localhost:27017` instead of the MongoDB Docker service.
+
+**Solution**: Update your `.env` file to use the correct Docker hostname:
+
+```bash
+# WRONG - uses localhost (won't work in Docker)
+MONGODB_URI=mongodb://localhost:27017/aiyu
+
+# CORRECT - uses 'mongodb' hostname (Docker service name)
+MONGODB_URI=mongodb://admin:YOUR_PASSWORD@mongodb:27017/aiyu?authSource=admin
+```
+
+The `mongodb` hostname is the Docker Compose service name, which resolves to the MongoDB container within the Docker network.
+
+#### General Connection Troubleshooting
+
 ```bash
 # Check MongoDB is healthy
 docker compose ps
@@ -235,6 +253,10 @@ docker compose ps
 docker compose logs mongodb
 
 # Verify connection string in .env matches MongoDB credentials
+# Make sure the password in MONGODB_URI matches MONGO_ROOT_PASSWORD
+
+# Test connection from within the app container
+docker exec -it aiyu-app sh -c 'echo $MONGODB_URI'
 ```
 
 ### Build Failures

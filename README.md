@@ -46,7 +46,10 @@ This project includes Docker support for easy deployment and development.
    ```
 
 2. **Update the .env file with your credentials:**
-   - Set `MONGODB_URI` to `mongodb://admin:YOUR_STRONG_PASSWORD@mongodb:27017/aiyu?authSource=admin` (for Docker Compose)
+   - **Important**: Set `MONGODB_URI` to use hostname `mongodb` (not `localhost`):
+     ```
+     MONGODB_URI=mongodb://admin:YOUR_STRONG_PASSWORD@mongodb:27017/aiyu?authSource=admin
+     ```
    - Replace `YOUR_STRONG_PASSWORD` with a strong password matching `MONGO_ROOT_PASSWORD`
    - Configure `ADMIN_USERNAME` and `ADMIN_PASSWORD` with secure values
    - Generate a secure `JWT_SECRET` (e.g., using `openssl rand -base64 32`)
