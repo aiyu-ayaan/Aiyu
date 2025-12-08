@@ -9,8 +9,9 @@ import { motion, useScroll, useTransform } from 'framer-motion';
 import ThemeToggle from './ThemeToggle';
 import { useTheme } from '../context/ThemeContext';
 
-export default function Header({ data }) {
+export default function Header({ data, logoText }) {
     const { navLinks, contactLink } = data || { navLinks: [], contactLink: {} };
+    const displayLogo = logoText || "< aiyu />";
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
     const pathname = usePathname();
@@ -73,7 +74,7 @@ export default function Header({ data }) {
                             whileHover={{ scale: 1.1 }}
                             transition={{ duration: 0.3 }}
                         >
-                            {"<"} aiyu {"/>"}
+                            {displayLogo}
                         </motion.div>
                     </Link>
                 </div>

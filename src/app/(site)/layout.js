@@ -5,6 +5,7 @@ import N8nChat from "../components/shared/N8nChat";
 import dbConnect from "@/lib/db";
 import HeaderModel from "@/models/Header";
 import SocialModel from "@/models/Social";
+import AboutModel from "@/models/About";
 
 import ConfigModel from "@/models/Config";
 
@@ -14,12 +15,15 @@ export default async function SiteLayout({ children }) {
     const headerData = await HeaderModel.findOne().lean();
     const socialData = await SocialModel.find().lean();
     const configData = await ConfigModel.findOne().lean();
+    const aboutData = await AboutModel.findOne().lean();
 
     // Serialize data to plain objects to pass to client components
     const serializedHeaderData = JSON.parse(JSON.stringify(headerData));
     const serializedSocialData = JSON.parse(JSON.stringify(socialData));
+    const serializedAboutData = JSON.parse(JSON.stringify(aboutData));
     // Default to empty string if config doesn't exist yet
     const n8nWebhookUrl = configData?.n8nWebhookUrl || '';
+    const logoText = configData?.logoText || '< aiyu />';
 
     // Handle Resume Link Logic
     if (serializedHeaderData && serializedHeaderData.navLinks) {
@@ -52,11 +56,11 @@ export default async function SiteLayout({ children }) {
 
     return (
         <>
-            <Header data={serializedHeaderData} />
+            <Header data={serializedHeaderData} logoText={logoText} />
             <main className="min-h-screen">
                 {children}
             </main>
-            <Footer socialData={serializedSocialData} />
+            <Footer socialData={serializedSocialData} name={serializedAboutData?.name} />
             <N8nChat webhookUrl={n8nWebhookUrl} />
         </>
     );

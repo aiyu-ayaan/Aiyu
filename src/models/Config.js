@@ -7,6 +7,13 @@ const ConfigSchema = new mongoose.Schema({
         value: { type: String, default: '' },
         filename: { type: String, default: '' }
     },
+    logoText: { type: String, default: '< aiyu />' },
+    siteTitle: { type: String, default: '' },
+    favicon: {
+        value: { type: String, default: '' }, // Base64
+        filename: { type: String, default: '' },
+        mimeType: { type: String, default: '' }
+    }
 }, { strict: false }); // Allow other fields to be added later if needed without strict validation issues initially
 
 export default mongoose.models.Config || mongoose.model('Config', ConfigSchema);

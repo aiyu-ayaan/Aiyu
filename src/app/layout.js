@@ -14,14 +14,25 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata = {
-  title: "Aiyu",
-  description: "Just coding........",
-  themeColor: "#111827",
-  icons: {
-    icon: "/favicon.ico", // Relative to public/
-  },
-};
+import dbConnect from "@/lib/db";
+import ConfigModel from "@/models/Config";
+
+export async function generateMetadata() {
+  await dbConnect();
+  const config = await ConfigModel.findOne().lean();
+
+  const title = config?.siteTitle || "Aiyu";
+  const icon = config?.favicon?.value ? '/api/favicon' : '/favicon.ico';
+
+  return {
+    title: title,
+    description: "Just coding........",
+    themeColor: "#111827",
+    icons: {
+      icon: icon,
+    },
+  };
+}
 
 export const viewport = {
   width: 'device-width',

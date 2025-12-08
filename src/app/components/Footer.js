@@ -7,12 +7,13 @@ import { motion } from 'framer-motion';
 import { getIconByName } from '../../lib/icons';
 import { useTheme } from '../context/ThemeContext';
 
-export default function Footer({ socialData }) {
+export default function Footer({ socialData, name }) {
     const { theme } = useTheme();
     const socials = socialData?.map(s => ({
         ...s,
         icon: getIconByName(s.iconName)
     })) || [];
+    const currentYear = new Date().getFullYear();
 
     return (
         <footer
@@ -64,7 +65,7 @@ export default function Footer({ socialData }) {
                 </div>
 
                 <div className="text-sm text-center sm:text-right" style={{ color: 'var(--text-muted)' }}>
-                    <p>© 2025 Ayaan Ansari. All rights reserved.</p>
+                    <p>© {currentYear} {name || 'Portfolio'}. All rights reserved.</p>
                 </div>
             </div>
         </footer>

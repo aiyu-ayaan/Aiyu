@@ -6,6 +6,13 @@ const ConfigForm = () => {
     const router = useRouter();
     const [formData, setFormData] = useState({
         n8nWebhookUrl: '',
+        logoText: '< aiyu />',
+        siteTitle: '',
+        favicon: {
+            value: '',
+            filename: '',
+            mimeType: ''
+        },
         resume: {
             type: 'url',
             value: '',
@@ -28,6 +35,13 @@ const ConfigForm = () => {
                 if (data) {
                     setFormData({
                         n8nWebhookUrl: data.n8nWebhookUrl || '',
+                        logoText: data.logoText || '< aiyu />',
+                        siteTitle: data.siteTitle || '',
+                        favicon: {
+                            value: data.favicon?.value || '',
+                            filename: data.favicon?.filename || '',
+                            mimeType: data.favicon?.mimeType || ''
+                        },
                         resume: {
                             type: data.resume?.type || 'url',
                             value: data.resume?.value || '',
@@ -87,6 +101,29 @@ const ConfigForm = () => {
         }
     };
 
+    const handleFaviconUpload = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            if (file.size > 1 * 1024 * 1024) { // 1MB limit for favicon
+                setError("Favicon size too large. Max 1MB.");
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setFormData(prev => ({
+                    ...prev,
+                    favicon: {
+                        value: reader.result,
+                        filename: file.name,
+                        mimeType: file.type
+                    }
+                }));
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setSaving(true);
@@ -125,7 +162,71 @@ const ConfigForm = () => {
                 </div>
             )}
 
-            {/* N8n Section */}
+            {/* Branding Section */}
+            <div>
+                <h2 className="text-xl font-bold text-white mb-4 border-b border-gray-700 pb-2">Branding</h2>
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium mb-1 text-gray-300">Logo Text</label>
+                        <input
+                            type="text"
+                            name="logoText"
+                            value={formData.logoText}
+                            onChange={handleChange}
+                            placeholder="< aiyu />"
+                            className="w-full p-3 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white font-mono"
+                        />
+                        <p className="text-xs text-gray-400 mt-1">
+                            Displayed in the top-left of the header.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Browser & SEO Section */}
+            <div>
+                <h2 className="text-xl font-bold text-white mb-4 border-b border-gray-700 pb-2">Browser & SEO</h2>
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium mb-1 text-gray-300">Site Title</label>
+                        <input
+                            type="text"
+                            name="siteTitle"
+                            value={formData.siteTitle}
+                            onChange={handleChange}
+                            placeholder="Ayaan's Portfolio"
+                            className="w-full p-3 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white"
+                        />
+                        <p className="text-xs text-gray-400 mt-1">
+                            The title shown in the browser tab.
+                        </p>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium mb-1 text-gray-300">Favicon</label>
+                        <input
+                            type="file"
+                            accept=".ico,.png,.jpg,.svg"
+                            onChange={handleFaviconUpload}
+                            className="w-full p-2 rounded bg-gray-700 border border-gray-600 text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-cyan-600 file:text-white hover:file:bg-cyan-500"
+                        />
+                        {formData.favicon.filename && (
+                            <div className="mt-2 text-sm text-green-400 flex items-center gap-1">
+                                <span>✓ Selected:</span>
+                                <span className="font-mono">{formData.favicon.filename}</span>
+                            </div>
+                        )}
+                        {/* Preview */}
+                        {formData.favicon.value && (
+                            <div className="mt-2">
+                                <p className="text-xs text-gray-400 mb-1">Preview:</p>
+                                <img src={formData.favicon.value} alt="Favicon Preview" className="w-8 h-8 object-contain bg-gray-900 rounded border border-gray-600" />
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* Integrations Section */}
             <div>
                 <h2 className="text-xl font-bold text-white mb-4 border-b border-gray-700 pb-2">Integrations</h2>
                 <label className="block text-sm font-medium mb-1 text-gray-300">N8n Webhook URL</label>
