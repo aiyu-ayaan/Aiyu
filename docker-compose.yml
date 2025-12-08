@@ -49,8 +49,6 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       # Node environment
       NODE_ENV: production
-    env_file:
-      - .env
     depends_on:
       mongodb:
         condition: service_healthy

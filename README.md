@@ -60,7 +60,8 @@ This project includes Docker support for easy deployment and development.
 4. **Access the application:**
    - Application: [http://localhost:3000](http://localhost:3000)
    - Admin Panel: [http://localhost:3000/admin/login](http://localhost:3000/admin/login)
-   - MongoDB: `localhost:27017`
+   - MongoDB: Accessible internally by app only (not exposed to host by default for security)
+     - To access externally, uncomment the ports section in docker-compose.yml
 
 ### Docker Commands
 
