@@ -51,6 +51,7 @@ next-env.d.ts
 # Documentation
 README.md
 Migration.md
+DOCKER.md
 CNAME
 
 # IDE
