@@ -2,14 +2,14 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import projects from '../../data/projectsData';
 import ProjectCard from '../projects/ProjectCard';
 import ProjectDialog from '../projects/ProjectDialog';
 import { useTheme } from '../../context/ThemeContext';
 
-const HomeProjects = () => {
+const HomeProjects = ({ data }) => {
   const { theme } = useTheme();
   const [selectedProject, setSelectedProject] = useState(null);
+  const projects = data || [];
 
   const openDialog = (project) => {
     setSelectedProject(project);
@@ -27,13 +27,13 @@ const HomeProjects = () => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.8, ease: 'easeOut' }}
       className="p-4 lg:p-8 transition-colors duration-300"
-      style={{ 
+      style={{
         backgroundColor: 'var(--bg-primary)',
         color: 'var(--text-primary)',
       }}
     >
       <div className="max-w-6xl mx-auto">
-        <h2 
+        <h2
           className="text-4xl font-bold mb-8 flex items-center gap-3"
           style={{ color: 'var(--accent-cyan)' }}
         >
@@ -49,14 +49,14 @@ const HomeProjects = () => {
         </div>
         <div className="text-center mt-12">
           <Link href="/projects" legacyBehavior>
-            <motion.a 
+            <motion.a
               className="inline-flex items-center gap-2 font-semibold text-lg px-6 py-3 rounded-lg border-2 transition-all duration-300 group"
               style={{
                 color: 'var(--accent-cyan)',
                 borderColor: 'var(--accent-cyan)',
               }}
-              whileHover={{ 
-                scale: 1.05, 
+              whileHover={{
+                scale: 1.05,
                 boxShadow: theme === 'dark'
                   ? "0 0 20px rgba(34, 211, 238, 0.5)"
                   : "0 0 20px rgba(8, 145, 178, 0.4)",
