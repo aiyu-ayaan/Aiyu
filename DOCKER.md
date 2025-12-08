@@ -243,6 +243,35 @@ MONGODB_URI=mongodb://admin:YOUR_PASSWORD@mongodb:27017/aiyu?authSource=admin
 
 The `mongodb` hostname is the Docker Compose service name, which resolves to the MongoDB container within the Docker network.
 
+#### Error: "MongoServerError: Authentication failed"
+
+This error occurs when the credentials in your `MONGODB_URI` don't match the MongoDB root user credentials.
+
+**Common Causes**:
+1. Password in `MONGODB_URI` doesn't match `MONGO_ROOT_PASSWORD`
+2. MongoDB container was created with different credentials
+
+**Solution**:
+
+```bash
+# 1. Stop and remove existing containers and volumes
+docker compose down -v
+
+# 2. Verify your .env file has matching credentials
+# MONGODB_URI should be:
+# mongodb://admin:YOUR_PASSWORD@mongodb:27017/aiyu?authSource=admin
+# 
+# MONGO_ROOT_PASSWORD should be:
+# YOUR_PASSWORD
+# 
+# Both must use the SAME password!
+
+# 3. Rebuild and start fresh
+docker compose up -d --build
+```
+
+**Important**: The `-v` flag removes the MongoDB data volume, so the database will be recreated with the credentials from your current `.env` file.
+
 #### General Connection Troubleshooting
 
 ```bash
@@ -252,11 +281,14 @@ docker compose ps
 # View MongoDB logs
 docker compose logs mongodb
 
-# Verify connection string in .env matches MongoDB credentials
-# Make sure the password in MONGODB_URI matches MONGO_ROOT_PASSWORD
+# View app logs for connection errors
+docker compose logs app
 
 # Test connection from within the app container
 docker exec -it aiyu-app sh -c 'echo $MONGODB_URI'
+
+# Verify MongoDB environment variables
+docker exec -it aiyu-mongodb sh -c 'echo $MONGO_INITDB_ROOT_USERNAME'
 ```
 
 ### Build Failures

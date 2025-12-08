@@ -46,11 +46,12 @@ This project includes Docker support for easy deployment and development.
    ```
 
 2. **Update the .env file with your credentials:**
-   - **Important**: Set `MONGODB_URI` to use hostname `mongodb` (not `localhost`):
+   - **Critical**: The password in `MONGODB_URI` MUST match `MONGO_ROOT_PASSWORD`:
      ```
-     MONGODB_URI=mongodb://admin:YOUR_STRONG_PASSWORD@mongodb:27017/aiyu?authSource=admin
+     MONGODB_URI=mongodb://admin:YOUR_PASSWORD@mongodb:27017/aiyu?authSource=admin
+     MONGO_ROOT_PASSWORD=YOUR_PASSWORD
      ```
-   - Replace `YOUR_STRONG_PASSWORD` with a strong password matching `MONGO_ROOT_PASSWORD`
+     Use the SAME password in both places!
    - Configure `ADMIN_USERNAME` and `ADMIN_PASSWORD` with secure values
    - Generate a secure `JWT_SECRET` (e.g., using `openssl rand -base64 32`)
    - Set other required environment variables
