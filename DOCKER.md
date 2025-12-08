@@ -68,7 +68,7 @@ docker compose logs -f
 
 - **Main Site**: http://localhost:3000
 - **Admin Panel**: http://localhost:3000/admin/login
-- **MongoDB**: localhost:27017 (accessible with configured credentials)
+- **MongoDB**: Accessible internally by app (not exposed to host by default for security)
 
 ## Docker Architecture
 
@@ -95,7 +95,7 @@ This approach:
 
 #### MongoDB Service
 - **Image**: mongo:7
-- **Port**: 27017
+- **Port**: 27017 (internal network only, not exposed to host by default)
 - **Volumes**: Persistent data storage
 - **Health Check**: Ensures database is ready before starting app
 
@@ -142,8 +142,12 @@ docker compose up -d
 ### Database Management
 
 ```bash
-# Access MongoDB shell
+# Access MongoDB shell (from within container)
 docker exec -it aiyu-mongodb mongosh -u admin -p YOUR_PASSWORD --authenticationDatabase admin
+
+# If you need external MongoDB access, uncomment the ports section in docker-compose.yml:
+# ports:
+#   - "27017:27017"
 
 # Backup database
 docker exec aiyu-mongodb mongodump --uri="mongodb://admin:YOUR_PASSWORD@localhost:27017/aiyu?authSource=admin" --out=/backup
