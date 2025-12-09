@@ -4,15 +4,14 @@ import { useEffect } from 'react';
 import '@n8n/chat/style.css';
 import { createChat } from '@n8n/chat';
 
-const N8nChat = () => {
+const N8nChat = ({ webhookUrl }) => {
   useEffect(() => {
-    const webhookUrl = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL;
-
+    // webhookUrl is passed as prop now
     if (webhookUrl) {
       const chat = createChat({
         webhookUrl,
         initialMessages: [
-      
+
         ],
         i18n: {
           en: {

@@ -2,15 +2,15 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { name, homeRoles, githubLink, codeSnippets } from '../../data/homeScreenData';
 import TypewriterEffect from '../shared/TypewriterEffect';
 import SnakeGame from './SnakeGame';
 import TicTacToe from './TicTacToe';
 import { useTheme } from '../../context/ThemeContext';
 
-const GamePortfolio = ({ onUnlock = () => {} }) => {
+const GamePortfolio = ({ data, onUnlock = () => { } }) => {
   const { theme } = useTheme();
   const [selectedGame, setSelectedGame] = useState(null);
+  const { name, homeRoles, githubLink, codeSnippets } = data || {};
 
   const renderGame = () => {
     switch (selectedGame) {
@@ -58,15 +58,15 @@ const GamePortfolio = ({ onUnlock = () => {} }) => {
     >
       {/* Animated background gradient */}
       <div className="absolute inset-0 opacity-30 pointer-events-none">
-        <div 
+        <div
           className="absolute top-10 left-10 w-72 h-72 rounded-full mix-blend-multiply filter blur-xl animate-blob"
           style={{ backgroundColor: 'var(--accent-cyan)' }}
         ></div>
-        <div 
+        <div
           className="absolute top-10 right-10 w-72 h-72 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-2000"
           style={{ backgroundColor: 'var(--accent-orange)' }}
         ></div>
-        <div 
+        <div
           className="absolute bottom-10 left-1/2 w-72 h-72 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-4000"
           style={{ backgroundColor: 'var(--accent-pink)' }}
         ></div>
@@ -89,14 +89,14 @@ const GamePortfolio = ({ onUnlock = () => {} }) => {
           >
             {name}
           </motion.h1>
-          <TypewriterEffect roles={homeRoles} />
+          <TypewriterEffect roles={homeRoles || []} />
           <motion.div
             initial={{ y: 30, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.8, delay: 0.8 }}
             className="space-y-2 font-mono text-xs sm:text-sm text-left"
           >
-            {codeSnippets.map((snippet, index) => (
+            {codeSnippets && codeSnippets.map((snippet, index) => (
               <p key={index} style={{ color: 'var(--text-tertiary)' }}>{`// ${snippet}`}</p>
             ))}
             <p className="break-all">

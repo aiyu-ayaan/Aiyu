@@ -2,12 +2,12 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { professionalSummary } from '../../data/aboutData';
 import { useTheme } from '../../context/ThemeContext';
 
-const HomeAbout = () => {
+const HomeAbout = ({ data }) => {
   const { theme } = useTheme();
-  
+  const { professionalSummary } = data || {};
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -28,20 +28,20 @@ const HomeAbout = () => {
               borderStyle: 'solid',
               borderColor: 'var(--border-secondary)',
             }}
-            whileHover={{ 
-              scale: 1.02, 
+            whileHover={{
+              scale: 1.02,
               y: -5,
               borderColor: 'var(--accent-cyan)',
             }}
           >
-            <h2 
+            <h2
               className="text-3xl font-bold mb-6 flex items-center gap-3"
               style={{ color: 'var(--accent-cyan)' }}
             >
               <span style={{ color: 'var(--accent-orange)' }}>{"</>"}</span>
               Summary
             </h2>
-            <p 
+            <p
               className="text-lg leading-relaxed"
               style={{ color: 'var(--text-secondary)' }}
             >
@@ -51,7 +51,7 @@ const HomeAbout = () => {
         </div>
         <div className="text-center mt-8">
           <Link href="/about-me" legacyBehavior>
-            <motion.a 
+            <motion.a
               className="inline-flex items-center gap-2 font-semibold text-lg group"
               style={{ color: 'var(--accent-cyan)' }}
               whileHover={{ scale: 1.05 }}

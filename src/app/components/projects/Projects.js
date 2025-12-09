@@ -2,14 +2,16 @@
 "use client";
 import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import projects, { roles } from '../../data/projectsData';
+// import projects, { roles } from '../../data/projectsData';
 import ProjectDialog from './ProjectDialog';
 import TypewriterEffect from '../shared/TypewriterEffect';
 import Timeline from './Timeline';
 import { useTheme } from '../../context/ThemeContext';
 
-const Projects = () => {
+const Projects = ({ data }) => {
   const { theme } = useTheme();
+  const projects = data || [];
+  const roles = ['A collection of my work', 'Click on a project to learn more']; // Static data migrated from projectsData.js
   const [selectedProject, setSelectedProject] = useState(null);
   const [selectedTechStack, setSelectedTechStack] = useState('All');
   const [selectedProjectType, setSelectedProjectType] = useState('All');
@@ -65,7 +67,7 @@ const Projects = () => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.8, ease: 'easeOut' }}
       className="min-h-screen p-4 lg:p-8 transition-colors duration-300"
-      style={{ 
+      style={{
         backgroundColor: 'var(--bg-primary)',
         color: 'var(--text-primary)',
       }}
@@ -77,7 +79,7 @@ const Projects = () => {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="text-center mb-12"
         >
-          <h1 
+          <h1
             className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4 bg-gradient-to-r bg-clip-text text-transparent"
             style={{
               backgroundImage: theme === 'dark'
@@ -91,12 +93,12 @@ const Projects = () => {
         </motion.div>
 
         <div className="flex flex-col sm:flex-row justify-center gap-4 mb-8">
-          <motion.div 
+          <motion.div
             className="flex flex-col items-center"
             whileHover={{ scale: 1.02 }}
           >
-            <label 
-              htmlFor="techStackFilter" 
+            <label
+              htmlFor="techStackFilter"
               className="text-lg mb-2 font-semibold"
               style={{ color: 'var(--text-secondary)' }}
             >
@@ -123,12 +125,12 @@ const Projects = () => {
             </select>
           </motion.div>
 
-          <motion.div 
+          <motion.div
             className="flex flex-col items-center"
             whileHover={{ scale: 1.02 }}
           >
-            <label 
-              htmlFor="projectTypeFilter" 
+            <label
+              htmlFor="projectTypeFilter"
               className="text-lg mb-2 font-semibold"
               style={{ color: 'var(--text-secondary)' }}
             >

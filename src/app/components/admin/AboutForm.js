@@ -1,0 +1,651 @@
+"use client";
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragOverlay } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, rectSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
+// Helper for Sortable Items
+function SortableItem({ id, children, className }) {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+    } = useSortable({ id });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+    };
+
+    return (
+        <div ref={setNodeRef} style={style} className={className}>
+            <div className="flex items-start gap-2 h-full">
+                <button
+                    type="button"
+                    {...attributes}
+                    {...listeners}
+                    className="mt-4 text-gray-500 hover:text-gray-300 cursor-grab active:cursor-grabbing touch-none"
+                    title="Drag to reorder"
+                >
+                    <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="8" y1="6" x2="21" y2="6"></line>
+                        <line x1="8" y1="12" x2="21" y2="12"></line>
+                        <line x1="8" y1="18" x2="21" y2="18"></line>
+                        <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                        <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                        <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                    </svg>
+                </button>
+                <div className="flex-1 w-full">
+                    {children}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+const AboutForm = () => {
+    const router = useRouter();
+    const [formData, setFormData] = useState({
+        name: '',
+        roles: '',
+        professionalSummary: '',
+        skills: [],
+        experiences: [],
+        education: [],
+        certifications: [],
+    });
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState('');
+
+    const sensors = useSensors(
+        useSensor(PointerSensor),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
+
+    useEffect(() => {
+        fetchData();
+    }, []);
+
+    // Helper to ensure all items have a unique ID for DnD
+    const ensureIds = (items) => {
+        return items.map(item => ({
+            ...item,
+            _id: item._id || `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+        }));
+    };
+
+    const fetchData = async () => {
+        try {
+            const res = await fetch('/api/about');
+            if (res.ok) {
+                const data = await res.json();
+                if (data) {
+                    setFormData({
+                        ...data,
+                        roles: data.roles ? data.roles.join(', ') : '',
+                        skills: ensureIds(data.skills || []),
+                        experiences: ensureIds(data.experiences || []),
+                        education: ensureIds(data.education || []),
+                        certifications: ensureIds(data.certifications || []),
+                    });
+                }
+            }
+        } catch (err) {
+            console.error('Failed to fetch about data', err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData((prev) => ({ ...prev, [name]: value }));
+    };
+
+    const handleDragEnd = (event, listKey) => {
+        const { active, over } = event;
+
+        if (active.id !== over.id) {
+            setFormData((prev) => {
+                const oldIndex = prev[listKey].findIndex((item) => item._id === active.id);
+                const newIndex = prev[listKey].findIndex((item) => item._id === over.id);
+
+                return {
+                    ...prev,
+                    [listKey]: arrayMove(prev[listKey], oldIndex, newIndex),
+                };
+            });
+        }
+    };
+
+    // --- Skills Handlers ---
+    const handleSkillChange = (index, field, value) => {
+        const newSkills = [...formData.skills];
+        newSkills[index] = { ...newSkills[index], [field]: value };
+        setFormData((prev) => ({ ...prev, skills: newSkills }));
+    };
+
+    const addSkill = () => {
+        setFormData((prev) => ({
+            ...prev,
+            skills: [...prev.skills, { _id: `temp-${Date.now()}`, name: '', level: 50 }],
+        }));
+    };
+
+    const removeSkill = (index) => {
+        setFormData((prev) => ({
+            ...prev,
+            skills: prev.skills.filter((_, i) => i !== index),
+        }));
+    };
+
+    const getProficiencyLabel = (level) => {
+        if (level < 40) return 'Basic';
+        if (level < 75) return 'Intermediate';
+        return 'Advanced';
+    };
+
+    // --- Experience Handlers ---
+    const handleExperienceChange = (index, field, value) => {
+        const newExperiences = [...formData.experiences];
+        newExperiences[index] = { ...newExperiences[index], [field]: value };
+        setFormData((prev) => ({ ...prev, experiences: newExperiences }));
+    };
+
+    const addExperience = () => {
+        setFormData((prev) => ({
+            ...prev,
+            experiences: [...prev.experiences, { _id: `temp-${Date.now()}`, company: '', role: '', duration: '', description: '' }],
+        }));
+    };
+
+    const removeExperience = (index) => {
+        setFormData((prev) => ({
+            ...prev,
+            experiences: prev.experiences.filter((_, i) => i !== index),
+        }));
+    };
+
+    // --- Education Handlers ---
+    const handleEducationChange = (index, field, value) => {
+        const newEducation = [...formData.education];
+        newEducation[index] = { ...newEducation[index], [field]: value };
+        setFormData((prev) => ({ ...prev, education: newEducation }));
+    };
+
+    const addEducation = () => {
+        setFormData((prev) => ({
+            ...prev,
+            education: [...prev.education, { _id: `temp-${Date.now()}`, institution: '', degree: '', duration: '', cgpa: '' }],
+        }));
+    };
+
+    const removeEducation = (index) => {
+        setFormData((prev) => ({
+            ...prev,
+            education: prev.education.filter((_, i) => i !== index),
+        }));
+    };
+
+    // --- Certification Handlers ---
+    const handleCertificationChange = (index, field, value) => {
+        const newCertifications = [...formData.certifications];
+        if (field === 'skills') {
+            // Handle skills as comma-separated string for input, array for state
+            value = value.split(',').map(s => s.trim());
+        }
+        newCertifications[index] = { ...newCertifications[index], [field]: value };
+        setFormData((prev) => ({ ...prev, certifications: newCertifications }));
+    };
+
+    const addCertification = () => {
+        setFormData((prev) => ({
+            ...prev,
+            certifications: [...prev.certifications, { _id: `temp-${Date.now()}`, name: '', issuer: '', date: '', url: '', skills: [] }],
+        }));
+    };
+
+    const removeCertification = (index) => {
+        setFormData((prev) => ({
+            ...prev,
+            certifications: prev.certifications.filter((_, i) => i !== index),
+        }));
+    };
+
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setSaving(true);
+        setError('');
+
+        const payload = {
+            ...formData,
+            roles: formData.roles.split(',').map((item) => item.trim()),
+        };
+
+        try {
+            const response = await fetch('/api/about', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload),
+            });
+
+            if (response.ok) {
+                router.push('/admin');
+                router.refresh();
+            } else {
+                const data = await response.json();
+                setError(data.error || 'Something went wrong');
+            }
+        } catch (err) {
+            setError('An error occurred');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    if (loading) return <div className="text-white">Loading...</div>;
+
+    return (
+        <form onSubmit={handleSubmit} className="space-y-12 max-w-4xl mx-auto bg-gray-800 p-8 rounded-xl border border-gray-700">
+            {error && (
+                <div className="bg-red-500/20 border border-red-500 text-red-200 p-3 rounded">
+                    {error}
+                </div>
+            )}
+
+            {/* Basic Info Section */}
+            <section className="space-y-6">
+                <h2 className="text-2xl font-bold text-white border-b border-gray-700 pb-2">Basic Info</h2>
+                <div>
+                    <label className="block text-sm font-medium mb-1 text-gray-300">Name <span className="text-red-400">*</span></label>
+                    <input
+                        type="text"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleChange}
+                        className="w-full p-3 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white"
+                        required
+                    />
+                </div>
+
+                <div>
+                    <label className="block text-sm font-medium mb-1 text-gray-300">Roles (comma separated) <span className="text-red-400">*</span></label>
+                    <input
+                        type="text"
+                        name="roles"
+                        value={formData.roles}
+                        onChange={handleChange}
+                        className="w-full p-3 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white"
+                        required
+                    />
+                </div>
+
+                <div>
+                    <label className="block text-sm font-medium mb-1 text-gray-300">Professional Summary <span className="text-red-400">*</span></label>
+                    <textarea
+                        name="professionalSummary"
+                        value={formData.professionalSummary}
+                        onChange={handleChange}
+                        rows="6"
+                        className="w-full p-3 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white"
+                        required
+                    />
+                </div>
+            </section>
+
+            {/* Skills Section */}
+            <section className="space-y-4">
+                <div className="flex justify-between items-center border-b border-gray-700 pb-2">
+                    <h2 className="text-2xl font-bold text-white">Skills</h2>
+                    <button
+                        type="button"
+                        onClick={addSkill}
+                        className="text-sm bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-400 px-3 py-1 rounded transition-colors"
+                    >
+                        + Add Skill
+                    </button>
+                </div>
+
+                <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={(e) => handleDragEnd(e, 'skills')}
+                >
+                    <SortableContext
+                        items={formData.skills.map(s => s._id)}
+                        strategy={rectSortingStrategy}
+                    >
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {formData.skills.map((skill, index) => (
+                                <SortableItem key={skill._id} id={skill._id} className="bg-gray-700/30 p-4 rounded-lg border border-gray-700 relative group">
+                                    <button
+                                        type="button"
+                                        onClick={() => removeSkill(index)}
+                                        className="absolute top-2 right-2 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                        title="Remove"
+                                    >
+                                        ✕
+                                    </button>
+                                    <div className="mb-2">
+                                        <input
+                                            type="text"
+                                            value={skill.name}
+                                            onChange={(e) => handleSkillChange(index, 'name', e.target.value)}
+                                            placeholder="Skill Name"
+                                            className="w-full bg-transparent border-b border-gray-600 focus:border-cyan-400 focus:outline-none text-white font-medium pl-1"
+                                            required
+                                        />
+                                    </div>
+                                    <div>
+                                        <div className="flex justify-between text-xs text-gray-400 mb-1">
+                                            <span>{getProficiencyLabel(skill.level)}</span>
+                                            <span>{skill.level}%</span>
+                                        </div>
+                                        <input
+                                            type="range"
+                                            min="0"
+                                            max="100"
+                                            value={skill.level}
+                                            onChange={(e) => handleSkillChange(index, 'level', parseInt(e.target.value))}
+                                            className="w-full h-1.5 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-cyan-500"
+                                        />
+                                    </div>
+                                </SortableItem>
+                            ))}
+                        </div>
+                    </SortableContext>
+                </DndContext>
+            </section>
+
+            {/* Experience Section */}
+            <section className="space-y-4">
+                <div className="flex justify-between items-center border-b border-gray-700 pb-2">
+                    <h2 className="text-2xl font-bold text-white">Experience</h2>
+                    <button
+                        type="button"
+                        onClick={addExperience}
+                        className="text-sm bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-400 px-3 py-1 rounded transition-colors"
+                    >
+                        + Add Experience
+                    </button>
+                </div>
+
+                <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={(e) => handleDragEnd(e, 'experiences')}
+                >
+                    <SortableContext
+                        items={formData.experiences.map(e => e._id)}
+                        strategy={verticalListSortingStrategy}
+                    >
+                        <div className="space-y-6">
+                            {formData.experiences.map((exp, index) => (
+                                <SortableItem key={exp._id} id={exp._id} className="bg-gray-700/30 p-6 rounded-lg border border-gray-700 relative">
+                                    <button
+                                        type="button"
+                                        onClick={() => removeExperience(index)}
+                                        className="absolute top-4 right-4 text-red-400 hover:text-red-300 z-10"
+                                        title="Remove Experience"
+                                    >
+                                        Remove
+                                    </button>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                        <div>
+                                            <label className="block text-xs text-gray-400 mb-1">Company</label>
+                                            <input
+                                                type="text"
+                                                value={exp.company}
+                                                onChange={(e) => handleExperienceChange(index, 'company', e.target.value)}
+                                                className="w-full p-2 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white text-sm"
+                                                required
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs text-gray-400 mb-1">Role</label>
+                                            <input
+                                                type="text"
+                                                value={exp.role}
+                                                onChange={(e) => handleExperienceChange(index, 'role', e.target.value)}
+                                                className="w-full p-2 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white text-sm"
+                                                required
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs text-gray-400 mb-1">Duration</label>
+                                            <input
+                                                type="text"
+                                                value={exp.duration}
+                                                onChange={(e) => handleExperienceChange(index, 'duration', e.target.value)}
+                                                className="w-full p-2 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white text-sm"
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-gray-400 mb-1">Description</label>
+                                        <textarea
+                                            value={exp.description}
+                                            onChange={(e) => handleExperienceChange(index, 'description', e.target.value)}
+                                            rows="3"
+                                            className="w-full p-2 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white text-sm"
+                                            required
+                                        />
+                                    </div>
+                                </SortableItem>
+                            ))}
+                        </div>
+                    </SortableContext>
+                </DndContext>
+            </section>
+
+            {/* Education Section */}
+            <section className="space-y-4">
+                <div className="flex justify-between items-center border-b border-gray-700 pb-2">
+                    <h2 className="text-2xl font-bold text-white">Education</h2>
+                    <button
+                        type="button"
+                        onClick={addEducation}
+                        className="text-sm bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-400 px-3 py-1 rounded transition-colors"
+                    >
+                        + Add Education
+                    </button>
+                </div>
+
+                <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={(e) => handleDragEnd(e, 'education')}
+                >
+                    <SortableContext
+                        items={formData.education.map(e => e._id)}
+                        strategy={verticalListSortingStrategy}
+                    >
+                        <div className="space-y-4">
+                            {formData.education.map((edu, index) => (
+                                <SortableItem key={edu._id} id={edu._id} className="bg-gray-700/30 p-4 rounded-lg border border-gray-700 relative">
+                                    <div className="flex flex-wrap gap-4 items-end w-full">
+                                        <button
+                                            type="button"
+                                            onClick={() => removeEducation(index)}
+                                            className="absolute top-2 right-2 text-red-500 hover:text-red-400 text-lg leading-none z-10"
+                                            title="Remove"
+                                        >
+                                            &times;
+                                        </button>
+                                        <div className="flex-1 min-w-[200px]">
+                                            <label className="block text-xs text-gray-400 mb-1">Institution</label>
+                                            <input
+                                                type="text"
+                                                value={edu.institution}
+                                                onChange={(e) => handleEducationChange(index, 'institution', e.target.value)}
+                                                className="w-full p-2 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white text-sm"
+                                                required
+                                            />
+                                        </div>
+                                        <div className="flex-1 min-w-[200px]">
+                                            <label className="block text-xs text-gray-400 mb-1">Degree</label>
+                                            <input
+                                                type="text"
+                                                value={edu.degree}
+                                                onChange={(e) => handleEducationChange(index, 'degree', e.target.value)}
+                                                className="w-full p-2 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white text-sm"
+                                                required
+                                            />
+                                        </div>
+                                        <div className="w-32">
+                                            <label className="block text-xs text-gray-400 mb-1">Duration</label>
+                                            <input
+                                                type="text"
+                                                value={edu.duration}
+                                                onChange={(e) => handleEducationChange(index, 'duration', e.target.value)}
+                                                className="w-full p-2 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white text-sm"
+                                                required
+                                            />
+                                        </div>
+                                        <div className="w-24">
+                                            <label className="block text-xs text-gray-400 mb-1">CGPA</label>
+                                            <input
+                                                type="text"
+                                                value={edu.cgpa}
+                                                onChange={(e) => handleEducationChange(index, 'cgpa', e.target.value)}
+                                                className="w-full p-2 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white text-sm"
+                                            />
+                                        </div>
+                                    </div>
+                                </SortableItem>
+                            ))}
+                        </div>
+                    </SortableContext>
+                </DndContext>
+            </section>
+
+            {/* Certifications Section */}
+            <section className="space-y-4">
+                <div className="flex justify-between items-center border-b border-gray-700 pb-2">
+                    <h2 className="text-2xl font-bold text-white">Certifications</h2>
+                    <button
+                        type="button"
+                        onClick={addCertification}
+                        className="text-sm bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-400 px-3 py-1 rounded transition-colors"
+                    >
+                        + Add Certification
+                    </button>
+                </div>
+
+                <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={(e) => handleDragEnd(e, 'certifications')}
+                >
+                    <SortableContext
+                        items={formData.certifications.map(c => c._id)}
+                        strategy={verticalListSortingStrategy}
+                    >
+                        <div className="space-y-4">
+                            {formData.certifications.map((cert, index) => (
+                                <SortableItem key={cert._id} id={cert._id} className="bg-gray-700/30 p-6 rounded-lg border border-gray-700 relative">
+                                    <button
+                                        type="button"
+                                        onClick={() => removeCertification(index)}
+                                        className="absolute top-4 right-4 text-red-400 hover:text-red-300 z-10"
+                                        title="Remove"
+                                    >
+                                        Remove
+                                    </button>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                        <div>
+                                            <label className="block text-xs text-gray-400 mb-1">Certification Name</label>
+                                            <input
+                                                type="text"
+                                                value={cert.name}
+                                                onChange={(e) => handleCertificationChange(index, 'name', e.target.value)}
+                                                className="w-full p-2 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white text-sm"
+                                                required
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs text-gray-400 mb-1">Issuer</label>
+                                            <input
+                                                type="text"
+                                                value={cert.issuer}
+                                                onChange={(e) => handleCertificationChange(index, 'issuer', e.target.value)}
+                                                className="w-full p-2 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white text-sm"
+                                                required
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs text-gray-400 mb-1">Date</label>
+                                            <input
+                                                type="text"
+                                                value={cert.date}
+                                                onChange={(e) => handleCertificationChange(index, 'date', e.target.value)}
+                                                className="w-full p-2 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white text-sm"
+                                                required
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs text-gray-400 mb-1">URL (Optional)</label>
+                                            <input
+                                                type="url"
+                                                value={cert.url || ''}
+                                                onChange={(e) => handleCertificationChange(index, 'url', e.target.value)}
+                                                className="w-full p-2 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white text-sm"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-gray-400 mb-1">Skills (Comma separated)</label>
+                                        <input
+                                            type="text"
+                                            value={cert.skills ? cert.skills.join(', ') : ''}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                const newCerts = [...formData.certifications];
+                                                // Temporarily store string to allow typing, but schema needs array. 
+                                                // Splitting here works for standard comma-separated input.
+                                                // For more robust handling we might need a separate component or state, but this fits the existing pattern.
+                                                newCerts[index] = { ...newCerts[index], skills: val.split(',') };
+                                                setFormData(prev => ({ ...prev, certifications: newCerts }));
+                                            }}
+                                            className="w-full p-2 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white text-sm"
+                                        />
+                                    </div>
+                                </SortableItem>
+                            ))}
+                        </div>
+                    </SortableContext>
+                </DndContext>
+            </section>
+
+            <div className="flex justify-end gap-4 pt-8 border-t border-gray-700 sticky bottom-0 bg-gray-800 pb-4">
+                <button
+                    type="button"
+                    onClick={() => router.back()}
+                    className="px-6 py-2 rounded bg-gray-700 hover:bg-gray-600 text-white transition-colors"
+                >
+                    Cancel
+                </button>
+                <button
+                    type="submit"
+                    disabled={saving}
+                    className="px-6 py-2 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-bold transition-colors disabled:opacity-50 shadow-lg shadow-cyan-500/20"
+                >
+                    {saving ? 'Saving...' : 'Update Entire Profile'}
+                </button>
+            </div>
+        </form>
+    );
+};
+
+export default AboutForm;

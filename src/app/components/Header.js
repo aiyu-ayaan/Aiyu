@@ -5,11 +5,13 @@ import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import clsx from 'clsx';
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { navLinks, contactLink } from '../data/headerData';
+// import { navLinks, contactLink } from '../data/headerData';
 import ThemeToggle from './ThemeToggle';
 import { useTheme } from '../context/ThemeContext';
 
-export default function Header() {
+export default function Header({ data, logoText }) {
+    const { navLinks, contactLink } = data || { navLinks: [], contactLink: {} };
+    const displayLogo = logoText || "< aiyu />";
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
     const pathname = usePathname();
@@ -32,28 +34,28 @@ export default function Header() {
     }, []);
 
     return (
-        <motion.header 
+        <motion.header
             className={clsx(
                 "sticky top-0 z-50 w-full px-4 sm:px-6 py-4 border-b transition-all duration-300",
-                scrolled 
+                scrolled
                     ? "backdrop-blur-lg shadow-lg"
                     : "backdrop-blur-sm"
             )}
-            style={{ 
+            style={{
                 opacity: headerOpacity,
-                backgroundColor: scrolled 
-                    ? theme === 'dark' 
+                backgroundColor: scrolled
+                    ? theme === 'dark'
                         ? 'rgba(13, 17, 23, 0.95)' // --bg-primary with opacity
                         : 'rgba(255, 255, 255, 0.95)' // --bg-primary with opacity
                     : theme === 'dark'
                         ? 'rgba(13, 17, 23, 0.7)' // --bg-primary with lower opacity
                         : 'rgba(255, 255, 255, 0.7)', // --bg-primary with lower opacity
-                borderColor: scrolled 
-                    ? 'var(--border-cyan)' 
+                borderColor: scrolled
+                    ? 'var(--border-cyan)'
                     : 'var(--border-secondary)',
                 boxShadow: scrolled && theme === 'dark'
                     ? '0 10px 30px rgba(34, 211, 238, 0.1)'
-                    : scrolled 
+                    : scrolled
                         ? '0 10px 30px rgba(8, 145, 178, 0.1)'
                         : 'none',
             }}
@@ -72,7 +74,7 @@ export default function Header() {
                             whileHover={{ scale: 1.1 }}
                             transition={{ duration: 0.3 }}
                         >
-                            {"<"} aiyu {"/>"}
+                            {displayLogo}
                         </motion.div>
                     </Link>
                 </div>
@@ -112,8 +114,8 @@ export default function Header() {
                                         }
                                     )}
                                     style={{
-                                        color: pathname === link.href 
-                                            ? 'var(--accent-cyan)' 
+                                        color: pathname === link.href
+                                            ? 'var(--accent-cyan)'
                                             : 'var(--text-bright)',
                                     }}
                                 >
@@ -171,7 +173,7 @@ export default function Header() {
                 }}
                 transition={{ duration: 0.3, ease: "easeInOut" }}
             >
-                <div 
+                <div
                     className="px-4 py-4 space-y-4 backdrop-blur-lg"
                     style={{
                         backgroundColor: theme === 'dark'
@@ -197,8 +199,8 @@ export default function Header() {
                                     }
                                 )}
                                 style={{
-                                    color: pathname === link.href 
-                                        ? 'var(--accent-cyan)' 
+                                    color: pathname === link.href
+                                        ? 'var(--accent-cyan)'
                                         : 'var(--text-bright)',
                                     borderColor: pathname === link.href ? 'var(--accent-cyan)' : 'transparent',
                                 }}
