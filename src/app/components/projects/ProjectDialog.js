@@ -6,7 +6,7 @@ import { useTheme } from '../../context/ThemeContext';
 
 const ProjectDialog = ({ project, onClose }) => {
   const { theme } = useTheme();
-  
+
   if (!project) return null;
 
   return (
@@ -48,7 +48,7 @@ const ProjectDialog = ({ project, onClose }) => {
             {project.image && <img src={project.image} alt={project.name} className="w-full h-64 object-contain" />}
           </div>
           <div className="p-8">
-            <h3 
+            <h3
               className="text-3xl font-bold mb-4 text-transparent bg-gradient-to-r bg-clip-text"
               style={{
                 backgroundImage: theme === 'dark'
@@ -60,8 +60,8 @@ const ProjectDialog = ({ project, onClose }) => {
             </h3>
             <div className="flex flex-wrap gap-2 mb-4">
               {project.techStack.map((tech, i) => (
-                <span 
-                  key={i} 
+                <span
+                  key={i}
                   className="px-3 py-1 rounded-lg text-sm font-medium"
                   style={{
                     background: theme === 'dark'
@@ -99,7 +99,7 @@ const ProjectDialog = ({ project, onClose }) => {
                 View Code
               </motion.a>
             )}
-            </div>  
+          </div>
         </motion.div>
       </motion.div>
     </AnimatePresence>

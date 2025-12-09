@@ -5,7 +5,7 @@ import { useTheme } from '../../context/ThemeContext';
 
 const TechStackDialog = ({ techStack, onClose }) => {
   const { theme } = useTheme();
-  
+
   if (!techStack) return null;
 
   return (
@@ -34,7 +34,7 @@ const TechStackDialog = ({ techStack, onClose }) => {
           onClick={(e) => e.stopPropagation()}
         >
           <div className="p-8">
-            <h3 
+            <h3
               className="text-2xl font-bold mb-6 text-transparent bg-gradient-to-r bg-clip-text flex items-center gap-3"
               style={{
                 backgroundImage: theme === 'dark'
@@ -48,8 +48,8 @@ const TechStackDialog = ({ techStack, onClose }) => {
             </h3>
             <div className="flex flex-wrap gap-2">
               {techStack.map((tech, i) => (
-                <span 
-                  key={i} 
+                <span
+                  key={i}
                   className="px-3 py-1 rounded-lg text-sm font-medium"
                   style={{
                     background: theme === 'dark'
