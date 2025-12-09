@@ -22,6 +22,7 @@ export default function AdminDashboard() {
 
     const collections = [
         { name: 'Projects', count: 'Manage', color: 'bg-blue-500', link: '/admin/projects' },
+        { name: 'Blogs', count: 'Manage', color: 'bg-teal-500', link: '/admin/blogs' },
         { name: 'About', count: 'Manage', color: 'bg-green-500', link: '/admin/about' },
         { name: 'Home', count: 'Manage', color: 'bg-purple-500', link: '/admin/home' },
         { name: 'Header', count: 'Manage', color: 'bg-orange-500', link: '/admin/header' },

@@ -9,14 +9,14 @@
   --bg-surface: #1e1433;
   --bg-elevated: #1a0f2e;
   --bg-hover: #1e3a5f;
-  
+
   /* Text Colors */
   --text-primary: #e5e7eb;
   --text-secondary: #cbd5e1;
   --text-tertiary: #94a3b8;
   --text-muted: #64748b;
   --text-bright: #ffffff;
-  
+
   /* Accent Colors */
   --accent-cyan: #22d3ee;
   --accent-cyan-bright: #00ffff;
@@ -28,19 +28,19 @@
   --accent-pink-hot: #ff0080;
   --accent-orange: #f97316;
   --accent-orange-bright: #ff9500;
-  
+
   /* Border Colors */
   --border-primary: #1e293b;
   --border-secondary: #374151;
   --border-accent: #4c1d95;
   --border-cyan: #22d3ee;
-  
+
   /* Status Colors */
   --status-error: #f87171;
   --status-warning: #fbbf24;
   --status-success: #34d399;
   --status-info: #22d3ee;
-  
+
   /* Syntax Colors */
   --syntax-comment: #a78bfa;
   --syntax-keyword: #d946ef;
@@ -53,12 +53,12 @@
   --syntax-property: #38bdf8;
   --syntax-operator: #a855f7;
   --syntax-punctuation: #fde047;
-  
+
   /* Shadow Colors */
   --shadow-sm: rgba(0, 0, 0, 0.3);
   --shadow-md: rgba(0, 0, 0, 0.5);
   --shadow-lg: rgba(34, 211, 238, 0.3);
-  
+
   /* Overlay Colors */
   --overlay-bg: rgba(0, 0, 0, 0.5);
   --overlay-hover: rgba(34, 211, 238, 0.15);
@@ -73,14 +73,14 @@
   --bg-surface: #e2e8f0;
   --bg-elevated: #f0f4f8;
   --bg-hover: #dbeafe;
-  
+
   /* Text Colors */
   --text-primary: #1e293b;
   --text-secondary: #475569;
   --text-tertiary: #64748b;
   --text-muted: #94a3b8;
   --text-bright: #0f172a;
-  
+
   /* Accent Colors */
   --accent-cyan: #0891b2;
   --accent-cyan-bright: #0284c7;
@@ -92,19 +92,19 @@
   --accent-pink-hot: #be185d;
   --accent-orange: #ea580c;
   --accent-orange-bright: #f97316;
-  
+
   /* Border Colors */
   --border-primary: #e2e8f0;
   --border-secondary: #cbd5e1;
   --border-accent: #c084fc;
   --border-cyan: #22d3ee;
-  
+
   /* Status Colors */
   --status-error: #dc2626;
   --status-warning: #f59e0b;
   --status-success: #10b981;
   --status-info: #0891b2;
-  
+
   /* Syntax Colors */
   --syntax-comment: #7c3aed;
   --syntax-keyword: #be185d;
@@ -117,12 +117,12 @@
   --syntax-property: #0284c7;
   --syntax-operator: #7c3aed;
   --syntax-punctuation: #ca8a04;
-  
+
   /* Shadow Colors */
   --shadow-sm: rgba(0, 0, 0, 0.1);
   --shadow-md: rgba(0, 0, 0, 0.15);
   --shadow-lg: rgba(14, 165, 233, 0.2);
-  
+
   /* Overlay Colors */
   --overlay-bg: rgba(15, 23, 42, 0.4);
   --overlay-hover: rgba(14, 165, 233, 0.1);
@@ -141,11 +141,13 @@
   box-sizing: border-box;
 }
 
-html, body {
+html,
+body {
   margin: 0;
   padding: 0;
   width: 100%;
-  overflow-x: hidden; /* Prevent horizontal scroll */
+  overflow-x: hidden;
+  /* Prevent horizontal scroll */
 }
 
 body {
@@ -160,26 +162,34 @@ body::before {
   content: "";
   position: absolute;
   top: 20%;
-  left: 30%; /* Reduced from 20% */
-  width: min(400px, 80vw); /* Responsive width */
-  height: min(400px, 80vw); /* Responsive height */
-  max-width: 400px; /* Cap the maximum size */
+  left: 30%;
+  /* Reduced from 20% */
+  width: min(400px, 80vw);
+  /* Responsive width */
+  height: min(400px, 80vw);
+  /* Responsive height */
+  max-width: 400px;
+  /* Cap the maximum size */
   background: radial-gradient(circle, var(--accent-cyan), transparent 70%);
   opacity: 0.2;
   pointer-events: none;
   z-index: 0;
   filter: blur(80px);
-  transform: translateX(-50%); /* Center it properly */
+  transform: translateX(-50%);
+  /* Center it properly */
   transition: opacity 0.3s ease;
 }
 
 /* Additional mobile-specific adjustments */
 @media (max-width: 768px) {
   body::before {
-    left: 50%; /* Center on mobile */
-    width: 250px; /* Smaller on mobile */
+    left: 50%;
+    /* Center on mobile */
+    width: 250px;
+    /* Smaller on mobile */
     height: 250px;
-    filter: blur(60px); /* Less blur on mobile */
+    filter: blur(60px);
+    /* Less blur on mobile */
   }
 }
 
@@ -187,9 +197,12 @@ body::before {
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
 .hide-scrollbar {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
 }
 
 .line-hover-effect {
@@ -215,15 +228,20 @@ body::before {
 
 /* Blob animations */
 @keyframes blob {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translate(0, 0) scale(1);
   }
+
   25% {
     transform: translate(20px, -50px) scale(1.1);
   }
+
   50% {
     transform: translate(-20px, 20px) scale(0.9);
   }
+
   75% {
     transform: translate(50px, 50px) scale(1.05);
   }
@@ -248,9 +266,12 @@ html {
 
 /* Gradient text animation */
 @keyframes gradient-x {
-  0%, 100% {
+
+  0%,
+  100% {
     background-position: 0% 50%;
   }
+
   50% {
     background-position: 100% 50%;
   }
@@ -263,9 +284,12 @@ html {
 
 /* Pulse glow effect */
 @keyframes pulse-glow {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 0 20px rgba(34, 211, 238, 0.3);
   }
+
   50% {
     box-shadow: 0 0 40px rgba(34, 211, 238, 0.6);
   }
@@ -281,6 +305,7 @@ html {
     opacity: 0;
     transform: translateY(30px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -305,18 +330,17 @@ html {
   0% {
     background-position: -1000px 0;
   }
+
   100% {
     background-position: 1000px 0;
   }
 }
 
 .shimmer {
-  background: linear-gradient(
-    to right,
-    transparent 0%,
-    rgba(255, 255, 255, 0.3) 50%,
-    transparent 100%
-  );
+  background: linear-gradient(to right,
+      transparent 0%,
+      rgba(255, 255, 255, 0.3) 50%,
+      transparent 100%);
   background-size: 1000px 100%;
   animation: shimmer 2s infinite;
 }
@@ -336,7 +360,7 @@ html {
   .animate-blob {
     animation: blob 15s infinite;
   }
-  
+
   body::before {
     filter: blur(50px);
   }

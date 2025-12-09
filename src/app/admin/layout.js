@@ -23,10 +23,8 @@ export const dynamic = 'force-dynamic';
 
 export default function AdminLayout({ children }) {
     return (
-        <html lang="en">
-            <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-900 text-white`}>
-                {children}
-            </body>
-        </html>
+        <div className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-900 text-white min-h-screen`}>
+            {children}
+        </div>
     );
 }

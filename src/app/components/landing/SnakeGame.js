@@ -14,7 +14,7 @@ const generateFood = () => {
   };
 };
 
-const SnakeGame = ({ onUnlock = () => {}, onBack }) => {
+const SnakeGame = ({ onUnlock = () => { }, onBack }) => {
   const { theme } = useTheme();
   const [gameState, setGameState] = useState('playing');
   const [snake, setSnake] = useState([{ x: 10, y: 10 }]);
@@ -149,7 +149,7 @@ const SnakeGame = ({ onUnlock = () => {}, onBack }) => {
           if (cellType === 'food') return { backgroundColor: theme === 'dark' ? '#4ade80' : '#16a34a' };
           return { backgroundColor: theme === 'dark' ? '#1f2937' : '#e5e7eb' };
         };
-        
+
         board.push(
           <div
             key={`${x}-${y}`}
@@ -171,233 +171,233 @@ const SnakeGame = ({ onUnlock = () => {}, onBack }) => {
         className="relative rounded-[2.5rem] p-3 shadow-2xl w-72 sm:w-80"
         style={{ backgroundColor: theme === 'dark' ? '#1f2937' : '#cbd5e1' }}
       >
-      {showConfetti && <Confetti recycle={false} />}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.6, delay: 0.8 }}
-        className="rounded-[2rem] p-4 relative"
-        style={{ backgroundColor: theme === 'dark' ? '#000000' : '#1e293b' }}
-      >
+        {showConfetti && <Confetti recycle={false} />}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.4, delay: 1.0 }}
-          className="flex justify-between items-center mb-4 text-white text-xs"
+          transition={{ duration: 0.6, delay: 0.8 }}
+          className="rounded-[2rem] p-4 relative"
+          style={{ backgroundColor: theme === 'dark' ? '#000000' : '#1e293b' }}
         >
-          <div className="flex items-center gap-1">
-            <div className="w-1 h-1 bg-white rounded-full"></div>
-            <div className="w-1 h-1 bg-white rounded-full"></div>
-            <div className="w-1 h-1 bg-white rounded-full"></div>
-          </div>
-          <div className="flex items-center gap-1">
-            <div className="w-4 h-2 border border-white rounded-sm">
-              <div className="w-2 h-1 bg-white rounded-sm m-0.5"></div>
-            </div>
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.6, delay: 1.2 }}
-          className="rounded-lg shadow-2xl backdrop-blur-md"
-          style={{ backgroundColor: theme === 'dark' ? 'rgba(20, 184, 166, 0.3)' : 'rgba(13, 148, 136, 0.2)' }}
-        >
-          <div 
-            className="rounded-lg p-4"
-            style={{ backgroundColor: theme === 'dark' ? '#111827' : '#334155' }}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.4, delay: 1.0 }}
+            className="flex justify-between items-center mb-4 text-white text-xs"
           >
-            <motion.div
-              initial={{ scale: 0.8 }}
-              animate={{ scale: 1 }}
-              transition={{ duration: 0.6, delay: 1.4 }}
-              className="relative mb-4"
-            >
-              <div 
-                className="grid grid-cols-20 gap-0 p-2 aspect-square w-full max-w-64 mx-auto"
-                style={{ backgroundColor: theme === 'dark' ? '#1f2937' : '#cbd5e1' }}
-              >
-                {renderGameBoard()}
+            <div className="flex items-center gap-1">
+              <div className="w-1 h-1 bg-white rounded-full"></div>
+              <div className="w-1 h-1 bg-white rounded-full"></div>
+              <div className="w-1 h-1 bg-white rounded-full"></div>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-4 h-2 border border-white rounded-sm">
+                <div className="w-2 h-1 bg-white rounded-sm m-0.5"></div>
               </div>
-            </motion.div>
+            </div>
+          </motion.div>
 
-            <motion.div
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ duration: 0.6, delay: 1.6 }}
-              className="mb-4"
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.6, delay: 1.2 }}
+            className="rounded-lg shadow-2xl backdrop-blur-md"
+            style={{ backgroundColor: theme === 'dark' ? 'rgba(20, 184, 166, 0.3)' : 'rgba(13, 148, 136, 0.2)' }}
+          >
+            <div
+              className="rounded-lg p-4"
+              style={{ backgroundColor: theme === 'dark' ? '#111827' : '#334155' }}
             >
-              <p 
-                className="text-xs mb-2 text-center"
-                style={{ color: 'var(--text-tertiary)' }}
+              <motion.div
+                initial={{ scale: 0.8 }}
+                animate={{ scale: 1 }}
+                transition={{ duration: 0.6, delay: 1.4 }}
+                className="relative mb-4"
               >
-                {`// tap arrows to play`}
-              </p>
-              <div className="grid grid-cols-3 gap-2 max-w-32 mx-auto">
-                <div></div>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => handleDirectionChange({ x: 0, y: -1 })}
-                  className="w-10 h-10 rounded border flex items-center justify-center text-white text-sm transition-colors"
-                  style={{
-                    backgroundColor: theme === 'dark' ? '#374151' : '#94a3b8',
-                    borderColor: theme === 'dark' ? '#4b5563' : '#64748b',
-                  }}
+                <div
+                  className="grid grid-cols-20 gap-0 p-2 aspect-square w-full max-w-64 mx-auto"
+                  style={{ backgroundColor: theme === 'dark' ? '#1f2937' : '#cbd5e1' }}
                 >
-                  ↑
-                </motion.button>
-                <div></div>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => handleDirectionChange({ x: -1, y: 0 })}
-                  className="w-10 h-10 rounded border flex items-center justify-center text-white text-sm transition-colors"
-                  style={{
-                    backgroundColor: theme === 'dark' ? '#374151' : '#94a3b8',
-                    borderColor: theme === 'dark' ? '#4b5563' : '#64748b',
-                  }}
-                >
-                  ←
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => handleDirectionChange({ x: 0, y: 1 })}
-                  className="w-10 h-10 rounded border flex items-center justify-center text-white text-sm transition-colors"
-                  style={{
-                    backgroundColor: theme === 'dark' ? '#374151' : '#94a3b8',
-                    borderColor: theme === 'dark' ? '#4b5563' : '#64748b',
-                  }}
-                >
-                  ↓
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => handleDirectionChange({ x: 1, y: 0 })}
-                  className="w-10 h-10 rounded border flex items-center justify-center text-white text-sm transition-colors"
-                  style={{
-                    backgroundColor: theme === 'dark' ? '#374151' : '#94a3b8',
-                    borderColor: theme === 'dark' ? '#4b5563' : '#64748b',
-                  }}
-                >
-                  →
-                </motion.button>
-              </div>
-            </motion.div>
+                  {renderGameBoard()}
+                </div>
+              </motion.div>
 
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.6, delay: 1.8 }}
-              className="mb-4"
-            >
-              <p 
-                className="text-xs mb-2"
-                style={{ color: 'var(--text-tertiary)' }}
+              <motion.div
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.6, delay: 1.6 }}
+                className="mb-4"
               >
-                {`// food left`}
-              </p>
-              <div className="flex flex-wrap gap-1 justify-center">
-                {Array.from({ length: 10 }, (_, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ duration: 0.3, delay: 2.0 + i * 0.05 }}
-                    className="w-2 h-2 rounded-full"
+                <p
+                  className="text-xs mb-2 text-center"
+                  style={{ color: 'var(--text-tertiary)' }}
+                >
+                  {`// tap arrows to play`}
+                </p>
+                <div className="grid grid-cols-3 gap-2 max-w-32 mx-auto">
+                  <div></div>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => handleDirectionChange({ x: 0, y: -1 })}
+                    className="w-10 h-10 rounded border flex items-center justify-center text-white text-sm transition-colors"
                     style={{
-                      backgroundColor: i < (10 - score) 
-                        ? (theme === 'dark' ? '#4ade80' : '#16a34a')
-                        : (theme === 'dark' ? '#374151' : '#94a3b8')
+                      backgroundColor: theme === 'dark' ? '#374151' : '#94a3b8',
+                      borderColor: theme === 'dark' ? '#4b5563' : '#64748b',
                     }}
-                  />
-                ))}
-              </div>
-            </motion.div>
+                  >
+                    ↑
+                  </motion.button>
+                  <div></div>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => handleDirectionChange({ x: -1, y: 0 })}
+                    className="w-10 h-10 rounded border flex items-center justify-center text-white text-sm transition-colors"
+                    style={{
+                      backgroundColor: theme === 'dark' ? '#374151' : '#94a3b8',
+                      borderColor: theme === 'dark' ? '#4b5563' : '#64748b',
+                    }}
+                  >
+                    ←
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => handleDirectionChange({ x: 0, y: 1 })}
+                    className="w-10 h-10 rounded border flex items-center justify-center text-white text-sm transition-colors"
+                    style={{
+                      backgroundColor: theme === 'dark' ? '#374151' : '#94a3b8',
+                      borderColor: theme === 'dark' ? '#4b5563' : '#64748b',
+                    }}
+                  >
+                    ↓
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => handleDirectionChange({ x: 1, y: 0 })}
+                    className="w-10 h-10 rounded border flex items-center justify-center text-white text-sm transition-colors"
+                    style={{
+                      backgroundColor: theme === 'dark' ? '#374151' : '#94a3b8',
+                      borderColor: theme === 'dark' ? '#4b5563' : '#64748b',
+                    }}
+                  >
+                    →
+                  </motion.button>
+                </div>
+              </motion.div>
 
-            <motion.div
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ duration: 0.6, delay: 2.2 }}
-              className="flex flex-col justify-center items-center gap-2"
-            >
-              <div>
-                <AnimatePresence mode="wait">
-                  {gameState === 'playing' && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.6, delay: 1.8 }}
+                className="mb-4"
+              >
+                <p
+                  className="text-xs mb-2"
+                  style={{ color: 'var(--text-tertiary)' }}
+                >
+                  {`// food left`}
+                </p>
+                <div className="flex flex-wrap gap-1 justify-center">
+                  {Array.from({ length: 10 }, (_, i) => (
                     <motion.div
-                      key="playing"
-                      initial={{ scale: 0.8, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      exit={{ scale: 0.8, opacity: 0 }}
-                      className="text-green-400 font-mono text-sm text-center"
-                    >
-                      Score: {score}
-                    </motion.div>
-                  )}
+                      key={i}
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ duration: 0.3, delay: 2.0 + i * 0.05 }}
+                      className="w-2 h-2 rounded-full"
+                      style={{
+                        backgroundColor: i < (10 - score)
+                          ? (theme === 'dark' ? '#4ade80' : '#16a34a')
+                          : (theme === 'dark' ? '#374151' : '#94a3b8')
+                      }}
+                    />
+                  ))}
+                </div>
+              </motion.div>
 
-                  {gameState === 'gameOver' && (
-                    <motion.div
-                      key="gameOver"
-                      initial={{ scale: 0.8, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      exit={{ scale: 0.8, opacity: 0 }}
-                      className="flex flex-col items-center gap-2"
-                    >
-                      <span className="text-red-400 font-mono text-sm">Game Over!</span>
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={startGame}
-                        className="bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white px-4 py-2 rounded font-mono text-xs transition-colors"
+              <motion.div
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.6, delay: 2.2 }}
+                className="flex flex-col justify-center items-center gap-2"
+              >
+                <div>
+                  <AnimatePresence mode="wait">
+                    {gameState === 'playing' && (
+                      <motion.div
+                        key="playing"
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.8, opacity: 0 }}
+                        className="text-green-400 font-mono text-sm text-center"
                       >
-                        restart
-                      </motion.button>
-                    </motion.div>
-                  )}
+                        Score: {score}
+                      </motion.div>
+                    )}
 
-                  {gameState === 'win' && (
-                    <motion.div
-                      key="win"
-                      initial={{ scale: 0.8, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      exit={{ scale: 0.8, opacity: 0 }}
-                      className="flex flex-col items-center gap-2"
-                    >
-                      <span className="text-green-400 font-mono text-sm">You Win!</span>
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={resetGame}
-                        className="bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white px-4 py-2 rounded font-mono text-xs transition-colors"
+                    {gameState === 'gameOver' && (
+                      <motion.div
+                        key="gameOver"
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.8, opacity: 0 }}
+                        className="flex flex-col items-center gap-2"
                       >
-                        Play Again
-                      </motion.button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
+                        <span className="text-red-400 font-mono text-sm">Game Over!</span>
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={startGame}
+                          className="bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white px-4 py-2 rounded font-mono text-xs transition-colors"
+                        >
+                          restart
+                        </motion.button>
+                      </motion.div>
+                    )}
+
+                    {gameState === 'win' && (
+                      <motion.div
+                        key="win"
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.8, opacity: 0 }}
+                        className="flex flex-col items-center gap-2"
+                      >
+                        <span className="text-green-400 font-mono text-sm">You Win!</span>
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={resetGame}
+                          className="bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white px-4 py-2 rounded font-mono text-xs transition-colors"
+                        >
+                          Play Again
+                        </motion.button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
 
 
-            </motion.div>
-          </div>
-        </motion.div>
+              </motion.div>
+            </div>
+          </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.4, delay: 2.4 }}
-          className="flex justify-center mt-4"
-        >
-          <div 
-            className="w-32 h-1 rounded-full"
-            style={{ backgroundColor: theme === 'dark' ? '#4b5563' : '#94a3b8' }}
-          ></div>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.4, delay: 2.4 }}
+            className="flex justify-center mt-4"
+          >
+            <div
+              className="w-32 h-1 rounded-full"
+              style={{ backgroundColor: theme === 'dark' ? '#4b5563' : '#94a3b8' }}
+            ></div>
+          </motion.div>
         </motion.div>
       </motion.div>
-    </motion.div>
       <motion.button
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
