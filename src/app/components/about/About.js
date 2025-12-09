@@ -97,23 +97,23 @@ const About = ({ data }) => {
                 key={index}
                 className="vertical-timeline-element--work"
                 contentStyle={{
-                  background: theme === 'dark' ? 'rgb(31 41 55)' : 'rgb(241 245 249)',
-                  color: theme === 'dark' ? '#fff' : '#1e293b',
+                  background: 'var(--bg-surface)',
+                  color: 'var(--text-primary)',
+                  boxShadow: 'var(--shadow-md)',
                 }}
                 contentArrowStyle={{
-                  borderRight: theme === 'dark'
-                    ? '7px solid rgb(31 41 55)'
-                    : '7px solid rgb(241 245 249)',
+                  borderRight: '7px solid var(--bg-surface)',
                 }}
                 iconStyle={{
-                  background: theme === 'dark' ? 'rgb(249 115 22)' : 'rgb(234 88 12)',
+                  background: 'var(--accent-orange)',
                   color: '#fff',
+                  boxShadow: 'var(--shadow-md)',
                 }}
                 icon={<FaBriefcase />}
               >
                 <h3
                   className="vertical-timeline-element-title text-xl font-bold"
-                  style={{ color: theme === 'dark' ? '#fb923c' : '#ea580c' }}
+                  style={{ color: 'var(--accent-orange)' }}
                 >
                   {exp.role}
                 </h3>
@@ -251,23 +251,23 @@ const About = ({ data }) => {
                 key={index}
                 className="vertical-timeline-element--education"
                 contentStyle={{
-                  background: theme === 'dark' ? 'rgb(31 41 55)' : 'rgb(241 245 249)',
-                  color: theme === 'dark' ? '#fff' : '#1e293b',
+                  background: 'var(--bg-surface)',
+                  color: 'var(--text-primary)',
+                  boxShadow: 'var(--shadow-md)',
                 }}
                 contentArrowStyle={{
-                  borderRight: theme === 'dark'
-                    ? '7px solid rgb(31 41 55)'
-                    : '7px solid rgb(241 245 249)',
+                  borderRight: '7px solid var(--bg-surface)',
                 }}
                 iconStyle={{
-                  background: theme === 'dark' ? 'rgb(249 115 22)' : 'rgb(234 88 12)',
+                  background: 'var(--accent-purple)',
                   color: '#fff',
+                  boxShadow: 'var(--shadow-md)',
                 }}
                 icon={<FaGraduationCap />}
               >
                 <h3
                   className="vertical-timeline-element-title text-xl font-bold"
-                  style={{ color: theme === 'dark' ? '#fb923c' : '#ea580c' }}
+                  style={{ color: 'var(--accent-purple)' }}
                 >
                   {edu.institution}
                 </h3>
@@ -306,17 +306,17 @@ const About = ({ data }) => {
                 key={index}
                 className="vertical-timeline-element--education"
                 contentStyle={{
-                  background: theme === 'dark' ? 'rgb(31 41 55)' : 'rgb(241 245 249)',
-                  color: theme === 'dark' ? '#fff' : '#1e293b',
+                  background: 'var(--bg-surface)',
+                  color: 'var(--text-primary)',
+                  boxShadow: 'var(--shadow-md)',
                 }}
                 contentArrowStyle={{
-                  borderRight: theme === 'dark'
-                    ? '7px solid rgb(31 41 55)'
-                    : '7px solid rgb(241 245 249)',
+                  borderRight: '7px solid var(--bg-surface)',
                 }}
                 iconStyle={{
-                  background: theme === 'dark' ? 'rgb(249 115 22)' : 'rgb(234 88 12)',
+                  background: 'var(--accent-cyan)',
                   color: '#fff',
+                  boxShadow: 'var(--shadow-md)',
                 }}
                 icon={<FaCertificate />}
               >
@@ -325,7 +325,7 @@ const About = ({ data }) => {
                     <a>
                       <h3
                         className="vertical-timeline-element-title text-xl font-bold hover:underline cursor-pointer"
-                        style={{ color: theme === 'dark' ? '#fb923c' : '#ea580c' }}
+                        style={{ color: 'var(--accent-cyan)' }}
                       >
                         {cert.name}
                       </h3>
@@ -334,7 +334,7 @@ const About = ({ data }) => {
                 ) : (
                   <h3
                     className="vertical-timeline-element-title text-xl font-bold"
-                    style={{ color: theme === 'dark' ? '#fb923c' : '#ea580c' }}
+                    style={{ color: 'var(--accent-cyan)' }}
                   >
                     {cert.name}
                   </h3>
