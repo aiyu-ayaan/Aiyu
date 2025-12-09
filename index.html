@@ -1,9 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="refresh" content="2; URL=https://me.aiyu.co.in/">
+    <meta charset="UTF-8" />
     <title>Redirecting...</title>
+
+    <script>
+        // Capture current path, query, hash
+        const newBase = "https://me.aiyu.co.in";
+        const fullPath = window.location.pathname + window.location.search + window.location.hash;
+
+        // Redirect to same path on new domain
+        setTimeout(() => {
+            window.location.href = newBase + fullPath;
+        }, 1500);
+    </script>
 
     <style>
         body {
@@ -18,7 +28,6 @@
             color: white;
             text-align: center;
         }
-
         .container {
             max-width: 400px;
             background: rgba(255, 255, 255, 0.1);
@@ -27,22 +36,18 @@
             backdrop-filter: blur(6px);
             box-shadow: 0 4px 20px rgba(0,0,0,0.2);
         }
-
         h1 {
             font-size: 26px;
             margin-bottom: 10px;
         }
-
         p {
             font-size: 16px;
             opacity: 0.9;
         }
-
         a {
             color: #ffd740;
             font-weight: bold;
         }
-
         .loader {
             margin: 20px auto;
             width: 40px;
@@ -52,7 +57,6 @@
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
-
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
@@ -64,11 +68,11 @@
         <h1>Page Moved</h1>
         <p>This page has been shifted to a new dynamic version.</p>
         <p>Redirecting you to the updated experience...</p>
-        
+
         <div class="loader"></div>
 
         <p>If you are not redirected automatically, 
-            <a href="https://me.aiyu.co.in/">click here</a>.
+            <script>document.write(`<a href="${newBase + fullPath}">click here</a>`);</script>.
         </p>
     </div>
 </body>
