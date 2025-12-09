@@ -21,11 +21,11 @@ export async function generateMetadata() {
   await dbConnect();
   const config = await ConfigModel.findOne().lean();
 
-  const title = config?.siteTitle || "Aiyu";
+  const baseName = config?.siteTitle || config?.logoText || 'Portfolio';
   const icon = config?.favicon?.value ? '/api/favicon' : '/favicon.ico';
 
   return {
-    title: title,
+    title: baseName,
     description: "Just coding........",
     themeColor: "#111827",
     icons: {
