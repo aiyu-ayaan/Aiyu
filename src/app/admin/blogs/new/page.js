@@ -230,7 +230,8 @@ export default function NewBlogPage() {
                                                 {children}
                                             </code>
                                         )
-                                    }
+                                    },
+                                    pre: ({ children }) => <>{children}</>
                                 }}
                             >
                                 {formData.content}

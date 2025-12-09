@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
 
 export async function GET(request, { params }) {
     await dbConnect();
-    const { id } = params;
+    const { id } = await params;
     try {
         const blog = await Blog.findById(id);
         if (!blog) {
@@ -19,7 +19,7 @@ export async function GET(request, { params }) {
 
 export async function PUT(request, { params }) {
     await dbConnect();
-    const { id } = params;
+    const { id } = await params;
     try {
         const body = await request.json();
         const blog = await Blog.findByIdAndUpdate(id, body, {
@@ -37,7 +37,7 @@ export async function PUT(request, { params }) {
 
 export async function DELETE(request, { params }) {
     await dbConnect();
-    const { id } = params;
+    const { id } = await params;
     try {
         const blog = await Blog.findByIdAndDelete(id);
         if (!blog) {

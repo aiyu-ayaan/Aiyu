@@ -260,7 +260,8 @@ export default function EditBlogPage() {
                                                 {children}
                                             </code>
                                         )
-                                    }
+                                    },
+                                    pre: ({ children }) => <>{children}</>
                                 }}
                             >
                                 {formData.content}
@@ -294,7 +295,7 @@ export default function EditBlogPage() {
                         Cancel
                     </button>
                 </div>
-            </form>
-        </div>
+            </form >
+        </div >
     );
 }

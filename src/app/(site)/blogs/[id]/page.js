@@ -132,7 +132,8 @@ export default function BlogDetailPage() {
                                         {children}
                                     </code>
                                 )
-                            }
+                            },
+                            pre: ({ children }) => <>{children}</>
                         }}
                     >
                         {blog.content}

@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 /* Dark Theme - Based on VS Code theme */
 [data-theme="dark"] {
