@@ -8,6 +8,8 @@ import dynamic from 'next/dynamic';
 
 const SyntaxHighlighter = dynamic(() => import('react-syntax-highlighter').then(mod => mod.Prism), { ssr: false });
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 export default function EditBlogPage() {
     const router = useRouter();
@@ -31,9 +33,16 @@ export default function EditBlogPage() {
                 const res = await fetch(`/api/blogs/${id}`);
                 const data = await res.json();
                 if (data.success) {
+                    const d = new Date(data.data.date);
+                    // Format to YYYY-MM-DD manually to avoid timezone shifts from toISOString()
+                    const year = d.getFullYear();
+                    const month = String(d.getMonth() + 1).padStart(2, '0');
+                    const day = String(d.getDate()).padStart(2, '0');
+
                     setFormData({
                         ...data.data,
                         tags: data.data.tags ? data.data.tags.join(', ') : '',
+                        date: `${year}-${month}-${day}`,
                     });
                     if (data.data.image && !data.data.image.startsWith('http')) {
                         setUseUrl(false);
@@ -90,8 +99,13 @@ export default function EditBlogPage() {
         e.preventDefault();
         setSubmitting(true);
 
+        // Create date object from the YYYY-MM-DD string treating it as local time
+        const [year, month, day] = formData.date.split('-').map(Number);
+        const dateObj = new Date(year, month - 1, day);
+
         const dataToSubmit = {
             ...formData,
+            date: dateObj.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
             tags: formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag !== '')
         };
 
@@ -158,13 +172,24 @@ export default function EditBlogPage() {
 
                     <div>
                         <label className="block text-sm font-medium mb-1">Date</label>
-                        <input
-                            type="text"
-                            name="date"
-                            value={formData.date}
-                            onChange={handleChange}
-                            className="w-full p-2 bg-gray-700 rounded border border-gray-600 focus:outline-none focus:border-blue-500"
-                        />
+                        <div className="custom-datepicker-wrapper">
+                            <DatePicker
+                                selected={formData.date ? new Date(formData.date) : null}
+                                onChange={(date) => {
+                                    if (!date) {
+                                        setFormData({ ...formData, date: '' });
+                                    } else {
+                                        const year = date.getFullYear();
+                                        const month = String(date.getMonth() + 1).padStart(2, '0');
+                                        const day = String(date.getDate()).padStart(2, '0');
+                                        setFormData({ ...formData, date: `${year}-${month}-${day}` });
+                                    }
+                                }}
+                                dateFormat="MMMM d, yyyy"
+                                className="w-full p-2 bg-gray-700 rounded border border-gray-600 focus:outline-none focus:border-blue-500 text-white"
+                                placeholderText="Select date"
+                            />
+                        </div>
                     </div>
                 </div>
 

@@ -9,6 +9,8 @@ import dynamic from 'next/dynamic';
 // Dynamic import for syntax highlighting to avoid SSR issues
 const SyntaxHighlighter = dynamic(() => import('react-syntax-highlighter').then(mod => mod.Prism), { ssr: false });
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 export default function NewBlogPage() {
     const router = useRouter();
@@ -17,7 +19,7 @@ export default function NewBlogPage() {
         content: '',
         image: '',
         tags: '',
-        date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+        date: new Date().toISOString().split('T')[0],
     });
     const [useUrl, setUseUrl] = useState(true);
     const [uploading, setUploading] = useState(false);
@@ -60,9 +62,14 @@ export default function NewBlogPage() {
         e.preventDefault();
         setSubmitting(true);
 
-        // Convert tags string to array
+        // Create date object from the YYYY-MM-DD string treating it as local time
+        const [year, month, day] = formData.date.split('-').map(Number);
+        const dateObj = new Date(year, month - 1, day);
+
         const dataToSubmit = {
             ...formData,
+            // Format date to match existing string format "Month DD, YYYY"
+            date: dateObj.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
             tags: formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag !== '')
         };
 
@@ -127,13 +134,24 @@ export default function NewBlogPage() {
 
                     <div>
                         <label className="block text-sm font-medium mb-1">Date</label>
-                        <input
-                            type="text"
-                            name="date"
-                            value={formData.date}
-                            onChange={handleChange}
-                            className="w-full p-2 bg-gray-700 rounded border border-gray-600 focus:outline-none focus:border-blue-500"
-                        />
+                        <div className="custom-datepicker-wrapper">
+                            <DatePicker
+                                selected={formData.date ? new Date(formData.date) : null}
+                                onChange={(date) => {
+                                    if (!date) {
+                                        setFormData({ ...formData, date: '' });
+                                    } else {
+                                        const year = date.getFullYear();
+                                        const month = String(date.getMonth() + 1).padStart(2, '0');
+                                        const day = String(date.getDate()).padStart(2, '0');
+                                        setFormData({ ...formData, date: `${year}-${month}-${day}` });
+                                    }
+                                }}
+                                dateFormat="MMMM d, yyyy"
+                                className="w-full p-2 bg-gray-700 rounded border border-gray-600 focus:outline-none focus:border-blue-500 text-white"
+                                placeholderText="Select date"
+                            />
+                        </div>
                     </div>
                 </div>
 
