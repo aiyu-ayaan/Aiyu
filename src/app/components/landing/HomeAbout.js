@@ -19,19 +19,14 @@ const HomeAbout = ({ data }) => {
       <div className="max-w-6xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-1 gap-8">
           <motion.div
-            className="p-8 rounded-2xl shadow-2xl transition-all duration-300"
+            className="p-8 rounded-lg transition-all duration-200"
             style={{
-              background: theme === 'dark'
-                ? 'linear-gradient(to bottom right, #1f2937, #111827)'
-                : 'linear-gradient(to bottom right, #f1f5f9, #e2e8f0)',
-              borderWidth: '1px',
-              borderStyle: 'solid',
-              borderColor: 'var(--border-secondary)',
+              backgroundColor: 'var(--bg-surface)',
+              boxShadow: 'var(--shadow-md)',
             }}
             whileHover={{
-              scale: 1.02,
-              y: -5,
-              borderColor: 'var(--accent-cyan)',
+              y: -4,
+              boxShadow: 'var(--shadow-lg)',
             }}
           >
             <h2
@@ -42,7 +37,7 @@ const HomeAbout = ({ data }) => {
               Summary
             </h2>
             <p
-              className="text-lg leading-relaxed"
+              className="text-base leading-relaxed"
               style={{ color: 'var(--text-secondary)' }}
             >
               {professionalSummary}
@@ -52,10 +47,10 @@ const HomeAbout = ({ data }) => {
         <div className="text-center mt-8">
           <Link href="/about-me" legacyBehavior>
             <motion.a
-              className="inline-flex items-center gap-2 font-semibold text-lg group"
+              className="inline-flex items-center gap-2 font-medium text-lg group"
               style={{ color: 'var(--accent-cyan)' }}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
             >
               View Full Resume
               <motion.span

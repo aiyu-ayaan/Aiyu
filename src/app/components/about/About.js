@@ -34,11 +34,9 @@ const About = ({ data }) => {
           className="text-center mb-12"
         >
           <h1
-            className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4 bg-gradient-to-r bg-clip-text text-transparent"
+            className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4"
             style={{
-              backgroundImage: theme === 'dark'
-                ? 'linear-gradient(to right, #22d3ee, #3b82f6, #8b5cf6)'
-                : 'linear-gradient(to right, #0891b2, #2563eb, #7c3aed)',
+              color: 'var(--text-primary)',
             }}
           >
             {name}
@@ -51,19 +49,14 @@ const About = ({ data }) => {
             initial={{ x: -50, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             transition={{ duration: 0.8, delay: 0.4 }}
-            className="p-8 rounded-2xl shadow-2xl transition-all duration-300"
+            className="p-8 rounded-lg transition-all duration-200"
             style={{
-              background: theme === 'dark'
-                ? 'linear-gradient(to bottom right, #1f2937, #111827)'
-                : 'linear-gradient(to bottom right, #f1f5f9, #e2e8f0)',
-              borderWidth: '1px',
-              borderStyle: 'solid',
-              borderColor: 'var(--border-secondary)',
+              backgroundColor: 'var(--bg-surface)',
+              boxShadow: 'var(--shadow-md)',
             }}
             whileHover={{
-              scale: 1.02,
-              y: -5,
-              borderColor: 'var(--accent-cyan)',
+              y: -4,
+              boxShadow: 'var(--shadow-lg)',
             }}
           >
             <h2
@@ -74,7 +67,7 @@ const About = ({ data }) => {
               Professional Summary
             </h2>
             <p
-              className="text-lg leading-relaxed"
+              className="text-base leading-relaxed"
               style={{ color: 'var(--text-secondary)' }}
             >
               {professionalSummary}
@@ -145,14 +138,10 @@ const About = ({ data }) => {
             initial={{ x: 50, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             transition={{ duration: 0.8, delay: 0.4, layout: { duration: 0.3 } }}
-            className="p-8 rounded-2xl shadow-2xl transition-all duration-300"
+            className="p-8 rounded-lg transition-all duration-200"
             style={{
-              background: theme === 'dark'
-                ? 'linear-gradient(to bottom right, #1f2937, #111827)'
-                : 'linear-gradient(to bottom right, #f1f5f9, #e2e8f0)',
-              borderWidth: '1px',
-              borderStyle: 'solid',
-              borderColor: 'var(--border-secondary)',
+              backgroundColor: 'var(--bg-surface)',
+              boxShadow: 'var(--shadow-md)',
             }}
           >
             <h2
@@ -192,18 +181,16 @@ const About = ({ data }) => {
                     </span>
                   </div>
                   <div
-                    className="w-full rounded-full h-3 overflow-hidden shadow-inner"
+                    className="w-full rounded-full h-3 overflow-hidden"
                     style={{
-                      backgroundColor: theme === 'dark' ? '#374151' : '#cbd5e1',
+                      backgroundColor: 'var(--bg-hover)',
                     }}
                   >
                     <motion.div
                       className="h-3 rounded-full relative"
                       style={{
                         width: `${skill.level}%`,
-                        background: theme === 'dark'
-                          ? 'linear-gradient(to right, #22d3ee, #3b82f6, #8b5cf6)'
-                          : 'linear-gradient(to right, #0891b2, #2563eb, #7c3aed)',
+                        backgroundColor: 'var(--accent-cyan)',
                       }}
                       initial={{ width: 0 }}
                       animate={{ width: `${skill.level}%` }}
@@ -224,18 +211,17 @@ const About = ({ data }) => {
             {skills.length > 5 && (
               <motion.button
                 onClick={() => setIsSkillsExpanded(!isSkillsExpanded)}
-                className="font-semibold mt-6 px-4 py-2 border rounded-lg transition-all duration-300"
+                className="font-medium mt-6 px-4 py-2 border rounded transition-all duration-200"
                 style={{
                   color: 'var(--accent-cyan)',
                   borderColor: 'var(--accent-cyan)',
+                  boxShadow: 'var(--shadow-sm)',
                 }}
                 whileHover={{
-                  scale: 1.05,
-                  backgroundColor: theme === 'dark'
-                    ? 'rgba(34, 211, 238, 0.1)'
-                    : 'rgba(8, 145, 178, 0.1)',
+                  backgroundColor: 'var(--overlay-hover)',
+                  boxShadow: 'var(--shadow-md)',
                 }}
-                whileTap={{ scale: 0.95 }}
+                whileTap={{ scale: 0.98 }}
               >
                 {isSkillsExpanded ? '↑ Show Less' : '↓ Show More Skills'}
               </motion.button>
