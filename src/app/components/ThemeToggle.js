@@ -3,15 +3,15 @@
 import { motion } from 'framer-motion';
 import { useTheme } from '../context/ThemeContext';
 
-// Theme toggle color constants
+// Theme toggle color constants - Material Design
 const TOGGLE_COLORS = {
   dark: {
-    background: '#4c1d95',
-    knob: '#c084fc',
+    background: '#bb86fc',
+    knob: '#121212',
   },
   light: {
-    background: '#e0e7ff',
-    knob: '#6366f1',
+    background: '#6200ea',
+    knob: '#ffffff',
   },
 };
 
@@ -40,12 +40,13 @@ export default function ThemeToggle() {
   return (
     <motion.button
       onClick={toggleTheme}
-      className="relative w-14 h-7 rounded-full p-1 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+      className="relative w-14 h-7 rounded-full p-1 transition-colors duration-200 focus:outline-none"
       style={{
         backgroundColor: colors.background,
+        boxShadow: 'var(--shadow-sm)',
       }}
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
+      whileHover={{ boxShadow: 'var(--shadow-md)' }}
+      whileTap={{ scale: 0.98 }}
       aria-label={`Switch to ${isDark ? 'light' : 'dark'} theme`}
       role="switch"
       aria-checked={isDark}

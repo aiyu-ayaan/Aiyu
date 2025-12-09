@@ -50,14 +50,8 @@ export default function Header({ data, logoText }) {
                     : theme === 'dark'
                         ? 'rgba(13, 17, 23, 0.7)' // --bg-primary with lower opacity
                         : 'rgba(255, 255, 255, 0.7)', // --bg-primary with lower opacity
-                borderColor: scrolled
-                    ? 'var(--border-cyan)'
-                    : 'var(--border-secondary)',
-                boxShadow: scrolled && theme === 'dark'
-                    ? '0 10px 30px rgba(34, 211, 238, 0.1)'
-                    : scrolled
-                        ? '0 10px 30px rgba(8, 145, 178, 0.1)'
-                        : 'none',
+                borderColor: 'var(--border-primary)',
+                boxShadow: scrolled ? 'var(--shadow-md)' : 'none',
             }}
         >
             <nav className="flex items-center justify-between max-w-full mx-auto">
@@ -65,14 +59,12 @@ export default function Header({ data, logoText }) {
                 <div className="flex-shrink-0">
                     <Link href="/">
                         <motion.div
-                            className="text-2xl font-bold bg-gradient-to-r bg-clip-text text-transparent"
+                            className="text-2xl font-bold"
                             style={{
-                                backgroundImage: theme === 'dark'
-                                    ? 'linear-gradient(to right, #22d3ee, #f97316)'
-                                    : 'linear-gradient(to right, #0891b2, #ea580c)',
+                                color: 'var(--accent-cyan)',
                             }}
-                            whileHover={{ scale: 1.1 }}
-                            transition={{ duration: 0.3 }}
+                            whileHover={{ scale: 1.05 }}
+                            transition={{ duration: 0.2 }}
                         >
                             {displayLogo}
                         </motion.div>
@@ -124,9 +116,7 @@ export default function Header({ data, logoText }) {
                                         <motion.div
                                             className="absolute bottom-0 left-0 right-0 h-0.5"
                                             style={{
-                                                background: theme === 'dark'
-                                                    ? 'linear-gradient(to right, #22d3ee, #3b82f6)'
-                                                    : 'linear-gradient(to right, #0891b2, #2563eb)',
+                                                backgroundColor: 'var(--accent-cyan)',
                                             }}
                                             layoutId="navbar-indicator"
                                             transition={{ type: "spring", stiffness: 300, damping: 30 }}
@@ -143,18 +133,14 @@ export default function Header({ data, logoText }) {
                     <ThemeToggle />
                     <Link href={contactLink.href}>
                         <motion.div
-                            className="px-4 py-2 rounded-lg font-semibold transition-all duration-300 shadow-lg"
+                            className="px-4 py-2 rounded font-medium transition-all duration-200"
                             style={{
-                                background: theme === 'dark'
-                                    ? 'linear-gradient(to right, #22d3ee, #3b82f6)'
-                                    : 'linear-gradient(to right, #0891b2, #2563eb)',
+                                backgroundColor: 'var(--accent-cyan)',
                                 color: '#ffffff',
-                                boxShadow: theme === 'dark'
-                                    ? '0 10px 30px rgba(34, 211, 238, 0.3)'
-                                    : '0 10px 30px rgba(8, 145, 178, 0.3)',
+                                boxShadow: 'var(--shadow-md)',
                             }}
-                            whileHover={{ scale: 1.05, y: -2 }}
-                            whileTap={{ scale: 0.95 }}
+                            whileHover={{ boxShadow: 'var(--shadow-lg)', opacity: 0.9 }}
+                            whileTap={{ scale: 0.98 }}
                         >
                             {contactLink.name}
                         </motion.div>
@@ -217,11 +203,10 @@ export default function Header({ data, logoText }) {
                     >
                         <Link
                             href={contactLink.href}
-                            className="block w-full text-center text-white font-semibold py-3 rounded-lg transition-all duration-300 mt-4"
+                            className="block w-full text-center text-white font-medium py-3 rounded transition-all duration-200 mt-4"
                             style={{
-                                background: theme === 'dark'
-                                    ? 'linear-gradient(to right, #22d3ee, #3b82f6)'
-                                    : 'linear-gradient(to right, #0891b2, #2563eb)',
+                                backgroundColor: 'var(--accent-cyan)',
+                                boxShadow: 'var(--shadow-md)',
                             }}
                             onClick={() => setIsMenuOpen(false)}
                         >
