@@ -27,23 +27,15 @@ const ProjectCard = ({ project, onCardClick }) => {
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.5 }}
-      className="rounded-xl overflow-hidden cursor-pointer shadow-lg hover:shadow-2xl transition-all duration-300 group"
+      className="rounded-lg overflow-hidden cursor-pointer transition-all duration-300 group"
       style={{
-        background: theme === 'dark'
-          ? 'linear-gradient(to bottom right, #1f2937, #111827)'
-          : 'linear-gradient(to bottom right, #f1f5f9, #e2e8f0)',
-        borderWidth: '1px',
-        borderStyle: 'solid',
-        borderColor: 'var(--border-secondary)',
+        backgroundColor: 'var(--bg-surface)',
+        boxShadow: 'var(--shadow-md)',
       }}
       onClick={() => onCardClick(project)}
       whileHover={{ 
-        y: -8, 
-        scale: 1.02,
-        borderColor: 'var(--accent-cyan)',
-        boxShadow: theme === 'dark'
-          ? '0 25px 50px rgba(34, 211, 238, 0.2)'
-          : '0 25px 50px rgba(8, 145, 178, 0.2)',
+        y: -4,
+        boxShadow: 'var(--shadow-lg)',
       }}
       whileTap={{ scale: 0.98 }}
     >
@@ -56,11 +48,9 @@ const ProjectCard = ({ project, onCardClick }) => {
           />
         )}
         <div 
-          className="absolute inset-0 opacity-60"
+          className="absolute inset-0 opacity-40"
           style={{
-            background: theme === 'dark'
-              ? 'linear-gradient(to top, #111827, transparent, transparent)'
-              : 'linear-gradient(to top, #e2e8f0, transparent, transparent)',
+            background: 'linear-gradient(to top, var(--bg-surface), transparent, transparent)',
           }}
         ></div>
         <div className="absolute top-2 right-2">
@@ -82,11 +72,9 @@ const ProjectCard = ({ project, onCardClick }) => {
       <motion.div layout className="p-6">
         <motion.h3 
           layout 
-          className="text-xl font-bold mb-3 text-transparent bg-gradient-to-r bg-clip-text transition-all duration-300"
+          className="text-xl font-bold mb-3 transition-all duration-300"
           style={{
-            backgroundImage: theme === 'dark'
-              ? 'linear-gradient(to right, #f97316, #22d3ee)'
-              : 'linear-gradient(to right, #ea580c, #0891b2)',
+            color: 'var(--text-primary)',
           }}
         >
           {project.name}
@@ -95,18 +83,13 @@ const ProjectCard = ({ project, onCardClick }) => {
           {project.techStack.slice(0, 3).map((tech, i) => (
             <motion.span 
               key={i} 
-              className="px-3 py-1 rounded-lg text-sm font-medium transition-all duration-300 cursor-default"
+              className="px-3 py-1 rounded text-sm font-medium transition-all duration-300 cursor-default"
               style={{
-                background: theme === 'dark'
-                  ? 'linear-gradient(to right, #374151, #1f2937)'
-                  : 'linear-gradient(to right, #e2e8f0, #cbd5e1)',
-                color: theme === 'dark' ? '#22d3ee' : '#0891b2',
+                backgroundColor: 'var(--bg-hover)',
+                color: 'var(--accent-cyan)',
               }}
               whileHover={{ 
-                scale: 1.1,
-                background: theme === 'dark'
-                  ? 'linear-gradient(to right, #0891b2, #2563eb)'
-                  : 'linear-gradient(to right, #0e7490, #1d4ed8)',
+                backgroundColor: 'var(--accent-cyan)',
                 color: '#ffffff',
               }}
             >
@@ -115,20 +98,15 @@ const ProjectCard = ({ project, onCardClick }) => {
           ))}
           {project.techStack.length > 3 && (
             <motion.span 
-              className="text-white px-3 py-1 rounded-lg text-sm font-medium cursor-pointer transition-all duration-300"
+              className="text-white px-3 py-1 rounded text-sm font-medium cursor-pointer transition-all duration-300"
               style={{
-                background: theme === 'dark'
-                  ? 'linear-gradient(to right, #f97316, #ec4899)'
-                  : 'linear-gradient(to right, #ea580c, #db2777)',
+                backgroundColor: 'var(--accent-purple)',
               }}
               onClick={openTechStackDialog}
               whileHover={{ 
-                scale: 1.1,
-                background: theme === 'dark'
-                  ? 'linear-gradient(to right, #fb923c, #f472b6)'
-                  : 'linear-gradient(to right, #f97316, #ec4899)',
+                opacity: 0.8,
               }}
-              whileTap={{ scale: 0.95 }}
+              whileTap={{ scale: 0.98 }}
             >
               +{project.techStack.length - 3} more
             </motion.span>

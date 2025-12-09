@@ -22,23 +22,25 @@ const GamePortfolio = ({ data, onUnlock = () => { } }) => {
         return (
           <div className="flex flex-col items-center gap-4">
             <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={{ boxShadow: 'var(--shadow-lg)' }}
+              whileTap={{ scale: 0.98 }}
               onClick={() => setSelectedGame('snake')}
-              className="text-white px-6 py-3 rounded-lg font-mono text-lg transition-colors"
+              className="text-white px-6 py-3 rounded font-medium text-lg transition-all duration-200"
               style={{
-                backgroundColor: theme === 'dark' ? '#f97316' : '#ea580c',
+                backgroundColor: 'var(--accent-orange)',
+                boxShadow: 'var(--shadow-md)',
               }}
             >
               Play Snake
             </motion.button>
             <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={{ boxShadow: 'var(--shadow-lg)' }}
+              whileTap={{ scale: 0.98 }}
               onClick={() => setSelectedGame('tictactoe')}
-              className="text-white px-6 py-3 rounded-lg font-mono text-lg transition-colors"
+              className="text-white px-6 py-3 rounded font-medium text-lg transition-all duration-200"
               style={{
-                backgroundColor: theme === 'dark' ? '#22d3ee' : '#0891b2',
+                backgroundColor: 'var(--accent-cyan)',
+                boxShadow: 'var(--shadow-md)',
               }}
             >
               Play Tic-Tac-Toe

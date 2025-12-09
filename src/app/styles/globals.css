@@ -1,131 +1,131 @@
 @import "tailwindcss";
 
-/* Dark Theme - Based on VS Code theme */
+/* Dark Theme - Material Design */
 [data-theme="dark"] {
-  /* Background Colors */
-  --bg-primary: #0d1117;
-  --bg-secondary: #0a1929;
-  --bg-tertiary: #080a0e;
-  --bg-surface: #1e1433;
-  --bg-elevated: #1a0f2e;
-  --bg-hover: #1e3a5f;
+  /* Background Colors - Material Design Dark */
+  --bg-primary: #121212;
+  --bg-secondary: #1e1e1e;
+  --bg-tertiary: #2c2c2c;
+  --bg-surface: #1e1e1e;
+  --bg-elevated: #2c2c2c;
+  --bg-hover: #3a3a3a;
   
-  /* Text Colors */
-  --text-primary: #e5e7eb;
-  --text-secondary: #cbd5e1;
-  --text-tertiary: #94a3b8;
-  --text-muted: #64748b;
+  /* Text Colors - Material Design */
+  --text-primary: rgba(255, 255, 255, 0.87);
+  --text-secondary: rgba(255, 255, 255, 0.60);
+  --text-tertiary: rgba(255, 255, 255, 0.38);
+  --text-muted: rgba(255, 255, 255, 0.30);
   --text-bright: #ffffff;
   
-  /* Accent Colors */
-  --accent-cyan: #22d3ee;
-  --accent-cyan-bright: #00ffff;
-  --accent-purple: #c084fc;
-  --accent-purple-dark: #7c3aed;
-  --accent-purple-darker: #4c1d95;
-  --accent-pink: #ec4899;
-  --accent-pink-bright: #f472b6;
-  --accent-pink-hot: #ff0080;
-  --accent-orange: #f97316;
-  --accent-orange-bright: #ff9500;
+  /* Accent Colors - Material Design */
+  --accent-cyan: #03dac6;
+  --accent-cyan-bright: #03dac6;
+  --accent-purple: #bb86fc;
+  --accent-purple-dark: #985eff;
+  --accent-purple-darker: #7f39fb;
+  --accent-pink: #cf6679;
+  --accent-pink-bright: #cf6679;
+  --accent-pink-hot: #cf6679;
+  --accent-orange: #ff9800;
+  --accent-orange-bright: #ffab40;
   
-  /* Border Colors */
-  --border-primary: #1e293b;
-  --border-secondary: #374151;
-  --border-accent: #4c1d95;
-  --border-cyan: #22d3ee;
+  /* Border Colors - Material Design */
+  --border-primary: rgba(255, 255, 255, 0.12);
+  --border-secondary: rgba(255, 255, 255, 0.12);
+  --border-accent: #bb86fc;
+  --border-cyan: #03dac6;
   
-  /* Status Colors */
-  --status-error: #f87171;
-  --status-warning: #fbbf24;
-  --status-success: #34d399;
-  --status-info: #22d3ee;
+  /* Status Colors - Material Design */
+  --status-error: #cf6679;
+  --status-warning: #ffab40;
+  --status-success: #03dac6;
+  --status-info: #03dac6;
   
   /* Syntax Colors */
-  --syntax-comment: #a78bfa;
-  --syntax-keyword: #d946ef;
-  --syntax-control: #ff0080;
-  --syntax-function: #00ffff;
-  --syntax-class: #c084fc;
-  --syntax-string: #00ff88;
-  --syntax-number: #ff9500;
-  --syntax-variable: #a5f3fc;
-  --syntax-property: #38bdf8;
-  --syntax-operator: #a855f7;
-  --syntax-punctuation: #fde047;
+  --syntax-comment: rgba(255, 255, 255, 0.38);
+  --syntax-keyword: #bb86fc;
+  --syntax-control: #cf6679;
+  --syntax-function: #03dac6;
+  --syntax-class: #bb86fc;
+  --syntax-string: #03dac6;
+  --syntax-number: #ff9800;
+  --syntax-variable: #03dac6;
+  --syntax-property: #03dac6;
+  --syntax-operator: #bb86fc;
+  --syntax-punctuation: #ffab40;
   
-  /* Shadow Colors */
-  --shadow-sm: rgba(0, 0, 0, 0.3);
-  --shadow-md: rgba(0, 0, 0, 0.5);
-  --shadow-lg: rgba(34, 211, 238, 0.3);
+  /* Shadow Colors - Material Design Elevation */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+  --shadow-md: 0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23);
+  --shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.19), 0 6px 6px rgba(0, 0, 0, 0.23);
+  
+  /* Overlay Colors */
+  --overlay-bg: rgba(0, 0, 0, 0.6);
+  --overlay-hover: rgba(255, 255, 255, 0.08);
+}
+
+/* Light Theme - Material Design */
+[data-theme="light"] {
+  /* Background Colors - Material Design Light */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f5f5f5;
+  --bg-tertiary: #eeeeee;
+  --bg-surface: #ffffff;
+  --bg-elevated: #ffffff;
+  --bg-hover: #f5f5f5;
+  
+  /* Text Colors - Material Design */
+  --text-primary: rgba(0, 0, 0, 0.87);
+  --text-secondary: rgba(0, 0, 0, 0.60);
+  --text-tertiary: rgba(0, 0, 0, 0.38);
+  --text-muted: rgba(0, 0, 0, 0.30);
+  --text-bright: #000000;
+  
+  /* Accent Colors - Material Design */
+  --accent-cyan: #00bcd4;
+  --accent-cyan-bright: #00bcd4;
+  --accent-purple: #6200ea;
+  --accent-purple-dark: #6200ea;
+  --accent-purple-darker: #6200ea;
+  --accent-pink: #f50057;
+  --accent-pink-bright: #f50057;
+  --accent-pink-hot: #f50057;
+  --accent-orange: #ff6f00;
+  --accent-orange-bright: #ff9800;
+  
+  /* Border Colors - Material Design */
+  --border-primary: rgba(0, 0, 0, 0.12);
+  --border-secondary: rgba(0, 0, 0, 0.12);
+  --border-accent: #6200ea;
+  --border-cyan: #00bcd4;
+  
+  /* Status Colors - Material Design */
+  --status-error: #f44336;
+  --status-warning: #ff9800;
+  --status-success: #4caf50;
+  --status-info: #2196f3;
+  
+  /* Syntax Colors */
+  --syntax-comment: rgba(0, 0, 0, 0.38);
+  --syntax-keyword: #6200ea;
+  --syntax-control: #f50057;
+  --syntax-function: #00bcd4;
+  --syntax-class: #6200ea;
+  --syntax-string: #4caf50;
+  --syntax-number: #ff6f00;
+  --syntax-variable: #00bcd4;
+  --syntax-property: #2196f3;
+  --syntax-operator: #6200ea;
+  --syntax-punctuation: #ff9800;
+  
+  /* Shadow Colors - Material Design Elevation */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+  --shadow-md: 0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23);
+  --shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.19), 0 6px 6px rgba(0, 0, 0, 0.23);
   
   /* Overlay Colors */
   --overlay-bg: rgba(0, 0, 0, 0.5);
-  --overlay-hover: rgba(34, 211, 238, 0.15);
-}
-
-/* Light Theme - Complementary palette */
-[data-theme="light"] {
-  /* Background Colors */
-  --bg-primary: #ffffff;
-  --bg-secondary: #f8fafc;
-  --bg-tertiary: #f1f5f9;
-  --bg-surface: #e2e8f0;
-  --bg-elevated: #f0f4f8;
-  --bg-hover: #dbeafe;
-  
-  /* Text Colors */
-  --text-primary: #1e293b;
-  --text-secondary: #475569;
-  --text-tertiary: #64748b;
-  --text-muted: #94a3b8;
-  --text-bright: #0f172a;
-  
-  /* Accent Colors */
-  --accent-cyan: #0891b2;
-  --accent-cyan-bright: #0284c7;
-  --accent-purple: #7c3aed;
-  --accent-purple-dark: #6d28d9;
-  --accent-purple-darker: #5b21b6;
-  --accent-pink: #db2777;
-  --accent-pink-bright: #ec4899;
-  --accent-pink-hot: #be185d;
-  --accent-orange: #ea580c;
-  --accent-orange-bright: #f97316;
-  
-  /* Border Colors */
-  --border-primary: #e2e8f0;
-  --border-secondary: #cbd5e1;
-  --border-accent: #c084fc;
-  --border-cyan: #22d3ee;
-  
-  /* Status Colors */
-  --status-error: #dc2626;
-  --status-warning: #f59e0b;
-  --status-success: #10b981;
-  --status-info: #0891b2;
-  
-  /* Syntax Colors */
-  --syntax-comment: #7c3aed;
-  --syntax-keyword: #be185d;
-  --syntax-control: #be0077;
-  --syntax-function: #0891b2;
-  --syntax-class: #7c3aed;
-  --syntax-string: #059669;
-  --syntax-number: #ea580c;
-  --syntax-variable: #0e7490;
-  --syntax-property: #0284c7;
-  --syntax-operator: #7c3aed;
-  --syntax-punctuation: #ca8a04;
-  
-  /* Shadow Colors */
-  --shadow-sm: rgba(0, 0, 0, 0.1);
-  --shadow-md: rgba(0, 0, 0, 0.15);
-  --shadow-lg: rgba(14, 165, 233, 0.2);
-  
-  /* Overlay Colors */
-  --overlay-bg: rgba(15, 23, 42, 0.4);
-  --overlay-hover: rgba(14, 165, 233, 0.1);
+  --overlay-hover: rgba(0, 0, 0, 0.04);
 }
 
 /* Default theme variables for Tailwind */

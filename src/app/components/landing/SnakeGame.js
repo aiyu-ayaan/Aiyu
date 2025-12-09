@@ -144,10 +144,10 @@ const SnakeGame = ({ onUnlock = () => {}, onBack }) => {
         }
 
         const getCellStyle = () => {
-          if (cellType === 'head') return { backgroundColor: theme === 'dark' ? '#22d3ee' : '#0891b2' };
-          if (cellType === 'body') return { backgroundColor: theme === 'dark' ? '#06b6d4' : '#0e7490' };
-          if (cellType === 'food') return { backgroundColor: theme === 'dark' ? '#4ade80' : '#16a34a' };
-          return { backgroundColor: theme === 'dark' ? '#1f2937' : '#e5e7eb' };
+          if (cellType === 'head') return { backgroundColor: 'var(--accent-cyan)' };
+          if (cellType === 'body') return { backgroundColor: 'var(--accent-cyan)', opacity: 0.7 };
+          if (cellType === 'food') return { backgroundColor: 'var(--status-success)' };
+          return { backgroundColor: 'var(--bg-hover)' };
         };
         
         board.push(
@@ -237,50 +237,54 @@ const SnakeGame = ({ onUnlock = () => {}, onBack }) => {
               <div className="grid grid-cols-3 gap-2 max-w-32 mx-auto">
                 <div></div>
                 <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                  whileHover={{ boxShadow: 'var(--shadow-md)' }}
+                  whileTap={{ scale: 0.98 }}
                   onClick={() => handleDirectionChange({ x: 0, y: -1 })}
-                  className="w-10 h-10 rounded border flex items-center justify-center text-white text-sm transition-colors"
+                  className="w-10 h-10 rounded flex items-center justify-center text-sm transition-all duration-200"
                   style={{
-                    backgroundColor: theme === 'dark' ? '#374151' : '#94a3b8',
-                    borderColor: theme === 'dark' ? '#4b5563' : '#64748b',
+                    backgroundColor: 'var(--bg-hover)',
+                    color: 'var(--text-primary)',
+                    boxShadow: 'var(--shadow-sm)',
                   }}
                 >
                   ↑
                 </motion.button>
                 <div></div>
                 <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                  whileHover={{ boxShadow: 'var(--shadow-md)' }}
+                  whileTap={{ scale: 0.98 }}
                   onClick={() => handleDirectionChange({ x: -1, y: 0 })}
-                  className="w-10 h-10 rounded border flex items-center justify-center text-white text-sm transition-colors"
+                  className="w-10 h-10 rounded flex items-center justify-center text-sm transition-all duration-200"
                   style={{
-                    backgroundColor: theme === 'dark' ? '#374151' : '#94a3b8',
-                    borderColor: theme === 'dark' ? '#4b5563' : '#64748b',
+                    backgroundColor: 'var(--bg-hover)',
+                    color: 'var(--text-primary)',
+                    boxShadow: 'var(--shadow-sm)',
                   }}
                 >
                   ←
                 </motion.button>
                 <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                  whileHover={{ boxShadow: 'var(--shadow-md)' }}
+                  whileTap={{ scale: 0.98 }}
                   onClick={() => handleDirectionChange({ x: 0, y: 1 })}
-                  className="w-10 h-10 rounded border flex items-center justify-center text-white text-sm transition-colors"
+                  className="w-10 h-10 rounded flex items-center justify-center text-sm transition-all duration-200"
                   style={{
-                    backgroundColor: theme === 'dark' ? '#374151' : '#94a3b8',
-                    borderColor: theme === 'dark' ? '#4b5563' : '#64748b',
+                    backgroundColor: 'var(--bg-hover)',
+                    color: 'var(--text-primary)',
+                    boxShadow: 'var(--shadow-sm)',
                   }}
                 >
                   ↓
                 </motion.button>
                 <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                  whileHover={{ boxShadow: 'var(--shadow-md)' }}
+                  whileTap={{ scale: 0.98 }}
                   onClick={() => handleDirectionChange({ x: 1, y: 0 })}
-                  className="w-10 h-10 rounded border flex items-center justify-center text-white text-sm transition-colors"
+                  className="w-10 h-10 rounded flex items-center justify-center text-sm transition-all duration-200"
                   style={{
-                    backgroundColor: theme === 'dark' ? '#374151' : '#94a3b8',
-                    borderColor: theme === 'dark' ? '#4b5563' : '#64748b',
+                    backgroundColor: 'var(--bg-hover)',
+                    color: 'var(--text-primary)',
+                    boxShadow: 'var(--shadow-sm)',
                   }}
                 >
                   →
@@ -399,13 +403,18 @@ const SnakeGame = ({ onUnlock = () => {}, onBack }) => {
       </motion.div>
     </motion.div>
       <motion.button
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
+        whileHover={{ boxShadow: 'var(--shadow-md)' }}
+        whileTap={{ scale: 0.98 }}
         onClick={() => {
           resetGame();
           onBack();
         }}
-        className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-mono text-base transition-colors mt-8"
+        className="text-white px-6 py-3 rounded font-medium text-base transition-all duration-200 mt-8"
+        style={{
+          backgroundColor: 'var(--bg-hover)',
+          color: 'var(--text-primary)',
+          boxShadow: 'var(--shadow-sm)',
+        }}
       >
         ← Back
       </motion.button>

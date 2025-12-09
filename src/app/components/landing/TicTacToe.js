@@ -123,20 +123,21 @@ const TicTacToe = ({ onBack }) => {
   const renderSquare = (i) => {
     return (
       <motion.button
-        className="w-20 h-20 border-2 flex items-center justify-center text-3xl font-bold transition-colors"
+        className="w-20 h-20 border flex items-center justify-center text-3xl font-bold transition-colors"
         style={{
-          backgroundColor: theme === 'dark' ? '#1f2937' : '#e2e8f0',
-          borderColor: theme === 'dark' ? '#374151' : '#cbd5e1',
-          color: 'var(--text-bright)',
+          backgroundColor: 'var(--bg-surface)',
+          borderColor: 'var(--border-primary)',
+          color: 'var(--text-primary)',
+          boxShadow: 'var(--shadow-sm)',
         }}
         onClick={() => handleClick(i)}
         whileHover={{ 
-          scale: 1.05,
-          backgroundColor: theme === 'dark' ? '#374151' : '#cbd5e1',
+          boxShadow: 'var(--shadow-md)',
+          backgroundColor: 'var(--bg-hover)',
         }}
-        whileTap={{ scale: 0.95 }}
+        whileTap={{ scale: 0.98 }}
       >
-        <span className={board[i] === 'X' ? 'text-cyan-400' : 'text-orange-400'}>
+        <span style={{ color: board[i] === 'X' ? 'var(--accent-cyan)' : 'var(--accent-orange)' }}>
           {board[i]}
         </span>
       </motion.button>
@@ -178,32 +179,45 @@ const TicTacToe = ({ onBack }) => {
       <div className="flex flex-col items-center gap-4">
         {showConfetti && <Confetti recycle={false} />}
         <h2 
-          className="text-4xl font-bold mb-4 font-mono"
-          style={{ color: 'var(--text-bright)' }}
+          className="text-4xl font-bold mb-4"
+          style={{ color: 'var(--text-primary)' }}
         >
           Choose Game Mode
         </h2>
           <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            whileHover={{ boxShadow: 'var(--shadow-lg)' }}
+            whileTap={{ scale: 0.98 }}
             onClick={() => setMode('pvp')}
-            className="bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white px-8 py-4 rounded-lg font-mono text-xl transition-colors shadow-lg"
+            className="text-white px-8 py-4 rounded font-medium text-xl transition-all duration-200"
+            style={{
+              backgroundColor: 'var(--accent-orange)',
+              boxShadow: 'var(--shadow-md)',
+            }}
           >
             🎮 Player vs Player
           </motion.button>
           <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            whileHover={{ boxShadow: 'var(--shadow-lg)' }}
+            whileTap={{ scale: 0.98 }}
             onClick={() => setMode('pva')}
-            className="bg-cyan-500 hover:bg-cyan-600 active:bg-cyan-700 text-white px-8 py-4 rounded-lg font-mono text-xl transition-colors shadow-lg"
+            className="text-white px-8 py-4 rounded font-medium text-xl transition-all duration-200"
+            style={{
+              backgroundColor: 'var(--accent-cyan)',
+              boxShadow: 'var(--shadow-md)',
+            }}
           >
             🤖 Player vs AI
           </motion.button>
         <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+          whileHover={{ boxShadow: 'var(--shadow-md)' }}
+          whileTap={{ scale: 0.98 }}
           onClick={onBack}
-          className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-mono text-base transition-colors mt-4"
+          className="text-white px-6 py-3 rounded font-medium text-base transition-all duration-200 mt-4"
+          style={{
+            backgroundColor: 'var(--bg-hover)',
+            color: 'var(--text-primary)',
+            boxShadow: 'var(--shadow-sm)',
+          }}
         >
           ← Back
         </motion.button>
@@ -215,40 +229,57 @@ const TicTacToe = ({ onBack }) => {
     return (
       <div className="flex flex-col items-center gap-4">
         <h2 
-          className="text-4xl font-bold mb-4 font-mono"
-          style={{ color: 'var(--text-bright)' }}
+          className="text-4xl font-bold mb-4"
+          style={{ color: 'var(--text-primary)' }}
         >
           Choose Difficulty
         </h2>
           <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            whileHover={{ boxShadow: 'var(--shadow-lg)' }}
+            whileTap={{ scale: 0.98 }}
             onClick={() => setDifficulty('easy')}
-            className="bg-green-500 hover:bg-green-600 active:bg-green-700 text-white px-8 py-4 rounded-lg font-mono text-xl transition-colors w-64 shadow-lg"
+            className="text-white px-8 py-4 rounded font-medium text-xl transition-all duration-200 w-64"
+            style={{
+              backgroundColor: 'var(--status-success)',
+              boxShadow: 'var(--shadow-md)',
+            }}
           >
             😊 Easy
           </motion.button>
           <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            whileHover={{ boxShadow: 'var(--shadow-lg)' }}
+            whileTap={{ scale: 0.98 }}
             onClick={() => setDifficulty('medium')}
-            className="bg-yellow-500 hover:bg-yellow-600 active:bg-yellow-700 text-white px-8 py-4 rounded-lg font-mono text-xl transition-colors w-64 shadow-lg"
+            className="text-white px-8 py-4 rounded font-medium text-xl transition-all duration-200 w-64"
+            style={{
+              backgroundColor: 'var(--status-warning)',
+              boxShadow: 'var(--shadow-md)',
+            }}
           >
             😐 Medium
           </motion.button>
           <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            whileHover={{ boxShadow: 'var(--shadow-lg)' }}
+            whileTap={{ scale: 0.98 }}
             onClick={() => setDifficulty('impossible')}
-            className="bg-red-600 hover:bg-red-700 active:bg-red-800 text-white px-8 py-4 rounded-lg font-mono text-xl transition-colors w-64 shadow-lg animate-pulse"
+            className="text-white px-8 py-4 rounded font-medium text-xl transition-all duration-200 w-64 animate-pulse"
+            style={{
+              backgroundColor: 'var(--status-error)',
+              boxShadow: 'var(--shadow-md)',
+            }}
           >
             💀 IMPOSSIBLE 💀
           </motion.button>
         <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+          whileHover={{ boxShadow: 'var(--shadow-md)' }}
+          whileTap={{ scale: 0.98 }}
           onClick={() => setMode(null)}
-          className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-mono text-base transition-colors mt-4"
+          className="text-white px-6 py-3 rounded font-medium text-base transition-all duration-200 mt-4"
+          style={{
+            backgroundColor: 'var(--bg-hover)',
+            color: 'var(--text-primary)',
+            boxShadow: 'var(--shadow-sm)',
+          }}
         >
           ← Back
         </motion.button>
@@ -275,12 +306,18 @@ const TicTacToe = ({ onBack }) => {
       <div className="grid grid-cols-3 gap-2 mb-6">
         {Array(9).fill(null).map((_, i) => renderSquare(i))}
       </div>
-      <button
-        className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg font-mono text-lg transition-colors shadow-lg"
+      <motion.button
+        whileHover={{ boxShadow: 'var(--shadow-lg)' }}
+        whileTap={{ scale: 0.98 }}
+        className="text-white px-6 py-3 rounded font-medium text-lg transition-all duration-200"
+        style={{
+          backgroundColor: 'var(--accent-orange)',
+          boxShadow: 'var(--shadow-md)',
+        }}
         onClick={handleRestart}
       >
         🔄 Restart
-      </button>
+      </motion.button>
     </div>
   );
 };

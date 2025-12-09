@@ -50,18 +50,16 @@ const HomeProjects = ({ data }) => {
         <div className="text-center mt-12">
           <Link href="/projects" legacyBehavior>
             <motion.a
-              className="inline-flex items-center gap-2 font-semibold text-lg px-6 py-3 rounded-lg border-2 transition-all duration-300 group"
+              className="inline-flex items-center gap-2 font-medium text-lg px-6 py-3 rounded border transition-all duration-200 group"
               style={{
                 color: 'var(--accent-cyan)',
                 borderColor: 'var(--accent-cyan)',
+                boxShadow: 'var(--shadow-sm)',
               }}
               whileHover={{
-                scale: 1.05,
-                boxShadow: theme === 'dark'
-                  ? "0 0 20px rgba(34, 211, 238, 0.5)"
-                  : "0 0 20px rgba(8, 145, 178, 0.4)",
+                boxShadow: 'var(--shadow-md)',
               }}
-              whileTap={{ scale: 0.95 }}
+              whileTap={{ scale: 0.98 }}
             >
               View All Projects
               <motion.span

@@ -15,7 +15,7 @@ const ProjectDialog = ({ project, onClose }) => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-50"
+        className="fixed inset-0 flex items-center justify-center z-50"
         style={{ backgroundColor: 'var(--overlay-bg)' }}
         onClick={onClose}
       >
@@ -23,23 +23,19 @@ const ProjectDialog = ({ project, onClose }) => {
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.9, opacity: 0 }}
-          className="rounded-2xl overflow-hidden max-w-2xl w-11/12 max-h-[60vh] overflow-y-auto m-4 relative hide-scrollbar shadow-2xl"
+          className="rounded-lg overflow-hidden max-w-2xl w-11/12 max-h-[60vh] overflow-y-auto m-4 relative hide-scrollbar"
           style={{
-            background: theme === 'dark'
-              ? 'linear-gradient(to bottom right, #1e1433, #1a0f2e)'
-              : 'linear-gradient(to bottom right, #f1f5f9, #e2e8f0)',
-            borderWidth: '1px',
-            borderStyle: 'solid',
-            borderColor: 'var(--border-accent)',
+            backgroundColor: 'var(--bg-surface)',
+            boxShadow: 'var(--shadow-lg)',
           }}
           onClick={(e) => e.stopPropagation()}
         >
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 text-3xl font-bold p-2 z-10 rounded-lg transition-all duration-300"
+            className="absolute top-4 right-4 text-2xl p-2 z-10 rounded-full transition-all duration-200 hover:bg-opacity-90"
             style={{
-              color: 'var(--text-tertiary)',
-              backgroundColor: theme === 'dark' ? 'rgba(30, 20, 51, 0.8)' : 'rgba(226, 232, 240, 0.8)',
+              color: 'var(--text-secondary)',
+              backgroundColor: 'var(--overlay-hover)',
             }}
           >
             &times;
@@ -49,11 +45,9 @@ const ProjectDialog = ({ project, onClose }) => {
           </div>
           <div className="p-8">
             <h3 
-              className="text-3xl font-bold mb-4 text-transparent bg-gradient-to-r bg-clip-text"
+              className="text-3xl font-bold mb-4"
               style={{
-                backgroundImage: theme === 'dark'
-                  ? 'linear-gradient(to right, #f97316, #22d3ee)'
-                  : 'linear-gradient(to right, #ea580c, #0891b2)',
+                color: 'var(--text-primary)',
               }}
             >
               {project.name}
@@ -62,12 +56,10 @@ const ProjectDialog = ({ project, onClose }) => {
               {project.techStack.map((tech, i) => (
                 <span 
                   key={i} 
-                  className="px-3 py-1 rounded-lg text-sm font-medium"
+                  className="px-3 py-1 rounded text-sm font-medium"
                   style={{
-                    background: theme === 'dark'
-                      ? 'linear-gradient(to right, #374151, #1f2937)'
-                      : 'linear-gradient(to right, #e2e8f0, #cbd5e1)',
-                    color: theme === 'dark' ? '#22d3ee' : '#0891b2',
+                    backgroundColor: 'var(--bg-hover)',
+                    color: 'var(--accent-cyan)',
                   }}
                 >
                   {tech}
@@ -78,23 +70,22 @@ const ProjectDialog = ({ project, onClose }) => {
               <span style={{ color: 'var(--accent-cyan)' }}>📅</span>
               <span className="font-semibold">Year:</span> {project.year}
             </p>
-            <p className="text-lg leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{project.description}</p>
+            <p className="text-base leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{project.description}</p>
             {project.codeLink && (
               <motion.a
                 href={project.codeLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-block mt-6 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 shadow-lg"
+                className="inline-block mt-6 text-white px-6 py-3 rounded font-medium transition-all duration-200"
                 style={{
-                  background: theme === 'dark'
-                    ? 'linear-gradient(to right, #22d3ee, #3b82f6)'
-                    : 'linear-gradient(to right, #0891b2, #2563eb)',
-                  boxShadow: theme === 'dark'
-                    ? '0 10px 30px rgba(34, 211, 238, 0.3)'
-                    : '0 10px 30px rgba(8, 145, 178, 0.3)',
+                  backgroundColor: 'var(--accent-cyan)',
+                  boxShadow: 'var(--shadow-md)',
                 }}
-                whileHover={{ scale: 1.05, y: -2 }}
-                whileTap={{ scale: 0.95 }}
+                whileHover={{ 
+                  boxShadow: 'var(--shadow-lg)',
+                  opacity: 0.9,
+                }}
+                whileTap={{ scale: 0.98 }}
               >
                 View Code
               </motion.a>
