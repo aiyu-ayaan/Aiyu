@@ -11,6 +11,9 @@ import { useTheme } from '../context/ThemeContext';
 
 export default function Header({ data, logoText }) {
     const { navLinks, contactLink } = data || { navLinks: [], contactLink: {} };
+    // Filter out hidden links
+    const visibleNavLinks = navLinks.filter(link => link.visible !== false);
+
     const displayLogo = logoText || "< aiyu />";
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
@@ -96,7 +99,7 @@ export default function Header({ data, logoText }) {
                 {/* Navigation Links - Desktop Center */}
                 <div className="hidden md:block absolute left-1/2 transform -translate-x-1/2">
                     <div className="flex space-x-8">
-                        {navLinks.map((link, index) => (
+                        {visibleNavLinks.map((link, index) => (
                             <motion.div
                                 key={link.name}
                                 initial={{ opacity: 0, y: -20 }}
@@ -181,7 +184,7 @@ export default function Header({ data, logoText }) {
                             : 'rgba(255, 255, 255, 0.98)', // --bg-primary with high opacity for mobile
                     }}
                 >
-                    {navLinks.map((link, index) => (
+                    {visibleNavLinks.map((link, index) => (
                         <motion.div
                             key={link.name}
                             initial={{ x: -20, opacity: 0 }}
