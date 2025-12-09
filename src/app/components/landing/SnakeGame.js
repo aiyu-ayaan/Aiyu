@@ -168,8 +168,8 @@ const SnakeGame = ({ onUnlock = () => {}, onBack }) => {
         initial={{ scale: 0.8 }}
         animate={{ scale: 1 }}
         transition={{ duration: 0.8, delay: 0.6, ease: "easeOut" }}
-        className="relative rounded-[2.5rem] p-3 shadow-2xl w-72 sm:w-80"
-        style={{ backgroundColor: theme === 'dark' ? '#1f2937' : '#cbd5e1' }}
+        className="relative rounded-[2.5rem] p-3 w-72 sm:w-80"
+        style={{ backgroundColor: 'var(--bg-surface)', boxShadow: 'var(--shadow-lg)' }}
       >
       {showConfetti && <Confetti recycle={false} />}
       <motion.div
@@ -177,7 +177,7 @@ const SnakeGame = ({ onUnlock = () => {}, onBack }) => {
         animate={{ opacity: 1 }}
         transition={{ duration: 0.6, delay: 0.8 }}
         className="rounded-[2rem] p-4 relative"
-        style={{ backgroundColor: theme === 'dark' ? '#000000' : '#1e293b' }}
+        style={{ backgroundColor: 'var(--bg-tertiary)' }}
       >
         <motion.div
           initial={{ opacity: 0 }}
@@ -201,12 +201,15 @@ const SnakeGame = ({ onUnlock = () => {}, onBack }) => {
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ duration: 0.6, delay: 1.2 }}
-          className="rounded-lg shadow-2xl backdrop-blur-md"
-          style={{ backgroundColor: theme === 'dark' ? 'rgba(20, 184, 166, 0.3)' : 'rgba(13, 148, 136, 0.2)' }}
+          className="rounded-lg backdrop-blur-md"
+          style={{ 
+            backgroundColor: 'var(--overlay-hover)',
+            boxShadow: 'var(--shadow-lg)',
+          }}
         >
           <div 
             className="rounded-lg p-4"
-            style={{ backgroundColor: theme === 'dark' ? '#111827' : '#334155' }}
+            style={{ backgroundColor: 'var(--bg-secondary)' }}
           >
             <motion.div
               initial={{ scale: 0.8 }}
@@ -314,8 +317,8 @@ const SnakeGame = ({ onUnlock = () => {}, onBack }) => {
                     className="w-2 h-2 rounded-full"
                     style={{
                       backgroundColor: i < (10 - score) 
-                        ? (theme === 'dark' ? '#4ade80' : '#16a34a')
-                        : (theme === 'dark' ? '#374151' : '#94a3b8')
+                        ? 'var(--status-success)'
+                        : 'var(--bg-hover)'
                     }}
                   />
                 ))}
@@ -397,7 +400,7 @@ const SnakeGame = ({ onUnlock = () => {}, onBack }) => {
         >
           <div 
             className="w-32 h-1 rounded-full"
-            style={{ backgroundColor: theme === 'dark' ? '#4b5563' : '#94a3b8' }}
+            style={{ backgroundColor: 'var(--bg-hover)' }}
           ></div>
         </motion.div>
       </motion.div>

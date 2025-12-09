@@ -15,7 +15,7 @@ const ProjectDialog = ({ project, onClose }) => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 flex items-center justify-center z-50"
+        className="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-50"
         style={{ backgroundColor: 'var(--overlay-bg)' }}
         onClick={onClose}
       >

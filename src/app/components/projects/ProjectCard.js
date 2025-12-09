@@ -58,9 +58,9 @@ const ProjectCard = ({ project, onCardClick }) => {
             className="px-3 py-1 text-xs font-bold rounded-full backdrop-blur-sm"
             style={{
               backgroundColor: project.status === 'Done' 
-                ? 'rgba(34, 197, 94, 0.9)' 
-                : 'rgba(234, 179, 8, 0.9)',
-              color: project.status === 'Done' ? '#ffffff' : theme === 'dark' ? '#111827' : '#111827',
+                ? 'var(--status-success)' 
+                : 'var(--status-warning)',
+              color: '#ffffff',
             }}
             whileHover={{ scale: 1.1 }}
           >
