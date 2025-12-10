@@ -1,5 +1,5 @@
 "use client";
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useTheme } from '../../context/ThemeContext';
@@ -13,17 +13,18 @@ import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 export default function BlogDetailClient({ blog }) {
     const { theme } = useTheme();
 
+    const [selectedImage, setSelectedImage] = useState(null);
+
     if (!blog) {
         return <div className="min-h-screen pt-20 flex items-center justify-center" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>Blog not found</div>;
     }
 
     return (
-
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: 'easeOut' }}
-            className="min-h-screen p-4 lg:p-8 transition-colors duration-300"
+            className="min-h-screen p-4 lg:p-8 transition-colors duration-300 relative"
             style={{
                 backgroundColor: 'var(--bg-primary)',
                 color: 'var(--text-primary)',
@@ -69,12 +70,13 @@ export default function BlogDetailClient({ blog }) {
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="mb-12 rounded-2xl overflow-hidden shadow-2xl"
+                        className="mb-12 rounded-2xl overflow-hidden shadow-2xl bg-black/20 flex justify-center cursor-zoom-in"
+                        onClick={() => setSelectedImage(blog.image)}
                     >
                         <img
                             src={blog.image}
                             alt={blog.title}
-                            className="w-full h-[400px] md:h-[600px] object-cover"
+                            className="w-auto h-auto max-h-[600px] max-w-full object-contain"
                         />
                     </motion.div>
                 )}
@@ -122,6 +124,37 @@ export default function BlogDetailClient({ blog }) {
                     </ReactMarkdown>
                 </div>
             </div>
+
+            {/* Image Popup Modal */}
+            {selectedImage && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    onClick={() => setSelectedImage(null)}
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm cursor-zoom-out"
+                >
+                    <motion.div
+                        initial={{ scale: 0.9, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.9, opacity: 0 }}
+                        className="relative max-w-[90vw] max-h-[90vh]"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <button
+                            onClick={() => setSelectedImage(null)}
+                            className="absolute -top-12 right-0 text-white hover:text-gray-300 text-xl font-bold bg-white/10 p-2 rounded-full"
+                        >
+                            ✕ Close
+                        </button>
+                        <img
+                            src={selectedImage}
+                            alt="Full screen view"
+                            className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
+                        />
+                    </motion.div>
+                </motion.div>
+            )}
         </motion.div>
     );
 }

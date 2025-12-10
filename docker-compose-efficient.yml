@@ -7,46 +7,48 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
-    # Port mapping commented out for security - app can access via internal network
-    # Uncomment if external MongoDB access is needed: 
-    # ports:
-    #   - "27017:27017"
     volumes:
       - mongodb_data:/data/db
       - mongodb_config:/data/configdb
     networks:
       - aiyu-network
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')", "--quiet"]
+      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')", "--quiet" ]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
+    # Resource limits for MongoDB
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5' # Maximum 50% of 1 CPU
+          memory: 512M # Maximum 512MB RAM
+        reservations:
+          cpus: '0.25' # Minimum 25% of 1 CPU
+          memory: 256M # Minimum 256MB RAM
+    # Alternative: Use Docker Compose v2 syntax
+    # cpus: 0.5
+    # mem_limit: 512m
+    # mem_reservation: 256m
 
-  # Next.js Application Service
+    # Next.js Application Service
   app:
     build:
       context: .
       dockerfile: Dockerfile
       args:
-        # Only pass public variables as build args
-        # MONGODB_URI uses dummy value in Dockerfile to prevent credentials in image layers
-        # All sensitive credentials are provided at runtime via environment section below
         - NEXT_PUBLIC_N8N_WEBHOOK_URL=${NEXT_PUBLIC_N8N_WEBHOOK_URL}
     container_name: aiyu-app
     restart: unless-stopped
     ports:
       - "${APP_PORT:-3000}:3000"
     environment:
-      # MongoDB connection
       MONGODB_URI: ${MONGODB_URI}
-      # N8N webhook URL
       NEXT_PUBLIC_N8N_WEBHOOK_URL: ${NEXT_PUBLIC_N8N_WEBHOOK_URL}
-      # Admin credentials
       ADMIN_USERNAME: ${ADMIN_USERNAME}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
-      # Node environment
       NODE_ENV: production
     volumes:
       - ./public/uploads:/app/public/uploads
@@ -55,15 +57,22 @@ services:
         condition: service_healthy
     networks:
       - aiyu-network
+    # Resource limits for Next.js app
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5' # Maximum 50% of 1 CPU
+          memory: 1024M # Maximum 1GB RAM
+        reservations:
+          cpus: '0.25' # Minimum 25% of 1 CPU
+          memory: 512M # Minimum 512MB RAM
 
-# Named volumes for data persistence
 volumes:
   mongodb_data:
     driver: local
   mongodb_config:
     driver: local
 
-# Network for inter-service communication
 networks:
   aiyu-network:
     driver: bridge
