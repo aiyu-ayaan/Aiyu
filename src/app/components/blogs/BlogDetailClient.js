@@ -18,22 +18,28 @@ export default function BlogDetailClient({ blog }) {
     }
 
     return (
-        <div className="min-h-screen pt-24 pb-20 px-4 sm:px-6 lg:px-8 transition-colors duration-300" style={{ backgroundColor: 'var(--bg-primary)' }}>
-            <motion.article
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="max-w-6xl mx-auto"
-            >
-                <Link href="/blogs" className="inline-block mb-8 text-lg font-medium hover:underline transition-colors" style={{ color: 'var(--text-accent)' }}>
+
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: 'easeOut' }}
+            className="min-h-screen p-4 lg:p-8 transition-colors duration-300"
+            style={{
+                backgroundColor: 'var(--bg-primary)',
+                color: 'var(--text-primary)',
+            }}
+        >
+            <div className="max-w-6xl mx-auto">
+                <Link href="/blogs" className="inline-block mb-12 text-lg font-medium hover:underline transition-colors" style={{ color: 'var(--text-accent)' }}>
                     ← Back to Blogs
                 </Link>
 
                 <header className="mb-12 text-center">
-                    <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r"
+                    <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4 pb-2 bg-gradient-to-r bg-clip-text text-transparent"
                         style={{
                             backgroundImage: theme === 'dark'
-                                ? 'linear-gradient(to right, #22d3ee, #3b82f6)'
-                                : 'linear-gradient(to right, #0891b2, #2563e5)'
+                                ? 'linear-gradient(to right, #22d3ee, #3b82f6, #8b5cf6)'
+                                : 'linear-gradient(to right, #0891b2, #2563eb, #7c3aed)'
                         }}
                     >
                         {blog.title}
@@ -115,7 +121,7 @@ export default function BlogDetailClient({ blog }) {
                         {blog.content}
                     </ReactMarkdown>
                 </div>
-            </motion.article>
-        </div>
+            </div>
+        </motion.div>
     );
 }

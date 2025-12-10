@@ -29,8 +29,6 @@ export async function generateMetadata() {
 
 export default function BlogsPage() {
     return (
-        <div className="min-h-screen pt-20" style={{ backgroundColor: 'var(--bg-primary)' }}>
-            <BlogList />
-        </div>
+        <BlogList />
     );
 }

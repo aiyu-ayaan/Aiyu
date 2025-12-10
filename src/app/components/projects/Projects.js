@@ -1,6 +1,5 @@
-
 "use client";
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 // import projects, { roles } from '../../data/projectsData';
 import ProjectDialog from './ProjectDialog';
@@ -11,7 +10,27 @@ import { useTheme } from '../../context/ThemeContext';
 const Projects = ({ data }) => {
   const { theme } = useTheme();
   const projects = data || [];
-  const roles = ['A collection of my work', 'Click on a project to learn more']; // Static data migrated from projectsData.js
+  const [config, setConfig] = useState(null);
+  const [configLoading, setConfigLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/config')
+      .then(res => res.json())
+      .then(data => {
+        setConfig(data);
+        setConfigLoading(false);
+      })
+      .catch(err => {
+        console.error('Failed to fetch config', err);
+        setConfigLoading(false);
+      });
+  }, []);
+
+  const roles = [
+    config?.projectsSubtitle || 'A collection of my work',
+    'Click on a project to learn more'
+  ];
+
   const [selectedProject, setSelectedProject] = useState(null);
   const [selectedTechStack, setSelectedTechStack] = useState('All');
   const [selectedProjectType, setSelectedProjectType] = useState('All');
@@ -79,17 +98,26 @@ const Projects = ({ data }) => {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="text-center mb-12"
         >
-          <h1
-            className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4 bg-gradient-to-r bg-clip-text text-transparent"
-            style={{
-              backgroundImage: theme === 'dark'
-                ? 'linear-gradient(to right, #22d3ee, #3b82f6, #8b5cf6)'
-                : 'linear-gradient(to right, #0891b2, #2563eb, #7c3aed)',
-            }}
-          >
-            Projects Portfolio
-          </h1>
-          <TypewriterEffect roles={roles} />
+          {configLoading ? (
+            <div className="animate-pulse flex flex-col items-center">
+              <div className="h-16 w-3/4 max-w-lg bg-gray-700/50 rounded-lg mb-4"></div>
+              <div className="h-8 w-1/2 max-w-md bg-gray-700/50 rounded-lg"></div>
+            </div>
+          ) : (
+            <>
+              <h1
+                className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4 pb-2 bg-gradient-to-r bg-clip-text text-transparent"
+                style={{
+                  backgroundImage: theme === 'dark'
+                    ? 'linear-gradient(to right, #22d3ee, #3b82f6, #8b5cf6)'
+                    : 'linear-gradient(to right, #0891b2, #2563eb, #7c3aed)',
+                }}
+              >
+                {config?.projectsTitle || 'Projects Portfolio'}
+              </h1>
+              <TypewriterEffect roles={roles} />
+            </>
+          )}
         </motion.div>
 
         <div className="flex flex-col sm:flex-row justify-center gap-4 mb-8">
@@ -118,7 +146,11 @@ const Projects = ({ data }) => {
               onChange={(e) => setSelectedTechStack(e.target.value)}
             >
               {uniqueTechStacks.map((tech) => (
-                <option key={tech} value={tech}>
+                <option
+                  key={tech}
+                  value={tech}
+                  className={theme === 'dark' ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}
+                >
                   {toPascalCase(tech)}
                 </option>
               ))}
@@ -150,7 +182,11 @@ const Projects = ({ data }) => {
               onChange={(e) => setSelectedProjectType(e.target.value)}
             >
               {uniqueProjectTypes.map((type) => (
-                <option key={type} value={type}>
+                <option
+                  key={type}
+                  value={type}
+                  className={theme === 'dark' ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}
+                >
                   {toPascalCase(type)}
                 </option>
               ))}

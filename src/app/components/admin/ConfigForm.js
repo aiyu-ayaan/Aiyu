@@ -17,7 +17,12 @@ const ConfigForm = () => {
             type: 'url',
             value: '',
             filename: '',
-        }
+        },
+        projectsTitle: '',
+        projectsSubtitle: '',
+        blogsTitle: '',
+        blogsSubtitle: '',
+
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -46,7 +51,12 @@ const ConfigForm = () => {
                             type: data.resume?.type || 'url',
                             value: data.resume?.value || '',
                             filename: data.resume?.filename || '',
-                        }
+                        },
+                        projectsTitle: data.projectsTitle || 'Projects Portfolio',
+                        projectsSubtitle: data.projectsSubtitle || 'A collection of my work',
+                        blogsTitle: data.blogsTitle || 'Latest Insights',
+                        blogsSubtitle: data.blogsSubtitle || 'Thoughts, tutorials, and updates on web development and technology.'
+
                     });
                 }
             }
@@ -222,6 +232,66 @@ const ConfigForm = () => {
                                 <img src={formData.favicon.value} alt="Favicon Preview" className="w-8 h-8 object-contain bg-gray-900 rounded border border-gray-600" />
                             </div>
                         )}
+                    </div>
+                </div>
+            </div>
+
+            {/* Page Headers Section */}
+            <div>
+                <h2 className="text-xl font-bold text-white mb-4 border-b border-gray-700 pb-2">Page Headers</h2>
+                <div className="space-y-6">
+                    {/* Projects Header */}
+                    <div className="bg-gray-700/30 p-4 rounded-lg border border-gray-700">
+                        <h3 className="text-lg font-semibold text-white mb-3">Projects Page</h3>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium mb-1 text-gray-300">Title</label>
+                                <input
+                                    type="text"
+                                    name="projectsTitle"
+                                    value={formData.projectsTitle}
+                                    onChange={handleChange}
+                                    className="w-full p-3 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1 text-gray-300">Subtitle</label>
+                                <input
+                                    type="text"
+                                    name="projectsSubtitle"
+                                    value={formData.projectsSubtitle}
+                                    onChange={handleChange}
+                                    className="w-full p-3 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Blogs Header */}
+                    <div className="bg-gray-700/30 p-4 rounded-lg border border-gray-700">
+                        <h3 className="text-lg font-semibold text-white mb-3">Blogs Page</h3>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium mb-1 text-gray-300">Title</label>
+                                <input
+                                    type="text"
+                                    name="blogsTitle"
+                                    value={formData.blogsTitle}
+                                    onChange={handleChange}
+                                    className="w-full p-3 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1 text-gray-300">Subtitle</label>
+                                <textarea
+                                    name="blogsSubtitle"
+                                    value={formData.blogsSubtitle}
+                                    onChange={handleChange}
+                                    rows="2"
+                                    className="w-full p-3 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white"
+                                />
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
