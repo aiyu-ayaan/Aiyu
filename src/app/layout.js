@@ -39,7 +39,13 @@ export const viewport = {
   initialScale: 1,
 }
 
-export default function RootLayout({ children }) {
+import GoogleAnalytics from "./components/GoogleAnalytics";
+
+export default async function RootLayout({ children }) {
+  await dbConnect();
+  const config = await ConfigModel.findOne().lean();
+  const gaId = config?.googleAnalyticsId || process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -65,6 +71,7 @@ export default function RootLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <GoogleAnalytics gaId={gaId} />
         <ThemeProvider>
           {children}
         </ThemeProvider>

@@ -6,6 +6,23 @@ import { useTheme } from '../../context/ThemeContext';
 
 import Link from 'next/link';
 
+const stripMarkdown = (markdown) => {
+    if (!markdown) return '';
+    return markdown
+        .replace(/!\[([^\]]*)\]\([^\)]+\)/g, '') // Remove images
+        .replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1') // Replace links with text
+        .replace(/#{1,6} /g, '') // Remove headers
+        .replace(/(\*\*|__)(.*?)\1/g, '$2') // Remove bold
+        .replace(/(\*|_)(.*?)\1/g, '$2') // Remove italic
+        .replace(/`{3,}[\s\S]*?`{3,}/g, '') // Remove code blocks
+        .replace(/`(.+?)`/g, '$1') // Remove inline code
+        .replace(/^\s*>\s+/gm, '') // Remove blockquotes
+        .replace(/^\s*[\*\-\+]\s+/gm, '') // Remove list items
+        .replace(/^\s*\d+\.\s+/gm, '') // Remove ordered list items
+        .replace(/\n{2,}/g, '\n') // Consolidate newlines
+        .trim();
+};
+
 const BlogCard = ({ blog }) => {
     const { theme } = useTheme();
 
@@ -52,7 +69,7 @@ const BlogCard = ({ blog }) => {
                     className="text-sm mb-4 line-clamp-3 flex-grow"
                     style={{ color: 'var(--text-secondary)' }}
                 >
-                    {blog.content}
+                    {stripMarkdown(blog.content)}
                 </p>
 
                 <Link href={`/blogs/${blog._id}`} passHref legacyBehavior>

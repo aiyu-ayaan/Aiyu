@@ -34,7 +34,7 @@ const About = ({ data }) => {
           className="text-center mb-12"
         >
           <h1
-            className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4 bg-gradient-to-r bg-clip-text text-transparent"
+            className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4 pb-2 bg-gradient-to-r bg-clip-text text-transparent"
             style={{
               backgroundImage: theme === 'dark'
                 ? 'linear-gradient(to right, #22d3ee, #3b82f6, #8b5cf6)'

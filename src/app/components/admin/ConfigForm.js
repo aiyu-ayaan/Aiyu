@@ -6,6 +6,7 @@ const ConfigForm = () => {
     const router = useRouter();
     const [formData, setFormData] = useState({
         n8nWebhookUrl: '',
+        googleAnalyticsId: '',
         logoText: '< aiyu />',
         siteTitle: '',
         favicon: {
@@ -17,7 +18,12 @@ const ConfigForm = () => {
             type: 'url',
             value: '',
             filename: '',
-        }
+        },
+        projectsTitle: '',
+        projectsSubtitle: '',
+        blogsTitle: '',
+        blogsSubtitle: '',
+
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -35,6 +41,7 @@ const ConfigForm = () => {
                 if (data) {
                     setFormData({
                         n8nWebhookUrl: data.n8nWebhookUrl || '',
+                        googleAnalyticsId: data.googleAnalyticsId || '',
                         logoText: data.logoText || '< aiyu />',
                         siteTitle: data.siteTitle || '',
                         favicon: {
@@ -46,7 +53,12 @@ const ConfigForm = () => {
                             type: data.resume?.type || 'url',
                             value: data.resume?.value || '',
                             filename: data.resume?.filename || '',
-                        }
+                        },
+                        projectsTitle: data.projectsTitle || 'Projects Portfolio',
+                        projectsSubtitle: data.projectsSubtitle || 'A collection of my work',
+                        blogsTitle: data.blogsTitle || 'Latest Insights',
+                        blogsSubtitle: data.blogsSubtitle || 'Thoughts, tutorials, and updates on web development and technology.'
+
                     });
                 }
             }
@@ -226,21 +238,99 @@ const ConfigForm = () => {
                 </div>
             </div>
 
+            {/* Page Headers Section */}
+            <div>
+                <h2 className="text-xl font-bold text-white mb-4 border-b border-gray-700 pb-2">Page Headers</h2>
+                <div className="space-y-6">
+                    {/* Projects Header */}
+                    <div className="bg-gray-700/30 p-4 rounded-lg border border-gray-700">
+                        <h3 className="text-lg font-semibold text-white mb-3">Projects Page</h3>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium mb-1 text-gray-300">Title</label>
+                                <input
+                                    type="text"
+                                    name="projectsTitle"
+                                    value={formData.projectsTitle}
+                                    onChange={handleChange}
+                                    className="w-full p-3 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1 text-gray-300">Subtitle</label>
+                                <input
+                                    type="text"
+                                    name="projectsSubtitle"
+                                    value={formData.projectsSubtitle}
+                                    onChange={handleChange}
+                                    className="w-full p-3 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Blogs Header */}
+                    <div className="bg-gray-700/30 p-4 rounded-lg border border-gray-700">
+                        <h3 className="text-lg font-semibold text-white mb-3">Blogs Page</h3>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium mb-1 text-gray-300">Title</label>
+                                <input
+                                    type="text"
+                                    name="blogsTitle"
+                                    value={formData.blogsTitle}
+                                    onChange={handleChange}
+                                    className="w-full p-3 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1 text-gray-300">Subtitle</label>
+                                <textarea
+                                    name="blogsSubtitle"
+                                    value={formData.blogsSubtitle}
+                                    onChange={handleChange}
+                                    rows="2"
+                                    className="w-full p-3 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             {/* Integrations Section */}
             <div>
                 <h2 className="text-xl font-bold text-white mb-4 border-b border-gray-700 pb-2">Integrations</h2>
-                <label className="block text-sm font-medium mb-1 text-gray-300">N8n Webhook URL</label>
-                <input
-                    type="url"
-                    name="n8nWebhookUrl"
-                    value={formData.n8nWebhookUrl}
-                    onChange={handleChange}
-                    placeholder="https://your-n8n-instance.com/webhook/..."
-                    className="w-full p-3 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white"
-                />
-                <p className="text-xs text-gray-400 mt-1">
-                    Used for the AI Assistant chat widget.
-                </p>
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium mb-1 text-gray-300">N8n Webhook URL</label>
+                        <input
+                            type="url"
+                            name="n8nWebhookUrl"
+                            value={formData.n8nWebhookUrl}
+                            onChange={handleChange}
+                            placeholder="https://your-n8n-instance.com/webhook/..."
+                            className="w-full p-3 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white"
+                        />
+                        <p className="text-xs text-gray-400 mt-1">
+                            Used for the AI Assistant chat widget.
+                        </p>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium mb-1 text-gray-300">Google Analytics ID</label>
+                        <input
+                            type="text"
+                            name="googleAnalyticsId"
+                            value={formData.googleAnalyticsId}
+                            onChange={handleChange}
+                            placeholder="G-XXXXXXXXXX"
+                            className="w-full p-3 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white"
+                        />
+                        <p className="text-xs text-gray-400 mt-1">
+                            Your Google Analytics Measurement ID (starts with G-).
+                        </p>
+                    </div>
+                </div>
             </div>
 
             {/* Resume Section */}

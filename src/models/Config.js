@@ -13,7 +13,12 @@ const ConfigSchema = new mongoose.Schema({
         value: { type: String, default: '' }, // Base64
         filename: { type: String, default: '' },
         mimeType: { type: String, default: '' }
-    }
+    },
+    projectsTitle: { type: String, default: 'Projects Portfolio' },
+    projectsSubtitle: { type: String, default: 'A collection of my work' },
+    blogsTitle: { type: String, default: 'Latest Insights' },
+    blogsSubtitle: { type: String, default: 'Thoughts, tutorials, and updates on web development and technology.' },
+    googleAnalyticsId: { type: String, default: '' }
 }, { strict: false }); // Allow other fields to be added later if needed without strict validation issues initially
 
 export default mongoose.models.Config || mongoose.model('Config', ConfigSchema);
