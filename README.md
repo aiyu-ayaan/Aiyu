@@ -20,6 +20,15 @@ You can start editing the page by modifying `app/page.js`. The page auto-updates
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Project Documentation
+
+For detailed guides, please refer to the `docs/` folder:
+
+- 📖 **[API Documentation](docs/API_DOCUMENTATION.md)**: Endpoints, Authentication, and usage for API integrations.
+- 🐳 **[Docker Guide](docs/DOCKER_GUIDE.md)**: Comprehensive guide for building, running, and troubleshooting Docker containers.
+- ⚙️ **[Setup Guide](docs/SETUP_GUIDE.md)**: Instructions for local development environment setup.
+- 🚀 **[Deployment Guide](docs/DEPLOYMENT.md)**: Strategies for deploying to VPS, Vercel, or custom servers.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
