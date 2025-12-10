@@ -1,10 +1,13 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useTheme } from '../../context/ThemeContext';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import LinkPreview from './LinkPreview';
+import Divider from '../landing/Divider';
 import dynamic from 'next/dynamic';
 
 const SyntaxHighlighter = dynamic(() => import('react-syntax-highlighter').then(mod => mod.Prism), { ssr: false });
@@ -14,6 +17,30 @@ export default function BlogDetailClient({ blog }) {
     const { theme } = useTheme();
 
     const [selectedImage, setSelectedImage] = useState(null);
+    const [extractedLinks, setExtractedLinks] = useState([]);
+
+    useEffect(() => {
+        if (blog?.content) {
+            const urls = new Set();
+            // Regex to find markdown links [text](url)
+            const mdLinkRegex = /\[.*?\]\((https?:\/\/[^\)]+)\)/g;
+            let match;
+            while ((match = mdLinkRegex.exec(blog.content)) !== null) {
+                urls.add(match[1]);
+            }
+
+            // Regex for raw links (simple version, might overlap with above but Set handles dupes)
+            // We can just rely on the above extracting all markdown links. 
+            // If we want raw urls not in markdown links, it gets complex. 
+            // Assuming most links are markdown links or just raw text that user wants previewed.
+            const rawLinkRegex = /(?<!\()(https?:\/\/[^\s\)>"]+)/g;
+            while ((match = rawLinkRegex.exec(blog.content)) !== null) {
+                urls.add(match[1]);
+            }
+
+            setExtractedLinks(Array.from(urls));
+        }
+    }, [blog]);
 
     if (!blog) {
         return <div className="min-h-screen pt-20 flex items-center justify-center" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>Blog not found</div>;
@@ -96,6 +123,19 @@ export default function BlogDetailClient({ blog }) {
                     <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
                         components={{
+                            a: ({ node, className, href, children, ...props }) => {
+                                return (
+                                    <a
+                                        href={href}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className={`${className} text-cyan-400 hover:underline`}
+                                        {...props}
+                                    >
+                                        {children}
+                                    </a>
+                                );
+                            },
                             code({ node, inline, className, children, ...props }) {
                                 const match = /language-(\w+)/.exec(className || '')
                                 return !inline && match ? (
@@ -123,6 +163,21 @@ export default function BlogDetailClient({ blog }) {
                         {blog.content}
                     </ReactMarkdown>
                 </div>
+
+
+
+
+                {extractedLinks.length > 0 && (
+                    <div className="mt-8">
+                        <Divider />
+                        <h2 className="text-2xl font-bold mb-6 text-white text-center">Resources & Links</h2>
+                        <div className="grid grid-cols-1 gap-4 max-w-3xl mx-auto">
+                            {extractedLinks.map((link, index) => (
+                                <LinkPreview key={index} url={link} />
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Image Popup Modal */}
