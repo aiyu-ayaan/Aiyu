@@ -6,6 +6,7 @@ const ConfigForm = () => {
     const router = useRouter();
     const [formData, setFormData] = useState({
         n8nWebhookUrl: '',
+        googleAnalyticsId: '',
         logoText: '< aiyu />',
         siteTitle: '',
         favicon: {
@@ -40,6 +41,7 @@ const ConfigForm = () => {
                 if (data) {
                     setFormData({
                         n8nWebhookUrl: data.n8nWebhookUrl || '',
+                        googleAnalyticsId: data.googleAnalyticsId || '',
                         logoText: data.logoText || '< aiyu />',
                         siteTitle: data.siteTitle || '',
                         favicon: {
@@ -299,18 +301,36 @@ const ConfigForm = () => {
             {/* Integrations Section */}
             <div>
                 <h2 className="text-xl font-bold text-white mb-4 border-b border-gray-700 pb-2">Integrations</h2>
-                <label className="block text-sm font-medium mb-1 text-gray-300">N8n Webhook URL</label>
-                <input
-                    type="url"
-                    name="n8nWebhookUrl"
-                    value={formData.n8nWebhookUrl}
-                    onChange={handleChange}
-                    placeholder="https://your-n8n-instance.com/webhook/..."
-                    className="w-full p-3 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white"
-                />
-                <p className="text-xs text-gray-400 mt-1">
-                    Used for the AI Assistant chat widget.
-                </p>
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium mb-1 text-gray-300">N8n Webhook URL</label>
+                        <input
+                            type="url"
+                            name="n8nWebhookUrl"
+                            value={formData.n8nWebhookUrl}
+                            onChange={handleChange}
+                            placeholder="https://your-n8n-instance.com/webhook/..."
+                            className="w-full p-3 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white"
+                        />
+                        <p className="text-xs text-gray-400 mt-1">
+                            Used for the AI Assistant chat widget.
+                        </p>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium mb-1 text-gray-300">Google Analytics ID</label>
+                        <input
+                            type="text"
+                            name="googleAnalyticsId"
+                            value={formData.googleAnalyticsId}
+                            onChange={handleChange}
+                            placeholder="G-XXXXXXXXXX"
+                            className="w-full p-3 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white"
+                        />
+                        <p className="text-xs text-gray-400 mt-1">
+                            Your Google Analytics Measurement ID (starts with G-).
+                        </p>
+                    </div>
+                </div>
             </div>
 
             {/* Resume Section */}
