@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
+import { writeFile, mkdir, chmod } from 'fs/promises';
 import { join } from 'path';
 
 export async function POST(request) {
@@ -21,10 +21,21 @@ export async function POST(request) {
 
         // Ensure upload directory exists
         const uploadDir = join(process.cwd(), 'public/uploads');
+        console.log('Current working directory:', process.cwd());
+        console.log('Upload directory target:', uploadDir);
+
         try {
             await mkdir(uploadDir, { recursive: true });
         } catch (e) {
+            console.error('Error creating directory:', e);
             // Ignore error if directory exists
+        }
+
+        try {
+            // Attempt to make directory writable just in case
+            await chmod(uploadDir, 0o777);
+        } catch (e) {
+            console.warn('Could not chmod directory:', e);
         }
 
         const path = join(uploadDir, filename);
@@ -34,7 +45,7 @@ export async function POST(request) {
 
         return NextResponse.json({ success: true, url: `/uploads/${filename}` });
     } catch (error) {
-        console.error('Upload error:', error);
-        return NextResponse.json({ success: false, error: 'Upload failed' }, { status: 500 });
+        console.error('Upload error details:', error);
+        return NextResponse.json({ success: false, error: 'Upload failed: ' + error.message }, { status: 500 });
     }
 }
