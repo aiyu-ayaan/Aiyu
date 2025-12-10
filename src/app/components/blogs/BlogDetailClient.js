@@ -11,6 +11,8 @@ import Divider from '../landing/Divider';
 import dynamic from 'next/dynamic';
 
 const SyntaxHighlighter = dynamic(() => import('react-syntax-highlighter').then(mod => mod.Prism), { ssr: false });
+import { FaShareAlt } from "react-icons/fa";
+import { IoCheckmark } from "react-icons/io5";
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 export default function BlogDetailClient({ blog }) {
@@ -18,6 +20,7 @@ export default function BlogDetailClient({ blog }) {
 
     const [selectedImage, setSelectedImage] = useState(null);
     const [extractedLinks, setExtractedLinks] = useState([]);
+    const [showShareToast, setShowShareToast] = useState(false);
 
     useEffect(() => {
         if (blog?.content) {
@@ -42,6 +45,21 @@ export default function BlogDetailClient({ blog }) {
         }
     }, [blog]);
 
+    const handleShare = async () => {
+        const url = new URL(window.location.href);
+        url.searchParams.set('utm_source', 'portfolio_share');
+        url.searchParams.set('utm_medium', 'social');
+        url.searchParams.set('utm_campaign', 'blog_share');
+
+        try {
+            await navigator.clipboard.writeText(url.toString());
+            setShowShareToast(true);
+            setTimeout(() => setShowShareToast(false), 3000);
+        } catch (err) {
+            console.error('Failed to copy code', err);
+        }
+    };
+
     if (!blog) {
         return <div className="min-h-screen pt-20 flex items-center justify-center" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>Blog not found</div>;
     }
@@ -62,7 +80,20 @@ export default function BlogDetailClient({ blog }) {
                     ← Back to Blogs
                 </Link>
 
-                <header className="mb-12 text-center">
+                <header className="mb-12 text-center relative">
+                    {/* Share URL Button - Desktop */}
+                    <div className="absolute right-0 top-0 hidden md:block">
+                        <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={handleShare}
+                            className="p-3 rounded-full bg-gray-800/50 hover:bg-gray-700/50 text-cyan-400 border border-gray-700 transition-colors"
+                            title="Share this blog"
+                        >
+                            {showShareToast ? <IoCheckmark size={20} /> : <FaShareAlt size={18} />}
+                        </motion.button>
+                    </div>
+
                     <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4 pb-2 bg-gradient-to-r bg-clip-text text-transparent"
                         style={{
                             backgroundImage: theme === 'dark'
@@ -75,7 +106,7 @@ export default function BlogDetailClient({ blog }) {
                     <p className="text-xl mb-6" style={{ color: 'var(--text-secondary)' }}>
                         {blog.date}
                     </p>
-                    <div className="flex flex-wrap justify-center gap-3 mb-8">
+                    <div className="flex flex-wrap justify-center gap-3 mb-8 items-center">
                         {blog.tags && blog.tags.map((tag, index) => (
                             <span
                                 key={index}
@@ -90,8 +121,28 @@ export default function BlogDetailClient({ blog }) {
                                 #{tag}
                             </span>
                         ))}
+                        {/* Mobile Share Button */}
+                        <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={handleShare}
+                            className="md:hidden p-2 rounded-full bg-gray-800/50 hover:bg-gray-700/50 text-cyan-400 border border-gray-700 transition-colors ml-2"
+                            title="Share this blog"
+                        >
+                            {showShareToast ? <IoCheckmark size={16} /> : <FaShareAlt size={14} />}
+                        </motion.button>
                     </div>
                 </header>
+
+                {/* Share Toast Notification */}
+                <motion.div
+                    initial={{ opacity: 0, y: 50 }}
+                    animate={{ opacity: showShareToast ? 1 : 0, y: showShareToast ? 0 : 50 }}
+                    className="fixed bottom-8 right-8 px-6 py-3 bg-gray-900 border border-cyan-500/50 rounded-lg shadow-lg z-50 flex items-center gap-3 pointer-events-none"
+                >
+                    <IoCheckmark className="text-cyan-400" size={20} />
+                    <span className="text-gray-200 font-medium">Link copied to clipboard!</span>
+                </motion.div>
 
                 {blog.image && (
                     <motion.div
