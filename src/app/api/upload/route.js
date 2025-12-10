@@ -43,7 +43,7 @@ export async function POST(request) {
         await writeFile(path, buffer);
         console.log(`Open ${path} to see the uploaded file`);
 
-        return NextResponse.json({ success: true, url: `/uploads/${filename}` });
+        return NextResponse.json({ success: true, url: `/api/uploads/${filename}` });
     } catch (error) {
         console.error('Upload error details:', error);
         return NextResponse.json({ success: false, error: 'Upload failed: ' + error.message }, { status: 500 });
