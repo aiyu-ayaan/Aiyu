@@ -2,6 +2,7 @@
 import dbConnect from "@/lib/db";
 import Blog from "@/models/Blog";
 import { NextResponse } from "next/server";
+import { getSession } from "@/lib/auth";
 
 export async function GET() {
     await dbConnect();
@@ -13,10 +14,44 @@ export async function GET() {
     }
 }
 
+
+
 export async function POST(request) {
     await dbConnect();
+
+    // Security Check
+    // 1. Check for API Key (External tools like n8n)
+    const apiKey = request.headers.get('x-api-key');
+    const validApiKey = process.env.BLOG_API_KEY || process.env.JWT_SECRET;
+
+    const isApiKeyValid = apiKey && validApiKey && apiKey === validApiKey;
+
+    // 2. Check for Session (Admin Panel)
+    const session = await getSession();
+    const isSessionValid = !!session;
+
+    if (!isApiKeyValid && !isSessionValid) {
+        return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+
     try {
         const body = await request.json();
+
+        // Default date to now if not provided
+        if (!body.date) {
+            const now = new Date();
+            body.date = now.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        }
+
+        // Validate basic fields
+        if (!body.title || !body.content) {
+            return NextResponse.json({ success: false, error: 'Title and content are required' }, { status: 400 });
+        }
+
         const blog = await Blog.create(body);
         return NextResponse.json({ success: true, data: blog }, { status: 201 });
     } catch (error) {
