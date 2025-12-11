@@ -1,0 +1,234 @@
+# Security-Enhanced Docker Ignore File
+# Prevents potentially malicious or sensitive files from being included in Docker images
+
+# Node modules and build artifacts
+node_modules
+npm-debug.log
+yarn-error.log
+.npm
+.yarn
+.next
+.out
+dist
+build
+coverage
+.cache
+
+# Environment and secrets
+.env
+.env.local
+.env.*.local
+.env.production
+.env.development
+*.env
+**/.env
+**/.env.*
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+*.jks
+id_rsa
+id_dsa
+id_ecdsa
+id_ed25519
+.ssh
+**/.ssh
+secrets
+**/*secret*
+**/*password*
+**/*credential*
+
+# Git and version control
+.git
+.gitignore
+.gitattributes
+.github
+.gitlab
+.svn
+.hg
+
+# Development and IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+.project
+.classpath
+.settings
+
+# Documentation (usually not needed in production)
+README.md
+CHANGELOG.md
+CONTRIBUTING.md
+LICENSE
+*.md
+docs
+documentation
+
+# Test files
+test
+tests
+__tests__
+*.test.js
+*.test.ts
+*.spec.js
+*.spec.ts
+*.test.jsx
+*.test.tsx
+*.spec.jsx
+*.spec.tsx
+coverage
+.nyc_output
+jest.config.js
+jest.config.ts
+
+# Docker files (avoid recursive Docker builds)
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+.dockerignore.*
+
+# CI/CD
+.travis.yml
+.circleci
+.gitlab-ci.yml
+azure-pipelines.yml
+.github/workflows
+Jenkinsfile
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+pnpm-debug.log*
+
+# Temporary files
+tmp
+temp
+*.tmp
+*.temp
+*.bak
+*.backup
+*.old
+*.orig
+*.rej
+*~
+.#*
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Security scan results
+trivy-results.json
+snyk-results.json
+audit.json
+security-report.html
+
+# Malware patterns and suspicious files
+# Add patterns for known malware files
+*ijnegrrinje*
+*xmrig*
+*minerd*
+*cpuminer*
+*.json.exe
+*.sh.txt
+/tmp/*
+/var/tmp/*
+
+# Scripts and executables that shouldn't be in Docker image
+scripts/seed.js
+scripts/debug.js
+scripts/test.js
+cleanup-malware.sh
+*.sh
+*.bash
+*.zsh
+
+# Database dumps and backups
+*.sql
+*.dump
+*.backup
+backup
+backups
+dumps
+
+# Media uploads (should use external storage in production)
+uploads
+public/uploads
+media
+
+# Package manager lock files (optional - include if you want reproducible builds)
+# Uncomment to exclude:
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# Local development databases
+*.sqlite
+*.sqlite3
+*.db
+*.rdb
+
+# Python (if you have any Python scripts)
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg
+*.egg-info
+dist
+build
+
+# Ruby (if you have any Ruby scripts)
+*.gem
+*.rbc
+.bundle
+vendor/bundle
+
+# Miscellaneous
+*.pid
+*.seed
+*.pid.lock
+*.tgz
+*.gz
+*.zip
+*.tar
+*.rar
+*.7z
+*.iso
+*.dmg
+*.exe (unless specifically needed)
+*.dll
+*.so
+*.dylib
+
+# Security-specific exclusions
+# Exclude files that could contain embedded malware
+*.base64
+*.encoded
+*.obfuscated
+*.packed
+
+# Exclude directories that could contain malicious code
+node_modules/**/test
+node_modules/**/tests
+node_modules/**/*.md
+node_modules/**/.github
+
+# Keep only necessary files for production
+# Everything else should be explicitly excluded
