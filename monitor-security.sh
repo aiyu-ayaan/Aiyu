@@ -78,9 +78,24 @@ echo ""
 
 # 5. Check for new cron jobs
 echo "5. Checking cron jobs..."
-if [ -f /tmp/cron_baseline.txt ]; then
+BASELINE_DIR="/var/lib/security-monitoring"
+BASELINE_FILE="$BASELINE_DIR/cron_baseline.txt"
+
+# Create secure baseline directory if it doesn't exist
+if [ -w "/var/lib" ] || [ -w "$HOME" ]; then
+    if [ ! -w "/var/lib" ]; then
+        # Fallback to home directory if /var/lib is not writable
+        BASELINE_DIR="$HOME/.security-monitoring"
+        BASELINE_FILE="$BASELINE_DIR/cron_baseline.txt"
+    fi
+    
+    mkdir -p "$BASELINE_DIR" 2>/dev/null || true
+    chmod 700 "$BASELINE_DIR" 2>/dev/null || true
+fi
+
+if [ -f "$BASELINE_FILE" ]; then
     CURRENT_CRON=$(crontab -l 2>/dev/null || echo "")
-    BASELINE_CRON=$(cat /tmp/cron_baseline.txt)
+    BASELINE_CRON=$(cat "$BASELINE_FILE" 2>/dev/null || echo "")
     if [ "$CURRENT_CRON" != "$BASELINE_CRON" ]; then
         report_warning "Cron jobs have changed since baseline"
         echo "Run 'crontab -l' to review"
@@ -89,8 +104,13 @@ if [ -f /tmp/cron_baseline.txt ]; then
     fi
 else
     # Create baseline
-    crontab -l 2>/dev/null > /tmp/cron_baseline.txt || echo "" > /tmp/cron_baseline.txt
-    report_ok "Created cron baseline for future comparisons"
+    if [ -w "$BASELINE_DIR" ]; then
+        crontab -l 2>/dev/null > "$BASELINE_FILE" || echo "" > "$BASELINE_FILE"
+        chmod 600 "$BASELINE_FILE" 2>/dev/null || true
+        report_ok "Created cron baseline for future comparisons at $BASELINE_FILE"
+    else
+        report_warning "Cannot create cron baseline (directory not writable)"
+    fi
 fi
 echo ""
 
@@ -186,14 +206,16 @@ echo ""
 echo "Next scheduled check: $(date -d '+1 hour' 2>/dev/null || date -v+1H 2>/dev/null || echo 'in 1 hour')"
 echo ""
 
-# Save report to log file
-REPORT_DIR="/var/log/security-monitoring"
-if [ -w "/var/log" ]; then
-    mkdir -p "$REPORT_DIR" 2>/dev/null || true
-    if [ -d "$REPORT_DIR" ]; then
-        REPORT_FILE="$REPORT_DIR/report-$(date +%Y%m%d-%H%M%S).log"
-        # Re-run without colors for log file
-        bash "$0" > "$REPORT_FILE" 2>&1 &
+# Save report to log file (only if not already logging)
+if [ -z "$SKIP_LOGGING" ]; then
+    REPORT_DIR="/var/log/security-monitoring"
+    if [ -w "/var/log" ]; then
+        mkdir -p "$REPORT_DIR" 2>/dev/null || true
+        if [ -d "$REPORT_DIR" ]; then
+            REPORT_FILE="$REPORT_DIR/report-$(date +%Y%m%d-%H%M%S).log"
+            # Run with SKIP_LOGGING to avoid recursion
+            SKIP_LOGGING=1 bash "$0" > "$REPORT_FILE" 2>&1 &
+        fi
     fi
 fi
 
