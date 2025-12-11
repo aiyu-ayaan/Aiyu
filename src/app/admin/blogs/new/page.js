@@ -21,41 +21,12 @@ export default function NewBlogPage() {
         tags: '',
         date: new Date().toISOString().split('T')[0],
     });
-    const [useUrl, setUseUrl] = useState(true);
-    const [uploading, setUploading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [previewMode, setPreviewMode] = useState(false);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
-    };
-
-    const handleFileChange = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        setUploading(true);
-        const formData = new FormData();
-        formData.append('file', file);
-
-        try {
-            const res = await fetch('/api/upload', {
-                method: 'POST',
-                body: formData,
-            });
-            const data = await res.json();
-            if (data.success) {
-                setFormData((prev) => ({ ...prev, image: data.url }));
-            } else {
-                alert('Upload failed: ' + data.error);
-            }
-        } catch (error) {
-            console.error('Upload error:', error);
-            alert('Upload failed');
-        } finally {
-            setUploading(false);
-        }
     };
 
     const handleSubmit = async (e) => {
@@ -167,55 +138,28 @@ export default function NewBlogPage() {
                     />
                 </div>
 
+                {/* Image URL Input Only */}
                 <div>
                     <div className="flex justify-between items-center mb-1">
-                        <label className="block text-sm font-medium">Image Cover</label>
-                        <div className="flex gap-4">
+                        <label className="block text-sm font-medium">Image Cover URL</label>
+                        {formData.image && (
                             <button
                                 type="button"
-                                onClick={() => setUseUrl(!useUrl)}
-                                className="text-xs text-blue-400 hover:text-blue-300 underline"
+                                onClick={insertImageMarkdown}
+                                className="text-xs text-green-400 hover:text-green-300 underline"
                             >
-                                {useUrl ? 'Switch to Upload' : 'Switch to URL'}
+                                Insert into Content
                             </button>
-                            {formData.image && (
-                                <button
-                                    type="button"
-                                    onClick={insertImageMarkdown}
-                                    className="text-xs text-green-400 hover:text-green-300 underline"
-                                >
-                                    Insert into Content
-                                </button>
-                            )}
-                        </div>
+                        )}
                     </div>
-
-                    {useUrl ? (
-                        <input
-                            type="text"
-                            name="image"
-                            value={formData.image}
-                            onChange={handleChange}
-                            placeholder="https://example.com/image.jpg"
-                            className="w-full p-2 bg-gray-700 rounded border border-gray-600 focus:outline-none focus:border-blue-500"
-                        />
-                    ) : (
-                        <div className="flex items-center gap-4">
-                            <input
-                                type="file"
-                                onChange={handleFileChange}
-                                accept="image/*"
-                                className="block w-full text-sm text-slate-500
-                      file:mr-4 file:py-2 file:px-4
-                      file:rounded-full file:border-0
-                      file:text-sm file:font-semibold
-                      file:bg-blue-50 and file:text-blue-700
-                      hover:file:bg-blue-100
-                    "
-                            />
-                            {uploading && <span className="text-yellow-400">Uploading...</span>}
-                        </div>
-                    )}
+                    <input
+                        type="text"
+                        name="image"
+                        value={formData.image}
+                        onChange={handleChange}
+                        placeholder="https://example.com/image.jpg"
+                        className="w-full p-2 bg-gray-700 rounded border border-gray-600 focus:outline-none focus:border-blue-500"
+                    />
                     {formData.image && (
                         <div className="mt-2 text-center">
                             <p className="text-xs text-gray-400 mb-1">Preview:</p>
@@ -270,7 +214,7 @@ export default function NewBlogPage() {
                 <div className="flex gap-4 pt-4 border-t border-gray-700 mt-8">
                     <button
                         type="submit"
-                        disabled={submitting || uploading}
+                        disabled={submitting}
                         className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded transition-colors disabled:opacity-50"
                     >
                         {submitting ? 'Creating...' : 'Create Blog'}
@@ -283,7 +227,7 @@ export default function NewBlogPage() {
                         Cancel
                     </button>
                 </div>
-            </form>
-        </div>
+            </form >
+        </div >
     );
 }

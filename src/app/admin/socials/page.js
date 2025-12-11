@@ -22,6 +22,25 @@ export default function AdminSocials() {
         }
     };
 
+    const handleToggleVisibility = async (id, currentStatus) => {
+        try {
+            const res = await fetch(`/api/socials/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ isHidden: !currentStatus }),
+            });
+            if (res.ok) {
+                setSocials(socials.map((s) => (s._id === id ? { ...s, isHidden: !currentStatus } : s)));
+            } else {
+                alert('Failed to update visibility');
+            }
+        } catch (error) {
+            console.error('Error updating visibility', error);
+        }
+    };
+
     const handleDelete = async (id) => {
         if (!confirm('Are you sure you want to delete this social link?')) return;
 
@@ -68,10 +87,20 @@ export default function AdminSocials() {
                     <tbody className="divide-y divide-gray-700">
                         {socials.map((social) => (
                             <tr key={social._id} className="hover:bg-gray-700/50 transition-colors">
-                                <td className="px-6 py-4 font-medium text-white">{social.name}</td>
+                                <td className="px-6 py-4 font-medium text-white">
+                                    {social.name}
+                                    {social.isHidden && <span className="ml-2 text-xs bg-red-500/20 text-red-300 px-2 py-0.5 rounded">Hidden</span>}
+                                </td>
                                 <td className="px-6 py-4 truncate max-w-xs">{social.url}</td>
                                 <td className="px-6 py-4">{social.iconName}</td>
                                 <td className="px-6 py-4 text-right space-x-3">
+                                    <button
+                                        onClick={() => handleToggleVisibility(social._id, social.isHidden)}
+                                        className={`${social.isHidden ? 'text-gray-500 hover:text-gray-400' : 'text-yellow-400 hover:text-yellow-300'} transition-colors`}
+                                        title={social.isHidden ? "Unhide" : "Hide"}
+                                    >
+                                        {social.isHidden ? 'Turn On' : 'Turn Off'}
+                                    </button>
                                     <Link href={`/admin/socials/${social._id}`} className="text-cyan-400 hover:text-cyan-300 transition-colors">
                                         Edit
                                     </Link>

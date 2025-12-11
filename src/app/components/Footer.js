@@ -35,7 +35,7 @@ export default function Footer({ socialData, name }) {
                     </span>
 
                     <div className="flex items-center gap-4 sm:gap-3">
-                        {socials.filter(social => social.url).map((social, index) => (
+                        {socials.filter(social => social.url && !social.isHidden && social.icon).map((social, index) => (
                             <div key={index}>
                                 <Link
                                     href={social.url}
