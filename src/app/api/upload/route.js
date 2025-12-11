@@ -12,6 +12,11 @@ export async function POST(request) {
             return NextResponse.json({ success: false, error: 'No file uploaded' }, { status: 400 });
         }
 
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml'];
+        if (!allowedTypes.includes(file.type)) {
+            return NextResponse.json({ success: false, error: 'Invalid file type. Only images are allowed.' }, { status: 400 });
+        }
+
         const bytes = await file.arrayBuffer();
         const buffer = Buffer.from(bytes);
 

@@ -56,9 +56,9 @@ COPY --from=builder /app/.next/static ./.next/static
 # Change ownership to non-root user
 RUN chown -R nextjs:nodejs /app
 
+
 # Switch to non-root user
-# Switch to non-root user
-# USER nextjs
+USER nextjs
 
 # Expose the port the app runs on
 EXPOSE 3000
