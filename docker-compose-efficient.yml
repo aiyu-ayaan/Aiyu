@@ -61,11 +61,11 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.5' # Maximum 50% of 1 CPU
-          memory: 1024M # Maximum 1GB RAM
+          cpus: '1.0' # Increased to 1 full CPU to prevent freezing
+          memory: 2048M # Maximum 2GB RAM
         reservations:
-          cpus: '0.25' # Minimum 25% of 1 CPU
-          memory: 512M # Minimum 512MB RAM
+          cpus: '0.5' # Minimum 50% of 1 CPU
+          memory: 1024M # Minimum 1GB RAM
 
 volumes:
   mongodb_data:
