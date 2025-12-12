@@ -65,8 +65,12 @@ export async function POST(request) {
             return NextResponse.json({ success: false, error: 'Title and content are required' }, { status: 400 });
         }
 
-        // Explicitly force published: false for new blogs
-        const blogData = { ...body, published: false };
+        // Use provided published status or default to false (Draft)
+        const blogData = {
+            ...body,
+            published: body.published !== undefined ? body.published : false
+        };
+
         const blog = await Blog.create(blogData);
         console.log('POST /api/blogs - Created:', blog);
         return NextResponse.json({ success: true, data: blog }, { status: 201 });

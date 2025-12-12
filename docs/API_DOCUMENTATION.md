@@ -15,8 +15,13 @@ The API supports two methods of authentication for write operations:
 **Base URL**: `/api/blogs`
 
 #### GET /api/blogs
-Retrieves a list of all blog posts, sorted by newest first.
-- **Auth**: Public
+Retrieves a list of blog posts.
+- **Auth**: Public or Admin
+- **Query Parameters**:
+  - `all=true`: (Admin only) Returns ALL blogs including drafts.
+- **Behavior**:
+  - **Public**: Returns only blogs where `published: true` (or missing).
+  - **Admin**: Returns all blogs if `all=true`, otherwise follows public behavior.
 - **Response**:
   ```json
   {
@@ -25,10 +30,9 @@ Retrieves a list of all blog posts, sorted by newest first.
       {
         "_id": "675...",
         "title": "My Blog Post",
+        "published": true, // New field, defaults to true (if missing) or explicit value
         "content": "...",
-        "date": "December 10, 2025",
-        "image": "...",
-        "tags": ["tech"]
+        // ...
       }
     ]
   }
@@ -37,6 +41,7 @@ Retrieves a list of all blog posts, sorted by newest first.
 #### POST /api/blogs
 Creates a new blog post.
 - **Auth**: Required (`x-api-key` header OR Admin Session)
+- **Behavior**: New blogs are created as **Drafts** (`published: false`) by default unless specified otherwise.
 - **Body** (JSON):
   ```json
   {
@@ -44,7 +49,8 @@ Creates a new blog post.
     "content": "Markdown content here...",
     "image": "https://example.com/image.jpg", // Optional
     "tags": ["react", "nextjs"], // Optional array of strings
-    "date": "December 11, 2025" // Optional, defaults to today
+    "date": "December 11, 2025", // Optional, defaults to today
+    "published": false // Optional, defaults to false (Draft) if omitted
   }
   ```
 - **Response**:

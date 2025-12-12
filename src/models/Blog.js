@@ -29,4 +29,9 @@ const BlogSchema = new mongoose.Schema({
     },
 }, { timestamps: true });
 
-export default mongoose.models.Blog || mongoose.model('Blog', BlogSchema);
+// Fix for Next.js HMR: delete the model if it exists to ensure new schema fields are picked up
+if (mongoose.models.Blog) {
+    delete mongoose.models.Blog;
+}
+
+export default mongoose.model('Blog', BlogSchema);
