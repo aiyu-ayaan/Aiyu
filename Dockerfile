@@ -44,6 +44,9 @@ WORKDIR /app
 # Set to production environment
 ENV NODE_ENV=production
 
+# Install curl for health checks (lightweight, ~200KB)
+RUN apk add --no-cache curl
+
 # Create a non-root user
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
@@ -53,9 +56,15 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 
-# Change ownership to non-root user
-RUN chown -R nextjs:nodejs /app
+# Copy healthcheck script
+COPY scripts/healthcheck.sh /app/healthcheck.sh
 
+# Create necessary writable directories for read-only filesystem
+# These will be mounted as volumes or tmpfs in docker-compose
+RUN mkdir -p /app/public/uploads \
+    && mkdir -p /app/.next/cache \
+    && chmod +x /app/healthcheck.sh \
+    && chown -R nextjs:nodejs /app
 
 # Switch to non-root user
 USER nextjs
