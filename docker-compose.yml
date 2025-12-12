@@ -83,7 +83,7 @@ services:
           memory: 256M     # Reserve 256MB RAM
     # Health check to detect abnormal behavior
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/api/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"]
+      test: ["CMD", "sh", "/app/healthcheck.sh"]
       interval: 30s
       timeout: 10s
       retries: 3

@@ -101,11 +101,12 @@ else
     echo "Add 'cap_drop: ALL' to docker-compose.yml"
 fi
 
+CAPS_ADD_COUNT=$(docker inspect aiyu-app --format '{{len .HostConfig.CapAdd}}')
 CAPS_ADD=$(docker inspect aiyu-app --format '{{.HostConfig.CapAdd}}')
-if echo "$CAPS_ADD" | grep -q "NET_BIND_SERVICE" && ! echo "$CAPS_ADD" | grep -qE "\[NET_BIND_SERVICE [A-Z_]+\]"; then
+if [ "$CAPS_ADD_COUNT" = "1" ] && echo "$CAPS_ADD" | grep -q "NET_BIND_SERVICE"; then
     pass "Only NET_BIND_SERVICE capability added"
 else
-    warn "Unexpected capabilities added: $CAPS_ADD"
+    warn "Unexpected capabilities configuration: $CAPS_ADD (count: $CAPS_ADD_COUNT, expected: 1)"
 fi
 
 ###############################################################################
@@ -156,9 +157,10 @@ STATS=$(docker stats aiyu-app --no-stream --format "CPU: {{.CPUPerc}} | Memory: 
 echo "$STATS"
 
 CPU_USAGE=$(docker stats aiyu-app --no-stream --format "{{.CPUPerc}}" | sed 's/%//')
-if (( $(echo "$CPU_USAGE < 50" | bc -l 2>/dev/null || echo 1) )); then
+# Use awk for more portable floating point comparison (doesn't require bc)
+if awk "BEGIN {exit !($CPU_USAGE < 50)}"; then
     pass "CPU usage is normal: ${CPU_USAGE}%"
-elif (( $(echo "$CPU_USAGE < 80" | bc -l 2>/dev/null || echo 0) )); then
+elif awk "BEGIN {exit !($CPU_USAGE < 80)}"; then
     warn "CPU usage is elevated: ${CPU_USAGE}%"
 else
     fail "CPU usage is very high: ${CPU_USAGE}% - Possible crypto mining!"
@@ -227,17 +229,24 @@ fi
 
 header "Environment Variable Security"
 
-# Check if dummy credentials are still being used
-if docker exec aiyu-app sh -c 'echo $JWT_SECRET' | grep -q "your-secret-key\|dummy"; then
-    fail "JWT_SECRET is using default/dummy value - CHANGE IT IMMEDIATELY!"
+# Check if dummy credentials are still being used (without exposing actual values)
+# Check length and pattern without printing the actual secret
+JWT_LEN=$(docker exec aiyu-app sh -c 'echo -n "$JWT_SECRET" | wc -c')
+if [ "$JWT_LEN" -lt 32 ]; then
+    fail "JWT_SECRET is too short (< 32 chars) - CHANGE IT IMMEDIATELY!"
+elif docker exec aiyu-app sh -c 'case "$JWT_SECRET" in *"your-secret-key"*|*"dummy"*|*"CHANGE"*) exit 0;; *) exit 1;; esac' 2>/dev/null; then
+    fail "JWT_SECRET contains default/dummy value - CHANGE IT IMMEDIATELY!"
 else
-    pass "JWT_SECRET appears to be customized"
+    pass "JWT_SECRET appears to be customized (${JWT_LEN} characters)"
 fi
 
-if docker exec aiyu-app sh -c 'echo $ADMIN_PASSWORD' | grep -q "CHANGE\|admin\|password\|dummy"; then
-    fail "ADMIN_PASSWORD is using default/weak value - CHANGE IT IMMEDIATELY!"
+PASS_LEN=$(docker exec aiyu-app sh -c 'echo -n "$ADMIN_PASSWORD" | wc -c')
+if [ "$PASS_LEN" -lt 12 ]; then
+    fail "ADMIN_PASSWORD is too short (< 12 chars) - CHANGE IT IMMEDIATELY!"
+elif docker exec aiyu-app sh -c 'case "$ADMIN_PASSWORD" in *"CHANGE"*|*"admin"*|*"password"*|*"dummy"*) exit 0;; *) exit 1;; esac' 2>/dev/null; then
+    fail "ADMIN_PASSWORD contains default/weak value - CHANGE IT IMMEDIATELY!"
 else
-    pass "ADMIN_PASSWORD appears to be customized"
+    pass "ADMIN_PASSWORD appears to be customized (${PASS_LEN} characters)"
 fi
 
 ###############################################################################

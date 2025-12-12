@@ -115,7 +115,8 @@ if [ "$CONTAINER_RUNNING" = true ]; then
     # Check CPU usage
     log "Checking CPU usage..."
     CPU_USAGE=$(docker stats aiyu-app --no-stream --format "{{.CPUPerc}}" | sed 's/%//' || echo "0")
-    if (( $(echo "$CPU_USAGE > 80" | bc -l 2>/dev/null || echo 0) )); then
+    # Use awk for portable floating point comparison
+    if awk "BEGIN {exit !($CPU_USAGE > 80)}" 2>/dev/null; then
         warn "⚠️  HIGH CPU USAGE: ${CPU_USAGE}% - Possible crypto mining!"
         THREATS_FOUND=true
     else
