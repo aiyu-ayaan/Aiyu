@@ -93,7 +93,7 @@ export default function DatabaseManager() {
     };
 
     return (
-        <div className="p-8 max-w-4xl mx-auto">
+        <div className="p-8 min-h-screen">
             <div className="mb-6">
                 <Link href="/admin" className="text-cyan-400 hover:text-cyan-300 flex items-center gap-2 transition-colors">
                     ← Back to Dashboard
