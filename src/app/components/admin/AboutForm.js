@@ -4,9 +4,8 @@ import { useRouter } from 'next/navigation';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragOverlay } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, rectSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { getIconNames, IconList } from '../../../lib/iconLibrary';
+import { getIconNames, IconList } from '@/lib/iconLibrary';
 
-// Helper for Icon Preview
 // Helper for Icon Preview
 const IconPreview = ({ name }) => {
     const Icon = IconList[name];
@@ -87,10 +86,63 @@ const AboutForm = () => {
     // Icon Picker State
     const [iconSearchTerm, setIconSearchTerm] = useState('');
     const [activeIconIndex, setActiveIconIndex] = useState(null);
-    const availableIcons = getIconNames();
-    const filteredIcons = availableIcons.filter(icon =>
-        icon.toLowerCase().includes(iconSearchTerm.toLowerCase())
-    );
+    const [allCdnIcons, setAllCdnIcons] = useState([]); // Store 3000+ icons here
+    const availableIcons = getIconNames(); // Local icons
+
+    // Fetch full icon list on mount
+    useEffect(() => {
+        const fetchIcons = async () => {
+            try {
+                // Load icons from the installed simple-icons package
+                console.log("Loading icons from simple-icons package...");
+                const iconsModule = await import('simple-icons/icons');
+                const iconArray = Object.values(iconsModule).map(icon => ({
+                    title: icon.title,
+                    slug: icon.slug
+                }));
+                console.log(`Loaded ${iconArray.length} icons from package`);
+                setAllCdnIcons(iconArray);
+            } catch (err) {
+                console.error("Failed to load icon library:", err);
+            }
+        };
+        fetchIcons();
+        fetchData();
+    }, []);
+
+    // Hybrid Search: Match local icons first, then CDN icons
+    // Hybrid Search: Match local icons first, then CDN icons
+    const getFilteredIcons = () => {
+        // Prepare local matches first (always normalized to objects)
+        const normalizedLocal = availableIcons.map(name => ({
+            name,
+            slug: name, // Local icons use name as slug for key purposes
+            isCdn: false
+        }));
+
+        if (!iconSearchTerm) return normalizedLocal.slice(0, 50);
+
+        const term = iconSearchTerm.toLowerCase();
+
+        // 1. Local Matches
+        const localMatches = normalizedLocal.filter(icon =>
+            icon.name.toLowerCase().includes(term)
+        );
+
+        // 2. CDN Matches (that aren't already in local)
+        const cdnMatches = (allCdnIcons || [])
+            .filter(icon => icon.title.toLowerCase().includes(term))
+            .map(icon => ({
+                name: icon.title,
+                slug: icon.slug,
+                isCdn: true
+            }))
+            .filter(cdnIcon => !localMatches.some(local => local.name === cdnIcon.name)); // Dedup
+
+        return [...localMatches, ...cdnMatches].slice(0, 50);
+    };
+
+    const filteredIcons = getFilteredIcons();
 
     const sensors = useSensors(
         useSensor(PointerSensor),
@@ -98,10 +150,6 @@ const AboutForm = () => {
             coordinateGetter: sortableKeyboardCoordinates,
         })
     );
-
-    useEffect(() => {
-        fetchData();
-    }, []);
 
     // Helper to ensure all items have a unique ID for DnD
     const ensureIds = (items) => {
@@ -310,37 +358,53 @@ const AboutForm = () => {
                             autoFocus
                         />
                         <div className="flex-1 overflow-y-auto grid grid-cols-4 sm:grid-cols-5 gap-2 min-h-[300px] content-start">
-                            {filteredIcons.map(iconName => (
+                            {filteredIcons.map(({ name, slug, isCdn }) => (
                                 <button
-                                    key={iconName}
+                                    key={`${isCdn ? 'cdn' : 'local'}-${slug}`}
                                     type="button"
                                     onClick={() => {
-                                        handleSkillChange(activeIconIndex, 'icon', iconName);
+                                        // For CDN icons, use the slug from the API, else use name
+                                        const value = isCdn ? slug : name;
+                                        handleSkillChange(activeIconIndex, 'icon', value);
                                         setActiveIconIndex(null);
                                         setIconSearchTerm('');
                                     }}
-                                    className="p-3 rounded bg-gray-700/50 hover:bg-cyan-900/40 border border-transparent hover:border-cyan-500/50 flex flex-col items-center gap-2 transition-all aspect-square justify-center"
+                                    className="p-3 rounded bg-gray-700/50 hover:bg-cyan-900/40 border border-transparent hover:border-cyan-500/50 flex flex-col items-center gap-2 transition-all aspect-square justify-center relative"
                                 >
-                                    <div className="text-3xl text-cyan-400">
-                                        <IconPreview name={iconName} />
+                                    <div className="text-3xl text-cyan-400 w-8 h-8 flex items-center justify-center">
+                                        {isCdn ? (
+                                            <img
+                                                src={`https://cdn.simpleicons.org/${slug}/22d3ee`}
+                                                alt={name}
+                                                className="w-full h-full object-contain"
+                                                onError={(e) => { e.target.style.opacity = '0.3'; }}
+                                            />
+                                        ) : (
+                                            <IconPreview name={name} />
+                                        )}
                                     </div>
-                                    <span className="text-[10px] text-gray-300 truncate w-full text-center">{iconName}</span>
+                                    <span className="text-[10px] text-gray-300 truncate w-full text-center">{name}</span>
+                                    {isCdn && (
+                                        <span className="absolute top-1 right-1 text-[8px] bg-cyan-900 text-cyan-300 px-1 rounded">
+                                            WEB
+                                        </span>
+                                    )}
                                 </button>
                             ))}
 
-                            {/* Dynamic CDN Result for Search Term */}
-                            {iconSearchTerm && !filteredIcons.includes(iconSearchTerm) && (
+                            {/* Fallback for completely unknown terms (still allows typing custom slug) */}
+                            {iconSearchTerm && filteredIcons.length === 0 && (
                                 <button
                                     type="button"
                                     onClick={() => {
-                                        // Normalize slug: lowercase, strictly alphanumeric
+                                        // Normalize slug
                                         const slug = iconSearchTerm.toLowerCase().replace(/[^a-z0-9]/g, '');
                                         handleSkillChange(activeIconIndex, 'icon', slug);
                                         setActiveIconIndex(null);
                                         setIconSearchTerm('');
                                     }}
                                     className="p-3 rounded bg-gray-700/50 hover:bg-cyan-900/40 border border-dashed border-gray-500/50 hover:border-cyan-500 flex flex-col items-center gap-2 transition-all aspect-square justify-center relative group"
-                                    title={`Use "${iconSearchTerm}" from online library`}
+                                    title={`Use "${iconSearchTerm}" as custom slug`}
                                 >
                                     <div className="text-3xl text-cyan-400 w-8 h-8 flex items-center justify-center relative">
                                         <img
@@ -356,22 +420,12 @@ const AboutForm = () => {
                                     <span className="text-[10px] text-cyan-200 truncate w-full text-center">
                                         Use "{iconSearchTerm}"
                                     </span>
-                                    <span className="absolute top-1 right-1 text-[8px] bg-cyan-900 text-cyan-300 px-1 rounded">
-                                        WEB
-                                    </span>
                                 </button>
-                            )}
-
-                            {/* Helper Text */}
-                            {iconSearchTerm && !filteredIcons.includes(iconSearchTerm) && (
-                                <div className="col-span-full text-center text-xs text-gray-500 mt-2">
-                                    Tip: Type the exact brand name (e.g. "google" not "goog")
-                                </div>
                             )}
 
                             {filteredIcons.length === 0 && !iconSearchTerm && (
                                 <div className="col-span-full text-center text-gray-500 py-8">
-                                    Start typing to search...
+                                    Start typing to search 3000+ icons...
                                 </div>
                             )}
                         </div>
