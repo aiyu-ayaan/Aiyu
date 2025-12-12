@@ -53,9 +53,11 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 
-# Change ownership to non-root user
-RUN chown -R nextjs:nodejs /app
-
+# Create necessary writable directories for read-only filesystem
+# These will be mounted as volumes or tmpfs in docker-compose
+RUN mkdir -p /app/public/uploads \
+    && mkdir -p /app/.next/cache \
+    && chown -R nextjs:nodejs /app
 
 # Switch to non-root user
 USER nextjs
