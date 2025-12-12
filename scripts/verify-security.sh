@@ -131,7 +131,8 @@ header "Resource Limits"
 
 CPU_LIMIT=$(docker inspect aiyu-app --format '{{.HostConfig.NanoCpus}}')
 if [ "$CPU_LIMIT" != "0" ]; then
-    CPU_CORES=$(echo "scale=2; $CPU_LIMIT / 1000000000" | bc)
+    # Use awk for portable floating point calculation
+    CPU_CORES=$(awk "BEGIN {printf \"%.2f\", $CPU_LIMIT / 1000000000}")
     pass "CPU limit set to ${CPU_CORES} cores"
 else
     fail "No CPU limit set"
