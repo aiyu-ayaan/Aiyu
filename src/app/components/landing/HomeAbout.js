@@ -50,10 +50,13 @@ const HomeAbout = ({ data }) => {
           </motion.div>
         </div>
         <div className="text-center mt-8">
-          <Link href="/about-me" legacyBehavior>
-            <motion.a
-              className="inline-flex items-center gap-2 font-semibold text-lg group"
-              style={{ color: 'var(--accent-cyan)' }}
+          <Link
+            href="/about-me"
+            className="inline-flex items-center gap-2 font-semibold text-lg group"
+            style={{ color: 'var(--accent-cyan)' }}
+          >
+            <motion.span
+              className="inline-flex items-center gap-2"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
@@ -64,7 +67,7 @@ const HomeAbout = ({ data }) => {
               >
                 →
               </motion.span>
-            </motion.a>
+            </motion.span>
           </Link>
         </div>
       </div>

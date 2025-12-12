@@ -1,4 +1,5 @@
-import { FaGithub, FaLinkedin, FaInstagram, FaEnvelope } from 'react-icons/fa';
+import { FaGithub, FaLinkedin, FaInstagram, FaEnvelope, FaCoffee } from 'react-icons/fa';
+import { SiBuymeacoffee } from 'react-icons/si';
 
 export const getIconByName = (name) => {
     switch (name) {
@@ -10,6 +11,11 @@ export const getIconByName = (name) => {
             return FaInstagram;
         case 'FaEnvelope':
             return FaEnvelope;
+        case 'FaCoffee':
+        case 'fa-coffee':
+            return FaCoffee;
+        case 'SiBuymeacoffee':
+            return SiBuymeacoffee;
         default:
             return null;
     }

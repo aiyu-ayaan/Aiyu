@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 const SkillSchema = new mongoose.Schema({
     name: { type: String, required: true },
     level: { type: Number, required: true },
+    icon: { type: String, required: false },
 });
 
 const ExperienceSchema = new mongoose.Schema({

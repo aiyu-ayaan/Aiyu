@@ -22,10 +22,16 @@ export async function PUT(request, { params }) {
     const { id } = await params;
     try {
         const body = await request.json();
+        console.log('PUT /api/blogs/[id] - Body:', body);
+
         const blog = await Blog.findByIdAndUpdate(id, body, {
             new: true,
             runValidators: true,
+            strict: false,
         });
+
+        console.log('PUT /api/blogs/[id] - Updated Blog:', blog);
+
         if (!blog) {
             return NextResponse.json({ success: false, error: "Blog not found" }, { status: 404 });
         }

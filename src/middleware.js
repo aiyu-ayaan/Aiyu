@@ -6,7 +6,8 @@ export async function middleware(request) {
     const path = request.nextUrl.pathname;
     const isPublicPath = path === '/admin/login';
 
-    const cookie = cookies().get('session')?.value;
+    const cookieStore = await cookies();
+    const cookie = cookieStore.get('session')?.value;
     const session = await decrypt(cookie);
 
     if (path.startsWith('/admin') && !isPublicPath && !session) {

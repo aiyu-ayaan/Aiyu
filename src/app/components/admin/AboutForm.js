@@ -4,8 +4,29 @@ import { useRouter } from 'next/navigation';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragOverlay } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, rectSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { getIconNames, IconList } from '@/lib/iconLibrary';
 
-// Helper for Sortable Items
+// Helper for Icon Preview
+const IconPreview = ({ name }) => {
+    const Icon = IconList[name];
+    if (Icon) return <Icon className="w-5 h-5 text-cyan-400" />;
+
+    // Fallback to CDN if not in local list
+    if (name) {
+        return (
+            <img
+                src={`https://cdn.simpleicons.org/${name.toLowerCase().replace(/[^a-z0-9]/g, '')}/22d3ee`}
+                alt={name}
+                className="w-5 h-5 object-contain"
+                onError={(e) => { e.target.style.display = 'none'; }}
+            />
+        );
+    }
+
+    return <span className="text-xs text-gray-500">?</span>;
+};
+
+// ... SortableItem (unchanged) ...
 function SortableItem({ id, children, className }) {
     const {
         attributes,
@@ -62,16 +83,73 @@ const AboutForm = () => {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
 
+    // Icon Picker State
+    const [iconSearchTerm, setIconSearchTerm] = useState('');
+    const [activeIconIndex, setActiveIconIndex] = useState(null);
+    const [allCdnIcons, setAllCdnIcons] = useState([]); // Store 3000+ icons here
+    const availableIcons = getIconNames(); // Local icons
+
+    // Fetch full icon list on mount
+    useEffect(() => {
+        const fetchIcons = async () => {
+            try {
+                // Load icons from the installed simple-icons package
+                console.log("Loading icons from simple-icons package...");
+                const iconsModule = await import('simple-icons/icons');
+                const iconArray = Object.values(iconsModule).map(icon => ({
+                    title: icon.title,
+                    slug: icon.slug
+                }));
+                console.log(`Loaded ${iconArray.length} icons from package`);
+                setAllCdnIcons(iconArray);
+            } catch (err) {
+                console.error("Failed to load icon library:", err);
+            }
+        };
+        fetchIcons();
+        fetchData();
+    }, []);
+
+    // Hybrid Search: Match local icons first, then CDN icons
+    // Hybrid Search: Match local icons first, then CDN icons
+    const getFilteredIcons = () => {
+        // Prepare local matches first (always normalized to objects)
+        const normalizedLocal = availableIcons.map(name => ({
+            name,
+            slug: name, // Local icons use name as slug for key purposes
+            isCdn: false
+        }));
+
+        if (!iconSearchTerm) return normalizedLocal.slice(0, 50);
+
+        const term = iconSearchTerm.toLowerCase();
+
+        // 1. Local Matches
+        const localMatches = normalizedLocal.filter(icon =>
+            icon.name.toLowerCase().includes(term)
+        );
+
+        // 2. CDN Matches (that aren't already in local)
+        const cdnMatches = (allCdnIcons || [])
+            .filter(icon => icon.title.toLowerCase().includes(term))
+            .map(icon => ({
+                name: icon.title,
+                slug: icon.slug,
+                isCdn: true
+            }))
+            .filter(cdnIcon => !localMatches.some(local => local.name === cdnIcon.name)); // Dedup
+
+        return [...localMatches, ...cdnMatches].slice(0, 50);
+    };
+
+    const filteredIcons = getFilteredIcons();
+
     const sensors = useSensors(
         useSensor(PointerSensor),
         useSensor(KeyboardSensor, {
             coordinateGetter: sortableKeyboardCoordinates,
         })
     );
-
-    useEffect(() => {
-        fetchData();
-    }, []);
 
     // Helper to ensure all items have a unique ID for DnD
     const ensureIds = (items) => {
@@ -135,7 +213,7 @@ const AboutForm = () => {
     const addSkill = () => {
         setFormData((prev) => ({
             ...prev,
-            skills: [...prev.skills, { _id: `temp-${Date.now()}`, name: '', level: 50 }],
+            skills: [...prev.skills, { _id: `temp-${Date.now()}`, name: '', level: 50, icon: '' }],
         }));
     };
 
@@ -256,7 +334,105 @@ const AboutForm = () => {
     if (loading) return <div className="text-white">Loading...</div>;
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-12 max-w-4xl mx-auto bg-gray-800 p-8 rounded-xl border border-gray-700">
+        <form onSubmit={handleSubmit} className="space-y-12 max-w-4xl mx-auto bg-gray-800 p-8 rounded-xl border border-gray-700 relative">
+            {/* Icon Picker Modal */}
+            {activeIconIndex !== null && (
+                <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+                    <div className="bg-gray-800 rounded-xl p-6 w-full max-w-lg border border-gray-700 shadow-2xl space-y-4 max-h-[80vh] flex flex-col">
+                        <div className="flex justify-between items-center border-b border-gray-700 pb-2">
+                            <h3 className="text-xl font-bold text-white">Select Icon</h3>
+                            <button
+                                type="button"
+                                onClick={() => setActiveIconIndex(null)}
+                                className="text-gray-400 hover:text-white"
+                            >
+                                ✕
+                            </button>
+                        </div>
+                        <input
+                            type="text"
+                            placeholder="Search icons (e.g. React, Android)..."
+                            className="w-full p-3 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white"
+                            value={iconSearchTerm}
+                            onChange={(e) => setIconSearchTerm(e.target.value)}
+                            autoFocus
+                        />
+                        <div className="flex-1 overflow-y-auto grid grid-cols-4 sm:grid-cols-5 gap-2 min-h-[300px] content-start">
+                            {filteredIcons.map(({ name, slug, isCdn }) => (
+                                <button
+                                    key={`${isCdn ? 'cdn' : 'local'}-${slug}`}
+                                    type="button"
+                                    onClick={() => {
+                                        // For CDN icons, use the slug from the API, else use name
+                                        const value = isCdn ? slug : name;
+                                        handleSkillChange(activeIconIndex, 'icon', value);
+                                        setActiveIconIndex(null);
+                                        setIconSearchTerm('');
+                                    }}
+                                    className="p-3 rounded bg-gray-700/50 hover:bg-cyan-900/40 border border-transparent hover:border-cyan-500/50 flex flex-col items-center gap-2 transition-all aspect-square justify-center relative"
+                                >
+                                    <div className="text-3xl text-cyan-400 w-8 h-8 flex items-center justify-center">
+                                        {isCdn ? (
+                                            <img
+                                                src={`https://cdn.simpleicons.org/${slug}/22d3ee`}
+                                                alt={name}
+                                                className="w-full h-full object-contain"
+                                                onError={(e) => { e.target.style.opacity = '0.3'; }}
+                                            />
+                                        ) : (
+                                            <IconPreview name={name} />
+                                        )}
+                                    </div>
+                                    <span className="text-[10px] text-gray-300 truncate w-full text-center">{name}</span>
+                                    {isCdn && (
+                                        <span className="absolute top-1 right-1 text-[8px] bg-cyan-900 text-cyan-300 px-1 rounded">
+                                            WEB
+                                        </span>
+                                    )}
+                                </button>
+                            ))}
+
+                            {/* Fallback for completely unknown terms (still allows typing custom slug) */}
+                            {iconSearchTerm && filteredIcons.length === 0 && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        // Normalize slug
+                                        const slug = iconSearchTerm.toLowerCase().replace(/[^a-z0-9]/g, '');
+                                        handleSkillChange(activeIconIndex, 'icon', slug);
+                                        setActiveIconIndex(null);
+                                        setIconSearchTerm('');
+                                    }}
+                                    className="p-3 rounded bg-gray-700/50 hover:bg-cyan-900/40 border border-dashed border-gray-500/50 hover:border-cyan-500 flex flex-col items-center gap-2 transition-all aspect-square justify-center relative group"
+                                    title={`Use "${iconSearchTerm}" as custom slug`}
+                                >
+                                    <div className="text-3xl text-cyan-400 w-8 h-8 flex items-center justify-center relative">
+                                        <img
+                                            src={`https://cdn.simpleicons.org/${iconSearchTerm.toLowerCase().replace(/[^a-z0-9]/g, '')}/22d3ee`}
+                                            alt={iconSearchTerm}
+                                            className="w-full h-full object-contain"
+                                            onError={(e) => {
+                                                e.target.style.display = 'none';
+                                                e.target.parentNode.innerHTML = '<span class="text-[10px] text-red-400">Not Found</span>';
+                                            }}
+                                        />
+                                    </div>
+                                    <span className="text-[10px] text-cyan-200 truncate w-full text-center">
+                                        Use "{iconSearchTerm}"
+                                    </span>
+                                </button>
+                            )}
+
+                            {filteredIcons.length === 0 && !iconSearchTerm && (
+                                <div className="col-span-full text-center text-gray-500 py-8">
+                                    Start typing to search 3000+ icons...
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {error && (
                 <div className="bg-red-500/20 border border-red-500 text-red-200 p-3 rounded">
                     {error}
@@ -336,15 +512,29 @@ const AboutForm = () => {
                                     >
                                         ✕
                                     </button>
-                                    <div className="mb-2">
-                                        <input
-                                            type="text"
-                                            value={skill.name}
-                                            onChange={(e) => handleSkillChange(index, 'name', e.target.value)}
-                                            placeholder="Skill Name"
-                                            className="w-full bg-transparent border-b border-gray-600 focus:border-cyan-400 focus:outline-none text-white font-medium pl-1"
-                                            required
-                                        />
+                                    <div className="mb-2 flex items-center gap-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => setActiveIconIndex(index)}
+                                            className="w-10 h-10 rounded bg-gray-800 border border-gray-600 flex items-center justify-center hover:border-cyan-400 transition-colors"
+                                            title="Change Icon"
+                                        >
+                                            {skill.icon ? (
+                                                <div className="text-2xl"><IconPreview name={skill.icon} /></div>
+                                            ) : (
+                                                <span className="text-xs text-gray-500">Icon</span>
+                                            )}
+                                        </button>
+                                        <div className="flex-1">
+                                            <input
+                                                type="text"
+                                                value={skill.name}
+                                                onChange={(e) => handleSkillChange(index, 'name', e.target.value)}
+                                                placeholder="Skill Name"
+                                                className="w-full bg-transparent border-b border-gray-600 focus:border-cyan-400 focus:outline-none text-white font-medium pl-1"
+                                                required
+                                            />
+                                        </div>
                                     </div>
                                     <div>
                                         <div className="flex justify-between text-xs text-gray-400 mb-1">

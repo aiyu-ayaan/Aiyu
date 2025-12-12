@@ -8,6 +8,7 @@ const SocialForm = ({ initialData, isEdit = false }) => {
         name: '',
         url: '',
         iconName: '',
+        isHidden: false,
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -97,6 +98,20 @@ const SocialForm = ({ initialData, isEdit = false }) => {
                     required
                 />
                 <p className="text-xs text-gray-400 mt-1">Must match an icon exported in src/lib/icons.js</p>
+            </div>
+
+            <div className="flex items-center gap-3">
+                <input
+                    type="checkbox"
+                    id="isHidden"
+                    name="isHidden"
+                    checked={formData.isHidden || false}
+                    onChange={(e) => setFormData(prev => ({ ...prev, isHidden: e.target.checked }))}
+                    className="w-5 h-5 rounded bg-gray-700 border-gray-600 text-cyan-600 focus:ring-cyan-500 rounded focus:ring-offset-gray-800"
+                />
+                <label htmlFor="isHidden" className="text-sm font-medium text-gray-300">
+                    Hide this social link
+                </label>
             </div>
 
             <div className="flex justify-end gap-4 pt-4">

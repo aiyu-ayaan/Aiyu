@@ -48,13 +48,16 @@ const HomeProjects = ({ data }) => {
           ))}
         </div>
         <div className="text-center mt-12">
-          <Link href="/projects" legacyBehavior>
-            <motion.a
-              className="inline-flex items-center gap-2 font-semibold text-lg px-6 py-3 rounded-lg border-2 transition-all duration-300 group"
-              style={{
-                color: 'var(--accent-cyan)',
-                borderColor: 'var(--accent-cyan)',
-              }}
+          <Link
+            href="/projects"
+            className="inline-flex items-center gap-2 font-semibold text-lg px-6 py-3 rounded-lg border-2 transition-all duration-300 group"
+            style={{
+              color: 'var(--accent-cyan)',
+              borderColor: 'var(--accent-cyan)',
+            }}
+          >
+            <motion.span
+              className="inline-flex items-center gap-2"
               whileHover={{
                 scale: 1.05,
                 boxShadow: theme === 'dark'
@@ -70,7 +73,7 @@ const HomeProjects = ({ data }) => {
               >
                 →
               </motion.span>
-            </motion.a>
+            </motion.span>
           </Link>
         </div>
       </div>

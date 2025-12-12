@@ -27,7 +27,6 @@ export async function generateMetadata() {
   return {
     title: baseName,
     description: "Just coding........",
-    themeColor: "#111827",
     icons: {
       icon: icon,
     },
@@ -37,6 +36,7 @@ export async function generateMetadata() {
 export const viewport = {
   width: 'device-width',
   initialScale: 1,
+  themeColor: '#111827',
 }
 
 import GoogleAnalytics from "./components/GoogleAnalytics";
@@ -49,7 +49,6 @@ export default async function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <meta name="theme-color" content="#111827" />
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -70,6 +69,7 @@ export default async function RootLayout({ children }) {
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        suppressHydrationWarning
       >
         <GoogleAnalytics gaId={gaId} />
         <ThemeProvider>

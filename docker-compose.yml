@@ -49,7 +49,43 @@ services:
       # Node environment
       NODE_ENV: production
     volumes:
+      # Persistent uploads directory (bind mount)
       - ./public/uploads:/app/public/uploads
+      # Writable Next.js cache directory (volume for read-only filesystem)
+      - nextjs_cache:/app/.next/cache
+    tmpfs:
+      # CRITICAL SECURITY: Mount /tmp with noexec to prevent crypto miners from executing
+      - /tmp:noexec,nosuid,nodev,mode=1777,size=100M
+      # Additional tmpfs mounts with noexec and nosuid for security
+      - /var/tmp:noexec,nosuid,nodev,mode=1777,size=50M
+      # /run uses 755 (not 1777) - only owner (nextjs user) needs write access for PID files
+      - /run:noexec,nosuid,nodev,mode=755,size=10M
+    # CRITICAL SECURITY: Drop all capabilities and enable security restrictions
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE  # Only allow binding to network ports
+    security_opt:
+      - no-new-privileges:true  # Prevent privilege escalation
+    # Read-only root filesystem (except for writable volumes)
+    read_only: true
+    # Resource limits to prevent CPU abuse from crypto miners
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'      # Max 1 CPU core
+          memory: 512M     # Max 512MB RAM
+        reservations:
+          cpus: '0.25'     # Reserve 0.25 CPU
+          memory: 256M     # Reserve 256MB RAM
+    # Health check to detect abnormal behavior
+    # Uses curl (installed in Dockerfile) with fallback chain
+    healthcheck:
+      test: ["CMD", "sh", "/app/healthcheck.sh"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
     depends_on:
       mongodb:
         condition: service_healthy
@@ -61,6 +97,8 @@ volumes:
   mongodb_data:
     driver: local
   mongodb_config:
+    driver: local
+  nextjs_cache:
     driver: local
 
 # Network for inter-service communication
