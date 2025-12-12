@@ -48,6 +48,7 @@ export async function POST(request) {
 
     try {
         const body = await request.json();
+        console.log('POST /api/blogs - Body:', body);
 
         // Default date to now if not provided
         if (!body.date) {
@@ -64,7 +65,10 @@ export async function POST(request) {
             return NextResponse.json({ success: false, error: 'Title and content are required' }, { status: 400 });
         }
 
-        const blog = await Blog.create(body);
+        // Explicitly force published: false for new blogs
+        const blogData = { ...body, published: false };
+        const blog = await Blog.create(blogData);
+        console.log('POST /api/blogs - Created:', blog);
         return NextResponse.json({ success: true, data: blog }, { status: 201 });
     } catch (error) {
         return NextResponse.json({ success: false, error: error.message }, { status: 400 });

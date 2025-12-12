@@ -41,7 +41,8 @@ export default function NewBlogPage() {
             ...formData,
             // Format date to match existing string format "Month DD, YYYY"
             date: dateObj.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
-            tags: formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag !== '')
+            tags: formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag !== ''),
+            published: false,
         };
 
         try {

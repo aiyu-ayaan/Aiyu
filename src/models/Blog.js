@@ -25,7 +25,7 @@ const BlogSchema = new mongoose.Schema({
     },
     published: {
         type: Boolean,
-        default: true,
+        default: false,
     },
 }, { timestamps: true });
 
