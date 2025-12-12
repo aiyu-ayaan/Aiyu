@@ -115,10 +115,10 @@ if [ "$CONTAINER_RUNNING" = true ]; then
     # Check CPU usage
     log "Checking CPU usage..."
     CPU_USAGE=$(docker stats aiyu-app --no-stream --format "{{.CPUPerc}}" | sed 's/%//' || echo "0")
-    # Validate CPU_USAGE is numeric before comparison
-    if [ -n "$CPU_USAGE" ] && echo "$CPU_USAGE" | grep -qE '^[0-9]+\.?[0-9]*$'; then
-        # Use awk for portable floating point comparison
-        if awk "BEGIN {exit !($CPU_USAGE > 80)}" 2>/dev/null; then
+    # Validate CPU_USAGE is numeric before comparison (strict pattern)
+    if [ -n "$CPU_USAGE" ] && echo "$CPU_USAGE" | grep -qE '^[0-9]+(\.[0-9]+)?$'; then
+        # Use awk with stdin to prevent code injection
+        if echo "$CPU_USAGE" | awk '{exit !($1 > 80)}' 2>/dev/null; then
             warn "⚠️  HIGH CPU USAGE: ${CPU_USAGE}% - Possible crypto mining!"
             THREATS_FOUND=true
         else
@@ -188,8 +188,13 @@ read -p "Do you want to remove Docker images? (yes/no): " -r
 echo
 if [[ $REPLY =~ ^[Yy]es$ ]]; then
     log "Removing aiyu Docker images..."
-    docker rmi $(docker images -q "aiyu*" 2>/dev/null) 2>/dev/null || log "No images to remove"
-    log "✅ Images removed"
+    IMAGE_IDS=$(docker images -q "aiyu*" 2>/dev/null)
+    if [ -n "$IMAGE_IDS" ]; then
+        docker rmi $IMAGE_IDS 2>/dev/null || log "Some images could not be removed"
+        log "✅ Images removed"
+    else
+        log "No aiyu images found to remove"
+    fi
 else
     warn "Keeping Docker images"
 fi

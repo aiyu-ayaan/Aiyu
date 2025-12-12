@@ -101,12 +101,16 @@ else
     echo "Add 'cap_drop: ALL' to docker-compose.yml"
 fi
 
-CAPS_ADD_COUNT=$(docker inspect aiyu-app --format '{{len .HostConfig.CapAdd}}')
-CAPS_ADD=$(docker inspect aiyu-app --format '{{.HostConfig.CapAdd}}')
-if [ "$CAPS_ADD_COUNT" = "1" ] && echo "$CAPS_ADD" | grep -q "NET_BIND_SERVICE"; then
-    pass "Only NET_BIND_SERVICE capability added"
+CAPS_ADD=$(docker inspect aiyu-app --format '{{.HostConfig.CapAdd}}' 2>/dev/null || echo "null")
+if [ "$CAPS_ADD" = "null" ] || [ "$CAPS_ADD" = "[]" ]; then
+    fail "No capabilities added - NET_BIND_SERVICE should be added"
 else
-    warn "Unexpected capabilities configuration: $CAPS_ADD (count: $CAPS_ADD_COUNT, expected: 1)"
+    CAPS_ADD_COUNT=$(docker inspect aiyu-app --format '{{len .HostConfig.CapAdd}}' 2>/dev/null || echo "0")
+    if [ "$CAPS_ADD_COUNT" = "1" ] && echo "$CAPS_ADD" | grep -q "NET_BIND_SERVICE"; then
+        pass "Only NET_BIND_SERVICE capability added"
+    else
+        warn "Unexpected capabilities configuration: $CAPS_ADD (count: $CAPS_ADD_COUNT, expected: 1)"
+    fi
 fi
 
 ###############################################################################
@@ -130,16 +134,18 @@ fi
 header "Resource Limits"
 
 CPU_LIMIT=$(docker inspect aiyu-app --format '{{.HostConfig.NanoCpus}}')
-if [ "$CPU_LIMIT" != "0" ] && [ "$CPU_LIMIT" != "" ]; then
+# Validate CPU_LIMIT is numeric before using in awk (prevent code injection)
+if [ "$CPU_LIMIT" != "0" ] && [ "$CPU_LIMIT" != "" ] && echo "$CPU_LIMIT" | grep -qE '^[0-9]+$'; then
     # Use awk for portable floating point calculation with error handling
-    CPU_CORES=$(awk "BEGIN {printf \"%.2f\", $CPU_LIMIT / 1000000000}" 2>/dev/null || echo "unknown")
+    # Pass as string to avoid code injection
+    CPU_CORES=$(echo "$CPU_LIMIT" | awk '{printf "%.2f", $1 / 1000000000}' 2>/dev/null || echo "unknown")
     if [ "$CPU_CORES" != "unknown" ]; then
         pass "CPU limit set to ${CPU_CORES} cores"
     else
         warn "CPU limit set but unable to calculate value"
     fi
 else
-    fail "No CPU limit set"
+    fail "No CPU limit set or invalid value"
     echo "Add CPU limits under 'deploy.resources.limits' in docker-compose.yml"
 fi
 
@@ -162,12 +168,13 @@ STATS=$(docker stats aiyu-app --no-stream --format "CPU: {{.CPUPerc}} | Memory: 
 echo "$STATS"
 
 CPU_USAGE=$(docker stats aiyu-app --no-stream --format "{{.CPUPerc}}" | sed 's/%//')
-# Validate CPU_USAGE is numeric before comparison
-if [ -n "$CPU_USAGE" ] && echo "$CPU_USAGE" | grep -qE '^[0-9]+\.?[0-9]*$'; then
-    # Use awk for more portable floating point comparison (doesn't require bc)
-    if awk "BEGIN {exit !($CPU_USAGE < 50)}" 2>/dev/null; then
+# Validate CPU_USAGE is numeric before comparison (strict pattern, at least one digit)
+if [ -n "$CPU_USAGE" ] && echo "$CPU_USAGE" | grep -qE '^[0-9]+(\.[0-9]+)?$'; then
+    # Use awk for more portable floating point comparison
+    # Pass as stdin to avoid code injection
+    if echo "$CPU_USAGE" | awk '{exit !($1 < 50)}' 2>/dev/null; then
         pass "CPU usage is normal: ${CPU_USAGE}%"
-    elif awk "BEGIN {exit !($CPU_USAGE < 80)}" 2>/dev/null; then
+    elif echo "$CPU_USAGE" | awk '{exit !($1 < 80)}' 2>/dev/null; then
         warn "CPU usage is elevated: ${CPU_USAGE}%"
     else
         fail "CPU usage is very high: ${CPU_USAGE}% - Possible crypto mining!"
@@ -240,19 +247,19 @@ fi
 header "Environment Variable Security"
 
 # Check if dummy credentials are still being used (without exposing actual values)
-# Check length and pattern without printing the actual secret
-JWT_LEN=$(docker exec aiyu-app sh -c 'echo -n "$JWT_SECRET" | wc -c')
-if [ "$JWT_LEN" -lt 32 ]; then
-    fail "JWT_SECRET is too short (< 32 chars) - CHANGE IT IMMEDIATELY!"
+# Check length without printing the actual secret - use wc which doesn't echo the value
+JWT_LEN=$(docker exec aiyu-app sh -c 'printf "%s" "$JWT_SECRET" | wc -c' 2>/dev/null || echo "0")
+if [ "$JWT_LEN" -lt 32 ] 2>/dev/null; then
+    fail "JWT_SECRET is too short (${JWT_LEN} chars, need 32+) - CHANGE IT IMMEDIATELY!"
 elif docker exec aiyu-app sh -c 'case "$JWT_SECRET" in *"your-secret-key"*|*"dummy"*|*"CHANGE"*) exit 0;; *) exit 1;; esac' 2>/dev/null; then
     fail "JWT_SECRET contains default/dummy value - CHANGE IT IMMEDIATELY!"
 else
     pass "JWT_SECRET appears to be customized (${JWT_LEN} characters)"
 fi
 
-PASS_LEN=$(docker exec aiyu-app sh -c 'echo -n "$ADMIN_PASSWORD" | wc -c')
-if [ "$PASS_LEN" -lt 12 ]; then
-    fail "ADMIN_PASSWORD is too short (< 12 chars) - CHANGE IT IMMEDIATELY!"
+PASS_LEN=$(docker exec aiyu-app sh -c 'printf "%s" "$ADMIN_PASSWORD" | wc -c' 2>/dev/null || echo "0")
+if [ "$PASS_LEN" -lt 12 ] 2>/dev/null; then
+    fail "ADMIN_PASSWORD is too short (${PASS_LEN} chars, need 12+) - CHANGE IT IMMEDIATELY!"
 elif docker exec aiyu-app sh -c 'case "$ADMIN_PASSWORD" in *"CHANGE"*|*"admin"*|*"password"*|*"dummy"*) exit 0;; *) exit 1;; esac' 2>/dev/null; then
     fail "ADMIN_PASSWORD contains default/weak value - CHANGE IT IMMEDIATELY!"
 else

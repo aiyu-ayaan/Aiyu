@@ -53,13 +53,9 @@ services:
       - ./public/uploads:/app/public/uploads
       # Writable Next.js cache directory (volume for read-only filesystem)
       - nextjs_cache:/app/.next/cache
-      # Mount /tmp with noexec to prevent crypto miners from executing
-      - type: tmpfs
-        target: /tmp
-        tmpfs:
-          mode: 1777
-          size: 100M
     tmpfs:
+      # CRITICAL SECURITY: Mount /tmp with noexec to prevent crypto miners from executing
+      - /tmp:noexec,nosuid,nodev,mode=1777,size=100M
       # Additional tmpfs mounts with noexec and nosuid for security
       - /var/tmp:noexec,nosuid,nodev,mode=1777,size=50M
       - /run:noexec,nosuid,nodev,mode=755,size=10M
