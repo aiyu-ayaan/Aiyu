@@ -135,7 +135,8 @@ header "Resource Limits"
 
 CPU_LIMIT=$(docker inspect aiyu-app --format '{{.HostConfig.NanoCpus}}')
 # Validate CPU_LIMIT is numeric before using in awk (prevent code injection)
-if [ "$CPU_LIMIT" != "0" ] && [ "$CPU_LIMIT" != "" ] && echo "$CPU_LIMIT" | grep -qE '^[0-9]+$'; then
+# Allow integers and decimals (NanoCpus can be fractional)
+if [ "$CPU_LIMIT" != "0" ] && [ "$CPU_LIMIT" != "" ] && echo "$CPU_LIMIT" | grep -qE '^[0-9]+(\.[0-9]+)?$'; then
     # Use awk for portable floating point calculation with error handling
     # Pass as string to avoid code injection
     CPU_CORES=$(echo "$CPU_LIMIT" | awk '{printf "%.2f", $1 / 1000000000}' 2>/dev/null || echo "unknown")

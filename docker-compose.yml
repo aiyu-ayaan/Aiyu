@@ -58,6 +58,7 @@ services:
       - /tmp:noexec,nosuid,nodev,mode=1777,size=100M
       # Additional tmpfs mounts with noexec and nosuid for security
       - /var/tmp:noexec,nosuid,nodev,mode=1777,size=50M
+      # /run uses 755 (not 1777) - only owner (nextjs user) needs write access for PID files
       - /run:noexec,nosuid,nodev,mode=755,size=10M
     # CRITICAL SECURITY: Drop all capabilities and enable security restrictions
     cap_drop:
