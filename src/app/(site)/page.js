@@ -15,7 +15,7 @@ export default async function Home() {
   const homeData = await HomeModel.findOne().lean();
   const aboutData = await AboutModel.findOne().lean();
   const projectsData = await ProjectModel.find().lean();
-  const blogsData = await BlogModel.find().sort({ createdAt: -1 }).limit(3).lean();
+  const blogsData = await BlogModel.find({ published: { $ne: false } }).sort({ createdAt: -1 }).limit(3).lean();
 
   // Serialize data to plain objects
   const serializedHomeData = JSON.parse(JSON.stringify(homeData));

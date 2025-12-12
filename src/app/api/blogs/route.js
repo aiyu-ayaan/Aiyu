@@ -4,10 +4,22 @@ import Blog from "@/models/Blog";
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 
-export async function GET() {
+export async function GET(request) {
     await dbConnect();
+    const session = await getSession();
+    const { searchParams } = new URL(request.url);
+    const showAll = searchParams.get('all');
+
     try {
-        const blogs = await Blog.find({}).sort({ createdAt: -1 });
+        let query = {};
+        // Only show drafts if 'all' param is requested AND user is admin
+        if (session && showAll === 'true') {
+            query = {};
+        } else {
+            query = { published: { $ne: false } };
+        }
+
+        const blogs = await Blog.find(query).sort({ createdAt: -1 });
         return NextResponse.json({ success: true, data: blogs });
     } catch (error) {
         return NextResponse.json({ success: false, error: error.message }, { status: 400 });
