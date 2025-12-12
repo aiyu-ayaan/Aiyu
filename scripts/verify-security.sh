@@ -130,10 +130,14 @@ fi
 header "Resource Limits"
 
 CPU_LIMIT=$(docker inspect aiyu-app --format '{{.HostConfig.NanoCpus}}')
-if [ "$CPU_LIMIT" != "0" ]; then
-    # Use awk for portable floating point calculation
-    CPU_CORES=$(awk "BEGIN {printf \"%.2f\", $CPU_LIMIT / 1000000000}")
-    pass "CPU limit set to ${CPU_CORES} cores"
+if [ "$CPU_LIMIT" != "0" ] && [ "$CPU_LIMIT" != "" ]; then
+    # Use awk for portable floating point calculation with error handling
+    CPU_CORES=$(awk "BEGIN {printf \"%.2f\", $CPU_LIMIT / 1000000000}" 2>/dev/null || echo "unknown")
+    if [ "$CPU_CORES" != "unknown" ]; then
+        pass "CPU limit set to ${CPU_CORES} cores"
+    else
+        warn "CPU limit set but unable to calculate value"
+    fi
 else
     fail "No CPU limit set"
     echo "Add CPU limits under 'deploy.resources.limits' in docker-compose.yml"
@@ -158,13 +162,18 @@ STATS=$(docker stats aiyu-app --no-stream --format "CPU: {{.CPUPerc}} | Memory: 
 echo "$STATS"
 
 CPU_USAGE=$(docker stats aiyu-app --no-stream --format "{{.CPUPerc}}" | sed 's/%//')
-# Use awk for more portable floating point comparison (doesn't require bc)
-if awk "BEGIN {exit !($CPU_USAGE < 50)}"; then
-    pass "CPU usage is normal: ${CPU_USAGE}%"
-elif awk "BEGIN {exit !($CPU_USAGE < 80)}"; then
-    warn "CPU usage is elevated: ${CPU_USAGE}%"
+# Validate CPU_USAGE is numeric before comparison
+if [ -n "$CPU_USAGE" ] && echo "$CPU_USAGE" | grep -qE '^[0-9]+\.?[0-9]*$'; then
+    # Use awk for more portable floating point comparison (doesn't require bc)
+    if awk "BEGIN {exit !($CPU_USAGE < 50)}" 2>/dev/null; then
+        pass "CPU usage is normal: ${CPU_USAGE}%"
+    elif awk "BEGIN {exit !($CPU_USAGE < 80)}" 2>/dev/null; then
+        warn "CPU usage is elevated: ${CPU_USAGE}%"
+    else
+        fail "CPU usage is very high: ${CPU_USAGE}% - Possible crypto mining!"
+    fi
 else
-    fail "CPU usage is very high: ${CPU_USAGE}% - Possible crypto mining!"
+    warn "Unable to read CPU usage (value: '${CPU_USAGE}')"
 fi
 
 ###############################################################################

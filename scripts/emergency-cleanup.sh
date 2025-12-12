@@ -115,12 +115,17 @@ if [ "$CONTAINER_RUNNING" = true ]; then
     # Check CPU usage
     log "Checking CPU usage..."
     CPU_USAGE=$(docker stats aiyu-app --no-stream --format "{{.CPUPerc}}" | sed 's/%//' || echo "0")
-    # Use awk for portable floating point comparison
-    if awk "BEGIN {exit !($CPU_USAGE > 80)}" 2>/dev/null; then
-        warn "⚠️  HIGH CPU USAGE: ${CPU_USAGE}% - Possible crypto mining!"
-        THREATS_FOUND=true
+    # Validate CPU_USAGE is numeric before comparison
+    if [ -n "$CPU_USAGE" ] && echo "$CPU_USAGE" | grep -qE '^[0-9]+\.?[0-9]*$'; then
+        # Use awk for portable floating point comparison
+        if awk "BEGIN {exit !($CPU_USAGE > 80)}" 2>/dev/null; then
+            warn "⚠️  HIGH CPU USAGE: ${CPU_USAGE}% - Possible crypto mining!"
+            THREATS_FOUND=true
+        else
+            log "CPU usage normal: ${CPU_USAGE}%"
+        fi
     else
-        log "CPU usage normal: ${CPU_USAGE}%"
+        warn "Unable to read CPU usage reliably"
     fi
     
     # Check for suspicious files in /tmp

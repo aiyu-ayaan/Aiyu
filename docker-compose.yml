@@ -82,6 +82,7 @@ services:
           cpus: '0.25'     # Reserve 0.25 CPU
           memory: 256M     # Reserve 256MB RAM
     # Health check to detect abnormal behavior
+    # Uses curl (installed in Dockerfile) with fallback chain
     healthcheck:
       test: ["CMD", "sh", "/app/healthcheck.sh"]
       interval: 30s

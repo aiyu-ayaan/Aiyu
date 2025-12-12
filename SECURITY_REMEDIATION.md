@@ -69,12 +69,17 @@ deploy:
 #### D. Health Monitoring
 ```yaml
 healthcheck:
-  test: ["CMD", "node", "-e", "fetch('http://localhost:3000/api/health')..."]
+  test: ["CMD", "sh", "/app/healthcheck.sh"]
   interval: 30s
   timeout: 10s
   retries: 3
   start_period: 40s
 ```
+
+The healthcheck.sh script uses curl (installed in container) with fallback chain:
+1. curl (primary, installed via apk)
+2. wget (fallback if available)
+3. Node.js http module (last resort)
 
 **Impact:** Automatically detects if the container becomes unresponsive or unhealthy. Container will restart if health checks fail.
 
