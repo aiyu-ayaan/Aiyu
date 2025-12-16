@@ -32,13 +32,17 @@ This setup uses **Docker Volumes** to ensure data is not lost when containers ar
 ### Accessing Uploaded Files from Host
 To copy uploaded files from the Docker volume to your host machine:
 ```bash
-# List files in the uploads volume
-docker run --rm -v aiyu_uploads_data:/uploads alpine ls -lah /uploads
+# List all Docker volumes (find the uploads volume name)
+docker volume ls | grep uploads
+
+# List files in the uploads volume (adjust volume name if needed)
+# The volume name format is <project-name>_uploads_data (e.g., aiyu_uploads_data)
+docker run --rm -v <project-name>_uploads_data:/uploads alpine ls -lah /uploads
 
 # Copy all uploads to host directory
-docker run --rm -v aiyu_uploads_data:/uploads -v $(pwd)/backup:/backup alpine cp -r /uploads/. /backup/
+docker run --rm -v <project-name>_uploads_data:/uploads -v $(pwd)/backup:/backup alpine cp -r /uploads/. /backup/
 
-# Copy a specific file
+# Copy a specific file from running container
 docker cp aiyu-app:/app/public/uploads/filename.jpg ./local-filename.jpg
 ```
 
