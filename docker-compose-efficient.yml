@@ -51,7 +51,8 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       NODE_ENV: production
     volumes:
-      - ./public/uploads:/app/public/uploads
+      # Persistent uploads directory (named volume for proper permissions)
+      - uploads_data:/app/public/uploads
     depends_on:
       mongodb:
         condition: service_healthy
@@ -71,6 +72,8 @@ volumes:
   mongodb_data:
     driver: local
   mongodb_config:
+    driver: local
+  uploads_data:
     driver: local
 
 networks:

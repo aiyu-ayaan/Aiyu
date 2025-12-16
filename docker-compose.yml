@@ -49,8 +49,8 @@ services:
       # Node environment
       NODE_ENV: production
     volumes:
-      # Persistent uploads directory (bind mount)
-      - ./public/uploads:/app/public/uploads
+      # Persistent uploads directory (named volume for proper permissions)
+      - uploads_data:/app/public/uploads
       # Writable Next.js cache directory (volume for read-only filesystem)
       - nextjs_cache:/app/.next/cache
     tmpfs:
@@ -99,6 +99,8 @@ volumes:
   mongodb_config:
     driver: local
   nextjs_cache:
+    driver: local
+  uploads_data:
     driver: local
 
 # Network for inter-service communication
