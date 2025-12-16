@@ -11,9 +11,21 @@ const GalleryClient = () => {
     const { theme } = useTheme();
     const [images, setImages] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [selectedImage, setSelectedImage] = useState(null);
 
     useEffect(() => {
         fetchImages();
+    }, []);
+
+    // ... existing fetchImages code ...
+
+    // Close modal on escape key
+    useEffect(() => {
+        const handleEsc = (e) => {
+            if (e.key === 'Escape') setSelectedImage(null);
+        };
+        window.addEventListener('keydown', handleEsc);
+        return () => window.removeEventListener('keydown', handleEsc);
     }, []);
 
     const fetchImages = async () => {
@@ -45,7 +57,6 @@ const GalleryClient = () => {
             const url = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
-            // Extract filename from path or use ID
             const filename = image.src.split('/').pop() || `gallery-image-${image._id}.jpg`;
             link.download = filename;
             document.body.appendChild(link);
@@ -109,7 +120,9 @@ const GalleryClient = () => {
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ duration: 0.5, delay: index * 0.1 }}
-                            className="mb-4 relative group overflow-hidden rounded-xl bg-[var(--surface-variant)]"
+                            className="mb-4 relative group overflow-hidden rounded-xl bg-[var(--surface-variant)] cursor-pointer"
+                            onClick={() => setSelectedImage(image)}
+                            layoutId={`image-${image._id}`}
                         >
                             <div className="relative w-full" style={{ aspectRatio: `${image.width} / ${image.height}` }}>
                                 <Image
@@ -144,6 +157,58 @@ const GalleryClient = () => {
                     </div>
                 )}
             </div>
+
+            {/* Lightbox Modal */}
+            <AnimatePresence>
+                {selectedImage && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm"
+                        onClick={() => setSelectedImage(null)}
+                    >
+                        <motion.button
+                            className="absolute top-4 right-4 p-2 text-white/50 hover:text-white bg-white/10 hover:bg-white/20 rounded-full transition-colors z-50"
+                            onClick={() => setSelectedImage(null)}
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 18 12" /></svg>
+                        </motion.button>
+
+                        <motion.div
+                            layoutId={`image-${selectedImage._id}`}
+                            className="relative w-full max-w-5xl max-h-[90vh] bg-transparent rounded-lg overflow-hidden flex flex-col items-center justify-center p-2"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="relative w-full h-[80vh]">
+                                <Image
+                                    src={selectedImage.src}
+                                    alt={selectedImage.description || 'Gallery view'}
+                                    fill
+                                    className="object-contain"
+                                    sizes="90vw"
+                                    quality={100}
+                                />
+                            </div>
+
+                            <div className="mt-4 flex flex-col items-center">
+                                <p className="text-white text-lg font-medium text-center mb-4 max-w-2xl px-4">
+                                    {selectedImage.description}
+                                </p>
+                                <button
+                                    onClick={(e) => handleDownload(e, selectedImage)}
+                                    className="flex items-center gap-2 px-6 py-2.5 bg-white text-black hover:bg-gray-200 rounded-full text-sm font-bold transition-colors"
+                                >
+                                    <Download size={18} />
+                                    Download Full Size
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </motion.div>
     );
 };
