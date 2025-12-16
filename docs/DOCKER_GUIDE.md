@@ -25,15 +25,29 @@ docker-compose down
 This setup uses **Docker Volumes** to ensure data is not lost when containers are restarted.
 
 1. **MongoDB Data**: Stored in named volume `mongodb_data`.
-2. **Uploaded Images**: Stored in host directory `./public/uploads` mounted to `/app/public/uploads` in the container.
-   - This ensures images uploaded via the app are saved to your actual local hard drive (or VPS disk).
+2. **Uploaded Images**: Stored in named volume `uploads_data` mounted to `/app/public/uploads` in the container.
+   - Using a named volume ensures proper permissions for the container user (nextjs:nodejs with UID 1001).
+   - Images persist across container restarts and rebuilds.
+   
+### Accessing Uploaded Files from Host
+To copy uploaded files from the Docker volume to your host machine:
+```bash
+# List files in the uploads volume
+docker run --rm -v aiyu_uploads_data:/uploads alpine ls -lah /uploads
+
+# Copy all uploads to host directory
+docker run --rm -v aiyu_uploads_data:/uploads -v $(pwd)/backup:/backup alpine cp -r /uploads/. /backup/
+
+# Copy a specific file
+docker cp aiyu-app:/app/public/uploads/filename.jpg ./local-filename.jpg
+```
 
 ## Common Issues & Fixes
 
 ### 1. "EACCES: permission denied" on Upload
-**Cause**: The Node.js user inside the container doesn't have write permissions to the mounted volume on the host.
+**Cause**: Permission mismatch between the container user and the upload directory.
 **Fix**:
-The `Dockerfile` has been configured to run as `root` temporarily to bypass this. Ensure you have rebuilt:
+This has been resolved by using a named Docker volume (`uploads_data`) instead of a bind mount. The named volume is created with proper permissions for the `nextjs` user (UID 1001) inside the container. After updating your docker-compose.yml, rebuild:
 ```bash
 docker-compose down
 docker-compose up -d --build
