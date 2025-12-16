@@ -30,6 +30,7 @@ export async function POST(request) {
             { model: About, key: 'about' },
             { model: Blog, key: 'blogs' },
             { model: Config, key: 'config' },
+            { model: Gallery, key: 'gallery' },
             { model: Header, key: 'header' },
             { model: Home, key: 'home' },
             { model: Project, key: 'projects' },

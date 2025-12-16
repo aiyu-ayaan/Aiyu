@@ -12,12 +12,30 @@ const GalleryClient = () => {
     const [images, setImages] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedImage, setSelectedImage] = useState(null);
+    const [headerInfo, setHeaderInfo] = useState({
+        title: 'Gallery',
+        subtitle: 'A visual journey through my lens.'
+    });
 
     useEffect(() => {
         fetchImages();
+        fetchConfig();
     }, []);
 
-    // ... existing fetchImages code ...
+    const fetchConfig = async () => {
+        try {
+            const res = await fetch('/api/config');
+            const data = await res.json();
+            if (data) {
+                setHeaderInfo({
+                    title: data.galleryTitle || 'Gallery',
+                    subtitle: data.gallerySubtitle || 'A visual journey through my lens.'
+                });
+            }
+        } catch (error) {
+            console.error('Failed to fetch config:', error);
+        }
+    };
 
     // Close modal on escape key
     useEffect(() => {
@@ -102,10 +120,10 @@ const GalleryClient = () => {
                                 : 'linear-gradient(to right, #0891b2, #2563eb, #7c3aed)'
                         }}
                     >
-                        Gallery
+                        {headerInfo.title}
                     </h1>
                     <p className="text-lg max-w-2xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
-                        A visual journey through my lens.
+                        {headerInfo.subtitle}
                     </p>
                 </motion.div>
 

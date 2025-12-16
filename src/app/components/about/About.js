@@ -67,7 +67,7 @@ const About = ({ data }) => {
             }}
           >
             <h2
-              className="text-3xl font-bold mb-6 flex items-center gap-3"
+              className="text-xl sm:text-2xl md:text-3xl font-bold mb-6 flex items-center gap-3"
               style={{ color: 'var(--accent-cyan)' }}
             >
               <span style={{ color: 'var(--accent-orange)' }}>{"</>"}</span>
@@ -91,7 +91,7 @@ const About = ({ data }) => {
           className="mt-8"
         >
           <h2
-            className="text-4xl font-bold mb-8 text-center flex items-center justify-center gap-3"
+            className="text-2xl sm:text-3xl md:text-4xl font-bold mb-8 text-center flex items-center justify-center gap-2 sm:gap-3"
             style={{ color: 'var(--accent-cyan)' }}
           >
             <span style={{ color: 'var(--accent-orange)' }}>{"<"}</span>
@@ -156,7 +156,7 @@ const About = ({ data }) => {
             }}
           >
             <h2
-              className="text-3xl font-bold mb-6 flex items-center gap-3"
+              className="text-xl sm:text-2xl md:text-3xl font-bold mb-6 flex items-center gap-3"
               style={{ color: 'var(--accent-cyan)' }}
             >
               <span style={{ color: 'var(--accent-orange)' }}>{"<"}</span>
@@ -252,7 +252,7 @@ const About = ({ data }) => {
           className="mt-8"
         >
           <h2
-            className="text-4xl font-bold mb-8 text-center flex items-center justify-center gap-3"
+            className="text-2xl sm:text-3xl md:text-4xl font-bold mb-8 text-center flex items-center justify-center gap-2 sm:gap-3"
             style={{ color: 'var(--accent-cyan)' }}
           >
             <span style={{ color: 'var(--accent-orange)' }}>{"<"}</span>
@@ -307,7 +307,7 @@ const About = ({ data }) => {
           className="mt-8"
         >
           <h2
-            className="text-4xl font-bold mb-8 text-center flex items-center justify-center gap-3"
+            className="text-2xl sm:text-3xl md:text-4xl font-bold mb-8 text-center flex items-center justify-center gap-2 sm:gap-3"
             style={{ color: 'var(--accent-cyan)' }}
           >
             <span style={{ color: 'var(--accent-orange)' }}>{"<"}</span>

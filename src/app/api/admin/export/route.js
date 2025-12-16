@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import About from "@/models/About";
 import Blog from "@/models/Blog";
 import Config from "@/models/Config";
+import Gallery from "@/models/Gallery";
 import Header from "@/models/Header";
 import Home from "@/models/Home";
 import Project from "@/models/Project";
@@ -22,6 +23,7 @@ export async function GET(request) {
             about: await About.find({}),
             blogs: await Blog.find({}),
             config: await Config.find({}),
+            gallery: await Gallery.find({}),
             header: await Header.find({}),
             home: await Home.find({}),
             projects: await Project.find({}),
