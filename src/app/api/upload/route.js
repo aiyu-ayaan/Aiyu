@@ -97,7 +97,7 @@ async function uploadHandler(request) {
         await writeFile(filePath, buffer, { mode: 0o644 });
 
         const uploadTime = Date.now() - startTime;
-        const fileUrl = `/uploads/${secureFilename}`;
+        const fileUrl = `/api/uploads/${secureFilename}`;
 
         console.log(`[SUCCESS] File uploaded successfully:`, {
             originalName: file.name,
