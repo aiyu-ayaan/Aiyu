@@ -7,7 +7,7 @@ import { jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 
 const JWT_SECRET = new TextEncoder().encode(
-    process.env.JWT_SECRET || 'your-secret-key-change-in-production'
+    process.env.JWT_SECRET || 'your-secret-key'
 );
 
 /**
@@ -19,7 +19,7 @@ const JWT_SECRET = new TextEncoder().encode(
 export async function verifyAuth(request) {
     try {
         const cookieStore = await cookies();
-        const token = cookieStore.get('auth-token');
+        const token = cookieStore.get('session');
 
         if (!token) {
             return {
