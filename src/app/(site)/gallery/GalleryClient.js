@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import Masonry from 'react-masonry-css';
 import { Download, Loader2 } from 'lucide-react';
 import Image from 'next/image';
@@ -37,14 +37,15 @@ const GalleryClient = () => {
         }
     };
 
-    // Close modal on escape key
+    // Close modal on escape key - memoized handler
+    const handleEsc = useCallback((e) => {
+        if (e.key === 'Escape') setSelectedImage(null);
+    }, []);
+
     useEffect(() => {
-        const handleEsc = (e) => {
-            if (e.key === 'Escape') setSelectedImage(null);
-        };
         window.addEventListener('keydown', handleEsc);
         return () => window.removeEventListener('keydown', handleEsc);
-    }, []);
+    }, [handleEsc]);
 
     const fetchImages = async () => {
         try {
@@ -60,13 +61,14 @@ const GalleryClient = () => {
         }
     };
 
-    const breakpointColumnsObj = {
+    // Memoize breakpoint configuration to prevent re-creation
+    const breakpointColumnsObj = useMemo(() => ({
         default: 3,
         1100: 2,
         700: 1
-    };
+    }), []);
 
-    const handleDownload = async (e, image) => {
+    const handleDownload = useCallback(async (e, image) => {
         e.preventDefault();
         e.stopPropagation();
         try {
@@ -84,7 +86,7 @@ const GalleryClient = () => {
         } catch (error) {
             console.error('Download failed:', error);
         }
-    };
+    }, []); // Empty deps since image is passed as parameter
 
     if (loading) {
         return (
@@ -137,19 +139,22 @@ const GalleryClient = () => {
                             key={image._id}
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}
-                            transition={{ duration: 0.5, delay: index * 0.1 }}
+                            transition={{ duration: 0.4, delay: Math.min(index * 0.05, 1) }}
                             className="mb-4 relative group overflow-hidden rounded-xl bg-[var(--surface-variant)] cursor-pointer"
                             onClick={() => setSelectedImage(image)}
                             layoutId={`image-${image._id}`}
                         >
                             <div className="relative w-full" style={{ aspectRatio: `${image.width} / ${image.height}` }}>
                                 <Image
-                                    src={image.src}
+                                    src={image.thumbnail || image.src}
                                     alt={image.description || 'Gallery image'}
                                     fill
                                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                                    className="object-cover transition-transform duration-700 group-hover:scale-105"
-                                    loading="lazy"
+                                    className="object-cover transition-transform duration-500 group-hover:scale-105"
+                                    loading={index < 6 ? "eager" : "lazy"}
+                                    priority={index < 3}
+                                    placeholder="blur"
+                                    blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
                                 />
                             </div>
 

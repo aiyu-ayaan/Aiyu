@@ -5,6 +5,10 @@ const GallerySchema = new mongoose.Schema({
         type: String,
         required: [true, 'Please provide an image URL'],
     },
+    thumbnail: {
+        type: String,
+        required: false, // Optional for backward compatibility
+    },
     description: {
         type: String,
         required: [true, 'Please provide a description'],
