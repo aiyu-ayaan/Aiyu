@@ -23,6 +23,8 @@ const ConfigForm = () => {
         projectsSubtitle: '',
         blogsTitle: '',
         blogsSubtitle: '',
+        galleryTitle: '',
+        gallerySubtitle: '',
 
     });
     const [loading, setLoading] = useState(true);
@@ -57,7 +59,9 @@ const ConfigForm = () => {
                         projectsTitle: data.projectsTitle || 'Projects Portfolio',
                         projectsSubtitle: data.projectsSubtitle || 'A collection of my work',
                         blogsTitle: data.blogsTitle || 'Latest Insights',
-                        blogsSubtitle: data.blogsSubtitle || 'Thoughts, tutorials, and updates on web development and technology.'
+                        blogsSubtitle: data.blogsSubtitle || 'Thoughts, tutorials, and updates on web development and technology.',
+                        galleryTitle: data.galleryTitle || 'Gallery',
+                        gallerySubtitle: data.gallerySubtitle || 'A visual journey through my lens.'
 
                     });
                 }
@@ -290,6 +294,33 @@ const ConfigForm = () => {
                                     value={formData.blogsSubtitle}
                                     onChange={handleChange}
                                     rows="2"
+                                    className="w-full p-3 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Gallery Header */}
+                    <div className="bg-gray-700/30 p-4 rounded-lg border border-gray-700">
+                        <h3 className="text-lg font-semibold text-white mb-3">Gallery Page</h3>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium mb-1 text-gray-300">Title</label>
+                                <input
+                                    type="text"
+                                    name="galleryTitle"
+                                    value={formData.galleryTitle}
+                                    onChange={handleChange}
+                                    className="w-full p-3 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1 text-gray-300">Subtitle</label>
+                                <input
+                                    type="text"
+                                    name="gallerySubtitle"
+                                    value={formData.gallerySubtitle}
+                                    onChange={handleChange}
                                     className="w-full p-3 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white"
                                 />
                             </div>

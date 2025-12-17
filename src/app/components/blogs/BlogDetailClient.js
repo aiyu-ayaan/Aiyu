@@ -29,19 +29,27 @@ export default function BlogDetailClient({ blog }) {
             const mdLinkRegex = /\[.*?\]\((https?:\/\/[^\)]+)\)/g;
             let match;
             while ((match = mdLinkRegex.exec(blog.content)) !== null) {
+                // Skip if it's an image (starts with !)
+                if (match.index > 0 && blog.content[match.index - 1] === '!') {
+                    continue;
+                }
                 urls.add(match[1]);
             }
 
-            // Regex for raw links (simple version, might overlap with above but Set handles dupes)
-            // We can just rely on the above extracting all markdown links. 
-            // If we want raw urls not in markdown links, it gets complex. 
-            // Assuming most links are markdown links or just raw text that user wants previewed.
-            const rawLinkRegex = /(?<!\()(https?:\/\/[^\s\)>"]+)/g;
+            // Regex for raw links. Added \] to excluded char set to prevent matching closing brackets
+            const rawLinkRegex = /(?<!\()(https?:\/\/[^\s\)>"\]]+)/g;
             while ((match = rawLinkRegex.exec(blog.content)) !== null) {
+                // If the link was inside [], it might have been picked up. 
+                // We want to avoid duplicates if possible, but Set handles exact string duplicates.
+                // We mainly need to avoid matching the ]( part.
                 urls.add(match[1]);
             }
 
-            setExtractedLinks(Array.from(urls));
+            // Filter out image URLs and converted to array
+            const imageExtensions = /\.(jpg|jpeg|png|gif|webp|svg)$/i;
+            const cleanUrls = Array.from(urls).filter(url => !imageExtensions.test(url));
+
+            setExtractedLinks(cleanUrls);
         }
     }, [blog]);
 
@@ -76,13 +84,13 @@ export default function BlogDetailClient({ blog }) {
             }}
         >
             <div className="max-w-6xl mx-auto">
-                <Link href="/blogs" className="inline-block mb-12 text-lg font-medium hover:underline transition-colors" style={{ color: 'var(--text-accent)' }}>
-                    ← Back to Blogs
-                </Link>
+                <div className="flex justify-between items-center mb-12">
+                    <Link href="/blogs" className="inline-block text-lg font-medium hover:underline transition-colors" style={{ color: 'var(--text-accent)' }}>
+                        ← Back to Blogs
+                    </Link>
 
-                <header className="mb-12 text-center relative">
                     {/* Share URL Button - Desktop */}
-                    <div className="absolute right-0 top-0 hidden md:block">
+                    <div className="hidden md:block">
                         <motion.button
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.9 }}
@@ -93,7 +101,9 @@ export default function BlogDetailClient({ blog }) {
                             {showShareToast ? <IoCheckmark size={20} /> : <FaShareAlt size={18} />}
                         </motion.button>
                     </div>
+                </div>
 
+                <header className="mb-12 text-center relative">
                     <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4 pb-2 bg-gradient-to-r bg-clip-text text-transparent"
                         style={{
                             backgroundImage: theme === 'dark'

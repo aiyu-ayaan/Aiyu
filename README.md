@@ -31,6 +31,22 @@ For detailed guides, please refer to the `docs/` folder:
 - 🔒 **[Security Remediation](SECURITY_REMEDIATION.md)**: Comprehensive security hardening guide (crypto miner incident response).
 - ✅ **[Deployment Security Checklist](DEPLOYMENT_SECURITY_CHECKLIST.md)**: Pre-deployment security verification checklist.
 
+## Features
+
+### 📸 **Image Gallery**
+- **Public View:** A responsive masonry layout (`/gallery`) showcasing images with lazy loading, hover effects, and a lightbox modal for detailed viewing.
+- **Admin Management:** Upload, delete, and manage gallery images with descriptions via the Admin Dashboard.
+- **Dynamic Configuration:** Customize the Gallery page title and subtitle directly from the Admin Settings.
+
+### 🛠️ **Admin Dashboard**
+- **Project & Blog Management:** CRUD operations for portfolio projects and blog posts.
+- **Dynamic Page Headers:** Customize titles/subtitles for Projects, Blogs, and Gallery pages without code changes.
+- **Database Tools:** Export/Import full database backups (including gallery images) JSON format.
+
+### 🐳 **Docker Integration**
+- **Persistent Storage:** Uploaded images and MongoDB data persist across container restarts via Docker volumes.
+- **Security:** Hardened container security with read-only root filesystems and non-root user execution.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

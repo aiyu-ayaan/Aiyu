@@ -18,6 +18,8 @@ const ConfigSchema = new mongoose.Schema({
     projectsSubtitle: { type: String, default: 'A collection of my work' },
     blogsTitle: { type: String, default: 'Latest Insights' },
     blogsSubtitle: { type: String, default: 'Thoughts, tutorials, and updates on web development and technology.' },
+    galleryTitle: { type: String, default: 'Gallery' },
+    gallerySubtitle: { type: String, default: 'A visual journey through my lens.' },
     googleAnalyticsId: { type: String, default: '' }
 }, { strict: false }); // Allow other fields to be added later if needed without strict validation issues initially
 

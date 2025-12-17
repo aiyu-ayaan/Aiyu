@@ -23,7 +23,7 @@ const TechStackCarousel = ({ data }) => {
 
             <div className="max-w-6xl mx-auto px-4 mb-8 text-center">
                 <h2
-                    className="text-2xl font-bold mb-2 flex items-center justify-center gap-2"
+                    className="text-xl sm:text-2xl font-bold mb-2 flex items-center justify-center gap-2"
                     style={{ color: 'var(--accent-cyan)' }}
                 >
                     <span style={{ color: 'var(--accent-orange)' }}>{"//"}</span>

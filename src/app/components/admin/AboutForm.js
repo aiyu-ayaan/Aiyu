@@ -418,7 +418,7 @@ const AboutForm = () => {
                                         />
                                     </div>
                                     <span className="text-[10px] text-cyan-200 truncate w-full text-center">
-                                        Use "{iconSearchTerm}"
+                                        Use &quot;{iconSearchTerm}&quot;
                                     </span>
                                 </button>
                             )}

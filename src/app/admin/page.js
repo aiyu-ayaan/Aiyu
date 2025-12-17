@@ -29,6 +29,7 @@ export default function AdminDashboard() {
         { name: 'Social', count: 'Manage', color: 'bg-pink-500', link: '/admin/socials' },
         { name: 'Database', count: 'Backup', color: 'bg-yellow-500', link: '/admin/database' },
         { name: 'Config', count: 'Setup', color: 'bg-slate-500', link: '/admin/config' },
+        { name: 'Gallery', count: 'Manage', color: 'bg-indigo-500', link: '/admin/gallery' },
     ];
 
     return (
