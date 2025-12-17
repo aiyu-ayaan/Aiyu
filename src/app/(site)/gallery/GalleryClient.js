@@ -68,6 +68,14 @@ const GalleryClient = () => {
         700: 1
     }), []);
 
+    // Helper function to extract file extension (outside callback for better performance)
+    const getFileExtension = useCallback((srcUrl) => {
+        const originalFilename = srcUrl.split('/').pop() || '';
+        return originalFilename.includes('.') 
+            ? originalFilename.split('.').pop() 
+            : 'jpg';
+    }, []);
+
     const handleDownload = useCallback(async (e, image) => {
         e.preventDefault();
         e.stopPropagation();
@@ -78,14 +86,6 @@ const GalleryClient = () => {
             const link = document.createElement('a');
             link.href = url;
             
-            // Helper function to extract file extension
-            const getFileExtension = (srcUrl) => {
-                const originalFilename = srcUrl.split('/').pop() || '';
-                return originalFilename.includes('.') 
-                    ? originalFilename.split('.').pop() 
-                    : 'jpg';
-            };
-            
             // Determine filename: use caption if available, otherwise use fallback strategy
             let filename;
             if (image.description && image.description.trim()) {
@@ -93,8 +93,9 @@ const GalleryClient = () => {
                 const sanitized = image.description
                     .trim()
                     .substring(0, 100) // Limit length
-                    .replace(/[/\\?%*:|"<>]/g, '-') // Replace invalid chars
-                    .replace(/\s+/g, '_'); // Replace spaces with underscores
+                    .replace(/[/\\?%*:|"<>\x00-\x1f]/g, '-') // Replace invalid chars including control chars
+                    .replace(/\s+/g, '_') // Replace spaces with underscores
+                    .replace(/\.+$/, ''); // Remove trailing periods
                 
                 // Check if sanitized result is meaningful (not empty or too short)
                 if (sanitized.length >= 3) {
@@ -110,7 +111,7 @@ const GalleryClient = () => {
             if (!filename) {
                 const timestamp = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
                 const extension = getFileExtension(image.src);
-                const imageIdShort = image._id ? image._id.slice(0, 8) : 'unknown';
+                const imageIdShort = image._id ? image._id.slice(0, 8) : Date.now().toString(36);
                 filename = `gallery_${timestamp}_${imageIdShort}.${extension}`;
             }
             
@@ -122,7 +123,7 @@ const GalleryClient = () => {
         } catch (error) {
             console.error('Download failed:', error);
         }
-    }, []); // Empty deps since image is passed as parameter
+    }, [getFileExtension]); // Include getFileExtension in deps
 
     if (loading) {
         return (
