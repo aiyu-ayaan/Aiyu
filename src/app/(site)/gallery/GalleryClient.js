@@ -77,7 +77,34 @@ const GalleryClient = () => {
             const url = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
-            const filename = image.src.split('/').pop() || `gallery-image-${image._id}.jpg`;
+            
+            // Determine filename: use caption if available, otherwise use fallback strategy
+            let filename;
+            if (image.description && image.description.trim()) {
+                // Use caption as filename, sanitize it for file systems
+                const sanitized = image.description
+                    .trim()
+                    .substring(0, 100) // Limit length
+                    .replace(/[/\\?%*:|"<>]/g, '-') // Replace invalid chars
+                    .replace(/\s+/g, '_'); // Replace spaces with underscores
+                
+                // Get file extension from original URL
+                const originalFilename = image.src.split('/').pop() || '';
+                const extension = originalFilename.includes('.') 
+                    ? originalFilename.split('.').pop() 
+                    : 'jpg';
+                
+                filename = `${sanitized}.${extension}`;
+            } else {
+                // Fallback strategy: use timestamp + image ID
+                const timestamp = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+                const originalFilename = image.src.split('/').pop() || '';
+                const extension = originalFilename.includes('.') 
+                    ? originalFilename.split('.').pop() 
+                    : 'jpg';
+                filename = `gallery_${timestamp}_${image._id.substring(0, 8)}.${extension}`;
+            }
+            
             link.download = filename;
             document.body.appendChild(link);
             link.click();
