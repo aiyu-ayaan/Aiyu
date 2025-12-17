@@ -78,6 +78,14 @@ const GalleryClient = () => {
             const link = document.createElement('a');
             link.href = url;
             
+            // Helper function to extract file extension
+            const getFileExtension = (srcUrl) => {
+                const originalFilename = srcUrl.split('/').pop() || '';
+                return originalFilename.includes('.') 
+                    ? originalFilename.split('.').pop() 
+                    : 'jpg';
+            };
+            
             // Determine filename: use caption if available, otherwise use fallback strategy
             let filename;
             if (image.description && image.description.trim()) {
@@ -88,21 +96,22 @@ const GalleryClient = () => {
                     .replace(/[/\\?%*:|"<>]/g, '-') // Replace invalid chars
                     .replace(/\s+/g, '_'); // Replace spaces with underscores
                 
-                // Get file extension from original URL
-                const originalFilename = image.src.split('/').pop() || '';
-                const extension = originalFilename.includes('.') 
-                    ? originalFilename.split('.').pop() 
-                    : 'jpg';
-                
-                filename = `${sanitized}.${extension}`;
-            } else {
-                // Fallback strategy: use timestamp + image ID
+                // Check if sanitized result is meaningful (not empty or too short)
+                if (sanitized.length >= 3) {
+                    const extension = getFileExtension(image.src);
+                    filename = `${sanitized}.${extension}`;
+                } else {
+                    // Fall through to fallback strategy if sanitization resulted in empty/short string
+                    filename = null;
+                }
+            }
+            
+            // Fallback strategy: use timestamp + image ID (if caption wasn't usable)
+            if (!filename) {
                 const timestamp = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-                const originalFilename = image.src.split('/').pop() || '';
-                const extension = originalFilename.includes('.') 
-                    ? originalFilename.split('.').pop() 
-                    : 'jpg';
-                filename = `gallery_${timestamp}_${image._id.substring(0, 8)}.${extension}`;
+                const extension = getFileExtension(image.src);
+                const imageIdShort = image._id ? image._id.slice(0, 8) : 'unknown';
+                filename = `gallery_${timestamp}_${imageIdShort}.${extension}`;
             }
             
             link.download = filename;
