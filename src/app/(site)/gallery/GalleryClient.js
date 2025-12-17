@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import Masonry from 'react-masonry-css';
 import { Download, Loader2 } from 'lucide-react';
 import Image from 'next/image';
@@ -37,14 +37,15 @@ const GalleryClient = () => {
         }
     };
 
-    // Close modal on escape key
+    // Close modal on escape key - memoized handler
+    const handleEsc = useCallback((e) => {
+        if (e.key === 'Escape') setSelectedImage(null);
+    }, []);
+
     useEffect(() => {
-        const handleEsc = (e) => {
-            if (e.key === 'Escape') setSelectedImage(null);
-        };
         window.addEventListener('keydown', handleEsc);
         return () => window.removeEventListener('keydown', handleEsc);
-    }, []);
+    }, [handleEsc]);
 
     const fetchImages = async () => {
         try {
@@ -60,13 +61,14 @@ const GalleryClient = () => {
         }
     };
 
-    const breakpointColumnsObj = {
+    // Memoize breakpoint configuration to prevent re-creation
+    const breakpointColumnsObj = useMemo(() => ({
         default: 3,
         1100: 2,
         700: 1
-    };
+    }), []);
 
-    const handleDownload = async (e, image) => {
+    const handleDownload = useCallback(async (e, image) => {
         e.preventDefault();
         e.stopPropagation();
         try {
@@ -84,7 +86,7 @@ const GalleryClient = () => {
         } catch (error) {
             console.error('Download failed:', error);
         }
-    };
+    }, []); // Empty deps since image is passed as parameter
 
     if (loading) {
         return (
@@ -144,7 +146,7 @@ const GalleryClient = () => {
                         >
                             <div className="relative w-full" style={{ aspectRatio: `${image.width} / ${image.height}` }}>
                                 <Image
-                                    src={image.src}
+                                    src={image.thumbnail || image.src}
                                     alt={image.description || 'Gallery image'}
                                     fill
                                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"

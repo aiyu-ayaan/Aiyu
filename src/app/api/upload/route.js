@@ -21,6 +21,7 @@ import {
     generateSecureFilename,
     MAX_FILE_SIZE
 } from '@/utils/fileValidation';
+import { generateThumbnail, saveThumbnail } from '@/utils/imageProcessing';
 
 async function uploadHandler(request) {
     const startTime = Date.now();
@@ -99,12 +100,27 @@ async function uploadHandler(request) {
         const uploadTime = Date.now() - startTime;
         const fileUrl = `/api/uploads/${secureFilename}`;
 
+        // Generate thumbnail for images
+        let thumbnailUrl = null;
+        const isImage = file.type?.startsWith('image/');
+        if (isImage) {
+            try {
+                const thumbnail = await generateThumbnail(buffer, secureFilename);
+                thumbnailUrl = await saveThumbnail(thumbnail.buffer, thumbnail.filename);
+                console.log(`[SUCCESS] Thumbnail generated: ${thumbnailUrl}`);
+            } catch (error) {
+                console.warn('[WARN] Failed to generate thumbnail, continuing without it:', error.message);
+                // Continue without thumbnail - not a critical error
+            }
+        }
+
         console.log(`[SUCCESS] File uploaded successfully:`, {
             originalName: file.name,
             secureFilename,
             size: file.size,
             type: file.type,
             url: fileUrl,
+            thumbnailUrl,
             uploadTime: `${uploadTime}ms`,
             user: userIdentifier
         });
@@ -112,6 +128,7 @@ async function uploadHandler(request) {
         return NextResponse.json({
             success: true,
             url: fileUrl,
+            thumbnailUrl,
             filename: secureFilename,
             size: file.size,
             type: file.type
