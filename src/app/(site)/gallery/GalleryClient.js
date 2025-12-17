@@ -139,7 +139,7 @@ const GalleryClient = () => {
                             key={image._id}
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}
-                            transition={{ duration: 0.5, delay: index * 0.1 }}
+                            transition={{ duration: 0.4, delay: Math.min(index * 0.05, 1) }}
                             className="mb-4 relative group overflow-hidden rounded-xl bg-[var(--surface-variant)] cursor-pointer"
                             onClick={() => setSelectedImage(image)}
                             layoutId={`image-${image._id}`}
@@ -150,8 +150,11 @@ const GalleryClient = () => {
                                     alt={image.description || 'Gallery image'}
                                     fill
                                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                                    className="object-cover transition-transform duration-700 group-hover:scale-105"
-                                    loading="lazy"
+                                    className="object-cover transition-transform duration-500 group-hover:scale-105"
+                                    loading={index < 6 ? "eager" : "lazy"}
+                                    priority={index < 3}
+                                    placeholder="blur"
+                                    blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
                                 />
                             </div>
 

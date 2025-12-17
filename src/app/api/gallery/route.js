@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import Gallery from '@/models/Gallery';
 import { withAuth } from '@/middleware/auth';
+import { deleteThumbnail } from '@/utils/imageProcessing';
 
 // GET: Fetch all gallery items (Public)
 export async function GET() {
@@ -46,6 +47,13 @@ async function deleteGalleryItem(req) {
             return NextResponse.json({ success: false, error: 'Item not found' }, { status: 404 });
         }
 
+        // Delete associated thumbnail file (non-blocking)
+        if (deletedItem.thumbnail) {
+            deleteThumbnail(deletedItem.thumbnail).catch(err => 
+                console.warn('[WARN] Failed to delete thumbnail:', err.message)
+            );
+        }
+
         return NextResponse.json({ success: true, data: {} });
     } catch (error) {
         return NextResponse.json({ success: false, error: error.message }, { status: 400 });
@@ -55,3 +63,6 @@ async function deleteGalleryItem(req) {
 // Export authenticated handlers
 export const POST = withAuth(createGalleryItem);
 export const DELETE = withAuth(deleteGalleryItem);
+
+// Use nodejs runtime for file system operations
+export const runtime = 'nodejs';
