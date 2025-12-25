@@ -41,7 +41,7 @@ For detailed guides, please refer to the `docs/` folder:
 ### 🛠️ **Admin Dashboard**
 - **Project & Blog Management:** CRUD operations for portfolio projects and blog posts.
 - **Dynamic Page Headers:** Customize titles/subtitles for Projects, Blogs, and Gallery pages without code changes.
-- **Database Tools:** Export/Import full database backups (including gallery images) JSON format.
+- **Database Tools:** Export/Import database backups (including blogs, projects, GitHub stats, and messages; excluding gallery images) in JSON format.
 
 ### 🐳 **Docker Integration**
 - **Persistent Storage:** Uploaded images and MongoDB data persist across container restarts via Docker volumes.
