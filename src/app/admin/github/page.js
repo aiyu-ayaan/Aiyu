@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, Github, CheckCircle, XCircle } from 'lucide-react';
+import { Loader2, Github, CheckCircle, XCircle, ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
 
 export default function GitHubConfigPage() {
     const router = useRouter();
@@ -129,6 +130,13 @@ export default function GitHubConfigPage() {
         <div className="p-8 min-h-screen text-white w-full flex flex-col items-center">
             <div className="w-full max-w-3xl">
                 <div className="mb-6">
+                    <Link
+                        href="/admin"
+                        className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 transition-colors mb-4 group"
+                    >
+                        <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                        Back to Dashboard
+                    </Link>
                     <h1 className="text-3xl font-bold flex items-center gap-2">
                         <Github className="text-[var(--primary)]" />
                         GitHub Configuration

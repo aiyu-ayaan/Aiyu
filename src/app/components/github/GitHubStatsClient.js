@@ -3,7 +3,10 @@
 import { Github, Star, GitFork, Users, BookOpen, MapPin, Link as LinkIcon, Calendar, Flame, TrendingUp, GitCommit, GitPullRequest, GitMerge } from 'lucide-react';
 import { useState } from 'react';
 
+import { useTheme } from '../../context/ThemeContext';
+
 export default function GitHubStatsClient({ data }) {
+    const { theme } = useTheme();
     const [selectedRepo, setSelectedRepo] = useState(null);
 
     if (!data.success) {
@@ -80,8 +83,10 @@ export default function GitHubStatsClient({ data }) {
 
     // Prepare contribution grid (52 weeks × 7 days)
     const weeks = [];
-    for (let i = 0; i < contributions.length; i += 7) {
-        weeks.push(contributions.slice(i, i + 7));
+    if (contributions && contributions.length > 0) {
+        for (let i = 0; i < contributions.length; i += 7) {
+            weeks.push(contributions.slice(i, i + 7));
+        }
     }
 
     return (
@@ -90,10 +95,17 @@ export default function GitHubStatsClient({ data }) {
                 {/* Header Section */}
                 <div className="text-center mb-12">
                     <Github className="w-16 h-16 mx-auto mb-4 text-[var(--primary)]" />
-                    <h1 className="text-4xl md:text-5xl font-bold mb-4">
+                    <h1
+                        className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4 pb-2 bg-gradient-to-r bg-clip-text text-transparent"
+                        style={{
+                            backgroundImage: theme === 'dark'
+                                ? 'linear-gradient(to right, #22d3ee, #3b82f6, #8b5cf6)'
+                                : 'linear-gradient(to right, #0891b2, #2563eb, #7c3aed)'
+                        }}
+                    >
                         GitHub Statistics
                     </h1>
-                    <p className="text-xl text-[var(--text-secondary)]">
+                    <p className="text-lg max-w-2xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
                         My open source journey and contributions
                     </p>
                 </div>
@@ -180,14 +192,14 @@ export default function GitHubStatsClient({ data }) {
                 {/* Contribution Graph */}
                 {sections?.showContributions && weeks.length > 0 && (
                     <div className="mb-8">
-                        <div className="flex justify-between items-center mb-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
                             <h2 className="text-2xl font-bold">Contribution Activity</h2>
                             <div className="text-sm text-[var(--text-secondary)]">
                                 Longest Streak: <span className="text-orange-400 font-bold">{streaks.longest} days</span>
                             </div>
                         </div>
-                        <div className="bg-[var(--surface-card)] rounded-xl p-6 border border-[var(--border-secondary)] overflow-x-auto">
-                            <div className="flex gap-1 w-full justify-center">
+                        <div className="bg-[var(--surface-card)] rounded-xl p-4 sm:p-6 border border-[var(--border-secondary)] overflow-x-auto">
+                            <div className="flex gap-1 min-w-max mx-auto">
                                 {weeks.map((week, weekIdx) => (
                                     <div key={weekIdx} className="flex flex-col gap-1">
                                         {week.map((day, dayIdx) => (
