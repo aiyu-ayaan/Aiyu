@@ -6,10 +6,16 @@ import SocialModel from '@/models/Social';
 import ContactForm from '@/app/components/contact/ContactForm';
 import Link from 'next/link';
 
-export const metadata = {
-    title: 'Contact | Get in Touch',
-    description: 'Let\'s collaborate on something amazing.',
-};
+export async function generateMetadata() {
+    await dbConnect();
+    const config = await ConfigModel.findOne().lean();
+    const baseName = config?.siteTitle || config?.logoText || 'Portfolio';
+
+    return {
+        title: `${baseName} | Contact`,
+        description: 'Let\'s collaborate on something amazing.',
+    };
+}
 
 export default async function ContactPage() {
     await dbConnect();
@@ -45,7 +51,7 @@ export default async function ContactPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 grid-rows-[auto]">
 
                     {/* 1. Contact Form - Large Block */}
-                    <div className="md:col-span-2 md:row-span-2 bg-[var(--bg-secondary)] rounded-3xl p-6 md:p-8 border border-[var(--border-primary)] hover:border-[var(--accent-purple)] transition-all shadow-sm group">
+                    <div className="md:col-span-2 md:row-span-2 bg-gray-50 dark:bg-[var(--bg-secondary)] rounded-3xl p-6 md:p-8 border border-gray-200 dark:border-[var(--border-primary)] hover:border-purple-300 dark:hover:border-[var(--accent-purple)] transition-all shadow-sm group">
                         <div className="h-full flex flex-col">
                             <h2 className="text-2xl font-bold mb-6">Send a Message</h2>
                             <ContactForm />
