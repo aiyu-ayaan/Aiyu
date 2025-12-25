@@ -18,10 +18,10 @@ export default function ContactPageClient({ location, status, email, hasResume, 
                     transition={{ duration: 0.6, delay: 0.2 }}
                     className="mb-12"
                 >
-                    <h1 className="text-4xl md:text-6xl font-bold mb-4 tracking-tight">Let's Talk.</h1>
+                    <h1 className="text-4xl md:text-6xl font-bold mb-4 tracking-tight">Let&apos;s Talk.</h1>
                     <p className="text-xl text-[var(--text-secondary)] max-w-2xl">
                         Have a project in mind or just want to explore new possibilities?
-                        I'm always open to discussing new ideas and opportunities.
+                        I&apos;m always open to discussing new ideas and opportunities.
                     </p>
                 </motion.div>
 

@@ -166,7 +166,7 @@ export default function ContactAdminPage() {
                     <div>
                         <label className="block text-sm font-medium mb-2 flex items-center gap-2">
                             <Mail className="w-4 h-4 text-purple-400" />
-                            Contact Email (for 'Email Me' box)
+                            Contact Email (for &apos;Email Me&apos; box)
                         </label>
                         <input
                             type="email"
