@@ -4,10 +4,13 @@ import { NextResponse } from "next/server";
 import About from "@/models/About";
 import Blog from "@/models/Blog";
 import Config from "@/models/Config";
+import Gallery from "@/models/Gallery";
 import Header from "@/models/Header";
 import Home from "@/models/Home";
 import Project from "@/models/Project";
 import Social from "@/models/Social";
+import GitHub from "@/models/GitHub";
+import ContactMessage from "@/models/ContactMessage";
 
 export async function POST(request) {
     try {
@@ -35,6 +38,8 @@ export async function POST(request) {
             { model: Home, key: 'home' },
             { model: Project, key: 'projects' },
             { model: Social, key: 'socials' },
+            { model: GitHub, key: 'github' },
+            { model: ContactMessage, key: 'contactMessages' },
         ];
 
         // Process import in transaction or just sequentially

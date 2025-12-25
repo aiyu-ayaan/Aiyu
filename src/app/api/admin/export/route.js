@@ -4,11 +4,12 @@ import { NextResponse } from "next/server";
 import About from "@/models/About";
 import Blog from "@/models/Blog";
 import Config from "@/models/Config";
-import Gallery from "@/models/Gallery";
 import Header from "@/models/Header";
 import Home from "@/models/Home";
 import Project from "@/models/Project";
 import Social from "@/models/Social";
+import GitHub from "@/models/GitHub";
+import ContactMessage from "@/models/ContactMessage";
 
 export async function GET(request) {
     try {
@@ -19,17 +20,28 @@ export async function GET(request) {
             return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
         }
 
+        const { searchParams } = new URL(request.url);
+        const includeGithub = searchParams.get('includeGithub') === 'true';
+        const includeContact = searchParams.get('includeContact') === 'true';
+
         const data = {
             about: await About.find({}),
             blogs: await Blog.find({}),
             config: await Config.find({}),
-            gallery: await Gallery.find({}),
             header: await Header.find({}),
             home: await Home.find({}),
             projects: await Project.find({}),
             socials: await Social.find({}),
             exportedAt: new Date().toISOString(),
         };
+
+        if (includeGithub) {
+            data.github = await GitHub.find({});
+        }
+
+        if (includeContact) {
+            data.contactMessages = await ContactMessage.find({});
+        }
 
         return NextResponse.json(data);
     } catch (error) {

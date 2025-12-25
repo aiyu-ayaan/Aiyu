@@ -14,7 +14,12 @@ export default function DatabaseManager() {
             setIsLoading(true);
             setMessage({ type: 'info', text: 'Preparing export...' });
 
-            const response = await fetch('/api/admin/export');
+            // Always include Github and Contact data by default
+            const queryParams = new URLSearchParams();
+            queryParams.append('includeGithub', 'true');
+            queryParams.append('includeContact', 'true');
+
+            const response = await fetch(`/api/admin/export?${queryParams.toString()}`);
 
             if (!response.ok) {
                 const error = await response.json();
@@ -28,7 +33,13 @@ export default function DatabaseManager() {
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `database_backup_${new Date().toISOString().split('T')[0]}.json`;
+
+            // Format: database_backup_YYYY-MM-DD_HH-mm-ss.json
+            const now = new Date();
+            const dateStr = now.toISOString().split('T')[0];
+            const timeStr = now.toTimeString().split(' ')[0].replace(/:/g, '-');
+            a.download = `database_backup_${dateStr}_${timeStr}.json`;
+
             document.body.appendChild(a);
             a.click();
             window.URL.revokeObjectURL(url);
@@ -132,8 +143,9 @@ export default function DatabaseManager() {
                         <h2 className="text-xl font-bold text-white">Export Database</h2>
                     </div>
                     <p className="text-gray-400 mb-6">
-                        Download a complete JSON backup of all your content, including blogs, projects, and configurations.
+                        Download a backup of your content (excluding gallery/images), including blogs, projects, configurations, github stats, and messages.
                     </p>
+
                     <button
                         onClick={handleExport}
                         disabled={isLoading}
