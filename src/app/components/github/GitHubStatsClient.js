@@ -2,12 +2,28 @@
 
 import { Github, Star, GitFork, Users, BookOpen, MapPin, Link as LinkIcon, Calendar, Flame, TrendingUp, GitCommit, GitPullRequest, GitMerge } from 'lucide-react';
 import { useState } from 'react';
+import { motion } from 'framer-motion';
 
 import { useTheme } from '../../context/ThemeContext';
 
 export default function GitHubStatsClient({ data }) {
     const { theme } = useTheme();
     const [selectedRepo, setSelectedRepo] = useState(null);
+
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        visible: {
+            opacity: 1,
+            transition: {
+                staggerChildren: 0.1
+            }
+        }
+    };
+
+    const itemVariants = {
+        hidden: { opacity: 0, y: 20 },
+        visible: { opacity: 1, y: 0 }
+    };
 
     if (!data.success) {
         return (
@@ -90,10 +106,15 @@ export default function GitHubStatsClient({ data }) {
     }
 
     return (
-        <div className="min-h-screen py-16 px-4 sm:px-6 lg:px-8">
+        <motion.div
+            className="min-h-screen py-16 px-4 sm:px-6 lg:px-8"
+            initial="hidden"
+            animate="visible"
+            variants={containerVariants}
+        >
             <div className="max-w-7xl mx-auto">
                 {/* Header Section */}
-                <div className="text-center mb-12">
+                <motion.div className="text-center mb-12" variants={itemVariants}>
                     <Github className="w-16 h-16 mx-auto mb-4 text-[var(--primary)]" />
                     <h1
                         className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4 pb-2 bg-gradient-to-r bg-clip-text text-transparent"
@@ -108,11 +129,11 @@ export default function GitHubStatsClient({ data }) {
                     <p className="text-lg max-w-2xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
                         My open source journey and contributions
                     </p>
-                </div>
+                </motion.div>
 
                 {/* Profile Card */}
                 {sections?.showProfile && (
-                    <div className="bg-[var(--surface-card)] rounded-xl p-6 mb-8 border border-[var(--border-secondary)]">
+                    <motion.div className="bg-[var(--surface-card)] rounded-xl p-6 mb-8 border border-[var(--border-secondary)]" variants={itemVariants}>
                         <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
                             <img
                                 src={profile.avatar}
@@ -155,12 +176,12 @@ export default function GitHubStatsClient({ data }) {
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </motion.div>
                 )}
 
                 {/* Stats Grid */}
                 {sections?.showStats && (
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+                    <motion.div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8" variants={itemVariants}>
                         <div className="bg-[var(--surface-card)] rounded-xl p-6 border border-[var(--border-secondary)] text-center">
                             <BookOpen className="w-8 h-8 mx-auto mb-2 text-blue-400" />
                             <div className="text-3xl font-bold mb-1">{stats.totalRepos}</div>
@@ -186,12 +207,12 @@ export default function GitHubStatsClient({ data }) {
                             <div className="text-3xl font-bold mb-1">{streaks.current}</div>
                             <div className="text-sm text-[var(--text-secondary)]">Day Streak</div>
                         </div>
-                    </div>
+                    </motion.div>
                 )}
 
                 {/* Contribution Graph */}
                 {sections?.showContributions && weeks.length > 0 && (
-                    <div className="mb-8">
+                    <motion.div className="mb-8" variants={itemVariants}>
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
                             <h2 className="text-2xl font-bold">Contribution Activity</h2>
                             <div className="text-sm text-[var(--text-secondary)]">
@@ -199,7 +220,7 @@ export default function GitHubStatsClient({ data }) {
                             </div>
                         </div>
                         <div className="bg-[var(--surface-card)] rounded-xl p-4 sm:p-6 border border-[var(--border-secondary)] overflow-x-auto">
-                            <div className="flex gap-1 min-w-max mx-auto">
+                            <div className="flex gap-1 w-fit mx-auto">
                                 {weeks.map((week, weekIdx) => (
                                     <div key={weekIdx} className="flex flex-col gap-1">
                                         {week.map((day, dayIdx) => (
@@ -222,12 +243,12 @@ export default function GitHubStatsClient({ data }) {
                                 <span>More</span>
                             </div>
                         </div>
-                    </div>
+                    </motion.div>
                 )}
 
                 {/* Recent Activity */}
                 {sections?.showActivity && recentActivity?.length > 0 && (
-                    <div className="mb-8">
+                    <motion.div className="mb-8" variants={itemVariants}>
                         <h2 className="text-2xl font-bold mb-4">Recent Activity</h2>
                         <div className="bg-[var(--surface-card)] rounded-xl p-6 border border-[var(--border-secondary)]">
                             <div className="space-y-4">
@@ -251,12 +272,12 @@ export default function GitHubStatsClient({ data }) {
                                 ))}
                             </div>
                         </div>
-                    </div>
+                    </motion.div>
                 )}
 
                 {/* Recently Updated Repositories */}
                 {sections?.showRepositories && topRepos?.length > 0 && (
-                    <div className="mb-8">
+                    <motion.div className="mb-8" variants={itemVariants}>
                         <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
                             <TrendingUp className="text-[var(--primary)]" />
                             Recently Updated Repositories
@@ -301,12 +322,12 @@ export default function GitHubStatsClient({ data }) {
                                 </a>
                             ))}
                         </div>
-                    </div>
+                    </motion.div>
                 )}
 
                 {/* Language Statistics */}
                 {sections?.showLanguages && languages?.length > 0 && (
-                    <div>
+                    <motion.div variants={itemVariants}>
                         <h2 className="text-2xl font-bold mb-4">Most Used Languages</h2>
                         <div className="bg-[var(--surface-card)] rounded-xl p-6 border border-[var(--border-secondary)]">
                             <div className="space-y-4">
@@ -337,9 +358,9 @@ export default function GitHubStatsClient({ data }) {
                                 ))}
                             </div>
                         </div>
-                    </div>
+                    </motion.div>
                 )}
             </div>
-        </div>
+        </motion.div >
     );
 }
