@@ -137,12 +137,28 @@ export function validateUploadedFile(file, buffer) {
         return { valid: false, error: 'No file provided' };
     }
 
+    // Attempt to detect MIME type from buffer if browser didn't provide it or provided generic
+    let mimeType = file.type;
+    const isHeicExt = file.name.toLowerCase().endsWith('.heic');
+
+    // HEIC files often have empty or application/octet-stream mime type on some browsers
+    if ((!mimeType || mimeType === 'application/octet-stream') && isHeicExt) {
+        mimeType = 'image/heic';
+    }
+
     // Check MIME type
-    if (!ALLOWED_MIME_TYPES.includes(file.type)) {
-        return {
-            valid: false,
-            error: `Invalid file type. Allowed types: ${ALLOWED_MIME_TYPES.join(', ')}. SVG is not allowed for security reasons.`
-        };
+    if (!ALLOWED_MIME_TYPES.includes(mimeType)) {
+        // Double check against signatures if type is unknown/generic
+        // This helps when browser sends 'application/octet-stream' but we support the file
+        const detectedType = Object.keys(FILE_SIGNATURES).find(type => validateFileSignature(buffer, type));
+        if (detectedType) {
+            mimeType = detectedType;
+        } else {
+            return {
+                valid: false,
+                error: `Invalid file type. Allowed types: ${ALLOWED_MIME_TYPES.join(', ')}. SVG is not allowed for security reasons.`
+            };
+        }
     }
 
     // Check file size
@@ -154,12 +170,12 @@ export function validateUploadedFile(file, buffer) {
     }
 
     // Check magic number (file signature)
-    if (!validateFileSignature(buffer, file.type)) {
+    if (!validateFileSignature(buffer, mimeType)) {
         return {
             valid: false,
             error: 'File signature does not match declared type. Possible malicious file detected.'
         };
     }
 
-    return { valid: true, error: null };
+    return { valid: true, error: null, detectedType: mimeType };
 }

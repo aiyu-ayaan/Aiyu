@@ -61,8 +61,18 @@ export default function GalleryManager() {
 
     const handleFile = (file) => {
         setFile(file);
-        const url = URL.createObjectURL(file);
-        setPreview(url);
+
+        // Check if file is HEIC
+        const isHeic = file.name.toLowerCase().endsWith('.heic') || file.type === 'image/heic';
+
+        if (isHeic) {
+            // Can't preview HEIC in browser, set a placeholder or null
+            // We use a special string to indicate placeholder
+            setPreview('HEIC_PLACEHOLDER');
+        } else {
+            const url = URL.createObjectURL(file);
+            setPreview(url);
+        }
     };
 
     const clearFile = () => {
@@ -94,22 +104,34 @@ export default function GalleryManager() {
             }
 
             // 2. Create Gallery Entry
-            // Get image dimensions (simplified: assuming we can get them or just using standard aspect ratio for now technically we should get them from the file)
-            // For a robust implementation we'd read them from the file object before upload or backend does it.
-            // Here I'll use a hack or just mock dimensions if backend doesn't provide.
-            // Wait, backend upload API returns size/type but not dimensions.
-            // I will create an image object to get dimensions.
+            let width = uploadData.width;
+            let height = uploadData.height;
 
-            const img = document.createElement('img');
-            img.src = preview;
-            await new Promise(resolve => { img.onload = resolve; });
+            // Fallback to client-side dimension extraction if server didn't provide it (e.g. for non-processed images)
+            // But skip this for HEIC/Placeholders since we can't load them
+            if ((!width || !height) && preview && preview !== 'HEIC_PLACEHOLDER') {
+                try {
+                    const img = document.createElement('img');
+                    img.src = preview;
+                    await new Promise((resolve, reject) => {
+                        img.onload = resolve;
+                        img.onerror = () => resolve(); // Don't fail if image can't load
+                    });
+                    width = img.naturalWidth || 800; // Default fallback
+                    height = img.naturalHeight || 600;
+                } catch (e) {
+                    console.warn('Failed to get client-side image dimensions', e);
+                    width = 800;
+                    height = 600;
+                }
+            }
 
             const galleryData = {
                 src: uploadData.url,
                 thumbnail: uploadData.thumbnailUrl, // Include thumbnail URL
                 description,
-                width: img.naturalWidth,
-                height: img.naturalHeight
+                width: width || 800,
+                height: height || 600
             };
 
             const galleryRes = await fetch('/api/gallery', {
@@ -237,7 +259,7 @@ export default function GalleryManager() {
                         {migrationProgress.percentage !== undefined && (
                             <div className="flex items-center gap-3">
                                 <div className="flex-1 h-2 bg-[var(--surface-variant)] rounded-full overflow-hidden">
-                                    <div 
+                                    <div
                                         className="h-full bg-[var(--primary)] transition-all duration-300"
                                         style={{ width: `${migrationProgress.percentage}%` }}
                                     />
@@ -296,13 +318,24 @@ export default function GalleryManager() {
                                 <X size={16} />
                             </button>
                             <div className="flex flex-col md:flex-row gap-6 p-4">
-                                <div className="relative h-48 w-full md:w-1/3 shrink-0">
-                                    <Image
-                                        src={preview}
-                                        alt="Preview"
-                                        fill
-                                        className="object-contain"
-                                    />
+                                <div className="relative h-48 w-full md:w-1/3 shrink-0 flex items-center justify-center bg-gray-800 rounded-lg">
+                                    {preview === 'HEIC_PLACEHOLDER' ? (
+                                        <div className="text-center p-4">
+                                            <div className="mx-auto mb-2 w-12 h-12 bg-gray-700 rounded-full flex items-center justify-center text-[var(--primary)]">
+                                                H
+                                            </div>
+                                            <p className="font-medium">HEIC File</p>
+                                            <p className="text-xs text-gray-400">Preview not available</p>
+                                            <p className="text-xs text-[var(--primary)] mt-1">Will be converted to WebP</p>
+                                        </div>
+                                    ) : (
+                                        <Image
+                                            src={preview}
+                                            alt="Preview"
+                                            fill
+                                            className="object-contain"
+                                        />
+                                    )}
                                 </div>
                                 <div className="flex-1 space-y-4">
                                     <div>

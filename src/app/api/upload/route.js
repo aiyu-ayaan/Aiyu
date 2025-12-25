@@ -21,7 +21,7 @@ import {
     generateSecureFilename,
     MAX_FILE_SIZE
 } from '@/utils/fileValidation';
-import { generateThumbnail, saveThumbnail } from '@/utils/imageProcessing';
+import { generateThumbnail, saveThumbnail, processUploadedImage } from '@/utils/imageProcessing';
 
 async function uploadHandler(request) {
     const startTime = Date.now();
@@ -71,8 +71,35 @@ async function uploadHandler(request) {
             }, { status: 400 });
         }
 
+        // Process image (Convert HEIC->WebP, optimize huge images)
+        let finalBuffer = buffer;
+        let finalFilename = file.name;
+        let finalType = validation.detectedType || file.type;
+        let imageWidth = null;
+        let imageHeight = null;
+
+        try {
+            const processed = await processUploadedImage(buffer);
+            finalBuffer = processed.buffer;
+            imageWidth = processed.width;
+            imageHeight = processed.height;
+
+            // If format changed (e.g. HEIC -> WebP), update extension and type
+            if (processed.format !== file.type.split('/')[1] && processed.format === 'webp') {
+                const nameWithoutExt = file.name.substring(0, file.name.lastIndexOf('.'));
+                finalFilename = `${nameWithoutExt}.webp`;
+                finalType = 'image/webp';
+            }
+        } catch (error) {
+            console.error('[WARN] Image processing failed, falling back to original:', error);
+            // Fallback to original buffer if processing fails (unless it's HEIC which needs conversion)
+            if (validation.detectedType === 'image/heic') {
+                throw new Error('Failed to process HEIC image: ' + error.message);
+            }
+        }
+
         // Generate secure filename
-        const secureFilename = generateSecureFilename(file.name);
+        const secureFilename = generateSecureFilename(finalFilename);
 
         // Ensure upload directory exists with SECURE permissions
         const uploadDir = join(process.cwd(), 'public', 'uploads');
@@ -95,17 +122,18 @@ async function uploadHandler(request) {
         // Group: read
         // Others: read
         const filePath = join(uploadDir, secureFilename);
-        await writeFile(filePath, buffer, { mode: 0o644 });
+        await writeFile(filePath, finalBuffer, { mode: 0o644 });
 
         const uploadTime = Date.now() - startTime;
         const fileUrl = `/api/uploads/${secureFilename}`;
 
         // Generate thumbnail for images
         let thumbnailUrl = null;
-        const isImage = file.type?.startsWith('image/');
+        const isImage = finalType?.startsWith('image/');
         if (isImage) {
             try {
-                const thumbnail = await generateThumbnail(buffer, secureFilename);
+                // Use the final buffer (which might be converted WebP) for thumbnail generation
+                const thumbnail = await generateThumbnail(finalBuffer, secureFilename);
                 thumbnailUrl = await saveThumbnail(thumbnail.buffer, thumbnail.filename);
                 console.log(`[SUCCESS] Thumbnail generated: ${thumbnailUrl}`);
             } catch (error) {
@@ -117,8 +145,8 @@ async function uploadHandler(request) {
         console.log(`[SUCCESS] File uploaded successfully:`, {
             originalName: file.name,
             secureFilename,
-            size: file.size,
-            type: file.type,
+            size: finalBuffer.length,
+            type: finalType,
             url: fileUrl,
             thumbnailUrl,
             uploadTime: `${uploadTime}ms`,
@@ -130,8 +158,10 @@ async function uploadHandler(request) {
             url: fileUrl,
             thumbnailUrl,
             filename: secureFilename,
-            size: file.size,
-            type: file.type
+            size: finalBuffer.length,
+            type: finalType,
+            width: imageWidth,
+            height: imageHeight
         });
 
     } catch (error) {
