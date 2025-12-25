@@ -1,6 +1,6 @@
 'use client';
 
-import { Github, Star, GitFork, Users, BookOpen, MapPin, Link as LinkIcon, Calendar } from 'lucide-react';
+import { Github, Star, GitFork, Users, BookOpen, MapPin, Link as LinkIcon, Calendar, Flame, TrendingUp, GitCommit, GitPullRequest, GitMerge } from 'lucide-react';
 import { useState } from 'react';
 
 export default function GitHubStatsClient({ data }) {
@@ -20,7 +20,7 @@ export default function GitHubStatsClient({ data }) {
         );
     }
 
-    const { profile, stats, topRepos, languages } = data.data;
+    const { profile, stats, topRepos, languages, contributions, streaks, recentActivity } = data.data;
 
     // Language colors (GitHub standard colors)
     const languageColors = {
@@ -42,6 +42,47 @@ export default function GitHubStatsClient({ data }) {
         'Vue': '#41b883',
         'Shell': '#89e051'
     };
+
+    // Helper to get contribution color
+    const getContributionColor = (count) => {
+        if (count === 0) return 'bg-gray-800';
+        if (count < 3) return 'bg-green-900';
+        if (count < 6) return 'bg-green-700';
+        if (count < 9) return 'bg-green-500';
+        return 'bg-green-400';
+    };
+
+    // Format activity type
+    const getActivityIcon = (type) => {
+        switch (type) {
+            case 'PushEvent': return <GitCommit className="w-4 h-4" />;
+            case 'PullRequestEvent': return <GitPullRequest className="w-4 h-4" />;
+            case 'CreateEvent': return <GitMerge className="w-4 h-4" />;
+            case 'IssuesEvent': return <BookOpen className="w-4 h-4" />;
+            default: return <Github className="w-4 h-4" />;
+        }
+    };
+
+    const getActivityText = (activity) => {
+        switch (activity.type) {
+            case 'PushEvent':
+                return `Pushed ${activity.payload.commits} commit${activity.payload.commits !== 1 ? 's' : ''} to ${activity.repo}`;
+            case 'PullRequestEvent':
+                return `${activity.payload.action} a pull request in ${activity.repo}`;
+            case 'CreateEvent':
+                return `Created ${activity.payload.ref || 'repository'} in ${activity.repo}`;
+            case 'IssuesEvent':
+                return `${activity.payload.action} an issue in ${activity.repo}`;
+            default:
+                return `Activity in ${activity.repo}`;
+        }
+    };
+
+    // Prepare contribution grid (52 weeks × 7 days)
+    const weeks = [];
+    for (let i = 0; i < contributions.length; i += 7) {
+        weeks.push(contributions.slice(i, i + 7));
+    }
 
     return (
         <div className="min-h-screen py-16 px-4 sm:px-6 lg:px-8">
@@ -104,7 +145,7 @@ export default function GitHubStatsClient({ data }) {
                 </div>
 
                 {/* Stats Grid */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
                     <div className="bg-[var(--surface-card)] rounded-xl p-6 border border-[var(--border-secondary)] text-center">
                         <BookOpen className="w-8 h-8 mx-auto mb-2 text-blue-400" />
                         <div className="text-3xl font-bold mb-1">{stats.totalRepos}</div>
@@ -121,9 +162,75 @@ export default function GitHubStatsClient({ data }) {
                         <div className="text-sm text-[var(--text-secondary)]">Total Forks</div>
                     </div>
                     <div className="bg-[var(--surface-card)] rounded-xl p-6 border border-[var(--border-secondary)] text-center">
-                        <Users className="w-8 h-8 mx-auto mb-2 text-purple-400" />
-                        <div className="text-3xl font-bold mb-1">{stats.followers}</div>
-                        <div className="text-sm text-[var(--text-secondary)]">Followers</div>
+                        <TrendingUp className="w-8 h-8 mx-auto mb-2 text-purple-400" />
+                        <div className="text-3xl font-bold mb-1">{stats.totalContributions}</div>
+                        <div className="text-sm text-[var(--text-secondary)]">Contributions</div>
+                    </div>
+                    <div className="bg-[var(--surface-card)] rounded-xl p-6 border border-[var(--border-secondary)] text-center">
+                        <Flame className="w-8 h-8 mx-auto mb-2 text-orange-400" />
+                        <div className="text-3xl font-bold mb-1">{streaks.current}</div>
+                        <div className="text-sm text-[var(--text-secondary)]">Day Streak</div>
+                    </div>
+                </div>
+
+                {/* Contribution Graph */}
+                <div className="mb-8">
+                    <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-2xl font-bold">Contribution Activity</h2>
+                        <div className="text-sm text-[var(--text-secondary)]">
+                            Longest Streak: <span className="text-orange-400 font-bold">{streaks.longest} days</span>
+                        </div>
+                    </div>
+                    <div className="bg-[var(--surface-card)] rounded-xl p-6 border border-[var(--border-secondary)] overflow-x-auto">
+                        <div className="flex gap-1 w-full justify-center">
+                            {weeks.map((week, weekIdx) => (
+                                <div key={weekIdx} className="flex flex-col gap-1">
+                                    {week.map((day, dayIdx) => (
+                                        <div
+                                            key={dayIdx}
+                                            className={`w-3 h-3 rounded-sm ${getContributionColor(day.count)} transition-opacity hover:opacity-75`}
+                                            title={`${day.date}: ${day.count} contribution${day.count !== 1 ? 's' : ''}`}
+                                        />
+                                    ))}
+                                </div>
+                            ))}
+                        </div>
+                        <div className="flex items-center gap-2 mt-4 text-xs text-[var(--text-secondary)]">
+                            <span>Less</span>
+                            <div className="w-3 h-3 rounded-sm bg-gray-800"></div>
+                            <div className="w-3 h-3 rounded-sm bg-green-900"></div>
+                            <div className="w-3 h-3 rounded-sm bg-green-700"></div>
+                            <div className="w-3 h-3 rounded-sm bg-green-500"></div>
+                            <div className="w-3 h-3 rounded-sm bg-green-400"></div>
+                            <span>More</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Recent Activity */}
+                <div className="mb-8">
+                    <h2 className="text-2xl font-bold mb-4">Recent Activity</h2>
+                    <div className="bg-[var(--surface-card)] rounded-xl p-6 border border-[var(--border-secondary)]">
+                        <div className="space-y-4">
+                            {recentActivity.map((activity, idx) => (
+                                <div key={idx} className="flex items-start gap-3 pb-4 border-b border-gray-700 last:border-0 last:pb-0">
+                                    <div className="text-[var(--text-secondary)] mt-1">
+                                        {getActivityIcon(activity.type)}
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="text-sm">{getActivityText(activity)}</p>
+                                        <p className="text-xs text-[var(--text-secondary)] mt-1">
+                                            {new Date(activity.created_at).toLocaleDateString('en-US', {
+                                                month: 'short',
+                                                day: 'numeric',
+                                                hour: '2-digit',
+                                                minute: '2-digit'
+                                            })}
+                                        </p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </div>
 

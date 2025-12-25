@@ -3,7 +3,8 @@ import mongoose from 'mongoose';
 const GitHubSchema = new mongoose.Schema({
     username: {
         type: String,
-        required: true,
+        required: false,
+        default: '',
         trim: true
     },
     enabled: {
