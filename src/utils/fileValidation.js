@@ -20,6 +20,19 @@ const FILE_SIGNATURES = {
     'image/gif': [
         [0x47, 0x49, 0x46, 0x38, 0x37, 0x61], // GIF87a
         [0x47, 0x49, 0x46, 0x38, 0x39, 0x61]  // GIF89a
+    ],
+    'image/heic': [
+        // HEIC format: ISO Base Media file with 'ftyp' box and 'heic' brand
+        // Structure: [size][ftyp][heic] where ftyp = 0x66747970, heic = 0x68656963
+        [0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70, 0x68, 0x65, 0x69, 0x63], // 24-byte header
+        [0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70, 0x68, 0x65, 0x69, 0x63], // 28-byte header variant
+        [0x00, 0x00, 0x00, 0x20, 0x66, 0x74, 0x79, 0x70, 0x68, 0x65, 0x69, 0x63]  // 32-byte header variant
+    ],
+    'image/heif': [
+        // HEIF format: ISO Base Media file with 'ftyp' box and 'mif1' brand
+        // Structure: [size][ftyp][mif1] where ftyp = 0x66747970, mif1 = 0x6D696631
+        [0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70, 0x6D, 0x69, 0x66, 0x31], // 24-byte header
+        [0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70, 0x6D, 0x69, 0x66, 0x31]  // 28-byte header variant
     ]
 };
 
@@ -31,7 +44,9 @@ export const ALLOWED_MIME_TYPES = [
     'image/jpeg',
     'image/png',
     'image/webp',
-    'image/gif'
+    'image/gif',
+    'image/heic',
+    'image/heif'
 ];
 
 /**
@@ -89,7 +104,7 @@ export function generateSecureFilename(originalName) {
     const extension = sanitized.split('.').pop()?.toLowerCase() || 'bin';
 
     // Only allow safe extensions
-    const safeExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+    const safeExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'heic', 'heif'];
     const finalExtension = safeExtensions.includes(extension) ? extension : 'bin';
 
     const timestamp = Date.now();
