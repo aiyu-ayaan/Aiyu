@@ -283,7 +283,7 @@ export default function GalleryManager() {
                             <label htmlFor="file-upload" className="cursor-pointer flex flex-col items-center gap-2">
                                 <ImageIcon size={48} className="text-[var(--text-secondary)]" />
                                 <span className="text-lg font-medium">Drag & Drop or Click to Upload</span>
-                                <span className="text-sm text-[var(--text-secondary)]">Supports JPG, PNG, WEBP</span>
+                                <span className="text-sm text-[var(--text-secondary)]">Supports JPG, PNG, WEBP, HEIC</span>
                             </label>
                         </div>
                     ) : (
