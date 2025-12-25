@@ -32,9 +32,9 @@ async function updateConfig(request) {
     try {
         await dbConnect();
         const body = await request.json();
-        const { username, enabled } = body;
+        const { username, enabled, sections } = body;
 
-        console.log('[GitHub Config] Update request:', { username, enabled });
+        console.log('[GitHub Config] Update request:', { username, enabled, sections });
 
         // Validate
         if (username !== undefined && typeof username !== 'string') {
@@ -48,10 +48,18 @@ async function updateConfig(request) {
         let config = await GitHub.findOne();
 
         if (!config) {
-            config = new GitHub({ username, enabled: enabled !== undefined ? enabled : true });
+            config = new GitHub({
+                username,
+                enabled: enabled !== undefined ? enabled : true,
+                sections: sections || {}
+            });
         } else {
             if (username !== undefined) config.username = username;
             if (enabled !== undefined) config.enabled = enabled;
+            if (sections !== undefined) {
+                config.sections = { ...config.sections, ...sections };
+                config.markModified('sections'); // Force Mongoose to detect change
+            }
         }
 
         await config.save();

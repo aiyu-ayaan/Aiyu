@@ -11,6 +11,14 @@ const GitHubSchema = new mongoose.Schema({
         type: Boolean,
         default: true
     },
+    sections: {
+        showProfile: { type: Boolean, default: true },
+        showStats: { type: Boolean, default: true },
+        showContributions: { type: Boolean, default: true },
+        showActivity: { type: Boolean, default: true },
+        showRepositories: { type: Boolean, default: true },
+        showLanguages: { type: Boolean, default: true }
+    },
     updatedAt: {
         type: Date,
         default: Date.now
@@ -22,6 +30,11 @@ GitHubSchema.pre('save', function () {
     this.updatedAt = Date.now();
 });
 
-const GitHub = mongoose.models.GitHub || mongoose.model('GitHub', GitHubSchema);
+// Force model recompilation to ensure schema changes (like sections) are picked up
+if (mongoose.models.GitHub) {
+    delete mongoose.models.GitHub;
+}
+
+const GitHub = mongoose.model('GitHub', GitHubSchema);
 
 export default GitHub;

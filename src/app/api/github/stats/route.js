@@ -23,9 +23,13 @@ export async function GET() {
 
         const username = config.username;
 
-        // Check cache
+        // Check cache (invalidate if config updated after cache was set)
         const now = Date.now();
-        if (cache && cacheTime && (now - cacheTime) < CACHE_DURATION) {
+        const configUpdated = new Date(config.updatedAt).getTime();
+        const isCacheValid = cache && cacheTime && (now - cacheTime) < CACHE_DURATION;
+        const isConfigNewer = configUpdated > cacheTime;
+
+        if (isCacheValid && !isConfigNewer) {
             return NextResponse.json({
                 success: true,
                 data: cache,
@@ -51,12 +55,15 @@ export async function GET() {
         }
         const userData = await userRes.json();
 
-        // Fetch repos
-        const reposRes = await fetch(`https://api.github.com/users/${username}/repos?sort=updated&per_page=100`, { headers });
+        // Fetch repos (only public, sorted by last updated)
+        const reposRes = await fetch(`https://api.github.com/users/${username}/repos?sort=updated&per_page=100&type=public`, { headers });
         if (!reposRes.ok) {
             throw new Error('Failed to fetch repositories');
         }
         const repos = await reposRes.json();
+
+        // Filter out private repos (extra safety)
+        const publicRepos = repos.filter(repo => !repo.private);
 
         // Fetch contribution data using GraphQL API
         const graphqlQuery = `
@@ -147,12 +154,11 @@ export async function GET() {
         const events = eventsRes.ok ? await eventsRes.json() : [];
 
         // Calculate stats
-        const totalStars = repos.reduce((sum, repo) => sum + (repo.stargazers_count || 0), 0);
-        const totalForks = repos.reduce((sum, repo) => sum + (repo.forks_count || 0), 0);
+        const totalStars = publicRepos.reduce((sum, repo) => sum + (repo.stargazers_count || 0), 0);
+        const totalForks = publicRepos.reduce((sum, repo) => sum + (repo.forks_count || 0), 0);
 
-        // Get top 6 repos
-        const topRepos = repos
-            .sort((a, b) => (b.stargazers_count || 0) - (a.stargazers_count || 0))
+        // Get top 6 recently updated repos
+        const topRepos = publicRepos
             .slice(0, 6)
             .map(repo => ({
                 name: repo.name,
@@ -161,12 +167,13 @@ export async function GET() {
                 forks: repo.forks_count || 0,
                 language: repo.language,
                 url: repo.html_url,
-                topics: repo.topics || []
+                topics: repo.topics || [],
+                updated_at: repo.updated_at
             }));
 
         // Calculate language stats
         const languageStats = {};
-        repos.forEach(repo => {
+        publicRepos.forEach(repo => {
             if (repo.language) {
                 languageStats[repo.language] = (languageStats[repo.language] || 0) + 1;
             }
@@ -242,7 +249,7 @@ export async function GET() {
                 createdAt: userData.created_at
             },
             stats: {
-                totalRepos: repos.length,
+                totalRepos: publicRepos.length,
                 totalStars,
                 totalForks,
                 followers: userData.followers,
@@ -255,7 +262,15 @@ export async function GET() {
             contributions,
             recentActivity,
             topRepos,
-            languages
+            languages,
+            sections: config.sections || {
+                showProfile: true,
+                showStats: true,
+                showContributions: true,
+                showActivity: true,
+                showRepositories: true,
+                showLanguages: true
+            }
         };
 
         // Cache the result
