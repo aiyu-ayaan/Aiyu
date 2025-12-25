@@ -20,7 +20,10 @@ const ConfigSchema = new mongoose.Schema({
     blogsSubtitle: { type: String, default: 'Thoughts, tutorials, and updates on web development and technology.' },
     galleryTitle: { type: String, default: 'Gallery' },
     gallerySubtitle: { type: String, default: 'A visual journey through my lens.' },
-    googleAnalyticsId: { type: String, default: '' }
+    googleAnalyticsId: { type: String, default: '' },
+    contactLocation: { type: String, default: '' },
+    contactEmail: { type: String, default: '' },
+    contactStatus: { type: String, default: 'Open to opportunities' },
 }, { strict: false }); // Allow other fields to be added later if needed without strict validation issues initially
 
 export default mongoose.models.Config || mongoose.model('Config', ConfigSchema);

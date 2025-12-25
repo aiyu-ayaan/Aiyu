@@ -31,6 +31,7 @@ export default function AdminDashboard() {
         { name: 'Config', count: 'Setup', color: 'bg-slate-500', link: '/admin/config' },
         { name: 'Gallery', count: 'Manage', color: 'bg-indigo-500', link: '/admin/gallery' },
         { name: 'GitHub', count: 'Configure', color: 'bg-gray-700', link: '/admin/github' },
+        { name: 'Contact', count: 'Manage', color: 'bg-red-500', link: '/admin/contact' },
     ];
 
     return (
