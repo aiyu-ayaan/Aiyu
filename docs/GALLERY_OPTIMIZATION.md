@@ -219,7 +219,7 @@ Can be adjusted via query parameter: `?batch=20`
 
 2. **Upload Guidelines**
    - Keep original images under 10MB
-   - Use standard formats (JPG, PNG, WebP)
+   - Use standard formats (JPG, PNG, WebP, HEIC/HEIF, GIF)
    - Avoid extremely large dimensions (>5000px)
 
 3. **Server Management**

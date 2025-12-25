@@ -68,14 +68,21 @@ Creates a new blog post.
 
 #### POST /api/upload
 Uploads a file to the server's `public/uploads` directory.
-- **Auth**: Public (currently, though relies on Admin UI context usually)
+- **Auth**: Admin Session Required (Cookie) or API Key
+- **Supported Formats**: JPG, PNG, WebP, GIF, HEIC, HEIF
+- **File Size Limit**: 10MB maximum
+- **Security**: Magic number validation, rate limiting, secure filename generation
 - **Body**: `multipart/form-data`
   - `file`: (Binary file data)
 - **Response**:
   ```json
   {
     "success": true,
-    "url": "/api/uploads/filename-timestamp.jpg"
+    "url": "/api/uploads/filename-timestamp.jpg",
+    "thumbnailUrl": "/api/uploads/filename-timestamp-thumb.webp",
+    "filename": "filename-timestamp.jpg",
+    "size": 1234567,
+    "type": "image/jpeg"
   }
   ```
 
