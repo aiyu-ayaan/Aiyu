@@ -17,7 +17,7 @@ services:
     networks:
       - aiyu-network
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')", "--quiet"]
+      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')", "--quiet" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -46,6 +46,7 @@ services:
       ADMIN_USERNAME: ${ADMIN_USERNAME}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
+      GITHUB_TOKEN: ${GITHUB_TOKEN}
       # Node environment
       NODE_ENV: production
     volumes:
@@ -64,24 +65,24 @@ services:
     cap_drop:
       - ALL
     cap_add:
-      - NET_BIND_SERVICE  # Only allow binding to network ports
+      - NET_BIND_SERVICE # Only allow binding to network ports
     security_opt:
-      - no-new-privileges:true  # Prevent privilege escalation
+      - no-new-privileges:true # Prevent privilege escalation
     # Read-only root filesystem (except for writable volumes)
     read_only: true
     # Resource limits to prevent CPU abuse from crypto miners
     deploy:
       resources:
         limits:
-          cpus: '1.0'      # Max 1 CPU core
-          memory: 512M     # Max 512MB RAM
+          cpus: '1.0' # Max 1 CPU core
+          memory: 512M # Max 512MB RAM
         reservations:
-          cpus: '0.25'     # Reserve 0.25 CPU
-          memory: 256M     # Reserve 256MB RAM
+          cpus: '0.25' # Reserve 0.25 CPU
+          memory: 256M # Reserve 256MB RAM
     # Health check to detect abnormal behavior
     # Uses curl (installed in Dockerfile) with fallback chain
     healthcheck:
-      test: ["CMD", "sh", "/app/healthcheck.sh"]
+      test: [ "CMD", "sh", "/app/healthcheck.sh" ]
       interval: 30s
       timeout: 10s
       retries: 3
