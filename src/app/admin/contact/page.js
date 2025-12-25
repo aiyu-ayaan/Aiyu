@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, ArrowLeft, MapPin, Activity, Mail } from 'lucide-react';
+import { Loader2, ArrowLeft, MapPin, Activity, Mail, Trash2, MessageSquare, Webhook } from 'lucide-react';
 import Link from 'next/link';
 
 export default function ContactAdminPage() {
@@ -14,6 +14,7 @@ export default function ContactAdminPage() {
     const [config, setConfig] = useState({
         contactLocation: '',
         contactEmail: '',
+        n8nWebhookUrl: '',
         contactStatus: 'Open to opportunities',
         resume: {
             type: 'url',
@@ -21,8 +22,11 @@ export default function ContactAdminPage() {
         }
     });
 
+    const [messages, setMessages] = useState([]);
+
     useEffect(() => {
         fetchConfig();
+        fetchMessages();
     }, []);
 
     const fetchConfig = async () => {
@@ -33,6 +37,7 @@ export default function ContactAdminPage() {
                 setConfig({
                     contactLocation: data.contactLocation || '',
                     contactEmail: data.contactEmail || '',
+                    n8nWebhookUrl: data.n8nWebhookUrl || '',
                     contactStatus: data.contactStatus || 'Open to opportunities',
                     resume: data.resume || { type: 'url', value: '' }
                 });
@@ -41,6 +46,36 @@ export default function ContactAdminPage() {
             console.error('Failed to fetch config:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchMessages = async () => {
+        try {
+            const res = await fetch('/api/contact/message');
+            const data = await res.json();
+            if (data.success) {
+                setMessages(data.data);
+            }
+        } catch (error) {
+            console.error('Failed to fetch messages:', error);
+        }
+    };
+
+    const handleDeleteMessage = async (id) => {
+        if (!confirm('Are you sure you want to delete this message?')) return;
+
+        try {
+            const res = await fetch(`/api/contact/message?id=${id}`, {
+                method: 'DELETE'
+            });
+            if (res.ok) {
+                setMessages(prev => prev.filter(msg => msg._id !== id));
+            } else {
+                alert('Failed to delete message');
+            }
+        } catch (error) {
+            console.error('Delete error:', error);
+            alert('Failed to delete message');
         }
     };
 
@@ -142,6 +177,21 @@ export default function ContactAdminPage() {
                         />
                     </div>
 
+                    {/* n8n Webhook */}
+                    <div>
+                        <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+                            <Webhook className="w-4 h-4 text-orange-400" />
+                            n8n Webhook URL (for form submissions)
+                        </label>
+                        <input
+                            type="url"
+                            value={config.n8nWebhookUrl}
+                            onChange={(e) => setConfig({ ...config, n8nWebhookUrl: e.target.value })}
+                            placeholder="https://your-n8n-instance.com/webhook/..."
+                            className="w-full p-3 bg-gray-700 rounded border border-gray-600 focus:outline-none focus:border-[var(--primary)]"
+                        />
+                    </div>
+
 
 
                     {/* Submit */}
@@ -163,6 +213,49 @@ export default function ContactAdminPage() {
                     </div>
                 </form>
             </div>
+
+            {/* Messages Inbox */}
+            <div className="w-full max-w-3xl mt-8">
+                <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+                    <MessageSquare className="text-[var(--primary)]" />
+                    Inbox ({messages.length})
+                </h2>
+
+                <div className="space-y-4">
+                    {messages.length === 0 ? (
+                        <div className="text-gray-400 text-center py-8 bg-gray-800 rounded-lg">
+                            No messages received yet.
+                        </div>
+                    ) : (
+                        messages.map((msg) => (
+                            <div key={msg._id} className="bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-700">
+                                <div className="flex justify-between items-start mb-4">
+                                    <div>
+                                        <h3 className="font-bold text-lg text-white">{msg.name}</h3>
+                                        <a href={`mailto:${msg.email}`} className="text-cyan-400 hover:text-cyan-300 text-sm">
+                                            {msg.email}
+                                        </a>
+                                        <div className="text-xs text-gray-500 mt-1">
+                                            {new Date(msg.createdAt).toLocaleString()}
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => handleDeleteMessage(msg._id)}
+                                        className="p-2 text-red-400 hover:bg-red-900/20 rounded transition-colors"
+                                        title="Delete Message"
+                                    >
+                                        <Trash2 className="w-5 h-5" />
+                                    </button>
+                                </div>
+                                <div className="bg-gray-900/50 p-4 rounded text-gray-300 whitespace-pre-wrap">
+                                    {msg.message}
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+            </div>
         </div>
+
     );
 }

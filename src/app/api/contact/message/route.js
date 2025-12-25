@@ -56,3 +56,33 @@ export async function POST(request) {
         );
     }
 }
+
+export async function GET(request) {
+    try {
+        await dbConnect();
+        const messages = await ContactMessage.find().sort({ createdAt: -1 });
+        return NextResponse.json({ success: true, data: messages }, { status: 200 });
+    } catch (error) {
+        console.error('Failed to fetch messages:', error);
+        return NextResponse.json({ error: 'Failed to fetch messages' }, { status: 500 });
+    }
+}
+
+export async function DELETE(request) {
+    try {
+        await dbConnect();
+        const { searchParams } = new URL(request.url);
+        const id = searchParams.get('id');
+
+        if (!id) {
+            return NextResponse.json({ error: 'Message ID is required' }, { status: 400 });
+        }
+
+        await ContactMessage.findByIdAndDelete(id);
+
+        return NextResponse.json({ success: true, message: 'Message deleted' }, { status: 200 });
+    } catch (error) {
+        console.error('Failed to delete message:', error);
+        return NextResponse.json({ error: 'Failed to delete message' }, { status: 500 });
+    }
+}
