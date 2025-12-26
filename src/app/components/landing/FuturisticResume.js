@@ -1,13 +1,25 @@
 "use client";
 import React, { useState, useEffect, useRef } from 'react';
-import { FaPlus, FaBolt } from "react-icons/fa6";
+import { FaPlus, FaBolt, FaCode, FaTerminal, FaRobot, FaRocket, FaBrain } from "react-icons/fa6";
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import TypewriterEffect from '../shared/TypewriterEffect';
 import { useTheme } from '../../context/ThemeContext';
 
+const ICON_MAP = {
+    'FaBolt': FaBolt,
+    'FaCode': FaCode,
+    'FaTerminal': FaTerminal,
+    'FaRobot': FaRobot,
+    'FaRocket': FaRocket,
+    'FaBrain': FaBrain
+};
+
 const FuturisticResume = ({ data }) => {
     const { theme } = useTheme();
-    const { name, homeRoles, githubLink, codeSnippets } = data || {};
+    const { name, homeRoles, githubLink, codeSnippets, resumeStatus, resumeMode, resumeIcon } = data || {};
+
+    // Select the icon based on prop, default to Bolt
+    const SelectedIcon = ICON_MAP[resumeIcon] || FaBolt;
 
     // --- Glitch & Tilt Card Logic ---
     const [text, setText] = useState('');
@@ -143,11 +155,11 @@ const FuturisticResume = ({ data }) => {
                             <div className="mt-4 pt-4 border-t border-dashed" style={{ borderColor: 'var(--border-secondary)' }}>
                                 <p className="flex justify-between text-xs font-mono mb-1" style={{ color: 'var(--text-tertiary)' }}>
                                     <span>STATUS</span>
-                                    <span style={{ color: 'var(--accent-cyan)' }}>ONLINE</span>
+                                    <span style={{ color: 'var(--accent-cyan)' }}>{resumeStatus || 'ONLINE'}</span>
                                 </p>
                                 <p className="flex justify-between text-xs font-mono" style={{ color: 'var(--text-tertiary)' }}>
                                     <span>MODE</span>
-                                    <span style={{ color: 'var(--accent-orange)' }}>DEV_01</span>
+                                    <span style={{ color: 'var(--accent-orange)' }}>{resumeMode || 'DEV_01'}</span>
                                 </p>
                             </div>
                         </div>
@@ -256,7 +268,7 @@ const FuturisticResume = ({ data }) => {
                                 className="w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center"
                                 style={{ backgroundColor: 'var(--bg-surface)' }}
                             >
-                                <FaBolt
+                                <SelectedIcon
                                     className={`text-3xl sm:text-4xl filter drop-shadow-[0_0_10px_rgba(255,255,255,0.5)] transition-all duration-300 ${isHovering ? 'text-[var(--accent-cyan)] scale-110' : 'text-[var(--text-secondary)]'}`}
                                 />
                             </div>

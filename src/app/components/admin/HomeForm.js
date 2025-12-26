@@ -134,6 +134,45 @@ const HomeForm = () => {
                 />
             </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t border-gray-700">
+                <div>
+                    <label className="block text-sm font-medium mb-1 text-gray-300">Resume Status</label>
+                    <input
+                        type="text"
+                        name="resumeStatus"
+                        value={formData.resumeStatus || 'ONLINE'}
+                        onChange={handleChange}
+                        className="w-full p-3 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white font-mono"
+                    />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium mb-1 text-gray-300">Resume Mode</label>
+                    <input
+                        type="text"
+                        name="resumeMode"
+                        value={formData.resumeMode || 'DEV_01'}
+                        onChange={handleChange}
+                        className="w-full p-3 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white font-mono"
+                    />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium mb-1 text-gray-300">Center Icon</label>
+                    <select
+                        name="resumeIcon"
+                        value={formData.resumeIcon || 'FaBolt'}
+                        onChange={handleChange}
+                        className="w-full p-3 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white"
+                    >
+                        <option value="FaBolt">⚡ Bolt</option>
+                        <option value="FaCode">💻 Code</option>
+                        <option value="FaTerminal">_ Terminal</option>
+                        <option value="FaRobot">🤖 Robot</option>
+                        <option value="FaRocket">🚀 Rocket</option>
+                        <option value="FaBrain">🧠 Brain</option>
+                    </select>
+                </div>
+            </div>
+
             <div className="flex justify-end gap-4 pt-4">
                 <button
                     type="button"
