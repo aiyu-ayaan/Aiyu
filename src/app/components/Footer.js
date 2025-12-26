@@ -19,10 +19,8 @@ export default function Footer({ socialData, name }) {
         <footer
             className="w-full px-4 sm:px-6 py-6 sm:py-4 border-t transition-colors duration-300"
             style={{
-                borderColor: theme === 'dark' ? 'rgba(34, 211, 238, 0.3)' : 'rgba(8, 145, 178, 0.3)',
-                background: theme === 'dark'
-                    ? 'linear-gradient(to bottom, #111827, #0f1419)'
-                    : 'linear-gradient(to bottom, #f8fafc, #f1f5f9)',
+                borderColor: 'var(--border-secondary)',
+                backgroundColor: 'var(--bg-secondary)',
             }}
         >
             <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-between max-w-6xl mx-auto gap-4 sm:gap-0">
@@ -52,7 +50,7 @@ export default function Footer({ socialData, name }) {
                                             scale: 1.2,
                                             y: -5,
                                             color: 'var(--accent-cyan)',
-                                            backgroundColor: theme === 'dark' ? '#1f2937' : '#e2e8f0',
+                                            backgroundColor: 'var(--bg-surface)',
                                         }}
                                         whileTap={{ scale: 0.9 }}
                                     >

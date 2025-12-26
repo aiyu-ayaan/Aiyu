@@ -27,6 +27,7 @@ export default function AdminDashboard() {
         { name: 'Home', count: 'Manage', color: 'bg-purple-500', link: '/admin/home' },
         { name: 'Header', count: 'Manage', color: 'bg-orange-500', link: '/admin/header' },
         { name: 'Social', count: 'Manage', color: 'bg-pink-500', link: '/admin/socials' },
+        { name: 'Themes', count: 'Customize', color: 'bg-violet-500', link: '/admin/themes' },
         { name: 'Database', count: 'Backup', color: 'bg-yellow-500', link: '/admin/database' },
         { name: 'Config', count: 'Setup', color: 'bg-slate-500', link: '/admin/config' },
         { name: 'Gallery', count: 'Manage', color: 'bg-indigo-500', link: '/admin/gallery' },

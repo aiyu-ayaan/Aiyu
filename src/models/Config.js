@@ -24,6 +24,10 @@ const ConfigSchema = new mongoose.Schema({
     contactLocation: { type: String, default: '' },
     contactEmail: { type: String, default: '' },
     contactStatus: { type: String, default: 'Open to opportunities' },
+    // Theme Management
+    activeTheme: { type: String, default: 'vs-code-dark' },
+    activeThemeVariant: { type: String, enum: ['light', 'dark'], default: 'dark' },
+    allowThemeSwitching: { type: Boolean, default: true },
 }, { strict: false }); // Allow other fields to be added later if needed without strict validation issues initially
 
 export default mongoose.models.Config || mongoose.model('Config', ConfigSchema);
