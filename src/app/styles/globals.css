@@ -148,7 +148,8 @@ body {
   padding: 0;
   width: 100%;
   overflow-x: hidden;
-  /* Prevent horizontal scroll */
+  background-color: var(--bg-primary);
+  /* Fix white background on mobile scroll */
 }
 
 body {
