@@ -108,7 +108,7 @@ const GamePortfolio = ({ data, onUnlock = () => { } }) => {
                 <span style={{ color: 'var(--text-secondary)' }}>.</span>
                 <span style={{ color: 'var(--syntax-function)' }}>log</span>
                 <span style={{ color: 'var(--text-secondary)' }}>(</span>
-                <span style={{ color: 'var(--syntax-string)' }}>"{githubLink}"</span>
+                <span style={{ color: 'var(--syntax-string)' }}>&quot;{githubLink}&quot;</span>
                 <span style={{ color: 'var(--text-secondary)' }}>);</span>
               </p>
 

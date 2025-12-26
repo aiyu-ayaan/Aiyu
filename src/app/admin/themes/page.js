@@ -152,7 +152,7 @@ export default function AdminThemesPage() {
                         ← Back to Dashboard
                     </Link>
                     <h1 className="text-3xl font-bold text-white">Theme Management</h1>
-                    <p className="text-gray-400 mt-2">Customize your website's appearance with pre-defined or custom themes</p>
+                    <p className="text-gray-400 mt-2">Customize your website&apos;s appearance with pre-defined or custom themes</p>
                 </div>
                 <button
                     onClick={handleCreateTheme}
@@ -192,8 +192,8 @@ export default function AdminThemesPage() {
                 <button
                     onClick={() => setActiveVariant('light')}
                     className={`px-4 py-2 rounded-lg transition-colors ${activeVariant === 'light'
-                            ? 'bg-cyan-500 text-white'
-                            : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                        ? 'bg-cyan-500 text-white'
+                        : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
                         }`}
                 >
                     Light Mode
@@ -201,8 +201,8 @@ export default function AdminThemesPage() {
                 <button
                     onClick={() => setActiveVariant('dark')}
                     className={`px-4 py-2 rounded-lg transition-colors ${activeVariant === 'dark'
-                            ? 'bg-cyan-500 text-white'
-                            : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                        ? 'bg-cyan-500 text-white'
+                        : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
                         }`}
                 >
                     Dark Mode
