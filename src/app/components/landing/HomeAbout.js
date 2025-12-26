@@ -21,9 +21,7 @@ const HomeAbout = ({ data }) => {
           <motion.div
             className="p-8 rounded-2xl shadow-2xl transition-all duration-300"
             style={{
-              background: theme === 'dark'
-                ? 'linear-gradient(to bottom right, #1f2937, #111827)'
-                : 'linear-gradient(to bottom right, #f1f5f9, #e2e8f0)',
+              background: 'linear-gradient(to bottom right, var(--bg-surface), var(--bg-secondary))',
               borderWidth: '1px',
               borderStyle: 'solid',
               borderColor: 'var(--border-secondary)',

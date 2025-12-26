@@ -71,8 +71,8 @@ const GalleryClient = () => {
     // Helper function to extract file extension (outside callback for better performance)
     const getFileExtension = useCallback((srcUrl) => {
         const originalFilename = srcUrl.split('/').pop() || '';
-        return originalFilename.includes('.') 
-            ? originalFilename.split('.').pop() 
+        return originalFilename.includes('.')
+            ? originalFilename.split('.').pop()
             : 'jpg';
     }, []);
 
@@ -85,7 +85,7 @@ const GalleryClient = () => {
             const url = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
-            
+
             // Determine filename: use caption if available, otherwise use fallback strategy
             let filename;
             if (image.description && image.description.trim()) {
@@ -96,7 +96,7 @@ const GalleryClient = () => {
                     .replace(/[/\\?%*:|"<>\x00-\x1f]/g, '-') // Replace invalid chars including control chars
                     .replace(/\s+/g, '_') // Replace spaces with underscores
                     .replace(/\.+$/, ''); // Remove trailing periods
-                
+
                 // Check if sanitized result is meaningful (not empty or too short)
                 if (sanitized.length >= 3) {
                     const extension = getFileExtension(image.src);
@@ -106,7 +106,7 @@ const GalleryClient = () => {
                     filename = null;
                 }
             }
-            
+
             // Fallback strategy: use timestamp + image ID (if caption wasn't usable)
             if (!filename) {
                 const timestamp = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
@@ -114,7 +114,7 @@ const GalleryClient = () => {
                 const imageIdShort = image._id ? image._id.slice(0, 8) : Date.now().toString(36);
                 filename = `gallery_${timestamp}_${imageIdShort}.${extension}`;
             }
-            
+
             link.download = filename;
             document.body.appendChild(link);
             link.click();
@@ -154,9 +154,7 @@ const GalleryClient = () => {
                     <h1
                         className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4 pb-2 bg-gradient-to-r bg-clip-text text-transparent"
                         style={{
-                            backgroundImage: theme === 'dark'
-                                ? 'linear-gradient(to right, #22d3ee, #3b82f6, #8b5cf6)'
-                                : 'linear-gradient(to right, #0891b2, #2563eb, #7c3aed)'
+                            backgroundImage: 'linear-gradient(to right, var(--accent-cyan), var(--accent-purple), var(--accent-pink))'
                         }}
                     >
                         {headerInfo.title}

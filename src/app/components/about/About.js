@@ -36,9 +36,7 @@ const About = ({ data }) => {
           <h1
             className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4 pb-2 bg-gradient-to-r bg-clip-text text-transparent"
             style={{
-              backgroundImage: theme === 'dark'
-                ? 'linear-gradient(to right, #22d3ee, #3b82f6, #8b5cf6)'
-                : 'linear-gradient(to right, #0891b2, #2563eb, #7c3aed)',
+              backgroundImage: 'linear-gradient(to right, var(--accent-cyan), var(--accent-purple), var(--accent-pink))',
             }}
           >
             {name}
@@ -53,9 +51,7 @@ const About = ({ data }) => {
             transition={{ duration: 0.8, delay: 0.4 }}
             className="p-8 rounded-2xl shadow-2xl transition-all duration-300"
             style={{
-              background: theme === 'dark'
-                ? 'linear-gradient(to bottom right, #1f2937, #111827)'
-                : 'linear-gradient(to bottom right, #f1f5f9, #e2e8f0)',
+              background: 'linear-gradient(to bottom right, var(--bg-surface), var(--bg-secondary))',
               borderWidth: '1px',
               borderStyle: 'solid',
               borderColor: 'var(--border-secondary)',
@@ -104,23 +100,21 @@ const About = ({ data }) => {
                 key={index}
                 className="vertical-timeline-element--work"
                 contentStyle={{
-                  background: theme === 'dark' ? 'rgb(31 41 55)' : 'rgb(241 245 249)',
-                  color: theme === 'dark' ? '#fff' : '#1e293b',
+                  background: 'var(--bg-surface)',
+                  color: 'var(--text-primary)',
                 }}
                 contentArrowStyle={{
-                  borderRight: theme === 'dark'
-                    ? '7px solid rgb(31 41 55)'
-                    : '7px solid rgb(241 245 249)',
+                  borderRight: '7px solid var(--bg-surface)',
                 }}
                 iconStyle={{
-                  background: theme === 'dark' ? 'rgb(249 115 22)' : 'rgb(234 88 12)',
+                  background: 'var(--accent-orange)',
                   color: '#fff',
                 }}
                 icon={<FaBriefcase />}
               >
                 <h3
                   className="vertical-timeline-element-title text-xl font-bold"
-                  style={{ color: theme === 'dark' ? '#fb923c' : '#ea580c' }}
+                  style={{ color: 'var(--accent-orange-bright)' }}
                 >
                   {exp.role}
                 </h3>
@@ -147,9 +141,7 @@ const About = ({ data }) => {
             transition={{ duration: 0.8, delay: 0.4, layout: { duration: 0.3 } }}
             className="p-8 rounded-2xl shadow-2xl transition-all duration-300"
             style={{
-              background: theme === 'dark'
-                ? 'linear-gradient(to bottom right, #1f2937, #111827)'
-                : 'linear-gradient(to bottom right, #f1f5f9, #e2e8f0)',
+              background: 'linear-gradient(to bottom right, var(--bg-surface), var(--bg-secondary))',
               borderWidth: '1px',
               borderStyle: 'solid',
               borderColor: 'var(--border-secondary)',
@@ -194,16 +186,14 @@ const About = ({ data }) => {
                   <div
                     className="w-full rounded-full h-3 overflow-hidden shadow-inner"
                     style={{
-                      backgroundColor: theme === 'dark' ? '#374151' : '#cbd5e1',
+                      backgroundColor: 'var(--bg-elevated)',
                     }}
                   >
                     <motion.div
                       className="h-3 rounded-full relative"
                       style={{
                         width: `${skill.level}%`,
-                        background: theme === 'dark'
-                          ? 'linear-gradient(to right, #22d3ee, #3b82f6, #8b5cf6)'
-                          : 'linear-gradient(to right, #0891b2, #2563eb, #7c3aed)',
+                        background: 'linear-gradient(to right, var(--accent-cyan), var(--accent-purple), var(--accent-pink))',
                       }}
                       initial={{ width: 0 }}
                       animate={{ width: `${skill.level}%` }}
@@ -231,9 +221,7 @@ const About = ({ data }) => {
                 }}
                 whileHover={{
                   scale: 1.05,
-                  backgroundColor: theme === 'dark'
-                    ? 'rgba(34, 211, 238, 0.1)'
-                    : 'rgba(8, 145, 178, 0.1)',
+                  backgroundColor: 'var(--bg-hover)',
                 }}
                 whileTap={{ scale: 0.95 }}
               >
@@ -265,23 +253,21 @@ const About = ({ data }) => {
                 key={index}
                 className="vertical-timeline-element--education"
                 contentStyle={{
-                  background: theme === 'dark' ? 'rgb(31 41 55)' : 'rgb(241 245 249)',
-                  color: theme === 'dark' ? '#fff' : '#1e293b',
+                  background: 'var(--bg-surface)',
+                  color: 'var(--text-primary)',
                 }}
                 contentArrowStyle={{
-                  borderRight: theme === 'dark'
-                    ? '7px solid rgb(31 41 55)'
-                    : '7px solid rgb(241 245 249)',
+                  borderRight: '7px solid var(--bg-surface)',
                 }}
                 iconStyle={{
-                  background: theme === 'dark' ? 'rgb(249 115 22)' : 'rgb(234 88 12)',
+                  background: 'var(--accent-orange)',
                   color: '#fff',
                 }}
                 icon={<FaGraduationCap />}
               >
                 <h3
                   className="vertical-timeline-element-title text-xl font-bold"
-                  style={{ color: theme === 'dark' ? '#fb923c' : '#ea580c' }}
+                  style={{ color: 'var(--accent-orange-bright)' }}
                 >
                   {edu.institution}
                 </h3>
@@ -320,16 +306,14 @@ const About = ({ data }) => {
                 key={index}
                 className="vertical-timeline-element--education"
                 contentStyle={{
-                  background: theme === 'dark' ? 'rgb(31 41 55)' : 'rgb(241 245 249)',
-                  color: theme === 'dark' ? '#fff' : '#1e293b',
+                  background: 'var(--bg-surface)',
+                  color: 'var(--text-primary)',
                 }}
                 contentArrowStyle={{
-                  borderRight: theme === 'dark'
-                    ? '7px solid rgb(31 41 55)'
-                    : '7px solid rgb(241 245 249)',
+                  borderRight: '7px solid var(--bg-surface)',
                 }}
                 iconStyle={{
-                  background: theme === 'dark' ? 'rgb(249 115 22)' : 'rgb(234 88 12)',
+                  background: 'var(--accent-orange)',
                   color: '#fff',
                 }}
                 icon={<FaCertificate />}
@@ -339,7 +323,7 @@ const About = ({ data }) => {
                     <a>
                       <h3
                         className="vertical-timeline-element-title text-xl font-bold hover:underline cursor-pointer"
-                        style={{ color: theme === 'dark' ? '#fb923c' : '#ea580c' }}
+                        style={{ color: 'var(--accent-orange-bright)' }}
                       >
                         {cert.name}
                       </h3>
@@ -348,7 +332,7 @@ const About = ({ data }) => {
                 ) : (
                   <h3
                     className="vertical-timeline-element-title text-xl font-bold"
-                    style={{ color: theme === 'dark' ? '#fb923c' : '#ea580c' }}
+                    style={{ color: 'var(--accent-orange-bright)' }}
                   >
                     {cert.name}
                   </h3>

@@ -35,9 +35,7 @@ const BlogCard = ({ blog }) => {
             whileHover={{ y: -5 }}
             className="rounded-xl overflow-hidden shadow-lg transition-all duration-300 flex flex-col h-full border border-opacity-50"
             style={{
-                background: theme === 'dark'
-                    ? 'linear-gradient(to bottom right, #1f2937, #111827)'
-                    : 'linear-gradient(to bottom right, #ffffff, #f1f5f9)',
+                background: 'linear-gradient(to bottom right, var(--bg-surface), var(--bg-secondary))',
                 borderColor: 'var(--border-secondary)',
             }}
         >
@@ -82,10 +80,10 @@ const BlogCard = ({ blog }) => {
                         whileTap={{ scale: 0.98 }}
                         className="w-full py-2 px-4 rounded-lg font-medium text-sm transition-colors mt-auto text-center block"
                         style={{
-                            backgroundColor: theme === 'dark' ? 'rgba(34, 211, 238, 0.1)' : 'rgba(8, 145, 178, 0.1)',
-                            color: theme === 'dark' ? '#22d3ee' : '#0891b2',
+                            backgroundColor: 'var(--bg-hover)',
+                            color: 'var(--accent-cyan)',
                             border: '1px solid',
-                            borderColor: theme === 'dark' ? 'rgba(34, 211, 238, 0.2)' : 'rgba(8, 145, 178, 0.2)',
+                            borderColor: 'var(--border-cyan)',
                         }}
                     >
                         Read Story

@@ -47,7 +47,7 @@ const HomeBlogs = ({ blogs }) => {
                             viewport={{ once: true }}
                             className="group flex flex-col h-full rounded-2xl overflow-hidden border transition-all duration-300 shadow-lg hover:shadow-2xl"
                             style={{
-                                background: theme === 'dark' ? '#1f2937' : '#ffffff',
+                                background: 'linear-gradient(to bottom right, var(--bg-surface), var(--bg-secondary))',
                                 borderColor: 'var(--border-secondary)',
                             }}
                         >
@@ -102,9 +102,7 @@ const HomeBlogs = ({ blogs }) => {
                             whileTap={{ scale: 0.95 }}
                             className="px-8 py-3 rounded-full font-semibold transition-all shadow-lg"
                             style={{
-                                background: theme === 'dark'
-                                    ? 'linear-gradient(to right, #0891b2, #2563eb)'
-                                    : 'linear-gradient(to right, #22d3ee, #3b82f6)',
+                                background: 'linear-gradient(to right, var(--accent-cyan), var(--accent-purple))',
                                 color: '#ffffff',
                             }}
                         >

@@ -29,9 +29,7 @@ const ProjectCard = ({ project, onCardClick }) => {
         transition={{ duration: 0.5 }}
         className="rounded-xl overflow-hidden cursor-pointer shadow-lg hover:shadow-2xl transition-all duration-300 group"
         style={{
-          background: theme === 'dark'
-            ? 'linear-gradient(to bottom right, #1f2937, #111827)'
-            : 'linear-gradient(to bottom right, #f1f5f9, #e2e8f0)',
+          background: 'linear-gradient(to bottom right, var(--bg-surface), var(--bg-secondary))',
           borderWidth: '1px',
           borderStyle: 'solid',
           borderColor: 'var(--border-secondary)',
@@ -41,9 +39,7 @@ const ProjectCard = ({ project, onCardClick }) => {
           y: -8,
           scale: 1.02,
           borderColor: 'var(--accent-cyan)',
-          boxShadow: theme === 'dark'
-            ? '0 25px 50px rgba(34, 211, 238, 0.2)'
-            : '0 25px 50px rgba(8, 145, 178, 0.2)',
+          boxShadow: '0 25px 50px var(--shadow-lg)',
         }}
         whileTap={{ scale: 0.98 }}
       >
@@ -58,9 +54,7 @@ const ProjectCard = ({ project, onCardClick }) => {
           <div
             className="absolute inset-0 opacity-60"
             style={{
-              background: theme === 'dark'
-                ? 'linear-gradient(to top, #111827, transparent, transparent)'
-                : 'linear-gradient(to top, #e2e8f0, transparent, transparent)',
+              background: 'linear-gradient(to top, var(--bg-secondary), transparent, transparent)',
             }}
           ></div>
           <div className="absolute top-2 right-2">
@@ -84,9 +78,7 @@ const ProjectCard = ({ project, onCardClick }) => {
             layout
             className="text-xl font-bold mb-3 text-transparent bg-gradient-to-r bg-clip-text transition-all duration-300"
             style={{
-              backgroundImage: theme === 'dark'
-                ? 'linear-gradient(to right, #f97316, #22d3ee)'
-                : 'linear-gradient(to right, #ea580c, #0891b2)',
+              backgroundImage: 'linear-gradient(to right, var(--accent-orange), var(--accent-cyan))',
             }}
           >
             {project.name}
@@ -97,16 +89,12 @@ const ProjectCard = ({ project, onCardClick }) => {
                 key={i}
                 className="px-3 py-1 rounded-lg text-sm font-medium transition-all duration-300 cursor-default"
                 style={{
-                  background: theme === 'dark'
-                    ? 'linear-gradient(to right, #374151, #1f2937)'
-                    : 'linear-gradient(to right, #e2e8f0, #cbd5e1)',
-                  color: theme === 'dark' ? '#22d3ee' : '#0891b2',
+                  background: 'linear-gradient(to right, var(--bg-surface), var(--bg-elevated))',
+                  color: 'var(--accent-cyan)',
                 }}
                 whileHover={{
                   scale: 1.1,
-                  background: theme === 'dark'
-                    ? 'linear-gradient(to right, #0891b2, #2563eb)'
-                    : 'linear-gradient(to right, #0e7490, #1d4ed8)',
+                  background: 'linear-gradient(to right, var(--accent-cyan), var(--accent-purple))',
                   color: '#ffffff',
                 }}
               >
@@ -117,16 +105,12 @@ const ProjectCard = ({ project, onCardClick }) => {
               <motion.span
                 className="text-white px-3 py-1 rounded-lg text-sm font-medium cursor-pointer transition-all duration-300"
                 style={{
-                  background: theme === 'dark'
-                    ? 'linear-gradient(to right, #f97316, #ec4899)'
-                    : 'linear-gradient(to right, #ea580c, #db2777)',
+                  background: 'linear-gradient(to right, var(--accent-orange), var(--accent-pink))',
                 }}
                 onClick={openTechStackDialog}
                 whileHover={{
                   scale: 1.1,
-                  background: theme === 'dark'
-                    ? 'linear-gradient(to right, #fb923c, #f472b6)'
-                    : 'linear-gradient(to right, #f97316, #ec4899)',
+                  background: 'linear-gradient(to right, var(--accent-orange-bright), var(--accent-pink-bright))',
                 }}
                 whileTap={{ scale: 0.95 }}
               >

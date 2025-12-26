@@ -108,9 +108,7 @@ const Projects = ({ data }) => {
               <h1
                 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4 pb-2 bg-gradient-to-r bg-clip-text text-transparent"
                 style={{
-                  backgroundImage: theme === 'dark'
-                    ? 'linear-gradient(to right, #22d3ee, #3b82f6, #8b5cf6)'
-                    : 'linear-gradient(to right, #0891b2, #2563eb, #7c3aed)',
+                  backgroundImage: 'linear-gradient(to right, var(--accent-cyan), var(--accent-purple), var(--accent-pink))',
                 }}
               >
                 {config?.projectsTitle || 'Projects Portfolio'}
@@ -136,9 +134,7 @@ const Projects = ({ data }) => {
               id="techStackFilter"
               className="p-3 rounded-lg border-2 focus:outline-none focus:ring-2 w-full md:w-auto cursor-pointer transition-all duration-300"
               style={{
-                background: theme === 'dark'
-                  ? 'linear-gradient(to bottom right, #1f2937, #111827)'
-                  : 'linear-gradient(to bottom right, #f1f5f9, #e2e8f0)',
+                background: 'linear-gradient(to bottom right, var(--bg-surface), var(--bg-secondary))',
                 color: 'var(--text-primary)',
                 borderColor: 'var(--border-secondary)',
               }}
@@ -172,9 +168,7 @@ const Projects = ({ data }) => {
               id="projectTypeFilter"
               className="p-3 rounded-lg border-2 focus:outline-none focus:ring-2 w-full md:w-auto cursor-pointer transition-all duration-300"
               style={{
-                background: theme === 'dark'
-                  ? 'linear-gradient(to bottom right, #1f2937, #111827)'
-                  : 'linear-gradient(to bottom right, #f1f5f9, #e2e8f0)',
+                background: 'linear-gradient(to bottom right, var(--bg-surface), var(--bg-secondary))',
                 color: 'var(--text-primary)',
                 borderColor: 'var(--border-secondary)',
               }}

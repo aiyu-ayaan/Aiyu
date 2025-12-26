@@ -65,9 +65,9 @@ const TypewriterEffect = ({ roles }) => {
   }, []);
 
   return (
-    <p 
+    <p
       className="text-lg sm:text-xl"
-      style={{ color: theme === 'dark' ? '#3b82f6' : '#2563eb' }}
+      style={{ color: 'var(--accent-cyan)' }}
     >
       &gt; {displayedText}
       <span className={`${showCursor ? 'opacity-100' : 'opacity-0'} transition-opacity duration-100`}>|</span>
