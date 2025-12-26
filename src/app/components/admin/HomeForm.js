@@ -173,6 +173,36 @@ const HomeForm = () => {
                 </div>
             </div>
 
+            <div className="pt-4 border-t border-gray-700">
+                <label className="block text-sm font-medium mb-2 text-gray-300">Hero Section Style</label>
+                <div className="flex gap-4">
+                    <label className={`flex-1 p-4 rounded-lg border cursor-pointer transition-all ${formData.heroSectionType === 'futuristic' ? 'bg-cyan-900/30 border-cyan-500' : 'bg-gray-700 border-gray-600 hover:border-gray-500'}`}>
+                        <input
+                            type="radio"
+                            name="heroSectionType"
+                            value="futuristic"
+                            checked={formData.heroSectionType === 'futuristic'}
+                            onChange={handleChange}
+                            className="hidden"
+                        />
+                        <div className="font-bold text-white mb-1">Futuristic Card</div>
+                        <div className="text-xs text-gray-400">New 3D animated card with glitch effects</div>
+                    </label>
+                    <label className={`flex-1 p-4 rounded-lg border cursor-pointer transition-all ${formData.heroSectionType === 'game' ? 'bg-orange-900/30 border-orange-500' : 'bg-gray-700 border-gray-600 hover:border-gray-500'}`}>
+                        <input
+                            type="radio"
+                            name="heroSectionType"
+                            value="game"
+                            checked={formData.heroSectionType === 'game'}
+                            onChange={handleChange}
+                            className="hidden"
+                        />
+                        <div className="font-bold text-white mb-1">Classic Game</div>
+                        <div className="text-xs text-gray-400">Original layout with Snake & Tic-Tac-Toe</div>
+                    </label>
+                </div>
+            </div>
+
             <div className="flex justify-end gap-4 pt-4">
                 <button
                     type="button"

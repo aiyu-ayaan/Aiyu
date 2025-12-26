@@ -1,4 +1,5 @@
 import FuturisticResume from "../components/landing/FuturisticResume";
+import GamePortfolio from "../components/landing/GamePortfolio";
 import HomeAbout from "../components/landing/HomeAbout";
 import HomeProjects from "../components/landing/HomeProjects";
 import Divider from "../components/landing/Divider";
@@ -25,7 +26,11 @@ export default async function Home() {
 
   return (
     <div>
-      <FuturisticResume data={serializedHomeData} />
+      {serializedHomeData?.heroSectionType === 'game' ? (
+        <GamePortfolio data={serializedHomeData} />
+      ) : (
+        <FuturisticResume data={serializedHomeData} />
+      )}
       <TechStackCarousel data={serializedAboutData} />
       <Divider />
       <HomeAbout data={serializedAboutData} />
