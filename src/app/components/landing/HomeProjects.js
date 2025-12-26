@@ -58,12 +58,7 @@ const HomeProjects = ({ data }) => {
           >
             <motion.span
               className="inline-flex items-center gap-2"
-              whileHover={{
-                scale: 1.05,
-                boxShadow: theme === 'dark'
-                  ? "0 0 20px rgba(34, 211, 238, 0.5)"
-                  : "0 0 20px rgba(8, 145, 178, 0.4)",
-              }}
+              whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
               View All Projects
