@@ -92,11 +92,21 @@ export default function BlogDetailClient({ blog }) {
                     {/* Share URL Button - Desktop */}
                     <div className="hidden md:block">
                         <motion.button
-                            whileHover={{ scale: 1.1 }}
+
                             whileTap={{ scale: 0.9 }}
                             onClick={handleShare}
-                            className="p-3 rounded-full bg-gray-800/50 hover:bg-gray-700/50 text-cyan-400 border border-gray-700 transition-colors"
-                            title="Share this blog"
+                            className="p-3 rounded-full transition-all duration-300 border backdrop-blur-sm"
+                            style={{
+                                backgroundColor: 'var(--bg-secondary)',
+                                borderColor: 'var(--border-secondary)',
+                                color: 'var(--accent-cyan)'
+                            }}
+                            whileHover={{
+                                scale: 1.1,
+                                backgroundColor: 'var(--bg-surface)',
+                                borderColor: 'var(--accent-cyan)',
+                                boxShadow: '0 0 15px var(--accent-cyan-dim)'
+                            }}
                         >
                             {showShareToast ? <IoCheckmark size={20} /> : <FaShareAlt size={18} />}
                         </motion.button>
@@ -106,9 +116,7 @@ export default function BlogDetailClient({ blog }) {
                 <header className="mb-12 text-center relative">
                     <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4 pb-2 bg-gradient-to-r bg-clip-text text-transparent"
                         style={{
-                            backgroundImage: theme === 'dark'
-                                ? 'linear-gradient(to right, #22d3ee, #3b82f6, #8b5cf6)'
-                                : 'linear-gradient(to right, #0891b2, #2563eb, #7c3aed)'
+                            backgroundImage: 'linear-gradient(to right, var(--accent-cyan), var(--accent-purple), var(--accent-pink))'
                         }}
                     >
                         {blog.title}
@@ -131,16 +139,7 @@ export default function BlogDetailClient({ blog }) {
                                 #{tag}
                             </span>
                         ))}
-                        {/* Mobile Share Button */}
-                        <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={handleShare}
-                            className="md:hidden p-2 rounded-full bg-gray-800/50 hover:bg-gray-700/50 text-cyan-400 border border-gray-700 transition-colors ml-2"
-                            title="Share this blog"
-                        >
-                            {showShareToast ? <IoCheckmark size={16} /> : <FaShareAlt size={14} />}
-                        </motion.button>
+
                     </div>
                 </header>
 
@@ -242,35 +241,37 @@ export default function BlogDetailClient({ blog }) {
             </div>
 
             {/* Image Popup Modal */}
-            {selectedImage && (
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    onClick={() => setSelectedImage(null)}
-                    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm cursor-zoom-out"
-                >
+            {
+                selectedImage && (
                     <motion.div
-                        initial={{ scale: 0.9, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 0.9, opacity: 0 }}
-                        className="relative max-w-[90vw] max-h-[90vh]"
-                        onClick={(e) => e.stopPropagation()}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={() => setSelectedImage(null)}
+                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm cursor-zoom-out"
                     >
-                        <button
-                            onClick={() => setSelectedImage(null)}
-                            className="absolute -top-12 right-0 text-white hover:text-gray-300 text-xl font-bold bg-white/10 p-2 rounded-full"
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="relative max-w-[90vw] max-h-[90vh]"
+                            onClick={(e) => e.stopPropagation()}
                         >
-                            ✕ Close
-                        </button>
-                        <img
-                            src={selectedImage}
-                            alt="Full screen view"
-                            className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
-                        />
+                            <button
+                                onClick={() => setSelectedImage(null)}
+                                className="absolute -top-12 right-0 text-white hover:text-gray-300 text-xl font-bold bg-white/10 p-2 rounded-full"
+                            >
+                                ✕ Close
+                            </button>
+                            <img
+                                src={selectedImage}
+                                alt="Full screen view"
+                                className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
+                            />
+                        </motion.div>
                     </motion.div>
-                </motion.div>
-            )}
-        </motion.div>
+                )
+            }
+        </motion.div >
     );
 }
