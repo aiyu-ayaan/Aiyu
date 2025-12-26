@@ -68,7 +68,7 @@ const FuturisticResume = ({ data }) => {
     }, []);
 
     const handleMouseMove = (e) => {
-        if (!containerRef.current) return;
+        if (!containerRef.current || isTouch) return;
         const rect = containerRef.current.getBoundingClientRect();
 
         const mouseX = e.clientX - rect.left;
@@ -90,12 +90,61 @@ const FuturisticResume = ({ data }) => {
     };
 
     const handleMouseLeave = () => {
+        if (isTouch) return;
         setIsHovering(false);
         x.set(0);
         y.set(0);
         // Reset text to standard state
         setText(generateRandomText(3000));
     };
+
+    // --- Touch / Mobile Logic ---
+    const [isTouch, setIsTouch] = useState(false);
+
+    useEffect(() => {
+        // Simple touch detection
+        const checkTouch = () => {
+            setIsTouch('ontouchstart' in window || navigator.maxTouchPoints > 0);
+        };
+        checkTouch();
+        window.addEventListener('resize', checkTouch);
+        return () => window.removeEventListener('resize', checkTouch);
+    }, []);
+
+    // Auto-animation for touch devices
+    useEffect(() => {
+        if (!isTouch) return;
+
+        setIsHovering(true); // Always active on mobile
+
+        const startTime = Date.now();
+        const animate = () => {
+            const elapsed = Date.now() - startTime;
+
+            // Gentle 3D Float (Sine wave)
+            const floatSpeed = 0.002;
+            const newX = Math.sin(elapsed * floatSpeed) * 0.2; // +/- 0.2 tilt
+            const newY = Math.cos(elapsed * floatSpeed * 0.8) * 0.2;
+
+            x.set(newX);
+            y.set(newY);
+
+            // Auto-Scan Flashlight (Figure-8 pattern)
+            if (containerRef.current) {
+                const rect = containerRef.current.getBoundingClientRect();
+                const scanSpeed = 0.001;
+                const activeX = (Math.sin(elapsed * scanSpeed) * 0.4 + 0.5) * rect.width;
+                const activeY = (Math.cos(elapsed * scanSpeed * 0.7) * 0.4 + 0.5) * rect.height;
+                setMousePos({ x: activeX, y: activeY });
+            }
+
+            requestAnimationFrame(animate);
+        };
+
+        const animationId = requestAnimationFrame(animate);
+        return () => cancelAnimationFrame(animationId);
+    }, [isTouch, x, y]);
+    // -------------------------
     // -------------------------
 
     return (
