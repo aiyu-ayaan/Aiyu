@@ -87,7 +87,7 @@ const Projects = ({ data }) => {
       transition={{ duration: 0.8, ease: 'easeOut' }}
       className="min-h-screen p-4 lg:p-8 transition-colors duration-300"
       style={{
-        backgroundColor: 'var(--bg-primary)',
+        backgroundColor: 'transparent',
         color: 'var(--text-primary)',
       }}
     >

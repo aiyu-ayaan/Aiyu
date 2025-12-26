@@ -47,14 +47,15 @@ export default function Header({ data, logoText }) {
             style={{
                 opacity: headerOpacity,
                 backgroundColor: scrolled
-                    ? 'var(--bg-primary)'
-                    : 'var(--bg-secondary)',
+                    ? theme === 'dark' ? 'rgba(13, 17, 23, 0.8)' : 'rgba(255, 255, 255, 0.8)'
+                    : 'transparent',
                 borderColor: scrolled
                     ? 'var(--border-cyan)'
-                    : 'var(--border-secondary)',
+                    : 'transparent',
                 boxShadow: scrolled
                     ? '0 10px 30px var(--shadow-md)'
                     : 'none',
+                backdropFilter: 'blur(10px)',
             }}
         >
             <nav className="flex items-center justify-between max-w-full mx-auto">

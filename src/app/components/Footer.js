@@ -20,7 +20,8 @@ export default function Footer({ socialData, name }) {
             className="w-full px-4 sm:px-6 py-6 sm:py-4 border-t transition-colors duration-300"
             style={{
                 borderColor: 'var(--border-secondary)',
-                backgroundColor: 'var(--bg-secondary)',
+                backgroundColor: theme === 'dark' ? 'rgba(10, 10, 20, 0.6)' : 'rgba(255, 255, 255, 0.6)',
+                backdropFilter: 'blur(10px)',
             }}
         >
             <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-between max-w-6xl mx-auto gap-4 sm:gap-0">
