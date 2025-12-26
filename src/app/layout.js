@@ -56,7 +56,7 @@ export default async function RootLayout({ children }) {
             __html: `
               (function() {
                 try {
-                  var theme = localStorage.getItem('theme');
+                  var theme = localStorage.getItem('themeVariant') || localStorage.getItem('theme');
                   if (!theme) {
                     theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
                   }

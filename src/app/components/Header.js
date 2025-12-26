@@ -34,197 +34,217 @@ export default function Header({ data, logoText }) {
 
         window.addEventListener('scroll', handleScroll);
         return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
+    }, [isMenuOpen]);
+
+    // Prevent body scroll when mobile menu is open
+    useEffect(() => {
+        if (isMenuOpen) {
+            document.body.style.overflow = 'hidden';
+            document.documentElement.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+            document.documentElement.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+            document.documentElement.style.overflow = 'unset';
+        };
+    }, [isMenuOpen]);
 
     return (
-        <motion.header
-            className={clsx(
-                "sticky top-0 z-50 w-full px-4 sm:px-6 py-4 border-b transition-all duration-300",
-                scrolled
-                    ? "backdrop-blur-lg shadow-lg"
-                    : "backdrop-blur-sm"
-            )}
-            style={{
-                opacity: headerOpacity,
-                backgroundColor: scrolled
-                    ? theme === 'dark' ? 'rgba(13, 17, 23, 0.8)' : 'rgba(255, 255, 255, 0.8)'
-                    : 'transparent',
-                borderColor: scrolled
-                    ? 'var(--border-cyan)'
-                    : 'transparent',
-                boxShadow: scrolled
-                    ? '0 10px 30px var(--shadow-md)'
-                    : 'none',
-                backdropFilter: 'blur(10px)',
-            }}
-        >
-            <nav className="flex items-center justify-between max-w-full mx-auto">
-                {/* Logo/Brand - Left */}
-                <div className="flex-shrink-0">
-                    <Link href="/">
-                        <motion.div
-                            className="text-2xl font-bold bg-gradient-to-r bg-clip-text text-transparent"
-                            style={{
-                                backgroundImage: 'linear-gradient(to right, var(--accent-cyan), var(--accent-orange))',
-                            }}
-                            whileHover={{ scale: 1.1 }}
-                            transition={{ duration: 0.3 }}
-                        >
-                            {displayLogo}
-                        </motion.div>
-                    </Link>
-                </div>
-
-                {/* Mobile Menu Button */}
-                <motion.button
-                    className="md:hidden transition-colors duration-200"
-                    style={{ color: 'var(--text-bright)' }}
-                    onClick={toggleMenu}
-                    aria-label="Toggle menu"
-                    whileHover={{ scale: 1.1, color: 'var(--accent-cyan)' }}
-                    whileTap={{ scale: 0.9 }}
-                >
-                    <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d={isMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
-                    </svg>
-                </motion.button>
-
-                {/* Navigation Links - Desktop Center */}
-                <div className="hidden md:block absolute left-1/2 transform -translate-x-1/2">
-                    <div className="flex space-x-8">
-                        {visibleNavLinks.map((link, index) => (
-                            <motion.div
-                                key={link.name}
-                                initial={{ opacity: 0, y: -20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: index * 0.1 }}
-                            >
-                                <Link
-                                    href={link.href}
-                                    target={link.target}
-                                    rel={link.target === '_blank' ? 'noopener noreferrer' : undefined}
-                                    className={clsx(
-                                        "relative transition-colors duration-300 pb-1 font-medium",
-                                        {
-                                            "": pathname === link.href,
-                                        }
-                                    )}
-                                    style={{
-                                        color: pathname === link.href
-                                            ? 'var(--accent-cyan)'
-                                            : 'var(--text-bright)',
-                                    }}
-                                >
-                                    {link.name}
-                                    {pathname === link.href && (
-                                        <motion.div
-                                            className="absolute bottom-0 left-0 right-0 h-0.5"
-                                            style={{
-                                                background: 'linear-gradient(to right, var(--accent-cyan), var(--accent-purple))',
-                                            }}
-                                            layoutId="navbar-indicator"
-                                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                                        />
-                                    )}
-                                </Link>
-                            </motion.div>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Contact Link and Theme Toggle - Desktop Right */}
-                <div className="hidden md:flex items-center gap-3 flex-shrink-0">
-                    <ThemeToggle />
-                    <Link href={contactLink.href}>
-                        <motion.div
-                            className="px-4 py-2 rounded-lg font-semibold transition-all duration-300 shadow-lg"
-                            style={{
-                                background: 'linear-gradient(to right, var(--accent-cyan), var(--accent-purple))',
-                                color: '#ffffff',
-                                boxShadow: '0 10px 30px var(--shadow-lg)',
-                            }}
-                            whileHover={{ scale: 1.05, y: -2 }}
-                            whileTap={{ scale: 0.95 }}
-                        >
-                            {contactLink.name}
-                        </motion.div>
-                    </Link>
-                </div>
-            </nav>
-
-            {/* Animated Mobile Menu */}
-            <motion.div
-                className="md:hidden overflow-hidden border-t z-50"
-                style={{ borderColor: 'var(--border-secondary)' }}
-                initial={false}
-                animate={{
-                    height: isMenuOpen ? "auto" : 0,
-                    opacity: isMenuOpen ? 1 : 0,
+        <>
+            <motion.header
+                className={clsx(
+                    "sticky top-0 z-50 w-full transition-all duration-300",
+                    scrolled ? "py-2" : "py-4"
+                )}
+                style={{
+                    backgroundColor: scrolled
+                        ? theme === 'dark' ? 'rgba(13, 17, 23, 0.6)' : 'rgba(255, 255, 255, 0.6)'
+                        : 'transparent',
+                    backdropFilter: scrolled ? 'blur(16px)' : 'none',
+                    borderBottom: scrolled
+                        ? `1px solid ${theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)'}`
+                        : '1px solid transparent',
+                    boxShadow: scrolled ? '0 4px 30px rgba(0, 0, 0, 0.1)' : 'none',
                 }}
-                transition={{ duration: 0.3, ease: "easeInOut" }}
             >
-                <div
-                    className="px-4 py-4 space-y-4 backdrop-blur-lg"
-                    style={{
-                        backgroundColor: 'var(--bg-primary)',
-                    }}
-                >
+                <nav className="flex items-center justify-between w-full mx-auto px-4 sm:px-6">
+                    {/* Logo/Brand - Left */}
+                    <div className="flex-shrink-0">
+                        <Link href="/">
+                            <motion.div
+                                className="text-2xl font-bold bg-gradient-to-r bg-clip-text text-transparent cursor-pointer flex items-center gap-2"
+                                style={{
+                                    backgroundImage: 'linear-gradient(to right, var(--accent-cyan), var(--accent-orange))',
+                                }}
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                            >
+                                {displayLogo}
+                            </motion.div>
+                        </Link>
+                    </div>
+
+                    {/* Mobile Menu Button - Styled */}
+                    <motion.button
+                        className="md:hidden relative z-[110] p-2 rounded-full transition-colors"
+                        style={{
+                            color: 'var(--text-primary)',
+                            backgroundColor: isMenuOpen ? 'transparent' : 'rgba(125, 125, 125, 0.1)',
+                            opacity: isMenuOpen ? 0 : 1,
+                            pointerEvents: isMenuOpen ? 'none' : 'auto',
+                        }}
+                        onClick={toggleMenu}
+                        whileTap={{ scale: 0.9 }}
+                    >
+                        <div className="w-6 h-5 flex flex-col justify-between items-center">
+                            <motion.span
+                                animate={isMenuOpen ? { rotate: 45, y: 9 } : { rotate: 0, y: 0 }}
+                                className="w-full h-0.5 bg-current rounded-full origin-center transition-transform"
+                            />
+                            <motion.span
+                                animate={isMenuOpen ? { opacity: 0 } : { opacity: 1 }}
+                                className="w-full h-0.5 bg-current rounded-full transition-opacity"
+                            />
+                            <motion.span
+                                animate={isMenuOpen ? { rotate: -45, y: -9 } : { rotate: 0, y: 0 }}
+                                className="w-full h-0.5 bg-current rounded-full origin-center transition-transform"
+                            />
+                        </div>
+                    </motion.button>
+
+                    {/* Navigation Links - Desktop Center */}
+                    <div className="hidden md:block absolute left-1/2 transform -translate-x-1/2">
+                        <div className="flex items-center gap-1 p-1 rounded-full border border-transparent transition-all duration-300"
+                            style={{
+                                backgroundColor: scrolled ? (theme === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)') : 'transparent',
+                                borderColor: scrolled ? (theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)') : 'transparent',
+                            }}
+                        >
+                            {visibleNavLinks.map((link) => {
+                                const isActive = pathname === link.href;
+                                return (
+                                    <Link
+                                        key={link.name}
+                                        href={link.href}
+                                        target={link.target}
+                                        className="relative px-4 py-2 rounded-full text-sm font-medium transition-all duration-300"
+                                        style={{
+                                            color: isActive
+                                                ? (theme === 'dark' ? '#fff' : '#000')
+                                                : 'var(--text-secondary)'
+                                        }}
+                                    >
+                                        {isActive && (
+                                            <motion.div
+                                                layoutId="navbar-pill"
+                                                className="absolute inset-0 rounded-full z-[-1]"
+                                                style={{
+                                                    backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+                                                }}
+                                                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                            />
+                                        )}
+                                        <span className="relative z-10">{link.name}</span>
+                                    </Link>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {/* Contact Link and Theme Toggle - Desktop Right */}
+                    <div className="hidden md:flex items-center gap-4">
+                        <ThemeToggle />
+                        <Link href={contactLink.href}>
+                            <motion.button
+                                className="px-5 py-2 rounded-full font-semibold text-sm transition-all shadow-lg relative overflow-hidden group"
+                                style={{
+                                    background: 'linear-gradient(to right, var(--accent-cyan), var(--accent-purple))',
+                                    color: '#ffffff',
+                                }}
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                            >
+                                <span className="relative z-10">{contactLink.name}</span>
+                                <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+                            </motion.button>
+                        </Link>
+                    </div>
+                </nav>
+            </motion.header>
+
+            {/* Full Screen Mobile Menu - Moved OUTSIDE header */}
+            <motion.div
+                className="fixed inset-0 z-[100] md:hidden backdrop-blur-3xl flex flex-col pt-6 px-6 gap-6 overflow-y-auto"
+                style={{
+                    backgroundColor: theme === 'dark' ? 'rgba(13, 17, 23, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+                    overscrollBehavior: 'contain',
+                }}
+                initial={{ y: "-100%" }}
+                animate={{ y: isMenuOpen ? "0%" : "-100%" }}
+                transition={{ type: "spring", damping: 30, stiffness: 300 }}
+            >
+                {/* Close Button Row */}
+                <div className="flex justify-end pb-2">
+                    <motion.button
+                        className="p-2 rounded-full transition-colors"
+                        style={{ color: 'var(--text-primary)' }}
+                        onClick={() => setIsMenuOpen(false)}
+                        whileTap={{ scale: 0.9 }}
+                    >
+                        <div className="w-6 h-5 flex flex-col justify-between items-center relative">
+                            <span className="w-full h-0.5 bg-current rounded-full absolute top-1/2 -translate-y-1/2 rotate-45" />
+                            <span className="w-full h-0.5 bg-current rounded-full absolute top-1/2 -translate-y-1/2 -rotate-45" />
+                        </div>
+                    </motion.button>
+                </div>
+
+                <div className="flex flex-col gap-4">
                     {visibleNavLinks.map((link, index) => (
                         <motion.div
                             key={link.name}
                             initial={{ x: -20, opacity: 0 }}
                             animate={isMenuOpen ? { x: 0, opacity: 1 } : { x: -20, opacity: 0 }}
-                            transition={{ delay: index * 0.1 }}
+                            transition={{ delay: 0.1 + index * 0.1 }}
                         >
                             <Link
                                 href={link.href}
-                                target={link.target}
-                                rel={link.target === '_blank' ? 'noopener noreferrer' : undefined}
-                                className={clsx(
-                                    "block transition-colors duration-200 pb-2 font-medium text-lg",
-                                    {
-                                        "border-b-2": pathname === link.href,
-                                    }
-                                )}
-                                style={{
-                                    color: pathname === link.href
-                                        ? 'var(--accent-cyan)'
-                                        : 'var(--text-bright)',
-                                    borderColor: pathname === link.href ? 'var(--accent-cyan)' : 'transparent',
-                                }}
                                 onClick={() => setIsMenuOpen(false)}
+                                className="text-3xl font-bold tracking-tight block py-2"
+                                style={{
+                                    color: pathname === link.href ? 'var(--accent-cyan)' : 'var(--text-primary)'
+                                }}
                             >
                                 {link.name}
                             </Link>
                         </motion.div>
                     ))}
-                    <motion.div
-                        initial={{ x: -20, opacity: 0 }}
-                        animate={isMenuOpen ? { x: 0, opacity: 1 } : { x: -20, opacity: 0 }}
-                        transition={{ delay: navLinks.length * 0.1 }}
-                    >
-                        <Link
-                            href={contactLink.href}
-                            className="block w-full text-center text-white font-semibold py-3 rounded-lg transition-all duration-300 mt-4"
+                </div>
+
+                <motion.div
+                    className="mt-auto mb-10 space-y-6"
+                    initial={{ opacity: 0 }}
+                    animate={isMenuOpen ? { opacity: 1 } : { opacity: 0 }}
+                    transition={{ delay: 0.4 }}
+                >
+                    <div className="h-px w-full bg-[var(--border-secondary)]" />
+                    <div className="flex items-center justify-between">
+                        <span className="text-lg font-medium text-[var(--text-secondary)]">Appearance</span>
+                        <ThemeToggle />
+                    </div>
+                    <Link href={contactLink.href} onClick={() => setIsMenuOpen(false)}>
+                        <button
+                            className="w-full py-4 rounded-xl font-bold text-white text-lg shadow-lg"
                             style={{
                                 background: 'linear-gradient(to right, var(--accent-cyan), var(--accent-purple))',
                             }}
-                            onClick={() => setIsMenuOpen(false)}
                         >
                             {contactLink.name}
-                        </Link>
-                    </motion.div>
-                    <motion.div
-                        initial={{ x: -20, opacity: 0 }}
-                        animate={isMenuOpen ? { x: 0, opacity: 1 } : { x: -20, opacity: 0 }}
-                        transition={{ delay: (navLinks.length + 1) * 0.1 }}
-                        className="flex items-center justify-center pt-4 border-t"
-                        style={{ borderColor: 'var(--border-secondary)' }}
-                    >
-                        <ThemeToggle />
-                    </motion.div>
-                </div>
+                        </button>
+                    </Link>
+                </motion.div>
             </motion.div>
-        </motion.header>
+        </>
     );
 }
