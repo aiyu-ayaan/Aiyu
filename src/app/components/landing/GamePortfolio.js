@@ -72,40 +72,58 @@ const GamePortfolio = ({ data, onUnlock = () => { } }) => {
         ></div>
       </div>
 
-      <div className="w-full max-w-6xl flex flex-col lg:flex-row items-center justify-center gap-6 lg:gap-8 relative z-10">
+      <div className="w-full max-w-7xl flex flex-col lg:flex-row items-center justify-between gap-12 relative z-10">
         <motion.div
           initial={{ x: -50, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.2 }}
-          className="flex-1 text-center lg:text-left order-1 max-w-lg"
-          style={{ color: 'var(--text-primary)' }}
+          className="flex-1 text-center lg:text-left order-1 max-w-lg relative"
         >
           <motion.h1
-            initial={{ y: -20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-            className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 line-hover-effect"
+            className="text-5xl sm:text-6xl lg:text-7xl font-bold mb-6 tracking-tight"
             style={{ color: 'var(--text-bright)' }}
           >
-            {name}
+            {name || "Ayaan Ansari"}
           </motion.h1>
-          <TypewriterEffect roles={homeRoles || []} />
+
+          <div className="mb-8">
+            <TypewriterEffect roles={homeRoles || []} />
+          </div>
+
           <motion.div
-            initial={{ y: 30, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.8 }}
-            className="space-y-2 font-mono text-xs sm:text-sm text-left"
+            className="p-6 rounded-xl border backdrop-blur-sm relative overflow-hidden group"
+            style={{
+              backgroundColor: 'var(--bg-elevated)',
+              borderColor: 'var(--border-secondary)'
+            }}
           >
-            {codeSnippets && codeSnippets.map((snippet, index) => (
-              <p key={index} style={{ color: 'var(--text-tertiary)' }}>{`// ${snippet}`}</p>
-            ))}
-            <p className="break-all">
-              <span style={{ color: 'var(--syntax-keyword)' }}>const</span>{' '}
-              <span style={{ color: 'var(--syntax-variable)' }}>githubLink</span>{' '}
-              <span style={{ color: 'var(--text-bright)' }}>=</span>
-              <br className="sm:hidden" />
-              <span className="sm:ml-1" style={{ color: 'var(--syntax-string)' }}>{`"${githubLink}"`}</span>
-            </p>
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+
+            <div className="space-y-2 font-mono text-xs sm:text-sm text-left">
+              {codeSnippets && codeSnippets.map((snippet, index) => (
+                <p key={index} style={{ color: 'var(--text-secondary)' }}>{`// ${snippet}`}</p>
+              ))}
+              <p className="break-all">
+                <span style={{ color: 'var(--syntax-keyword)' }}>console</span>
+                <span style={{ color: 'var(--text-secondary)' }}>.</span>
+                <span style={{ color: 'var(--syntax-function)' }}>log</span>
+                <span style={{ color: 'var(--text-secondary)' }}>(</span>
+                <span style={{ color: 'var(--syntax-string)' }}>"{githubLink}"</span>
+                <span style={{ color: 'var(--text-secondary)' }}>);</span>
+              </p>
+
+              {/* Dynamic Data Info */}
+              <div className="mt-4 pt-4 border-t border-dashed" style={{ borderColor: 'var(--border-secondary)' }}>
+                <p className="flex justify-between text-xs font-mono mb-1" style={{ color: 'var(--text-tertiary)' }}>
+                  <span>STATUS</span>
+                  <span style={{ color: 'var(--accent-cyan)' }}>{data?.resumeStatus || 'ONLINE'}</span>
+                </p>
+                <p className="flex justify-between text-xs font-mono" style={{ color: 'var(--text-tertiary)' }}>
+                  <span>MODE</span>
+                  <span style={{ color: 'var(--accent-orange)' }}>{data?.resumeMode || 'DEV_01'}</span>
+                </p>
+              </div>
+            </div>
           </motion.div>
         </motion.div>
 
