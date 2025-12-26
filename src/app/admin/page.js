@@ -35,7 +35,7 @@ export default function AdminDashboard() {
             title: "Components",
             items: [
                 { name: 'Header', desc: 'Nav & Logo', icon: FaHeading, color: 'text-orange-400', bg: 'bg-orange-500/10', border: 'border-orange-500/20', link: '/admin/header' },
-                { name: 'Social', desc: 'Links & Profiles', icon: FaShareNodes, color: 'text-pink-400', bg: 'bg-pink-500/10', border: 'border-pink-500/20', link: '/admin/socials' },
+                { name: 'Footer', desc: 'Links & Profiles', icon: FaShareNodes, color: 'text-pink-400', bg: 'bg-pink-500/10', border: 'border-pink-500/20', link: '/admin/socials' },
                 { name: 'Contact', desc: 'Messages & Info', icon: FaEnvelope, color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/20', link: '/admin/contact' },
             ]
         },

@@ -18,6 +18,14 @@ export async function GET() {
 }
 
 export async function PUT(request) {
+    return updateConfig(request);
+}
+
+export async function POST(request) {
+    return updateConfig(request);
+}
+
+async function updateConfig(request) {
     const session = await getSession();
     if (!session) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -26,13 +34,16 @@ export async function PUT(request) {
     await dbConnect();
     try {
         const body = await request.json();
-        const config = await Config.findOneAndUpdate({}, body, {
+        // Use $set to ensure partial updates don't overwrite other fields
+        // This is critical since different admin pages update different parts of the config
+        const config = await Config.findOneAndUpdate({}, { $set: body }, {
             new: true,
             upsert: true,
             runValidators: true,
         });
         return NextResponse.json(config);
     } catch (error) {
+        console.error('Config update error:', error);
         return NextResponse.json({ error: 'Failed to update config' }, { status: 500 });
     }
 }

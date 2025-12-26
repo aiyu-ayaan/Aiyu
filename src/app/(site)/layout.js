@@ -26,6 +26,7 @@ export default async function SiteLayout({ children }) {
     const serializedHeaderData = JSON.parse(JSON.stringify(headerData));
     const serializedSocialData = JSON.parse(JSON.stringify(socialData));
     const serializedAboutData = JSON.parse(JSON.stringify(aboutData));
+    const serializedConfigData = JSON.parse(JSON.stringify(configData));
     // Default to empty string if config doesn't exist yet
     const n8nWebhookUrl = configData?.n8nWebhookUrl || '';
     const logoText = configData?.logoText || '< aiyu />';
@@ -65,7 +66,7 @@ export default async function SiteLayout({ children }) {
             <main className="min-h-screen">
                 {children}
             </main>
-            <Footer socialData={serializedSocialData} name={serializedAboutData?.name} />
+            <Footer socialData={serializedSocialData} name={serializedAboutData?.name} config={serializedConfigData} />
             <N8nChat webhookUrl={n8nWebhookUrl} />
         </>
     );

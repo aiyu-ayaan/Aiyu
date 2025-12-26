@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 import { getIconByName } from '../../lib/icons';
 import { useTheme } from '../context/ThemeContext';
 
-export default function Footer({ socialData, name }) {
+export default function Footer({ socialData, name, config }) {
     const { theme } = useTheme();
     const socials = socialData?.map(s => ({
         ...s,
@@ -17,23 +17,39 @@ export default function Footer({ socialData, name }) {
 
     return (
         <footer
-            className="w-full px-4 sm:px-6 py-6 sm:py-4 border-t transition-colors duration-300"
+            className="w-full px-4 sm:px-6 py-8 border-t transition-all duration-300"
             style={{
-                borderColor: 'var(--border-secondary)',
-                backgroundColor: theme === 'dark' ? 'rgba(10, 10, 20, 0.6)' : 'rgba(255, 255, 255, 0.6)',
-                backdropFilter: 'blur(10px)',
+                borderColor: theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+                backgroundColor: theme === 'dark' ? 'rgba(13, 17, 23, 0.6)' : 'rgba(255, 255, 255, 0.6)',
+                backdropFilter: 'blur(16px)',
             }}
         >
-            <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-between max-w-6xl mx-auto gap-4 sm:gap-0">
-                <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-6">
-                    <span
-                        className="text-base font-semibold text-center sm:text-left"
-                        style={{ color: 'var(--accent-cyan)' }}
+            <div className="flex flex-col md:flex-row items-center justify-between max-w-7xl mx-auto gap-6 md:gap-0">
+                <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-8">
+                    <motion.div
+                        className="flex items-center gap-2 px-4 py-2 rounded-full border border-transparent"
+                        style={{
+                            backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)',
+                            borderColor: theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                        }}
                     >
-                        {"<"} find me in: {"/>"}
-                    </span>
+                        <span className="text-sm font-semibold text-[var(--accent-orange)]">
+                            {"<"}
+                        </span>
+                        <span
+                            className="text-sm font-semibold bg-gradient-to-r bg-clip-text text-transparent"
+                            style={{
+                                backgroundImage: 'linear-gradient(to right, var(--accent-cyan), var(--accent-orange))',
+                            }}
+                        >
+                            find me in:
+                        </span>
+                        <span className="text-sm font-semibold text-[var(--accent-cyan)]">
+                            {"/>"}
+                        </span>
+                    </motion.div>
 
-                    <div className="flex items-center gap-4 sm:gap-3">
+                    <div className="flex items-center gap-3">
                         {socials.filter(social => social.url && !social.isHidden && social.icon).map((social, index) => (
                             <div key={index}>
                                 <Link
@@ -43,19 +59,23 @@ export default function Footer({ socialData, name }) {
                                     aria-label={social.name}
                                 >
                                     <motion.div
-                                        className="transition-colors duration-300 p-2 rounded-lg"
+                                        className="p-2.5 rounded-xl border transition-all duration-300 relative group overflow-hidden"
                                         style={{
-                                            color: 'var(--text-tertiary)',
+                                            backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)',
+                                            borderColor: theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                                            color: 'var(--text-secondary)',
                                         }}
                                         whileHover={{
-                                            scale: 1.2,
-                                            y: -5,
-                                            color: 'var(--accent-cyan)',
-                                            backgroundColor: 'var(--bg-surface)',
+                                            scale: 1.05,
+                                            y: -2,
+                                            color: 'var(--accent-orange)',
+                                            borderColor: 'var(--accent-orange)',
+                                            boxShadow: '0 0 20px rgba(249, 115, 22, 0.2)'
                                         }}
-                                        whileTap={{ scale: 0.9 }}
+                                        whileTap={{ scale: 0.95 }}
                                     >
-                                        <social.icon className="w-6 h-6 sm:w-5 sm:h-5" />
+                                        <div className="absolute inset-0 bg-[var(--accent-orange)] opacity-0 group-hover:opacity-10 transition-opacity duration-300" />
+                                        <social.icon className="w-5 h-5 relative z-10" />
                                     </motion.div>
                                 </Link>
                             </div>
@@ -63,8 +83,15 @@ export default function Footer({ socialData, name }) {
                     </div>
                 </div>
 
-                <div className="text-sm text-center sm:text-right" style={{ color: 'var(--text-muted)' }}>
-                    <p>© {currentYear} {name || 'Portfolio'}. All rights reserved.</p>
+                <div className="flex flex-col md:flex-row items-center gap-2 md:gap-6 text-sm font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                    {config?.showWorkStatus && (
+                        <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-[var(--status-success)] animate-pulse" />
+                            <span>{config?.workStatus || 'Available for work'}</span>
+                        </div>
+                    )}
+                    {config?.showWorkStatus && <p className="hidden md:block opacity-20">|</p>}
+                    <p>{config?.footerText || `© ${currentYear} ${name || 'Ayaaan'}. All rights reserved.`}</p>
                 </div>
             </div>
         </footer>

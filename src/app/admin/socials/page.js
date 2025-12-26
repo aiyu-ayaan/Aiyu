@@ -5,10 +5,32 @@ import Link from 'next/link';
 export default function AdminSocials() {
     const [socials, setSocials] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [config, setConfig] = useState({
+        footerText: '',
+        workStatus: '',
+        showWorkStatus: true
+    });
 
     useEffect(() => {
         fetchSocials();
+        fetchConfig();
     }, []);
+
+    const fetchConfig = async () => {
+        try {
+            const res = await fetch('/api/config');
+            const data = await res.json();
+            if (data) {
+                setConfig({
+                    footerText: data.footerText || '',
+                    workStatus: data.workStatus || '',
+                    showWorkStatus: data.showWorkStatus ?? true
+                });
+            }
+        } catch (error) {
+            console.error('Failed to fetch config', error);
+        }
+    };
 
     const fetchSocials = async () => {
         try {
@@ -19,6 +41,24 @@ export default function AdminSocials() {
             console.error('Failed to fetch socials', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleConfigSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            const res = await fetch('/api/config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(config),
+            });
+            if (res.ok) {
+                alert('Footer configuration updated!');
+            } else {
+                alert('Failed to update config');
+            }
+        } catch (error) {
+            console.error('Error updating config', error);
         }
     };
 
@@ -68,12 +108,57 @@ export default function AdminSocials() {
                 </Link>
             </div>
             <div className="flex justify-between items-center mb-8">
-                <h1 className="text-3xl font-bold text-white">Manage Socials</h1>
+                <h1 className="text-3xl font-bold text-white">Manage Footer</h1>
                 <Link href="/admin/socials/new" className="bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2 rounded transition-colors">
                     Add New Social
                 </Link>
             </div>
 
+            {/* Config Section */}
+            <div className="bg-gray-800 rounded-xl border border-gray-700 p-6 mb-8">
+                <h2 className="text-xl font-bold text-white mb-4">Footer Configuration</h2>
+                <form onSubmit={handleConfigSubmit} className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-gray-400 mb-2 text-sm">Copyright Text</label>
+                            <input
+                                type="text"
+                                value={config.footerText}
+                                onChange={(e) => setConfig({ ...config, footerText: e.target.value })}
+                                className="w-full bg-gray-900 border border-gray-700 rounded p-3 text-white focus:border-cyan-500 outline-none"
+                                placeholder="© 2025 Ayaan. All rights reserved."
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-gray-400 mb-2 text-sm">Work Status Text</label>
+                            <input
+                                type="text"
+                                value={config.workStatus}
+                                onChange={(e) => setConfig({ ...config, workStatus: e.target.value })}
+                                className="w-full bg-gray-900 border border-gray-700 rounded p-3 text-white focus:border-cyan-500 outline-none"
+                                placeholder="Available for work"
+                            />
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <input
+                            type="checkbox"
+                            checked={config.showWorkStatus}
+                            onChange={(e) => setConfig({ ...config, showWorkStatus: e.target.checked })}
+                            className="w-4 h-4 rounded border-gray-700 bg-gray-900 text-cyan-600 focus:ring-cyan-500"
+                            id="showWorkStatus"
+                        />
+                        <label htmlFor="showWorkStatus" className="text-gray-300 cursor-pointer">Show Work Status Indicator</label>
+                    </div>
+                    <div className="flex justify-end">
+                        <button type="submit" className="bg-green-600 hover:bg-green-500 text-white px-6 py-2 rounded transition-colors">
+                            Save Configuration
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <h2 className="text-xl font-bold text-white mb-4">Social Links</h2>
             <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
                 <table className="w-full text-left text-gray-300">
                     <thead className="bg-gray-900 text-gray-100 uppercase text-sm font-semibold">

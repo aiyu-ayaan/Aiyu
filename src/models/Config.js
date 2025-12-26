@@ -24,6 +24,13 @@ const ConfigSchema = new mongoose.Schema({
     contactLocation: { type: String, default: '' },
     contactEmail: { type: String, default: '' },
     contactStatus: { type: String, default: 'Open to opportunities' },
+
+    // Footer Configuration
+    footerText: { type: String, default: '© 2025 Ayaan Ansari. All rights reserved.' },
+    footerText2: { type: String, default: 'Made with ❤️ by Ayaan' },
+    showWorkStatus: { type: Boolean, default: true },
+    workStatus: { type: String, default: 'Available for work' },
+
     // Theme Management
     activeTheme: { type: String, default: 'vs-code-dark' },
     activeThemeVariant: { type: String, enum: ['light', 'dark'], default: 'dark' },
