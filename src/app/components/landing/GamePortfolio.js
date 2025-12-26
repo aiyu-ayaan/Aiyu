@@ -54,24 +54,8 @@ const GamePortfolio = ({ data, onUnlock = () => { } }) => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.8, ease: "easeOut" }}
       className="min-h-screen flex flex-col lg:flex-row items-center justify-center p-4 lg:p-8 relative transition-colors duration-300"
-      style={{ backgroundColor: 'var(--bg-primary)' }}
+      style={{ backgroundColor: 'transparent' }}
     >
-      {/* Animated background gradient */}
-      <div className="absolute inset-0 opacity-30 pointer-events-none">
-        <div
-          className="absolute top-10 left-10 w-72 h-72 rounded-full mix-blend-multiply filter blur-xl animate-blob"
-          style={{ backgroundColor: 'var(--accent-cyan)' }}
-        ></div>
-        <div
-          className="absolute top-10 right-10 w-72 h-72 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-2000"
-          style={{ backgroundColor: 'var(--accent-orange)' }}
-        ></div>
-        <div
-          className="absolute bottom-10 left-1/2 w-72 h-72 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-4000"
-          style={{ backgroundColor: 'var(--accent-pink)' }}
-        ></div>
-      </div>
-
       <div className="w-full max-w-7xl flex flex-col lg:flex-row items-center justify-between gap-12 relative z-10">
         <motion.div
           initial={{ x: -50, opacity: 0 }}

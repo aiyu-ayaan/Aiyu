@@ -47,7 +47,8 @@ const HomeBlogs = ({ blogs }) => {
                             viewport={{ once: true }}
                             className="group flex flex-col h-full rounded-2xl overflow-hidden border transition-all duration-300 shadow-lg hover:shadow-2xl"
                             style={{
-                                background: 'linear-gradient(to bottom right, var(--bg-surface), var(--bg-secondary))',
+                                background: 'linear-gradient(to bottom right, rgba(30, 20, 51, 0.6), rgba(10, 25, 41, 0.6))',
+                                backdropFilter: 'blur(10px)',
                                 borderColor: 'var(--border-secondary)',
                             }}
                         >

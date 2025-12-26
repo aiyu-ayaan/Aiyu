@@ -153,20 +153,8 @@ const FuturisticResume = ({ data }) => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
             className="min-h-screen flex flex-col lg:flex-row items-center justify-center p-4 lg:p-8 relative transition-colors duration-300 overflow-hidden"
-            style={{ backgroundColor: 'var(--bg-primary)' }}
+            style={{ backgroundColor: 'transparent' }}
         >
-            {/* Animated background gradient blobs */}
-            <div className="absolute inset-0 opacity-20 pointer-events-none">
-                <div
-                    className="absolute top-10 left-10 w-96 h-96 rounded-full mix-blend-screen filter blur-3xl animate-blob"
-                    style={{ backgroundColor: 'var(--accent-cyan)', opacity: 0.5 }}
-                ></div>
-                <div
-                    className="absolute bottom-10 right-10 w-96 h-96 rounded-full mix-blend-screen filter blur-3xl animate-blob animation-delay-2000"
-                    style={{ backgroundColor: 'var(--accent-pink)', opacity: 0.5 }}
-                ></div>
-            </div>
-
             <div className="w-full max-w-7xl flex flex-col lg:flex-row items-center justify-between gap-12 relative z-10">
 
                 {/* --- Left Column: Personal Info --- */}

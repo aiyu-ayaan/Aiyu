@@ -1,37 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import '../../styles/Divider.css';
-import { useTheme } from '../../context/ThemeContext';
 
 const Divider = () => {
-  const { theme } = useTheme();
-
-  // Default fallback colors
-  const [colors, setColors] = useState({
-    cyan: '#22d3ee',
-    purple: '#3b82f6',
-    pink: '#8b5cf6'
-  });
-
-  // Update colors when theme changes
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const getVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-
-      // Small timeout to ensure DOM has updated with new theme class
-      const timer = setTimeout(() => {
-        setColors({
-          cyan: getVar('--accent-cyan') || '#22d3ee',
-          purple: getVar('--accent-purple') || '#3b82f6',
-          pink: getVar('--accent-pink') || '#8b5cf6'
-        });
-      }, 50);
-
-      return () => clearTimeout(timer);
-    }
-  }, [theme]);
-
   // Use a unique ID for the gradient to prevent conflicts if multiple dividers exist
   const gradientId = "waveGradient";
 
@@ -40,9 +12,9 @@ const Divider = () => {
       <svg className="w-2/5 md:w-1/3" height="40" viewBox="0 0 400 40" fill="none" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor={colors.cyan} />
-            <stop offset="50%" stopColor={colors.purple} />
-            <stop offset="100%" stopColor={colors.pink} />
+            <stop offset="0%" style={{ stopColor: 'var(--accent-cyan)' }} />
+            <stop offset="50%" style={{ stopColor: 'var(--accent-purple)' }} />
+            <stop offset="100%" style={{ stopColor: 'var(--accent-pink)' }} />
           </linearGradient>
         </defs>
         <g className="wave-animation">

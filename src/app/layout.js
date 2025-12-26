@@ -41,6 +41,8 @@ export const viewport = {
 
 import GoogleAnalytics from "./components/GoogleAnalytics";
 
+import SpaceBackground from "./components/shared/SpaceBackground";
+
 export default async function RootLayout({ children }) {
   await dbConnect();
   const config = await ConfigModel.findOne().lean();
@@ -73,7 +75,12 @@ export default async function RootLayout({ children }) {
       >
         <GoogleAnalytics gaId={gaId} />
         <ThemeProvider>
-          {children}
+          <div className="fixed inset-0 z-[-1]">
+            <SpaceBackground />
+          </div>
+          <div className="relative z-0">
+            {children}
+          </div>
         </ThemeProvider>
       </body>
     </html>

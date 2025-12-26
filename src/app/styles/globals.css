@@ -152,7 +152,6 @@ body {
 }
 
 body {
-  background: var(--bg-primary);
   color: var(--text-primary);
   font-family: 'Fira Code', monospace;
   position: relative;
