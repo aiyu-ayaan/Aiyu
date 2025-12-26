@@ -104,12 +104,19 @@ const GamePortfolio = ({ data, onUnlock = () => { } }) => {
                 <p key={index} style={{ color: 'var(--text-secondary)' }}>{`// ${snippet}`}</p>
               ))}
               <p className="break-all">
-                <span style={{ color: 'var(--syntax-keyword)' }}>console</span>
-                <span style={{ color: 'var(--text-secondary)' }}>.</span>
-                <span style={{ color: 'var(--syntax-function)' }}>log</span>
-                <span style={{ color: 'var(--text-secondary)' }}>(</span>
-                <span style={{ color: 'var(--syntax-string)' }}>&quot;{githubLink}&quot;</span>
-                <span style={{ color: 'var(--text-secondary)' }}>);</span>
+                <span style={{ color: 'var(--syntax-keyword)' }}>const</span>{' '}
+                <span style={{ color: 'var(--syntax-variable)' }}>githubLink</span>{' '}
+                <span style={{ color: 'var(--text-bright)' }}>=</span>
+                <br className="sm:hidden" />
+                <a
+                  href={githubLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="sm:ml-1 hover:underline transition-all"
+                  style={{ color: 'var(--syntax-string)' }}
+                >
+                  &quot;{githubLink}&quot;
+                </a>
               </p>
 
               {/* Dynamic Data Info */}

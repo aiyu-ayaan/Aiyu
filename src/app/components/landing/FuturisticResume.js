@@ -151,6 +151,21 @@ const FuturisticResume = ({ data }) => {
                             {codeSnippets && codeSnippets.map((snippet, index) => (
                                 <p key={index} style={{ color: 'var(--text-secondary)' }}>{`// ${snippet}`}</p>
                             ))}
+                            <p className="break-all">
+                                <span style={{ color: 'var(--syntax-keyword)' }}>const</span>{' '}
+                                <span style={{ color: 'var(--syntax-variable)' }}>githubLink</span>{' '}
+                                <span style={{ color: 'var(--text-bright)' }}>=</span>
+                                <br className="sm:hidden" />
+                                <a
+                                    href={githubLink}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="sm:ml-1 hover:underline transition-all"
+                                    style={{ color: 'var(--syntax-string)' }}
+                                >
+                                    &quot;{githubLink}&quot;
+                                </a>
+                            </p>
                             {/* Dynamic Data Info */}
                             <div className="mt-4 pt-4 border-t border-dashed" style={{ borderColor: 'var(--border-secondary)' }}>
                                 <p className="flex justify-between text-xs font-mono mb-1" style={{ color: 'var(--text-tertiary)' }}>
