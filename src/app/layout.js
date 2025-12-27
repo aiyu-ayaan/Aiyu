@@ -85,7 +85,7 @@ export default async function RootLayout({ children }) {
   const gaId = config?.googleAnalyticsId || process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning style={{ backgroundColor: '#0d1117' }}>
       <head>
         <script
           dangerouslySetInnerHTML={{
@@ -94,7 +94,7 @@ export default async function RootLayout({ children }) {
                 try {
                   var theme = localStorage.getItem('themeVariant') || localStorage.getItem('theme');
                   if (!theme) {
-                    theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                    theme = 'dark';
                   }
                   document.documentElement.setAttribute('data-theme', theme);
                 } catch (e) {

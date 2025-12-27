@@ -31,7 +31,7 @@ export default function AdminDashboard() {
         ],
         secondary: [
             { label: 'Header', description: 'Nav & Logo', icon: <FaHeading />, color: 'from-orange-500/10 to-orange-500/5', textColor: 'text-orange-400', path: '/admin/header' },
-            { label: 'Footer', description: 'Links & Profiles', icon: <FaShareNodes />, color: 'from-pink-500/10 to-pink-500/5', textColor: 'text-pink-400', path: '/admin/socials' },
+            { label: 'Footer', description: 'Links & Profiles', icon: <FaShareNodes />, color: 'from-pink-500/10 to-pink-500/5', textColor: 'text-pink-400', path: '/admin/footer' },
             { label: 'Contact', description: 'Messages & Info', icon: <FaEnvelope />, color: 'from-red-500/10 to-red-500/5', textColor: 'text-red-400', path: '/admin/contact' },
         ],
         system: [
