@@ -4,8 +4,6 @@ import ProjectModel from '@/models/Project';
 import GalleryModel from '@/models/Gallery';
 
 export default async function sitemap() {
-  await dbConnect();
-
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
 
   // Static routes
@@ -55,6 +53,9 @@ export default async function sitemap() {
   ];
 
   try {
+    // Attempt database connection
+    await dbConnect();
+
     // Dynamic blog routes
     const blogs = await BlogModel.find({ published: { $ne: false } }, { slug: 1, updatedAt: 1 }).lean();
     const blogRoutes = blogs.map((blog) => ({
@@ -85,6 +86,7 @@ export default async function sitemap() {
     return [...staticRoutes, ...blogRoutes, ...projectRoutes, ...galleryRoutes];
   } catch (error) {
     console.error('Error generating sitemap:', error);
+    console.warn('Database unavailable during sitemap generation. Returning static routes only.');
     return staticRoutes;
   }
 }
