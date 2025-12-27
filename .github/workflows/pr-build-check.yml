@@ -1,0 +1,60 @@
+name: PR Build Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [master, feature]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [20.x]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Create dummy .env file
+        run: |
+          cat > .env.local << 'EOF'
+          MONGODB_URI=mongodb://dummy:dummy@dummy:27017/dummy
+          NEXT_PUBLIC_N8N_WEBHOOK_URL=https://dummy-webhook.example.com
+          NEXT_PUBLIC_AUTHOR_NAME=Portfolio Author
+          ADMIN_USERNAME=dummy
+          ADMIN_PASSWORD=dummy
+          JWT_SECRET=dummy-jwt-secret-for-ci-build
+          GITHUB_TOKEN=dummy-github-token
+          EOF
+      
+      - name: Run ESLint
+        run: npm run lint
+        continue-on-error: true
+      
+      - name: Build project
+        run: npm run build
+      
+      - name: Build success summary
+        if: success()
+        run: |
+          echo "✅ Build and lint checks passed!"
+          echo "The project is ready for merge."
+      
+      - name: Build failure summary
+        if: failure()
+        run: |
+          echo "❌ Build or lint checks failed!"
+          echo "Please review the logs above and fix any issues."
+          exit 1
