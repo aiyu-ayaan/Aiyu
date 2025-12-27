@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 
-export default function AdminSocials() {
+export default function AdminFooter() {
     const [socials, setSocials] = useState([]);
     const [loading, setLoading] = useState(true);
     const [config, setConfig] = useState({
@@ -117,7 +117,7 @@ export default function AdminSocials() {
                         <h1 className="text-3xl md:text-4xl font-bold text-white mb-2 tracking-tight">Communication Grid</h1>
                         <p className="text-slate-400">Configure footer metrics and external communication uplinks.</p>
                     </div>
-                    <Link href="/admin/socials/new" className="group relative px-6 py-3 rounded-lg overflow-hidden bg-cyan-500/10 border border-cyan-500/20 hover:border-cyan-500/50 transition-all hover:shadow-[0_0_20px_rgba(34,211,238,0.2)]">
+                    <Link href="/admin/footer/new" className="group relative px-6 py-3 rounded-lg overflow-hidden bg-cyan-500/10 border border-cyan-500/20 hover:border-cyan-500/50 transition-all hover:shadow-[0_0_20px_rgba(34,211,238,0.2)]">
                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-500/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700" />
                         <span className="relative text-cyan-400 font-bold tracking-wide flex items-center gap-2">
                             <span className="text-lg">+</span> ESTABLISH_UPLINK
@@ -241,7 +241,7 @@ export default function AdminSocials() {
                                         >
                                             {social.isHidden ? 'Enable' : 'Disable'}
                                         </button>
-                                        <Link href={`/admin/socials/${social._id}`} className="text-cyan-400 hover:text-cyan-300 transition-colors text-xs uppercase font-bold tracking-wider">
+                                        <Link href={`/admin/footer/${social._id}`} className="text-cyan-400 hover:text-cyan-300 transition-colors text-xs uppercase font-bold tracking-wider">
                                             Edit
                                         </Link>
                                         <button

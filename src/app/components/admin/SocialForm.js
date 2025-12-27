@@ -42,7 +42,7 @@ const SocialForm = ({ initialData, isEdit = false }) => {
             });
 
             if (response.ok) {
-                router.push('/admin/socials');
+                router.push('/admin/footer');
                 router.refresh();
             } else {
                 const data = await response.json();
