@@ -1,140 +1,115 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Portfolio Website
 
-## Getting Started
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-First, run the development server:
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Project Documentation
-
-For detailed guides, please refer to the `docs/` folder:
-
-- 📖 **[API Documentation](docs/API_DOCUMENTATION.md)**: Endpoints, Authentication, and usage for API integrations.
-- 🐳 **[Docker Guide](docs/DOCKER_GUIDE.md)**: Comprehensive guide for building, running, and troubleshooting Docker containers.
-- ⚙️ **[Setup Guide](docs/SETUP_GUIDE.md)**: Instructions for local development environment setup.
-- 🚀 **[Deployment Guide](docs/DEPLOYMENT.md)**: Strategies for deploying to VPS, Vercel, or custom servers.
-- 🔒 **[Security Remediation](SECURITY_REMEDIATION.md)**: Comprehensive security hardening guide (crypto miner incident response).
-- ✅ **[Deployment Security Checklist](DEPLOYMENT_SECURITY_CHECKLIST.md)**: Pre-deployment security verification checklist.
+A modern, responsive portfolio website built with Next.js, Tailwind CSS, and MongoDB. This project showcases my skills, detailed project case studies, and provides a way for visitors to contact me. It also features a comprehensive Admin Panel for managing content.
 
 ## Features
 
-### 📸 **Image Gallery**
-- **Public View:** A responsive masonry layout (`/gallery`) showcasing images with lazy loading, hover effects, and a lightbox modal for detailed viewing.
-- **Admin Management:** Upload, delete, and manage gallery images with descriptions via the Admin Dashboard.
-- **Dynamic Configuration:** Customize the Gallery page title and subtitle directly from the Admin Settings.
+### Public Interface
+- **Home Page**: Interactive landing page with a dynamic space-themed background.
+- **About Me**: Detailed introduction and professional background.
+- **Projects**: Showcase of my work with detailed project pages.
+- **Contact**: Functional contact form for inquiries.
+- **Gallery**: A visual collection of achievements and certifications.
+- **Blogs**: A section to share thoughts and technical articles.
 
-### 🛠️ **Admin Dashboard**
-- **Project & Blog Management:** CRUD operations for portfolio projects and blog posts.
-- **Dynamic Page Headers:** Customize titles/subtitles for Projects, Blogs, and Gallery pages without code changes.
-- **Database Tools:** Export/Import database backups (including blogs, projects, GitHub stats, and messages; excluding gallery images) in JSON format.
+### Admin Panel
+- **Dashboard**: Overview of site activity and statistics.
+- **Project Management**: Add, edit, and delete projects.
+- **Message Center**: specific section to view and reply to contact form messages (Chat feature).
+- **GitHub Integration**: Integration with GitHub for fetching repository data.
+- **Database Export**: Functionality to backup/export database records.
 
-### 🐳 **Docker Integration**
-- **Persistent Storage:** Uploaded images and MongoDB data persist across container restarts via Docker volumes.
-- **Security:** Hardened container security with read-only root filesystems and non-root user execution.
+## Screenshots
 
-## Learn More
+### Home Page
+![Home Page](public/screenshots/home.png)
 
-To learn more about Next.js, take a look at the following resources:
+### About Me
+![About Me](public/screenshots/about.png)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Projects
+![Projects](public/screenshots/projects.png)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Contact Us
+![Contact Us](public/screenshots/contact.png)
 
-## Docker Setup
+### Admin Panel (Homepage)
+![Admin Panel](public/screenshots/admin.png)
 
-This project includes Docker support for easy deployment and development.
+## Tech Stack
+
+- **Frontend**: Next.js 15 (React 19), Tailwind CSS, Framer Motion
+- **Backend**: Next.js API Routes, Mongoose (MongoDB)
+- **Utilities**: Lucide React (Icons), date-fns, lodash
+- **Infrastructure**: Docker, Docker Compose
+
+## Quick Start (Docker)
+
+The recommended way to run this application is using Docker.
 
 ### Prerequisites
 
-- Docker (version 20.10 or higher)
-- Docker Compose (version 2.0 or higher)
+- Docker Engine 20.10+
+- Docker Compose v2.0+
+- 2GB+ available RAM
 
-### Quick Start with Docker
+### Installation & Running
 
-1. **Copy the environment file:**
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd portfolio
+   ```
+
+2. **Configure Environment**
+   Copy the example environment file and update the credentials.
    ```bash
    cp .env.example .env
    ```
+   
+   > **IMPORTANT**: You must update `MONGO_ROOT_PASSWORD`, `ADMIN_PASSWORD` and `JWT_SECRET` in your `.env` file with strong, unique passwords before starting.
 
-2. **Update the .env file with your credentials:**
-   - **Critical**: The password in `MONGODB_URI` MUST match `MONGO_ROOT_PASSWORD`:
-     ```
-     MONGODB_URI=mongodb://admin:YOUR_PASSWORD@mongodb:27017/aiyu?authSource=admin
-     MONGO_ROOT_PASSWORD=YOUR_PASSWORD
-     ```
-     Use the SAME password in both places!
-   - Configure `ADMIN_USERNAME` and `ADMIN_PASSWORD` with secure values
-   - Generate a secure `JWT_SECRET` (e.g., using `openssl rand -base64 32`)
-   - Set other required environment variables
-   - **Security Note**: Use strong, unique passwords - never use placeholder values in production
-
-3. **Start the application:**
+3. **Start the Application**
    ```bash
    docker compose up -d --build
    ```
 
-4. **Access the application:**
-   - Application: [http://localhost:3000](http://localhost:3000)
-   - Admin Panel: [http://localhost:3000/admin/login](http://localhost:3000/admin/login)
-   - MongoDB: Accessible internally by app only (not exposed to host by default for security)
-     - To access externally, uncomment the ports section in docker-compose.yml
+   The application will be available at:
+   - **Main Site**: [http://localhost:3000](http://localhost:3000)
+   - **Admin Panel**: [http://localhost:3000/admin](http://localhost:3000/admin)
 
-### Docker Commands
+## Manual Installation (Development)
 
-- **Start services:** `npm run docker:up` or `docker compose up -d`
-- **Stop services:** `npm run docker:down` or `docker compose down`
-- **View logs:** `npm run docker:logs` or `docker compose logs -f`
-- **Rebuild application:** `npm run docker:build` or `docker compose build --no-cache`
-- **Stop and remove volumes (WARNING: deletes database):** `docker compose down -v`
+If you wish to run the project without Docker for development purposes:
 
-### Security Commands
+1. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-- **Security health check:** `npm run security-check`
-- **Verify Docker security:** `npm run docker:verify` (must be run after containers are started)
-- **Emergency cleanup (if compromised):** `npm run emergency:cleanup`
+2. **Setup MongoDB**
+   You need a running MongoDB instance. Update `.env` with your `MONGODB_URI`.
 
-> **⚠️ IMPORTANT:** After crypto miner incident, all Docker containers now run with:
-> - Read-only root filesystem
-> - `/tmp` mounted with `noexec` (prevents malware execution)
-> - All Linux capabilities dropped
-> - CPU/memory resource limits
-> - Health checks and monitoring
->
-> See [SECURITY_REMEDIATION.md](SECURITY_REMEDIATION.md) for complete details.
+3. **Run the development server**
+   ```bash
+   npm run dev
+   ```
 
-### Development with Docker
+## Security & Deployment
 
-For development, you can mount the source code as a volume to enable hot-reloading:
+This project requires specific security configurations for production deployment.
 
-```bash
-docker-compose -f docker-compose.yml up
-```
-
-## Database & Migrations
-
-This project uses a MongoDB database. For instructions on how to seed the database with initial data (or reset it), please refer to [Migration.md](Migration.md).
-
-> **Quick Command:** `node scripts/seed.mjs` (Warning: Destructive!)
-
-## Deploy on Vercel
+- **Security Checklist**: Please refer to [DEPLOYMENT_SECURITY_CHECKLIST.md](DEPLOYMENT_SECURITY_CHECKLIST.md) before deploying.
 
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Key Security Measures
+- Run crypto-safe credential generation before first deployment.
+- Ensure the application runs as a non-root user (configured in Dockerfile).
+- Verify all file upload permissions and authentications.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## License
+
+This project is licensed under the MIT License.
