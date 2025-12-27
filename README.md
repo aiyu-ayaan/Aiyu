@@ -710,7 +710,7 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 ```
 MIT License
 
-Copyright (c) 2025 Aiyu Ayaan
+Copyright (c) 2025 Ayaan Ansari
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -719,7 +719,17 @@ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 copies of the Software, and to permit persons to whom the Software is
 furnished to do so, subject to the following conditions:
 
-[Full MIT License text...]
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
 ```
 
 ### What This Means
@@ -735,8 +745,7 @@ furnished to do so, subject to the following conditions:
 
 **Built with ❤️ by [Aiyu Ayaan](https://github.com/aiyu-ayaan)**
 
-[![GitHub](https://img.shields.io/badge/GitHub-aiyu--ayaan-black?logo=github)](https://github.com/aiyu-ayaan)
-[![Portfolio](https://img.shields.io/badge/Portfolio-Visit-blue)](https://github.com/aiyu-ayaan/Aiyu)
+[![Portfolio](https://img.shields.io/badge/Portfolio-Visit-blue)](https://me.aiyu.co.in)
 
 **[⬆ Back to Top](#portfolio-website)**
 
