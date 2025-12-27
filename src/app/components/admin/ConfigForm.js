@@ -204,7 +204,7 @@ const ConfigForm = () => {
                             className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-cyan-400 font-mono focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-700"
                         />
                         <p className="text-xs text-slate-500 mt-2 font-mono">
-                            // Displayed in the top-left of the navigation header.
+                            {'// Displayed in the top-left of the navigation header.'}
                         </p>
                     </div>
                 </div>
@@ -230,7 +230,7 @@ const ConfigForm = () => {
                             className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/50 outline-none transition-all placeholder:text-slate-700 font-mono"
                         />
                         <p className="text-xs text-slate-500 mt-2 font-mono">
-                            // Shown in the footer. Use this to track updates.
+                            {'// Shown in the footer. Use this to track updates.'}
                         </p>
                     </div>
                 </div>
@@ -257,7 +257,7 @@ const ConfigForm = () => {
                             className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-green-500/50 focus:ring-1 focus:ring-green-500/50 outline-none transition-all placeholder:text-slate-600"
                         />
                         <p className="text-xs text-slate-500 mt-2 font-mono">
-                            // The title shown in the browser tab.
+                            {'// The title shown in the browser tab.'}
                         </p>
                     </div>
                     <div>
@@ -405,7 +405,7 @@ const ConfigForm = () => {
                             className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-yellow-500/50 focus:ring-1 focus:ring-yellow-500/50 outline-none transition-all placeholder:text-slate-600"
                         />
                         <p className="text-xs text-slate-500 mt-2 font-mono">
-                            // Used for the AI Assistant chat widget.
+                            {'// Used for the AI Assistant chat widget.'}
                         </p>
                     </div>
                     <div>
@@ -419,7 +419,7 @@ const ConfigForm = () => {
                             className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-yellow-500/50 focus:ring-1 focus:ring-yellow-500/50 outline-none transition-all placeholder:text-slate-600"
                         />
                         <p className="text-xs text-slate-500 mt-2 font-mono">
-                            // Starts with G-
+                            {'// Starts with G-'}
                         </p>
                     </div>
                 </div>

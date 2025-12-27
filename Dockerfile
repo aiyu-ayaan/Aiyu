@@ -22,11 +22,13 @@ COPY . .
 # We use a dummy value here to prevent credentials from being baked into image layers
 # The real MONGODB_URI will be provided at runtime via docker-compose environment
 ARG NEXT_PUBLIC_N8N_WEBHOOK_URL
+ARG NEXT_PUBLIC_AUTHOR_NAME
 
 # Set environment variables for build process
 # Use dummy MongoDB URI during build (no actual connection is made)
 ENV MONGODB_URI=mongodb://dummy:dummy@dummy:27017/dummy
 ENV NEXT_PUBLIC_N8N_WEBHOOK_URL=${NEXT_PUBLIC_N8N_WEBHOOK_URL}
+ENV NEXT_PUBLIC_AUTHOR_NAME=${NEXT_PUBLIC_AUTHOR_NAME}
 
 # Set dummy values for build-time checks (not used, only runtime matters)
 # These prevent build errors but won't be in the final image or accessible at runtime

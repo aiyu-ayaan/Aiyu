@@ -107,7 +107,7 @@ const HomeForm = () => {
                             className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-600 font-bold tracking-wide"
                             required
                         />
-                        <p className="text-xs text-slate-500 mt-2 font-mono">// Primary user identifier</p>
+                        <p className="text-xs text-slate-500 mt-2 font-mono">{'// Primary user identifier'}</p>
                     </div>
 
                     <div>
@@ -133,7 +133,7 @@ const HomeForm = () => {
                             placeholder="e.g. Full Stack Developer, UI/UX Designer"
                             required
                         />
-                        <p className="text-xs text-slate-500 mt-2 font-mono">// Comma-separated list of active functions</p>
+                        <p className="text-xs text-slate-500 mt-2 font-mono">{'// Comma-separated list of active functions'}</p>
                     </div>
                 </div>
             </div>
@@ -157,7 +157,7 @@ const HomeForm = () => {
                         className="w-full bg-slate-950/80 border border-white/10 rounded-lg p-4 text-green-400 focus:border-green-500/50 focus:ring-1 focus:ring-green-500/50 outline-none transition-all placeholder:text-slate-600 font-mono text-sm"
                         placeholder="const future = await build();"
                     />
-                    <p className="text-xs text-slate-500 mt-2 font-mono">// Displayed in hero terminal background. One line per entry.</p>
+                    <p className="text-xs text-slate-500 mt-2 font-mono">{'// Displayed in hero terminal background. One line per entry.'}</p>
                 </div>
             </div>
 

@@ -34,6 +34,7 @@ services:
         # All sensitive credentials are provided at runtime via environment section below
         - NEXT_PUBLIC_N8N_WEBHOOK_URL=${NEXT_PUBLIC_N8N_WEBHOOK_URL}
         - NEXT_PUBLIC_BASE_URL=${NEXT_PUBLIC_BASE_URL}
+        - NEXT_PUBLIC_AUTHOR_NAME=${NEXT_PUBLIC_AUTHOR_NAME}
     container_name: aiyu-app
     restart: unless-stopped
     ports:
@@ -45,6 +46,7 @@ services:
       NEXT_PUBLIC_N8N_WEBHOOK_URL: ${NEXT_PUBLIC_N8N_WEBHOOK_URL}
       # Base URL for SEO/OG tags
       NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL}
+      NEXT_PUBLIC_AUTHOR_NAME: ${NEXT_PUBLIC_AUTHOR_NAME}
       # Admin credentials
       ADMIN_USERNAME: ${ADMIN_USERNAME}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
