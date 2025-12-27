@@ -3,6 +3,7 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { FaGithub } from 'react-icons/fa';
 // import { socials } from '../data/siteData';
 import { getIconByName } from '../../lib/icons';
 import { useTheme } from '../context/ThemeContext';
@@ -95,7 +96,19 @@ export default function Footer({ socialData, name, config }) {
                     {config?.footerVersion && (
                         <>
                             <p className="hidden md:block opacity-20">|</p>
-                            <p className="opacity-50 hover:opacity-100 transition-opacity cursor-default">{config?.footerVersion}</p>
+                            {config.footerVersionLink ? (
+                                <Link
+                                    href={config.footerVersionLink}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="opacity-50 hover:opacity-100 transition-opacity cursor-pointer hover:text-[var(--accent-orange)] flex items-center gap-2"
+                                >
+                                    <FaGithub className="w-4 h-4" />
+                                    {config.footerVersion}
+                                </Link>
+                            ) : (
+                                <p className="opacity-50 hover:opacity-100 transition-opacity cursor-default">{config.footerVersion}</p>
+                            )}
                         </>
                     )}
                 </div>

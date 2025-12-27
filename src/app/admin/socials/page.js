@@ -9,7 +9,9 @@ export default function AdminSocials() {
         footerText: '',
         workStatus: '',
         showWorkStatus: true,
-        footerVersion: ''
+        showWorkStatus: true,
+        footerVersion: '',
+        footerVersionLink: ''
     });
 
     useEffect(() => {
@@ -26,7 +28,9 @@ export default function AdminSocials() {
                     footerText: data.footerText || '',
                     workStatus: data.workStatus || '',
                     showWorkStatus: data.showWorkStatus ?? true,
-                    footerVersion: data.footerVersion || ''
+                    showWorkStatus: data.showWorkStatus ?? true,
+                    footerVersion: data.footerVersion || '',
+                    footerVersionLink: data.footerVersionLink || ''
                 });
             }
         } catch (error) {
@@ -161,6 +165,16 @@ export default function AdminSocials() {
                                 onChange={(e) => setConfig({ ...config, footerVersion: e.target.value })}
                                 className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-600 font-mono"
                                 placeholder="v1.0.0"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">System Version Link</label>
+                            <input
+                                type="url"
+                                value={config.footerVersionLink || ''}
+                                onChange={(e) => setConfig({ ...config, footerVersionLink: e.target.value })}
+                                className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-600 font-mono"
+                                placeholder="https://github.com/..."
                             />
                         </div>
                     </div>

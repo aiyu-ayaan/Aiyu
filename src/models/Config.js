@@ -31,6 +31,7 @@ const ConfigSchema = new mongoose.Schema({
     showWorkStatus: { type: Boolean, default: true },
     workStatus: { type: String, default: 'Available for work' },
     footerVersion: { type: String, default: 'v1.0.0' },
+    footerVersionLink: { type: String, default: '' },
 
     // Theme Management
     activeTheme: { type: String, default: 'vs-code-dark' },

@@ -27,6 +27,7 @@ const ConfigForm = () => {
         galleryTitle: '',
         gallerySubtitle: '',
         footerVersion: '',
+        footerVersionLink: '',
 
     });
     const [loading, setLoading] = useState(true);
@@ -65,7 +66,8 @@ const ConfigForm = () => {
                         galleryTitle: data.galleryTitle || 'Gallery',
                         galleryTitle: data.galleryTitle || 'Gallery',
                         gallerySubtitle: data.gallerySubtitle || 'A visual journey through my lens.',
-                        footerVersion: data.footerVersion || 'v1.0.0'
+                        footerVersion: data.footerVersion || 'v1.0.0',
+                        footerVersionLink: data.footerVersionLink || ''
 
                     });
                 }
@@ -231,6 +233,20 @@ const ConfigForm = () => {
                         />
                         <p className="text-xs text-slate-500 mt-2 font-mono">
                             {'// Shown in the footer. Use this to track updates.'}
+                        </p>
+                    </div>
+                    <div>
+                        <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">System Version Link</label>
+                        <input
+                            type="url"
+                            name="footerVersionLink"
+                            value={formData.footerVersionLink}
+                            onChange={handleChange}
+                            placeholder="https://github.com/..."
+                            className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/50 outline-none transition-all placeholder:text-slate-700 font-mono"
+                        />
+                        <p className="text-xs text-slate-500 mt-2 font-mono">
+                            {'// Optional URL to make the version tag clickable.'}
                         </p>
                     </div>
                 </div>
