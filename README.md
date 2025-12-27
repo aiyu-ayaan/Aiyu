@@ -22,6 +22,8 @@ A modern, responsive portfolio website built with Next.js, Tailwind CSS, and Mon
 - **GitHub Integration**: Integration with GitHub for fetching repository data.
 - **Database Export**: Functionality to backup/export database records.
 
+> **Extensive Documentation**: For a detailed guide on using these features, please refer to the [Admin Panel User Manual](docs/admin_manual.md).
+
 ## Screenshots
 
 ### Home Page
@@ -101,15 +103,37 @@ If you wish to run the project without Docker for development purposes:
 ## Security & Deployment
 
 This project requires specific security configurations for production deployment.
-
-- **Security Checklist**: Please refer to [DEPLOYMENT_SECURITY_CHECKLIST.md](DEPLOYMENT_SECURITY_CHECKLIST.md) before deploying.
-
-
 ### Key Security Measures
 - Run crypto-safe credential generation before first deployment.
 - Ensure the application runs as a non-root user (configured in Dockerfile).
 - Verify all file upload permissions and authentications.
 
-## License
+## Documentation
 
+- **[Admin Panel User Manual](docs/admin_manual.md)**: Detailed guide with screenshots for managing the site.
+- **[API Documentation](docs/API_DOCUMENTATION.md)**: Technical details for automating content creation.
+  - **Blog Automation**: The blog system supports automated posting via API (e.g., from Notion or external CMS). See the API docs for authentication and endpoints.
+
+## Admin Panel Features
+The admin panel (`/admin`) is a comprehensive CMS located at `/src/app/admin`.
+
+### Main Content Management
+- **Home**: Edit hero section text and "Open to Work" status.
+- **About**: Update biography and manage the skills grid.
+- **Projects**: Full CRUD for portfolio items with Markdown support, image uploads, and tech stack tagging.
+- **Blogs**: Create and manage technical articles with status (Draft/Published) and automated creation support.
+- **Gallery**: Upload and manage certifications/awards with drag-and-drop storage.
+
+### Components & Layout
+- **Header**: Configure navigation links and logo text.
+- **Footer**: Manage global footer links, version tags, and copyright text.
+- **Contact**: View and manage incoming form messages with read/unread status.
+
+### System Configuration
+- **Themes**: Live theme editor with presets (Dracula, Nord, Cyberpunk, etc.) and custom color generation.
+- **GitHub Integration**: Fetch and display repository statistics (stars, forks) by username/token.
+- **Global Config**: Manage SEO metadata, Google Analytics ID, and feature flags.
+- **Database**: Export full system backups to JSON.
+
+## License
 This project is licensed under the MIT License.
