@@ -75,8 +75,22 @@ jobs:
       github.event_name == 'workflow_dispatch'
     outputs:
       version: ${{ steps.extract-version.outputs.version }}
+    outputs:
+      version: ${{ steps.extract-version.outputs.version }}
     
     steps:
+      - name: Extract version from commit message
+        id: extract-version
+        run: |
+          if [[ "${{ github.event.head_commit.message }}" =~ Release:\ (v[0-9]+\.[0-9]+\.[0-9]+) ]]; then
+            VERSION="${BASH_REMATCH[1]}"
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            echo "Found version: $VERSION"
+          else
+            echo "version=v0.0.0" >> $GITHUB_OUTPUT
+            echo "No version found, using default: v0.0.0"
+          fi
+      
       - name: Extract version from commit message
         id: extract-version
         run: |
