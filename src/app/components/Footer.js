@@ -92,6 +92,12 @@ export default function Footer({ socialData, name, config }) {
                     )}
                     {config?.showWorkStatus && <p className="hidden md:block opacity-20">|</p>}
                     <p>{config?.footerText || `© ${currentYear} ${name || 'Ayaaan'}. All rights reserved.`}</p>
+                    {config?.footerVersion && (
+                        <>
+                            <p className="hidden md:block opacity-20">|</p>
+                            <p className="opacity-50 hover:opacity-100 transition-opacity cursor-default">{config?.footerVersion}</p>
+                        </>
+                    )}
                 </div>
             </div>
         </footer>

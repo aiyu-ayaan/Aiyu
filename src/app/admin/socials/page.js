@@ -8,7 +8,8 @@ export default function AdminSocials() {
     const [config, setConfig] = useState({
         footerText: '',
         workStatus: '',
-        showWorkStatus: true
+        showWorkStatus: true,
+        footerVersion: ''
     });
 
     useEffect(() => {
@@ -24,7 +25,8 @@ export default function AdminSocials() {
                 setConfig({
                     footerText: data.footerText || '',
                     workStatus: data.workStatus || '',
-                    showWorkStatus: data.showWorkStatus ?? true
+                    showWorkStatus: data.showWorkStatus ?? true,
+                    footerVersion: data.footerVersion || ''
                 });
             }
         } catch (error) {
@@ -128,6 +130,7 @@ export default function AdminSocials() {
                                 className="w-full bg-gray-900 border border-gray-700 rounded p-3 text-white focus:border-cyan-500 outline-none"
                                 placeholder="© 2025 Ayaan. All rights reserved."
                             />
+
                         </div>
                         <div>
                             <label className="block text-gray-400 mb-2 text-sm">Work Status Text</label>
@@ -137,6 +140,16 @@ export default function AdminSocials() {
                                 onChange={(e) => setConfig({ ...config, workStatus: e.target.value })}
                                 className="w-full bg-gray-900 border border-gray-700 rounded p-3 text-white focus:border-cyan-500 outline-none"
                                 placeholder="Available for work"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-gray-400 mb-2 text-sm">Website Version</label>
+                            <input
+                                type="text"
+                                value={config.footerVersion || ''}
+                                onChange={(e) => setConfig({ ...config, footerVersion: e.target.value })}
+                                className="w-full bg-gray-900 border border-gray-700 rounded p-3 text-white focus:border-cyan-500 outline-none"
+                                placeholder="v1.0.0"
                             />
                         </div>
                     </div>
@@ -156,7 +169,7 @@ export default function AdminSocials() {
                         </button>
                     </div>
                 </form>
-            </div>
+            </div >
 
             <h2 className="text-xl font-bold text-white mb-4">Social Links</h2>
             <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
@@ -201,6 +214,6 @@ export default function AdminSocials() {
                     </tbody>
                 </table>
             </div>
-        </div>
+        </div >
     );
 }

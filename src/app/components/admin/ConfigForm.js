@@ -24,7 +24,9 @@ const ConfigForm = () => {
         blogsTitle: '',
         blogsSubtitle: '',
         galleryTitle: '',
+        galleryTitle: '',
         gallerySubtitle: '',
+        footerVersion: '',
 
     });
     const [loading, setLoading] = useState(true);
@@ -61,7 +63,9 @@ const ConfigForm = () => {
                         blogsTitle: data.blogsTitle || 'Latest Insights',
                         blogsSubtitle: data.blogsSubtitle || 'Thoughts, tutorials, and updates on web development and technology.',
                         galleryTitle: data.galleryTitle || 'Gallery',
-                        gallerySubtitle: data.gallerySubtitle || 'A visual journey through my lens.'
+                        galleryTitle: data.galleryTitle || 'Gallery',
+                        gallerySubtitle: data.gallerySubtitle || 'A visual journey through my lens.',
+                        footerVersion: data.footerVersion || 'v1.0.0'
 
                     });
                 }
@@ -194,6 +198,27 @@ const ConfigForm = () => {
                         />
                         <p className="text-xs text-gray-400 mt-1">
                             Displayed in the top-left of the header.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Footer Configuration */}
+            <div>
+                <h2 className="text-xl font-bold text-white mb-4 border-b border-gray-700 pb-2">Footer Settings</h2>
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium mb-1 text-gray-300">Website Version</label>
+                        <input
+                            type="text"
+                            name="footerVersion"
+                            value={formData.footerVersion}
+                            onChange={handleChange}
+                            placeholder="v1.0.0"
+                            className="w-full p-3 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white"
+                        />
+                        <p className="text-xs text-gray-400 mt-1">
+                            Shown in the footer. Use this to track updates.
                         </p>
                     </div>
                 </div>
@@ -442,7 +467,7 @@ const ConfigForm = () => {
                     {saving ? 'Save Configuration' : 'Update Configuration'}
                 </button>
             </div>
-        </form>
+        </form >
     );
 };
 

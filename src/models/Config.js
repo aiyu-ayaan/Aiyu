@@ -30,6 +30,7 @@ const ConfigSchema = new mongoose.Schema({
     footerText2: { type: String, default: 'Made with ❤️ by Ayaan' },
     showWorkStatus: { type: Boolean, default: true },
     workStatus: { type: String, default: 'Available for work' },
+    footerVersion: { type: String, default: 'v1.0.0' },
 
     // Theme Management
     activeTheme: { type: String, default: 'vs-code-dark' },
