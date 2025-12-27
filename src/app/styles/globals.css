@@ -142,21 +142,32 @@
   box-sizing: border-box;
 }
 
-html,
+html {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  overflow-x: hidden;
+  /* Apply background to html to cover overscroll */
+  background-color: #0d1117;
+  /* Fallback */
+  background-color: var(--bg-primary);
+  /* Fix white background on mobile scroll */
+  overscroll-behavior-y: none;
+  min-height: 100vh;
+  transition: background-color 0.3s ease;
+}
+
 body {
   margin: 0;
   padding: 0;
   width: 100%;
   overflow-x: hidden;
-  /* background-color: var(--bg-primary); Removed to show SpaceBackground */
-  /* Fix white background on mobile scroll */
-}
-
-body {
+  background-color: transparent;
+  /* Keep transparent for SpaceBackground */
   color: var(--text-primary);
   font-family: 'Fira Code', monospace;
   position: relative;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition: color 0.3s ease;
 }
 
 body::before {
