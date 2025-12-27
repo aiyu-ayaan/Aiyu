@@ -103,7 +103,7 @@ If you wish to run the project without Docker for development purposes:
 This project requires specific security configurations for production deployment.
 
 - **Security Checklist**: Please refer to [DEPLOYMENT_SECURITY_CHECKLIST.md](DEPLOYMENT_SECURITY_CHECKLIST.md) before deploying.
-- **Docker Guide**: For detailed Docker instructions, maintenance, and troubleshooting, see [DOCKER.md](DOCKER.md).
+
 
 ### Key Security Measures
 - Run crypto-safe credential generation before first deployment.
