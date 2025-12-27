@@ -71,7 +71,7 @@ jobs:
     runs-on: ubuntu-latest
     if: |
       (github.ref == 'refs/heads/master' && github.event_name == 'push' && 
-       contains(github.event.head_commit.message, 'Release:')) ||
+       (contains(github.event.head_commit.message, 'Release:') || contains(github.event.head_commit.message, 'Release v'))) ||
       github.event_name == 'workflow_dispatch'
     outputs:
       version: ${{ steps.extract-version.outputs.version }}
@@ -124,7 +124,7 @@ jobs:
     name: Create GitHub Release
     needs: deploy
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master' && github.event_name == 'push' && contains(github.event.head_commit.message, 'Release:')
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push' && (contains(github.event.head_commit.message, 'Release:') || contains(github.event.head_commit.message, 'Release v'))
     
     steps:
       - name: Checkout code
@@ -133,7 +133,11 @@ jobs:
       - name: Extract version from commit message
         id: extract-version
         run: |
-          if [[ "${{ github.event.head_commit.message }}" =~ Release:\ (v[0-9]+\.[0-9]+\.[0-9]+) ]]; then
+          if [[ "${{ github.event.head_commit.message }}" =~ Release\ (v[0-9]+\.[0-9]+\.[0-9]+) ]]; then
+            VERSION="${BASH_REMATCH[1]}"
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            echo "Found version: $VERSION"
+          elif [[ "${{ github.event.head_commit.message }}" =~ Release:\ (v[0-9]+\.[0-9]+\.[0-9]+) ]]; then
             VERSION="${BASH_REMATCH[1]}"
             echo "version=$VERSION" >> $GITHUB_OUTPUT
             echo "Found version: $VERSION"
