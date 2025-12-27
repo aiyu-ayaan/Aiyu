@@ -10,7 +10,7 @@ const SpaceBackground = () => {
 
     useEffect(() => {
         // Static stars
-        const generatedStars = [...Array(80)].map((_, i) => ({
+        const generatedStars = [...Array(25)].map((_, i) => ({
             id: i,
             x: Math.random() * 100,
             y: Math.random() * 100,
@@ -32,7 +32,7 @@ const SpaceBackground = () => {
 
         // Shooting stars loop
         const interval = setInterval(() => {
-            if (Math.random() > 0.7) { // 30% chance to spawn a shooting star
+            if (Math.random() > 0.85) { // 15% chance to spawn a shooting star
                 const newStar = {
                     id: Date.now(),
                     x: Math.random() * 100,
@@ -46,7 +46,7 @@ const SpaceBackground = () => {
                     setShootingStars(prev => prev.filter(s => s.id !== newStar.id));
                 }, 2000);
             }
-        }, 1500);
+        }, 2500);
 
         return () => {
             window.removeEventListener('mousemove', handleMouseMove);

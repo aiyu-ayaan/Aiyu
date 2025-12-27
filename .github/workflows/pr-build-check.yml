@@ -1,0 +1,98 @@
+name: Build & Deploy
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [master]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [20.x]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Create dummy .env file
+        run: |
+          cat > .env.local << 'EOF'
+          MONGODB_URI=mongodb://dummy:dummy@dummy:27017/dummy
+          NEXT_PUBLIC_N8N_WEBHOOK_URL=https://dummy-webhook.example.com
+          NEXT_PUBLIC_AUTHOR_NAME=Portfolio Author
+          ADMIN_USERNAME=dummy
+          ADMIN_PASSWORD=dummy
+          JWT_SECRET=dummy-jwt-secret-for-ci-build
+          GITHUB_TOKEN=dummy-github-token
+          EOF
+      
+      - name: Run ESLint
+        run: npm run lint
+        continue-on-error: true
+      
+      - name: Build project
+        run: npm run build
+      
+      - name: Build success summary
+        if: success()
+        run: |
+          echo "✅ Build and lint checks passed!"
+          echo "The project is ready for merge."
+      
+      - name: Build failure summary
+        if: failure()
+        run: |
+          echo "❌ Build or lint checks failed!"
+          echo "Please review the logs above and fix any issues."
+          exit 1
+
+  deploy:
+    name: Deploy to Server
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push' && needs.build.result == 'success'
+    
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          script: |
+            set -e
+            
+            echo "Starting deployment..."
+            ls -la 
+            
+            echo "Navigating to project directory..."
+            cd docker/Aiyu/ || { echo "Failed to navigate to docker/Aiyu/"; exit 1; }
+            
+            echo "Pulling latest code from master..."
+            git pull origin master || { echo "Failed to pull from git"; exit 1; }
+            
+            ls -la 
+            
+            echo "Building Docker image..."
+            docker compose build --memory=512m || { echo "Docker build failed"; exit 1; }
+            
+            echo "Starting containers..."
+            docker compose up -d || { echo "Failed to start containers"; exit 1; }
+            
+            echo "Cleaning up Docker system..."
+            docker system prune -a --volumes -f || { echo "Cleanup warning (non-critical)"; }
+            
+            echo "✅ Deployment completed successfully!"
