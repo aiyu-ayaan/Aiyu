@@ -164,11 +164,11 @@ export default function AdminThemesPage() {
 
             {/* Active Theme Status */}
             {activeTheme && (
-                <div className="bg-[#0a0a0a]/60 backdrop-blur-xl border border-cyan-500/30 rounded-2xl p-6 mb-12 relative overflow-hidden">
+                <div className="bg-slate-900/50 backdrop-blur-xl border border-cyan-500/30 rounded-2xl p-6 mb-12 relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-[100px] pointer-events-none" />
                     <div className="flex justify-between items-center relative z-10">
                         <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-xl bg-cyan-500/20 flex items-center justify-center border border-cyan-500/30 text-cyan-400">
+                            <div className="w-12 h-12 rounded-xl bg-cyan-500/10 flex items-center justify-center border border-cyan-500/30 text-cyan-400">
                                 <Layout className="w-6 h-6" />
                             </div>
                             <div>
@@ -184,7 +184,7 @@ export default function AdminThemesPage() {
                         </div>
 
                         {/* Variant Toggle for Active Theme */}
-                        <div className="flex bg-black/40 p-1 rounded-lg border border-white/10">
+                        <div className="flex bg-slate-950/50 p-1 rounded-lg border border-white/10">
                             <button
                                 onClick={() => setActiveVariant('light')}
                                 className={`px-4 py-2 rounded-md transition-all flex items-center gap-2 text-sm font-medium ${activeVariant === 'light' ? 'bg-white text-black shadow-lg' : 'text-slate-400 hover:text-white'}`}
@@ -241,7 +241,7 @@ export default function AdminThemesPage() {
                     <div className="h-px w-full bg-white/5" />
                 </h2>
                 {customThemes.length === 0 ? (
-                    <div className="bg-white/[0.02] border border-white/5 border-dashed rounded-2xl p-12 text-center group hover:border-white/10 transition-colors">
+                    <div className="bg-slate-900/30 border border-white/10 border-dashed rounded-2xl p-12 text-center group hover:border-white/20 transition-colors">
                         <div className="w-16 h-16 rounded-full bg-white/5 mx-auto flex items-center justify-center text-slate-600 mb-4 group-hover:text-cyan-400 group-hover:bg-cyan-500/10 transition-colors">
                             <Paintbrush className="w-8 h-8" />
                         </div>

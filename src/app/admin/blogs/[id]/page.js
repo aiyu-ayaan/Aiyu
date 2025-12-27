@@ -198,7 +198,7 @@ export default function EditBlogPage() {
                 </div>
 
                 {/* Mode Toggle */}
-                <div className="bg-black/40 p-1 rounded-lg border border-white/10 flex">
+                <div className="bg-slate-900/50 p-1 rounded-lg border border-white/10 flex">
                     <button
                         type="button"
                         onClick={() => setPreviewMode(false)}
@@ -218,7 +218,7 @@ export default function EditBlogPage() {
 
             <form onSubmit={handleSubmit} className="space-y-8">
                 {/* Metadata Section */}
-                <div className="bg-[#0a0a0a]/60 backdrop-blur-xl rounded-2xl border border-white/5 p-8 relative overflow-hidden group">
+                <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 relative overflow-hidden group">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
 
                     <h2 className="text-sm font-mono text-cyan-500/70 uppercase tracking-widest mb-8 flex items-center gap-4 relative z-10">
@@ -238,7 +238,7 @@ export default function EditBlogPage() {
                                     onChange={handleChange}
                                     required
                                     placeholder="ENTER_TITLE"
-                                    className="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-slate-200 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-700 font-bold"
+                                    className="w-full bg-slate-950/50 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-slate-200 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-600 font-bold"
                                 />
                             </div>
                         </div>
@@ -261,7 +261,7 @@ export default function EditBlogPage() {
                                             }
                                         }}
                                         dateFormat="yyyy-MM-dd"
-                                        className="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-slate-200 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-700 font-mono"
+                                        className="w-full bg-slate-950/50 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-slate-200 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-600 font-mono"
                                         placeholderText="YYYY-MM-DD"
                                     />
                                 </div>
@@ -279,14 +279,14 @@ export default function EditBlogPage() {
                                 value={formData.tags}
                                 onChange={handleChange}
                                 placeholder="REACT, NEXT.JS, SYSTEM_DESIGN"
-                                className="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-slate-200 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-700 font-mono"
+                                className="w-full bg-slate-950/50 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-slate-200 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-600 font-mono"
                             />
                         </div>
                     </div>
                 </div>
 
                 {/* Cover Image Section */}
-                <div className="bg-[#0a0a0a]/60 backdrop-blur-xl rounded-2xl border border-white/5 p-8 relative overflow-hidden group">
+                <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 relative overflow-hidden group">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
 
                     <div className="flex justify-between items-center mb-8 relative z-10">
@@ -294,7 +294,7 @@ export default function EditBlogPage() {
                             Visual Attachment
                             <div className="h-px w-20 bg-purple-500/10" />
                         </h2>
-                        <div className="flex bg-black/40 rounded-lg p-1 border border-white/10">
+                        <div className="flex bg-slate-950/50 rounded-lg p-1 border border-white/10">
                             <button
                                 type="button"
                                 onClick={() => setImageMode('url')}
@@ -323,7 +323,7 @@ export default function EditBlogPage() {
                                         value={formData.image}
                                         onChange={handleChange}
                                         placeholder="https://source.com/image_asset.jpg"
-                                        className="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-slate-200 focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/50 outline-none transition-all placeholder:text-slate-700 font-mono"
+                                        className="w-full bg-slate-950/50 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-slate-200 focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/50 outline-none transition-all placeholder:text-slate-600 font-mono"
                                     />
                                 </div>
                                 {formData.image && (
@@ -364,7 +364,7 @@ export default function EditBlogPage() {
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="w-full flex gap-4 p-4 bg-black/40 rounded-xl border border-white/10 items-center">
+                                    <div className="w-full flex gap-4 p-4 bg-slate-950/50 rounded-xl border border-white/10 items-center">
                                         <div className="w-20 h-20 bg-white/5 rounded-lg overflow-hidden flex items-center justify-center shrink-0 border border-white/5">
                                             {uploadPreview === 'HEIC_PLACEHOLDER' ? (
                                                 <span className="text-xs font-mono text-purple-400">HEIC</span>
@@ -414,13 +414,13 @@ export default function EditBlogPage() {
                 </div>
 
                 {/* Content Editor */}
-                <div className="bg-[#0a0a0a]/60 backdrop-blur-xl rounded-2xl border border-white/5 p-8 relative overflow-hidden group min-h-[600px] flex flex-col">
+                <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 relative overflow-hidden group min-h-[600px] flex flex-col">
                     <h2 className="text-sm font-mono text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-4">
                         Data Payload (Markdown)
                         <div className="h-px bg-white/5 flex-grow" />
                     </h2>
 
-                    <div className="flex-1 bg-black/40 rounded-xl border border-white/10 overflow-hidden relative">
+                    <div className="flex-1 bg-slate-950/50 rounded-xl border border-white/10 overflow-hidden relative">
                         {previewMode ? (
                             <div className="absolute inset-0 overflow-y-auto p-8 prose prose-invert max-w-none prose-headings:font-bold prose-headings:tracking-tight prose-a:text-cyan-400 prose-img:rounded-xl prose-pre:bg-black/50 prose-pre:border prose-pre:border-white/10">
                                 <ReactMarkdown
@@ -454,7 +454,7 @@ export default function EditBlogPage() {
                                 value={formData.content}
                                 onChange={handleChange}
                                 required
-                                className="w-full h-full p-6 bg-transparent resize-none focus:outline-none font-mono text-sm leading-relaxed text-slate-300"
+                                className="w-full h-full p-6 bg-transparent resize-none focus:outline-none font-mono text-sm leading-relaxed text-slate-300 placeholder:text-slate-600"
                                 placeholder="# Begin transmission..."
                             />
                         )}
@@ -462,7 +462,7 @@ export default function EditBlogPage() {
                 </div>
 
                 {/* Action Footer */}
-                <div className="sticky bottom-8 bg-[#0a0a0a]/80 backdrop-blur-xl border border-white/10 p-4 rounded-2xl shadow-2xl flex justify-between items-center">
+                <div className="sticky bottom-8 bg-slate-900/90 backdrop-blur-xl border border-white/10 p-4 rounded-2xl shadow-2xl flex justify-between items-center z-50">
                     <div className="text-xs font-mono text-slate-500 px-4">
                         SYSTEM_STATUS: {submitting ? 'WRITING...' : 'READY'}
                     </div>

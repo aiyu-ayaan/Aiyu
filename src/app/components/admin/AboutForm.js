@@ -338,7 +338,7 @@ const AboutForm = () => {
             {/* Icon Picker Modal */}
             {activeIconIndex !== null && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-[#0a0a0a] rounded-2xl p-6 w-full max-w-2xl border border-white/10 shadow-2xl space-y-6 max-h-[80vh] flex flex-col relative overflow-hidden">
+                    <div className="bg-slate-900/50 rounded-2xl p-6 w-full max-w-2xl border border-white/10 shadow-2xl space-y-6 max-h-[80vh] flex flex-col relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-[100px] pointer-events-none" />
 
                         <div className="flex justify-between items-center border-b border-white/10 pb-4 relative z-10">
@@ -359,7 +359,7 @@ const AboutForm = () => {
                             <input
                                 type="text"
                                 placeholder="Search icon matrix..."
-                                className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-600 font-mono text-sm"
+                                className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-white focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-600 font-mono text-sm"
                                 value={iconSearchTerm}
                                 onChange={(e) => setIconSearchTerm(e.target.value)}
                                 autoFocus
@@ -439,7 +439,7 @@ const AboutForm = () => {
             )}
 
             {/* Basic Info Section */}
-            <div className="bg-[#0a0a0a]/60 backdrop-blur-xl rounded-2xl border border-white/5 p-8 relative overflow-hidden group">
+            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
 
                 <h2 className="text-sm font-mono text-cyan-500/70 uppercase tracking-widest mb-8 flex items-center gap-4">
@@ -455,7 +455,7 @@ const AboutForm = () => {
                             name="name"
                             value={formData.name}
                             onChange={handleChange}
-                            className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-700 font-bold"
+                            className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-600 font-bold"
                             required
                         />
                     </div>
@@ -467,7 +467,7 @@ const AboutForm = () => {
                             name="roles"
                             value={formData.roles}
                             onChange={handleChange}
-                            className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-700 font-mono text-sm"
+                            className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-600 font-mono text-sm"
                             required
                         />
                     </div>
@@ -480,14 +480,14 @@ const AboutForm = () => {
                         value={formData.professionalSummary}
                         onChange={handleChange}
                         rows="6"
-                        className="w-full bg-black/40 border border-white/10 rounded-lg p-4 text-slate-300 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-700 leading-relaxed"
+                        className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-4 text-slate-300 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-600 leading-relaxed"
                         required
                     />
                 </div>
             </div>
 
             {/* Skills Section */}
-            <div className="bg-[#0a0a0a]/60 backdrop-blur-xl rounded-2xl border border-white/5 p-8 relative overflow-hidden group">
+            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-green-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
 
                 <div className="flex justify-between items-center mb-8 relative z-10">
@@ -528,7 +528,7 @@ const AboutForm = () => {
                                         <button
                                             type="button"
                                             onClick={() => setActiveIconIndex(index)}
-                                            className="w-12 h-12 rounded-lg bg-black/40 border border-white/10 flex items-center justify-center hover:border-green-500/50 transition-colors group/icon shrink-0"
+                                            className="w-12 h-12 rounded-lg bg-slate-950/50 border border-white/10 flex items-center justify-center hover:border-green-500/50 transition-colors group/icon shrink-0"
                                             title="Configure Icon"
                                         >
                                             {skill.icon ? (
@@ -555,7 +555,7 @@ const AboutForm = () => {
                                             <span>{getProficiencyLabel(skill.level)}</span>
                                             <span className="text-green-500/80">{skill.level}%</span>
                                         </div>
-                                        <div className="relative h-1.5 w-full bg-black/40 rounded-full overflow-hidden">
+                                        <div className="relative h-1.5 w-full bg-slate-950/50 rounded-full overflow-hidden">
                                             <input
                                                 type="range"
                                                 min="0"
@@ -578,7 +578,7 @@ const AboutForm = () => {
             </div>
 
             {/* Experience Section */}
-            <div className="bg-[#0a0a0a]/60 backdrop-blur-xl rounded-2xl border border-white/5 p-8 relative overflow-hidden group">
+            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
 
                 <div className="flex justify-between items-center mb-8 relative z-10">
@@ -621,7 +621,7 @@ const AboutForm = () => {
                                                 type="text"
                                                 value={exp.company}
                                                 onChange={(e) => handleExperienceChange(index, 'company', e.target.value)}
-                                                className="w-full bg-black/40 border border-white/10 rounded-lg p-2.5 text-slate-200 focus:border-orange-500/50 outline-none text-sm font-bold"
+                                                className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-2.5 text-slate-200 focus:border-orange-500/50 outline-none text-sm font-bold"
                                                 required
                                             />
                                         </div>
@@ -631,7 +631,7 @@ const AboutForm = () => {
                                                 type="text"
                                                 value={exp.role}
                                                 onChange={(e) => handleExperienceChange(index, 'role', e.target.value)}
-                                                className="w-full bg-black/40 border border-white/10 rounded-lg p-2.5 text-slate-200 focus:border-orange-500/50 outline-none text-sm"
+                                                className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-2.5 text-slate-200 focus:border-orange-500/50 outline-none text-sm"
                                                 required
                                             />
                                         </div>
@@ -641,7 +641,7 @@ const AboutForm = () => {
                                                 type="text"
                                                 value={exp.duration}
                                                 onChange={(e) => handleExperienceChange(index, 'duration', e.target.value)}
-                                                className="w-full bg-black/40 border border-white/10 rounded-lg p-2.5 text-slate-200 focus:border-orange-500/50 outline-none text-sm font-mono"
+                                                className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-2.5 text-slate-200 focus:border-orange-500/50 outline-none text-sm font-mono"
                                                 placeholder="e.g. 2020 - Present"
                                                 required
                                             />
@@ -653,7 +653,7 @@ const AboutForm = () => {
                                             value={exp.description}
                                             onChange={(e) => handleExperienceChange(index, 'description', e.target.value)}
                                             rows="3"
-                                            className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-slate-300 focus:border-orange-500/50 outline-none text-sm leading-relaxed"
+                                            className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-300 focus:border-orange-500/50 outline-none text-sm leading-relaxed"
                                             required
                                         />
                                     </div>
@@ -665,7 +665,7 @@ const AboutForm = () => {
             </div>
 
             {/* Education Section */}
-            <div className="bg-[#0a0a0a]/60 backdrop-blur-xl rounded-2xl border border-white/5 p-8 relative overflow-hidden group">
+            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
 
                 <div className="flex justify-between items-center mb-8 relative z-10">
@@ -709,7 +709,7 @@ const AboutForm = () => {
                                                 type="text"
                                                 value={edu.institution}
                                                 onChange={(e) => handleEducationChange(index, 'institution', e.target.value)}
-                                                className="w-full bg-black/40 border border-white/10 rounded-lg p-2.5 text-slate-200 focus:border-purple-500/50 outline-none text-sm font-bold"
+                                                className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-2.5 text-slate-200 focus:border-purple-500/50 outline-none text-sm font-bold"
                                                 required
                                             />
                                         </div>
@@ -719,7 +719,7 @@ const AboutForm = () => {
                                                 type="text"
                                                 value={edu.degree}
                                                 onChange={(e) => handleEducationChange(index, 'degree', e.target.value)}
-                                                className="w-full bg-black/40 border border-white/10 rounded-lg p-2.5 text-slate-200 focus:border-purple-500/50 outline-none text-sm"
+                                                className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-2.5 text-slate-200 focus:border-purple-500/50 outline-none text-sm"
                                                 required
                                             />
                                         </div>
@@ -729,7 +729,7 @@ const AboutForm = () => {
                                                 type="text"
                                                 value={edu.duration}
                                                 onChange={(e) => handleEducationChange(index, 'duration', e.target.value)}
-                                                className="w-full bg-black/40 border border-white/10 rounded-lg p-2.5 text-slate-200 focus:border-purple-500/50 outline-none text-sm font-mono text-center"
+                                                className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-2.5 text-slate-200 focus:border-purple-500/50 outline-none text-sm font-mono text-center"
                                                 required
                                             />
                                         </div>
@@ -739,7 +739,7 @@ const AboutForm = () => {
                                                 type="text"
                                                 value={edu.cgpa}
                                                 onChange={(e) => handleEducationChange(index, 'cgpa', e.target.value)}
-                                                className="w-full bg-black/40 border border-white/10 rounded-lg p-2.5 text-purple-400 focus:border-purple-500/50 outline-none text-sm font-mono text-center font-bold"
+                                                className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-2.5 text-purple-400 focus:border-purple-500/50 outline-none text-sm font-mono text-center font-bold"
                                             />
                                         </div>
                                     </div>
@@ -751,7 +751,7 @@ const AboutForm = () => {
             </div>
 
             {/* Certifications Section */}
-            <div className="bg-[#0a0a0a]/60 backdrop-blur-xl rounded-2xl border border-white/5 p-8 relative overflow-hidden group">
+            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
 
                 <div className="flex justify-between items-center mb-8 relative z-10">
@@ -795,7 +795,7 @@ const AboutForm = () => {
                                                 type="text"
                                                 value={cert.name}
                                                 onChange={(e) => handleCertificationChange(index, 'name', e.target.value)}
-                                                className="w-full bg-black/40 border border-white/10 rounded-lg p-2.5 text-slate-200 focus:border-yellow-500/50 outline-none text-sm font-bold"
+                                                className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-2.5 text-slate-200 focus:border-yellow-500/50 outline-none text-sm font-bold"
                                                 required
                                             />
                                         </div>
@@ -805,7 +805,7 @@ const AboutForm = () => {
                                                 type="text"
                                                 value={cert.issuer}
                                                 onChange={(e) => handleCertificationChange(index, 'issuer', e.target.value)}
-                                                className="w-full bg-black/40 border border-white/10 rounded-lg p-2.5 text-slate-200 focus:border-yellow-500/50 outline-none text-sm"
+                                                className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-2.5 text-slate-200 focus:border-yellow-500/50 outline-none text-sm"
                                                 required
                                             />
                                         </div>
@@ -815,7 +815,7 @@ const AboutForm = () => {
                                                 type="text"
                                                 value={cert.date}
                                                 onChange={(e) => handleCertificationChange(index, 'date', e.target.value)}
-                                                className="w-full bg-black/40 border border-white/10 rounded-lg p-2.5 text-slate-200 focus:border-yellow-500/50 outline-none text-sm font-mono"
+                                                className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-2.5 text-slate-200 focus:border-yellow-500/50 outline-none text-sm font-mono"
                                                 required
                                             />
                                         </div>
@@ -825,7 +825,7 @@ const AboutForm = () => {
                                                 type="url"
                                                 value={cert.url || ''}
                                                 onChange={(e) => handleCertificationChange(index, 'url', e.target.value)}
-                                                className="w-full bg-black/40 border border-white/10 rounded-lg p-2.5 text-slate-200 focus:border-yellow-500/50 outline-none text-sm font-mono"
+                                                className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-2.5 text-slate-200 focus:border-yellow-500/50 outline-none text-sm font-mono"
                                             />
                                         </div>
                                     </div>
@@ -840,7 +840,7 @@ const AboutForm = () => {
                                                 newCerts[index] = { ...newCerts[index], skills: val.split(',') };
                                                 setFormData(prev => ({ ...prev, certifications: newCerts }));
                                             }}
-                                            className="w-full bg-black/40 border border-white/10 rounded-lg p-2.5 text-slate-200 focus:border-yellow-500/50 outline-none text-sm"
+                                            className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-2.5 text-slate-200 focus:border-yellow-500/50 outline-none text-sm"
                                         />
                                     </div>
                                 </SortableItem>
@@ -851,7 +851,7 @@ const AboutForm = () => {
             </div>
 
             {/* Sticky Action Footer */}
-            <div className="sticky bottom-8 flex justify-end gap-4 pt-6 border-t border-white/5 bg-[#030014]/80 backdrop-blur-lg p-4 rounded-xl border border-white/5 shadow-2xl z-50">
+            <div className="sticky bottom-8 flex justify-end gap-4 pt-6 border-t border-white/5 bg-slate-900/90 backdrop-blur-lg p-4 rounded-xl border border-white/5 shadow-2xl z-50">
                 <button
                     type="button"
                     onClick={() => router.back()}
@@ -862,7 +862,7 @@ const AboutForm = () => {
                 <button
                     type="submit"
                     disabled={saving}
-                    className="px-8 py-2 rounded bg-cyan-500 hover:bg-cyan-400 text-black font-bold transition-all shadow-[0_0_20px_rgba(34,211,238,0.3)] hover:shadow-[0_0_30px_rgba(34,211,238,0.5)] disabled:opacity-50 disabled:cursor-not-allowed text-sm tracking-wide"
+                    className="px-8 py-2 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-bold transition-all shadow-[0_0_20px_rgba(8,145,178,0.3)] hover:shadow-[0_0_30px_rgba(8,145,178,0.5)] disabled:opacity-50 disabled:cursor-not-allowed text-sm tracking-wide"
                 >
                     {saving ? 'UPDATING_MATRIX...' : 'CONFIRM_UPDATE'}
                 </button>

@@ -62,10 +62,10 @@ export default function AdminProjects() {
                 </div>
             </div>
 
-            <div className="bg-[#0a0a0a]/60 backdrop-blur-xl rounded-2xl border border-white/5 overflow-hidden">
+            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
-                        <thead className="bg-white/5 border-b border-white/5 text-xs uppercase tracking-wider text-slate-400 font-medium">
+                        <thead className="bg-white/5 border-b border-white/10 text-xs uppercase tracking-wider text-slate-400 font-medium">
                             <tr>
                                 <th className="px-6 py-5">Project Name</th>
                                 <th className="px-6 py-5">Type / Category</th>
@@ -74,7 +74,7 @@ export default function AdminProjects() {
                                 <th className="px-6 py-5 text-right">Controls</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-white/5 text-sm">
+                        <tbody className="divide-y divide-white/10 text-sm">
                             {projects.map((project, index) => (
                                 <motion.tr
                                     key={project._id}

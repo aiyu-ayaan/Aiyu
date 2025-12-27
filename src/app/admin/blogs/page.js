@@ -84,10 +84,10 @@ export default function AdminBlogsPage() {
                 </div>
             </div>
 
-            <div className="bg-[#0a0a0a]/60 backdrop-blur-xl rounded-2xl border border-white/5 overflow-hidden">
+            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
-                        <thead className="bg-white/5 border-b border-white/5 text-xs uppercase tracking-wider text-slate-400 font-medium">
+                        <thead className="bg-white/5 border-b border-white/10 text-xs uppercase tracking-wider text-slate-400 font-medium">
                             <tr>
                                 <th className="px-6 py-5">Transmission Title</th>
                                 <th className="px-6 py-5">Timestamp</th>
@@ -104,8 +104,8 @@ export default function AdminBlogsPage() {
                                     <td className="px-6 py-5 text-slate-500 font-mono">{blog.date}</td>
                                     <td className="px-6 py-5">
                                         <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${blog.published !== false
-                                                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                                                : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                                            : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
                                             }`}>
                                             <span className={`w-1.5 h-1.5 rounded-full ${blog.published !== false ? 'bg-emerald-500' : 'bg-amber-500'}`} />
                                             {blog.published !== false ? 'Broadcast Active' : 'Draft / Offline'}

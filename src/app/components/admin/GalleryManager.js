@@ -225,12 +225,12 @@ export default function GalleryManager() {
     return (
         <div className="space-y-12">
             {/* Migration Section */}
-            <div className="bg-[#0a0a0a]/60 backdrop-blur-xl rounded-2xl border border-white/5 p-8 relative overflow-hidden group">
+            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
 
                 <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
                     <div>
-                        <h2 className="text-sm font-mono text-cyan-500/70 uppercase tracking-widest mb-2 flex items-center gap-2">
+                        <h2 className="text-sm font-mono text-cyan-400 uppercase tracking-widest mb-2 flex items-center gap-2">
                             <RefreshCw size={14} className={migrating ? "animate-spin" : ""} />
                             Optimization Protocol
                         </h2>
@@ -248,10 +248,10 @@ export default function GalleryManager() {
                 </div>
 
                 {migrationProgress && (
-                    <div className="mt-8 p-4 bg-black/40 rounded-lg border border-white/10 font-mono text-xs">
+                    <div className="mt-8 p-4 bg-slate-950/50 rounded-lg border border-white/10 font-mono text-xs">
                         <div className="flex justify-between items-end mb-2">
                             <span className="text-cyan-400 uppercase tracking-wider">{migrationProgress.message}</span>
-                            <span className="text-slate-500">{migrationProgress.percentage}%</span>
+                            <span className="text-slate-400">{migrationProgress.percentage}%</span>
                         </div>
                         {migrationProgress.percentage !== undefined && (
                             <div className="h-1 bg-white/10 rounded-full overflow-hidden">
@@ -262,7 +262,7 @@ export default function GalleryManager() {
                             </div>
                         )}
                         {migrationProgress.processed && migrationProgress.total && (
-                            <div className="mt-2 text-slate-600 text-[10px] text-right">
+                            <div className="mt-2 text-slate-500 text-[10px] text-right">
                                 PROCESSED: {migrationProgress.processed} / {migrationProgress.total}
                             </div>
                         )}
@@ -271,12 +271,12 @@ export default function GalleryManager() {
             </div>
 
             {/* Upload Section */}
-            <div className="bg-[#0a0a0a]/60 backdrop-blur-xl rounded-2xl border border-white/5 p-8 relative overflow-hidden group">
+            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-pink-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
 
-                <h2 className="text-sm font-mono text-pink-500/70 uppercase tracking-widest mb-8 flex items-center gap-4">
+                <h2 className="text-sm font-mono text-pink-400 uppercase tracking-widest mb-8 flex items-center gap-4">
                     Upload Interface
-                    <div className="h-px bg-pink-500/10 flex-grow" />
+                    <div className="h-px bg-pink-500/20 flex-grow" />
                 </h2>
 
                 <form onSubmit={handleSubmit} className="relative z-10">
@@ -285,7 +285,7 @@ export default function GalleryManager() {
                             className={`border-2 border-dashed rounded-xl p-12 text-center transition-all duration-300 group/drop
                                 ${dragActive
                                     ? 'border-pink-500 bg-pink-500/5'
-                                    : 'border-white/10 hover:border-pink-500/30 hover:bg-white/[0.02]'
+                                    : 'border-white/10 hover:border-pink-500/30 hover:bg-slate-800/50'
                                 }
                             `}
                             onDragEnter={handleDrag}
@@ -311,8 +311,8 @@ export default function GalleryManager() {
                             </label>
                         </div>
                     ) : (
-                        <div className="bg-black/40 rounded-xl border border-white/10 overflow-hidden flex flex-col md:flex-row">
-                            <div className="relative h-64 md:h-auto md:w-1/3 shrink-0 bg-[#050505] flex items-center justify-center p-4 border-b md:border-b-0 md:border-r border-white/10">
+                        <div className="bg-slate-950/50 rounded-xl border border-white/10 overflow-hidden flex flex-col md:flex-row">
+                            <div className="relative h-64 md:h-auto md:w-1/3 shrink-0 bg-black/20 flex items-center justify-center p-4 border-b md:border-b-0 md:border-r border-white/10">
                                 <button
                                     type="button"
                                     onClick={clearFile}
@@ -347,7 +347,7 @@ export default function GalleryManager() {
                                     <textarea
                                         value={description}
                                         onChange={(e) => setDescription(e.target.value)}
-                                        className="w-full bg-black/40 border border-white/10 rounded-lg p-4 text-slate-200 focus:border-pink-500/50 focus:ring-1 focus:ring-pink-500/50 outline-none transition-all placeholder:text-slate-700 min-h-[120px] resize-none font-mono text-sm"
+                                        className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-4 text-slate-200 focus:border-pink-500/50 focus:ring-1 focus:ring-pink-500/50 outline-none transition-all placeholder:text-slate-600 min-h-[120px] resize-none font-mono text-sm"
                                         placeholder="// Enter detailed description..."
                                         required
                                     />
@@ -356,7 +356,7 @@ export default function GalleryManager() {
                                     <button
                                         type="submit"
                                         disabled={uploading}
-                                        className="px-8 py-3 rounded bg-pink-500 hover:bg-pink-400 text-white font-bold transition-all shadow-[0_0_20px_rgba(236,72,153,0.3)] hover:shadow-[0_0_30px_rgba(236,72,153,0.5)] disabled:opacity-50 disabled:cursor-not-allowed text-xs uppercase tracking-widest flex items-center gap-2"
+                                        className="px-8 py-3 rounded bg-pink-600 hover:bg-pink-500 text-white font-bold transition-all shadow-[0_0_20px_rgba(236,72,153,0.3)] hover:shadow-[0_0_30px_rgba(236,72,153,0.5)] disabled:opacity-50 disabled:cursor-not-allowed text-xs uppercase tracking-widest flex items-center gap-2"
                                     >
                                         {uploading ? (
                                             <>
@@ -381,7 +381,7 @@ export default function GalleryManager() {
                 <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
                     <span className="w-2 h-8 bg-pink-500 rounded-full" />
                     Database Content
-                    <span className="text-sm font-mono text-slate-500 font-normal">({images.length} items)</span>
+                    <span className="text-sm font-mono text-slate-400 font-normal">({images.length} items)</span>
                 </h2>
 
                 {loading ? (
@@ -391,17 +391,17 @@ export default function GalleryManager() {
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                         {images.map(image => (
-                            <div key={image._id} className="group relative bg-[#0a0a0a]/60 backdrop-blur-xl rounded-xl border border-white/5 overflow-hidden hover:border-pink-500/30 transition-all hover:translate-y-[-4px] hover:shadow-xl">
-                                <div className="aspect-video relative bg-[#050505]">
+                            <div key={image._id} className="group relative bg-slate-900/50 backdrop-blur-xl rounded-xl border border-white/5 overflow-hidden hover:border-pink-500/30 transition-all hover:translate-y-[-4px] hover:shadow-xl">
+                                <div className="aspect-video relative bg-slate-950">
                                     <Image
                                         src={image.thumbnail || image.src}
                                         alt={image.description}
                                         fill
                                         className="object-cover transition-transform duration-700 group-hover:scale-105"
                                     />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-4">
+                                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-4">
                                         <div className="flex justify-between items-end">
-                                            <span className="text-[10px] font-mono text-slate-400 bg-black/50 px-2 py-1 rounded backdrop-blur-sm">
+                                            <span className="text-[10px] font-mono text-slate-300 bg-slate-900/50 px-2 py-1 rounded backdrop-blur-sm border border-white/10">
                                                 {new Date(image.createdAt).toLocaleDateString()}
                                             </span>
                                             <button
@@ -428,7 +428,7 @@ export default function GalleryManager() {
                         ))}
 
                         {images.length === 0 && (
-                            <div className="col-span-full py-20 flex flex-col items-center justify-center border-2 border-dashed border-white/10 rounded-2xl bg-white/[0.01]">
+                            <div className="col-span-full py-20 flex flex-col items-center justify-center border-2 border-dashed border-white/10 rounded-2xl bg-slate-900/30">
                                 <div className="p-4 rounded-full bg-white/5 mb-4">
                                     <ImageIcon size={32} className="text-slate-500" />
                                 </div>

@@ -103,7 +103,7 @@ export default function ThemeEditor({ theme, onSave, onCancel }) {
     };
 
     const ColorInput = ({ label, value, onChange, category, colorKey }) => (
-        <div className="flex items-center gap-3 p-3 bg-white/[0.02] border border-white/5 rounded-lg hover:border-white/10 transition-colors group">
+        <div className="flex items-center gap-3 p-3 bg-white/[0.02] border border-white/10 rounded-lg hover:border-white/20 transition-colors group">
             <div className="relative">
                 <input
                     type="color"
@@ -122,7 +122,7 @@ export default function ThemeEditor({ theme, onSave, onCancel }) {
                     type="text"
                     value={value}
                     onChange={(e) => onChange(category, colorKey, e.target.value)}
-                    className="w-full bg-black/40 text-slate-200 px-2 py-1 rounded text-xs font-mono border border-white/5 focus:border-cyan-500/50 outline-none"
+                    className="w-full bg-slate-950/50 text-slate-200 px-2 py-1 rounded text-xs font-mono border border-white/10 focus:border-cyan-500/50 outline-none"
                 />
             </div>
         </div>
@@ -151,15 +151,15 @@ export default function ThemeEditor({ theme, onSave, onCancel }) {
     );
 
     return (
-        <div className="fixed inset-0 bg-[#030014]/90 backdrop-blur-xl flex items-center justify-center z-[100] p-4 animate-in fade-in duration-200">
-            <div className="bg-[#0a0a0a] rounded-2xl w-full max-w-7xl h-[90vh] flex flex-col border border-white/10 shadow-2xl relative overflow-hidden">
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-xl flex items-center justify-center z-[100] p-4 animate-in fade-in duration-200">
+            <div className="bg-slate-900 rounded-2xl w-full max-w-7xl h-[90vh] flex flex-col border border-white/10 shadow-2xl relative overflow-hidden">
 
                 {/* Background Decorative Elements */}
                 <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/5 rounded-full blur-[120px] pointer-events-none" />
                 <div className="absolute bottom-0 left-0 w-96 h-96 bg-purple-500/5 rounded-full blur-[120px] pointer-events-none" />
 
                 {/* Header */}
-                <div className="p-6 border-b border-white/5 flex justify-between items-start bg-black/20 relative z-10 shrink-0">
+                <div className="p-6 border-b border-white/10 flex justify-between items-start bg-slate-900/50 relative z-10 shrink-0">
                     <div className="flex-1 max-w-2xl">
                         <div className="flex items-center gap-3 mb-4">
                             <div className="p-2 bg-cyan-500/10 rounded-lg text-cyan-400">
@@ -179,14 +179,14 @@ export default function ThemeEditor({ theme, onSave, onCancel }) {
                                 placeholder="THEME_DESIGNATION"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
-                                className="w-full bg-black/40 text-white px-4 py-3 rounded-xl border border-white/10 focus:border-cyan-500/50 outline-none text-sm font-bold placeholder:text-slate-700 font-mono"
+                                className="w-full bg-slate-950/50 text-white px-4 py-3 rounded-xl border border-white/10 focus:border-cyan-500/50 outline-none text-sm font-bold placeholder:text-slate-700 font-mono"
                             />
                             <input
                                 type="text"
                                 placeholder="Description (Optional context)"
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
-                                className="w-full bg-black/40 text-slate-300 px-4 py-3 rounded-xl border border-white/10 focus:border-cyan-500/50 outline-none text-sm placeholder:text-slate-700"
+                                className="w-full bg-slate-950/50 text-slate-300 px-4 py-3 rounded-xl border border-white/10 focus:border-cyan-500/50 outline-none text-sm placeholder:text-slate-700"
                             />
                         </div>
                     </div>
@@ -199,11 +199,11 @@ export default function ThemeEditor({ theme, onSave, onCancel }) {
                 </div>
 
                 {/* Variant Tabs */}
-                <div className="flex px-6 pt-6 gap-2 bg-black/20 shrink-0 relative z-10">
+                <div className="flex px-6 pt-6 gap-2 bg-slate-900/50 shrink-0 relative z-10">
                     <button
                         onClick={() => setActiveTab('light')}
                         className={`px-6 py-3 rounded-t-xl transition-all flex items-center gap-2 text-sm font-bold border-t border-x ${activeTab === 'light'
-                            ? 'bg-[#0a0a0a] border-white/10 text-white border-b-transparent translate-y-px z-10'
+                            ? 'bg-slate-900 border-white/10 text-white border-b-transparent translate-y-px z-10'
                             : 'bg-white/5 border-transparent text-slate-500 hover:text-slate-300 hover:bg-white/10'}`}
                     >
                         <Sun className="w-4 h-4" /> Light Mode
@@ -211,7 +211,7 @@ export default function ThemeEditor({ theme, onSave, onCancel }) {
                     <button
                         onClick={() => setActiveTab('dark')}
                         className={`px-6 py-3 rounded-t-xl transition-all flex items-center gap-2 text-sm font-bold border-t border-x ${activeTab === 'dark'
-                            ? 'bg-[#0a0a0a] border-white/10 text-white border-b-transparent translate-y-px z-10'
+                            ? 'bg-slate-900 border-white/10 text-white border-b-transparent translate-y-px z-10'
                             : 'bg-white/5 border-transparent text-slate-500 hover:text-slate-300 hover:bg-white/10'}`}
                     >
                         <Moon className="w-4 h-4" /> Dark Mode
@@ -269,7 +269,7 @@ export default function ThemeEditor({ theme, onSave, onCancel }) {
                 </div>
 
                 {/* Footer Action Bar */}
-                <div className="p-6 border-t border-white/10 bg-[#050505] flex gap-4 justify-end shrink-0 relative z-10">
+                <div className="p-6 border-t border-white/10 bg-slate-900 flex gap-4 justify-end shrink-0 relative z-10">
                     <button
                         onClick={onCancel}
                         className="px-6 py-3 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors text-sm font-bold"

@@ -88,12 +88,12 @@ const HomeForm = () => {
             )}
 
             {/* Core Data Section */}
-            <div className="bg-[#0a0a0a]/60 backdrop-blur-xl rounded-2xl border border-white/5 p-8 relative overflow-hidden group">
+            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
 
-                <h2 className="text-sm font-mono text-cyan-500/70 uppercase tracking-widest mb-8 flex items-center gap-4">
+                <h2 className="text-sm font-mono text-cyan-400 uppercase tracking-widest mb-8 flex items-center gap-4">
                     Core Identification
-                    <div className="h-px bg-cyan-500/10 flex-grow" />
+                    <div className="h-px bg-cyan-500/20 flex-grow" />
                 </h2>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -104,7 +104,7 @@ const HomeForm = () => {
                             name="name"
                             value={formData.name}
                             onChange={handleChange}
-                            className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-700 font-bold tracking-wide"
+                            className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-600 font-bold tracking-wide"
                             required
                         />
                         <p className="text-xs text-slate-500 mt-2 font-mono">// Primary user identifier</p>
@@ -117,7 +117,7 @@ const HomeForm = () => {
                             name="githubLink"
                             value={formData.githubLink}
                             onChange={handleChange}
-                            className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-cyan-400 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-700 font-mono text-sm"
+                            className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-cyan-400 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-600 font-mono text-sm"
                             required
                         />
                     </div>
@@ -129,7 +129,7 @@ const HomeForm = () => {
                             name="homeRoles"
                             value={formData.homeRoles}
                             onChange={handleChange}
-                            className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-700"
+                            className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-600"
                             placeholder="e.g. Full Stack Developer, UI/UX Designer"
                             required
                         />
@@ -139,12 +139,12 @@ const HomeForm = () => {
             </div>
 
             {/* Code Snippets Section */}
-            <div className="bg-[#0a0a0a]/60 backdrop-blur-xl rounded-2xl border border-white/5 p-8 relative overflow-hidden group">
+            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-green-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
 
-                <h2 className="text-sm font-mono text-green-500/70 uppercase tracking-widest mb-8 flex items-center gap-4">
+                <h2 className="text-sm font-mono text-green-400 uppercase tracking-widest mb-8 flex items-center gap-4">
                     Terminal Output
-                    <div className="h-px bg-green-500/10 flex-grow" />
+                    <div className="h-px bg-green-500/20 flex-grow" />
                 </h2>
 
                 <div>
@@ -154,7 +154,7 @@ const HomeForm = () => {
                         value={formData.codeSnippets}
                         onChange={handleChange}
                         rows="6"
-                        className="w-full bg-black/60 border border-white/10 rounded-lg p-4 text-green-400 focus:border-green-500/50 focus:ring-1 focus:ring-green-500/50 outline-none transition-all placeholder:text-slate-700 font-mono text-sm"
+                        className="w-full bg-slate-950/80 border border-white/10 rounded-lg p-4 text-green-400 focus:border-green-500/50 focus:ring-1 focus:ring-green-500/50 outline-none transition-all placeholder:text-slate-600 font-mono text-sm"
                         placeholder="const future = await build();"
                     />
                     <p className="text-xs text-slate-500 mt-2 font-mono">// Displayed in hero terminal background. One line per entry.</p>
@@ -162,12 +162,12 @@ const HomeForm = () => {
             </div>
 
             {/* Resume Configuration */}
-            <div className="bg-[#0a0a0a]/60 backdrop-blur-xl rounded-2xl border border-white/5 p-8 relative overflow-hidden group">
+            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
 
-                <h2 className="text-sm font-mono text-orange-500/70 uppercase tracking-widest mb-8 flex items-center gap-4">
+                <h2 className="text-sm font-mono text-orange-400 uppercase tracking-widest mb-8 flex items-center gap-4">
                     Resume Module
-                    <div className="h-px bg-orange-500/10 flex-grow" />
+                    <div className="h-px bg-orange-500/20 flex-grow" />
                 </h2>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -178,7 +178,7 @@ const HomeForm = () => {
                             name="resumeStatus"
                             value={formData.resumeStatus || 'ONLINE'}
                             onChange={handleChange}
-                            className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-orange-400 font-bold text-center tracking-widest focus:border-orange-500/50 outline-none"
+                            className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-orange-400 font-bold text-center tracking-widest focus:border-orange-500/50 outline-none"
                         />
                     </div>
                     <div>
@@ -188,7 +188,7 @@ const HomeForm = () => {
                             name="resumeMode"
                             value={formData.resumeMode || 'DEV_01'}
                             onChange={handleChange}
-                            className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-slate-300 font-mono text-center focus:border-orange-500/50 outline-none"
+                            className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-300 font-mono text-center focus:border-orange-500/50 outline-none"
                         />
                     </div>
                     <div>
@@ -197,7 +197,7 @@ const HomeForm = () => {
                             name="resumeIcon"
                             value={formData.resumeIcon || 'FaBolt'}
                             onChange={handleChange}
-                            className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-orange-500/50 outline-none appearance-none cursor-pointer"
+                            className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-orange-500/50 outline-none appearance-none cursor-pointer"
                         >
                             <option value="FaBolt">⚡ Bolt</option>
                             <option value="FaCode">💻 Code</option>
@@ -211,16 +211,16 @@ const HomeForm = () => {
             </div>
 
             {/* Visual Interface Selector */}
-            <div className="bg-[#0a0a0a]/60 backdrop-blur-xl rounded-2xl border border-white/5 p-8 relative overflow-hidden group">
+            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
 
-                <h2 className="text-sm font-mono text-purple-500/70 uppercase tracking-widest mb-8 flex items-center gap-4">
+                <h2 className="text-sm font-mono text-purple-400 uppercase tracking-widest mb-8 flex items-center gap-4">
                     Interface Style
-                    <div className="h-px bg-purple-500/10 flex-grow" />
+                    <div className="h-px bg-purple-500/20 flex-grow" />
                 </h2>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <label className={`relative overflow-hidden p-6 rounded-xl border cursor-pointer transition-all duration-300 group/card ${formData.heroSectionType === 'futuristic' ? 'bg-purple-500/10 border-purple-500/50 shadow-[0_0_30px_rgba(168,85,247,0.15)]' : 'bg-white/[0.02] border-white/5 hover:border-white/20'}`}>
+                    <label className={`relative overflow-hidden p-6 rounded-xl border cursor-pointer transition-all duration-300 group/card ${formData.heroSectionType === 'futuristic' ? 'bg-purple-500/10 border-purple-500/50 shadow-[0_0_30px_rgba(168,85,247,0.15)]' : 'bg-slate-950/30 border-white/5 hover:border-white/20'}`}>
                         <input
                             type="radio"
                             name="heroSectionType"
@@ -241,7 +241,7 @@ const HomeForm = () => {
                         )}
                     </label>
 
-                    <label className={`relative overflow-hidden p-6 rounded-xl border cursor-pointer transition-all duration-300 group/card ${formData.heroSectionType === 'game' ? 'bg-orange-500/10 border-orange-500/50 shadow-[0_0_30px_rgba(249,115,22,0.15)]' : 'bg-white/[0.02] border-white/5 hover:border-white/20'}`}>
+                    <label className={`relative overflow-hidden p-6 rounded-xl border cursor-pointer transition-all duration-300 group/card ${formData.heroSectionType === 'game' ? 'bg-orange-500/10 border-orange-500/50 shadow-[0_0_30px_rgba(249,115,22,0.15)]' : 'bg-slate-950/30 border-white/5 hover:border-white/20'}`}>
                         <input
                             type="radio"
                             name="heroSectionType"
@@ -265,7 +265,7 @@ const HomeForm = () => {
             </div>
 
             {/* Action Buttons */}
-            <div className="sticky bottom-8 flex justify-end gap-4 pt-6 border-t border-white/5 bg-[#030014]/80 backdrop-blur-lg p-4 rounded-xl border border-white/5 shadow-2xl z-50">
+            <div className="sticky bottom-8 flex justify-end gap-4 pt-6 border-t border-white/5 bg-slate-900/90 backdrop-blur-lg p-4 rounded-xl border border-white/5 shadow-2xl z-50">
                 <button
                     type="button"
                     onClick={() => router.back()}
@@ -276,7 +276,7 @@ const HomeForm = () => {
                 <button
                     type="submit"
                     disabled={saving}
-                    className="px-8 py-2 rounded bg-cyan-500 hover:bg-cyan-400 text-black font-bold transition-all shadow-[0_0_20px_rgba(34,211,238,0.3)] hover:shadow-[0_0_30px_rgba(34,211,238,0.5)] disabled:opacity-50 disabled:cursor-not-allowed text-sm tracking-wide"
+                    className="px-8 py-2 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-bold transition-all shadow-[0_0_20px_rgba(8,145,178,0.3)] hover:shadow-[0_0_30px_rgba(8,145,178,0.5)] disabled:opacity-50 disabled:cursor-not-allowed text-sm tracking-wide"
                 >
                     {saving ? 'UPDATING_SYSTEM...' : 'CONFIRM_CHANGES'}
                 </button>

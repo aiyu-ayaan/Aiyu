@@ -254,7 +254,7 @@ const ConfigForm = () => {
                             value={formData.siteTitle}
                             onChange={handleChange}
                             placeholder="Ayaan's Portfolio"
-                            className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-green-500/50 focus:ring-1 focus:ring-green-500/50 outline-none transition-all placeholder:text-slate-700"
+                            className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-green-500/50 focus:ring-1 focus:ring-green-500/50 outline-none transition-all placeholder:text-slate-600"
                         />
                         <p className="text-xs text-slate-500 mt-2 font-mono">
                             // The title shown in the browser tab.
@@ -263,7 +263,7 @@ const ConfigForm = () => {
                     <div>
                         <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Favicon Source</label>
                         <div className="flex items-center gap-4">
-                            <label className="cursor-pointer bg-black/40 border border-white/10 hover:border-green-500/50 text-slate-300 px-4 py-3 rounded-lg transition-all flex items-center gap-3 w-full">
+                            <label className="cursor-pointer bg-slate-950/50 border border-white/10 hover:border-green-500/50 text-slate-300 px-4 py-3 rounded-lg transition-all flex items-center gap-3 w-full">
                                 <span className="bg-green-500/10 text-green-400 px-2 py-1 rounded text-xs font-bold uppercase">Upload</span>
                                 <span className="text-sm truncate opacity-60 hover:opacity-100 transition-opacity">
                                     {formData.favicon.filename || "Select .ico, .png, .svg..."}
@@ -276,7 +276,7 @@ const ConfigForm = () => {
                                 />
                             </label>
                             {formData.favicon.value && (
-                                <div className="h-12 w-12 rounded-lg bg-black/60 border border-white/10 flex items-center justify-center p-2 shrink-0">
+                                <div className="h-12 w-12 rounded-lg bg-slate-950/50 border border-white/10 flex items-center justify-center p-2 shrink-0">
                                     <img src={formData.favicon.value} alt="Favicon Preview" className="w-full h-full object-contain" />
                                 </div>
                             )}
@@ -286,7 +286,7 @@ const ConfigForm = () => {
             </div>
 
             {/* Page Headers Section */}
-            <div className="bg-[#0a0a0a]/60 backdrop-blur-xl rounded-2xl border border-white/5 p-8 relative overflow-hidden group">
+            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
 
                 <h2 className="text-sm font-mono text-orange-500/70 uppercase tracking-widest mb-8 flex items-center gap-4">
@@ -296,7 +296,7 @@ const ConfigForm = () => {
 
                 <div className="space-y-6 relative z-10">
                     {/* Projects Header */}
-                    <div className="p-6 rounded-xl bg-white/[0.02] border border-white/5 hover:border-orange-500/20 transition-colors">
+                    <div className="p-6 rounded-xl bg-white/[0.02] border border-white/10 hover:border-orange-500/20 transition-colors">
                         <h3 className="text-xs font-bold text-orange-400 uppercase tracking-wider mb-4 flex items-center gap-2">
                             <span className="w-1 h-4 bg-orange-500 rounded-full" /> /projects
                         </h3>
@@ -308,7 +308,7 @@ const ConfigForm = () => {
                                     name="projectsTitle"
                                     value={formData.projectsTitle}
                                     onChange={handleChange}
-                                    className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 outline-none transition-all placeholder:text-slate-700/50"
+                                    className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 outline-none transition-all placeholder:text-slate-600/50"
                                 />
                             </div>
                             <div>
@@ -318,14 +318,14 @@ const ConfigForm = () => {
                                     name="projectsSubtitle"
                                     value={formData.projectsSubtitle}
                                     onChange={handleChange}
-                                    className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 outline-none transition-all placeholder:text-slate-700/50"
+                                    className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 outline-none transition-all placeholder:text-slate-600/50"
                                 />
                             </div>
                         </div>
                     </div>
 
                     {/* Blogs Header */}
-                    <div className="p-6 rounded-xl bg-white/[0.02] border border-white/5 hover:border-orange-500/20 transition-colors">
+                    <div className="p-6 rounded-xl bg-white/[0.02] border border-white/10 hover:border-orange-500/20 transition-colors">
                         <h3 className="text-xs font-bold text-orange-400 uppercase tracking-wider mb-4 flex items-center gap-2">
                             <span className="w-1 h-4 bg-orange-500 rounded-full" /> /blogs
                         </h3>
@@ -337,7 +337,7 @@ const ConfigForm = () => {
                                     name="blogsTitle"
                                     value={formData.blogsTitle}
                                     onChange={handleChange}
-                                    className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 outline-none transition-all placeholder:text-slate-700/50"
+                                    className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 outline-none transition-all placeholder:text-slate-600/50"
                                 />
                             </div>
                             <div>
@@ -347,14 +347,14 @@ const ConfigForm = () => {
                                     value={formData.blogsSubtitle}
                                     onChange={handleChange}
                                     rows="1"
-                                    className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 outline-none transition-all placeholder:text-slate-700/50 resize-none"
+                                    className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 outline-none transition-all placeholder:text-slate-600/50 resize-none"
                                 />
                             </div>
                         </div>
                     </div>
 
                     {/* Gallery Header */}
-                    <div className="p-6 rounded-xl bg-white/[0.02] border border-white/5 hover:border-orange-500/20 transition-colors">
+                    <div className="p-6 rounded-xl bg-white/[0.02] border border-white/10 hover:border-orange-500/20 transition-colors">
                         <h3 className="text-xs font-bold text-orange-400 uppercase tracking-wider mb-4 flex items-center gap-2">
                             <span className="w-1 h-4 bg-orange-500 rounded-full" /> /gallery
                         </h3>
@@ -366,7 +366,7 @@ const ConfigForm = () => {
                                     name="galleryTitle"
                                     value={formData.galleryTitle}
                                     onChange={handleChange}
-                                    className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 outline-none transition-all placeholder:text-slate-700/50"
+                                    className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 outline-none transition-all placeholder:text-slate-600/50"
                                 />
                             </div>
                             <div>
@@ -376,7 +376,7 @@ const ConfigForm = () => {
                                     name="gallerySubtitle"
                                     value={formData.gallerySubtitle}
                                     onChange={handleChange}
-                                    className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 outline-none transition-all placeholder:text-slate-700/50"
+                                    className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 outline-none transition-all placeholder:text-slate-600/50"
                                 />
                             </div>
                         </div>
@@ -385,7 +385,7 @@ const ConfigForm = () => {
             </div>
 
             {/* Integrations Section */}
-            <div className="bg-[#0a0a0a]/60 backdrop-blur-xl rounded-2xl border border-white/5 p-8 relative overflow-hidden group">
+            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
 
                 <h2 className="text-sm font-mono text-yellow-500/70 uppercase tracking-widest mb-8 flex items-center gap-4">
@@ -402,7 +402,7 @@ const ConfigForm = () => {
                             value={formData.n8nWebhookUrl}
                             onChange={handleChange}
                             placeholder="https://your-n8n-instance.com/webhook/..."
-                            className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-yellow-500/50 focus:ring-1 focus:ring-yellow-500/50 outline-none transition-all placeholder:text-slate-700"
+                            className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-yellow-500/50 focus:ring-1 focus:ring-yellow-500/50 outline-none transition-all placeholder:text-slate-600"
                         />
                         <p className="text-xs text-slate-500 mt-2 font-mono">
                             // Used for the AI Assistant chat widget.
@@ -416,7 +416,7 @@ const ConfigForm = () => {
                             value={formData.googleAnalyticsId}
                             onChange={handleChange}
                             placeholder="G-XXXXXXXXXX"
-                            className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-yellow-500/50 focus:ring-1 focus:ring-yellow-500/50 outline-none transition-all placeholder:text-slate-700"
+                            className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-yellow-500/50 focus:ring-1 focus:ring-yellow-500/50 outline-none transition-all placeholder:text-slate-600"
                         />
                         <p className="text-xs text-slate-500 mt-2 font-mono">
                             // Starts with G-
@@ -426,7 +426,7 @@ const ConfigForm = () => {
             </div>
 
             {/* Resume Section */}
-            <div className="bg-[#0a0a0a]/60 backdrop-blur-xl rounded-2xl border border-white/5 p-8 relative overflow-hidden group">
+            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
 
                 <h2 className="text-sm font-mono text-blue-500/70 uppercase tracking-widest mb-8 flex items-center gap-4">
@@ -436,7 +436,7 @@ const ConfigForm = () => {
 
                 <div className="flex gap-6 mb-8">
                     <label className={`flex items-center gap-3 cursor-pointer p-4 rounded-xl border transition-all w-full
-                        ${formData.resume.type === 'url' ? 'bg-blue-500/10 border-blue-500/40 text-blue-300' : 'bg-black/40 border-white/10 text-slate-400'}
+                        ${formData.resume.type === 'url' ? 'bg-blue-500/10 border-blue-500/40 text-blue-300' : 'bg-slate-950/50 border-white/10 text-slate-400'}
                     `}>
                         <div className={`w-4 h-4 rounded-full border flex items-center justify-center
                              ${formData.resume.type === 'url' ? 'border-blue-400' : 'border-slate-600'}

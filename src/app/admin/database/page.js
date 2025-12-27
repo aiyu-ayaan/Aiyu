@@ -125,8 +125,8 @@ export default function DatabaseManager() {
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
                     className={`p-4 rounded-xl mb-8 flex items-center gap-3 border backdrop-blur-md ${message.type === 'error' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
-                            message.type === 'success' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-                                'bg-cyan-500/10 text-cyan-400 border-cyan-500/20'
+                        message.type === 'success' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                            'bg-cyan-500/10 text-cyan-400 border-cyan-500/20'
                         }`}
                 >
                     {message.type === 'error' && <FaExclamationTriangle />}
@@ -140,7 +140,7 @@ export default function DatabaseManager() {
                 <motion.div
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    className="bg-[#0a0a0a]/60 backdrop-blur-xl p-8 rounded-2xl border border-white/5 relative overflow-hidden group"
+                    className="bg-slate-900/50 backdrop-blur-xl p-8 rounded-2xl border border-white/10 relative overflow-hidden group"
                 >
                     <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
 
@@ -175,7 +175,7 @@ export default function DatabaseManager() {
                 <motion.div
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    className="bg-[#0a0a0a]/60 backdrop-blur-xl p-8 rounded-2xl border border-white/5 relative overflow-hidden group"
+                    className="bg-slate-900/50 backdrop-blur-xl p-8 rounded-2xl border border-white/10 relative overflow-hidden group"
                 >
                     <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
 
@@ -201,8 +201,8 @@ export default function DatabaseManager() {
                                     className="hidden"
                                 />
                                 <div className={`w-full p-4 rounded-xl border border-dashed transition-all flex items-center justify-center gap-3 text-sm font-mono ${importFile
-                                        ? 'bg-cyan-500/10 border-cyan-500/50 text-cyan-400'
-                                        : 'bg-black/20 border-white/10 group-hover/file:border-cyan-500/30 text-slate-500 group-hover/file:text-cyan-400'
+                                    ? 'bg-cyan-500/10 border-cyan-500/50 text-cyan-400'
+                                    : 'bg-slate-900/30 border-white/10 group-hover/file:border-cyan-500/30 text-slate-500 group-hover/file:text-cyan-400'
                                     }`}>
                                     {importFile ? (
                                         <>

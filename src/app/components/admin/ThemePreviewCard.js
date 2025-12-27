@@ -14,7 +14,7 @@ export default function ThemePreviewCard({
     const colors = theme.variants?.[variant] || theme.variants?.dark;
 
     return (
-        <div className={`bg-[#0a0a0a]/80 backdrop-blur-md rounded-xl overflow-hidden border transition-all duration-300 group flex flex-col h-full ${isActive ? 'border-cyan-500/50 shadow-[0_0_20px_rgba(34,211,238,0.1)]' : 'border-white/5 hover:border-white/10 hover:shadow-lg'}`}>
+        <div className={`bg-slate-900/60 backdrop-blur-md rounded-xl overflow-hidden border transition-all duration-300 group flex flex-col h-full ${isActive ? 'border-cyan-500/50 shadow-[0_0_20px_rgba(34,211,238,0.1)]' : 'border-white/10 hover:border-white/20 hover:shadow-lg'}`}>
 
             {/* Color Preview Header */}
             <div className="h-32 relative" style={{ backgroundColor: colors?.backgrounds?.primary }}>

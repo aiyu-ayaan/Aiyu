@@ -165,7 +165,7 @@ const HeaderForm = () => {
             )}
 
             {/* Navigation Links Section */}
-            <div className="bg-[#0a0a0a]/60 backdrop-blur-xl rounded-2xl border border-white/5 p-8 relative overflow-hidden group">
+            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
 
                 <div className="flex justify-between items-center mb-8 relative z-10">
@@ -193,7 +193,7 @@ const HeaderForm = () => {
                     >
                         <div className="space-y-4 relative z-10">
                             {formData.navLinks.map((link, index) => (
-                                <SortableItem key={link._id} id={link._id} className="bg-white/[0.02] p-6 rounded-xl border border-white/5 relative group hover:border-blue-500/30 transition-colors">
+                                <SortableItem key={link._id} id={link._id} className="bg-slate-900/30 p-6 rounded-xl border border-white/10 relative group hover:border-blue-500/30 transition-colors">
                                     <button
                                         type="button"
                                         onClick={() => handleRemoveNavLink(index)}
@@ -216,7 +216,7 @@ const HeaderForm = () => {
                                                     type="text"
                                                     value={link.name}
                                                     onChange={(e) => handleNavLinkChange(index, 'name', e.target.value)}
-                                                    className="w-full bg-black/40 border border-white/10 rounded-lg p-2.5 text-slate-200 focus:border-blue-500/50 outline-none text-sm font-bold placeholder:text-slate-700"
+                                                    className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-2.5 text-slate-200 focus:border-blue-500/50 outline-none text-sm font-bold placeholder:text-slate-600"
                                                     placeholder="Link Text"
                                                 />
                                             </div>
@@ -226,19 +226,19 @@ const HeaderForm = () => {
                                                     type="text"
                                                     value={link.href}
                                                     onChange={(e) => handleNavLinkChange(index, 'href', e.target.value)}
-                                                    className="w-full bg-black/40 border border-white/10 rounded-lg p-2.5 text-blue-400 focus:border-blue-500/50 outline-none text-sm font-mono placeholder:text-blue-900/50"
+                                                    className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-2.5 text-blue-400 focus:border-blue-500/50 outline-none text-sm font-mono placeholder:text-blue-900/50"
                                                     placeholder="/path"
                                                 />
                                             </div>
                                         </div>
 
-                                        <div className="flex flex-col items-center gap-2 border-l border-white/5 pl-4 ml-2">
+                                        <div className="flex flex-col items-center gap-2 border-l border-white/10 pl-4 ml-2">
                                             <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500">Visible</label>
                                             <input
                                                 type="checkbox"
                                                 checked={link.visible !== false}
                                                 onChange={(e) => handleNavLinkChange(index, 'visible', e.target.checked)}
-                                                className="w-5 h-5 rounded border-white/20 bg-black/40 text-blue-500 focus:ring-blue-500 focus:ring-offset-0 focus:ring-offset-transparent transition-all cursor-pointer accent-blue-500"
+                                                className="w-5 h-5 rounded border-white/20 bg-slate-950/50 text-blue-500 focus:ring-blue-500 focus:ring-offset-0 focus:ring-offset-transparent transition-all cursor-pointer accent-blue-500"
                                             />
                                         </div>
                                     </div>
@@ -250,7 +250,7 @@ const HeaderForm = () => {
             </div>
 
             {/* Contact Link Section */}
-            <div className="bg-[#0a0a0a]/60 backdrop-blur-xl rounded-2xl border border-white/5 p-8 relative overflow-hidden group">
+            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
 
                 <div className="flex justify-between items-center mb-8 relative z-10">
@@ -267,7 +267,7 @@ const HeaderForm = () => {
                             type="text"
                             value={formData.contactLink?.name || ''}
                             onChange={(e) => handleContactLinkChange('name', e.target.value)}
-                            className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-cyan-500/50 outline-none text-sm font-bold placeholder:text-slate-700"
+                            className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-cyan-500/50 outline-none text-sm font-bold placeholder:text-slate-600"
                             placeholder="e.g. Hire Me"
                         />
                     </div>
@@ -277,7 +277,7 @@ const HeaderForm = () => {
                             type="text"
                             value={formData.contactLink?.href || ''}
                             onChange={(e) => handleContactLinkChange('href', e.target.value)}
-                            className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-cyan-400 focus:border-cyan-500/50 outline-none text-sm font-mono placeholder:text-cyan-900/50"
+                            className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-cyan-400 focus:border-cyan-500/50 outline-none text-sm font-mono placeholder:text-cyan-900/50"
                             placeholder="e.g. #contact"
                         />
                     </div>
@@ -285,7 +285,7 @@ const HeaderForm = () => {
             </div>
 
             {/* Sticky Action Footer */}
-            <div className="sticky bottom-8 flex justify-end gap-4 pt-6 border-t border-white/5 bg-[#030014]/80 backdrop-blur-lg p-4 rounded-xl border border-white/5 shadow-2xl z-50">
+            <div className="sticky bottom-8 flex justify-end gap-4 pt-6 border-t border-white/5 bg-slate-900/90 backdrop-blur-lg p-4 rounded-xl border border-white/5 shadow-2xl z-50">
                 <button
                     type="button"
                     onClick={() => router.back()}
@@ -296,7 +296,7 @@ const HeaderForm = () => {
                 <button
                     type="submit"
                     disabled={saving}
-                    className="px-8 py-2 rounded bg-cyan-500 hover:bg-cyan-400 text-black font-bold transition-all shadow-[0_0_20px_rgba(34,211,238,0.3)] hover:shadow-[0_0_30px_rgba(34,211,238,0.5)] disabled:opacity-50 disabled:cursor-not-allowed text-sm tracking-wide"
+                    className="px-8 py-2 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-bold transition-all shadow-[0_0_20px_rgba(8,145,178,0.3)] hover:shadow-[0_0_30px_rgba(8,145,178,0.5)] disabled:opacity-50 disabled:cursor-not-allowed text-sm tracking-wide"
                 >
                     {saving ? 'UPDATING_SYSTEM...' : 'CONFIRM_UPDATE'}
                 </button>

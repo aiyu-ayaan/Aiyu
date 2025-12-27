@@ -148,7 +148,7 @@ export default function GitHubConfigPage() {
             <form onSubmit={handleSave} className="space-y-8">
 
                 {/* Connection Settings */}
-                <div className="bg-[#0a0a0a]/60 backdrop-blur-xl rounded-2xl border border-white/5 p-8 relative overflow-hidden group">
+                <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 relative overflow-hidden group">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
 
                     <div className="flex justify-between items-center mb-8 relative z-10">
@@ -168,7 +168,7 @@ export default function GitHubConfigPage() {
                                     value={config.username}
                                     onChange={(e) => setConfig({ ...config, username: e.target.value })}
                                     placeholder="e.g. octocat"
-                                    className="flex-1 bg-black/40 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-purple-500/50 outline-none text-sm font-mono"
+                                    className="flex-1 bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-purple-500/50 outline-none text-sm font-mono"
                                 />
                                 <button
                                     type="button"
@@ -193,7 +193,7 @@ export default function GitHubConfigPage() {
 
                         {/* Status Toggle */}
                         <div className="flex flex-col justify-center">
-                            <div className="flex items-center justify-between p-4 bg-white/[0.02] border border-white/5 rounded-xl hover:border-purple-500/30 transition-colors">
+                            <div className="flex items-center justify-between p-4 bg-slate-900/30 border border-white/10 rounded-xl hover:border-purple-500/30 transition-colors">
                                 <div>
                                     <div className="text-sm font-bold text-slate-200 mb-1">Public Access</div>
                                     <div className="text-xs text-slate-500 font-mono">/github route visibility</div>
@@ -205,7 +205,7 @@ export default function GitHubConfigPage() {
                                         onChange={(e) => setConfig({ ...config, enabled: e.target.checked })}
                                         className="sr-only peer"
                                     />
-                                    <div className="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-500"></div>
+                                    <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-500"></div>
                                 </label>
                             </div>
                         </div>
@@ -213,7 +213,7 @@ export default function GitHubConfigPage() {
                 </div>
 
                 {/* Module Layout */}
-                <div className="bg-[#0a0a0a]/60 backdrop-blur-xl rounded-2xl border border-white/5 p-8 relative overflow-hidden group">
+                <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 relative overflow-hidden group">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-green-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
 
                     <div className="flex justify-between items-center mb-8 relative z-10">
@@ -227,7 +227,7 @@ export default function GitHubConfigPage() {
                         {Object.entries(config.sections).map(([key, value]) => {
                             const Icon = sectionIcons[key] || CheckCircle;
                             return (
-                                <label key={key} className={`flex items-center gap-4 p-4 rounded-xl border transition-all cursor-pointer ${value ? 'bg-green-500/10 border-green-500/30' : 'bg-black/20 border-white/5 hover:border-white/10'}`}>
+                                <label key={key} className={`flex items-center gap-4 p-4 rounded-xl border transition-all cursor-pointer ${value ? 'bg-green-500/10 border-green-500/30' : 'bg-slate-900/30 border-white/5 hover:border-white/10'}`}>
                                     <div className={`p-2 rounded-lg ${value ? 'bg-green-500/20 text-green-400' : 'bg-white/5 text-slate-500'}`}>
                                         <Icon className="w-4 h-4" />
                                     </div>
@@ -243,7 +243,7 @@ export default function GitHubConfigPage() {
                                             onChange={() => toggleSection(key)}
                                             className="sr-only peer"
                                         />
-                                        <div className={`w-8 h-4 rounded-full transition-colors ${value ? 'bg-green-500' : 'bg-white/10'}`}></div>
+                                        <div className={`w-8 h-4 rounded-full transition-colors ${value ? 'bg-green-500' : 'bg-slate-700'}`}></div>
                                         <div className={`absolute left-0.5 top-0.5 bg-white w-3 h-3 rounded-full transition-transform ${value ? 'translate-x-4' : ''}`}></div>
                                     </div>
                                 </label>

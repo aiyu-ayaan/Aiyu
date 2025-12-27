@@ -123,7 +123,7 @@ export default function AdminSocials() {
             </div>
 
             {/* Config Section */}
-            <div className="bg-[#0a0a0a]/60 backdrop-blur-xl rounded-2xl border border-white/5 p-8 mb-12 relative overflow-hidden">
+            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 mb-12 relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-[100px] pointer-events-none" />
 
                 <h2 className="text-sm font-mono text-cyan-500/70 uppercase tracking-widest mb-8 flex items-center gap-4">
@@ -139,7 +139,7 @@ export default function AdminSocials() {
                                 type="text"
                                 value={config.footerText}
                                 onChange={(e) => setConfig({ ...config, footerText: e.target.value })}
-                                className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-700"
+                                className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-600"
                                 placeholder="© 2025 Ayaan. All rights reserved."
                             />
                         </div>
@@ -149,7 +149,7 @@ export default function AdminSocials() {
                                 type="text"
                                 value={config.workStatus}
                                 onChange={(e) => setConfig({ ...config, workStatus: e.target.value })}
-                                className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-700"
+                                className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-600"
                                 placeholder="Available for work"
                             />
                         </div>
@@ -159,7 +159,7 @@ export default function AdminSocials() {
                                 type="text"
                                 value={config.footerVersion || ''}
                                 onChange={(e) => setConfig({ ...config, footerVersion: e.target.value })}
-                                className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-700 font-mono"
+                                className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-600 font-mono"
                                 placeholder="v1.0.0"
                             />
                         </div>
@@ -194,10 +194,10 @@ export default function AdminSocials() {
                 Active Uplinks
             </h2>
 
-            <div className="bg-[#0a0a0a]/60 backdrop-blur-xl rounded-2xl border border-white/5 overflow-hidden">
+            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
-                        <thead className="bg-white/5 border-b border-white/5 text-xs uppercase tracking-wider text-slate-400 font-medium">
+                        <thead className="bg-white/5 border-b border-white/10 text-xs uppercase tracking-wider text-slate-400 font-medium">
                             <tr>
                                 <th className="px-6 py-5">Network Name</th>
                                 <th className="px-6 py-5">Target URL</th>
