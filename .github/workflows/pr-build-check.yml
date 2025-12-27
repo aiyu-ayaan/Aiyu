@@ -71,10 +71,24 @@ jobs:
     runs-on: ubuntu-latest
     if: |
       (github.ref == 'refs/heads/master' && github.event_name == 'push' && 
-       contains(github.event.head_commit.message, 'release')) ||
+       contains(github.event.head_commit.message, 'Release:')) ||
       github.event_name == 'workflow_dispatch'
+    outputs:
+      version: ${{ steps.extract-version.outputs.version }}
     
     steps:
+      - name: Extract version from commit message
+        id: extract-version
+        run: |
+          if [[ "${{ github.event.head_commit.message }}" =~ Release:\ (v[0-9]+\.[0-9]+\.[0-9]+) ]]; then
+            VERSION="${BASH_REMATCH[1]}"
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            echo "Found version: $VERSION"
+          else
+            echo "version=v0.0.0" >> $GITHUB_OUTPUT
+            echo "No version found, using default: v0.0.0"
+          fi
+      
       - name: Deploy via SSH
         uses: appleboy/ssh-action@master
         with:
@@ -105,3 +119,48 @@ jobs:
             docker system prune -a --volumes -f || { echo "Cleanup warning (non-critical)"; }
             
             echo "✅ Deployment completed successfully!"
+
+  create-release:
+    name: Create GitHub Release
+    needs: deploy
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push' && contains(github.event.head_commit.message, 'Release:')
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Extract version from commit message
+        id: extract-version
+        run: |
+          if [[ "${{ github.event.head_commit.message }}" =~ Release:\ (v[0-9]+\.[0-9]+\.[0-9]+) ]]; then
+            VERSION="${BASH_REMATCH[1]}"
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            echo "Found version: $VERSION"
+          else
+            echo "version=v0.0.0" >> $GITHUB_OUTPUT
+            echo "No version found, using default: v0.0.0"
+          fi
+      
+      - name: Create Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.USER_TOKEN }}
+        with:
+          tag_name: ${{ steps.extract-version.outputs.version }}
+          release_name: Release ${{ steps.extract-version.outputs.version }}
+          body: |
+            ## Release ${{ steps.extract-version.outputs.version }}
+            
+            **Commit Message:**
+            ```
+            ${{ github.event.head_commit.message }}
+            ```
+            
+            **Commit SHA:** ${{ github.event.head_commit.id }}
+            
+            **Author:** ${{ github.event.head_commit.author.name }}
+            
+            This release was automatically created by GitHub Actions.
+          draft: false
+          prerelease: false
