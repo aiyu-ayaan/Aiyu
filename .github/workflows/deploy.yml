@@ -22,7 +22,7 @@ jobs:
             git pull origin master
             
             ls -la 
-            docker compose build
+            docker compose build --memory=512m
             docker compose up -d
             docker system prune -a --volumes -f
             
