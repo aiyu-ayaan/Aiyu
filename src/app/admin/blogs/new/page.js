@@ -166,23 +166,23 @@ export default function NewBlogPage() {
                 </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="w-full bg-gray-800 p-6 rounded-lg shadow-lg space-y-6">
+            <form onSubmit={handleSubmit} className="w-full bg-slate-900/50 backdrop-blur-xl p-8 rounded-2xl border border-white/10 space-y-6 shadow-2xl">
                 {/* Meta Fields Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <label className="block text-sm font-medium mb-1">Title</label>
+                        <label className="block text-sm font-medium mb-1 text-slate-300">Title</label>
                         <input
                             type="text"
                             name="title"
                             value={formData.title}
                             onChange={handleChange}
                             required
-                            className="w-full p-2 bg-gray-700 rounded border border-gray-600 focus:outline-none focus:border-blue-500"
+                            className="w-full p-3 bg-slate-950/50 rounded-xl border border-white/10 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 text-slate-200"
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium mb-1">Date</label>
+                        <label className="block text-sm font-medium mb-1 text-slate-300">Date</label>
                         <div className="custom-datepicker-wrapper">
                             <DatePicker
                                 selected={formData.date ? new Date(formData.date) : null}
@@ -197,7 +197,7 @@ export default function NewBlogPage() {
                                     }
                                 }}
                                 dateFormat="MMMM d, yyyy"
-                                className="w-full p-2 bg-gray-700 rounded border border-gray-600 focus:outline-none focus:border-blue-500 text-white"
+                                className="w-full p-3 bg-slate-950/50 rounded-xl border border-white/10 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 text-slate-200"
                                 placeholderText="Select date"
                             />
                         </div>
@@ -205,28 +205,28 @@ export default function NewBlogPage() {
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium mb-1">Tags (comma separated)</label>
+                    <label className="block text-sm font-medium mb-1 text-slate-300">Tags (comma separated)</label>
                     <input
                         type="text"
                         name="tags"
                         value={formData.tags}
                         onChange={handleChange}
                         placeholder="React, Next.js, Web"
-                        className="w-full p-2 bg-gray-700 rounded border border-gray-600 focus:outline-none focus:border-blue-500"
+                        className="w-full p-3 bg-slate-950/50 rounded-xl border border-white/10 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 text-slate-200"
                     />
                 </div>
 
                 {/* Image Input with URL/Upload Toggle */}
                 <div>
                     <div className="flex justify-between items-center mb-2">
-                        <label className="block text-sm font-medium">Image Cover</label>
+                        <label className="block text-sm font-medium text-slate-300">Image Cover</label>
                         <div className="flex gap-2">
                             <button
                                 type="button"
                                 onClick={() => setImageMode('url')}
                                 className={`px-3 py-1 text-xs rounded transition-colors ${imageMode === 'url'
-                                        ? 'bg-blue-600 text-white'
-                                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                    ? 'bg-cyan-600 text-white'
+                                    : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
                                     }`}
                             >
                                 URL
@@ -235,8 +235,8 @@ export default function NewBlogPage() {
                                 type="button"
                                 onClick={() => setImageMode('upload')}
                                 className={`px-3 py-1 text-xs rounded transition-colors ${imageMode === 'upload'
-                                        ? 'bg-blue-600 text-white'
-                                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                    ? 'bg-cyan-600 text-white'
+                                    : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
                                     }`}
                             >
                                 Upload
@@ -252,12 +252,12 @@ export default function NewBlogPage() {
                                 value={formData.image}
                                 onChange={handleChange}
                                 placeholder="https://example.com/image.jpg"
-                                className="w-full p-2 bg-gray-700 rounded border border-gray-600 focus:outline-none focus:border-blue-500"
+                                className="w-full p-3 bg-slate-950/50 rounded-xl border border-white/10 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 text-slate-200"
                             />
                             {formData.image && (
                                 <div className="mt-2 text-center">
-                                    <p className="text-xs text-gray-400 mb-1">Preview:</p>
-                                    <img src={formData.image} alt="Preview" className="h-48 mx-auto rounded object-cover border border-gray-600" />
+                                    <p className="text-xs text-slate-500 mb-1">Preview:</p>
+                                    <img src={formData.image} alt="Preview" className="h-48 mx-auto rounded-lg object-cover border border-white/10" />
                                 </div>
                             )}
                         </>
@@ -266,7 +266,7 @@ export default function NewBlogPage() {
                             {!uploadFile ? (
                                 <div
                                     className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer
-                                        ${dragActive ? 'border-blue-500 bg-blue-500/10' : 'border-gray-600 hover:border-gray-500'}
+                                        ${dragActive ? 'border-cyan-500 bg-cyan-500/10' : 'border-white/10 hover:border-white/20 hover:bg-white/5'}
                                     `}
                                     onDragEnter={handleDrag}
                                     onDragLeave={handleDrag}
@@ -282,15 +282,15 @@ export default function NewBlogPage() {
                                         accept="image/*"
                                     />
                                     <div className="flex flex-col items-center gap-2">
-                                        <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg className="w-12 h-12 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                         </svg>
-                                        <span className="text-lg font-medium">Drag & Drop or Click to Upload</span>
-                                        <span className="text-sm text-gray-400">Supports JPG, PNG, WEBP, HEIC</span>
+                                        <span className="text-lg font-medium text-slate-300">Drag & Drop or Click to Upload</span>
+                                        <span className="text-sm text-slate-500">Supports JPG, PNG, WEBP, HEIC</span>
                                     </div>
                                 </div>
                             ) : (
-                                <div className="relative rounded-xl overflow-hidden border border-gray-600 bg-gray-900">
+                                <div className="relative rounded-xl overflow-hidden border border-white/10 bg-slate-900/50">
                                     <button
                                         type="button"
                                         onClick={clearUpload}
@@ -301,15 +301,15 @@ export default function NewBlogPage() {
                                         </svg>
                                     </button>
                                     <div className="flex flex-col md:flex-row gap-6 p-4">
-                                        <div className="relative h-48 w-full md:w-1/3 shrink-0 flex items-center justify-center bg-gray-800 rounded-lg">
+                                        <div className="relative h-48 w-full md:w-1/3 shrink-0 flex items-center justify-center bg-slate-950/50 rounded-lg border border-white/5">
                                             {uploadPreview === 'HEIC_PLACEHOLDER' ? (
                                                 <div className="text-center p-4">
-                                                    <div className="mx-auto mb-2 w-12 h-12 bg-gray-700 rounded-full flex items-center justify-center text-blue-400 font-bold">
+                                                    <div className="mx-auto mb-2 w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center text-cyan-400 font-bold">
                                                         H
                                                     </div>
-                                                    <p className="font-medium">HEIC File</p>
-                                                    <p className="text-xs text-gray-400">Preview not available</p>
-                                                    <p className="text-xs text-blue-400 mt-1">Will be converted to WebP</p>
+                                                    <p className="font-medium text-slate-300">HEIC File</p>
+                                                    <p className="text-xs text-slate-500">Preview not available</p>
+                                                    <p className="text-xs text-cyan-400 mt-1">Will be converted to WebP</p>
                                                 </div>
                                             ) : (
                                                 <img
@@ -321,14 +321,14 @@ export default function NewBlogPage() {
                                         </div>
                                         <div className="flex-1 flex flex-col justify-center gap-3">
                                             <div>
-                                                <p className="text-sm font-medium">{uploadFile.name}</p>
-                                                <p className="text-xs text-gray-400">{(uploadFile.size / 1024).toFixed(2)} KB</p>
+                                                <p className="text-sm font-medium text-slate-200">{uploadFile.name}</p>
+                                                <p className="text-xs text-slate-500">{(uploadFile.size / 1024).toFixed(2)} KB</p>
                                             </div>
                                             <button
                                                 type="button"
                                                 onClick={handleUpload}
                                                 disabled={uploading || formData.image}
-                                                className="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="w-full py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-500 transition-all font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_15px_rgba(8,145,178,0.3)]"
                                             >
                                                 {uploading ? (
                                                     <>
@@ -355,7 +355,7 @@ export default function NewBlogPage() {
                                                 )}
                                             </button>
                                             {formData.image && (
-                                                <div className="text-sm text-green-400 text-center">✓ Image ready for blog</div>
+                                                <div className="text-sm text-emerald-400 text-center">✓ Image ready for blog</div>
                                             )}
                                         </div>
                                     </div>
@@ -368,7 +368,7 @@ export default function NewBlogPage() {
                         <button
                             type="button"
                             onClick={insertImageMarkdown}
-                            className="mt-2 text-xs text-green-400 hover:text-green-300 underline"
+                            className="mt-2 text-xs text-emerald-400 hover:text-emerald-300 underline"
                         >
                             Insert into Content
                         </button>
@@ -376,10 +376,10 @@ export default function NewBlogPage() {
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium mb-1">Content (Markdown)</label>
+                    <label className="block text-sm font-medium mb-1 text-slate-300">Content (Markdown)</label>
 
                     {previewMode ? (
-                        <div className="w-full min-h-[500px] p-6 bg-gray-900 rounded border border-gray-700 prose prose-invert max-w-none">
+                        <div className="w-full min-h-[500px] p-6 bg-slate-900/50 rounded-xl border border-white/10 prose prose-invert max-w-none">
                             <ReactMarkdown
                                 remarkPlugins={[remarkGfm]}
                                 components={{
@@ -412,24 +412,24 @@ export default function NewBlogPage() {
                             value={formData.content}
                             onChange={handleChange}
                             required
-                            className="w-full h-[500px] p-4 bg-gray-700 rounded border border-gray-600 focus:outline-none focus:border-blue-500 font-mono text-sm leading-relaxed"
+                            className="w-full h-[500px] p-4 bg-slate-950/50 rounded-xl border border-white/10 focus:outline-none focus:border-cyan-500/50 font-mono text-sm leading-relaxed text-slate-200 placeholder:text-slate-600"
                             placeholder="# Write your blog post in Markdown..."
                         ></textarea>
                     )}
                 </div>
 
-                <div className="flex gap-4 pt-4 border-t border-gray-700 mt-8">
+                <div className="flex gap-4 pt-4 border-t border-white/10 mt-8">
                     <button
                         type="submit"
                         disabled={submitting}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded transition-colors disabled:opacity-50"
+                        className="bg-cyan-600 hover:bg-cyan-500 text-white px-6 py-2 rounded-xl transition-colors disabled:opacity-50 shadow-[0_0_15px_rgba(8,145,178,0.3)] font-bold tracking-wide"
                     >
                         {submitting ? 'Creating...' : 'Create Blog'}
                     </button>
                     <button
                         type="button"
                         onClick={() => router.back()}
-                        className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded transition-colors"
+                        className="bg-slate-800 hover:bg-slate-700 text-white px-6 py-2 rounded-xl transition-colors font-medium"
                     >
                         Cancel
                     </button>

@@ -91,7 +91,7 @@ export default function ContactAdminPage() {
             });
 
             if (res.ok) {
-                alert('Contact settings saved successfully!');
+                // Optional: show a toast or success state
             } else {
                 alert('Failed to save settings');
             }
@@ -106,149 +106,164 @@ export default function ContactAdminPage() {
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-screen">
-                <Loader2 className="w-8 h-8 animate-spin text-[var(--primary)]" />
+                <span className="font-mono text-cyan-400 animate-pulse">ESTABLISHING_UPLINK...</span>
             </div>
         );
     }
 
     return (
-        <div className="p-8 min-h-screen w-full flex flex-col items-center">
-            <div className="w-full max-w-3xl">
-                <div className="mb-6">
-                    <Link
-                        href="/admin"
-                        className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 transition-colors mb-4 group"
-                    >
-                        <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-                        Back to Dashboard
-                    </Link>
-                    <h1 className="text-3xl font-bold flex items-center gap-2">
-                        <Activity className="text-[var(--primary)]" />
-                        Contact Configuration
-                    </h1>
-                </div>
-
-                <form onSubmit={handleSave} className="w-full bg-gray-800 p-6 rounded-lg shadow-lg space-y-6">
-
-                    {/* Location */}
-                    <div>
-                        <label className="block text-sm font-medium mb-2 flex items-center gap-2">
-                            <MapPin className="w-4 h-4 text-cyan-400" />
-                            Current Location
-                        </label>
-                        <input
-                            type="text"
-                            value={config.contactLocation}
-                            onChange={(e) => setConfig({ ...config, contactLocation: e.target.value })}
-                            placeholder="e.g. San Francisco, CA"
-                            className="w-full p-3 bg-gray-700 rounded border border-gray-600 focus:outline-none focus:border-[var(--primary)]"
-                        />
-                    </div>
-
-                    {/* Status */}
-                    <div>
-                        <label className="block text-sm font-medium mb-2 flex items-center gap-2">
-                            <Activity className="w-4 h-4 text-green-400" />
-                            Work Status
-                        </label>
-                        <select
-                            value={config.contactStatus}
-                            onChange={(e) => setConfig({ ...config, contactStatus: e.target.value })}
-                            className="w-full p-3 bg-gray-700 rounded border border-gray-600 focus:outline-none focus:border-[var(--primary)]"
-                        >
-                            <option value="Open to opportunities">Open to opportunities</option>
-                            <option value="Busy with projects">Busy with projects</option>
-                            <option value="Not looking">Not looking</option>
-                        </select>
-                    </div>
-
-                    {/* Email */}
-                    <div>
-                        <label className="block text-sm font-medium mb-2 flex items-center gap-2">
-                            <Mail className="w-4 h-4 text-purple-400" />
-                            Contact Email (for &apos;Email Me&apos; box)
-                        </label>
-                        <input
-                            type="email"
-                            value={config.contactEmail}
-                            onChange={(e) => setConfig({ ...config, contactEmail: e.target.value })}
-                            placeholder="your.name@example.com"
-                            className="w-full p-3 bg-gray-700 rounded border border-gray-600 focus:outline-none focus:border-[var(--primary)]"
-                        />
-                    </div>
-
-                    {/* n8n Webhook */}
-                    <div>
-                        <label className="block text-sm font-medium mb-2 flex items-center gap-2">
-                            <Webhook className="w-4 h-4 text-orange-400" />
-                            n8n Webhook URL (for form submissions)
-                        </label>
-                        <input
-                            type="url"
-                            value={config.n8nWebhookUrl}
-                            onChange={(e) => setConfig({ ...config, n8nWebhookUrl: e.target.value })}
-                            placeholder="https://your-n8n-instance.com/webhook/..."
-                            className="w-full p-3 bg-gray-700 rounded border border-gray-600 focus:outline-none focus:border-[var(--primary)]"
-                        />
-                    </div>
-
-
-
-                    {/* Submit */}
-                    <div className="flex gap-4 pt-4 border-t border-gray-700">
-                        <button
-                            type="submit"
-                            disabled={saving}
-                            className="bg-[var(--primary)] hover:brightness-110 text-white px-6 py-2 rounded transition-all font-medium disabled:opacity-50 flex items-center gap-2"
-                        >
-                            {saving ? (
-                                <>
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                    Saving...
-                                </>
-                            ) : (
-                                'Save Settings'
-                            )}
-                        </button>
-                    </div>
-                </form>
+        <div className="p-8 max-w-7xl mx-auto min-h-screen w-full flex flex-col">
+            <div className="mb-8">
+                <Link
+                    href="/admin"
+                    className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 transition-colors mb-4 font-mono text-sm tracking-wide"
+                >
+                    ← BACK_TO_COMMAND_CENTER
+                </Link>
+                <h1 className="text-4xl font-bold text-white mb-2 tracking-tight">Comms Array</h1>
+                <p className="text-slate-400">Manage incoming transmissions and contact protocols.</p>
             </div>
 
-            {/* Messages Inbox */}
-            <div className="w-full max-w-3xl mt-8">
-                <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
-                    <MessageSquare className="text-[var(--primary)]" />
-                    Inbox ({messages.length})
-                </h2>
+            <form onSubmit={handleSave} className="space-y-12">
 
-                <div className="space-y-4">
+                {/* Contact Configuration Section */}
+                <div className="bg-[#0a0a0a]/60 backdrop-blur-xl rounded-2xl border border-white/5 p-8 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-slate-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
+
+                    <div className="flex justify-between items-center mb-8 relative z-10">
+                        <h2 className="text-sm font-mono text-slate-500 uppercase tracking-widest flex items-center gap-4">
+                            Signal Parameters
+                            <div className="h-px w-20 bg-slate-500/10" />
+                        </h2>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
+                        {/* Location */}
+                        <div>
+                            <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2 flex items-center gap-2">
+                                <MapPin className="w-3 h-3 text-cyan-400" /> Location Coordinates
+                            </label>
+                            <input
+                                type="text"
+                                value={config.contactLocation}
+                                onChange={(e) => setConfig({ ...config, contactLocation: e.target.value })}
+                                placeholder="e.g. San Francisco, CA"
+                                className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-cyan-500/50 outline-none text-sm font-mono"
+                            />
+                        </div>
+
+                        {/* Status */}
+                        <div>
+                            <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2 flex items-center gap-2">
+                                <Activity className="w-3 h-3 text-green-400" /> Operative Status
+                            </label>
+                            <select
+                                value={config.contactStatus}
+                                onChange={(e) => setConfig({ ...config, contactStatus: e.target.value })}
+                                className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-cyan-500/50 outline-none text-sm appearance-none"
+                            >
+                                <option value="Open to opportunities">Open to opportunities</option>
+                                <option value="Busy with projects">Busy with projects</option>
+                                <option value="Not looking">Not looking</option>
+                            </select>
+                        </div>
+
+                        {/* Email */}
+                        <div>
+                            <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2 flex items-center gap-2">
+                                <Mail className="w-3 h-3 text-purple-400" /> Direct Uplink (Email)
+                            </label>
+                            <input
+                                type="email"
+                                value={config.contactEmail}
+                                onChange={(e) => setConfig({ ...config, contactEmail: e.target.value })}
+                                placeholder="your.name@example.com"
+                                className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-purple-500/50 outline-none text-sm font-mono"
+                            />
+                        </div>
+
+                        {/* n8n Webhook */}
+                        <div>
+                            <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2 flex items-center gap-2">
+                                <Webhook className="w-3 h-3 text-orange-400" /> Webhook Endpoint (n8n)
+                            </label>
+                            <input
+                                type="url"
+                                value={config.n8nWebhookUrl}
+                                onChange={(e) => setConfig({ ...config, n8nWebhookUrl: e.target.value })}
+                                placeholder="https://..."
+                                className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-orange-500/50 outline-none text-sm font-mono"
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Submit Config */}
+                <div className="flex justify-end pt-4">
+                    <button
+                        type="submit"
+                        disabled={saving}
+                        className="px-8 py-2 rounded bg-cyan-500 hover:bg-cyan-400 text-black font-bold transition-all shadow-[0_0_20px_rgba(34,211,238,0.3)] hover:shadow-[0_0_30px_rgba(34,211,238,0.5)] disabled:opacity-50 disabled:cursor-not-allowed text-sm tracking-wide flex items-center gap-2"
+                    >
+                        {saving ? (
+                            <>
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                UPDATING_PROTOCOLS...
+                            </>
+                        ) : (
+                            'UPDATE_CONFIGURATION'
+                        )}
+                    </button>
+                </div>
+            </form>
+
+            {/* Messages Inbox */}
+            <div className="w-full mt-16">
+                <div className="flex justify-between items-center mb-8">
+                    <h2 className="text-xl font-bold flex items-center gap-3 text-white">
+                        <MessageSquare className="text-cyan-400 w-5 h-5" />
+                        Incoming Transmissions
+                        <span className="text-sm bg-white/10 text-slate-400 px-2 py-0.5 rounded-full font-mono">{messages.length}</span>
+                    </h2>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4">
                     {messages.length === 0 ? (
-                        <div className="text-gray-400 text-center py-8 bg-gray-800 rounded-lg">
-                            No messages received yet.
+                        <div className="text-slate-500 text-center py-12 bg-white/[0.02] border border-white/5 rounded-2xl font-mono text-sm">
+                            [NO_TRANSMISSIONS_DETECTED]
                         </div>
                     ) : (
                         messages.map((msg) => (
-                            <div key={msg._id} className="bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-700">
+                            <div key={msg._id} className="bg-[#0a0a0a]/60 backdrop-blur-md p-6 rounded-xl border border-white/5 hover:border-cyan-500/30 transition-all group relative">
                                 <div className="flex justify-between items-start mb-4">
-                                    <div>
-                                        <h3 className="font-bold text-lg text-white">{msg.name}</h3>
-                                        <a href={`mailto:${msg.email}`} className="text-cyan-400 hover:text-cyan-300 text-sm">
-                                            {msg.email}
-                                        </a>
-                                        <div className="text-xs text-gray-500 mt-1">
-                                            {new Date(msg.createdAt).toLocaleString()}
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center border border-white/10 text-cyan-400 font-bold text-lg">
+                                            {msg.name.charAt(0).toUpperCase()}
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-white tracking-wide">{msg.name}</h3>
+                                            <a href={`mailto:${msg.email}`} className="text-slate-400 hover:text-cyan-400 text-xs font-mono transition-colors">
+                                                {msg.email}
+                                            </a>
                                         </div>
                                     </div>
-                                    <button
-                                        onClick={() => handleDeleteMessage(msg._id)}
-                                        className="p-2 text-red-400 hover:bg-red-900/20 rounded transition-colors"
-                                        title="Delete Message"
-                                    >
-                                        <Trash2 className="w-5 h-5" />
-                                    </button>
+                                    <div className="flex items-center gap-4">
+                                        <div className="text-[10px] font-mono text-slate-500">
+                                            {new Date(msg.createdAt).toLocaleString()}
+                                        </div>
+                                        <button
+                                            onClick={() => handleDeleteMessage(msg._id)}
+                                            className="p-2 text-slate-600 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                                            title="Purge Transmission"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </div>
                                 </div>
-                                <div className="bg-gray-900/50 p-4 rounded text-gray-300 whitespace-pre-wrap">
-                                    {msg.message}
+                                <div className="pl-14">
+                                    <div className="bg-black/40 p-4 rounded-lg border border-white/5 text-slate-300 text-sm leading-relaxed font-mono">
+                                        {msg.message}
+                                    </div>
                                 </div>
                             </div>
                         ))
@@ -256,6 +271,5 @@ export default function ContactAdminPage() {
                 </div>
             </div>
         </div>
-
     );
 }

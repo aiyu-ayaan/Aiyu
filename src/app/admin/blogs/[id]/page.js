@@ -1,15 +1,17 @@
-
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
 
+// Dynamic imports for heavy components
 const SyntaxHighlighter = dynamic(() => import('react-syntax-highlighter').then(mod => mod.Prism), { ssr: false });
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import { Loader2, Save, ArrowLeft, Image as ImageIcon, Eye, Edit2, Upload, FileText, Calendar, Tag, X } from 'lucide-react';
 
 export default function EditBlogPage() {
     const router = useRouter();
@@ -72,7 +74,6 @@ export default function EditBlogPage() {
         e.preventDefault();
         setSubmitting(true);
 
-        // Create date object from the YYYY-MM-DD string treating it as local time
         const [year, month, day] = formData.date.split('-').map(Number);
         const dateObj = new Date(year, month - 1, day);
 
@@ -130,8 +131,6 @@ export default function EditBlogPage() {
 
     const handleFileSelection = (file) => {
         setUploadFile(file);
-
-        // Check if HEIC
         const isHeic = file.name.toLowerCase().endsWith('.heic') || file.type === 'image/heic';
 
         if (isHeic) {
@@ -159,7 +158,6 @@ export default function EditBlogPage() {
 
             if (data.success) {
                 setFormData((prev) => ({ ...prev, image: data.url }));
-                alert('Image uploaded successfully!');
             } else {
                 alert('Upload failed: ' + (data.error || 'Unknown error'));
             }
@@ -179,295 +177,323 @@ export default function EditBlogPage() {
         if (formData.image) {
             const imageMarkdown = `![Image Alt Text](${formData.image})`;
             setFormData(prev => ({ ...prev, content: prev.content + '\n' + imageMarkdown }));
-            alert('Image markdown appended to content!');
-        } else {
-            alert('No image selected/uploaded to insert.');
         }
     };
 
-    if (loading) return <div className="p-8 text-center text-white">Loading...</div>;
+    if (loading) return (
+        <div className="flex items-center justify-center min-h-screen">
+            <span className="font-mono text-cyan-400 animate-pulse">DECRYPTING_TRANSMISSION...</span>
+        </div>
+    );
 
     return (
-        <div className="p-8 min-h-screen text-white w-full">
-            <div className="flex justify-between items-center mb-6">
-                <h1 className="text-3xl font-bold">Edit Blog</h1>
-                <button
-                    type="button"
-                    onClick={() => setPreviewMode(!previewMode)}
-                    className="text-sm bg-gray-700 px-4 py-2 rounded hover:bg-gray-600 transition-colors"
-                >
-                    {previewMode ? 'Edit Mode' : 'Preview Mode'}
-                </button>
+        <div className="p-8 max-w-7xl mx-auto min-h-screen">
+            <div className="mb-8 flex justify-between items-end">
+                <div>
+                    <Link href="/admin/blogs" className="text-cyan-400 hover:text-cyan-300 flex items-center gap-2 transition-colors mb-4 text-sm font-mono opacity-60 hover:opacity-100">
+                        ← ABORT_EDIT
+                    </Link>
+                    <h1 className="text-3xl md:text-4xl font-bold text-white mb-1 tracking-tight">Edit Transmission</h1>
+                    <p className="text-slate-400">Modify existing content entry ID: <span className="font-mono text-xs opacity-50">{id}</span></p>
+                </div>
+
+                {/* Mode Toggle */}
+                <div className="bg-slate-900/50 p-1 rounded-lg border border-white/10 flex">
+                    <button
+                        type="button"
+                        onClick={() => setPreviewMode(false)}
+                        className={`px-4 py-2 rounded-md transition-all flex items-center gap-2 text-sm font-bold uppercase tracking-wide ${!previewMode ? 'bg-cyan-500 text-black shadow-lg shadow-cyan-500/20' : 'text-slate-400 hover:text-white'}`}
+                    >
+                        <Edit2 className="w-3.5 h-3.5" /> Editor
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setPreviewMode(true)}
+                        className={`px-4 py-2 rounded-md transition-all flex items-center gap-2 text-sm font-bold uppercase tracking-wide ${previewMode ? 'bg-cyan-500 text-black shadow-lg shadow-cyan-500/20' : 'text-slate-400 hover:text-white'}`}
+                    >
+                        <Eye className="w-3.5 h-3.5" /> Preview
+                    </button>
+                </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="w-full bg-gray-800 p-6 rounded-lg shadow-lg space-y-6">
-                {/* Meta Fields Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label className="block text-sm font-medium mb-1">Title</label>
-                        <input
-                            type="text"
-                            name="title"
-                            value={formData.title}
-                            onChange={handleChange}
-                            required
-                            className="w-full p-2 bg-gray-700 rounded border border-gray-600 focus:outline-none focus:border-blue-500"
-                        />
+            <form onSubmit={handleSubmit} className="space-y-8">
+                {/* Metadata Section */}
+                <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
+
+                    <h2 className="text-sm font-mono text-cyan-500/70 uppercase tracking-widest mb-8 flex items-center gap-4 relative z-10">
+                        Header Metadata
+                        <div className="h-px bg-cyan-500/10 flex-grow" />
+                    </h2>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
+                        <div>
+                            <label className="block text-xs font-mono uppercase tracking-wider text-slate-500 mb-2">Transmission Title</label>
+                            <div className="relative group/input">
+                                <FileText className="absolute left-4 top-3.5 text-slate-500 group-focus-within/input:text-cyan-400 transition-colors" size={18} />
+                                <input
+                                    type="text"
+                                    name="title"
+                                    value={formData.title}
+                                    onChange={handleChange}
+                                    required
+                                    placeholder="ENTER_TITLE"
+                                    className="w-full bg-slate-950/50 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-slate-200 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-600 font-bold"
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-mono uppercase tracking-wider text-slate-500 mb-2">Stardate</label>
+                            <div className="relative group/input">
+                                <Calendar className="absolute left-4 top-3.5 text-slate-500 group-focus-within/input:text-cyan-400 transition-colors z-10" size={18} />
+                                <div className="custom-datepicker-wrapper w-full">
+                                    <DatePicker
+                                        selected={formData.date ? new Date(formData.date) : null}
+                                        onChange={(date) => {
+                                            if (!date) {
+                                                setFormData({ ...formData, date: '' });
+                                            } else {
+                                                const year = date.getFullYear();
+                                                const month = String(date.getMonth() + 1).padStart(2, '0');
+                                                const day = String(date.getDate()).padStart(2, '0');
+                                                setFormData({ ...formData, date: `${year}-${month}-${day}` });
+                                            }
+                                        }}
+                                        dateFormat="yyyy-MM-dd"
+                                        className="w-full bg-slate-950/50 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-slate-200 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-600 font-mono"
+                                        placeholderText="YYYY-MM-DD"
+                                    />
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-medium mb-1">Date</label>
-                        <div className="custom-datepicker-wrapper">
-                            <DatePicker
-                                selected={formData.date ? new Date(formData.date) : null}
-                                onChange={(date) => {
-                                    if (!date) {
-                                        setFormData({ ...formData, date: '' });
-                                    } else {
-                                        const year = date.getFullYear();
-                                        const month = String(date.getMonth() + 1).padStart(2, '0');
-                                        const day = String(date.getDate()).padStart(2, '0');
-                                        setFormData({ ...formData, date: `${year}-${month}-${day}` });
-                                    }
-                                }}
-                                dateFormat="MMMM d, yyyy"
-                                className="w-full p-2 bg-gray-700 rounded border border-gray-600 focus:outline-none focus:border-blue-500 text-white"
-                                placeholderText="Select date"
+                    <div className="mt-6 relative z-10">
+                        <label className="block text-xs font-mono uppercase tracking-wider text-slate-500 mb-2">Topic Vectors (Comma Separated)</label>
+                        <div className="relative group/input">
+                            <Tag className="absolute left-4 top-3.5 text-slate-500 group-focus-within/input:text-cyan-400 transition-colors" size={18} />
+                            <input
+                                type="text"
+                                name="tags"
+                                value={formData.tags}
+                                onChange={handleChange}
+                                placeholder="REACT, NEXT.JS, SYSTEM_DESIGN"
+                                className="w-full bg-slate-950/50 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-slate-200 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-600 font-mono"
                             />
                         </div>
                     </div>
                 </div>
 
-                <div>
-                    <label className="block text-sm font-medium mb-1">Tags (comma separated)</label>
-                    <input
-                        type="text"
-                        name="tags"
-                        value={formData.tags}
-                        onChange={handleChange}
-                        placeholder="React, Next.js, Web"
-                        className="w-full p-2 bg-gray-700 rounded border border-gray-600 focus:outline-none focus:border-blue-500"
-                    />
-                </div>
+                {/* Cover Image Section */}
+                <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
 
-                {/* Image Input with URL/Upload Toggle */}
-                <div>
-                    <div className="flex justify-between items-center mb-2">
-                        <label className="block text-sm font-medium">Image Cover</label>
-                        <div className="flex gap-2">
+                    <div className="flex justify-between items-center mb-8 relative z-10">
+                        <h2 className="text-sm font-mono text-purple-500/70 uppercase tracking-widest flex items-center gap-4">
+                            Visual Attachment
+                            <div className="h-px w-20 bg-purple-500/10" />
+                        </h2>
+                        <div className="flex bg-slate-950/50 rounded-lg p-1 border border-white/10">
                             <button
                                 type="button"
                                 onClick={() => setImageMode('url')}
-                                className={`px-3 py-1 text-xs rounded transition-colors ${imageMode === 'url'
-                                        ? 'bg-blue-600 text-white'
-                                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                                    }`}
+                                className={`px-3 py-1 text-[10px] uppercase font-bold rounded transition-colors ${imageMode === 'url' ? 'bg-purple-500 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
                             >
-                                URL
+                                External URL
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setImageMode('upload')}
-                                className={`px-3 py-1 text-xs rounded transition-colors ${imageMode === 'upload'
-                                        ? 'bg-blue-600 text-white'
-                                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                                    }`}
+                                className={`px-3 py-1 text-[10px] uppercase font-bold rounded transition-colors ${imageMode === 'upload' ? 'bg-purple-500 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
                             >
-                                Upload
+                                Local Upload
                             </button>
                         </div>
                     </div>
 
-                    {imageMode === 'url' ? (
-                        <>
-                            <input
-                                type="text"
-                                name="image"
-                                value={formData.image}
-                                onChange={handleChange}
-                                placeholder="https://example.com/image.jpg"
-                                className="w-full p-2 bg-gray-700 rounded border border-gray-600 focus:outline-none focus:border-blue-500"
-                            />
-                            {formData.image && (
-                                <div className="mt-2 text-center">
-                                    <p className="text-xs text-gray-400 mb-1">Preview:</p>
-                                    <img src={formData.image} alt="Preview" className="h-48 mx-auto rounded object-cover border border-gray-600" />
-                                </div>
-                            )}
-                        </>
-                    ) : (
-                        <>
-                            {!uploadFile ? (
-                                <div
-                                    className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer
-                                        ${dragActive ? 'border-blue-500 bg-blue-500/10' : 'border-gray-600 hover:border-gray-500'}
-                                    `}
-                                    onDragEnter={handleDrag}
-                                    onDragLeave={handleDrag}
-                                    onDragOver={handleDrag}
-                                    onDrop={handleDrop}
-                                    onClick={() => document.getElementById('blog-file-upload-edit').click()}
-                                >
+                    <div className="relative z-10">
+                        {imageMode === 'url' ? (
+                            <div className="space-y-4">
+                                <div className="relative group/input">
+                                    <ImageIcon className="absolute left-4 top-3.5 text-slate-500 group-focus-within/input:text-purple-400 transition-colors" size={18} />
                                     <input
-                                        type="file"
-                                        id="blog-file-upload-edit"
-                                        className="hidden"
-                                        onChange={handleFileChange}
-                                        accept="image/*"
+                                        type="text"
+                                        name="image"
+                                        value={formData.image}
+                                        onChange={handleChange}
+                                        placeholder="https://source.com/image_asset.jpg"
+                                        className="w-full bg-slate-950/50 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-slate-200 focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/50 outline-none transition-all placeholder:text-slate-600 font-mono"
                                     />
-                                    <div className="flex flex-col items-center gap-2">
-                                        <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                        </svg>
-                                        <span className="text-lg font-medium">Drag & Drop or Click to Upload</span>
-                                        <span className="text-sm text-gray-400">Supports JPG, PNG, WEBP, HEIC</span>
-                                    </div>
                                 </div>
-                            ) : (
-                                <div className="relative rounded-xl overflow-hidden border border-gray-600 bg-gray-900">
-                                    <button
-                                        type="button"
-                                        onClick={clearUpload}
-                                        className="absolute top-2 right-2 p-1 bg-red-500/80 hover:bg-red-500 text-white rounded-full transition-colors z-10"
+                                {formData.image && (
+                                    <div className="relative h-48 w-full rounded-xl overflow-hidden border border-white/10 group/preview">
+                                        <img src={formData.image} alt="Preview" className="w-full h-full object-cover opacity-60 group-hover/preview:opacity-100 transition-opacity" />
+                                        <div className="absolute bottom-2 right-2 bg-black/60 backdrop-blur-md px-2 py-1 rounded text-xs font-mono text-purple-400 border border-purple-500/30">PREVIEW_ACTIVE</div>
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="flex flex-col md:flex-row gap-6">
+                                {/* Upload Box */}
+                                {!uploadFile ? (
+                                    <div
+                                        className={`flex-1 border-2 border-dashed rounded-xl p-12 text-center transition-all cursor-pointer group/drop ${dragActive ? 'border-purple-500 bg-purple-500/10' : 'border-white/10 hover:border-purple-500/30 hover:bg-white/[0.02]'
+                                            }`}
+                                        onDragEnter={handleDrag}
+                                        onDragLeave={handleDrag}
+                                        onDragOver={handleDrag}
+                                        onDrop={handleDrop}
+                                        onClick={() => document.getElementById('blog-edit-upload').click()}
                                     >
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                        </svg>
-                                    </button>
-                                    <div className="flex flex-col md:flex-row gap-6 p-4">
-                                        <div className="relative h-48 w-full md:w-1/3 shrink-0 flex items-center justify-center bg-gray-800 rounded-lg">
+                                        <input
+                                            type="file"
+                                            id="blog-edit-upload"
+                                            className="hidden"
+                                            onChange={handleFileChange}
+                                            accept="image/*"
+                                        />
+                                        <div className="flex flex-col items-center gap-4">
+                                            <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center group-hover/drop:scale-110 transition-transform group-hover/drop:bg-purple-500/10 group-hover/drop:text-purple-400 text-slate-500">
+                                                <Upload className="w-6 h-6" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-slate-300 font-bold mb-1">Upload Asset</h3>
+                                                <p className="text-slate-500 text-xs font-mono">DRAG_AND_DROP_OR_CLICK</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="w-full flex gap-4 p-4 bg-slate-950/50 rounded-xl border border-white/10 items-center">
+                                        <div className="w-20 h-20 bg-white/5 rounded-lg overflow-hidden flex items-center justify-center shrink-0 border border-white/5">
                                             {uploadPreview === 'HEIC_PLACEHOLDER' ? (
-                                                <div className="text-center p-4">
-                                                    <div className="mx-auto mb-2 w-12 h-12 bg-gray-700 rounded-full flex items-center justify-center text-blue-400 font-bold">
-                                                        H
-                                                    </div>
-                                                    <p className="font-medium">HEIC File</p>
-                                                    <p className="text-xs text-gray-400">Preview not available</p>
-                                                    <p className="text-xs text-blue-400 mt-1">Will be converted to WebP</p>
-                                                </div>
+                                                <span className="text-xs font-mono text-purple-400">HEIC</span>
                                             ) : (
-                                                <img
-                                                    src={uploadPreview}
-                                                    alt="Preview"
-                                                    className="w-full h-full object-contain rounded"
-                                                />
+                                                <img src={uploadPreview} className="w-full h-full object-cover" />
                                             )}
                                         </div>
-                                        <div className="flex-1 flex flex-col justify-center gap-3">
-                                            <div>
-                                                <p className="text-sm font-medium">{uploadFile.name}</p>
-                                                <p className="text-xs text-gray-400">{(uploadFile.size / 1024).toFixed(2)} KB</p>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex justify-between items-start mb-2">
+                                                <div>
+                                                    <p className="text-sm font-bold text-slate-200 truncate">{uploadFile.name}</p>
+                                                    <p className="text-xs font-mono text-slate-500">{(uploadFile.size / 1024).toFixed(1)} KB</p>
+                                                </div>
+                                                <button type="button" onClick={clearUpload} className="p-1 hover:bg-white/10 rounded text-slate-500 hover:text-white transition-colors">
+                                                    <X className="w-4 h-4" />
+                                                </button>
                                             </div>
-                                            <button
-                                                type="button"
-                                                onClick={handleUpload}
-                                                disabled={uploading || formData.image}
-                                                className="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                                            >
-                                                {uploading ? (
-                                                    <>
-                                                        <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                        </svg>
-                                                        Uploading...
-                                                    </>
-                                                ) : formData.image ? (
-                                                    <>
-                                                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                                        </svg>
-                                                        Uploaded!
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                                                        </svg>
-                                                        Upload Image
-                                                    </>
-                                                )}
-                                            </button>
-                                            {formData.image && (
-                                                <div className="text-sm text-green-400 text-center">✓ Image ready for blog</div>
+                                            {formData.image !== uploadPreview && (
+                                                <button
+                                                    type="button"
+                                                    onClick={handleUpload}
+                                                    disabled={uploading}
+                                                    className="w-full py-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 border border-purple-500/30 rounded-lg text-xs font-bold uppercase tracking-wide flex items-center justify-center gap-2"
+                                                >
+                                                    {uploading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
+                                                    {uploading ? 'UPLOADING...' : 'CONFIRM_UPLOAD'}
+                                                </button>
                                             )}
                                         </div>
                                     </div>
-                                </div>
-                            )}
-                        </>
-                    )}
+                                )}
+                            </div>
+                        )}
 
-                    {formData.image && (
+                        {/* Insert Button */}
+                        {formData.image && (
+                            <button
+                                type="button"
+                                onClick={insertImageMarkdown}
+                                className="mt-4 text-xs font-mono text-purple-400 hover:text-purple-300 flex items-center gap-2 hover:underline"
+                            >
+                                <Upload className="w-3 h-3" />
+                                INJECT_MARKDOWN_REFERENCE
+                            </button>
+                        )}
+                    </div>
+                </div>
+
+                {/* Content Editor */}
+                <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 relative overflow-hidden group min-h-[600px] flex flex-col">
+                    <h2 className="text-sm font-mono text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-4">
+                        Data Payload (Markdown)
+                        <div className="h-px bg-white/5 flex-grow" />
+                    </h2>
+
+                    <div className="flex-1 bg-slate-950/50 rounded-xl border border-white/10 overflow-hidden relative">
+                        {previewMode ? (
+                            <div className="absolute inset-0 overflow-y-auto p-8 prose prose-invert max-w-none prose-headings:font-bold prose-headings:tracking-tight prose-a:text-cyan-400 prose-img:rounded-xl prose-pre:bg-black/50 prose-pre:border prose-pre:border-white/10">
+                                <ReactMarkdown
+                                    remarkPlugins={[remarkGfm]}
+                                    components={{
+                                        code({ node, inline, className, children, ...props }) {
+                                            const match = /language-(\w+)/.exec(className || '')
+                                            return !inline && match ? (
+                                                <SyntaxHighlighter
+                                                    style={vscDarkPlus}
+                                                    language={match[1]}
+                                                    PreTag="div"
+                                                    {...props}
+                                                >
+                                                    {String(children).replace(/\n$/, '')}
+                                                </SyntaxHighlighter>
+                                            ) : (
+                                                <code className={className} {...props}>
+                                                    {children}
+                                                </code>
+                                            )
+                                        }
+                                    }}
+                                >
+                                    {formData.content}
+                                </ReactMarkdown>
+                            </div>
+                        ) : (
+                            <textarea
+                                name="content"
+                                value={formData.content}
+                                onChange={handleChange}
+                                required
+                                className="w-full h-full p-6 bg-transparent resize-none focus:outline-none font-mono text-sm leading-relaxed text-slate-300 placeholder:text-slate-600"
+                                placeholder="# Begin transmission..."
+                            />
+                        )}
+                    </div>
+                </div>
+
+                {/* Action Footer */}
+                <div className="sticky bottom-8 bg-slate-900/90 backdrop-blur-xl border border-white/10 p-4 rounded-2xl shadow-2xl flex justify-between items-center z-50">
+                    <div className="text-xs font-mono text-slate-500 px-4">
+                        SYSTEM_STATUS: {submitting ? 'WRITING...' : 'READY'}
+                    </div>
+                    <div className="flex gap-4">
                         <button
                             type="button"
-                            onClick={insertImageMarkdown}
-                            className="mt-2 text-xs text-green-400 hover:text-green-300 underline"
+                            onClick={() => router.back()}
+                            className="px-6 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-colors text-sm font-bold uppercase tracking-wide"
                         >
-                            Insert into Content
+                            Cancel
                         </button>
-                    )}
+                        <button
+                            type="submit"
+                            disabled={submitting}
+                            className="px-8 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-bold transition-all shadow-[0_0_20px_rgba(34,211,238,0.3)] hover:shadow-[0_0_30px_rgba(34,211,238,0.5)] disabled:opacity-50 disabled:cursor-not-allowed text-sm tracking-wide flex items-center gap-2"
+                        >
+                            {submitting ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    SAVING_CHANGES...
+                                </>
+                            ) : (
+                                <>
+                                    <Save className="w-4 h-4" />
+                                    COMMIT_UPDATE
+                                </>
+                            )}
+                        </button>
+                    </div>
                 </div>
-
-                <div>
-                    <label className="block text-sm font-medium mb-1">Content (Markdown)</label>
-                    {previewMode ? (
-                        <div className="w-full min-h-[500px] p-6 bg-gray-900 rounded border border-gray-700 prose prose-invert max-w-none">
-                            <ReactMarkdown
-                                remarkPlugins={[remarkGfm]}
-                                components={{
-                                    code({ node, inline, className, children, ...props }) {
-                                        const match = /language-(\w+)/.exec(className || '')
-                                        return !inline && match ? (
-                                            <SyntaxHighlighter
-                                                style={vscDarkPlus}
-                                                language={match[1]}
-                                                PreTag="div"
-                                                {...props}
-                                            >
-                                                {String(children).replace(/\n$/, '')}
-                                            </SyntaxHighlighter>
-                                        ) : (
-                                            <code className={className} {...props}>
-                                                {children}
-                                            </code>
-                                        )
-                                    },
-                                    pre: ({ children }) => <>{children}</>
-                                }}
-                            >
-                                {formData.content}
-                            </ReactMarkdown>
-                        </div>
-                    ) : (
-                        <textarea
-                            name="content"
-                            value={formData.content}
-                            onChange={handleChange}
-                            required
-                            className="w-full h-[500px] p-4 bg-gray-700 rounded border border-gray-600 focus:outline-none focus:border-blue-500 font-mono text-sm leading-relaxed"
-                            placeholder="# Write your blog post in Markdown..."
-                        ></textarea>
-                    )}
-                </div>
-
-                <div className="flex gap-4 pt-4 border-t border-gray-700 mt-8">
-                    <button
-                        type="submit"
-                        disabled={submitting}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded transition-colors disabled:opacity-50"
-                    >
-                        {submitting ? 'Updating...' : 'Update Blog'}
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => router.back()}
-                        className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded transition-colors"
-                    >
-                        Cancel
-                    </button>
-                </div>
-            </form >
-        </div >
+            </form>
+        </div>
     );
 }

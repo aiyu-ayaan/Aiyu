@@ -6,10 +6,30 @@ export async function generateMetadata() {
     await dbConnect();
     const config = await ConfigModel.findOne().lean();
     const baseName = config?.siteTitle || config?.logoText || 'Portfolio';
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    const description = 'Let\'s collaborate on something amazing.';
+    const ogImage = config?.ogImage || `${baseUrl}/og-image.png`;
 
     return {
         title: `${baseName} | Contact`,
-        description: 'Let\'s collaborate on something amazing.',
+        description,
+        keywords: ['contact', 'collaborate', 'inquiry', 'email', 'reach out', 'get in touch'].join(', '),
+        openGraph: {
+            title: `${baseName} | Contact`,
+            description,
+            url: `${baseUrl}/contact-us`,
+            type: 'website',
+            images: [{ url: ogImage, width: 1200, height: 630 }],
+        },
+        twitter: {
+            card: 'summary_large_image',
+            title: `${baseName} | Contact`,
+            description,
+            images: [ogImage],
+        },
+        alternates: {
+            canonical: `${baseUrl}/contact-us`,
+        },
     };
 }
 

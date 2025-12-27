@@ -1,0 +1,20 @@
+# Allow all crawlers
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /api/admin
+Disallow: /api/auth/login
+Disallow: /api/auth/logout
+Disallow: /api/config
+Disallow: /*.json$
+Disallow: /*?*sort=
+Disallow: /*?*page=
+Crawl-delay: 1
+
+# Specific rules for Google
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 0
+
+# Sitemap location
+Sitemap: https://yourdomain.com/sitemap.xml

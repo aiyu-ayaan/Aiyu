@@ -23,13 +23,49 @@ export async function generateMetadata() {
 
   const baseName = config?.siteTitle || config?.logoText || 'Portfolio';
   const icon = config?.favicon?.value ? '/api/favicon' : '/favicon.ico';
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+  const siteDescription = config?.siteDescription || 'Professional portfolio showcasing projects, blogs, and expertise.';
+  const ogImage = config?.ogImage || `${baseUrl}/og-image.png`;
+  const authorName = config?.authorName || 'Developer';
 
   return {
     title: baseName,
-    description: "Just coding........",
+    description: siteDescription,
+    keywords: ['portfolio', 'developer', 'projects', 'blogs', 'web development', config?.profession || 'full stack'].join(', '),
     icons: {
       icon: icon,
     },
+    openGraph: {
+      title: baseName,
+      description: siteDescription,
+      url: baseUrl,
+      type: 'website',
+      images: [
+        {
+          url: ogImage,
+          width: 1200,
+          height: 630,
+          alt: baseName,
+        },
+      ],
+      locale: 'en_US',
+      siteName: baseName,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: baseName,
+      description: siteDescription,
+      images: [ogImage],
+    },
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1',
+    },
+    alternates: {
+      canonical: baseUrl,
+    },
+    manifest: '/site.webmanifest',
   };
 }
 
