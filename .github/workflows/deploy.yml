@@ -1,0 +1,28 @@
+name: Deploy to Server
+
+on:
+  # push:
+  #   branches:
+  #     - master
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          script: |
+            ls -la 
+            cd docker/Aiyu/
+            git pull origin master
+            
+            ls -la 
+            docker compose build --memory=512m
+            docker compose up -d 
+            
+ 
