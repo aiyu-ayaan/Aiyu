@@ -1,4 +1,4 @@
-name: PR Build Check
+name: Build & Deploy
 
 on:
   pull_request:
@@ -58,3 +58,41 @@ jobs:
           echo "❌ Build or lint checks failed!"
           echo "Please review the logs above and fix any issues."
           exit 1
+
+  deploy:
+    name: Deploy to Server
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push' && needs.build.result == 'success'
+    
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          script: |
+            set -e
+            
+            echo "Starting deployment..."
+            ls -la 
+            
+            echo "Navigating to project directory..."
+            cd docker/Aiyu/ || { echo "Failed to navigate to docker/Aiyu/"; exit 1; }
+            
+            echo "Pulling latest code from master..."
+            git pull origin master || { echo "Failed to pull from git"; exit 1; }
+            
+            ls -la 
+            
+            echo "Building Docker image..."
+            docker compose build --memory=512m || { echo "Docker build failed"; exit 1; }
+            
+            echo "Starting containers..."
+            docker compose up -d || { echo "Failed to start containers"; exit 1; }
+            
+            echo "Cleaning up Docker system..."
+            docker system prune -a --volumes -f || { echo "Cleanup warning (non-critical)"; }
+            
+            echo "✅ Deployment completed successfully!"
