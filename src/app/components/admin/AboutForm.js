@@ -43,13 +43,13 @@ function SortableItem({ id, children, className }) {
 
     return (
         <div ref={setNodeRef} style={style} className={className}>
-            <div className="flex items-start gap-2 h-full">
+            <div className="flex items-start gap-4 h-full">
                 <button
                     type="button"
                     {...attributes}
                     {...listeners}
-                    className="mt-4 text-gray-500 hover:text-gray-300 cursor-grab active:cursor-grabbing touch-none"
-                    title="Drag to reorder"
+                    className="mt-4 text-slate-600 hover:text-cyan-400 cursor-grab active:cursor-grabbing touch-none transition-colors"
+                    title="Reorder Element"
                 >
                     <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
                         <line x1="8" y1="6" x2="21" y2="6"></line>
@@ -334,89 +334,87 @@ const AboutForm = () => {
     if (loading) return <div className="text-white">Loading...</div>;
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-12 max-w-4xl mx-auto bg-gray-800 p-8 rounded-xl border border-gray-700 relative">
+        <form onSubmit={handleSubmit} className="space-y-12 max-w-5xl mx-auto">
             {/* Icon Picker Modal */}
             {activeIconIndex !== null && (
-                <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-                    <div className="bg-gray-800 rounded-xl p-6 w-full max-w-lg border border-gray-700 shadow-2xl space-y-4 max-h-[80vh] flex flex-col">
-                        <div className="flex justify-between items-center border-b border-gray-700 pb-2">
-                            <h3 className="text-xl font-bold text-white">Select Icon</h3>
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-[#0a0a0a] rounded-2xl p-6 w-full max-w-2xl border border-white/10 shadow-2xl space-y-6 max-h-[80vh] flex flex-col relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-[100px] pointer-events-none" />
+
+                        <div className="flex justify-between items-center border-b border-white/10 pb-4 relative z-10">
+                            <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                                <span className="w-1 h-6 bg-cyan-500 rounded-full" />
+                                Select Visualization Icon
+                            </h3>
                             <button
                                 type="button"
                                 onClick={() => setActiveIconIndex(null)}
-                                className="text-gray-400 hover:text-white"
+                                className="text-slate-400 hover:text-white transition-colors"
                             >
-                                ✕
+                                <div className="p-2 rounded-full hover:bg-white/10">✕</div>
                             </button>
                         </div>
-                        <input
-                            type="text"
-                            placeholder="Search icons (e.g. React, Android)..."
-                            className="w-full p-3 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white"
-                            value={iconSearchTerm}
-                            onChange={(e) => setIconSearchTerm(e.target.value)}
-                            autoFocus
-                        />
-                        <div className="flex-1 overflow-y-auto grid grid-cols-4 sm:grid-cols-5 gap-2 min-h-[300px] content-start">
+
+                        <div className="relative z-10">
+                            <input
+                                type="text"
+                                placeholder="Search icon matrix..."
+                                className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-600 font-mono text-sm"
+                                value={iconSearchTerm}
+                                onChange={(e) => setIconSearchTerm(e.target.value)}
+                                autoFocus
+                            />
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto grid grid-cols-4 sm:grid-cols-6 gap-3 min-h-[300px] content-start relative z-10 pr-2 custom-scrollbar">
                             {filteredIcons.map(({ name, slug, isCdn }) => (
                                 <button
                                     key={`${isCdn ? 'cdn' : 'local'}-${slug}`}
                                     type="button"
                                     onClick={() => {
-                                        // For CDN icons, use the slug from the API, else use name
                                         const value = isCdn ? slug : name;
                                         handleSkillChange(activeIconIndex, 'icon', value);
                                         setActiveIconIndex(null);
                                         setIconSearchTerm('');
                                     }}
-                                    className="p-3 rounded bg-gray-700/50 hover:bg-cyan-900/40 border border-transparent hover:border-cyan-500/50 flex flex-col items-center gap-2 transition-all aspect-square justify-center relative"
+                                    className="p-3 rounded-xl bg-white/[0.02] hover:bg-cyan-500/10 border border-white/5 hover:border-cyan-500/30 flex flex-col items-center gap-3 transition-all aspect-square justify-center relative group"
                                 >
-                                    <div className="text-3xl text-cyan-400 w-8 h-8 flex items-center justify-center">
+                                    <div className="text-2xl text-slate-400 group-hover:text-cyan-400 transition-colors w-8 h-8 flex items-center justify-center">
                                         {isCdn ? (
                                             <img
                                                 src={`https://cdn.simpleicons.org/${slug}/22d3ee`}
                                                 alt={name}
-                                                className="w-full h-full object-contain"
+                                                className="w-full h-full object-contain filter grayscale group-hover:grayscale-0 transition-all opacity-70 group-hover:opacity-100"
                                                 onError={(e) => { e.target.style.opacity = '0.3'; }}
                                             />
                                         ) : (
                                             <IconPreview name={name} />
                                         )}
                                     </div>
-                                    <span className="text-[10px] text-gray-300 truncate w-full text-center">{name}</span>
+                                    <span className="text-[10px] text-slate-500 group-hover:text-cyan-200 truncate w-full text-center font-mono">
+                                        {name}
+                                    </span>
                                     {isCdn && (
-                                        <span className="absolute top-1 right-1 text-[8px] bg-cyan-900 text-cyan-300 px-1 rounded">
+                                        <span className="absolute top-1 right-1 text-[8px] bg-cyan-900/50 text-cyan-300 px-1 rounded border border-cyan-500/20">
                                             WEB
                                         </span>
                                     )}
                                 </button>
                             ))}
 
-                            {/* Fallback for completely unknown terms (still allows typing custom slug) */}
+                            {/* Fallback */}
                             {iconSearchTerm && filteredIcons.length === 0 && (
                                 <button
                                     type="button"
                                     onClick={() => {
-                                        // Normalize slug
                                         const slug = iconSearchTerm.toLowerCase().replace(/[^a-z0-9]/g, '');
                                         handleSkillChange(activeIconIndex, 'icon', slug);
                                         setActiveIconIndex(null);
                                         setIconSearchTerm('');
                                     }}
-                                    className="p-3 rounded bg-gray-700/50 hover:bg-cyan-900/40 border border-dashed border-gray-500/50 hover:border-cyan-500 flex flex-col items-center gap-2 transition-all aspect-square justify-center relative group"
-                                    title={`Use "${iconSearchTerm}" as custom slug`}
+                                    className="p-3 rounded-xl bg-white/[0.02] border-2 border-dashed border-white/10 hover:border-cyan-500/50 flex flex-col items-center gap-2 transition-all aspect-square justify-center group"
                                 >
-                                    <div className="text-3xl text-cyan-400 w-8 h-8 flex items-center justify-center relative">
-                                        <img
-                                            src={`https://cdn.simpleicons.org/${iconSearchTerm.toLowerCase().replace(/[^a-z0-9]/g, '')}/22d3ee`}
-                                            alt={iconSearchTerm}
-                                            className="w-full h-full object-contain"
-                                            onError={(e) => {
-                                                e.target.style.display = 'none';
-                                                e.target.parentNode.innerHTML = '<span class="text-[10px] text-red-400">Not Found</span>';
-                                            }}
-                                        />
-                                    </div>
+                                    <div className="text-xl text-cyan-400">?</div>
                                     <span className="text-[10px] text-cyan-200 truncate w-full text-center">
                                         Use &quot;{iconSearchTerm}&quot;
                                     </span>
@@ -424,8 +422,9 @@ const AboutForm = () => {
                             )}
 
                             {filteredIcons.length === 0 && !iconSearchTerm && (
-                                <div className="col-span-full text-center text-gray-500 py-8">
-                                    Start typing to search 3000+ icons...
+                                <div className="col-span-full flex flex-col items-center justify-center text-slate-500 py-12 gap-2">
+                                    <span className="text-2xl opacity-20">⌨️</span>
+                                    <p className="text-sm font-mono">Awaiting search input...</p>
                                 </div>
                             )}
                         </div>
@@ -440,55 +439,68 @@ const AboutForm = () => {
             )}
 
             {/* Basic Info Section */}
-            <section className="space-y-6">
-                <h2 className="text-2xl font-bold text-white border-b border-gray-700 pb-2">Basic Info</h2>
-                <div>
-                    <label className="block text-sm font-medium mb-1 text-gray-300">Name <span className="text-red-400">*</span></label>
-                    <input
-                        type="text"
-                        name="name"
-                        value={formData.name}
-                        onChange={handleChange}
-                        className="w-full p-3 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white"
-                        required
-                    />
+            <div className="bg-[#0a0a0a]/60 backdrop-blur-xl rounded-2xl border border-white/5 p-8 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
+
+                <h2 className="text-sm font-mono text-cyan-500/70 uppercase tracking-widest mb-8 flex items-center gap-4">
+                    Core Metadata
+                    <div className="h-px bg-cyan-500/10 flex-grow" />
+                </h2>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Full Identification</label>
+                        <input
+                            type="text"
+                            name="name"
+                            value={formData.name}
+                            onChange={handleChange}
+                            className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-700 font-bold"
+                            required
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Role Vectors</label>
+                        <input
+                            type="text"
+                            name="roles"
+                            value={formData.roles}
+                            onChange={handleChange}
+                            className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-700 font-mono text-sm"
+                            required
+                        />
+                    </div>
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium mb-1 text-gray-300">Roles (comma separated) <span className="text-red-400">*</span></label>
-                    <input
-                        type="text"
-                        name="roles"
-                        value={formData.roles}
-                        onChange={handleChange}
-                        className="w-full p-3 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white"
-                        required
-                    />
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium mb-1 text-gray-300">Professional Summary <span className="text-red-400">*</span></label>
+                    <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Professional Narrative</label>
                     <textarea
                         name="professionalSummary"
                         value={formData.professionalSummary}
                         onChange={handleChange}
                         rows="6"
-                        className="w-full p-3 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white"
+                        className="w-full bg-black/40 border border-white/10 rounded-lg p-4 text-slate-300 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-700 leading-relaxed"
                         required
                     />
                 </div>
-            </section>
+            </div>
 
             {/* Skills Section */}
-            <section className="space-y-4">
-                <div className="flex justify-between items-center border-b border-gray-700 pb-2">
-                    <h2 className="text-2xl font-bold text-white">Skills</h2>
+            <div className="bg-[#0a0a0a]/60 backdrop-blur-xl rounded-2xl border border-white/5 p-8 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-green-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
+
+                <div className="flex justify-between items-center mb-8 relative z-10">
+                    <h2 className="text-sm font-mono text-green-500/70 uppercase tracking-widest flex items-center gap-4">
+                        Skill Competencies
+                        <div className="h-px w-20 bg-green-500/10" />
+                    </h2>
                     <button
                         type="button"
                         onClick={addSkill}
-                        className="text-sm bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-400 px-3 py-1 rounded transition-colors"
+                        className="text-xs bg-green-500/10 hover:bg-green-500/20 text-green-400 px-4 py-2 rounded-lg border border-green-500/20 hover:border-green-500/50 transition-all font-mono uppercase tracking-wide flex items-center gap-2"
                     >
-                        + Add Skill
+                        + Add Node
                     </button>
                 </div>
 
@@ -501,28 +513,30 @@ const AboutForm = () => {
                         items={formData.skills.map(s => s._id)}
                         strategy={rectSortingStrategy}
                     >
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
                             {formData.skills.map((skill, index) => (
-                                <SortableItem key={skill._id} id={skill._id} className="bg-gray-700/30 p-4 rounded-lg border border-gray-700 relative group">
+                                <SortableItem key={skill._id} id={skill._id} className="bg-white/[0.02] p-4 rounded-xl border border-white/5 relative group hover:border-green-500/30 transition-colors">
                                     <button
                                         type="button"
                                         onClick={() => removeSkill(index)}
-                                        className="absolute top-2 right-2 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                        className="absolute top-3 right-3 text-white/20 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all z-20"
                                         title="Remove"
                                     >
                                         ✕
                                     </button>
-                                    <div className="mb-2 flex items-center gap-3">
+                                    <div className="mb-4 flex items-center gap-4">
                                         <button
                                             type="button"
                                             onClick={() => setActiveIconIndex(index)}
-                                            className="w-10 h-10 rounded bg-gray-800 border border-gray-600 flex items-center justify-center hover:border-cyan-400 transition-colors"
-                                            title="Change Icon"
+                                            className="w-12 h-12 rounded-lg bg-black/40 border border-white/10 flex items-center justify-center hover:border-green-500/50 transition-colors group/icon shrink-0"
+                                            title="Configure Icon"
                                         >
                                             {skill.icon ? (
-                                                <div className="text-2xl"><IconPreview name={skill.icon} /></div>
+                                                <div className="text-2xl text-slate-400 group-hover/icon:text-green-400 transition-colors">
+                                                    <IconPreview name={skill.icon} />
+                                                </div>
                                             ) : (
-                                                <span className="text-xs text-gray-500">Icon</span>
+                                                <span className="text-[10px] text-slate-600 font-mono">ICON</span>
                                             )}
                                         </button>
                                         <div className="flex-1">
@@ -530,43 +544,54 @@ const AboutForm = () => {
                                                 type="text"
                                                 value={skill.name}
                                                 onChange={(e) => handleSkillChange(index, 'name', e.target.value)}
-                                                placeholder="Skill Name"
-                                                className="w-full bg-transparent border-b border-gray-600 focus:border-cyan-400 focus:outline-none text-white font-medium pl-1"
+                                                placeholder="Skill Identifier"
+                                                className="w-full bg-transparent border-b border-white/10 focus:border-green-500/50 focus:outline-none text-slate-200 font-bold text-sm pb-1 transition-colors placeholder:text-slate-700"
                                                 required
                                             />
                                         </div>
                                     </div>
                                     <div>
-                                        <div className="flex justify-between text-xs text-gray-400 mb-1">
+                                        <div className="flex justify-between text-[10px] font-mono text-slate-500 mb-2 uppercase tracking-wider">
                                             <span>{getProficiencyLabel(skill.level)}</span>
-                                            <span>{skill.level}%</span>
+                                            <span className="text-green-500/80">{skill.level}%</span>
                                         </div>
-                                        <input
-                                            type="range"
-                                            min="0"
-                                            max="100"
-                                            value={skill.level}
-                                            onChange={(e) => handleSkillChange(index, 'level', parseInt(e.target.value))}
-                                            className="w-full h-1.5 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-cyan-500"
-                                        />
+                                        <div className="relative h-1.5 w-full bg-black/40 rounded-full overflow-hidden">
+                                            <input
+                                                type="range"
+                                                min="0"
+                                                max="100"
+                                                value={skill.level}
+                                                onChange={(e) => handleSkillChange(index, 'level', parseInt(e.target.value))}
+                                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                            />
+                                            <div
+                                                className="h-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.3)] transition-all duration-300"
+                                                style={{ width: `${skill.level}%` }}
+                                            />
+                                        </div>
                                     </div>
                                 </SortableItem>
                             ))}
                         </div>
                     </SortableContext>
                 </DndContext>
-            </section>
+            </div>
 
             {/* Experience Section */}
-            <section className="space-y-4">
-                <div className="flex justify-between items-center border-b border-gray-700 pb-2">
-                    <h2 className="text-2xl font-bold text-white">Experience</h2>
+            <div className="bg-[#0a0a0a]/60 backdrop-blur-xl rounded-2xl border border-white/5 p-8 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
+
+                <div className="flex justify-between items-center mb-8 relative z-10">
+                    <h2 className="text-sm font-mono text-orange-500/70 uppercase tracking-widest flex items-center gap-4">
+                        Career Trajectory
+                        <div className="h-px w-20 bg-orange-500/10" />
+                    </h2>
                     <button
                         type="button"
                         onClick={addExperience}
-                        className="text-sm bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-400 px-3 py-1 rounded transition-colors"
+                        className="text-xs bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 px-4 py-2 rounded-lg border border-orange-500/20 hover:border-orange-500/50 transition-all font-mono uppercase tracking-wide flex items-center gap-2"
                     >
-                        + Add Experience
+                        + Add Event
                     </button>
                 </div>
 
@@ -579,56 +604,56 @@ const AboutForm = () => {
                         items={formData.experiences.map(e => e._id)}
                         strategy={verticalListSortingStrategy}
                     >
-                        <div className="space-y-6">
+                        <div className="space-y-6 relative z-10">
                             {formData.experiences.map((exp, index) => (
-                                <SortableItem key={exp._id} id={exp._id} className="bg-gray-700/30 p-6 rounded-lg border border-gray-700 relative">
+                                <SortableItem key={exp._id} id={exp._id} className="bg-white/[0.02] p-8 rounded-xl border border-white/5 relative group hover:border-orange-500/30 transition-colors">
                                     <button
                                         type="button"
                                         onClick={() => removeExperience(index)}
-                                        className="absolute top-4 right-4 text-red-400 hover:text-red-300 z-10"
-                                        title="Remove Experience"
+                                        className="absolute top-4 right-4 text-xs font-mono uppercase tracking-wider text-red-400/50 hover:text-red-400 border border-red-500/10 hover:border-red-500/50 px-3 py-1 rounded transition-all opacity-0 group-hover:opacity-100 z-10"
                                     >
-                                        Remove
+                                        Delete
                                     </button>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                                         <div>
-                                            <label className="block text-xs text-gray-400 mb-1">Company</label>
+                                            <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Organization</label>
                                             <input
                                                 type="text"
                                                 value={exp.company}
                                                 onChange={(e) => handleExperienceChange(index, 'company', e.target.value)}
-                                                className="w-full p-2 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white text-sm"
+                                                className="w-full bg-black/40 border border-white/10 rounded-lg p-2.5 text-slate-200 focus:border-orange-500/50 outline-none text-sm font-bold"
                                                 required
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-xs text-gray-400 mb-1">Role</label>
+                                            <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Designation</label>
                                             <input
                                                 type="text"
                                                 value={exp.role}
                                                 onChange={(e) => handleExperienceChange(index, 'role', e.target.value)}
-                                                className="w-full p-2 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white text-sm"
+                                                className="w-full bg-black/40 border border-white/10 rounded-lg p-2.5 text-slate-200 focus:border-orange-500/50 outline-none text-sm"
                                                 required
                                             />
                                         </div>
-                                        <div>
-                                            <label className="block text-xs text-gray-400 mb-1">Duration</label>
+                                        <div className="md:col-span-2">
+                                            <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Timeline</label>
                                             <input
                                                 type="text"
                                                 value={exp.duration}
                                                 onChange={(e) => handleExperienceChange(index, 'duration', e.target.value)}
-                                                className="w-full p-2 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white text-sm"
+                                                className="w-full bg-black/40 border border-white/10 rounded-lg p-2.5 text-slate-200 focus:border-orange-500/50 outline-none text-sm font-mono"
+                                                placeholder="e.g. 2020 - Present"
                                                 required
                                             />
                                         </div>
                                     </div>
                                     <div>
-                                        <label className="block text-xs text-gray-400 mb-1">Description</label>
+                                        <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Responsibilities</label>
                                         <textarea
                                             value={exp.description}
                                             onChange={(e) => handleExperienceChange(index, 'description', e.target.value)}
                                             rows="3"
-                                            className="w-full p-2 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white text-sm"
+                                            className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-slate-300 focus:border-orange-500/50 outline-none text-sm leading-relaxed"
                                             required
                                         />
                                     </div>
@@ -637,18 +662,23 @@ const AboutForm = () => {
                         </div>
                     </SortableContext>
                 </DndContext>
-            </section>
+            </div>
 
             {/* Education Section */}
-            <section className="space-y-4">
-                <div className="flex justify-between items-center border-b border-gray-700 pb-2">
-                    <h2 className="text-2xl font-bold text-white">Education</h2>
+            <div className="bg-[#0a0a0a]/60 backdrop-blur-xl rounded-2xl border border-white/5 p-8 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
+
+                <div className="flex justify-between items-center mb-8 relative z-10">
+                    <h2 className="text-sm font-mono text-purple-500/70 uppercase tracking-widest flex items-center gap-4">
+                        Academic Records
+                        <div className="h-px w-20 bg-purple-500/10" />
+                    </h2>
                     <button
                         type="button"
                         onClick={addEducation}
-                        className="text-sm bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-400 px-3 py-1 rounded transition-colors"
+                        className="text-xs bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 px-4 py-2 rounded-lg border border-purple-500/20 hover:border-purple-500/50 transition-all font-mono uppercase tracking-wide flex items-center gap-2"
                     >
-                        + Add Education
+                        + Add Record
                     </button>
                 </div>
 
@@ -661,55 +691,55 @@ const AboutForm = () => {
                         items={formData.education.map(e => e._id)}
                         strategy={verticalListSortingStrategy}
                     >
-                        <div className="space-y-4">
+                        <div className="space-y-4 relative z-10">
                             {formData.education.map((edu, index) => (
-                                <SortableItem key={edu._id} id={edu._id} className="bg-gray-700/30 p-4 rounded-lg border border-gray-700 relative">
-                                    <div className="flex flex-wrap gap-4 items-end w-full">
-                                        <button
-                                            type="button"
-                                            onClick={() => removeEducation(index)}
-                                            className="absolute top-2 right-2 text-red-500 hover:text-red-400 text-lg leading-none z-10"
-                                            title="Remove"
-                                        >
-                                            &times;
-                                        </button>
+                                <SortableItem key={edu._id} id={edu._id} className="bg-white/[0.02] p-6 rounded-xl border border-white/5 relative group hover:border-purple-500/30 transition-colors">
+                                    <button
+                                        type="button"
+                                        onClick={() => removeEducation(index)}
+                                        className="absolute top-3 right-3 text-white/20 hover:text-red-400 transition-colors z-20"
+                                    >
+                                        <div className="p-1">✕</div>
+                                    </button>
+
+                                    <div className="flex flex-wrap gap-4 items-end w-full pr-8">
                                         <div className="flex-1 min-w-[200px]">
-                                            <label className="block text-xs text-gray-400 mb-1">Institution</label>
+                                            <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Institution</label>
                                             <input
                                                 type="text"
                                                 value={edu.institution}
                                                 onChange={(e) => handleEducationChange(index, 'institution', e.target.value)}
-                                                className="w-full p-2 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white text-sm"
+                                                className="w-full bg-black/40 border border-white/10 rounded-lg p-2.5 text-slate-200 focus:border-purple-500/50 outline-none text-sm font-bold"
                                                 required
                                             />
                                         </div>
                                         <div className="flex-1 min-w-[200px]">
-                                            <label className="block text-xs text-gray-400 mb-1">Degree</label>
+                                            <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Degree / Major</label>
                                             <input
                                                 type="text"
                                                 value={edu.degree}
                                                 onChange={(e) => handleEducationChange(index, 'degree', e.target.value)}
-                                                className="w-full p-2 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white text-sm"
+                                                className="w-full bg-black/40 border border-white/10 rounded-lg p-2.5 text-slate-200 focus:border-purple-500/50 outline-none text-sm"
                                                 required
                                             />
                                         </div>
                                         <div className="w-32">
-                                            <label className="block text-xs text-gray-400 mb-1">Duration</label>
+                                            <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Years</label>
                                             <input
                                                 type="text"
                                                 value={edu.duration}
                                                 onChange={(e) => handleEducationChange(index, 'duration', e.target.value)}
-                                                className="w-full p-2 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white text-sm"
+                                                className="w-full bg-black/40 border border-white/10 rounded-lg p-2.5 text-slate-200 focus:border-purple-500/50 outline-none text-sm font-mono text-center"
                                                 required
                                             />
                                         </div>
                                         <div className="w-24">
-                                            <label className="block text-xs text-gray-400 mb-1">CGPA</label>
+                                            <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Grade</label>
                                             <input
                                                 type="text"
                                                 value={edu.cgpa}
                                                 onChange={(e) => handleEducationChange(index, 'cgpa', e.target.value)}
-                                                className="w-full p-2 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white text-sm"
+                                                className="w-full bg-black/40 border border-white/10 rounded-lg p-2.5 text-purple-400 focus:border-purple-500/50 outline-none text-sm font-mono text-center font-bold"
                                             />
                                         </div>
                                     </div>
@@ -718,18 +748,23 @@ const AboutForm = () => {
                         </div>
                     </SortableContext>
                 </DndContext>
-            </section>
+            </div>
 
             {/* Certifications Section */}
-            <section className="space-y-4">
-                <div className="flex justify-between items-center border-b border-gray-700 pb-2">
-                    <h2 className="text-2xl font-bold text-white">Certifications</h2>
+            <div className="bg-[#0a0a0a]/60 backdrop-blur-xl rounded-2xl border border-white/5 p-8 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
+
+                <div className="flex justify-between items-center mb-8 relative z-10">
+                    <h2 className="text-sm font-mono text-yellow-500/70 uppercase tracking-widest flex items-center gap-4">
+                        Credentials & Licenses
+                        <div className="h-px w-20 bg-yellow-500/10" />
+                    </h2>
                     <button
                         type="button"
                         onClick={addCertification}
-                        className="text-sm bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-400 px-3 py-1 rounded transition-colors"
+                        className="text-xs bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-400 px-4 py-2 rounded-lg border border-yellow-500/20 hover:border-yellow-500/50 transition-all font-mono uppercase tracking-wide flex items-center gap-2"
                     >
-                        + Add Certification
+                        + Add Credential
                     </button>
                 </div>
 
@@ -742,73 +777,70 @@ const AboutForm = () => {
                         items={formData.certifications.map(c => c._id)}
                         strategy={verticalListSortingStrategy}
                     >
-                        <div className="space-y-4">
+                        <div className="space-y-4 relative z-10">
                             {formData.certifications.map((cert, index) => (
-                                <SortableItem key={cert._id} id={cert._id} className="bg-gray-700/30 p-6 rounded-lg border border-gray-700 relative">
+                                <SortableItem key={cert._id} id={cert._id} className="bg-white/[0.02] p-6 rounded-xl border border-white/5 relative group hover:border-yellow-500/30 transition-colors">
                                     <button
                                         type="button"
                                         onClick={() => removeCertification(index)}
-                                        className="absolute top-4 right-4 text-red-400 hover:text-red-300 z-10"
-                                        title="Remove"
+                                        className="absolute top-3 right-3 text-white/20 hover:text-red-400 transition-colors z-20"
                                     >
-                                        Remove
+                                        <div className="p-1">✕</div>
                                     </button>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
                                         <div>
-                                            <label className="block text-xs text-gray-400 mb-1">Certification Name</label>
+                                            <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">License Name</label>
                                             <input
                                                 type="text"
                                                 value={cert.name}
                                                 onChange={(e) => handleCertificationChange(index, 'name', e.target.value)}
-                                                className="w-full p-2 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white text-sm"
+                                                className="w-full bg-black/40 border border-white/10 rounded-lg p-2.5 text-slate-200 focus:border-yellow-500/50 outline-none text-sm font-bold"
                                                 required
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-xs text-gray-400 mb-1">Issuer</label>
+                                            <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Issuing Authority</label>
                                             <input
                                                 type="text"
                                                 value={cert.issuer}
                                                 onChange={(e) => handleCertificationChange(index, 'issuer', e.target.value)}
-                                                className="w-full p-2 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white text-sm"
+                                                className="w-full bg-black/40 border border-white/10 rounded-lg p-2.5 text-slate-200 focus:border-yellow-500/50 outline-none text-sm"
                                                 required
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-xs text-gray-400 mb-1">Date</label>
+                                            <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Date of Issue</label>
                                             <input
                                                 type="text"
                                                 value={cert.date}
                                                 onChange={(e) => handleCertificationChange(index, 'date', e.target.value)}
-                                                className="w-full p-2 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white text-sm"
+                                                className="w-full bg-black/40 border border-white/10 rounded-lg p-2.5 text-slate-200 focus:border-yellow-500/50 outline-none text-sm font-mono"
                                                 required
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-xs text-gray-400 mb-1">URL (Optional)</label>
+                                            <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Validation URL (Optional)</label>
                                             <input
                                                 type="url"
                                                 value={cert.url || ''}
                                                 onChange={(e) => handleCertificationChange(index, 'url', e.target.value)}
-                                                className="w-full p-2 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white text-sm"
+                                                className="w-full bg-black/40 border border-white/10 rounded-lg p-2.5 text-slate-200 focus:border-yellow-500/50 outline-none text-sm font-mono"
                                             />
                                         </div>
                                     </div>
                                     <div>
-                                        <label className="block text-xs text-gray-400 mb-1">Skills (Comma separated)</label>
+                                        <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Associated Skills (Comma Separated)</label>
                                         <input
                                             type="text"
-                                            value={cert.skills ? cert.skills.join(', ') : ''}
+                                            value={Array.isArray(cert.skills) ? cert.skills.join(', ') : cert.skills || ''}
                                             onChange={(e) => {
                                                 const val = e.target.value;
                                                 const newCerts = [...formData.certifications];
-                                                // Temporarily store string to allow typing, but schema needs array. 
-                                                // Splitting here works for standard comma-separated input.
-                                                // For more robust handling we might need a separate component or state, but this fits the existing pattern.
                                                 newCerts[index] = { ...newCerts[index], skills: val.split(',') };
                                                 setFormData(prev => ({ ...prev, certifications: newCerts }));
                                             }}
-                                            className="w-full p-2 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white text-sm"
+                                            className="w-full bg-black/40 border border-white/10 rounded-lg p-2.5 text-slate-200 focus:border-yellow-500/50 outline-none text-sm"
                                         />
                                     </div>
                                 </SortableItem>
@@ -816,22 +848,23 @@ const AboutForm = () => {
                         </div>
                     </SortableContext>
                 </DndContext>
-            </section>
+            </div>
 
-            <div className="flex justify-end gap-4 pt-8 border-t border-gray-700 sticky bottom-0 bg-gray-800 pb-4">
+            {/* Sticky Action Footer */}
+            <div className="sticky bottom-8 flex justify-end gap-4 pt-6 border-t border-white/5 bg-[#030014]/80 backdrop-blur-lg p-4 rounded-xl border border-white/5 shadow-2xl z-50">
                 <button
                     type="button"
                     onClick={() => router.back()}
-                    className="px-6 py-2 rounded bg-gray-700 hover:bg-gray-600 text-white transition-colors"
+                    className="px-6 py-2 rounded bg-white/5 hover:bg-white/10 text-slate-400 transition-colors text-sm font-medium"
                 >
-                    Cancel
+                    CANCEL
                 </button>
                 <button
                     type="submit"
                     disabled={saving}
-                    className="px-6 py-2 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-bold transition-colors disabled:opacity-50 shadow-lg shadow-cyan-500/20"
+                    className="px-8 py-2 rounded bg-cyan-500 hover:bg-cyan-400 text-black font-bold transition-all shadow-[0_0_20px_rgba(34,211,238,0.3)] hover:shadow-[0_0_30px_rgba(34,211,238,0.5)] disabled:opacity-50 disabled:cursor-not-allowed text-sm tracking-wide"
                 >
-                    {saving ? 'Saving...' : 'Update Entire Profile'}
+                    {saving ? 'UPDATING_MATRIX...' : 'CONFIRM_UPDATE'}
                 </button>
             </div>
         </form>

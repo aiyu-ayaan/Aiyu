@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
+import { X, Save, Eraser, Palette, Eye, Layout, Type, Box, Hash, Sun, Moon, Layers } from 'lucide-react';
 
 const defaultVariant = {
     backgrounds: {
@@ -102,30 +103,39 @@ export default function ThemeEditor({ theme, onSave, onCancel }) {
     };
 
     const ColorInput = ({ label, value, onChange, category, colorKey }) => (
-        <div className="flex items-center gap-3 group">
-            <input
-                type="color"
-                value={value}
-                onChange={(e) => onChange(category, colorKey, e.target.value)}
-                className="w-12 h-10 rounded cursor-pointer border-2 border-gray-600 hover:border-cyan-400 transition-colors"
-            />
-            <div className="flex-1">
-                <label className="text-sm text-gray-300 block">{label}</label>
+        <div className="flex items-center gap-3 p-3 bg-white/[0.02] border border-white/5 rounded-lg hover:border-white/10 transition-colors group">
+            <div className="relative">
+                <input
+                    type="color"
+                    value={value}
+                    onChange={(e) => onChange(category, colorKey, e.target.value)}
+                    className="w-10 h-10 rounded cursor-pointer opacity-0 absolute inset-0 z-10"
+                />
+                <div
+                    className="w-10 h-10 rounded border border-white/10 shadow-inner"
+                    style={{ backgroundColor: value }}
+                />
+            </div>
+            <div className="flex-1 min-w-0">
+                <label className="text-xs text-slate-400 block mb-1 truncate font-mono uppercase tracking-wide">{label}</label>
                 <input
                     type="text"
                     value={value}
                     onChange={(e) => onChange(category, colorKey, e.target.value)}
-                    className="w-full bg-gray-700 text-gray-200 px-3 py-1 rounded text-xs font-mono border border-gray-600 focus:border-cyan-400 outline-none"
-                    pattern="^#[0-9A-Fa-f]{6}$|^rgba?\([^)]+\)$"
+                    className="w-full bg-black/40 text-slate-200 px-2 py-1 rounded text-xs font-mono border border-white/5 focus:border-cyan-500/50 outline-none"
                 />
             </div>
         </div>
     );
 
-    const ColorSection = ({ title, category, colors }) => (
-        <div className="mb-6">
-            <h4 className="text-lg font-semibold text-white mb-3 pb-2 border-b border-gray-700">{title}</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    const ColorSection = ({ title, icon: Icon, category, colors }) => (
+        <div className="mb-8">
+            <div className="flex items-center gap-2 mb-4">
+                <Icon className="w-4 h-4 text-cyan-400" />
+                <h4 className="text-sm font-bold text-white uppercase tracking-wider">{title}</h4>
+                <div className="h-px bg-white/10 flex-1 ml-4" />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                 {Object.entries(colors).map(([key, value]) => (
                     <ColorInput
                         key={key}
@@ -141,120 +151,137 @@ export default function ThemeEditor({ theme, onSave, onCancel }) {
     );
 
     return (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 overflow-y-auto">
-            <div className="bg-gray-900 rounded-xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col border border-gray-700">
+        <div className="fixed inset-0 bg-[#030014]/90 backdrop-blur-xl flex items-center justify-center z-[100] p-4 animate-in fade-in duration-200">
+            <div className="bg-[#0a0a0a] rounded-2xl w-full max-w-7xl h-[90vh] flex flex-col border border-white/10 shadow-2xl relative overflow-hidden">
+
+                {/* Background Decorative Elements */}
+                <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/5 rounded-full blur-[120px] pointer-events-none" />
+                <div className="absolute bottom-0 left-0 w-96 h-96 bg-purple-500/5 rounded-full blur-[120px] pointer-events-none" />
+
                 {/* Header */}
-                <div className="p-6 border-b border-gray-700 flex justify-between items-center bg-gray-800">
-                    <div className="flex-1">
-                        <h2 className="text-2xl font-bold text-white mb-2">
-                            {theme ? 'Edit Theme' : 'Create Custom Theme'}
-                        </h2>
-                        <input
-                            type="text"
-                            placeholder="Theme Name"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            className="w-full max-w-md bg-gray-700 text-white px-4 py-2 rounded border border-gray-600 focus:border-cyan-400 outline-none mb-2"
-                        />
-                        <input
-                            type="text"
-                            placeholder="Description (optional)"
-                            value={description}
-                            onChange={(e) => setDescription(e.target.value)}
-                            className="w-full max-w-md bg-gray-700 text-gray-300 px-4 py-2 rounded text-sm border border-gray-600 focus:border-cyan-400 outline-none"
-                        />
+                <div className="p-6 border-b border-white/5 flex justify-between items-start bg-black/20 relative z-10 shrink-0">
+                    <div className="flex-1 max-w-2xl">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="p-2 bg-cyan-500/10 rounded-lg text-cyan-400">
+                                <Palette className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <h2 className="text-2xl font-bold text-white tracking-tight">
+                                    {theme ? 'Edit System Theme' : 'Initialize New Theme'}
+                                </h2>
+                                <p className="text-sm text-slate-500 font-mono">Configure color variables and syntax highlighting.</p>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <input
+                                type="text"
+                                placeholder="THEME_DESIGNATION"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                className="w-full bg-black/40 text-white px-4 py-3 rounded-xl border border-white/10 focus:border-cyan-500/50 outline-none text-sm font-bold placeholder:text-slate-700 font-mono"
+                            />
+                            <input
+                                type="text"
+                                placeholder="Description (Optional context)"
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                                className="w-full bg-black/40 text-slate-300 px-4 py-3 rounded-xl border border-white/10 focus:border-cyan-500/50 outline-none text-sm placeholder:text-slate-700"
+                            />
+                        </div>
                     </div>
                     <button
                         onClick={onCancel}
-                        className="text-gray-400 hover:text-white transition-colors ml-4"
+                        className="text-slate-500 hover:text-white transition-colors bg-white/5 hover:bg-white/10 p-2 rounded-lg"
                     >
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
+                        <X className="w-6 h-6" />
                     </button>
                 </div>
 
                 {/* Variant Tabs */}
-                <div className="flex gap-2 p-4 bg-gray-800 border-b border-gray-700">
+                <div className="flex px-6 pt-6 gap-2 bg-black/20 shrink-0 relative z-10">
                     <button
                         onClick={() => setActiveTab('light')}
-                        className={`px-6 py-2 rounded transition-colors ${activeTab === 'light'
-                                ? 'bg-cyan-500 text-white'
-                                : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
-                            }`}
+                        className={`px-6 py-3 rounded-t-xl transition-all flex items-center gap-2 text-sm font-bold border-t border-x ${activeTab === 'light'
+                            ? 'bg-[#0a0a0a] border-white/10 text-white border-b-transparent translate-y-px z-10'
+                            : 'bg-white/5 border-transparent text-slate-500 hover:text-slate-300 hover:bg-white/10'}`}
                     >
-                        Light Mode
+                        <Sun className="w-4 h-4" /> Light Mode
                     </button>
                     <button
                         onClick={() => setActiveTab('dark')}
-                        className={`px-6 py-2 rounded transition-colors ${activeTab === 'dark'
-                                ? 'bg-cyan-500 text-white'
-                                : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
-                            }`}
+                        className={`px-6 py-3 rounded-t-xl transition-all flex items-center gap-2 text-sm font-bold border-t border-x ${activeTab === 'dark'
+                            ? 'bg-[#0a0a0a] border-white/10 text-white border-b-transparent translate-y-px z-10'
+                            : 'bg-white/5 border-transparent text-slate-500 hover:text-slate-300 hover:bg-white/10'}`}
                     >
-                        Dark Mode
+                        <Moon className="w-4 h-4" /> Dark Mode
                     </button>
                 </div>
 
-                {/* Color Editor */}
-                <div className="flex-1 overflow-y-auto p-6 hide-scrollbar">
-                    <div className="max-w-4xl mx-auto">
+                <div className="h-px bg-white/10 w-full shrink-0 relative z-0" />
+
+                {/* Color Editor Content */}
+                <div className="flex-1 overflow-y-auto p-8 hide-scrollbar relative z-10 scroll-smooth">
+                    <div className="max-w-5xl mx-auto space-y-2">
                         <ColorSection
-                            title="Background Colors"
+                            title="Structure & Backgrounds"
+                            icon={Layout}
                             category="backgrounds"
                             colors={currentVariant.backgrounds}
                         />
                         <ColorSection
-                            title="Text Colors"
+                            title="Typography"
+                            icon={Type}
                             category="text"
                             colors={currentVariant.text}
                         />
                         <ColorSection
-                            title="Accent Colors"
+                            title="Primary Accents"
+                            icon={Eraser}
                             category="accents"
                             colors={currentVariant.accents}
                         />
                         <ColorSection
-                            title="Border Colors"
+                            title="Borders & Dividers"
+                            icon={Box}
                             category="borders"
                             colors={currentVariant.borders}
                         />
                         <ColorSection
-                            title="Status Colors"
+                            title="UI Indicators"
+                            icon={Layers}
                             category="status"
                             colors={currentVariant.status}
                         />
                         <ColorSection
-                            title="Syntax Colors"
+                            title="Code Syntax"
+                            icon={Hash}
                             category="syntax"
                             colors={currentVariant.syntax}
                         />
                         <ColorSection
-                            title="Shadow Colors"
+                            title="Depth & Shadow"
+                            icon={Eye}
                             category="shadows"
                             colors={currentVariant.shadows}
-                        />
-                        <ColorSection
-                            title="Overlay Colors"
-                            category="overlays"
-                            colors={currentVariant.overlays}
                         />
                     </div>
                 </div>
 
-                {/* Footer */}
-                <div className="p-6 border-t border-gray-700 bg-gray-800 flex gap-4 justify-end">
+                {/* Footer Action Bar */}
+                <div className="p-6 border-t border-white/10 bg-[#050505] flex gap-4 justify-end shrink-0 relative z-10">
                     <button
                         onClick={onCancel}
-                        className="px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors"
+                        className="px-6 py-3 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors text-sm font-bold"
                     >
-                        Cancel
+                        CANCEL
                     </button>
                     <button
                         onClick={handleSubmit}
-                        className="px-6 py-3 bg-cyan-500 hover:bg-cyan-400 text-white rounded transition-colors"
+                        className="px-8 py-3 rounded-lg bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40 transition-all text-sm font-bold tracking-wide flex items-center gap-2"
                     >
-                        {theme ? 'Update Theme' : 'Create Theme'}
+                        <Save className="w-4 h-4" />
+                        {theme ? 'SAVE_MODIFICATIONS' : 'CREATE_THEME'}
                     </button>
                 </div>
             </div>

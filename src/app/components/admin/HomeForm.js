@@ -80,103 +80,147 @@ const HomeForm = () => {
     if (loading) return <div className="text-white">Loading...</div>;
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl mx-auto bg-gray-800 p-8 rounded-xl border border-gray-700">
+        <form onSubmit={handleSubmit} className="space-y-8 max-w-4xl mx-auto">
             {error && (
-                <div className="bg-red-500/20 border border-red-500 text-red-200 p-3 rounded">
-                    {error}
+                <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-lg flex items-center gap-3">
+                    <span className="text-xl">⚠️</span> {error}
                 </div>
             )}
 
-            <div>
-                <label className="block text-sm font-medium mb-1 text-gray-300">Name</label>
-                <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    className="w-full p-3 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white"
-                    required
-                />
+            {/* Core Data Section */}
+            <div className="bg-[#0a0a0a]/60 backdrop-blur-xl rounded-2xl border border-white/5 p-8 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
+
+                <h2 className="text-sm font-mono text-cyan-500/70 uppercase tracking-widest mb-8 flex items-center gap-4">
+                    Core Identification
+                    <div className="h-px bg-cyan-500/10 flex-grow" />
+                </h2>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                        <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Display Name</label>
+                        <input
+                            type="text"
+                            name="name"
+                            value={formData.name}
+                            onChange={handleChange}
+                            className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-700 font-bold tracking-wide"
+                            required
+                        />
+                        <p className="text-xs text-slate-500 mt-2 font-mono">// Primary user identifier</p>
+                    </div>
+
+                    <div>
+                        <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">GitHub Uplink</label>
+                        <input
+                            type="url"
+                            name="githubLink"
+                            value={formData.githubLink}
+                            onChange={handleChange}
+                            className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-cyan-400 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-700 font-mono text-sm"
+                            required
+                        />
+                    </div>
+
+                    <div className="md:col-span-2">
+                        <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Role Designations</label>
+                        <input
+                            type="text"
+                            name="homeRoles"
+                            value={formData.homeRoles}
+                            onChange={handleChange}
+                            className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-700"
+                            placeholder="e.g. Full Stack Developer, UI/UX Designer"
+                            required
+                        />
+                        <p className="text-xs text-slate-500 mt-2 font-mono">// Comma-separated list of active functions</p>
+                    </div>
+                </div>
             </div>
 
-            <div>
-                <label className="block text-sm font-medium mb-1 text-gray-300">Roles (comma separated)</label>
-                <input
-                    type="text"
-                    name="homeRoles"
-                    value={formData.homeRoles}
-                    onChange={handleChange}
-                    className="w-full p-3 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white"
-                    required
-                />
-            </div>
+            {/* Code Snippets Section */}
+            <div className="bg-[#0a0a0a]/60 backdrop-blur-xl rounded-2xl border border-white/5 p-8 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-green-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
 
-            <div>
-                <label className="block text-sm font-medium mb-1 text-gray-300">GitHub Link</label>
-                <input
-                    type="url"
-                    name="githubLink"
-                    value={formData.githubLink}
-                    onChange={handleChange}
-                    className="w-full p-3 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white"
-                    required
-                />
-            </div>
+                <h2 className="text-sm font-mono text-green-500/70 uppercase tracking-widest mb-8 flex items-center gap-4">
+                    Terminal Output
+                    <div className="h-px bg-green-500/10 flex-grow" />
+                </h2>
 
-            <div>
-                <label className="block text-sm font-medium mb-1 text-gray-300">Code Snippets (one per line)</label>
-                <textarea
-                    name="codeSnippets"
-                    value={formData.codeSnippets}
-                    onChange={handleChange}
-                    rows="5"
-                    className="w-full p-3 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white font-mono"
-                />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t border-gray-700">
                 <div>
-                    <label className="block text-sm font-medium mb-1 text-gray-300">Resume Status</label>
-                    <input
-                        type="text"
-                        name="resumeStatus"
-                        value={formData.resumeStatus || 'ONLINE'}
+                    <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Code Snippets</label>
+                    <textarea
+                        name="codeSnippets"
+                        value={formData.codeSnippets}
                         onChange={handleChange}
-                        className="w-full p-3 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white font-mono"
+                        rows="6"
+                        className="w-full bg-black/60 border border-white/10 rounded-lg p-4 text-green-400 focus:border-green-500/50 focus:ring-1 focus:ring-green-500/50 outline-none transition-all placeholder:text-slate-700 font-mono text-sm"
+                        placeholder="const future = await build();"
                     />
-                </div>
-                <div>
-                    <label className="block text-sm font-medium mb-1 text-gray-300">Resume Mode</label>
-                    <input
-                        type="text"
-                        name="resumeMode"
-                        value={formData.resumeMode || 'DEV_01'}
-                        onChange={handleChange}
-                        className="w-full p-3 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white font-mono"
-                    />
-                </div>
-                <div>
-                    <label className="block text-sm font-medium mb-1 text-gray-300">Center Icon</label>
-                    <select
-                        name="resumeIcon"
-                        value={formData.resumeIcon || 'FaBolt'}
-                        onChange={handleChange}
-                        className="w-full p-3 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white"
-                    >
-                        <option value="FaBolt">⚡ Bolt</option>
-                        <option value="FaCode">💻 Code</option>
-                        <option value="FaTerminal">_ Terminal</option>
-                        <option value="FaRobot">🤖 Robot</option>
-                        <option value="FaRocket">🚀 Rocket</option>
-                        <option value="FaBrain">🧠 Brain</option>
-                    </select>
+                    <p className="text-xs text-slate-500 mt-2 font-mono">// Displayed in hero terminal background. One line per entry.</p>
                 </div>
             </div>
 
-            <div className="pt-4 border-t border-gray-700">
-                <label className="block text-sm font-medium mb-2 text-gray-300">Hero Section Style</label>
-                <div className="flex gap-4">
-                    <label className={`flex-1 p-4 rounded-lg border cursor-pointer transition-all ${formData.heroSectionType === 'futuristic' ? 'bg-cyan-900/30 border-cyan-500' : 'bg-gray-700 border-gray-600 hover:border-gray-500'}`}>
+            {/* Resume Configuration */}
+            <div className="bg-[#0a0a0a]/60 backdrop-blur-xl rounded-2xl border border-white/5 p-8 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
+
+                <h2 className="text-sm font-mono text-orange-500/70 uppercase tracking-widest mb-8 flex items-center gap-4">
+                    Resume Module
+                    <div className="h-px bg-orange-500/10 flex-grow" />
+                </h2>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Status</label>
+                        <input
+                            type="text"
+                            name="resumeStatus"
+                            value={formData.resumeStatus || 'ONLINE'}
+                            onChange={handleChange}
+                            className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-orange-400 font-bold text-center tracking-widest focus:border-orange-500/50 outline-none"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Mode Identifier</label>
+                        <input
+                            type="text"
+                            name="resumeMode"
+                            value={formData.resumeMode || 'DEV_01'}
+                            onChange={handleChange}
+                            className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-slate-300 font-mono text-center focus:border-orange-500/50 outline-none"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Hologram Icon</label>
+                        <select
+                            name="resumeIcon"
+                            value={formData.resumeIcon || 'FaBolt'}
+                            onChange={handleChange}
+                            className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-orange-500/50 outline-none appearance-none cursor-pointer"
+                        >
+                            <option value="FaBolt">⚡ Bolt</option>
+                            <option value="FaCode">💻 Code</option>
+                            <option value="FaTerminal">_ Terminal</option>
+                            <option value="FaRobot">🤖 Robot</option>
+                            <option value="FaRocket">🚀 Rocket</option>
+                            <option value="FaBrain">🧠 Brain</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            {/* Visual Interface Selector */}
+            <div className="bg-[#0a0a0a]/60 backdrop-blur-xl rounded-2xl border border-white/5 p-8 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
+
+                <h2 className="text-sm font-mono text-purple-500/70 uppercase tracking-widest mb-8 flex items-center gap-4">
+                    Interface Style
+                    <div className="h-px bg-purple-500/10 flex-grow" />
+                </h2>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <label className={`relative overflow-hidden p-6 rounded-xl border cursor-pointer transition-all duration-300 group/card ${formData.heroSectionType === 'futuristic' ? 'bg-purple-500/10 border-purple-500/50 shadow-[0_0_30px_rgba(168,85,247,0.15)]' : 'bg-white/[0.02] border-white/5 hover:border-white/20'}`}>
                         <input
                             type="radio"
                             name="heroSectionType"
@@ -185,10 +229,19 @@ const HomeForm = () => {
                             onChange={handleChange}
                             className="hidden"
                         />
-                        <div className="font-bold text-white mb-1">Futuristic Card</div>
-                        <div className="text-xs text-gray-400">New 3D animated card with glitch effects</div>
+                        <div className="relative z-10 flex flex-col h-full">
+                            <div className="mb-4 text-3xl">🔮</div>
+                            <div className="font-bold text-white mb-2 text-lg">Futuristic Card</div>
+                            <div className="text-xs text-slate-400 leading-relaxed">
+                                Advanced 3D styling with glitch effects, neon glows, and dynamic motion. Optimal for modern tech portfolios.
+                            </div>
+                        </div>
+                        {formData.heroSectionType === 'futuristic' && (
+                            <div className="absolute top-3 right-3 w-2 h-2 rounded-full bg-purple-500 shadow-[0_0_10px_rgba(168,85,247,1)] animate-ping" />
+                        )}
                     </label>
-                    <label className={`flex-1 p-4 rounded-lg border cursor-pointer transition-all ${formData.heroSectionType === 'game' ? 'bg-orange-900/30 border-orange-500' : 'bg-gray-700 border-gray-600 hover:border-gray-500'}`}>
+
+                    <label className={`relative overflow-hidden p-6 rounded-xl border cursor-pointer transition-all duration-300 group/card ${formData.heroSectionType === 'game' ? 'bg-orange-500/10 border-orange-500/50 shadow-[0_0_30px_rgba(249,115,22,0.15)]' : 'bg-white/[0.02] border-white/5 hover:border-white/20'}`}>
                         <input
                             type="radio"
                             name="heroSectionType"
@@ -197,26 +250,35 @@ const HomeForm = () => {
                             onChange={handleChange}
                             className="hidden"
                         />
-                        <div className="font-bold text-white mb-1">Classic Game</div>
-                        <div className="text-xs text-gray-400">Original layout with Snake & Tic-Tac-Toe</div>
+                        <div className="relative z-10 flex flex-col h-full">
+                            <div className="mb-4 text-3xl">🕹️</div>
+                            <div className="font-bold text-white mb-2 text-lg">Retro Arcade</div>
+                            <div className="text-xs text-slate-400 leading-relaxed">
+                                Interactive gaming interface featuring playable Snake, Tic-Tac-Toe, and pixel art aesthetics.
+                            </div>
+                        </div>
+                        {formData.heroSectionType === 'game' && (
+                            <div className="absolute top-3 right-3 w-2 h-2 rounded-full bg-orange-500 shadow-[0_0_10px_rgba(249,115,22,1)] animate-ping" />
+                        )}
                     </label>
                 </div>
             </div>
 
-            <div className="flex justify-end gap-4 pt-4">
+            {/* Action Buttons */}
+            <div className="sticky bottom-8 flex justify-end gap-4 pt-6 border-t border-white/5 bg-[#030014]/80 backdrop-blur-lg p-4 rounded-xl border border-white/5 shadow-2xl z-50">
                 <button
                     type="button"
                     onClick={() => router.back()}
-                    className="px-6 py-2 rounded bg-gray-700 hover:bg-gray-600 text-white transition-colors"
+                    className="px-6 py-2 rounded bg-white/5 hover:bg-white/10 text-slate-400 transition-colors text-sm font-medium"
                 >
-                    Cancel
+                    CANCEL
                 </button>
                 <button
                     type="submit"
                     disabled={saving}
-                    className="px-6 py-2 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-bold transition-colors disabled:opacity-50"
+                    className="px-8 py-2 rounded bg-cyan-500 hover:bg-cyan-400 text-black font-bold transition-all shadow-[0_0_20px_rgba(34,211,238,0.3)] hover:shadow-[0_0_30px_rgba(34,211,238,0.5)] disabled:opacity-50 disabled:cursor-not-allowed text-sm tracking-wide"
                 >
-                    {saving ? 'Saving...' : 'Update Home'}
+                    {saving ? 'UPDATING_SYSTEM...' : 'CONFIRM_CHANGES'}
                 </button>
             </div>
         </form>

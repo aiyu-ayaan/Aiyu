@@ -21,28 +21,8 @@ function SortableItem({ id, children, className }) {
     };
 
     return (
-        <div ref={setNodeRef} style={style} className={className}>
-            <div className="flex items-start gap-2 h-full">
-                <button
-                    type="button"
-                    {...attributes}
-                    {...listeners}
-                    className="mt-4 text-gray-500 hover:text-gray-300 cursor-grab active:cursor-grabbing touch-none"
-                    title="Drag to reorder"
-                >
-                    <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                        <line x1="8" y1="6" x2="21" y2="6"></line>
-                        <line x1="8" y1="12" x2="21" y2="12"></line>
-                        <line x1="8" y1="18" x2="21" y2="18"></line>
-                        <line x1="3" y1="6" x2="3.01" y2="6"></line>
-                        <line x1="3" y1="12" x2="3.01" y2="12"></line>
-                        <line x1="3" y1="18" x2="3.01" y2="18"></line>
-                    </svg>
-                </button>
-                <div className="flex-1 w-full">
-                    {children}
-                </div>
-            </div>
+        <div ref={setNodeRef} style={style} className={className} {...attributes} {...listeners}>
+            {children}
         </div>
     );
 }
@@ -158,7 +138,11 @@ const HeaderForm = () => {
         }
     };
 
-    if (loading) return <div className="text-white">Loading...</div>;
+    if (loading) return (
+        <div className="flex items-center justify-center p-12">
+            <span className="font-mono text-cyan-400 animate-pulse">LOADING_DATA_STREAM...</span>
+        </div>
+    );
 
     const handleAddNavLink = () => {
         setFormData({
@@ -173,117 +157,148 @@ const HeaderForm = () => {
     };
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl mx-auto bg-gray-800 p-8 rounded-xl border border-gray-700">
+        <form onSubmit={handleSubmit} className="space-y-12">
             {error && (
-                <div className="bg-red-500/20 border border-red-500 text-red-200 p-3 rounded">
-                    {error}
+                <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl font-mono text-sm">
+                    ERROR: {error}
                 </div>
             )}
 
-            <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold text-white">Navigation Links</h3>
-                <button
-                    type="button"
-                    onClick={handleAddNavLink}
-                    className="px-3 py-1 bg-green-600 hover:bg-green-500 text-white rounded text-sm transition-colors"
-                >
-                    + Add Link
-                </button>
-            </div>
+            {/* Navigation Links Section */}
+            <div className="bg-[#0a0a0a]/60 backdrop-blur-xl rounded-2xl border border-white/5 p-8 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
 
-            <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
-            >
-                <SortableContext
-                    items={formData.navLinks.map(link => link._id)}
-                    strategy={verticalListSortingStrategy}
+                <div className="flex justify-between items-center mb-8 relative z-10">
+                    <h2 className="text-sm font-mono text-blue-500/70 uppercase tracking-widest flex items-center gap-4">
+                        Navigation Sequence
+                        <div className="h-px w-20 bg-blue-500/10" />
+                    </h2>
+                    <button
+                        type="button"
+                        onClick={handleAddNavLink}
+                        className="text-xs bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 px-4 py-2 rounded-lg border border-blue-500/20 hover:border-blue-500/50 transition-all font-mono uppercase tracking-wide flex items-center gap-2"
+                    >
+                        + Add Checkpoint
+                    </button>
+                </div>
+
+                <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
                 >
-                    <div className="space-y-4">
-                        {formData.navLinks.map((link, index) => (
-                            <SortableItem key={link._id} id={link._id} className="mb-4 p-4 bg-gray-700/50 rounded relative group">
-                                <button
-                                    type="button"
-                                    onClick={() => handleRemoveNavLink(index)}
-                                    className="absolute top-2 right-2 text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                                    title="Remove link"
-                                >
-                                    ✕
-                                </button>
-                                <div className="grid grid-cols-12 gap-4 items-end">
-                                    <div className="col-span-5">
-                                        <label className="block text-sm font-medium mb-1 text-gray-300">Name</label>
-                                        <input
-                                            type="text"
-                                            value={link.name}
-                                            onChange={(e) => handleNavLinkChange(index, 'name', e.target.value)}
-                                            className="w-full p-2 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white"
-                                        />
-                                    </div>
-                                    <div className="col-span-12 md:col-span-5">
-                                        <label className="block text-sm font-medium mb-1 text-gray-300">Href</label>
-                                        <input
-                                            type="text"
-                                            value={link.href}
-                                            onChange={(e) => handleNavLinkChange(index, 'href', e.target.value)}
-                                            className="w-full p-2 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white"
-                                        />
-                                    </div>
-                                    <div className="col-span-12 md:col-span-2 flex items-center justify-center pb-2">
-                                        <label className="flex items-center gap-2 cursor-pointer">
+                    <SortableContext
+                        items={formData.navLinks.map(link => link._id)}
+                        strategy={verticalListSortingStrategy}
+                    >
+                        <div className="space-y-4 relative z-10">
+                            {formData.navLinks.map((link, index) => (
+                                <SortableItem key={link._id} id={link._id} className="bg-white/[0.02] p-6 rounded-xl border border-white/5 relative group hover:border-blue-500/30 transition-colors">
+                                    <button
+                                        type="button"
+                                        onClick={() => handleRemoveNavLink(index)}
+                                        className="absolute top-3 right-3 text-white/20 hover:text-red-400 transition-colors z-20"
+                                        title="Remove link"
+                                    >
+                                        <div className="p-1">✕</div>
+                                    </button>
+
+                                    <div className="flex gap-4 items-center">
+                                        {/* Drag Handle Icon (Visual only, handled by SortableItem parent item) */}
+                                        <div className="text-slate-600 cursor-move">
+                                            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                                        </div>
+
+                                        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Display Label</label>
+                                                <input
+                                                    type="text"
+                                                    value={link.name}
+                                                    onChange={(e) => handleNavLinkChange(index, 'name', e.target.value)}
+                                                    className="w-full bg-black/40 border border-white/10 rounded-lg p-2.5 text-slate-200 focus:border-blue-500/50 outline-none text-sm font-bold placeholder:text-slate-700"
+                                                    placeholder="Link Text"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Target Route</label>
+                                                <input
+                                                    type="text"
+                                                    value={link.href}
+                                                    onChange={(e) => handleNavLinkChange(index, 'href', e.target.value)}
+                                                    className="w-full bg-black/40 border border-white/10 rounded-lg p-2.5 text-blue-400 focus:border-blue-500/50 outline-none text-sm font-mono placeholder:text-blue-900/50"
+                                                    placeholder="/path"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="flex flex-col items-center gap-2 border-l border-white/5 pl-4 ml-2">
+                                            <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500">Visible</label>
                                             <input
                                                 type="checkbox"
-                                                checked={link.visible !== false} // Default to true if undefined
+                                                checked={link.visible !== false}
                                                 onChange={(e) => handleNavLinkChange(index, 'visible', e.target.checked)}
-                                                className="w-5 h-5 rounded border-gray-600 text-cyan-500 focus:ring-cyan-500 bg-gray-700"
+                                                className="w-5 h-5 rounded border-white/20 bg-black/40 text-blue-500 focus:ring-blue-500 focus:ring-offset-0 focus:ring-offset-transparent transition-all cursor-pointer accent-blue-500"
                                             />
-                                            <span className="text-sm text-gray-300">Show</span>
-                                        </label>
+                                        </div>
                                     </div>
-                                </div>
-                            </SortableItem>
-                        ))}
-                    </div>
-                </SortableContext>
-            </DndContext>
+                                </SortableItem>
+                            ))}
+                        </div>
+                    </SortableContext>
+                </DndContext>
+            </div>
 
-            <h3 className="text-xl font-bold text-white mb-4 mt-8">Contact Link</h3>
-            <div className="grid grid-cols-2 gap-4 p-4 bg-gray-700/50 rounded">
-                <div>
-                    <label className="block text-sm font-medium mb-1 text-gray-300">Name</label>
-                    <input
-                        type="text"
-                        value={formData.contactLink?.name || ''}
-                        onChange={(e) => handleContactLinkChange('name', e.target.value)}
-                        className="w-full p-2 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white"
-                    />
+            {/* Contact Link Section */}
+            <div className="bg-[#0a0a0a]/60 backdrop-blur-xl rounded-2xl border border-white/5 p-8 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
+
+                <div className="flex justify-between items-center mb-8 relative z-10">
+                    <h2 className="text-sm font-mono text-cyan-500/70 uppercase tracking-widest flex items-center gap-4">
+                        Contact Vector
+                        <div className="h-px w-20 bg-cyan-500/10" />
+                    </h2>
                 </div>
-                <div>
-                    <label className="block text-sm font-medium mb-1 text-gray-300">Href</label>
-                    <input
-                        type="text"
-                        value={formData.contactLink?.href || ''}
-                        onChange={(e) => handleContactLinkChange('href', e.target.value)}
-                        className="w-full p-2 rounded bg-gray-700 border border-gray-600 focus:border-cyan-400 focus:outline-none text-white"
-                    />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
+                    <div>
+                        <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Action Label</label>
+                        <input
+                            type="text"
+                            value={formData.contactLink?.name || ''}
+                            onChange={(e) => handleContactLinkChange('name', e.target.value)}
+                            className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-cyan-500/50 outline-none text-sm font-bold placeholder:text-slate-700"
+                            placeholder="e.g. Hire Me"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Target Action</label>
+                        <input
+                            type="text"
+                            value={formData.contactLink?.href || ''}
+                            onChange={(e) => handleContactLinkChange('href', e.target.value)}
+                            className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-cyan-400 focus:border-cyan-500/50 outline-none text-sm font-mono placeholder:text-cyan-900/50"
+                            placeholder="e.g. #contact"
+                        />
+                    </div>
                 </div>
             </div>
 
-            <div className="flex justify-end gap-4 pt-4">
+            {/* Sticky Action Footer */}
+            <div className="sticky bottom-8 flex justify-end gap-4 pt-6 border-t border-white/5 bg-[#030014]/80 backdrop-blur-lg p-4 rounded-xl border border-white/5 shadow-2xl z-50">
                 <button
                     type="button"
                     onClick={() => router.back()}
-                    className="px-6 py-2 rounded bg-gray-700 hover:bg-gray-600 text-white transition-colors"
+                    className="px-6 py-2 rounded bg-white/5 hover:bg-white/10 text-slate-400 transition-colors text-sm font-medium"
                 >
-                    Cancel
+                    CANCEL
                 </button>
                 <button
                     type="submit"
                     disabled={saving}
-                    className="px-6 py-2 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-bold transition-colors disabled:opacity-50"
+                    className="px-8 py-2 rounded bg-cyan-500 hover:bg-cyan-400 text-black font-bold transition-all shadow-[0_0_20px_rgba(34,211,238,0.3)] hover:shadow-[0_0_30px_rgba(34,211,238,0.5)] disabled:opacity-50 disabled:cursor-not-allowed text-sm tracking-wide"
                 >
-                    {saving ? 'Saving...' : 'Update Header'}
+                    {saving ? 'UPDATING_SYSTEM...' : 'CONFIRM_UPDATE'}
                 </button>
             </div>
         </form>
