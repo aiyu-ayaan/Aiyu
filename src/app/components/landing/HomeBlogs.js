@@ -43,11 +43,16 @@ const HomeBlogs = ({ blogs }) => {
                             key={blog._id}
                             initial={{ y: 30, opacity: 0 }}
                             whileInView={{ y: 0, opacity: 1 }}
-                            transition={{ duration: 0.5, delay: index * 0.1 }}
+                            whileHover={{
+                                y: -5,
+                                borderColor: 'var(--accent-cyan)',
+                                boxShadow: 'var(--shadow-lg)'
+                            }}
+                            transition={{ duration: 0.3 }}
                             viewport={{ once: true }}
-                            className="group flex flex-col h-full rounded-2xl overflow-hidden border transition-all duration-300 shadow-lg hover:shadow-2xl"
+                            className="group flex flex-col h-full rounded-2xl overflow-hidden border transition-all duration-300 shadow-lg"
                             style={{
-                                background: 'linear-gradient(to bottom right, rgba(30, 20, 51, 0.6), rgba(10, 25, 41, 0.6))',
+                                backgroundColor: 'var(--bg-elevated)',
                                 backdropFilter: 'blur(10px)',
                                 borderColor: 'var(--border-secondary)',
                             }}
@@ -65,9 +70,9 @@ const HomeBlogs = ({ blogs }) => {
                                     </span>
                                 </div>
 
-                                <Link href={`/blogs/${blog._id}`} className="block group-hover:underline decoration-2 underline-offset-4 decoration-blue-500">
+                                <Link href={`/blogs/${blog._id}`} className="block group-hover:underline decoration-2 underline-offset-4 decoration-[var(--accent-cyan)]">
                                     <h3
-                                        className="text-xl font-bold mb-3 line-clamp-2 transition-colors"
+                                        className="text-xl font-bold mb-3 line-clamp-2 transition-colors duration-300"
                                         style={{ color: 'var(--text-primary)' }}
                                     >
                                         {blog.title}
@@ -82,10 +87,10 @@ const HomeBlogs = ({ blogs }) => {
                                     {blog.content?.replace(/[#*`_\[\]]/g, '').substring(0, 150)}...
                                 </div>
 
-                                <div className="mt-auto pt-4 border-t" style={{ borderColor: 'var(--border-secondary)' }}>
+                                <div className="mt-auto pt-4 border-t transition-colors duration-300" style={{ borderColor: 'var(--border-secondary)' }}>
                                     <Link
                                         href={`/blogs/${blog._id}`}
-                                        className="inline-flex items-center gap-2 font-medium transition-colors"
+                                        className="inline-flex items-center gap-2 font-medium transition-colors duration-300"
                                         style={{ color: 'var(--accent-cyan)' }}
                                     >
                                         Read Article <FaArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
