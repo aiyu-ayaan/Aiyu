@@ -65,7 +65,7 @@ Access the admin panel at `/admin` to manage everything without touching code:
   - Chat-style interface
   - Message threading
 - **Themes**: Live theme editor with:
-  - Pre-built presets (Dracula, Nord, Cyberpunk, Monokai, Ocean, Sunset)
+  - 21 pre-built theme presets (VS Code Dark, Ocean Blue, Forest Green, Sunset Orange, Royal Purple, Monochrome, Dracula, Nord, Cyberpunk, Gruvbox, Solarized, Catppuccin, Tokyo Night, Material Ocean, Synthwave, Forest, Sunset, Aurora, Coral Reef, Espresso, Midnight Blue)
   - Custom color generation
   - Real-time preview
   - Export/import theme configurations
@@ -551,7 +551,7 @@ This portfolio is built to be **fully customizable** without touching code!
 
 ### Live Theme Editor
 Access the theme editor in the admin panel to:
-- Choose from **6 pre-built themes**: Dracula, Nord, Cyberpunk, Monokai, Ocean, Sunset
+- Choose from **21 pre-built themes**: VS Code Dark, Ocean Blue, Forest Green, Sunset Orange, Royal Purple, Monochrome, Dracula, Nord, Cyberpunk, Gruvbox, Solarized, Catppuccin, Tokyo Night, Material Ocean, Synthwave, Forest, Sunset, Aurora, Coral Reef, Espresso, and Midnight Blue
 - Create **custom themes** with real-time preview
 - Configure colors, fonts, and spacing
 - Export/import theme configurations
