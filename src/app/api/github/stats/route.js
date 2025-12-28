@@ -45,13 +45,35 @@ export async function GET() {
 
         // Add token if available
         if (process.env.GITHUB_TOKEN) {
-            headers['Authorization'] = `token ${process.env.GITHUB_TOKEN}`;
+            headers['Authorization'] = `token ${process.env.GITHUB_TOKEN.trim()}`;
         }
 
         // Fetch user data
-        const userRes = await fetch(`https://api.github.com/users/${username}`, { headers });
+        // Fetch user data
+        let userRes = await fetch(`https://api.github.com/users/${username}`, { headers });
+
+        // Retry without token if 401 (Bad Credentials)
+        if (userRes.status === 401 && headers['Authorization']) {
+            console.warn('[WARN] GITHUB_TOKEN is invalid. Retrying without token...');
+            delete headers['Authorization']; // Remove invalid token for this and subsequent requests
+            userRes = await fetch(`https://api.github.com/users/${username}`, { headers });
+        }
+
         if (!userRes.ok) {
-            throw new Error('Failed to fetch user data');
+            const errorText = await userRes.text();
+            console.error(`[GitHub API Error] Status: ${userRes.status} ${userRes.statusText}, Body: ${errorText}`);
+
+            if (userRes.status === 403) {
+                if (userRes.headers.get('x-ratelimit-remaining') === '0') {
+                    throw new Error('GitHub API rate limit exceeded. Please add a valid GITHUB_TOKEN.');
+                }
+                throw new Error('GitHub API access forbidden.');
+            }
+            if (userRes.status === 404) {
+                throw new Error(`GitHub user '${username}' not found.`);
+            }
+
+            throw new Error(`Failed to fetch user data (${userRes.status})`);
         }
         const userData = await userRes.json();
 

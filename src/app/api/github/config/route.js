@@ -14,9 +14,42 @@ async function getConfig(request) {
             config = await GitHub.create({ username: '', enabled: false });
         }
 
+        // Check GITHUB_TOKEN status
+        const rawToken = process.env.GITHUB_TOKEN;
+        const token = rawToken ? rawToken.trim() : '';
+        let tokenStatus = 'missing';
+
+        console.log('[Debug] Token check:', {
+            exists: !!token,
+            length: token.length,
+            prefix: token ? token.substring(0, 4) + '...' : 'none'
+        });
+
+        if (token) {
+            try {
+                const verifyRes = await fetch('https://api.github.com/user', {
+                    headers: {
+                        Authorization: `token ${token}`,
+                        'User-Agent': 'Portfolio-App'
+                    }
+                });
+                tokenStatus = verifyRes.ok ? 'valid' : 'invalid';
+
+                if (!verifyRes.ok) {
+                    console.error('[Debug] Token verify failed:', VerifyRes.status, await verifyRes.text());
+                }
+            } catch (error) {
+                console.error('Token validation failed:', error);
+                tokenStatus = 'unknown';
+            }
+        }
+
         return NextResponse.json({
             success: true,
-            data: config
+            data: {
+                ...config,
+                tokenStatus
+            }
         });
     } catch (error) {
         console.error('[ERROR] Failed to fetch GitHub config:', error);

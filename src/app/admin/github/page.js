@@ -23,6 +23,7 @@ export default function GitHubConfigPage() {
     const [saving, setSaving] = useState(false);
     const [testing, setTesting] = useState(false);
     const [testResult, setTestResult] = useState(null);
+    const [tokenStatus, setTokenStatus] = useState(null);
 
     useEffect(() => {
         fetchConfig();
@@ -37,6 +38,7 @@ export default function GitHubConfigPage() {
                     ...data.data,
                     sections: data.data.sections || config.sections
                 });
+                setTokenStatus(data.data.tokenStatus);
             }
         } catch (error) {
             console.error('Failed to fetch config:', error);
@@ -144,6 +146,36 @@ export default function GitHubConfigPage() {
                 <h1 className="text-4xl font-bold text-white mb-2 tracking-tight">GitHub Integration</h1>
                 <p className="text-slate-400">Configure repositories, activity feeds, and statistical displays.</p>
             </div>
+
+            {/* Token Status Message */}
+            {tokenStatus && (
+                <div className={`mb-8 p-4 rounded-xl border flex items-center gap-3 ${tokenStatus === 'valid'
+                        ? 'bg-green-500/10 border-green-500/20 text-green-400'
+                        : tokenStatus === 'invalid'
+                            ? 'bg-red-500/10 border-red-500/20 text-red-400'
+                            : 'bg-yellow-500/10 border-yellow-500/20 text-yellow-400'
+                    }`}>
+                    {tokenStatus === 'valid' ? (
+                        <CheckCircle className="w-5 h-5 shrink-0" />
+                    ) : tokenStatus === 'invalid' ? (
+                        <XCircle className="w-5 h-5 shrink-0" />
+                    ) : (
+                        <BarChart2 className="w-5 h-5 shrink-0" />
+                    )}
+                    <div>
+                        <p className="font-bold text-sm">
+                            {tokenStatus === 'valid' ? 'System Optimized' : tokenStatus === 'invalid' ? 'Token Error' : 'Optimization Available'}
+                        </p>
+                        <p className="text-xs font-mono mt-1 opacity-90">
+                            {tokenStatus === 'valid'
+                                ? 'GITHUB_TOKEN is active. Full API rate limits and private data access enabled.'
+                                : tokenStatus === 'invalid'
+                                    ? 'Provided GITHUB_TOKEN is invalid. Please check your .env file.'
+                                    : 'For full data stats and higher rate limits, add a valid "GITHUB_TOKEN" to your .env file.'}
+                        </p>
+                    </div>
+                </div>
+            )}
 
             <form onSubmit={handleSave} className="space-y-8">
 
