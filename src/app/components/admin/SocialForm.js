@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Toast from './Toast';
 
 const SocialForm = ({ initialData, isEdit = false }) => {
     const router = useRouter();
@@ -12,6 +13,7 @@ const SocialForm = ({ initialData, isEdit = false }) => {
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [notification, setNotification] = useState(null);
 
     useEffect(() => {
         if (initialData) {
@@ -22,6 +24,11 @@ const SocialForm = ({ initialData, isEdit = false }) => {
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
+    };
+
+    const showNotification = (success, message) => {
+        setNotification({ success, message });
+        setTimeout(() => setNotification(null), 3000);
     };
 
     const handleSubmit = async (e) => {
@@ -42,14 +49,19 @@ const SocialForm = ({ initialData, isEdit = false }) => {
             });
 
             if (response.ok) {
-                router.push('/admin/footer');
-                router.refresh();
+                showNotification(true, isEdit ? 'Social Link Updated Successfully' : 'Social Link Created Successfully');
+                setTimeout(() => {
+                    router.push('/admin/footer');
+                    router.refresh();
+                }, 1500);
             } else {
                 const data = await response.json();
                 setError(data.error || 'Something went wrong');
+                showNotification(false, data.error || 'Failed to save');
             }
         } catch (err) {
             setError('An error occurred');
+            showNotification(false, 'An error occurred');
         } finally {
             setLoading(false);
         }
@@ -130,6 +142,9 @@ const SocialForm = ({ initialData, isEdit = false }) => {
                     {loading ? 'Saving...' : isEdit ? 'Update Social' : 'Create Social'}
                 </button>
             </div>
+
+            {/* Toast Notification */}
+            <Toast notification={notification} />
         </form>
     );
 };

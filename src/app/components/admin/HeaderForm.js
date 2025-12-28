@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import Toast from './Toast';
 
 // Helper for Sortable Items
 function SortableItem({ id, children, className }) {
@@ -36,6 +37,7 @@ const HeaderForm = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
+    const [notification, setNotification] = useState(null);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -108,6 +110,11 @@ const HeaderForm = () => {
         });
     };
 
+    const showNotification = (success, message) => {
+        setNotification({ success, message });
+        setTimeout(() => setNotification(null), 3000);
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setSaving(true);
@@ -129,14 +136,16 @@ const HeaderForm = () => {
             });
 
             if (response.ok) {
-                router.push('/admin');
-                router.refresh();
+                showNotification(true, 'Navigation Matrix Updated Successfully');
+                fetchData(); // Refresh data
             } else {
                 const data = await response.json();
                 setError(data.error || 'Something went wrong');
+                showNotification(false, data.error || 'Failed to update');
             }
         } catch (err) {
             setError('An error occurred');
+            showNotification(false, 'An error occurred');
         } finally {
             setSaving(false);
         }
@@ -305,6 +314,9 @@ const HeaderForm = () => {
                     {saving ? 'UPDATING_SYSTEM...' : 'CONFIRM_UPDATE'}
                 </button>
             </div>
+
+            {/* Toast Notification */}
+            <Toast notification={notification} />
         </form>
     );
 };

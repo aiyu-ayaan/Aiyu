@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Upload, X, Trash2, Image as ImageIcon, Loader2, RefreshCw } from 'lucide-react';
 import Image from 'next/image';
+import Toast from './Toast';
 
 export default function GalleryManager() {
     const [images, setImages] = useState([]);
@@ -14,6 +15,12 @@ export default function GalleryManager() {
     const [description, setDescription] = useState('');
     const [dragActive, setDragActive] = useState(false);
     const [preview, setPreview] = useState(null);
+    const [notification, setNotification] = useState(null);
+
+    const showNotification = (success, message) => {
+        setNotification({ success, message });
+        setTimeout(() => setNotification(null), 3000);
+    };
 
     useEffect(() => {
         fetchImages();
@@ -145,12 +152,13 @@ export default function GalleryManager() {
             if (galleryResult.success) {
                 setImages([galleryResult.data, ...images]);
                 clearFile();
+                showNotification(true, 'Image uploaded successfully');
             } else {
                 throw new Error(galleryResult.error);
             }
 
         } catch (error) {
-            alert(error.message);
+            showNotification(false, error.message);
         } finally {
             setUploading(false);
         }
@@ -166,11 +174,13 @@ export default function GalleryManager() {
             const data = await res.json();
             if (data.success) {
                 setImages(images.filter(img => img._id !== id));
+                showNotification(true, 'Image deleted successfully');
             } else {
-                alert(data.error);
+                showNotification(false, data.error);
             }
         } catch (error) {
             console.error('Failed to delete:', error);
+            showNotification(false, 'Failed to delete image');
         }
     };
 
@@ -212,10 +222,11 @@ export default function GalleryManager() {
             }
 
             alert('Migration completed successfully!');
+            showNotification(true, 'Migration completed successfully!');
             fetchImages(); // Refresh gallery
         } catch (error) {
             console.error('Migration failed:', error);
-            alert(`Migration failed: ${error.message}`);
+            showNotification(false, `Migration failed: ${error.message}`);
         } finally {
             setMigrating(false);
             setMigrationProgress(null);
@@ -438,6 +449,9 @@ export default function GalleryManager() {
                     </div>
                 )}
             </div>
+
+            {/* Toast Notification */}
+            <Toast notification={notification} />
         </div>
     );
 }

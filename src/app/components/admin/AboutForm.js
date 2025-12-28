@@ -5,6 +5,7 @@ import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, us
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, rectSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { getIconNames, IconList } from '@/lib/iconLibrary';
+import Toast from './Toast';
 
 // Helper for Icon Preview
 const IconPreview = ({ name }) => {
@@ -82,6 +83,7 @@ const AboutForm = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
+    const [notification, setNotification] = useState(null);
 
     // Icon Picker State
     const [iconSearchTerm, setIconSearchTerm] = useState('');
@@ -185,6 +187,11 @@ const AboutForm = () => {
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
+    };
+
+    const showNotification = (success, message) => {
+        setNotification({ success, message });
+        setTimeout(() => setNotification(null), 3000);
     };
 
     const handleDragEnd = (event, listKey) => {
@@ -318,14 +325,16 @@ const AboutForm = () => {
             });
 
             if (response.ok) {
-                router.push('/admin');
-                router.refresh();
+                showNotification(true, 'Identity Matrix Updated Successfully');
+                fetchData(); // Refresh data
             } else {
                 const data = await response.json();
                 setError(data.error || 'Something went wrong');
+                showNotification(false, data.error || 'Failed to update');
             }
         } catch (err) {
             setError('An error occurred');
+            showNotification(false, 'An error occurred');
         } finally {
             setSaving(false);
         }
@@ -867,6 +876,9 @@ const AboutForm = () => {
                     {saving ? 'UPDATING_MATRIX...' : 'CONFIRM_UPDATE'}
                 </button>
             </div>
+
+            {/* Toast Notification */}
+            <Toast notification={notification} />
         </form>
     );
 };

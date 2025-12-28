@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Toast from './Toast';
 
 const HomeForm = () => {
     const router = useRouter();
@@ -13,6 +14,7 @@ const HomeForm = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
+    const [notification, setNotification] = useState(null);
 
     useEffect(() => {
         fetchData();
@@ -43,6 +45,11 @@ const HomeForm = () => {
         setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
+    const showNotification = (success, message) => {
+        setNotification({ success, message });
+        setTimeout(() => setNotification(null), 3000);
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setSaving(true);
@@ -64,14 +71,16 @@ const HomeForm = () => {
             });
 
             if (response.ok) {
-                router.push('/admin');
-                router.refresh();
+                showNotification(true, 'Landing Sequence Updated Successfully');
+                fetchData(); // Refresh data
             } else {
                 const data = await response.json();
                 setError(data.error || 'Something went wrong');
+                showNotification(false, data.error || 'Failed to update');
             }
         } catch (err) {
             setError('An error occurred');
+            showNotification(false, 'An error occurred');
         } finally {
             setSaving(false);
         }
@@ -281,6 +290,9 @@ const HomeForm = () => {
                     {saving ? 'UPDATING_SYSTEM...' : 'CONFIRM_CHANGES'}
                 </button>
             </div>
+
+            {/* Toast Notification */}
+            <Toast notification={notification} />
         </form>
     );
 };
