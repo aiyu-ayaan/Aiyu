@@ -1,6 +1,6 @@
 'use client';
 
-import { Github, Star, GitFork, Users, BookOpen, MapPin, Link as LinkIcon, Calendar, Flame, TrendingUp, GitCommit, GitPullRequest, GitMerge } from 'lucide-react';
+import { Github, Star, GitFork, Users, BookOpen, MapPin, Link as LinkIcon, Calendar, Flame, TrendingUp, GitCommit, GitPullRequest, GitMerge, Lock } from 'lucide-react';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 
@@ -290,10 +290,18 @@ export default function GitHubStatsClient({ data }) {
                                     className="bg-[var(--surface-card)] rounded-xl p-6 border border-[var(--border-secondary)] hover:border-[var(--primary)] transition-colors group"
                                 >
                                     <div className="flex items-start justify-between mb-3">
-                                        <h3 className="font-bold text-lg group-hover:text-[var(--primary)] transition-colors truncate">
-                                            {repo.name}
-                                        </h3>
-                                        <Github className="w-5 h-5 text-[var(--text-secondary)] flex-shrink-0 ml-2" />
+                                        <div className="flex items-center gap-2 truncate pr-2">
+                                            <h3 className="font-bold text-lg group-hover:text-[var(--primary)] transition-colors truncate">
+                                                {repo.name}
+                                            </h3>
+                                            {repo.isPrivate && (
+                                                <span className="shrink-0 flex items-center gap-1 bg-amber-500/10 text-amber-500 text-[10px] font-bold px-2 py-0.5 rounded border border-amber-500/20 uppercase tracking-wide">
+                                                    <Lock className="w-2.5 h-2.5" />
+                                                    Private
+                                                </span>
+                                            )}
+                                        </div>
+                                        <Github className="w-5 h-5 text-[var(--text-secondary)] flex-shrink-0" />
                                     </div>
                                     <p className="text-sm text-[var(--text-secondary)] mb-4 line-clamp-2 min-h-[40px]">
                                         {repo.description || 'No description provided'}

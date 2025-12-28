@@ -77,16 +77,58 @@ export async function GET() {
         }
         const userData = await userRes.json();
 
-        // Fetch repos (only public, sorted by last updated)
-        const reposRes = await fetch(`https://api.github.com/users/${username}/repos?sort=updated&per_page=100&type=public`, { headers });
-        if (!reposRes.ok) {
-            throw new Error('Failed to fetch repositories');
-        }
-        const repos = await reposRes.json();
+        // Fetch repos
+        // Logic: To get private repos, we must use the '/user/repos' endpoint authenticated with the token.
+        // The '/users/:username/repos' endpoint ONLY returns public repos, regardless of the token.
 
-        // Filter out private repos (extra safety) and hidden repos
+        let repos = [];
+        let fetchedWithPrivate = false;
+
+        if (config.includePrivate && process.env.GITHUB_TOKEN) {
+            // 1. Check if the token belongs to the configured user
+            try {
+                const identityRes = await fetch('https://api.github.com/user', { headers });
+                if (identityRes.ok) {
+                    const identity = await identityRes.json();
+
+                    if (identity.login.toLowerCase() === username.toLowerCase()) {
+                        // Token matches user! We can fetch private repos.
+                        const privateRes = await fetch(`https://api.github.com/user/repos?sort=updated&per_page=100&type=all`, { headers });
+                        if (privateRes.ok) {
+                            repos = await privateRes.json();
+                            fetchedWithPrivate = true;
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error('[WARN] Failed to verify token identity for private repos:', e);
+            }
+        }
+
+        // Fallback: If we couldn't fetch private repos (token mismatch or config disabled), fetch public only
+        if (!fetchedWithPrivate) {
+            let reposRes = await fetch(`https://api.github.com/users/${username}/repos?sort=updated&per_page=100&type=public`, { headers });
+
+            // Retry without token if 401
+            if (reposRes.status === 401 && headers['Authorization']) {
+                const noTokenHeaders = { ...headers };
+                delete noTokenHeaders['Authorization'];
+                reposRes = await fetch(`https://api.github.com/users/${username}/repos?sort=updated&per_page=100&type=public`, { headers: noTokenHeaders });
+            }
+
+            if (!reposRes.ok) {
+                throw new Error('Failed to fetch repositories');
+            }
+            repos = await reposRes.json();
+        }
+
+        // Filter hidden repos and correctly handle visibility
         const hiddenRepos = config.hiddenRepos || [];
-        const publicRepos = repos.filter(repo => !repo.private && !hiddenRepos.includes(repo.name));
+        const filteredRepos = repos.filter(repo => {
+            // If strictly public mode, enforce !private (API 'type=all' returns private too if token has scope)
+            if (!config.includePrivate && repo.private) return false;
+            return !hiddenRepos.includes(repo.name);
+        });
 
         // Fetch contribution data using GraphQL API
         const graphqlQuery = `
@@ -177,11 +219,11 @@ export async function GET() {
         const events = eventsRes.ok ? await eventsRes.json() : [];
 
         // Calculate stats
-        const totalStars = publicRepos.reduce((sum, repo) => sum + (repo.stargazers_count || 0), 0);
-        const totalForks = publicRepos.reduce((sum, repo) => sum + (repo.forks_count || 0), 0);
+        const totalStars = filteredRepos.reduce((sum, repo) => sum + (repo.stargazers_count || 0), 0);
+        const totalForks = filteredRepos.reduce((sum, repo) => sum + (repo.forks_count || 0), 0);
 
         // Get top 6 recently updated repos
-        const topRepos = publicRepos
+        const topRepos = filteredRepos
             .slice(0, 6)
             .map(repo => ({
                 name: repo.name,
@@ -191,12 +233,13 @@ export async function GET() {
                 language: repo.language,
                 url: repo.html_url,
                 topics: repo.topics || [],
-                updated_at: repo.updated_at
+                updated_at: repo.updated_at,
+                isPrivate: repo.private
             }));
 
         // Calculate language stats
         const languageStats = {};
-        publicRepos.forEach(repo => {
+        filteredRepos.forEach(repo => {
             if (repo.language) {
                 languageStats[repo.language] = (languageStats[repo.language] || 0) + 1;
             }
@@ -245,16 +288,22 @@ export async function GET() {
         }
 
         // Process recent activity
-        const recentActivity = events.slice(0, 10).map(event => ({
-            type: event.type,
-            repo: event.repo.name,
-            created_at: event.created_at,
-            payload: {
-                action: event.payload.action,
-                ref: event.payload.ref,
-                commits: event.payload.commits?.length || 0
-            }
-        }));
+        const recentActivity = events
+            .filter(event => {
+                const repoName = event.repo.name.split('/').pop(); // Extract short name from 'user/repo'
+                return !hiddenRepos.includes(repoName);
+            })
+            .slice(0, 10)
+            .map(event => ({
+                type: event.type,
+                repo: event.repo.name,
+                created_at: event.created_at,
+                payload: {
+                    action: event.payload.action,
+                    ref: event.payload.ref,
+                    commits: event.payload.commits?.length || 0
+                }
+            }));
 
         // Prepare response
         const data = {
@@ -272,7 +321,7 @@ export async function GET() {
                 createdAt: userData.created_at
             },
             stats: {
-                totalRepos: publicRepos.length,
+                totalRepos: filteredRepos.length,
                 totalStars,
                 totalForks,
                 followers: userData.followers,
