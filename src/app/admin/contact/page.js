@@ -4,11 +4,13 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2, ArrowLeft, MapPin, Activity, Mail, Trash2, MessageSquare, Webhook } from 'lucide-react';
 import Link from 'next/link';
+import Toast from '@/app/components/admin/Toast';
 
 export default function ContactAdminPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [notification, setNotification] = useState(null);
 
     // Config state
     const [config, setConfig] = useState({
@@ -23,6 +25,11 @@ export default function ContactAdminPage() {
     });
 
     const [messages, setMessages] = useState([]);
+
+    const showNotification = (success, message) => {
+        setNotification({ success, message });
+        setTimeout(() => setNotification(null), 3000);
+    };
 
     useEffect(() => {
         fetchConfig();
@@ -70,12 +77,13 @@ export default function ContactAdminPage() {
             });
             if (res.ok) {
                 setMessages(prev => prev.filter(msg => msg._id !== id));
+                showNotification(true, 'Message deleted successfully');
             } else {
-                alert('Failed to delete message');
+                showNotification(false, 'Failed to delete message');
             }
         } catch (error) {
             console.error('Delete error:', error);
-            alert('Failed to delete message');
+            showNotification(false, 'Failed to delete message');
         }
     };
 
@@ -91,13 +99,13 @@ export default function ContactAdminPage() {
             });
 
             if (res.ok) {
-                // Optional: show a toast or success state
+                showNotification(true, 'Contact Settings Updated Successfully');
             } else {
-                alert('Failed to save settings');
+                showNotification(false, 'Failed to save settings');
             }
         } catch (error) {
             console.error('Save error:', error);
-            alert('Failed to save settings: ' + error.message);
+            showNotification(false, 'Failed to save settings: ' + error.message);
         } finally {
             setSaving(false);
         }
@@ -270,6 +278,9 @@ export default function ContactAdminPage() {
                     )}
                 </div>
             </div>
+
+            {/* Toast Notification */}
+            <Toast notification={notification} />
         </div>
     );
 }

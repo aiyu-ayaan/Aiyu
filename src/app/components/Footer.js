@@ -3,13 +3,13 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { FaGithub } from 'react-icons/fa';
+import { FaGithub, FaPalette } from 'react-icons/fa';
 // import { socials } from '../data/siteData';
 import { getIconByName } from '../../lib/icons';
 import { useTheme } from '../context/ThemeContext';
 
 export default function Footer({ socialData, name, config }) {
-    const { theme } = useTheme();
+    const { theme, activeThemeData, mounted } = useTheme();
     const socials = socialData?.map(s => ({
         ...s,
         icon: getIconByName(s.iconName)
@@ -109,6 +109,15 @@ export default function Footer({ socialData, name, config }) {
                             ) : (
                                 <p className="opacity-50 hover:opacity-100 transition-opacity cursor-default">{config.footerVersion}</p>
                             )}
+                        </>
+                    )}
+                    {mounted && activeThemeData?.name && (
+                        <>
+                            <p className="hidden md:block opacity-20">|</p>
+                            <div className="flex items-center gap-2 opacity-50 hover:opacity-100 transition-opacity cursor-default">
+                                <FaPalette className="w-4 h-4" />
+                                <span>{activeThemeData.name}</span>
+                            </div>
                         </>
                     )}
                 </div>

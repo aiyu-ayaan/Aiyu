@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { X, Save, Eraser, Palette, Eye, Layout, Type, Box, Hash, Sun, Moon, Layers } from 'lucide-react';
+import Toast from './Toast';
 
 const defaultVariant = {
     backgrounds: {
@@ -72,6 +73,12 @@ export default function ThemeEditor({ theme, onSave, onCancel }) {
     const [activeTab, setActiveTab] = useState('light');
     const [lightVariant, setLightVariant] = useState(theme?.variants?.light || defaultVariant);
     const [darkVariant, setDarkVariant] = useState(theme?.variants?.dark || defaultVariant);
+    const [notification, setNotification] = useState(null);
+
+    const showNotification = (success, message) => {
+        setNotification({ success, message });
+        setTimeout(() => setNotification(null), 3000);
+    };
 
     const currentVariant = activeTab === 'light' ? lightVariant : darkVariant;
     const setCurrentVariant = activeTab === 'light' ? setLightVariant : setDarkVariant;
@@ -88,7 +95,7 @@ export default function ThemeEditor({ theme, onSave, onCancel }) {
 
     const handleSubmit = () => {
         if (!name.trim()) {
-            alert('Please enter a theme name');
+            showNotification(false, 'Please enter a theme name');
             return;
         }
 
@@ -285,6 +292,9 @@ export default function ThemeEditor({ theme, onSave, onCancel }) {
                     </button>
                 </div>
             </div>
+
+            {/* Toast Notification */}
+            <Toast notification={notification} />
         </div>
     );
 }

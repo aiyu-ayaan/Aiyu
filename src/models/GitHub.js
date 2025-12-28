@@ -11,6 +11,10 @@ const GitHubSchema = new mongoose.Schema({
         type: Boolean,
         default: true
     },
+    includePrivate: {
+        type: Boolean,
+        default: false
+    },
     sections: {
         showProfile: { type: Boolean, default: true },
         showStats: { type: Boolean, default: true },
@@ -18,6 +22,10 @@ const GitHubSchema = new mongoose.Schema({
         showActivity: { type: Boolean, default: true },
         showRepositories: { type: Boolean, default: true },
         showLanguages: { type: Boolean, default: true }
+    },
+    hiddenRepos: {
+        type: [String],
+        default: []
     },
     updatedAt: {
         type: Date,

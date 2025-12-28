@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2, Save, Terminal, Code, Layers, Calendar, Link as LinkIcon, Image as ImageIcon, FileText, CheckCircle, Activity } from 'lucide-react';
+import Toast from './Toast';
 
 const ProjectForm = ({ initialData, isEdit = false }) => {
     const router = useRouter();
@@ -17,6 +18,7 @@ const ProjectForm = ({ initialData, isEdit = false }) => {
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [notification, setNotification] = useState(null);
 
     useEffect(() => {
         if (initialData) {
@@ -30,6 +32,11 @@ const ProjectForm = ({ initialData, isEdit = false }) => {
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
+    };
+
+    const showNotification = (success, message) => {
+        setNotification({ success, message });
+        setTimeout(() => setNotification(null), 3000);
     };
 
     const handleSubmit = async (e) => {
@@ -55,14 +62,19 @@ const ProjectForm = ({ initialData, isEdit = false }) => {
             });
 
             if (response.ok) {
-                router.push('/admin/projects');
-                router.refresh();
+                showNotification(true, isEdit ? 'Project Updated Successfully' : 'Project Created Successfully');
+                setTimeout(() => {
+                    router.push('/admin/projects');
+                    router.refresh();
+                }, 1500);
             } else {
                 const data = await response.json();
                 setError(data.error || 'Something went wrong');
+                showNotification(false, data.error || 'Failed to save');
             }
         } catch (err) {
             setError('An error occurred');
+            showNotification(false, 'An error occurred');
         } finally {
             setLoading(false);
         }
@@ -284,6 +296,9 @@ const ProjectForm = ({ initialData, isEdit = false }) => {
                     </button>
                 </div>
             </div>
+
+            {/* Toast Notification */}
+            <Toast notification={notification} />
         </form>
     );
 };
