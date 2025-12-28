@@ -19,6 +19,10 @@ const GitHubSchema = new mongoose.Schema({
         showRepositories: { type: Boolean, default: true },
         showLanguages: { type: Boolean, default: true }
     },
+    hiddenRepos: {
+        type: [String],
+        default: []
+    },
     updatedAt: {
         type: Date,
         default: Date.now

@@ -93,6 +93,9 @@ async function updateConfig(request) {
                 config.sections = { ...config.sections, ...sections };
                 config.markModified('sections'); // Force Mongoose to detect change
             }
+            if (body.hiddenRepos !== undefined) {
+                config.hiddenRepos = body.hiddenRepos;
+            }
         }
 
         await config.save();

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, Github, CheckCircle, XCircle, ArrowLeft, BarChart2, Book, Code, Globe, User } from 'lucide-react';
+import { Loader2, Github, CheckCircle, XCircle, ArrowLeft, BarChart2, Book, Code, Globe, User, EyeOff } from 'lucide-react';
 import Link from 'next/link';
 
 export default function GitHubConfigPage() {
@@ -17,7 +17,8 @@ export default function GitHubConfigPage() {
             showActivity: true,
             showRepositories: true,
             showLanguages: true
-        }
+        },
+        hiddenRepos: []
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -36,7 +37,8 @@ export default function GitHubConfigPage() {
             if (data.success && data.data) {
                 setConfig({
                     ...data.data,
-                    sections: data.data.sections || config.sections
+                    sections: data.data.sections || config.sections,
+                    hiddenRepos: data.data.hiddenRepos || []
                 });
                 setTokenStatus(data.data.tokenStatus);
             }
@@ -107,6 +109,46 @@ export default function GitHubConfigPage() {
         }
     };
 
+    const [availableRepos, setAvailableRepos] = useState([]);
+    const [loadingRepos, setLoadingRepos] = useState(false);
+
+    useEffect(() => {
+        if (config.username) {
+            fetchRepos();
+        }
+    }, [config.username]);
+
+    const fetchRepos = async () => {
+        if (!config.username) return;
+        setLoadingRepos(true);
+        try {
+            const res = await fetch(`https://api.github.com/users/${config.username}/repos?per_page=100&type=public&sort=updated`);
+            if (res.ok) {
+                const data = await res.json();
+                setAvailableRepos(data.map(repo => repo.name));
+            }
+        } catch (error) {
+            console.error('Failed to fetch repos:', error);
+        } finally {
+            setLoadingRepos(false);
+        }
+    };
+
+    const toggleRepoVisibility = (repoName) => {
+        setConfig(prev => {
+            const hidden = new Set(prev.hiddenRepos || []);
+            if (hidden.has(repoName)) {
+                hidden.delete(repoName);
+            } else {
+                hidden.add(repoName);
+            }
+            return {
+                ...prev,
+                hiddenRepos: Array.from(hidden)
+            };
+        });
+    };
+
     const toggleSection = (section) => {
         setConfig(prev => ({
             ...prev,
@@ -150,10 +192,10 @@ export default function GitHubConfigPage() {
             {/* Token Status Message */}
             {tokenStatus && (
                 <div className={`mb-8 p-4 rounded-xl border flex items-center gap-3 ${tokenStatus === 'valid'
-                        ? 'bg-green-500/10 border-green-500/20 text-green-400'
-                        : tokenStatus === 'invalid'
-                            ? 'bg-red-500/10 border-red-500/20 text-red-400'
-                            : 'bg-yellow-500/10 border-yellow-500/20 text-yellow-400'
+                    ? 'bg-green-500/10 border-green-500/20 text-green-400'
+                    : tokenStatus === 'invalid'
+                        ? 'bg-red-500/10 border-red-500/20 text-red-400'
+                        : 'bg-yellow-500/10 border-yellow-500/20 text-yellow-400'
                     }`}>
                     {tokenStatus === 'valid' ? (
                         <CheckCircle className="w-5 h-5 shrink-0" />
@@ -281,6 +323,61 @@ export default function GitHubConfigPage() {
                                 </label>
                             );
                         })}
+                    </div>
+                </div>
+
+                {/* Repo Visibility */}
+                <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
+
+                    <div className="flex justify-between items-center mb-8 relative z-10">
+                        <h2 className="text-sm font-mono text-blue-500/70 uppercase tracking-widest flex items-center gap-4">
+                            Repository Filters
+                            <div className="h-px w-20 bg-blue-500/10" />
+                        </h2>
+                        <span className="text-xs text-slate-500 font-mono">
+                            {config.hiddenRepos?.length || 0} HIDDEN
+                        </span>
+                    </div>
+
+                    <div className="relative z-10">
+                        {loadingRepos ? (
+                            <div className="flex items-center justify-center p-8 text-slate-500 gap-2">
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                <span className="text-sm font-mono">LOADING_REPOSITORIES...</span>
+                            </div>
+                        ) : availableRepos.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto pr-2 custom-scrollbar">
+                                {availableRepos.map((repo) => {
+                                    const isHidden = config.hiddenRepos?.includes(repo);
+                                    return (
+                                        <label key={repo} className={`flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer ${isHidden
+                                                ? 'bg-red-500/10 border-red-500/30 opacity-75'
+                                                : 'bg-slate-900/30 border-white/5 hover:border-white/10'
+                                            }`}>
+                                            <div className={`p-1.5 rounded-md ${isHidden ? 'bg-red-500/20 text-red-400' : 'bg-blue-500/10 text-blue-400'
+                                                }`}>
+                                                {isHidden ? <EyeOff className="w-3.5 h-3.5" /> : <Book className="w-3.5 h-3.5" />}
+                                            </div>
+                                            <span className={`text-sm font-mono truncate flex-1 ${isHidden ? 'text-red-300 line-through decoration-red-500/50' : 'text-slate-300'}`}>
+                                                {repo}
+                                            </span>
+                                            <input
+                                                type="checkbox"
+                                                checked={isHidden}
+                                                onChange={() => toggleRepoVisibility(repo)}
+                                                className="hidden"
+                                            />
+                                            {isHidden && <span className="text-[10px] text-red-400 font-bold uppercase tracking-wider">HIDDEN</span>}
+                                        </label>
+                                    );
+                                })}
+                            </div>
+                        ) : (
+                            <div className="text-center p-8 text-slate-500 font-mono text-sm">
+                                NO_PUBLIC_REPOSITORIES_FOUND
+                            </div>
+                        )}
                     </div>
                 </div>
 

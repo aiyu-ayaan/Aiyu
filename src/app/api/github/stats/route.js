@@ -84,8 +84,9 @@ export async function GET() {
         }
         const repos = await reposRes.json();
 
-        // Filter out private repos (extra safety)
-        const publicRepos = repos.filter(repo => !repo.private);
+        // Filter out private repos (extra safety) and hidden repos
+        const hiddenRepos = config.hiddenRepos || [];
+        const publicRepos = repos.filter(repo => !repo.private && !hiddenRepos.includes(repo.name));
 
         // Fetch contribution data using GraphQL API
         const graphqlQuery = `
