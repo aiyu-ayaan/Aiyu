@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import ThemePreviewCard from '@/app/components/admin/ThemePreviewCard';
 import ThemeEditor from '@/app/components/admin/ThemeEditor';
+import Toast from '@/app/components/admin/Toast';
 import { Paintbrush, Plus, Layout, Moon, Sun } from 'lucide-react';
 
 export default function AdminThemesPage() {
@@ -16,6 +17,15 @@ export default function AdminThemesPage() {
     const [showEditor, setShowEditor] = useState(false);
     const [editingTheme, setEditingTheme] = useState(null);
     const [error, setError] = useState(null);
+    const [perPageEnabled, setPerPageEnabled] = useState(false);
+    const [perPageConfig, setPerPageConfig] = useState({});
+    const [toast, setToast] = useState(null);
+
+    const showToast = (message, success = true) => {
+        setToast({ message, success });
+        setTimeout(() => setToast(null), 3000);
+    };
+
 
     useEffect(() => {
         fetchThemes();
@@ -46,9 +56,54 @@ export default function AdminThemesPage() {
             if (data.success) {
                 setActiveTheme(data.data.theme.slug);
                 setActiveVariant(data.data.activeVariant);
+                if (data.data.perPageThemes) {
+                    setPerPageEnabled(data.data.perPageThemes.enabled);
+                    setPerPageConfig(data.data.perPageThemes.pages || {});
+                }
             }
         } catch (err) {
             console.error('Failed to fetch active theme:', err);
+        }
+    };
+
+    const handleTogglePerPage = () => {
+        setPerPageEnabled(!perPageEnabled);
+        // We defer saving until the user clicks save, or we can auto-save.
+        // Let's implement auto-save for toggle for better UX? 
+        // Or wait for strict save button. The UI I added has a SAVE button. 
+        // So just toggle state here.
+    };
+
+    const handlePerPageChange = (route, themeSlug) => {
+        setPerPageConfig(prev => ({
+            ...prev,
+            [route]: themeSlug
+        }));
+    };
+
+    const savePerPageConfig = async () => {
+        try {
+            const response = await fetch('/api/themes/active', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    perPageThemes: {
+                        enabled: perPageEnabled,
+                        pages: perPageConfig
+                    }
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                showToast('Configuration saved successfully');
+            } else {
+                showToast(data.error || 'Failed to save configuration', false);
+            }
+        } catch (err) {
+            showToast('Failed to save configuration', false);
+            console.error(err);
         }
     };
 
@@ -63,12 +118,12 @@ export default function AdminThemesPage() {
             const data = await response.json();
             if (data.success) {
                 setActiveTheme(themeSlug);
-                // Optionally refresh to apply theme immediately if it affects admin
+                showToast('Theme activated successfully');
             } else {
-                alert(data.error || 'Failed to activate theme');
+                showToast(data.error || 'Failed to activate theme', false);
             }
         } catch (err) {
-            alert('Failed to activate theme');
+            showToast('Failed to activate theme', false);
             console.error(err);
         }
     };
@@ -84,11 +139,12 @@ export default function AdminThemesPage() {
             const data = await response.json();
             if (data.success) {
                 setThemes(themes.filter(t => t.slug !== themeSlug));
+                showToast('Theme deleted successfully');
             } else {
-                alert(data.error || 'Failed to delete theme');
+                showToast(data.error || 'Failed to delete theme', false);
             }
         } catch (err) {
-            alert('Failed to delete theme');
+            showToast('Failed to delete theme', false);
             console.error(err);
         }
     };
@@ -119,11 +175,12 @@ export default function AdminThemesPage() {
                 setShowEditor(false);
                 setEditingTheme(null);
                 fetchThemes();
+                showToast('Theme saved successfully');
             } else {
-                alert(data.error || 'Failed to save theme');
+                showToast(data.error || 'Failed to save theme', false);
             }
         } catch (err) {
-            alert('Failed to save theme');
+            showToast('Failed to save theme', false);
             console.error(err);
         }
     };
@@ -201,6 +258,81 @@ export default function AdminThemesPage() {
                     </div>
                 </div>
             )}
+
+            {/* Per-Page Customization Section */}
+            <div className="bg-slate-900/50 backdrop-blur-xl border border-purple-500/30 rounded-2xl p-6 mb-12 relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-64 h-64 bg-purple-500/5 rounded-full blur-[100px] pointer-events-none" />
+
+                <div className="relative z-10">
+                    <div className="flex justify-between items-center mb-6">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center border border-purple-500/30 text-purple-400">
+                                <Layout className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-bold text-white">Route-Specific Customization</h2>
+                                <p className="text-slate-400 text-sm">Assign different visual themes to specific application routes.</p>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                            <span className={`text-sm font-mono ${perPageEnabled ? 'text-purple-400' : 'text-slate-500'}`}>
+                                {perPageEnabled ? 'ENABLED' : 'DISABLED'}
+                            </span>
+                            <button
+                                onClick={handleTogglePerPage}
+                                className={`w-12 h-6 rounded-full p-1 transition-colors duration-300 ${perPageEnabled ? 'bg-purple-500' : 'bg-slate-700'}`}
+                            >
+                                <div className={`w-4 h-4 rounded-full bg-white shadow-md transition-transform duration-300 ${perPageEnabled ? 'translate-x-6' : 'translate-x-0'}`} />
+                            </button>
+                        </div>
+                    </div>
+
+                    {perPageEnabled && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6 animate-fadeIn">
+                            {[
+                                { path: '/', label: 'Home (/)' },
+                                { path: '/about-me', label: 'About Me (/about-me)' },
+                                { path: '/projects', label: 'Projects List (/projects)' },
+                                { path: '/projects/', label: 'Project Details (/projects/...)' },
+                                { path: '/gallery', label: 'Gallery (/gallery)' },
+                                { path: '/blogs', label: 'Blogs List (/blogs)' },
+                                { path: '/blogs/', label: 'Blog Details (/blogs/...)' },
+                                { path: '/contact-us', label: 'Contact Us (/contact-us)' },
+                                { path: '/github', label: 'GitHub Showcase (/github)' },
+                                { path: '/work-in-progress', label: 'Work In Progress (/work-in-progress)' }
+                            ].map(routeObj => (
+                                <div key={routeObj.path} className="bg-slate-950/50 p-4 rounded-xl border border-white/5 hover:border-purple-500/30 transition-colors">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <span className="font-mono text-cyan-400 text-sm">{routeObj.label}</span>
+                                    </div>
+                                    <select
+                                        value={perPageConfig[routeObj.path] || ''}
+                                        onChange={(e) => handlePerPageChange(routeObj.path, e.target.value)}
+                                        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-300 focus:outline-none focus:border-purple-500"
+                                    >
+                                        <option value="">Global Default</option>
+                                        {themes.map(theme => (
+                                            <option key={theme.slug} value={theme.slug}>
+                                                {theme.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    <div className="mt-6 flex justify-end">
+                        <button
+                            onClick={savePerPageConfig}
+                            className={`bg-purple-500 hover:bg-purple-400 text-white px-6 py-2 rounded-lg transition-all shadow-[0_0_15px_rgba(168,85,247,0.3)] hover:shadow-[0_0_25px_rgba(168,85,247,0.5)] font-bold text-sm tracking-wide ${!perPageEnabled ? 'opacity-75 grayscale' : ''}`}
+                        >
+                            {perPageEnabled ? 'SAVE_CONFIGURATION' : 'SAVE_DISABLE_STATE'}
+                        </button>
+                    </div>
+                </div>
+            </div>
 
             {error && (
                 <div className="bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl p-4 mb-8 font-mono text-sm">
@@ -288,6 +420,8 @@ export default function AdminThemesPage() {
                     }}
                 />
             )}
+
+            <Toast notification={toast} onClose={() => setToast(null)} />
         </div>
     );
 }

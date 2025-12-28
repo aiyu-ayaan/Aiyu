@@ -37,6 +37,10 @@ const ConfigSchema = new mongoose.Schema({
     activeTheme: { type: String, default: 'vs-code-dark' },
     activeThemeVariant: { type: String, enum: ['light', 'dark'], default: 'dark' },
     allowThemeSwitching: { type: Boolean, default: true },
+    perPageThemes: {
+        enabled: { type: Boolean, default: false },
+        pages: { type: Map, of: String, default: {} }
+    }
 }, { strict: false }); // Allow other fields to be added later if needed without strict validation issues initially
 
 export default mongoose.models.Config || mongoose.model('Config', ConfigSchema);

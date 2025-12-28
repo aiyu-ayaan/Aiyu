@@ -43,7 +43,8 @@ export async function GET() {
             data: {
                 theme: themeData,
                 activeVariant,
-                allowThemeSwitching: config.allowThemeSwitching
+                allowThemeSwitching: config.allowThemeSwitching,
+                perPageThemes: config.perPageThemes || { enabled: false, pages: {} }
             }
         });
     } catch (error) {
@@ -69,38 +70,7 @@ export async function PATCH(request) {
         }
 
         const body = await request.json();
-        const { themeSlug, variant } = body;
-
-        if (!themeSlug) {
-            return NextResponse.json(
-                { success: false, error: "themeSlug is required" },
-                { status: 400 }
-            );
-        }
-
-        // Validate variant if provided
-        if (variant && !['light', 'dark'].includes(variant)) {
-            return NextResponse.json(
-                { success: false, error: "variant must be 'light' or 'dark'" },
-                { status: 400 }
-            );
-        }
-
-        // Verify the theme exists
-        let themeExists = false;
-        if (isPredefinedTheme(themeSlug)) {
-            themeExists = true;
-        } else {
-            const customTheme = await Theme.findOne({ slug: themeSlug });
-            themeExists = !!customTheme;
-        }
-
-        if (!themeExists) {
-            return NextResponse.json(
-                { success: false, error: "Theme not found" },
-                { status: 404 }
-            );
-        }
+        const { themeSlug, variant, perPageThemes } = body;
 
         // Get or create config
         let config = await Config.findOne({});
@@ -108,10 +78,51 @@ export async function PATCH(request) {
             config = new Config({});
         }
 
-        // Update active theme
-        config.activeTheme = themeSlug;
+        // Handle standard theme update
+        if (themeSlug) {
+            // Verify the theme exists
+            let themeExists = false;
+            if (isPredefinedTheme(themeSlug)) {
+                themeExists = true;
+            } else {
+                const customTheme = await Theme.findOne({ slug: themeSlug });
+                themeExists = !!customTheme;
+            }
+
+            if (!themeExists) {
+                return NextResponse.json(
+                    { success: false, error: "Theme not found" },
+                    { status: 404 }
+                );
+            }
+            config.activeTheme = themeSlug;
+        }
+
         if (variant) {
+            if (!['light', 'dark'].includes(variant)) {
+                return NextResponse.json(
+                    { success: false, error: "variant must be 'light' or 'dark'" },
+                    { status: 400 }
+                );
+            }
             config.activeThemeVariant = variant;
+        }
+
+        // Handle per-page theme update
+        if (perPageThemes) {
+            if (!config.perPageThemes) {
+                config.perPageThemes = { enabled: false, pages: {} };
+            }
+            // Ensure it's treated as a Mongoose object if needed, but simple assignment of properties works
+            // if we mark it modified.
+
+            if (typeof perPageThemes.enabled === 'boolean') {
+                config.perPageThemes.enabled = perPageThemes.enabled;
+            }
+            if (perPageThemes.pages) {
+                config.perPageThemes.pages = perPageThemes.pages;
+            }
+            config.markModified('perPageThemes');
         }
 
         await config.save();
@@ -121,7 +132,8 @@ export async function PATCH(request) {
             message: "Active theme updated successfully",
             data: {
                 activeTheme: config.activeTheme,
-                activeThemeVariant: config.activeThemeVariant
+                activeThemeVariant: config.activeThemeVariant,
+                perPageThemes: config.perPageThemes
             }
         });
     } catch (error) {
