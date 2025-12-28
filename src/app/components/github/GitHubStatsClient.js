@@ -281,52 +281,62 @@ export default function GitHubStatsClient({ data }) {
                             Recently Updated Repositories
                         </h2>
                         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {topRepos.map((repo, index) => (
-                                <a
-                                    key={index}
-                                    href={repo.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="bg-[var(--surface-card)] rounded-xl p-6 border border-[var(--border-secondary)] hover:border-[var(--primary)] transition-colors group"
-                                >
-                                    <div className="flex items-start justify-between mb-3">
-                                        <div className="flex items-center gap-2 truncate pr-2">
-                                            <h3 className="font-bold text-lg group-hover:text-[var(--primary)] transition-colors truncate">
-                                                {repo.name}
-                                            </h3>
-                                            {repo.isPrivate && (
-                                                <span className="shrink-0 flex items-center gap-1 bg-amber-500/10 text-amber-500 text-[10px] font-bold px-2 py-0.5 rounded border border-amber-500/20 uppercase tracking-wide">
-                                                    <Lock className="w-2.5 h-2.5" />
-                                                    Private
-                                                </span>
-                                            )}
-                                        </div>
-                                        <Github className="w-5 h-5 text-[var(--text-secondary)] flex-shrink-0" />
-                                    </div>
-                                    <p className="text-sm text-[var(--text-secondary)] mb-4 line-clamp-2 min-h-[40px]">
-                                        {repo.description || 'No description provided'}
-                                    </p>
-                                    <div className="flex items-center gap-4 text-sm text-[var(--text-secondary)]">
-                                        {repo.language && (
-                                            <div className="flex items-center gap-1">
-                                                <span
-                                                    className="w-3 h-3 rounded-full"
-                                                    style={{ backgroundColor: languageColors[repo.language] || '#gray' }}
-                                                />
-                                                {repo.language}
+                            {topRepos.map((repo, index) => {
+                                const isPrivate = repo.isPrivate;
+                                const Wrapper = isPrivate ? 'div' : 'a';
+                                const wrapperProps = isPrivate ? {} : {
+                                    href: repo.url,
+                                    target: "_blank",
+                                    rel: "noopener noreferrer"
+                                };
+
+                                return (
+                                    <Wrapper
+                                        key={index}
+                                        {...wrapperProps}
+                                        className={`bg-[var(--surface-card)] rounded-xl p-6 border border-[var(--border-secondary)] transition-colors ${isPrivate ? 'opacity-80 cursor-default' : 'hover:border-[var(--primary)] group cursor-pointer'
+                                            }`}
+                                    >
+                                        <div className="flex items-start justify-between mb-3">
+                                            <div className="flex items-center gap-2 truncate pr-2">
+                                                <h3 className={`font-bold text-lg transition-colors truncate ${isPrivate ? '' : 'group-hover:text-[var(--primary)]'
+                                                    }`}>
+                                                    {repo.name}
+                                                </h3>
+                                                {repo.isPrivate && (
+                                                    <span className="shrink-0 flex items-center gap-1 bg-amber-500/10 text-amber-500 text-[10px] font-bold px-2 py-0.5 rounded border border-amber-500/20 uppercase tracking-wide">
+                                                        <Lock className="w-2.5 h-2.5" />
+                                                        Private
+                                                    </span>
+                                                )}
                                             </div>
-                                        )}
-                                        <div className="flex items-center gap-1">
-                                            <Star className="w-4 h-4" />
-                                            {repo.stars}
+                                            <Github className="w-5 h-5 text-[var(--text-secondary)] flex-shrink-0" />
                                         </div>
-                                        <div className="flex items-center gap-1">
-                                            <GitFork className="w-4 h-4" />
-                                            {repo.forks}
+                                        <p className="text-sm text-[var(--text-secondary)] mb-4 line-clamp-2 min-h-[40px]">
+                                            {repo.description || 'No description provided'}
+                                        </p>
+                                        <div className="flex items-center gap-4 text-sm text-[var(--text-secondary)]">
+                                            {repo.language && (
+                                                <div className="flex items-center gap-1">
+                                                    <span
+                                                        className="w-3 h-3 rounded-full"
+                                                        style={{ backgroundColor: languageColors[repo.language] || '#gray' }}
+                                                    />
+                                                    {repo.language}
+                                                </div>
+                                            )}
+                                            <div className="flex items-center gap-1">
+                                                <Star className="w-4 h-4" />
+                                                {repo.stars}
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                <GitFork className="w-4 h-4" />
+                                                {repo.forks}
+                                            </div>
                                         </div>
-                                    </div>
-                                </a>
-                            ))}
+                                    </Wrapper>
+                                );
+                            })}
                         </div>
                     </motion.div>
                 )}
