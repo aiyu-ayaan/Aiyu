@@ -76,6 +76,7 @@ export const viewport = {
 }
 
 import GoogleAnalytics from "./components/GoogleAnalytics";
+import TerminalPath from "./components/admin/TerminalPath";
 
 import SpaceBackground from "./components/shared/SpaceBackground";
 
@@ -114,6 +115,7 @@ export default async function RootLayout({ children }) {
           <div className="fixed inset-0 z-[-1]">
             <SpaceBackground />
           </div>
+          <TerminalPath />
           <div className="relative z-0">
             {children}
           </div>

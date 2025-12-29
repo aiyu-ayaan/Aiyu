@@ -18,11 +18,13 @@ export default function Footer({ socialData, name, config }) {
 
     return (
         <footer
-            className="w-full px-4 sm:px-6 py-8 border-t transition-all duration-300"
+            className="w-full px-4 sm:px-6 border-t transition-all duration-300"
             style={{
                 borderColor: theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
                 backgroundColor: theme === 'dark' ? 'rgba(13, 17, 23, 0.6)' : 'rgba(255, 255, 255, 0.6)',
                 backdropFilter: 'blur(16px)',
+                paddingTop: '2rem', // py-8 equivalent
+                paddingBottom: 'calc(2rem + var(--terminal-height, 4rem))', // base padding + terminal height
             }}
         >
             <div className="flex flex-col md:flex-row items-center justify-between max-w-7xl mx-auto gap-6 md:gap-0">
