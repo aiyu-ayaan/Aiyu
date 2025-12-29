@@ -8,6 +8,7 @@ import { motion, useScroll, useTransform } from 'framer-motion';
 // import { navLinks, contactLink } from '../data/headerData';
 import ThemeToggle from './ThemeToggle';
 import { useTheme } from '../context/ThemeContext';
+import TerminalPath from './admin/TerminalPath';
 
 export default function Header({ data, logoText }) {
     const { navLinks, contactLink } = data || { navLinks: [], contactLink: {} };
@@ -172,6 +173,7 @@ export default function Header({ data, logoText }) {
                         </Link>
                     </div>
                 </nav>
+                <TerminalPath />
             </motion.header>
 
             {/* Full Screen Mobile Menu - Moved OUTSIDE header */}
