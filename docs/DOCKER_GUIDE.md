@@ -1,8 +1,44 @@
 # Docker Setup & Troubleshooting
 
-## Prerequisites
-- Docker Desktop installed and running.
-- `.env` file created in root directory (see `SETUP_GUIDE.md`).
+> **📚 This documentation has moved to the GitHub Wiki**
+>
+> **Please visit**: **[Docker Setup Wiki](https://github.com/aiyu-ayaan/Aiyu/wiki/Docker-Setup)**
+>
+> The wiki version includes complete Docker configuration, troubleshooting, and best practices.
+
+---
+
+## Quick Links
+
+- **[Docker Setup](https://github.com/aiyu-ayaan/Aiyu/wiki/Docker-Setup)** - Complete Docker guide
+- **[Installation Guide](https://github.com/aiyu-ayaan/Aiyu/wiki/Installation-Guide)** - Setup instructions
+- **[Deployment Guide](https://github.com/aiyu-ayaan/Aiyu/wiki/Deployment-Guide)** - Production deployment
+- **[Security Guide](https://github.com/aiyu-ayaan/Aiyu/wiki/Security-Guide)** - Docker security hardening
+- **[Common Issues](https://github.com/aiyu-ayaan/Aiyu/wiki/Common-Issues)** - Troubleshooting
+
+## Quick Start
+
+```bash
+# Build and start
+docker-compose up -d --build
+
+# Wait for containers to start
+sleep 10
+
+# Seed database (FIRST TIME ONLY)
+curl http://localhost:3000/api/seed
+
+# View logs
+docker-compose logs -f
+
+# Stop containers
+docker-compose down
+```
+
+---
+
+**For complete and up-to-date documentation, visit the [GitHub Wiki](https://github.com/aiyu-ayaan/Aiyu/wiki)**
+
 
 ## Building and Running
 
@@ -14,6 +50,28 @@ docker-compose up -d --build
 
 - `--build`: Forces a rebuild of the Docker image (essential if you modify `package.json` or `Dockerfile`).
 - `-d`: Detached mode (runs in background).
+
+**🚨 IMPORTANT - First Time Setup**:
+After starting the containers for the first time, you **MUST** seed the database with initial data:
+
+```bash
+# Wait 10 seconds for containers to fully start
+sleep 10
+
+# Seed the database
+curl http://localhost:3000/api/seed
+```
+
+**Expected Response**: `{"message": "Database seeded successfully"}`
+
+This populates the database with:
+- Home page content
+- Sample projects
+- About section data
+- Header navigation
+- Social links
+
+**⚠️ WARNING**: Only run the seed endpoint ONCE during initial setup. Running it again will delete all your data and reset to defaults!
 
 To stop the application:
 

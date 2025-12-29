@@ -5,10 +5,13 @@
 [![React](https://img.shields.io/badge/React-19.0-blue?logo=react)](https://reactjs.org/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-6.0-green?logo=mongodb)](https://www.mongodb.com/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker)](https://www.docker.com/)
+[![Documentation](https://img.shields.io/badge/Wiki-Documentation-blue?logo=github)](https://github.com/aiyu-ayaan/Aiyu/wiki)
 
 A modern, responsive, and **fully customizable** portfolio website built with Next.js 15, Tailwind CSS, and MongoDB. This project showcases skills, detailed project case studies, blogs, and provides a way for visitors to contact you. It features a comprehensive **Admin Panel** for managing all content without touching code, making it perfect for developers who want a professional portfolio with zero-hassle content management.
 
 **🌟 Perfect for**: Developers, designers, freelancers, and tech professionals looking for a production-ready portfolio solution.
+
+**📚 [Complete Documentation Wiki](https://github.com/aiyu-ayaan/Aiyu/wiki)** | **🚀 [Quick Start Guide](https://github.com/aiyu-ayaan/Aiyu/wiki/Quick-Start)** | **📖 [Installation Guide](https://github.com/aiyu-ayaan/Aiyu/wiki/Installation-Guide)**
 
 ## ✨ Features
 
@@ -94,7 +97,12 @@ Access the admin panel at `/admin` to manage everything without touching code:
 - **Environment Variables**: Secure credential management
 - **API Key Protection**: Secure blog API with token authentication
 
-> **📚 Extensive Documentation**: For a detailed guide on using these features, please refer to the [Admin Panel User Manual](docs/admin_manual.md).
+> **📚 Complete Documentation**: 
+> - **[GitHub Wiki](https://github.com/aiyu-ayaan/Aiyu/wiki)** - Comprehensive guides and tutorials
+> - **[Quick Start](https://github.com/aiyu-ayaan/Aiyu/wiki/Quick-Start)** - Get running in 5 minutes
+> - **[Admin Panel Manual](docs/admin_manual.md)** - Detailed admin panel guide with screenshots
+> - **[API Documentation](https://github.com/aiyu-ayaan/Aiyu/wiki/API-Documentation)** - REST API reference
+> - **[Deployment Guide](https://github.com/aiyu-ayaan/Aiyu/wiki/Deployment-Guide)** - Production deployment instructions
 
 ## Screenshots
 
@@ -155,6 +163,8 @@ Access the admin panel at `/admin` to manage everything without touching code:
 ## 🚀 Quick Start (Docker) - Recommended
 
 The fastest and most secure way to run this application is using Docker. Everything is pre-configured!
+
+> **📚 New to this project?** Check out our **[5-Minute Quick Start Guide](https://github.com/aiyu-ayaan/Aiyu/wiki/Quick-Start)** or **[Detailed Installation Guide](https://github.com/aiyu-ayaan/Aiyu/wiki/Installation-Guide)**
 
 ### Prerequisites
 
@@ -241,7 +251,36 @@ All security checks must pass! This verifies:
 - Resource limits are active
 - Container is running as non-root user
 
-#### 5. **Access Your Portfolio**
+#### 5. **Seed Initial Data (REQUIRED - First Time Only)**
+
+🚨 **IMPORTANT**: Before accessing the site, you must seed the database with initial data:
+
+```bash
+# Open browser and visit (or use curl):
+http://localhost:3000/api/seed
+```
+
+Or using curl:
+```bash
+curl http://localhost:3000/api/seed
+```
+
+**Expected Response**:
+```json
+{"message": "Database seeded successfully"}
+```
+
+This populates the database with:
+- Default home page content
+- Sample projects
+- About section data
+- Header navigation
+- Social links
+- Initial configuration
+
+**Note**: Only run this ONCE during initial setup. Running it again will reset all data to defaults!
+
+#### 6. **Access Your Portfolio**
 - **🌐 Main Site**: [http://localhost:3000](http://localhost:3000)
 - **⚙️ Admin Panel**: [http://localhost:3000/admin](http://localhost:3000/admin)
   - Username: `admin` (or your configured username)
@@ -249,16 +288,19 @@ All security checks must pass! This verifies:
 
 ### 🎯 Post-Installation Steps
 
-1. **Login to Admin Panel**: Navigate to `/admin` and login
-2. **Update Home Content**: Edit hero section, tagline, and "Open to Work" status
-3. **Add Your Projects**: Create project entries with descriptions, images, and links
-4. **Configure GitHub Integration**: Add GitHub token to fetch repository statistics
-5. **Customize Theme**: Choose or create a theme that matches your brand
-6. **Setup SEO**: Configure meta tags, analytics, and sitemap settings
+1. **Seed Database**: Visit `http://localhost:3000/api/seed` (first time only!)
+2. **Login to Admin Panel**: Navigate to `/admin` and login
+3. **Update Home Content**: Edit hero section, tagline, and "Open to Work" status
+4. **Add Your Projects**: Create project entries with descriptions, images, and links
+5. **Configure GitHub Integration**: Add GitHub token to fetch repository statistics
+6. **Customize Theme**: Choose or create a theme that matches your brand
+7. **Setup SEO**: Configure meta tags, analytics, and sitemap settings
 
 ## 💻 Manual Installation (Development)
 
 If you wish to run the project without Docker for local development:
+
+> **📖 Full Guide**: [Manual Installation Steps](https://github.com/aiyu-ayaan/Aiyu/wiki/Installation-Guide#-manual-installation)
 
 ### Prerequisites
 - **Node.js**: 18.17+ or 20.0+ ([Download Node.js](https://nodejs.org/))
@@ -319,6 +361,21 @@ npm run dev
 
 The application will start at [http://localhost:3000](http://localhost:3000) with hot-reload enabled (Turbopack).
 
+#### 5. **Seed Initial Data (REQUIRED - First Time Only)**
+
+🚨 **IMPORTANT**: Before using the site, seed the database with initial data:
+
+```bash
+# Visit in browser or use curl:
+curl http://localhost:3000/api/seed
+```
+
+**Expected Response**: `{"message": "Database seeded successfully"}`
+
+**Note**: Only run this ONCE during initial setup. It will reset all data to defaults if run again!
+
+📖 **Learn More**: [Database Seeding Guide](https://github.com/aiyu-ayaan/Aiyu/wiki/Database-Seeding)
+
 ### 🛠️ Available Scripts
 
 ```bash
@@ -348,9 +405,16 @@ npm run emergency:cleanup # Emergency cleanup script (if compromised)
 4. **Environment Variables**: Add `NEXT_PUBLIC_` prefix for client-side variables
 5. **Image Optimization**: Place images in `public/` folder for static serving
 
+📖 **More Tips**: [Development Guide](https://github.com/aiyu-ayaan/Aiyu/wiki/Architecture)
+
 ## 🔒 Security & Production Deployment
 
 This project includes enterprise-grade security features and has been hardened against common attacks, including crypto mining exploits.
+
+> **📖 Complete Guides**: 
+> - **[Security Guide](https://github.com/aiyu-ayaan/Aiyu/wiki/Security-Guide)** - Comprehensive security practices
+> - **[Deployment Guide](https://github.com/aiyu-ayaan/Aiyu/wiki/Deployment-Guide)** - Production deployment options
+> - **[Quick Security Guide](QUICK_SECURITY_GUIDE.md)** - Essential security checklist
 
 ### 🛡️ Built-in Security Features
 
@@ -381,7 +445,7 @@ This project includes enterprise-grade security features and has been hardened a
 #### **Option 1: Docker on VPS (Recommended)**
 Perfect for DigitalOcean, AWS EC2, Linode, Vultr, etc.
 
-**See detailed guide**: [DEPLOYMENT.md](docs/DEPLOYMENT.md)
+**See detailed guide**: **[Deployment Guide - Docker on VPS](https://github.com/aiyu-ayaan/Aiyu/wiki/Deployment-Guide#-option-1-docker-on-vps-recommended)**
 
 **Quick Steps**:
 ```bash
@@ -453,7 +517,7 @@ Before deploying to production:
 - [ ] Test admin panel login after deployment
 - [ ] Run `npm run docker:verify` and ensure all checks pass
 
-**📖 Complete Security Guide**: [QUICK_SECURITY_GUIDE.md](QUICK_SECURITY_GUIDE.md)
+**📖 Complete Security Guide**: **[Security Guide](https://github.com/aiyu-ayaan/Aiyu/wiki/Security-Guide)** | **[Quick Security Checklist](QUICK_SECURITY_GUIDE.md)**
 
 ### 🚨 Emergency Response
 
@@ -481,69 +545,119 @@ curl http://localhost:3000/api/health
 
 ## 📚 Documentation
 
-Comprehensive guides to help you get the most out of this portfolio:
+This project includes extensive documentation to help you get started and make the most of all features.
 
-### Getting Started
-- **[README.md](README.md)** (this file): Overview, installation, and quick start
-- **[QUICK_SECURITY_GUIDE.md](QUICK_SECURITY_GUIDE.md)**: Essential security setup and crypto miner prevention
+### 🌟 GitHub Wiki (Recommended)
 
-### Admin & Usage
-- **[Admin Panel User Manual](docs/admin_manual.md)**: Complete guide with screenshots for managing your portfolio
+**Visit our [Complete Documentation Wiki](https://github.com/aiyu-ayaan/Aiyu/wiki)** for comprehensive guides:
+
+#### Getting Started
+- **[📖 Home](https://github.com/aiyu-ayaan/Aiyu/wiki)** - Wiki overview and navigation
+- **[⚡ Quick Start Guide](https://github.com/aiyu-ayaan/Aiyu/wiki/Quick-Start)** - Get running in 5 minutes
+- **[🔧 Installation Guide](https://github.com/aiyu-ayaan/Aiyu/wiki/Installation-Guide)** - Detailed setup instructions
+- **[⚙️ Configuration](https://github.com/aiyu-ayaan/Aiyu/wiki/Configuration)** - Environment variables and settings
+
+#### Features & Usage  
+- **[🎛️ Admin Panel Guide](https://github.com/aiyu-ayaan/Aiyu/wiki/Admin-Panel)** - Complete admin panel documentation
+- **[📝 Content Management](https://github.com/aiyu-ayaan/Aiyu/wiki/Content-Management)** - Managing projects, blogs, and gallery
+- **[🎨 Theme Customization](https://github.com/aiyu-ayaan/Aiyu/wiki/Theme-Customization)** - Creating and applying themes
+- **[🔗 GitHub Integration](https://github.com/aiyu-ayaan/Aiyu/wiki/GitHub-Integration)** - Repository statistics and automation
+
+#### Development
+- **[🔌 API Documentation](https://github.com/aiyu-ayaan/Aiyu/wiki/API-Documentation)** - REST API endpoints and usage
+- **[💾 Database Seeding](https://github.com/aiyu-ayaan/Aiyu/wiki/Database-Seeding)** - Populating initial data (REQUIRED)
+- **[🏗️ Architecture](https://github.com/aiyu-ayaan/Aiyu/wiki/Architecture)** - Project structure and design patterns
+- **[🤝 Contributing Guide](https://github.com/aiyu-ayaan/Aiyu/wiki/Contributing-Guide)** - How to contribute
+
+#### Deployment
+- **[🚀 Deployment Guide](https://github.com/aiyu-ayaan/Aiyu/wiki/Deployment-Guide)** - Production deployment options
+- **[🔒 Security Guide](https://github.com/aiyu-ayaan/Aiyu/wiki/Security-Guide)** - Security best practices and hardening
+- **[📊 Monitoring](https://github.com/aiyu-ayaan/Aiyu/wiki/Monitoring)** - Health checks and performance monitoring
+
+#### Help & Troubleshooting
+- **[❓ Common Issues & FAQ](https://github.com/aiyu-ayaan/Aiyu/wiki/Common-Issues)** - Solutions to frequent problems
+- **[🐛 Debugging](https://github.com/aiyu-ayaan/Aiyu/wiki/Debugging)** - Debugging tips and tools
+
+---
+
+### 📁 Local Documentation (docs/ folder)
+
+Additional detailed guides available in the `docs/` directory:
+
+#### Getting Started
+- **[README.md](README.md)** (this file) - Overview, installation, and quick start
+- **[QUICK_SECURITY_GUIDE.md](QUICK_SECURITY_GUIDE.md)** - Essential security setup and crypto miner prevention
+
+#### Admin & Usage
+- **[Admin Panel User Manual](docs/admin_manual.md)** - Complete guide with screenshots
   - Content management (Projects, Blogs, Gallery)
   - Theme customization
   - Message management
   - GitHub integration
   - Database exports
 
-### Development & Integration
-- **[API Documentation](docs/API_DOCUMENTATION.md)**: Technical details for developers
+#### Development & Integration
+- **[API Documentation](docs/API_DOCUMENTATION.md)** - Technical API details
   - Authentication endpoints
   - Blog automation API (integrate with Notion, n8n, Zapier)
   - Project and gallery APIs
   - Rate limiting and security
   - Example requests with cURL and JavaScript
 
-### Deployment & Operations
-- **[DEPLOYMENT.md](docs/DEPLOYMENT.md)**: Step-by-step deployment guides
+#### Deployment & Operations
+- **[DEPLOYMENT.md](docs/DEPLOYMENT.md)** - Step-by-step deployment guides
   - Docker on VPS (DigitalOcean, AWS, Linode)
   - Vercel serverless deployment
   - PM2 traditional hosting
   - Domain and DNS setup
   - SSL certificate configuration
 
-- **[DOCKER_GUIDE.md](docs/DOCKER_GUIDE.md)**: Docker-specific documentation
+- **[DOCKER_GUIDE.md](docs/DOCKER_GUIDE.md)** - Docker-specific documentation
   - Container architecture
   - Volume management
   - Networking
   - Troubleshooting
 
-### Optimization & Performance
-- **[SEO_OPTIMIZATION.md](docs/SEO_OPTIMIZATION.md)**: SEO best practices and configuration
+#### Optimization & Performance
+- **[SEO_OPTIMIZATION.md](docs/SEO_OPTIMIZATION.md)** - SEO best practices
   - Meta tags and Open Graph
   - Structured data (schema.org)
   - Sitemap generation
   - Performance optimization
 
-- **[SEO_TESTING.md](docs/SEO_TESTING.md)**: How to test and validate your SEO setup
+- **[SEO_TESTING.md](docs/SEO_TESTING.md)** - Testing and validation
   - Google Search Console
   - Rich results testing
   - Performance audits
 
-- **[GALLERY_OPTIMIZATION.md](docs/GALLERY_OPTIMIZATION.md)**: Image optimization techniques
+- **[GALLERY_OPTIMIZATION.md](docs/GALLERY_OPTIMIZATION.md)** - Image optimization
   - Image compression
   - Responsive images
   - Lazy loading
   - HEIC format support
 
+---
+
 ### 🎯 Quick Links by Use Case
 
 **I want to...**
-- **Setup the portfolio**: Start with [Quick Start](#-quick-start-docker---recommended) section above
-- **Customize content**: Read [Admin Panel User Manual](docs/admin_manual.md)
-- **Deploy to production**: Follow [DEPLOYMENT.md](docs/DEPLOYMENT.md)
-- **Automate blog posting**: Check [API Documentation](docs/API_DOCUMENTATION.md)
-- **Improve SEO**: Review [SEO_OPTIMIZATION.md](docs/SEO_OPTIMIZATION.md)
-- **Secure my deployment**: Follow [QUICK_SECURITY_GUIDE.md](QUICK_SECURITY_GUIDE.md)
+- **Get started quickly**: Read [Quick Start Guide](https://github.com/aiyu-ayaan/Aiyu/wiki/Quick-Start) (5 minutes)
+- **Install from scratch**: Follow [Installation Guide](https://github.com/aiyu-ayaan/Aiyu/wiki/Installation-Guide)
+- **Seed the database**: See [Database Seeding Guide](https://github.com/aiyu-ayaan/Aiyu/wiki/Database-Seeding) ⚠️ REQUIRED
+- **Customize content**: Use [Admin Panel Guide](https://github.com/aiyu-ayaan/Aiyu/wiki/Admin-Panel)
+- **Deploy to production**: Follow [Deployment Guide](https://github.com/aiyu-ayaan/Aiyu/wiki/Deployment-Guide)
+- **Automate blog posting**: Check [API Documentation](https://github.com/aiyu-ayaan/Aiyu/wiki/API-Documentation)
+- **Improve SEO**: Review [SEO Optimization](docs/SEO_OPTIMIZATION.md)
+- **Secure my deployment**: Follow [Security Guide](https://github.com/aiyu-ayaan/Aiyu/wiki/Security-Guide)
+- **Troubleshoot issues**: Check [Common Issues](https://github.com/aiyu-ayaan/Aiyu/wiki/Common-Issues)
+
+---
+
+### 📖 Documentation Format
+
+- **Wiki (Recommended)**: Interactive, searchable, community-editable documentation on GitHub
+- **Local Files**: Markdown files you can read offline in the repository
+- **Both in Sync**: Wiki and local docs cover the same topics with consistent information
 
 ## 🎨 Customization & Theming
 
@@ -686,8 +800,20 @@ portfolio/
 
 ### Need Help?
 
-- **🐛 Issues**: Report bugs in [GitHub Issues](https://github.com/aiyu-ayaan/Aiyu/issues)
-- **📧 Email**: Contact the maintainer at [ayaan35200@gmail.com]
+- **🌟 [GitHub Wiki](https://github.com/aiyu-ayaan/Aiyu/wiki)** - Comprehensive documentation
+- **❓ [Common Issues](https://github.com/aiyu-ayaan/Aiyu/wiki/Common-Issues)** - Quick solutions to frequent problems
+- **🐛 [GitHub Issues](https://github.com/aiyu-ayaan/Aiyu/issues)** - Report bugs or request features
+- **💬 [GitHub Discussions](https://github.com/aiyu-ayaan/Aiyu/discussions)** - Ask questions and share ideas
+- **📧 Email** - Contact the maintainer at ayaan35200@gmail.com
+
+---
+
+**Estimated Time**: 
+- Basic setup: **5 minutes** (with Docker)
+- Full customization: **30 minutes**
+- Production deployment: **1-2 hours**
+
+**⚠️ Don't forget**: After installation, visit `http://localhost:3000/api/seed` to populate the database with initial data!
 
 ### Code of Conduct
 
@@ -696,11 +822,13 @@ Be respectful, inclusive, and constructive. We're all here to learn and build to
 ## 🌟 Show Your Support
 
 If you find this project helpful, consider:
-- ⭐ **Starring the repository** on GitHub
-- 🍴 **Forking and customizing** for your own use
-- 📢 **Sharing with others** who might need a portfolio
-- 🐛 **Reporting issues** to help improve the project
-- 💡 **Contributing** features or fixes
+- ⭐ **[Star the repository](https://github.com/aiyu-ayaan/Aiyu)** on GitHub
+- 📚 **[Explore the Wiki](https://github.com/aiyu-ayaan/Aiyu/wiki)** for comprehensive guides
+- 🍴 **Fork and customize** for your own use
+- 📢 **Share with others** who might need a portfolio
+- 🐛 **Report issues** to help improve the project
+- 💡 **Contribute** features or fixes (see [Contributing Guide](https://github.com/aiyu-ayaan/Aiyu/wiki/Contributing-Guide))
+- 📝 **Improve documentation** in the Wiki
 
 
 ## 📄 License
@@ -746,6 +874,23 @@ SOFTWARE.
 **Built with ❤️ by [Aiyu Ayaan](https://github.com/aiyu-ayaan)**
 
 [![Portfolio](https://img.shields.io/badge/Portfolio-Visit-blue)](https://me.aiyu.co.in)
+[![GitHub](https://img.shields.io/badge/GitHub-Follow-black?logo=github)](https://github.com/aiyu-ayaan)
+[![Wiki](https://img.shields.io/badge/Wiki-Documentation-blue?logo=github)](https://github.com/aiyu-ayaan/Aiyu/wiki)
+
+---
+
+### 📚 Quick Links
+
+**[Home](https://github.com/aiyu-ayaan/Aiyu)** • 
+**[Wiki](https://github.com/aiyu-ayaan/Aiyu/wiki)** • 
+**[Quick Start](https://github.com/aiyu-ayaan/Aiyu/wiki/Quick-Start)** • 
+**[Installation](https://github.com/aiyu-ayaan/Aiyu/wiki/Installation-Guide)** • 
+**[API Docs](https://github.com/aiyu-ayaan/Aiyu/wiki/API-Documentation)** • 
+**[Deployment](https://github.com/aiyu-ayaan/Aiyu/wiki/Deployment-Guide)** • 
+**[Security](https://github.com/aiyu-ayaan/Aiyu/wiki/Security-Guide)** • 
+**[FAQ](https://github.com/aiyu-ayaan/Aiyu/wiki/Common-Issues)**
+
+---
 
 **[⬆ Back to Top](#portfolio-website)**
 

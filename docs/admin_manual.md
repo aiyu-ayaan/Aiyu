@@ -1,40 +1,34 @@
 # Admin Panel User Manual
 
-This document provides a comprehensive guide to using the Portfolio Admin Panel. The system allows you to manage content, configurations, and themes without writing code.
+> **📚 This documentation has moved to the GitHub Wiki**
+>
+> **Please visit**: **[Admin Panel Manual Wiki](https://github.com/aiyu-ayaan/Aiyu/wiki/Admin-Panel-Manual)**
+>
+> The wiki version includes complete guide with screenshots, step-by-step instructions, and best practices.
 
 ---
 
-## Table of Contents
+## Quick Links
 
-1.  [Access & Authentication](#access--authentication)
-2.  [Command Center (Dashboard)](#command-center-dashboard)
-3.  [Main Content Modules](#main-content-modules)
-    *   [Home](#home)
-    *   [About](#about)
-    *   [Projects](#projects)
-    *   [Blogs](#blogs)
-    *   [Gallery](#gallery)
-4.  [Component Modules](#component-modules)
-    *   [Header](#header)
-    *   [Footer](#footer)
-    *   [Contact](#contact)
-5.  [System Configuration](#system-configuration)
-    *   [Themes](#themes)
-    *   [GitHub](#github)
-    *   [Config](#config)
-    *   [Database](#database)
+- **[Admin Panel Manual](https://github.com/aiyu-ayaan/Aiyu/wiki/Admin-Panel-Manual)** - Complete guide with screenshots
+- **[Installation Guide](https://github.com/aiyu-ayaan/Aiyu/wiki/Installation-Guide)** - Setup instructions
+- **[Configuration](https://github.com/aiyu-ayaan/Aiyu/wiki/Configuration)** - Environment variables
+- **[Content Management](https://github.com/aiyu-ayaan/Aiyu/wiki/Content-Management)** - Managing content
+- **[Security Guide](https://github.com/aiyu-ayaan/Aiyu/wiki/Security-Guide)** - Security best practices
+
+### Screenshots
+
+All screenshots are available in the repository at `docs/images/`:
+
+![Login Screen](https://github.com/aiyu-ayaan/Aiyu/blob/master/docs/images/admin-login.png?raw=true)
+![Admin Dashboard](https://github.com/aiyu-ayaan/Aiyu/blob/master/docs/images/admin-dashboard.png?raw=true)
+![Footer Admin](https://github.com/aiyu-ayaan/Aiyu/blob/master/docs/images/admin-footer.png?raw=true)
+![Theme Editor](https://github.com/aiyu-ayaan/Aiyu/blob/master/docs/images/admin-themes.png?raw=true)
 
 ---
 
-## Access & Authentication
+**For complete and up-to-date documentation, visit the [GitHub Wiki](https://github.com/aiyu-ayaan/Aiyu/wiki)**
 
-**URL**: `/admin`  
-**Login URL**: `/admin/login`
-
-The admin panel is protected by a secure authentication system.
-
-### Login Screen
-![Login Screen](images/admin-login.png)
 
 *   **Rate Limiting**: The system allows 5 attempts every 5 minutes per IP address to prevent brute-force attacks.
 *   **Security**: Ensure `ADMIN_PASSWORD` is set securely in your `.env` file.
@@ -48,7 +42,7 @@ The admin panel is protected by a secure authentication system.
 The Command Center is the landing page after a successful login. It provides a visual grid of all available administration modules.
 
 ### Dashboard Overview
-![Admin Dashboard](images/admin-dashboard.png)
+![Admin Dashboard](images/admin-dashboard.png?raw=true)
 
 *   **Main Content**: Primary pages visible to visitors.
 *   **Components**: Reusable sections like Header and Footer.
@@ -115,7 +109,7 @@ Configure the main navigation bar.
 
 Manage the website footer and external links.
 
-![Footer Admin](images/admin-footer.png)
+![Footer Admin](images/admin-footer.png?raw=true)
 
 *   **Global Protocols**:
     *   **Copyright Signature**: Custom text (e.g., "© 2025").
@@ -141,7 +135,7 @@ View and manage incoming messages.
 
 Control the visual appearance of the portfolio.
 
-![Theme Editor](images/admin-themes.png)
+![Theme Editor](images/admin-themes.png?raw=true)
 
 *   **Preset Themes**: Select from built-in high-quality themes:
     *   **Dracula**, **Nord**, **Cyberpunk**
@@ -180,9 +174,9 @@ To help you find screenshots, here is the suggested directory structure:
 docs/
   ├── admin_manual.md  (This file)
   └── images/
-      ├── admin-login.png
-      ├── admin-dashboard.png
-      ├── admin-footer.png
-      ├── admin-themes.png
+      ├── admin-login.png?raw=true
+      ├── admin-dashboard.png?raw=true
+      ├── admin-footer.png?raw=true
+      ├── admin-themes.png?raw=true
       └── ... (add others as needed)
 ```

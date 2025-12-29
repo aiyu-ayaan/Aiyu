@@ -44,3 +44,7 @@ next-env.d.ts
 # uploads
 /public/uploads/*
 !/public/uploads/.gitkeep
+
+# wiki folder
+/wiki
+/Aiyu.wiki
