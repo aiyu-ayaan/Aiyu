@@ -15,6 +15,16 @@ export default function TerminalPath() {
 
     useEffect(() => {
         setMounted(true);
+
+        const handleGlobalKeyDown = (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === '`') {
+                e.preventDefault();
+                inputRef.current?.focus();
+            }
+        };
+
+        window.addEventListener('keydown', handleGlobalKeyDown);
+        return () => window.removeEventListener('keydown', handleGlobalKeyDown);
     }, []);
 
     const pathSegments = pathname?.split('/').filter(Boolean) || [];
@@ -111,7 +121,7 @@ export default function TerminalPath() {
             </span>
 
             {/* Interactive Input Area */}
-            <div className="flex-1 ml-2 flex items-center relative">
+            <div className="flex-1 ml-2 flex items-center relative overflow-hidden">
                 {/* Visual Input + Cursor + Ghost Text */}
                 <div className="flex items-center whitespace-pre relative z-10 pointer-events-none">
                     <span style={{ color: 'var(--accent-cyan)' }}>{input}</span>
