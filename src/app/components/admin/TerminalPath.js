@@ -69,9 +69,8 @@ export default function TerminalPath() {
 
     return (
         <div
-            className="w-full py-1.5 px-4 sm:px-6 flex items-center font-mono text-[11px] sm:text-xs border-t relative overflow-hidden group"
+            className="w-full py-1.5 px-4 sm:px-6 flex items-center font-mono text-[11px] sm:text-xs relative overflow-hidden group"
             style={{
-                borderColor: 'var(--border-secondary)',
                 backgroundColor: isFocused ? 'rgba(255,255,255,0.01)' : 'transparent',
                 cursor: 'text'
             }}
