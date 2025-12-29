@@ -70,7 +70,18 @@ export default function TerminalPath() {
                 const newPath = pathSegments.slice(0, -1).join('/');
                 router.push(newPath ? `/${newPath}` : '/');
             } else {
-                router.push(arg.startsWith('/') ? arg : `/${arg}`);
+                // Check if the argument is a valid path
+                const validPaths = SUGGESTIONS;
+                const cleanArg = arg.startsWith('/') ? arg.slice(1) : arg;
+
+                if (validPaths.includes(cleanArg)) {
+                    router.push(arg.startsWith('/') ? arg : `/${arg}`);
+                } else {
+                    // Show error in input temporarily
+                    const originalInput = input;
+                    setInput(`cd: no such file or directory: ${arg}`);
+                    setTimeout(() => setInput(''), 2000);
+                }
             }
         }
     };
