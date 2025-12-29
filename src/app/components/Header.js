@@ -11,7 +11,7 @@ import ThemeToggle from './ThemeToggle';
 import { useTheme } from '../context/ThemeContext';
 import TerminalPath from './admin/TerminalPath';
 
-export default function Header({ data, logoText }) {
+export default function Header({ data, logoText, socialData, config }) {
     const { navLinks, contactLink } = data || { navLinks: [], contactLink: {} };
     // Filter out hidden links
     const visibleNavLinks = navLinks.filter(link => link.visible !== false);
@@ -205,7 +205,7 @@ export default function Header({ data, logoText }) {
                         </Link>
                     </div>
                 </nav>
-                <TerminalPath />
+                <TerminalPath socialData={socialData} config={config} />
             </motion.header>
 
             {/* Full Screen Mobile Menu - Moved OUTSIDE header */}

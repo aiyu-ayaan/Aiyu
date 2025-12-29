@@ -4,8 +4,9 @@ import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 const SUGGESTIONS = ['about-me', 'blogs', 'projects', 'gallery', 'github', 'resume', 'contact-me'];
+const ALL_COMMANDS = ['cd', 'ls', 'pwd', 'clear', 'date', 'whoami', 'history', 'resume', 'email', 'socials', 'reboot', 'help'];
 
-export default function TerminalPath() {
+export default function TerminalPath({ socialData, config }) {
     const pathname = usePathname();
     const router = useRouter();
     const [mounted, setMounted] = useState(false);
@@ -13,6 +14,7 @@ export default function TerminalPath() {
     const [isFocused, setIsFocused] = useState(false);
     const [output, setOutput] = useState(null); // State for command output
     const [blogCache, setBlogCache] = useState([]); // Cache for blog slugs/ids
+    const [history, setHistory] = useState([]); // Command history
     const inputRef = useRef(null);
 
     useEffect(() => {
@@ -48,36 +50,52 @@ export default function TerminalPath() {
 
     // Helper to get auto-complete suggestion (context-aware with nested path support)
     const getSuggestion = () => {
-        if (!input.toLowerCase().startsWith('cd ')) return '';
-        const query = input.slice(3).trim();
-        if (!query) return '';
+        const trimmedInput = input.trim();
+        if (!trimmedInput) return '';
 
-        // Check for nested path (e.g., "blogs/...")
-        if (query.includes('/')) {
-            const parts = query.split('/');
-            const parentDir = parts[0].toLowerCase();
-            const subQuery = parts.slice(1).join('/').toLowerCase();
+        const parts = input.split(' ');
 
-            // Nested suggestion for blogs/
-            if (parentDir === 'blogs' && blogCache.length > 0) {
-                const match = blogCache.find(b => b.title.toLowerCase().startsWith(subQuery));
-                if (match) return match.title.slice(subQuery.length);
+        // 1. Suggest command name if user is just starting
+        if (parts.length === 1 && !input.endsWith(' ')) {
+            const query = parts[0].toLowerCase();
+            const match = ALL_COMMANDS.find(c => c.startsWith(query));
+            if (match && match !== query) return match.slice(query.length);
+            return '';
+        }
+
+        // 2. Suggest arguments for specific commands (currently primarily 'cd')
+        if (parts[0].toLowerCase() === 'cd') {
+            const query = input.slice(3).trim();
+            if (!query) return '';
+
+            // Check for nested path (e.g., "blogs/...")
+            if (query.includes('/')) {
+                const queryParts = query.split('/');
+                const parentDir = queryParts[0].toLowerCase();
+                const subQuery = queryParts.slice(1).join('/').toLowerCase();
+
+                // Nested suggestion for blogs/
+                if (parentDir === 'blogs' && blogCache.length > 0) {
+                    const match = blogCache.find(b => b.title.toLowerCase().startsWith(subQuery));
+                    if (match) return match.title.slice(subQuery.length);
+                    return '';
+                }
                 return '';
             }
-            return '';
+
+            // Context-aware suggestions based on current path
+            if (pathname === '/blogs' && blogCache.length > 0) {
+                // Suggest blog IDs based on title match
+                const match = blogCache.find(b => b.title.toLowerCase().startsWith(query.toLowerCase()));
+                if (match) return match.title.slice(query.length);
+                return '';
+            }
+
+            // Default: suggest from SUGGESTIONS
+            const match = SUGGESTIONS.find(s => s.toLowerCase().startsWith(query.toLowerCase()));
+            if (match) return match.slice(query.length);
         }
 
-        // Context-aware suggestions based on current path
-        if (pathname === '/blogs' && blogCache.length > 0) {
-            // Suggest blog IDs based on title match
-            const match = blogCache.find(b => b.title.toLowerCase().startsWith(query.toLowerCase()));
-            if (match) return match.title.slice(query.length);
-            return '';
-        }
-
-        // Default: suggest from SUGGESTIONS
-        const match = SUGGESTIONS.find(s => s.toLowerCase().startsWith(query.toLowerCase()));
-        if (match) return match.slice(query.length);
         return '';
     };
 
@@ -100,6 +118,7 @@ export default function TerminalPath() {
         setInput(''); // Clear input immediately
 
         if (!cmd) return;
+        addToHistory(cmd);
 
         // Clear previous output
         setOutput(null);
@@ -162,19 +181,85 @@ export default function TerminalPath() {
             }
         } else if (command === 'ls') {
             handleLs();
+        } else if (command === 'clear') {
+            setOutput(null);
+        } else if (command === 'pwd') {
+            setOutput({ type: 'text', message: pathname });
+            setTimeout(() => setOutput(null), 5000);
+        } else if (command === 'date') {
+            setOutput({ type: 'text', message: new Date().toString() });
+            setTimeout(() => setOutput(null), 5000);
+        } else if (command === 'history') {
+            setOutput({
+                type: 'list',
+                items: history.slice(-10).reverse() // Show last 10 commands
+            });
+            setTimeout(() => setOutput(null), 8000);
+        } else if (command === 'whoami') {
+            const name = config?.authorName || 'Visitor';
+            setOutput({ type: 'text', message: `Visitor exploring the digital space of ${config?.authorName || 'Aiyu'}` });
+            setTimeout(() => setOutput(null), 5000);
+        } else if (command === 'resume') {
+            const resumeUrl = config?.resume?.type === 'file' ? '/api/resume' : (config?.resume?.value || '/api/resume');
+            if (resumeUrl) {
+                window.open(resumeUrl, '_blank');
+                setOutput({ type: 'success', message: `Opening resume: ${resumeUrl}` });
+            } else {
+                setOutput({ type: 'error', message: 'Resume not found.' });
+            }
+            setTimeout(() => setOutput(null), 3000);
+        } else if (command === 'email') {
+            const email = config?.contactEmail || 'contact@aiyu.com';
+            navigator.clipboard.writeText(email);
+            setOutput({ type: 'success', message: `Email copied to clipboard: ${email}` });
+            setTimeout(() => setOutput(null), 5000);
+        } else if (command === 'socials') {
+            const items = (socialData || [])
+                .filter(s => s.url && !s.isHidden)
+                .map(s => ({
+                    cmd: s.name,
+                    desc: s.url.replace(/^https?:\/\/(www\.)?/, '') // Cleaner display
+                }));
+
+            if (items.length === 0) {
+                setOutput({ type: 'text', message: 'No social links found.' });
+            } else {
+                setOutput({
+                    type: 'help',
+                    items: items
+                });
+            }
+            setTimeout(() => setOutput(null), 8000);
+        } else if (command === 'sudo') {
+            setOutput({ type: 'error', message: 'Permission denied: You need to be Aiyu to do that.' });
+            setTimeout(() => setOutput(null), 5000);
+        } else if (command === 'reboot') {
+            setOutput({ type: 'warning', message: 'Rebooting system...' });
+            setTimeout(() => window.location.reload(), 1000);
         } else if (command === 'help') {
             setOutput({
                 type: 'help',
                 items: [
-                    { cmd: 'cd [path]', desc: 'Navigate to a directory (e.g., cd blogs, cd blogs/[title])' },
-                    { cmd: 'cd ..', desc: 'Go back to parent directory' },
-                    { cmd: 'cd ~', desc: 'Go to home (root)' },
-                    { cmd: 'ls', desc: 'List contents of current directory' },
-                    { cmd: 'help', desc: 'Show this help message' },
+                    { cmd: 'cd [path]', desc: 'Navigate directories' },
+                    { cmd: 'ls', desc: 'List contents' },
+                    { cmd: 'pwd', desc: 'Print working directory' },
+                    { cmd: 'clear', desc: 'Clear output' },
+                    { cmd: 'date', desc: 'Show current date' },
+                    { cmd: 'whoami', desc: 'Display user info' },
+                    { cmd: 'history', desc: 'Show command history' },
+                    { cmd: 'resume', desc: 'Open resume' },
+                    { cmd: 'email', desc: 'Get contact email' },
+                    { cmd: 'socials', desc: 'List social links' },
+                    { cmd: 'reboot', desc: 'Restart system' },
                 ]
             });
-            setTimeout(() => setOutput(null), 8000);
+            setTimeout(() => setOutput(null), 10000);
         }
+    };
+
+    // Add to history function
+    const addToHistory = (cmd) => {
+        setHistory(prev => [...prev, cmd]);
     };
 
     const handleLs = async () => {
@@ -343,6 +428,15 @@ export default function TerminalPath() {
                                     </div>
                                 ))}
                             </div>
+                        )}
+                        {output.type === 'text' && (
+                            <div style={{ color: 'var(--text-secondary)' }}>{output.message}</div>
+                        )}
+                        {output.type === 'success' && (
+                            <div style={{ color: 'var(--status-success)' }}>{output.message}</div>
+                        )}
+                        {output.type === 'warning' && (
+                            <div style={{ color: 'var(--status-warning)' }}>{output.message}</div>
                         )}
                     </div>
                     <div

@@ -62,7 +62,12 @@ export default async function SiteLayout({ children }) {
 
     return (
         <>
-            <Header data={serializedHeaderData} logoText={logoText} />
+            <Header
+                data={serializedHeaderData}
+                logoText={logoText}
+                socialData={serializedSocialData}
+                config={serializedConfigData}
+            />
             <main className="min-h-screen">
                 {children}
             </main>
