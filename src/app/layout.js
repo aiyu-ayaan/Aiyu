@@ -76,6 +76,7 @@ export const viewport = {
 }
 
 import GoogleAnalytics from "./components/GoogleAnalytics";
+import CommandPalette from "./components/shared/CommandPalette";
 
 import SpaceBackground from "./components/shared/SpaceBackground";
 
@@ -111,6 +112,7 @@ export default async function RootLayout({ children }) {
       >
         <GoogleAnalytics gaId={gaId} />
         <ThemeProvider>
+          <CommandPalette />
           <div className="fixed inset-0 z-[-1]">
             <SpaceBackground />
           </div>
