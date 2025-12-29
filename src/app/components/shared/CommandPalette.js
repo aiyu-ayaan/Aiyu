@@ -38,7 +38,12 @@ export default function CommandPalette() {
         };
 
         window.addEventListener("keydown", handleKeyDown);
-        return () => window.removeEventListener("keydown", handleKeyDown);
+        window.addEventListener("open-command-palette", () => setIsOpen(true));
+
+        return () => {
+            window.removeEventListener("keydown", handleKeyDown);
+            window.removeEventListener("open-command-palette", () => setIsOpen(true));
+        };
     }, []);
 
     // Determine mode based on query prefix
@@ -182,8 +187,8 @@ export default function CommandPalette() {
                                 onKeyDown={handleInputKeyDown}
                             />
                             <div className="flex items-center gap-2">
-                                {isSearching && <span className="text-xs text-gray-500 animate-pulse">Searching...</span>}
-                                <span className="rounded border border-gray-700 bg-gray-800 px-1.5 py-0.5 text-xs text-gray-400">
+                                {isSearching && <span className="text-xs text-gray-500 animate-pulse hidden sm:inline">Searching...</span>}
+                                <span className="hidden md:inline-block rounded border border-gray-700 bg-gray-800 px-1.5 py-0.5 text-xs text-gray-400">
                                     Esc
                                 </span>
                             </div>
@@ -234,8 +239,8 @@ export default function CommandPalette() {
                             )}
                         </div>
 
-                        {/* Footer */}
-                        <div className="border-t border-gray-800 bg-gray-900/50 px-4 py-2 text-xs text-gray-500 flex justify-end">
+                        {/* Footer - Hidden on mobile/tablet */}
+                        <div className="hidden lg:flex border-t border-gray-800 bg-gray-900/50 px-4 py-2 text-xs text-gray-500 justify-end">
                             <div className="flex gap-4">
                                 <span>Use arrows to navigate</span>
                                 <span>Enter to select</span>
