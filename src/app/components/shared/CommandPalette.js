@@ -13,20 +13,9 @@ const MOCK_PAGES = [
     { title: "Projects", path: "/projects", type: "page", icon: <FileCode size={16} /> },
     { title: "Blogs", path: "/blogs", type: "page", icon: <BookOpen size={16} /> },
     { title: "Contact", path: "/contact-us", type: "page", icon: <Hash size={16} /> },
-    { title: "Dashboard", path: "/admin", type: "page", icon: <Terminal size={16} /> },
     { title: "GitHub", path: "/github", type: "page", icon: <FileCode size={16} /> },
 ];
 
-const MOCK_COMMANDS = [
-    { command: "ls", description: "List directory contents", type: "command" },
-    { command: "cd", description: "Change directory", type: "command" },
-    { command: "mkdir", description: "Make directory", type: "command" },
-    { command: "touch", description: "Create file", type: "command" },
-    { command: "npm run dev", description: "Start development server", type: "command" },
-    { command: "git status", description: "Show working tree status", type: "command" },
-    { command: "whoami", description: "Display current user", type: "command" },
-    { command: "clear", description: "Clear terminal screen", type: "command" },
-];
 
 export default function CommandPalette() {
     const [isOpen, setIsOpen] = useState(false);
@@ -53,12 +42,11 @@ export default function CommandPalette() {
     }, []);
 
     // Determine mode based on query prefix
-    const isCommandMode = query.startsWith("$");
-    const cleanQuery = isCommandMode ? query.slice(1).trim() : query;
+    const cleanQuery = query.trim();
 
     // Debounced API Search
     useEffect(() => {
-        if (isCommandMode || !cleanQuery) {
+        if (!cleanQuery) {
             setApiResults([]);
             return;
         }
@@ -80,19 +68,11 @@ export default function CommandPalette() {
         }, 300); // 300ms debounce
 
         return () => clearTimeout(searchTimeout.current);
-    }, [cleanQuery, isCommandMode]);
+    }, [cleanQuery]);
 
     // Combined Results
     const filteredItems = useMemo(() => {
-        // 1. Terminal Mode
-        if (isCommandMode) {
-            if (!cleanQuery) return MOCK_COMMANDS;
-            return MOCK_COMMANDS.filter(item =>
-                item.command.toLowerCase().includes(cleanQuery.toLowerCase())
-            );
-        }
-
-        // 2. Local Pages Search (Local)
+        // 1. Local Pages Search (Local)
         const localMatches = MOCK_PAGES.filter(item =>
             item.title.toLowerCase().includes(cleanQuery.toLowerCase())
         );
@@ -115,7 +95,9 @@ export default function CommandPalette() {
 
         return [...localMatches, ...remoteMatches];
 
-    }, [query, isCommandMode, cleanQuery, apiResults]);
+        return [...localMatches, ...remoteMatches];
+
+    }, [query, cleanQuery, apiResults]);
 
     // Reset active index on query change
     useEffect(() => {
@@ -132,10 +114,6 @@ export default function CommandPalette() {
             } else {
                 router.push(item.path);
             }
-            setIsOpen(false);
-            setQuery("");
-        } else if (item.type === "command") {
-            console.log("Selected command:", item.command);
             setIsOpen(false);
             setQuery("");
         }
@@ -193,11 +171,11 @@ export default function CommandPalette() {
                     >
                         {/* Input Area */}
                         <div className="flex items-center border-b border-gray-800 px-4 py-3">
-                            <Search className={`mr-3 h-5 w-5 ${isCommandMode ? "text-green-500" : "text-gray-400"}`} />
+                            <Search className="mr-3 h-5 w-5 text-gray-400" />
                             <input
                                 autoFocus
                                 type="text"
-                                placeholder={isCommandMode ? "Search terminal commands..." : "Search pages, blogs, projects..."}
+                                placeholder="Search pages, blogs, projects..."
                                 className="flex-1 bg-transparent text-lg text-gray-200 placeholder-gray-500 focus:outline-none"
                                 value={query}
                                 onChange={(e) => setQuery(e.target.value)}
@@ -220,7 +198,7 @@ export default function CommandPalette() {
                             ) : (
                                 <>
                                     <div className="mb-2 px-2 text-xs font-semibold uppercase text-gray-500">
-                                        {isCommandMode ? "Terminal Commands" : "Results"}
+                                        Results
                                     </div>
                                     {filteredItems.map((item, index) => (
                                         <motion.button
@@ -240,10 +218,10 @@ export default function CommandPalette() {
                                                 </div>
                                                 <div className="flex flex-col items-start gap-0.5 w-full overflow-hidden">
                                                     <span className={`text-sm font-medium truncate w-full text-left ${index === activeIndex ? "text-blue-200" : "text-gray-200"}`}>
-                                                        {item.type === "command" ? item.command : item.title}
+                                                        {item.title}
                                                     </span>
                                                     <span className="text-xs text-gray-500 truncate w-full text-left">
-                                                        {item.type === "command" ? item.description : item.description || item.path}
+                                                        {item.description || item.path}
                                                     </span>
                                                 </div>
                                             </div>
@@ -257,10 +235,7 @@ export default function CommandPalette() {
                         </div>
 
                         {/* Footer */}
-                        <div className="border-t border-gray-800 bg-gray-900/50 px-4 py-2 text-xs text-gray-500 flex justify-between">
-                            <span>
-                                <span className="text-blue-400 font-mono">$</span> for terminal mode
-                            </span>
+                        <div className="border-t border-gray-800 bg-gray-900/50 px-4 py-2 text-xs text-gray-500 flex justify-end">
                             <div className="flex gap-4">
                                 <span>Use arrows to navigate</span>
                                 <span>Enter to select</span>
