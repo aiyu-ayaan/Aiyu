@@ -7,7 +7,8 @@ import confetti from 'canvas-confetti';
 import { themePresets } from '../../../lib/themePresets';
 import { applyThemeColors } from '../../../utils/themeUtils';
 
-const SUGGESTIONS = ['about-me', 'blogs', 'projects', 'gallery', 'github', 'resume', 'contact-me'];
+const SUGGESTIONS = ['about-me', 'blogs', 'projects', 'gallery', 'github', 'resume', 'contact-me', 'admin'];
+const ADMIN_SUGGESTIONS = ['dashboard', 'home', 'about', 'projects', 'blogs', 'gallery', 'header', 'footer', 'contact', 'themes', 'github', 'config', 'terminal', 'database'];
 const ALL_COMMANDS = ['cd', 'ls', 'pwd', 'clear', 'date', 'whoami', 'history', 'resume', 'email', 'socials', 'reboot', 'help', 'theme', 'echo', 'sysinfo', 'joke', 'projects', 'ascii', 'roll', 'flip', 'magic8', 'disco'];
 
 const ASCII_ARTS = [
@@ -184,8 +185,16 @@ export default function TerminalPath({ socialData, config }) {
                     }
                 }
 
-                // Check if just navigating to a valid parent (e.g., cd blogs/)
-                if (SUGGESTIONS.includes(parentDir) && !subPath) {
+                // Handle admin sub-paths
+                if (parentDir === 'admin' && subPath) {
+                    if (ADMIN_SUGGESTIONS.includes(subPath.toLowerCase())) {
+                        router.push(`/admin/${subPath.toLowerCase()}`);
+                        return;
+                    }
+                }
+
+                // Check if just navigating to a valid parent (e.g., cd blogs/ or cd admin/)
+                if ((SUGGESTIONS.includes(parentDir) || parentDir === 'admin') && !subPath) {
                     router.push(`/${parentDir}`);
                     return;
                 }
@@ -195,26 +204,44 @@ export default function TerminalPath({ socialData, config }) {
                 setTimeout(() => setInput(''), 2000);
             } else {
                 // Context-aware navigation for current directory
+                const cleanArg = arg.startsWith('/') ? arg.slice(1).toLowerCase() : arg.toLowerCase();
+
+                // 1. Check if we are in admin scope
+                if (pathname.startsWith('/admin')) {
+                    if (cleanArg === 'admin' || cleanArg === 'dashboard') {
+                        router.push('/admin');
+                        return;
+                    }
+                    if (ADMIN_SUGGESTIONS.includes(cleanArg)) {
+                        router.push(`/admin/${cleanArg}`);
+                        return;
+                    }
+                }
+
+                // 2. Check if arg matches a blog title (if on /blogs)
                 if (pathname === '/blogs' && blogCache.length > 0) {
-                    // Check if arg matches a blog title
-                    const blog = blogCache.find(b => b.title.toLowerCase() === arg.toLowerCase());
+                    const blog = blogCache.find(b => b.title.toLowerCase() === cleanArg);
                     if (blog) {
                         router.push(`/blogs/${blog.id}`);
                         return;
                     }
                 }
 
-                // Check if the argument is a valid root path
-                const validPaths = SUGGESTIONS;
-                const cleanArg = arg.startsWith('/') ? arg.slice(1) : arg;
-
-                if (validPaths.includes(cleanArg.toLowerCase())) {
+                // 3. Check if it's a valid root path from SUGGESTIONS
+                if (SUGGESTIONS.includes(cleanArg)) {
                     router.push(`/${cleanArg}`);
-                } else {
-                    // Show error in input temporarily
-                    setInput(`cd: no such file or directory: ${arg}`);
-                    setTimeout(() => setInput(''), 2000);
+                    return;
                 }
+
+                // 4. Special cases
+                if (cleanArg === 'home' || cleanArg === 'root') {
+                    router.push('/');
+                    return;
+                }
+
+                // Show error in input temporarily
+                setInput(`cd: no such file or directory: ${arg}`);
+                setTimeout(() => setInput(''), 2000);
             }
         } else if (command === 'ls') {
             handleLs();
@@ -418,7 +445,27 @@ export default function TerminalPath({ socialData, config }) {
             return;
         }
 
-        // 2. Blogs Directory
+        // 2. Admin Directory
+        if (pathname === '/admin') {
+            setOutput({
+                type: 'list',
+                items: ADMIN_SUGGESTIONS.map(s => s + '/')
+            });
+            setTimeout(() => setOutput(null), 5000);
+            return;
+        }
+
+        // 3. Admin sub-directories
+        if (pathname.startsWith('/admin/')) {
+            setOutput({
+                type: 'list',
+                items: ['.', '..']
+            });
+            setTimeout(() => setOutput(null), 3000);
+            return;
+        }
+
+        // 4. Blogs Directory
         if (pathname === '/blogs') {
             setOutput({ type: 'loading', message: 'Fetching blogs...' });
             try {
@@ -442,10 +489,10 @@ export default function TerminalPath({ socialData, config }) {
             return;
         }
 
-        // 3. Other Directories (Default empty or specific logic)
+        // 5. Other Directories (Default empty or specific logic)
         setOutput({
             type: 'list',
-            items: [] // Or maybe ['.', '..']
+            items: ['.', '..']
         });
         setTimeout(() => setOutput(null), 5000);
     };

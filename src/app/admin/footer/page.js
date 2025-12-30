@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { Loader2, RefreshCw, CheckCircle, XCircle } from 'lucide-react';
 
 export default function AdminFooter() {
     const [socials, setSocials] = useState([]);
@@ -13,6 +14,14 @@ export default function AdminFooter() {
         footerVersion: '',
         footerVersionLink: ''
     });
+    const [fetchingVersion, setFetchingVersion] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const [notification, setNotification] = useState(null);
+
+    const showNotification = (success, message) => {
+        setNotification({ success, message });
+        setTimeout(() => setNotification(null), 3000);
+    };
 
     useEffect(() => {
         fetchSocials();
@@ -50,8 +59,56 @@ export default function AdminFooter() {
         }
     };
 
+    const fetchLatestVersion = async () => {
+        if (!config.footerVersionLink) {
+            showNotification(false, 'PROVIDE_VERSION_LINK_FIRST');
+            return;
+        }
+
+        let owner, repo;
+        try {
+            const url = new URL(config.footerVersionLink);
+            if (url.hostname !== 'github.com') {
+                throw new Error('Only GitHub links are supported.');
+            }
+            const paths = url.pathname.split('/').filter(Boolean);
+            if (paths.length < 2) {
+                throw new Error('Invalid GitHub repository link.');
+            }
+            owner = paths[0];
+            repo = paths[1];
+        } catch (error) {
+            showNotification(false, error.message || 'INVALID_VERSION_LINK');
+            return;
+        }
+
+        setFetchingVersion(true);
+        try {
+            const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/releases/latest`);
+            if (!res.ok) {
+                if (res.status === 404) {
+                    throw new Error('No releases found for this repository.');
+                }
+                throw new Error('Failed to fetch latest release from GitHub.');
+            }
+            const data = await res.json();
+            if (data.tag_name) {
+                setConfig(prev => ({ ...prev, footerVersion: data.tag_name }));
+                showNotification(true, `VERSION_RETRIEVED: ${data.tag_name}`);
+            } else {
+                throw new Error('NO_TAG_NAME_FOUND');
+            }
+        } catch (error) {
+            console.error('Fetch version error:', error);
+            showNotification(false, error.message || 'FETCH_VERSION_FAILED');
+        } finally {
+            setFetchingVersion(false);
+        }
+    };
+
     const handleConfigSubmit = async (e) => {
         e.preventDefault();
+        setSaving(true);
         try {
             const res = await fetch('/api/config', {
                 method: 'POST',
@@ -59,12 +116,15 @@ export default function AdminFooter() {
                 body: JSON.stringify(config),
             });
             if (res.ok) {
-                alert('Footer configuration updated!');
+                showNotification(true, 'SYSTEM_UPDATED_SUCCESSFULLY');
             } else {
-                alert('Failed to update config');
+                showNotification(false, 'FAILED_TO_UPDATE_CONFIG');
             }
         } catch (error) {
             console.error('Error updating config', error);
+            showNotification(false, 'SYSTEM_ERROR_OCCURRED');
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -79,11 +139,13 @@ export default function AdminFooter() {
             });
             if (res.ok) {
                 setSocials(socials.map((s) => (s._id === id ? { ...s, isHidden: !currentStatus } : s)));
+                showNotification(true, `UPLINK_${currentStatus ? 'RE-ESTABLISHED' : 'DEACTIVATED'}`);
             } else {
-                alert('Failed to update visibility');
+                showNotification(false, 'FAILED_TO_UPDATE_VISIBILITY');
             }
         } catch (error) {
             console.error('Error updating visibility', error);
+            showNotification(false, 'COMMUNICATION_LINK_ERROR');
         }
     };
 
@@ -96,11 +158,13 @@ export default function AdminFooter() {
             });
             if (res.ok) {
                 setSocials(socials.filter((s) => s._id !== id));
+                showNotification(true, 'UPLINK_PERMANENTLY_TERMINATED');
             } else {
-                alert('Failed to delete social link');
+                showNotification(false, 'FAILED_TO_DELETE_UPLINK');
             }
         } catch (error) {
             console.error('Error deleting social link', error);
+            showNotification(false, 'TERMINATION_SEQUENCE_FAILURE');
         }
     };
 
@@ -159,13 +223,29 @@ export default function AdminFooter() {
                         </div>
                         <div>
                             <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">System Version Identifier</label>
-                            <input
-                                type="text"
-                                value={config.footerVersion || ''}
-                                onChange={(e) => setConfig({ ...config, footerVersion: e.target.value })}
-                                className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-600 font-mono"
-                                placeholder="v1.0.0"
-                            />
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    value={config.footerVersion || ''}
+                                    onChange={(e) => setConfig({ ...config, footerVersion: e.target.value })}
+                                    className="flex-1 bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-600 font-mono"
+                                    placeholder="v1.0.0"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={fetchLatestVersion}
+                                    disabled={fetchingVersion || !config.footerVersionLink}
+                                    className="px-4 py-2 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/20 rounded-lg transition-all disabled:opacity-50 flex items-center gap-2 group/btn"
+                                    title="Fetch latest version from GitHub"
+                                >
+                                    {fetchingVersion ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                        <RefreshCw className="w-4 h-4 group-hover/btn:rotate-180 transition-transform duration-500" />
+                                    )}
+                                    <span className="text-xs font-bold uppercase tracking-wider hidden sm:inline">Fetch</span>
+                                </button>
+                            </div>
                         </div>
                         <div>
                             <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">System Version Link</label>
@@ -196,8 +276,19 @@ export default function AdminFooter() {
                     </div>
 
                     <div className="flex justify-end pt-4 border-t border-white/5">
-                        <button type="submit" className="px-6 py-2 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 hover:border-emerald-500/40 transition-all text-sm font-bold tracking-wide uppercase">
-                            Commit Changes
+                        <button
+                            type="submit"
+                            disabled={saving}
+                            className="px-6 py-2 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 hover:border-emerald-500/40 transition-all text-sm font-bold tracking-wide uppercase flex items-center gap-2"
+                        >
+                            {saving ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    COMMITTING...
+                                </>
+                            ) : (
+                                'Commit Changes'
+                            )}
                         </button>
                     </div>
                 </form>
@@ -257,6 +348,17 @@ export default function AdminFooter() {
                     </table>
                 </div>
             </div>
+
+            {/* Notification Toast */}
+            {notification && (
+                <div className={`fixed bottom-8 right-8 p-4 rounded-xl border shadow-2xl backdrop-blur-xl z-50 flex items-center gap-3 animate-in slide-in-from-bottom-5 fade-in duration-300 ${notification.success
+                    ? 'bg-green-500/10 border-green-500/20 text-green-400'
+                    : 'bg-red-500/10 border-red-500/20 text-red-400'
+                    }`}>
+                    {notification.success ? <CheckCircle className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
+                    <span className="font-mono text-sm font-bold">{notification.message}</span>
+                </div>
+            )}
         </div>
     );
 }
