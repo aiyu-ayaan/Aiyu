@@ -40,6 +40,19 @@ const ConfigSchema = new mongoose.Schema({
     perPageThemes: {
         enabled: { type: Boolean, default: false },
         pages: { type: Map, of: String, default: {} }
+    },
+
+    // Terminal Configuration
+    terminal: {
+        username: { type: String, default: 'guest' },
+        promptSymbol: { type: String, default: '➜' },
+        welcomeMessage: { type: String, default: '' },
+        showDate: { type: Boolean, default: true },
+        showGitBranch: { type: Boolean, default: true },
+        asciiArts: [{
+            name: { type: String },
+            art: { type: String }
+        }]
     }
 }, { strict: false }); // Allow other fields to be added later if needed without strict validation issues initially
 

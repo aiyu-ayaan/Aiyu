@@ -151,7 +151,7 @@ export default function DatabaseManager() {
                         </div>
 
                         <p className="text-slate-400 mb-8 text-sm leading-relaxed">
-                            Generate a full JSON dump of current system state. Includes blogs, projects, configurations, and communication logs. Gallery assets are excluded.
+                            Generate a full JSON dump of current system state. Includes blogs, projects, configurations, terminal settings, and communication logs. Gallery assets are excluded.
                         </p>
 
                         <button

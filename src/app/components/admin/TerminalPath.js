@@ -233,8 +233,8 @@ export default function TerminalPath({ socialData, config }) {
             });
             setTimeout(() => setOutput(null), 8000);
         } else if (command === 'whoami') {
-            const name = config?.authorName || 'Visitor';
-            setOutput({ type: 'text', message: `Visitor exploring the digital space of ${config?.authorName || 'Aiyu'}` });
+            const name = config?.terminal?.username || config?.authorName || 'Visitor';
+            setOutput({ type: 'text', message: `${name} exploring the digital space of ${config?.authorName || 'Aiyu'}` });
             setTimeout(() => setOutput(null), 5000);
         } else if (command === 'resume') {
             const resumeUrl = config?.resume?.type === 'file' ? '/api/resume' : (config?.resume?.value || '/api/resume');
@@ -338,7 +338,10 @@ export default function TerminalPath({ socialData, config }) {
         } else if (command === 'projects') {
             router.push('/projects');
         } else if (command === 'ascii') {
-            const randomArt = ASCII_ARTS[Math.floor(Math.random() * ASCII_ARTS.length)];
+            // Combine default ASCII arts with custom ones from config
+            const customArts = config?.terminal?.asciiArts || [];
+            const artList = [...ASCII_ARTS, ...customArts];
+            const randomArt = artList[Math.floor(Math.random() * artList.length)];
             setOutput({ type: 'ascii', message: randomArt.art });
             setTimeout(() => setOutput(null), 5000);
         } else if (command === 'roll') {
@@ -459,7 +462,9 @@ export default function TerminalPath({ socialData, config }) {
             onClick={() => inputRef.current?.focus()}
         >
             {/* Terminal Prompt Symbol */}
-            <span className="text-emerald-500 ml-1 mr-2 flex-shrink-0 font-bold select-none">➜</span>
+            <span className="text-emerald-500 ml-1 mr-2 flex-shrink-0 font-bold select-none">
+                {config?.terminal?.promptSymbol || '➜'}
+            </span>
 
             {/* Breadcrumbs - Root */}
             <Link
@@ -488,9 +493,11 @@ export default function TerminalPath({ socialData, config }) {
             })}
 
             {/* Git Branch */}
-            <span className="ml-3 hidden sm:inline select-none" style={{ color: 'var(--text-secondary)' }}>
-                git:(master)
-            </span>
+            {(config?.terminal?.showGitBranch !== false) && (
+                <span className="ml-3 hidden sm:inline select-none" style={{ color: 'var(--text-secondary)' }}>
+                    git:(master)
+                </span>
+            )}
 
             {/* Interactive Input Area */}
             <div className="flex-1 ml-2 flex items-center relative overflow-hidden">
