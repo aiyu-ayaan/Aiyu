@@ -7,9 +7,20 @@ export const revalidate = 300; // Revalidate every 5 minutes
 
 async function getGitHubStats() {
     try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/github/stats`, {
+        const url = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/github/stats`;
+        console.log(`[GitHub Page] Fetching stats from: ${url}`);
+
+        const res = await fetch(url, {
             cache: 'no-store'
         });
+
+        console.log(`[GitHub Page] Stats fetch status: ${res.status} ${res.statusText}`);
+
+        if (!res.ok) {
+            const text = await res.text();
+            console.error(`[GitHub Page] Fetch failed with status ${res.status}. Body preview: ${text.substring(0, 200)}`);
+            return { success: false, error: `API Error: ${res.status}` };
+        }
 
         const data = await res.json();
         return data;

@@ -53,7 +53,10 @@ const ConfigSchema = new mongoose.Schema({
             name: { type: String },
             art: { type: String }
         }]
-    }
+    },
+
+    // Secure Data
+    encryptedGithubToken: { type: String, select: false }
 }, { strict: false }); // Allow other fields to be added later if needed without strict validation issues initially
 
 export default mongoose.models.Config || mongoose.model('Config', ConfigSchema);
