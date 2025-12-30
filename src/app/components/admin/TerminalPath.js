@@ -2,13 +2,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useTheme } from '../../context/ThemeContext';
 
 const SUGGESTIONS = ['about-me', 'blogs', 'projects', 'gallery', 'github', 'resume', 'contact-me'];
-const ALL_COMMANDS = ['cd', 'ls', 'pwd', 'clear', 'date', 'whoami', 'history', 'resume', 'email', 'socials', 'reboot', 'help'];
+const ALL_COMMANDS = ['cd', 'ls', 'pwd', 'clear', 'date', 'whoami', 'history', 'resume', 'email', 'socials', 'reboot', 'help', 'theme', 'echo', 'sysinfo', 'joke', 'projects'];
 
 export default function TerminalPath({ socialData, config }) {
     const pathname = usePathname();
     const router = useRouter();
+    const { switchVariant, theme } = useTheme();
     const [mounted, setMounted] = useState(false);
     const [input, setInput] = useState('');
     const [isFocused, setIsFocused] = useState(false);
@@ -250,10 +252,51 @@ export default function TerminalPath({ socialData, config }) {
                     { cmd: 'resume', desc: 'Open resume' },
                     { cmd: 'email', desc: 'Get contact email' },
                     { cmd: 'socials', desc: 'List social links' },
+                    { cmd: 'projects', desc: 'View projects' },
+                    { cmd: 'theme [mode]', desc: 'Switch theme (light/dark)' },
+                    { cmd: 'echo [text]', desc: 'Print text' },
+                    { cmd: 'sysinfo', desc: 'System information' },
+                    { cmd: 'joke', desc: 'Tell a joke' },
                     { cmd: 'reboot', desc: 'Restart system' },
                 ]
             });
             setTimeout(() => setOutput(null), 10000);
+        } else if (command === 'theme') {
+            if (!arg) {
+                setOutput({ type: 'text', message: `Current theme: ${theme}. Usage: theme [light|dark]` });
+            } else if (['light', 'dark'].includes(arg.toLowerCase())) {
+                switchVariant(arg.toLowerCase());
+                setOutput({ type: 'success', message: `Theme switched to ${arg.toLowerCase()}` });
+            } else {
+                setOutput({ type: 'error', message: `Invalid theme: ${arg}. Use 'light' or 'dark'.` });
+            }
+            setTimeout(() => setOutput(null), 3000);
+        } else if (command === 'echo') {
+            setOutput({ type: 'text', message: arg });
+            setTimeout(() => setOutput(null), 5000);
+        } else if (command === 'sysinfo') {
+            const info = [
+                `Host: ${window.location.hostname}`,
+                `OS: ${navigator.platform}`,
+                `Browser: ${navigator.appName}`,
+                `Resolution: ${window.screen.width}x${window.screen.height}`,
+                `Theme: ${theme}`,
+            ];
+            setOutput({ type: 'list', items: info });
+            setTimeout(() => setOutput(null), 8000);
+        } else if (command === 'joke') {
+            const jokes = [
+                "Why do programmers prefer dark mode? Because light attracts bugs.",
+                "How many programmers does it take to change a light bulb? None, that's a hardware problem.",
+                "I walked into a bar, ran into a bar, and crawled into a bar. The bartender asked, 'Why the long interface?'",
+                "There are 10 types of people in the world: those who understand binary, and those who don't.",
+                "What is a programmer's favorite hangout place? Foo Bar."
+            ];
+            const randomJoke = jokes[Math.floor(Math.random() * jokes.length)];
+            setOutput({ type: 'text', message: randomJoke });
+            setTimeout(() => setOutput(null), 6000);
+        } else if (command === 'projects') {
+            router.push('/projects');
         }
     };
 
