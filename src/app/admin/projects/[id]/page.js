@@ -44,14 +44,14 @@ export default function EditProjectPage() {
     return (
         <div className="p-8 max-w-7xl mx-auto min-h-screen">
             <div className="mb-12">
-                <Link href="/admin/projects" className="text-cyan-400 hover:text-cyan-300 flex items-center gap-2 transition-colors mb-4 text-sm font-mono opacity-60 hover:opacity-100">
-                    ← BACK_TO_DATABASE
+                <Link href="/admin/projects" className="text-cyan-400 hover:text-cyan-300 flex items-center gap-2 transition-colors mb-4 text-sm font-mono opacity-60 hover:opacity-100 uppercase tracking-widest">
+                    ← BACK_TO_PROJECT_DATABASE
                 </Link>
                 <div className="flex items-end gap-4">
-                    <h1 className="text-3xl md:text-4xl font-bold text-white mb-2 tracking-tight">Modify Project</h1>
-                    <span className="font-mono text-xs text-slate-500 mb-4 pb-1">ID: {project._id}</span>
+                    <h1 className="text-4xl font-bold text-white mb-2 tracking-tight">Modify Project</h1>
+                    <span className="font-mono text-xs text-slate-500 mb-4 pb-1">SEQ_ID: {project._id}</span>
                 </div>
-                <p className="text-slate-400">Update project parameters and assets.</p>
+                <p className="text-slate-400">Update specific parameters and assets for this project module.</p>
             </div>
 
             <ProjectForm initialData={project} isEdit={true} />

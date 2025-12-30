@@ -124,7 +124,7 @@ export default function ContactAdminPage() {
             <div className="mb-8">
                 <Link
                     href="/admin"
-                    className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 transition-colors mb-4 font-mono text-sm tracking-wide"
+                    className="text-cyan-400 hover:text-cyan-300 flex items-center gap-2 transition-colors mb-4 text-sm font-mono opacity-60 hover:opacity-100"
                 >
                     ← BACK_TO_COMMAND_CENTER
                 </Link>
@@ -135,20 +135,18 @@ export default function ContactAdminPage() {
             <form onSubmit={handleSave} className="space-y-12">
 
                 {/* Contact Configuration Section */}
-                <div className="bg-[#0a0a0a]/60 backdrop-blur-xl rounded-2xl border border-white/5 p-8 relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-slate-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
+                <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
 
-                    <div className="flex justify-between items-center mb-8 relative z-10">
-                        <h2 className="text-sm font-mono text-slate-500 uppercase tracking-widest flex items-center gap-4">
-                            Signal Parameters
-                            <div className="h-px w-20 bg-slate-500/10" />
-                        </h2>
-                    </div>
+                    <h2 className="text-sm font-mono text-cyan-500/70 uppercase tracking-widest mb-8 flex items-center gap-4 relative z-10">
+                        Signal Parameters
+                        <div className="h-px bg-cyan-500/10 flex-grow" />
+                    </h2>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
                         {/* Location */}
                         <div>
-                            <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2 flex items-center gap-2">
+                            <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider flex items-center gap-2">
                                 <MapPin className="w-3 h-3 text-cyan-400" /> Location Coordinates
                             </label>
                             <input
@@ -156,29 +154,29 @@ export default function ContactAdminPage() {
                                 value={config.contactLocation}
                                 onChange={(e) => setConfig({ ...config, contactLocation: e.target.value })}
                                 placeholder="e.g. San Francisco, CA"
-                                className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-cyan-500/50 outline-none text-sm font-mono"
+                                className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-600 font-mono"
                             />
                         </div>
 
                         {/* Status */}
                         <div>
-                            <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2 flex items-center gap-2">
+                            <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider flex items-center gap-2">
                                 <Activity className="w-3 h-3 text-green-400" /> Operative Status
                             </label>
                             <select
                                 value={config.contactStatus}
                                 onChange={(e) => setConfig({ ...config, contactStatus: e.target.value })}
-                                className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-cyan-500/50 outline-none text-sm appearance-none"
+                                className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all appearance-none"
                             >
-                                <option value="Open to opportunities">Open to opportunities</option>
-                                <option value="Busy with projects">Busy with projects</option>
-                                <option value="Not looking">Not looking</option>
+                                <option value="Open to opportunities" className="bg-slate-900">Open to opportunities</option>
+                                <option value="Busy with projects" className="bg-slate-900">Busy with projects</option>
+                                <option value="Not looking" className="bg-slate-900">Not looking</option>
                             </select>
                         </div>
 
                         {/* Email */}
                         <div>
-                            <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2 flex items-center gap-2">
+                            <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider flex items-center gap-2">
                                 <Mail className="w-3 h-3 text-purple-400" /> Direct Uplink (Email)
                             </label>
                             <input
@@ -186,13 +184,13 @@ export default function ContactAdminPage() {
                                 value={config.contactEmail}
                                 onChange={(e) => setConfig({ ...config, contactEmail: e.target.value })}
                                 placeholder="your.name@example.com"
-                                className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-purple-500/50 outline-none text-sm font-mono"
+                                className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/50 outline-none transition-all placeholder:text-slate-600 font-mono"
                             />
                         </div>
 
                         {/* n8n Webhook */}
                         <div>
-                            <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2 flex items-center gap-2">
+                            <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider flex items-center gap-2">
                                 <Webhook className="w-3 h-3 text-orange-400" /> Webhook Endpoint (n8n)
                             </label>
                             <input
@@ -200,26 +198,33 @@ export default function ContactAdminPage() {
                                 value={config.n8nWebhookUrl}
                                 onChange={(e) => setConfig({ ...config, n8nWebhookUrl: e.target.value })}
                                 placeholder="https://..."
-                                className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-orange-500/50 outline-none text-sm font-mono"
+                                className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 outline-none transition-all placeholder:text-slate-600 font-mono"
                             />
                         </div>
                     </div>
                 </div>
 
-                {/* Submit Config */}
-                <div className="flex justify-end pt-4">
+                {/* Sticky Action Footer */}
+                <div className="sticky bottom-8 flex justify-end gap-4 pt-6 border-t border-white/5 bg-slate-900/90 backdrop-blur-lg p-4 rounded-xl border border-white/5 shadow-2xl z-50 mt-12">
+                    <button
+                        type="button"
+                        onClick={() => router.back()}
+                        className="px-6 py-2 rounded bg-white/5 hover:bg-white/10 text-slate-400 transition-colors text-sm font-medium"
+                    >
+                        CANCEL
+                    </button>
                     <button
                         type="submit"
                         disabled={saving}
-                        className="px-8 py-2 rounded bg-cyan-500 hover:bg-cyan-400 text-black font-bold transition-all shadow-[0_0_20px_rgba(34,211,238,0.3)] hover:shadow-[0_0_30px_rgba(34,211,238,0.5)] disabled:opacity-50 disabled:cursor-not-allowed text-sm tracking-wide flex items-center gap-2"
+                        className="px-8 py-2 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-bold transition-all shadow-[0_0_20px_rgba(8,145,178,0.3)] hover:shadow-[0_0_30px_rgba(8,145,178,0.5)] disabled:opacity-50 disabled:cursor-not-allowed text-sm tracking-wide flex items-center gap-2"
                     >
                         {saving ? (
                             <>
                                 <Loader2 className="w-4 h-4 animate-spin" />
-                                UPDATING_PROTOCOLS...
+                                UPDATING_SYSTEM...
                             </>
                         ) : (
-                            'UPDATE_CONFIGURATION'
+                            'CONFIRM_UPDATE'
                         )}
                     </button>
                 </div>
@@ -229,6 +234,7 @@ export default function ContactAdminPage() {
             <div className="w-full mt-16">
                 <div className="flex justify-between items-center mb-8">
                     <h2 className="text-xl font-bold flex items-center gap-3 text-white">
+                        <span className="w-2 h-8 bg-cyan-500 rounded-full" />
                         <MessageSquare className="text-cyan-400 w-5 h-5" />
                         Incoming Transmissions
                         <span className="text-sm bg-white/10 text-slate-400 px-2 py-0.5 rounded-full font-mono">{messages.length}</span>
@@ -242,7 +248,7 @@ export default function ContactAdminPage() {
                         </div>
                     ) : (
                         messages.map((msg) => (
-                            <div key={msg._id} className="bg-[#0a0a0a]/60 backdrop-blur-md p-6 rounded-xl border border-white/5 hover:border-cyan-500/30 transition-all group relative">
+                            <div key={msg._id} className="bg-slate-900/40 backdrop-blur-xl p-6 rounded-2xl border border-white/10 hover:border-cyan-500/30 transition-all group relative">
                                 <div className="flex justify-between items-start mb-4">
                                     <div className="flex items-center gap-4">
                                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center border border-white/10 text-cyan-400 font-bold text-lg">

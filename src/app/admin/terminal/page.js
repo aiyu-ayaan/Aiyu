@@ -6,20 +6,15 @@ import TerminalForm from '../../components/admin/TerminalForm';
 
 export default function AdminTerminalPage() {
     return (
-        <div className="min-h-screen bg-slate-950 p-8 pb-32">
-            <div className="max-w-7xl mx-auto">
-                <header className="mb-12">
-                    <Link
-                        href="/admin"
-                        className="inline-flex items-center gap-2 text-slate-400 hover:text-white mb-6 transition-colors"
-                    >
-                        <FaArrowLeft />
-                        Back to Dashboard
-                    </Link>
-                </header>
-
-                <TerminalForm />
+        <div className="p-8 max-w-7xl mx-auto min-h-screen">
+            <div className="mb-8">
+                <Link href="/admin" className="text-cyan-400 hover:text-cyan-300 transition-colors mb-4 inline-flex items-center gap-2 font-mono text-sm tracking-wide">
+                    ← BACK_TO_COMMAND_CENTER
+                </Link>
+                <h1 className="text-4xl font-bold text-white mb-2 tracking-tight">Terminal Matrix</h1>
+                <p className="text-slate-400">Customize the appearance and behavior of the terminal component</p>
             </div>
+            <TerminalForm />
         </div>
     );
 }
