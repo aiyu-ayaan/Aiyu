@@ -56,11 +56,13 @@ const About = ({ data }) => {
               borderStyle: 'solid',
               borderColor: 'var(--border-secondary)',
             }}
+            id="summary"
             whileHover={{
               scale: 1.02,
               y: -5,
               borderColor: 'var(--accent-cyan)',
             }}
+
           >
             <h2
               className="text-xl sm:text-2xl md:text-3xl font-bold mb-6 flex items-center gap-3"
@@ -146,6 +148,7 @@ const About = ({ data }) => {
               borderStyle: 'solid',
               borderColor: 'var(--border-secondary)',
             }}
+            id="skills"
           >
             <h2
               className="text-xl sm:text-2xl md:text-3xl font-bold mb-6 flex items-center gap-3"
@@ -349,7 +352,7 @@ const About = ({ data }) => {
           </VerticalTimeline>
         </motion.div>
       </div>
-    </motion.div>
+    </motion.div >
   );
 };
 

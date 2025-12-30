@@ -11,7 +11,7 @@ export async function PUT(request, { params }) {
 
     await dbConnect();
     try {
-        const { id } = params;
+        const { id } = await params;
         const body = await request.json();
         const social = await Social.findByIdAndUpdate(id, body, {
             new: true,
@@ -34,7 +34,7 @@ export async function DELETE(request, { params }) {
 
     await dbConnect();
     try {
-        const { id } = params;
+        const { id } = await params;
         const social = await Social.findByIdAndDelete(id);
         if (!social) {
             return NextResponse.json({ error: 'Social link not found' }, { status: 404 });
@@ -48,7 +48,7 @@ export async function DELETE(request, { params }) {
 export async function GET(request, { params }) {
     await dbConnect();
     try {
-        const { id } = params;
+        const { id } = await params;
         const social = await Social.findById(id);
         if (!social) {
             return NextResponse.json({ error: 'Social link not found' }, { status: 404 });

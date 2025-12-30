@@ -195,7 +195,7 @@ const ConfigForm = () => {
             )}
 
             {/* Branding Section */}
-            <div className="bg-[#0a0a0a]/60 backdrop-blur-xl rounded-2xl border border-white/5 p-8 relative overflow-hidden group">
+            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
 
                 <h2 className="text-sm font-mono text-cyan-500/70 uppercase tracking-widest mb-8 flex items-center gap-4">
@@ -212,7 +212,7 @@ const ConfigForm = () => {
                             value={formData.logoText}
                             onChange={handleChange}
                             placeholder="< aiyu />"
-                            className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-cyan-400 font-mono focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-700"
+                            className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-cyan-400 font-mono focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-700"
                         />
                         <p className="text-xs text-slate-500 mt-2 font-mono">
                             {'// Displayed in the top-left of the navigation header.'}
@@ -222,7 +222,7 @@ const ConfigForm = () => {
             </div>
 
             {/* Footer Configuration */}
-            <div className="bg-[#0a0a0a]/60 backdrop-blur-xl rounded-2xl border border-white/5 p-8 relative overflow-hidden group">
+            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
 
                 <h2 className="text-sm font-mono text-purple-500/70 uppercase tracking-widest mb-8 flex items-center gap-4">
@@ -238,7 +238,7 @@ const ConfigForm = () => {
                             value={formData.footerVersion}
                             onChange={handleChange}
                             placeholder="v1.0.0"
-                            className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/50 outline-none transition-all placeholder:text-slate-700 font-mono"
+                            className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/50 outline-none transition-all placeholder:text-slate-700 font-mono"
                         />
                         <p className="text-xs text-slate-500 mt-2 font-mono">
                             {'// Shown in the footer. Use this to track updates.'}
@@ -252,7 +252,7 @@ const ConfigForm = () => {
                             value={formData.footerVersionLink}
                             onChange={handleChange}
                             placeholder="https://github.com/..."
-                            className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/50 outline-none transition-all placeholder:text-slate-700 font-mono"
+                            className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/50 outline-none transition-all placeholder:text-slate-700 font-mono"
                         />
                         <p className="text-xs text-slate-500 mt-2 font-mono">
                             {'// Optional URL to make the version tag clickable.'}
@@ -262,7 +262,7 @@ const ConfigForm = () => {
             </div>
 
             {/* Browser & SEO Section */}
-            <div className="bg-[#0a0a0a]/60 backdrop-blur-xl rounded-2xl border border-white/5 p-8 relative overflow-hidden group">
+            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-green-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
 
                 <h2 className="text-sm font-mono text-green-500/70 uppercase tracking-widest mb-8 flex items-center gap-4">
@@ -327,7 +327,7 @@ const ConfigForm = () => {
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-slate-500 mb-2 text-[10px] font-mono uppercase tracking-wider">Title</label>
+                                <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Title</label>
                                 <input
                                     type="text"
                                     name="projectsTitle"
@@ -337,7 +337,7 @@ const ConfigForm = () => {
                                 />
                             </div>
                             <div>
-                                <label className="block text-slate-500 mb-2 text-[10px] font-mono uppercase tracking-wider">Subtitle</label>
+                                <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Subtitle</label>
                                 <input
                                     type="text"
                                     name="projectsSubtitle"
@@ -356,7 +356,7 @@ const ConfigForm = () => {
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-slate-500 mb-2 text-[10px] font-mono uppercase tracking-wider">Title</label>
+                                <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Title</label>
                                 <input
                                     type="text"
                                     name="blogsTitle"
@@ -366,7 +366,7 @@ const ConfigForm = () => {
                                 />
                             </div>
                             <div>
-                                <label className="block text-slate-500 mb-2 text-[10px] font-mono uppercase tracking-wider">Subtitle</label>
+                                <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Subtitle</label>
                                 <textarea
                                     name="blogsSubtitle"
                                     value={formData.blogsSubtitle}
@@ -385,7 +385,7 @@ const ConfigForm = () => {
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-slate-500 mb-2 text-[10px] font-mono uppercase tracking-wider">Title</label>
+                                <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Title</label>
                                 <input
                                     type="text"
                                     name="galleryTitle"
@@ -395,7 +395,7 @@ const ConfigForm = () => {
                                 />
                             </div>
                             <div>
-                                <label className="block text-slate-500 mb-2 text-[10px] font-mono uppercase tracking-wider">Subtitle</label>
+                                <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Subtitle</label>
                                 <input
                                     type="text"
                                     name="gallerySubtitle"
@@ -479,7 +479,7 @@ const ConfigForm = () => {
                     </label>
 
                     <label className={`flex items-center gap-3 cursor-pointer p-4 rounded-xl border transition-all w-full
-                        ${formData.resume.type === 'file' ? 'bg-blue-500/10 border-blue-500/40 text-blue-300' : 'bg-black/40 border-white/10 text-slate-400'}
+                        ${formData.resume.type === 'file' ? 'bg-blue-500/10 border-blue-500/40 text-blue-300' : 'bg-slate-950/50 border-white/10 text-slate-400'}
                     `}>
                         <div className={`w-4 h-4 rounded-full border flex items-center justify-center
                              ${formData.resume.type === 'file' ? 'border-blue-400' : 'border-slate-600'}
@@ -505,14 +505,14 @@ const ConfigForm = () => {
                             value={formData.resume.value}
                             onChange={(e) => handleResumeValueChange(e.target.value)}
                             placeholder="https://example.com/my-resume.pdf"
-                            className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 outline-none transition-all placeholder:text-slate-700 font-mono"
+                            className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 outline-none transition-all placeholder:text-slate-700 font-mono"
                         />
                     </div>
                 ) : (
                     <div>
                         <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Upload PDF Asset</label>
                         <div className="flex items-center gap-4">
-                            <label className="cursor-pointer bg-black/40 border border-white/10 hover:border-blue-500/50 text-slate-300 px-4 py-3 rounded-lg transition-all flex items-center gap-3 w-full">
+                            <label className="cursor-pointer bg-slate-950/50 border border-white/10 hover:border-blue-500/50 text-slate-300 px-4 py-3 rounded-lg transition-all flex items-center gap-3 w-full">
                                 <span className="bg-blue-500/10 text-blue-400 px-2 py-1 rounded text-xs font-bold uppercase">Choose File</span>
                                 <span className="text-sm truncate opacity-60 hover:opacity-100 transition-opacity">
                                     {formData.resume.filename || "Select PDF document..."}
@@ -540,26 +540,34 @@ const ConfigForm = () => {
                 )}
             </div>
 
-            <div className="sticky bottom-8 flex justify-end gap-4 pt-6 border-t border-white/5 bg-[#030014]/80 backdrop-blur-lg p-4 rounded-xl border border-white/5 shadow-2xl z-50">
+            {/* Sticky Action Footer */}
+            <div className="sticky bottom-8 flex justify-end gap-4 pt-6 border-t border-white/5 bg-slate-900/90 backdrop-blur-lg p-4 rounded-xl border border-white/5 shadow-2xl z-50 mt-12">
                 <button
                     type="button"
                     onClick={() => router.back()}
                     className="px-6 py-2 rounded bg-white/5 hover:bg-white/10 text-slate-400 transition-colors text-sm font-medium"
                 >
-                    Cancel
+                    CANCEL
                 </button>
                 <button
                     type="submit"
                     disabled={saving}
-                    className="px-8 py-2 rounded bg-cyan-500 hover:bg-cyan-400 text-black font-bold transition-all shadow-[0_0_20px_rgba(34,211,238,0.3)] hover:shadow-[0_0_30px_rgba(34,211,238,0.5)] disabled:opacity-50 disabled:cursor-not-allowed text-sm tracking-wide"
+                    className="px-8 py-2 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-bold transition-all shadow-[0_0_20px_rgba(8,145,178,0.3)] hover:shadow-[0_0_30px_rgba(8,145,178,0.5)] disabled:opacity-50 disabled:cursor-not-allowed text-sm tracking-wide flex items-center gap-2"
                 >
-                    {saving ? 'SAVING...' : 'INITIATE_UPDATE'}
+                    {saving ? (
+                        <>
+                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            UPDATING_SYSTEM...
+                        </>
+                    ) : (
+                        'CONFIRM_UPDATE'
+                    )}
                 </button>
             </div>
 
             {/* Toast Notification */}
             <Toast notification={notification} />
-        </form >
+        </form>
     );
 };
 

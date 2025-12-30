@@ -7,6 +7,9 @@
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker)](https://www.docker.com/)
 [![Documentation](https://img.shields.io/badge/Wiki-Documentation-blue?logo=github)](https://github.com/aiyu-ayaan/Aiyu/wiki)
 
+![home](./docs/images/home.png)
+
+
 A modern, responsive, and **fully customizable** portfolio website built with Next.js 15, Tailwind CSS, and MongoDB. This project showcases skills, detailed project case studies, blogs, and provides a way for visitors to contact you. It features a comprehensive **Admin Panel** for managing all content without touching code, making it perfect for developers who want a professional portfolio with zero-hassle content management.
 
 **🌟 Perfect for**: Developers, designers, freelancers, and tech professionals looking for a production-ready portfolio solution.

@@ -65,6 +65,7 @@ const Timeline = ({ projectsByYear, years, onCardClick }) => {
                 boxShadow: '0 0 20px var(--shadow-glow)',
               }}
               icon={getProjectIcon(project.projectType)}
+              id={`project-${project._id}`}
             >
               <ProjectCard project={project} onCardClick={onCardClick} />
             </VerticalTimelineElement>

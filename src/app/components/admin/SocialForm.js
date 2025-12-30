@@ -126,20 +126,21 @@ const SocialForm = ({ initialData, isEdit = false }) => {
                 </label>
             </div>
 
-            <div className="flex justify-end gap-4 pt-4 border-t border-white/5">
+            {/* Sticky Action Footer */}
+            <div className="sticky bottom-8 flex justify-end gap-4 pt-6 border-t border-white/5 bg-slate-900/90 backdrop-blur-lg p-4 rounded-xl border border-white/5 shadow-2xl z-50 mt-12">
                 <button
                     type="button"
                     onClick={() => router.back()}
                     className="px-6 py-2 rounded bg-white/5 hover:bg-white/10 text-slate-400 transition-colors text-sm font-medium"
                 >
-                    Cancel
+                    CANCEL
                 </button>
                 <button
                     type="submit"
                     disabled={loading}
-                    className="px-6 py-2 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-bold transition-all shadow-[0_0_15px_rgba(8,145,178,0.3)] hover:shadow-[0_0_25px_rgba(8,145,178,0.5)] disabled:opacity-50 text-sm tracking-wide"
+                    className="px-8 py-2 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-bold transition-all shadow-[0_0_20px_rgba(8,145,178,0.3)] hover:shadow-[0_0_30px_rgba(8,145,178,0.5)] disabled:opacity-50 disabled:cursor-not-allowed text-sm tracking-wide uppercase"
                 >
-                    {loading ? 'Saving...' : isEdit ? 'Update Social' : 'Create Social'}
+                    {loading ? 'UPDATING_SYSTEM...' : isEdit ? 'CONFIRM_UPDATE' : 'INITIALIZE_SOCIAL'}
                 </button>
             </div>
 

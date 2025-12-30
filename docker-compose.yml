@@ -51,7 +51,7 @@ services:
       ADMIN_USERNAME: ${ADMIN_USERNAME}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
-      GITHUB_TOKEN: ${GITHUB_TOKEN}
+
       # Node environment
       NODE_ENV: production
     volumes:

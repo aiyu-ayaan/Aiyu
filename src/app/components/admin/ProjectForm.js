@@ -263,38 +263,29 @@ const ProjectForm = ({ initialData, isEdit = false }) => {
                 </div>
             </div>
 
-            {/* Action Footer */}
-            <div className="sticky bottom-8 bg-slate-900/90 backdrop-blur-xl border border-white/10 p-4 rounded-2xl shadow-2xl flex justify-between items-center z-50">
-                <div className="text-xs font-mono text-slate-400 px-4 flex items-center gap-2">
-                    <Activity size={14} className={loading ? 'animate-spin' : ''} />
-                    SYSTEM_STATUS: {loading ? 'PROCESSING...' : 'READY'}
-                </div>
-                <div className="flex gap-4">
-                    <button
-                        type="button"
-                        onClick={() => router.back()}
-                        className="px-6 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-colors text-sm font-bold uppercase tracking-wide border border-transparent hover:border-white/10"
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="px-8 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold transition-all shadow-[0_0_20px_rgba(8,145,178,0.3)] hover:shadow-[0_0_30px_rgba(8,145,178,0.5)] disabled:opacity-50 disabled:cursor-not-allowed text-sm tracking-wide flex items-center gap-2"
-                    >
-                        {loading ? (
-                            <>
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                                PROCESSING...
-                            </>
-                        ) : (
-                            <>
-                                <Save className="w-4 h-4" />
-                                {isEdit ? 'UPDATE_PROJECT_DATA' : 'INITIALIZE_PROJECT'}
-                            </>
-                        )}
-                    </button>
-                </div>
+            {/* Sticky Action Footer */}
+            <div className="sticky bottom-8 flex justify-end gap-4 pt-6 border-t border-white/5 bg-slate-900/90 backdrop-blur-lg p-4 rounded-xl border border-white/5 shadow-2xl z-50 mt-12">
+                <button
+                    type="button"
+                    onClick={() => router.back()}
+                    className="px-6 py-2 rounded bg-white/5 hover:bg-white/10 text-slate-400 transition-colors text-sm font-medium"
+                >
+                    CANCEL
+                </button>
+                <button
+                    type="submit"
+                    disabled={loading}
+                    className="px-8 py-2 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-bold transition-all shadow-[0_0_20px_rgba(8,145,178,0.3)] hover:shadow-[0_0_30px_rgba(8,145,178,0.5)] disabled:opacity-50 disabled:cursor-not-allowed text-sm tracking-wide uppercase flex items-center gap-2"
+                >
+                    {loading ? (
+                        <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            UPDATING_SYSTEM...
+                        </>
+                    ) : (
+                        isEdit ? 'CONFIRM_UPDATE' : 'INITIALIZE_PROJECT'
+                    )}
+                </button>
             </div>
 
             {/* Toast Notification */}

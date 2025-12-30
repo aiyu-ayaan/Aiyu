@@ -122,6 +122,6 @@ export default function Footer({ socialData, name, config }) {
                     )}
                 </div>
             </div>
-        </footer>
+        </footer >
     );
 }

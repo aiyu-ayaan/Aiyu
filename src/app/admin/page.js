@@ -6,7 +6,8 @@ import { motion } from 'framer-motion';
 import {
     FaHouse, FaUser, FaBriefcase, FaPenNib, FaImages,
     FaHeading, FaShareNodes, FaEnvelope,
-    FaPalette, FaGithub, FaSliders, FaDatabase, FaRightFromBracket, FaArrowRight
+
+    FaPalette, FaGithub, FaSliders, FaDatabase, FaRightFromBracket, FaArrowRight, FaTerminal
 } from "react-icons/fa6";
 
 export default function AdminDashboard() {
@@ -37,7 +38,9 @@ export default function AdminDashboard() {
         system: [
             { label: 'Themes', description: 'Colors & Style', icon: <FaPalette />, color: 'from-violet-500/10 to-violet-500/5', textColor: 'text-violet-400', path: '/admin/themes' },
             { label: 'GitHub', description: 'Repo Stats', icon: <FaGithub />, color: 'from-gray-500/10 to-gray-500/5', textColor: 'text-gray-400', path: '/admin/github' },
+
             { label: 'Config', description: 'Site Settings', icon: <FaSliders />, color: 'from-slate-500/10 to-slate-500/5', textColor: 'text-slate-400', path: '/admin/config' },
+            { label: 'Terminal', description: 'CLI Appearance', icon: <FaTerminal />, color: 'from-amber-500/10 to-amber-500/5', textColor: 'text-amber-400', path: '/admin/terminal' },
             { label: 'Database', description: 'Backups & JSON', icon: <FaDatabase />, color: 'from-yellow-500/10 to-yellow-500/5', textColor: 'text-yellow-400', path: '/admin/database' },
         ]
     };

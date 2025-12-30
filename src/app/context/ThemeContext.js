@@ -1,7 +1,6 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect } from 'react';
-import { usePathname } from 'next/navigation';
 
 // Theme configuration constants
 const VALID_THEMES = ['dark', 'light'];
@@ -116,12 +115,7 @@ export const ThemeProvider = ({ children }) => {
   const [activeVariant, setActiveVariant] = useState(DEFAULT_THEME);
   const [themeLoaded, setThemeLoaded] = useState(false);
 
-  const pathname = usePathname();
-  const [themeCache, setThemeCache] = useState({});
-  // Fallback to activeThemeData if per-page isn't active
-  const [resolvedThemeData, setResolvedThemeData] = useState(null);
-
-  // Fetch active theme and per-page config from API
+  // Fetch active theme from API - this is the source of truth
   useEffect(() => {
     const fetchActiveTheme = async () => {
       try {
@@ -129,129 +123,55 @@ export const ThemeProvider = ({ children }) => {
         const data = await response.json();
 
         if (data.success && data.data.theme) {
-          const { theme, activeVariant, perPageThemes } = data.data;
-
-          setActiveThemeData(theme);
-          setResolvedThemeData(theme); // Default to global theme
+          setActiveThemeData(data.data.theme);
 
           // Use the variant from database as the source of truth
-          const dbVariant = activeVariant || 'dark';
+          const dbVariant = data.data.activeVariant || 'dark';
           setActiveVariant(dbVariant);
           setTheme(dbVariant);
 
-          // Update localStorage
+          // Update localStorage to match database
           localStorage.setItem('themeVariant', dbVariant);
-
-          // Initialize per-page config
-          if (perPageThemes) {
-            // Store global config in state if needed, but for now we rely on the effect below
-            // to access the latest data. We might need a state for it.
-            setPerPageConfig(perPageThemes);
-          }
 
           setThemeLoaded(true);
         } else {
-          // Fallback
-          handleFallback();
+          // Fallback to localStorage only if API fails
+          const savedVariant = localStorage.getItem('themeVariant');
+          if (savedVariant && isValidTheme(savedVariant)) {
+            setActiveVariant(savedVariant);
+            setTheme(savedVariant);
+          }
+          setThemeLoaded(true);
         }
       } catch (error) {
         console.error('Failed to fetch active theme:', error);
-        handleFallback();
+        // Fallback to localStorage on error
+        const savedVariant = localStorage.getItem('themeVariant');
+        if (savedVariant && isValidTheme(savedVariant)) {
+          setActiveVariant(savedVariant);
+          setTheme(savedVariant);
+        }
+        setThemeLoaded(true);
       }
-    };
-
-    const handleFallback = () => {
-      const savedVariant = localStorage.getItem('themeVariant');
-      if (savedVariant && isValidTheme(savedVariant)) {
-        setActiveVariant(savedVariant);
-        setTheme(savedVariant);
-      }
-      setThemeLoaded(true);
     };
 
     fetchActiveTheme();
     setMounted(true);
   }, []);
 
-  const [perPageConfig, setPerPageConfig] = useState(null);
-
-  // Effect to handle per-page theme switching
-  useEffect(() => {
-    const handlePageTheme = async () => {
-      if (!themeLoaded || !perPageConfig?.enabled) {
-        // If disabled or not loaded, revert to global active theme
-        if (activeThemeData && resolvedThemeData !== activeThemeData) {
-          setResolvedThemeData(activeThemeData);
-        }
-        return;
-      }
-
-      // Check if current path has a theme
-      // We use startsWith to handle sub-routes if needed, or exact match.
-      // Let's assume exact match for now as per plan, or maybe closest match?
-      // Simple map lookup is fastest for exact matches.
-
-      // Convert Map to object if it came from JSON (it's likely a plain object from API)
-      const pages = perPageConfig.pages || {};
-
-      // 1. Exact match
-      let targetThemeSlug = pages[pathname];
-
-      // 2. Sub-page match (check if any configured page is a parent of current path)
-      if (!targetThemeSlug) {
-        // Find keys that the current pathname starts with (e.g., config has "/blogs/" and path is "/blogs/my-post")
-        // Sort by length descending to match most specific parent first
-        const parentUrl = Object.keys(pages)
-          .filter(key => key !== '/' && pathname.startsWith(key))
-          .sort((a, b) => b.length - a.length)[0];
-
-        if (parentUrl) {
-          targetThemeSlug = pages[parentUrl];
-        }
-      }
-
-      if (targetThemeSlug) {
-        // Check cache first
-        if (themeCache[targetThemeSlug]) {
-          setResolvedThemeData(themeCache[targetThemeSlug]);
-          return;
-        }
-
-        // Fetch theme data
-        try {
-          const res = await fetch(`/api/themes/${targetThemeSlug}`);
-          const data = await res.json();
-          if (data.success) {
-            setThemeCache(prev => ({ ...prev, [targetThemeSlug]: data.data }));
-            setResolvedThemeData(data.data);
-          }
-        } catch (e) {
-          console.error(`Failed to fetch theme ${targetThemeSlug}`, e);
-        }
-      } else {
-        // Revert to global active theme
-        if (activeThemeData && resolvedThemeData !== activeThemeData) {
-          setResolvedThemeData(activeThemeData);
-        }
-      }
-    };
-
-    handlePageTheme();
-  }, [pathname, perPageConfig, themeLoaded, activeThemeData]); // Removed resolvedThemeData from dependency to avoid loop
-
   // Apply theme when data is loaded and variant changes
   useEffect(() => {
-    if (themeLoaded && resolvedThemeData) {
+    if (themeLoaded && activeThemeData) {
       const root = document.documentElement;
       root.setAttribute('data-theme', activeVariant);
 
       // Apply custom theme colors
-      const variantData = resolvedThemeData.variants?.[activeVariant];
+      const variantData = activeThemeData.variants?.[activeVariant];
       if (variantData) {
         applyThemeColors(activeVariant, variantData);
       }
     }
-  }, [resolvedThemeData, activeVariant, themeLoaded]); // Use resolvedThemeData instead of activeThemeData
+  }, [activeThemeData, activeVariant, themeLoaded]);
 
   const toggleTheme = () => {
     const newVariant = theme === 'dark' ? 'light' : 'dark';
@@ -275,7 +195,7 @@ export const ThemeProvider = ({ children }) => {
       theme,
       toggleTheme,
       mounted,
-      activeThemeData: resolvedThemeData,
+      activeThemeData,
       activeVariant,
       switchVariant
     }}>

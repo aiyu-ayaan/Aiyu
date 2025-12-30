@@ -5,11 +5,13 @@ import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import clsx from 'clsx';
 import { motion, useScroll, useTransform } from 'framer-motion';
+import { Search } from 'lucide-react';
 // import { navLinks, contactLink } from '../data/headerData';
 import ThemeToggle from './ThemeToggle';
 import { useTheme } from '../context/ThemeContext';
+import TerminalPath from './admin/TerminalPath';
 
-export default function Header({ data, logoText }) {
+export default function Header({ data, logoText, socialData, config }) {
     const { navLinks, contactLink } = data || { navLinks: [], contactLink: {} };
     // Filter out hidden links
     const visibleNavLinks = navLinks.filter(link => link.visible !== false);
@@ -86,6 +88,22 @@ export default function Header({ data, logoText }) {
                         </Link>
                     </div>
 
+                    {/* Mobile Search Button */}
+                    <div className="flex md:hidden items-center ml-auto mr-2">
+                        <motion.button
+                            className="p-2 rounded-full transition-colors relative"
+                            style={{
+                                color: 'var(--text-primary)',
+                                backgroundColor: scrolled ? 'rgba(125, 125, 125, 0.1)' : 'transparent',
+                            }}
+                            onClick={() => window.dispatchEvent(new CustomEvent("open-command-palette"))}
+                            whileTap={{ scale: 0.9 }}
+                            aria-label="Search"
+                        >
+                            <Search size={22} strokeWidth={2.5} />
+                        </motion.button>
+                    </div>
+
                     {/* Mobile Menu Button - Styled */}
                     <motion.button
                         className="md:hidden relative z-[110] p-2 rounded-full transition-colors"
@@ -155,6 +173,21 @@ export default function Header({ data, logoText }) {
 
                     {/* Contact Link and Theme Toggle - Desktop Right */}
                     <div className="hidden md:flex items-center gap-4">
+                        {/* Shortcut Hints */}
+                        <div className="hidden lg:flex items-center gap-3 mr-2 font-mono text-[10px] font-medium opacity-60" style={{ color: 'var(--text-secondary)' }}>
+                            <div className="flex items-center gap-1">
+                                <span className="px-1.5 py-0.5 rounded border border-[var(--border-primary)] bg-[var(--bg-secondary)] shadow-sm">Ctrl</span>
+                                <span>+</span>
+                                <span className="px-1.5 py-0.5 rounded border border-[var(--border-primary)] bg-[var(--bg-secondary)] shadow-sm">K</span>
+                            </div>
+                            <div className="w-[1px] h-4 bg-[var(--border-secondary)]"></div>
+                            <div className="flex items-center gap-1">
+                                <span className="px-1.5 py-0.5 rounded border border-[var(--border-primary)] bg-[var(--bg-secondary)] shadow-sm">Ctrl</span>
+                                <span>+</span>
+                                <span className="px-1.5 py-0.5 rounded border border-[var(--border-primary)] bg-[var(--bg-secondary)] shadow-sm">`</span>
+                            </div>
+                        </div>
+
                         <ThemeToggle />
                         <Link href={contactLink.href}>
                             <motion.button
@@ -172,6 +205,7 @@ export default function Header({ data, logoText }) {
                         </Link>
                     </div>
                 </nav>
+                <TerminalPath socialData={socialData} config={config} />
             </motion.header>
 
             {/* Full Screen Mobile Menu - Moved OUTSIDE header */}

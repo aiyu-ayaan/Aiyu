@@ -19,8 +19,11 @@ export default function GitHubConfigPage() {
             showRepositories: true,
             showLanguages: true
         },
-        hiddenRepos: []
+        hiddenRepos: [],
+        hasToken: false
     });
+    const [newToken, setNewToken] = useState('');
+    const [showTokenInput, setShowTokenInput] = useState(false);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [testing, setTesting] = useState(false);
@@ -40,7 +43,8 @@ export default function GitHubConfigPage() {
                     ...data.data,
                     sections: data.data.sections || config.sections,
                     hiddenRepos: data.data.hiddenRepos || [],
-                    includePrivate: data.data.includePrivate || false
+                    includePrivate: data.data.includePrivate || false,
+                    hasToken: data.data.hasToken || false
                 });
                 setTokenStatus(data.data.tokenStatus);
             }
@@ -59,7 +63,10 @@ export default function GitHubConfigPage() {
             const res = await fetch('/api/github/config', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(config)
+                body: JSON.stringify({
+                    ...config,
+                    githubToken: newToken || undefined // Only send if changed
+                })
             });
 
             const data = await res.json();
@@ -239,10 +246,10 @@ export default function GitHubConfigPage() {
                         </p>
                         <p className="text-xs font-mono mt-1 opacity-90">
                             {tokenStatus === 'valid'
-                                ? 'GITHUB_TOKEN is active. Full API rate limits and private data access enabled.'
+                                ? 'Secure Token is active. Full API rate limits and private data access enabled.'
                                 : tokenStatus === 'invalid'
-                                    ? 'Provided GITHUB_TOKEN is invalid. Please check your .env file.'
-                                    : 'For full data stats and higher rate limits, add a valid "GITHUB_TOKEN" to your .env file.'}
+                                    ? 'Provided Token is invalid.'
+                                    : 'For full stats and higher limits, add a Personal Access Token below.'}
                         </p>
                     </div>
                 </div>
@@ -294,26 +301,53 @@ export default function GitHubConfigPage() {
                             )}
                         </div>
 
-                        {/* Status Toggle */}
+                        {/* Token Input Section */}
+                        <div>
+                            <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Detailed Access Token (Optional)</label>
+                            <div className="flex gap-2 items-center">
+                                {config.hasToken && !showTokenInput ? (
+                                    <div className="flex-1 bg-green-500/10 border border-green-500/20 rounded-lg p-3 flex items-center gap-2">
+                                        <Lock className="w-4 h-4 text-green-400" />
+                                        <span className="text-green-400 text-sm font-mono flex-1">Securely key stored in system</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowTokenInput(true)}
+                                            className="text-xs text-green-300 hover:text-green-200 underline"
+                                        >
+                                            Update Key
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <input
+                                        type="password"
+                                        value={newToken}
+                                        onChange={(e) => setNewToken(e.target.value)}
+                                        placeholder={config.hasToken ? "Enter new token to overwrite..." : "ghp_xxxxxxxxxxxx"}
+                                        className="flex-1 bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-purple-500/50 outline-none text-sm font-mono placeholder:text-slate-600"
+                                    />
+                                )}
+
+                                {showTokenInput && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setShowTokenInput(false);
+                                            setNewToken('');
+                                        }}
+                                        className="text-slate-400 hover:text-white"
+                                    >
+                                        <XCircle className="w-5 h-5" />
+                                    </button>
+                                )}
+                            </div>
+                            <p className="text-[10px] text-slate-500 mt-2 font-mono">
+                                Token is encrypted before storage. Used for higher rate limits and private options.
+                            </p>
+                        </div>
+
+                        {/* Connection Status - Replacing Public Access Toggle */}
                         <div className="flex flex-col justify-center">
                             <div className="flex items-center justify-between p-4 bg-slate-900/30 border border-white/10 rounded-xl hover:border-purple-500/30 transition-colors">
-                                <div>
-                                    <div className="text-sm font-bold text-slate-200 mb-1">Public Access</div>
-                                    <div className="text-xs text-slate-500 font-mono">/github route visibility</div>
-                                </div>
-                                <label className="relative inline-flex items-center cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={config.enabled}
-                                        onChange={(e) => setConfig({ ...config, enabled: e.target.checked })}
-                                        className="sr-only peer"
-                                    />
-                                    <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-500"></div>
-                                </label>
-                            </div>
-
-                            {/* Private Repos Toggle */}
-                            <div className="flex items-center justify-between p-4 bg-slate-900/30 border border-white/10 rounded-xl hover:border-purple-500/30 transition-colors mt-4">
                                 <div>
                                     <div className="text-sm font-bold text-slate-200 mb-1 flex items-center gap-2">
                                         Private Repos
@@ -326,12 +360,17 @@ export default function GitHubConfigPage() {
                                         type="checkbox"
                                         checked={config.includePrivate}
                                         onChange={(e) => setConfig({ ...config, includePrivate: e.target.checked })}
-                                        disabled={tokenStatus !== 'valid'}
+                                        disabled={!config.hasToken}
                                         className="sr-only peer"
                                     />
-                                    <div className={`w-11 h-6 bg-slate-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-500 ${tokenStatus !== 'valid' ? 'opacity-50 cursor-not-allowed' : ''}`}></div>
+                                    <div className={`w-11 h-6 bg-slate-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-500 ${!config.hasToken ? 'opacity-50 cursor-not-allowed' : ''}`}></div>
                                 </label>
                             </div>
+                            {!config.hasToken && (
+                                <p className="text-[10px] text-slate-500 mt-2 font-mono px-1">
+                                    * Requires valid Access Token
+                                </p>
+                            )}
                         </div>
                     </div>
                 </div>

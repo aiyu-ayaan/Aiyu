@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import GitHub from '@/models/GitHub';
+import Config from '@/models/Config';
+import { decrypt } from '@/lib/encryption';
 
 // Cache for 5 minutes
 let cache = null;
@@ -14,10 +16,10 @@ export async function GET() {
         // Get GitHub config
         const config = await GitHub.findOne().lean();
 
-        if (!config || !config.enabled || !config.username) {
+        if (!config || !config.username) {
             return NextResponse.json({
                 success: false,
-                error: 'GitHub stats not configured'
+                error: 'GitHub username not configured'
             }, { status: 404 });
         }
 
@@ -43,9 +45,16 @@ export async function GET() {
             'User-Agent': 'Portfolio-App'
         };
 
+        // Check for encrypted token in Config
+        const configDoc = await Config.findOne().select('+encryptedGithubToken').lean();
+        const dbToken = configDoc?.encryptedGithubToken ? decrypt(configDoc.encryptedGithubToken) : null;
+        const envToken = process.env.GITHUB_TOKEN ? process.env.GITHUB_TOKEN.trim() : null;
+
+        const token = dbToken || envToken;
+
         // Add token if available
-        if (process.env.GITHUB_TOKEN) {
-            headers['Authorization'] = `token ${process.env.GITHUB_TOKEN.trim()}`;
+        if (token) {
+            headers['Authorization'] = `token ${token}`;
         }
 
         // Fetch user data
@@ -84,7 +93,7 @@ export async function GET() {
         let repos = [];
         let fetchedWithPrivate = false;
 
-        if (config.includePrivate && process.env.GITHUB_TOKEN) {
+        if (config.includePrivate && token) {
             // 1. Check if the token belongs to the configured user
             try {
                 const identityRes = await fetch('https://api.github.com/user', { headers });

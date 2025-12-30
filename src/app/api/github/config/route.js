@@ -1,7 +1,18 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import GitHub from '@/models/GitHub';
+import Config from '@/models/Config';
 import { withAuth } from '@/middleware/auth';
+import { encrypt, decrypt } from '@/lib/encryption';
+
+// Helper to get token
+async function getDecryptedToken() {
+    const config = await Config.findOne().select('+encryptedGithubToken').lean();
+    if (config?.encryptedGithubToken) {
+        return decrypt(config.encryptedGithubToken);
+    }
+    return process.env.GITHUB_TOKEN; // Fallback to env if not in DB
+}
 
 // GET: Fetch GitHub configuration or full repo list
 async function getConfig(request) {
@@ -19,9 +30,9 @@ async function getConfig(request) {
             config = await GitHub.create({ username: '', enabled: false });
         }
 
-        // Check GITHUB_TOKEN status
-        const rawToken = process.env.GITHUB_TOKEN;
-        const token = rawToken ? rawToken.trim() : '';
+        // Get token from DB (encrypted) or Env
+        const token = await getDecryptedToken();
+        const hasToken = !!token;
 
         // If 'repos' mode is requested, fetch full list of repos (proxied to use token)
         if (mode === 'repos' && config.username) {
@@ -97,12 +108,6 @@ async function getConfig(request) {
 
         let tokenStatus = 'missing';
 
-        console.log('[Debug] Token check:', {
-            exists: !!token,
-            length: token.length,
-            prefix: token ? token.substring(0, 4) + '...' : 'none'
-        });
-
         if (token) {
             try {
                 const verifyRes = await fetch('https://api.github.com/user', {
@@ -114,7 +119,7 @@ async function getConfig(request) {
                 tokenStatus = verifyRes.ok ? 'valid' : 'invalid';
 
                 if (!verifyRes.ok) {
-                    console.error('[Debug] Token verify failed:', VerifyRes.status, await verifyRes.text());
+                    console.error('[Debug] Token verify failed:', verifyRes.status);
                 }
             } catch (error) {
                 console.error('Token validation failed:', error);
@@ -126,7 +131,8 @@ async function getConfig(request) {
             success: true,
             data: {
                 ...config,
-                tokenStatus
+                tokenStatus,
+                hasToken // Tell frontend we have a token (without sending it)
             }
         });
     } catch (error) {
@@ -175,6 +181,12 @@ async function updateConfig(request) {
             if (body.hiddenRepos !== undefined) {
                 config.hiddenRepos = body.hiddenRepos;
             }
+        }
+
+        if (body.githubToken !== undefined) {
+            // Update token in Config
+            const encryptedToken = body.githubToken ? encrypt(body.githubToken) : '';
+            await Config.findOneAndUpdate({}, { encryptedGithubToken: encryptedToken }, { upsert: true });
         }
 
         await config.save();

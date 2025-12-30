@@ -33,13 +33,14 @@ export default function EditSocialPage() {
     if (!social) return <div className="p-8 text-white">Social link not found</div>;
 
     return (
-        <div className="p-8">
-            <div className="mb-6">
-                <Link href="/admin/footer" className="text-cyan-400 hover:text-cyan-300 flex items-center gap-2 transition-colors">
-                    ← Back to Footer
+        <div className="p-8 max-w-7xl mx-auto min-h-screen">
+            <div className="mb-12">
+                <Link href="/admin/footer" className="text-cyan-400 hover:text-cyan-300 flex items-center gap-2 transition-colors mb-4 text-sm font-mono opacity-60 hover:opacity-100 uppercase tracking-widest">
+                    ← BACK_TO_FOOTER_SETTINGS
                 </Link>
+                <h1 className="text-4xl font-bold text-white mb-2 tracking-tight">Social Connection</h1>
+                <p className="text-slate-400">Update parameters for specific social network uplink.</p>
             </div>
-            <h1 className="text-3xl font-bold text-white mb-8 text-center">Edit Social Link</h1>
             <SocialForm initialData={social} isEdit={true} />
         </div>
     );
