@@ -3,14 +3,49 @@ import React, { useState, useEffect, useRef } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useTheme } from '../../context/ThemeContext';
+import confetti from 'canvas-confetti';
+import { themePresets } from '../../../lib/themePresets';
+import { applyThemeColors } from '../../../utils/themeUtils';
 
 const SUGGESTIONS = ['about-me', 'blogs', 'projects', 'gallery', 'github', 'resume', 'contact-me'];
-const ALL_COMMANDS = ['cd', 'ls', 'pwd', 'clear', 'date', 'whoami', 'history', 'resume', 'email', 'socials', 'reboot', 'help', 'theme', 'echo', 'sysinfo', 'joke', 'projects'];
+const ALL_COMMANDS = ['cd', 'ls', 'pwd', 'clear', 'date', 'whoami', 'history', 'resume', 'email', 'socials', 'reboot', 'help', 'theme', 'echo', 'sysinfo', 'joke', 'projects', 'ascii', 'roll', 'flip', 'magic8', 'disco'];
+
+const ASCII_ARTS = [
+    {
+        name: 'robot',
+        art: `
+      /\\_/\\
+     ( o.o )
+      > ^ <
+    `
+    },
+    {
+        name: 'coffee',
+        art: `
+    ( (
+     ) )
+  ........
+  |      |]
+  \\      /
+   \`----'
+    `
+    },
+    {
+        name: 'ghost',
+        art: `
+   .-.
+  (o o) boo!
+  | O \\
+   \\   \\
+    \`~~~'
+    `
+    }
+];
 
 export default function TerminalPath({ socialData, config }) {
     const pathname = usePathname();
     const router = useRouter();
-    const { switchVariant, theme } = useTheme();
+    const { switchVariant, theme, activeThemeData } = useTheme();
     const [mounted, setMounted] = useState(false);
     const [input, setInput] = useState('');
     const [isFocused, setIsFocused] = useState(false);
@@ -257,6 +292,11 @@ export default function TerminalPath({ socialData, config }) {
                     { cmd: 'echo [text]', desc: 'Print text' },
                     { cmd: 'sysinfo', desc: 'System information' },
                     { cmd: 'joke', desc: 'Tell a joke' },
+                    { cmd: 'ascii', desc: 'Show random ASCII art' },
+                    { cmd: 'roll', desc: 'Roll a die' },
+                    { cmd: 'flip', desc: 'Flip a coin' },
+                    { cmd: 'magic8 [q]', desc: 'Ask the Magic 8-Ball' },
+                    { cmd: 'disco', desc: 'Party mode!' },
                     { cmd: 'reboot', desc: 'Restart system' },
                 ]
             });
@@ -297,6 +337,65 @@ export default function TerminalPath({ socialData, config }) {
             setTimeout(() => setOutput(null), 6000);
         } else if (command === 'projects') {
             router.push('/projects');
+        } else if (command === 'ascii') {
+            const randomArt = ASCII_ARTS[Math.floor(Math.random() * ASCII_ARTS.length)];
+            setOutput({ type: 'ascii', message: randomArt.art });
+            setTimeout(() => setOutput(null), 5000);
+        } else if (command === 'roll') {
+            const roll = Math.floor(Math.random() * 6) + 1;
+            setOutput({ type: 'success', message: `You rolled a ${roll} 🎲` });
+            setTimeout(() => setOutput(null), 3000);
+        } else if (command === 'flip') {
+            const result = Math.random() < 0.5 ? 'Heads 🪙' : 'Tails 🦅';
+            setOutput({ type: 'success', message: `Coin flip: ${result}` });
+            setTimeout(() => setOutput(null), 3000);
+        } else if (command === 'magic8') {
+            if (!arg) {
+                setOutput({ type: 'text', message: 'Ask a question! Usage: magic8 [question]' });
+            } else {
+                const answers = ["Yes.", "No.", "Maybe.", "Ask again later.", "Definitely.", "Unlikely."];
+                const answer = answers[Math.floor(Math.random() * answers.length)];
+                setOutput({ type: 'text', message: `🎱 ${answer}` });
+            }
+            setTimeout(() => setOutput(null), 5000);
+        } else if (command === 'disco') {
+            setOutput({ type: 'success', message: '🕺 DISCO TIME! 🕺' });
+
+            const presetValues = Object.values(themePresets);
+            const duration = 800; // Time per theme
+            const cycles = 5; // How many themes to cycle through
+            const totalDuration = presetValues.length * duration;
+
+            // Prevent rapid commands while discoing? Ideally yes, but let's keep it simple.
+
+            let currentIndex = 0;
+            const interval = setInterval(() => {
+                const randomTheme = presetValues[Math.floor(Math.random() * presetValues.length)];
+                // Use the current variant (light/dark) of the random theme
+                const variantData = randomTheme.variants[theme] || randomTheme.variants['dark'];
+                applyThemeColors(theme, variantData);
+            }, 200); // Fast flashing
+
+            setTimeout(() => {
+                clearInterval(interval);
+                // Revert to current active theme data which is managed by ThemeContext
+                if (activeThemeData && activeThemeData.variants && activeThemeData.variants[theme]) {
+                    applyThemeColors(theme, activeThemeData.variants[theme]);
+                } else {
+                    // Fallback to simpler switch if data isn't handy, though activeThemeData should be there
+                    switchVariant(theme);
+                }
+
+                // Confetti explosion
+                confetti({
+                    particleCount: 200,
+                    spread: 100,
+                    origin: { y: 0.6 },
+                    colors: ['#FFD700', '#C0C0C0'] // Gold and Silver primarily
+                });
+
+                setOutput(null);
+            }, 3000); // Run disco for 3 seconds
         }
     };
 
@@ -390,7 +489,7 @@ export default function TerminalPath({ socialData, config }) {
 
             {/* Git Branch */}
             <span className="ml-3 hidden sm:inline select-none" style={{ color: 'var(--text-secondary)' }}>
-                git:(main)
+                git:(master)
             </span>
 
             {/* Interactive Input Area */}
@@ -473,7 +572,10 @@ export default function TerminalPath({ socialData, config }) {
                             </div>
                         )}
                         {output.type === 'text' && (
-                            <div style={{ color: 'var(--text-secondary)' }}>{output.message}</div>
+                            <div style={{ color: 'var(--text-secondary)', whiteSpace: 'pre-wrap' }}>{output.message}</div>
+                        )}
+                        {output.type === 'ascii' && (
+                            <div style={{ color: 'var(--accent-pink)', whiteSpace: 'pre', lineHeight: '1.2' }}>{output.message}</div>
                         )}
                         {output.type === 'success' && (
                             <div style={{ color: 'var(--status-success)' }}>{output.message}</div>
