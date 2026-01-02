@@ -27,9 +27,6 @@ const ConfigForm = () => {
         galleryTitle: '',
         galleryTitle: '',
         gallerySubtitle: '',
-        footerVersion: '',
-        footerVersionLink: '',
-
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -68,9 +65,6 @@ const ConfigForm = () => {
                         galleryTitle: data.galleryTitle || 'Gallery',
                         galleryTitle: data.galleryTitle || 'Gallery',
                         gallerySubtitle: data.gallerySubtitle || 'A visual journey through my lens.',
-                        footerVersion: data.footerVersion || 'v1.0.0',
-                        footerVersionLink: data.footerVersionLink || ''
-
                     });
                 }
             }
@@ -221,45 +215,7 @@ const ConfigForm = () => {
                 </div>
             </div>
 
-            {/* Footer Configuration */}
-            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
 
-                <h2 className="text-sm font-mono text-purple-500/70 uppercase tracking-widest mb-8 flex items-center gap-4">
-                    Footer Metrics
-                    <div className="h-px bg-purple-500/10 flex-grow" />
-                </h2>
-                <div className="space-y-4 relative z-10">
-                    <div>
-                        <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">System Version Tag</label>
-                        <input
-                            type="text"
-                            name="footerVersion"
-                            value={formData.footerVersion}
-                            onChange={handleChange}
-                            placeholder="v1.0.0"
-                            className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/50 outline-none transition-all placeholder:text-slate-700 font-mono"
-                        />
-                        <p className="text-xs text-slate-500 mt-2 font-mono">
-                            {'// Shown in the footer. Use this to track updates.'}
-                        </p>
-                    </div>
-                    <div>
-                        <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">System Version Link</label>
-                        <input
-                            type="url"
-                            name="footerVersionLink"
-                            value={formData.footerVersionLink}
-                            onChange={handleChange}
-                            placeholder="https://github.com/..."
-                            className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/50 outline-none transition-all placeholder:text-slate-700 font-mono"
-                        />
-                        <p className="text-xs text-slate-500 mt-2 font-mono">
-                            {'// Optional URL to make the version tag clickable.'}
-                        </p>
-                    </div>
-                </div>
-            </div>
 
             {/* Browser & SEO Section */}
             <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 relative overflow-hidden group">
