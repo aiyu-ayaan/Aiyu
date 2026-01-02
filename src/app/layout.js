@@ -23,7 +23,7 @@ export async function generateMetadata() {
 
   const baseName = config?.siteTitle || config?.logoText || 'Portfolio';
   const icon = config?.favicon?.value ? '/api/favicon' : '/favicon.ico';
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://me.aiyu.co.in';
   const siteDescription = config?.siteDescription || 'Professional portfolio showcasing projects, blogs, and expertise.';
   const ogImage = config?.ogImage || `${baseUrl}/og-image.png`;
   const authorName = config?.authorName || 'Developer';
@@ -33,7 +33,9 @@ export async function generateMetadata() {
     description: siteDescription,
     keywords: ['portfolio', 'developer', 'projects', 'blogs', 'web development', config?.profession || 'full stack'].join(', '),
     icons: {
-      icon: icon,
+      icon: new URL(icon, baseUrl).toString(),
+      shortcut: new URL(icon, baseUrl).toString(),
+      apple: new URL(icon, baseUrl).toString(),
     },
     openGraph: {
       title: baseName,
@@ -80,6 +82,8 @@ import CommandPalette from "./components/shared/CommandPalette";
 
 import SpaceBackground from "./components/shared/SpaceBackground";
 
+import Preloader from "./components/shared/Preloader";
+
 export default async function RootLayout({ children }) {
   await dbConnect();
   const config = await ConfigModel.findOne().lean();
@@ -112,13 +116,15 @@ export default async function RootLayout({ children }) {
       >
         <GoogleAnalytics gaId={gaId} />
         <ThemeProvider>
-          <CommandPalette />
-          <div className="fixed inset-0 z-[-1]">
-            <SpaceBackground />
-          </div>
-          <div className="relative z-0">
-            {children}
-          </div>
+          <Preloader>
+            <CommandPalette />
+            <div className="fixed inset-0 z-[-1]">
+              <SpaceBackground />
+            </div>
+            <div className="relative z-0">
+              {children}
+            </div>
+          </Preloader>
         </ThemeProvider>
       </body>
     </html>

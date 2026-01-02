@@ -1,6 +1,7 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { usePathname } from 'next/navigation';
 
 // Theme configuration constants
 const VALID_THEMES = ['dark', 'light'];
@@ -115,6 +116,13 @@ export const ThemeProvider = ({ children }) => {
   const [activeVariant, setActiveVariant] = useState(DEFAULT_THEME);
   const [themeLoaded, setThemeLoaded] = useState(false);
 
+  // Per-page theme logic
+  const pathname = usePathname();
+  const [globalThemeData, setGlobalThemeData] = useState(null); // Backup for global theme
+  const [globalVariant, setGlobalVariant] = useState(DEFAULT_THEME);
+  const [perPageConfig, setPerPageConfig] = useState({ enabled: false, pages: {} });
+  const [themeCache, setThemeCache] = useState({}); // Cache for fetched themes
+
   // Fetch active theme from API - this is the source of truth
   useEffect(() => {
     const fetchActiveTheme = async () => {
@@ -124,11 +132,17 @@ export const ThemeProvider = ({ children }) => {
 
         if (data.success && data.data.theme) {
           setActiveThemeData(data.data.theme);
+          setGlobalThemeData(data.data.theme); // Store as global default
 
           // Use the variant from database as the source of truth
           const dbVariant = data.data.activeVariant || 'dark';
           setActiveVariant(dbVariant);
+          setGlobalVariant(dbVariant);
           setTheme(dbVariant);
+
+          if (data.data.perPageThemes) {
+            setPerPageConfig(data.data.perPageThemes);
+          }
 
           // Update localStorage to match database
           localStorage.setItem('themeVariant', dbVariant);
@@ -158,6 +172,92 @@ export const ThemeProvider = ({ children }) => {
     fetchActiveTheme();
     setMounted(true);
   }, []);
+
+  // Helper to fetch theme data
+  const fetchThemeData = useCallback(async (slug) => {
+    if (!slug) return null;
+
+    // Check cache first
+    if (themeCache[slug]) return themeCache[slug];
+
+    try {
+      const res = await fetch(`/api/themes/${slug}`);
+      const data = await res.json();
+      if (data.success) {
+        setThemeCache(prev => ({ ...prev, [slug]: data.data }));
+        return data.data;
+      }
+    } catch (error) {
+      console.error(`Failed to fetch theme ${slug}:`, error);
+    }
+    return null;
+  }, [themeCache]);
+
+  // Handle route changes and per-page themes
+  useEffect(() => {
+    if (!themeLoaded || !globalThemeData) return;
+
+    const handleRouteChange = async () => {
+      // Logic to determine if current path has a specific theme
+      if (perPageConfig.enabled && perPageConfig.pages) {
+
+        // Find matching rule
+        // We look for exact match first, then prefix match for "Details" style paths if needed
+        // Based on Admin UI:
+        // /projects -> List
+        // /projects/ -> Details (prefix)
+
+        let targetThemeSlug = null;
+
+        // 1. Exact match
+        if (perPageConfig.pages[pathname]) {
+          targetThemeSlug = perPageConfig.pages[pathname];
+        }
+
+        // 2. Prefix match (longest prefix wins)
+        if (!targetThemeSlug) {
+          const sortedPrefixes = Object.keys(perPageConfig.pages)
+            .filter(key => key.endsWith('/')) // Only keys ending in / are treated as prefixes
+            .sort((a, b) => b.length - a.length);
+
+          for (const prefix of sortedPrefixes) {
+            if (pathname.startsWith(prefix)) {
+              targetThemeSlug = perPageConfig.pages[prefix];
+              break;
+            }
+          }
+        }
+
+        if (targetThemeSlug) {
+          // Check if we already have this data
+          // If it's the global theme, just revert
+          if (targetThemeSlug === globalThemeData.slug) {
+            if (activeThemeData?.slug !== globalThemeData.slug) {
+              setActiveThemeData(globalThemeData);
+              // Optionally keep current variant or revert to global variant?
+              // Usually per-page themes might want to enforce their own variant preference if stored,
+              // but for now let's keep user's selected variant or global variant.
+              // The requirement implies visual theme changes. 
+            }
+          } else {
+            // Fetch and apply
+            const newThemeData = await fetchThemeData(targetThemeSlug);
+            if (newThemeData && newThemeData.slug !== activeThemeData?.slug) {
+              setActiveThemeData(newThemeData);
+            }
+          }
+          return;
+        }
+      }
+
+      // Default: Revert to global theme if not already
+      if (activeThemeData?.slug !== globalThemeData.slug) {
+        setActiveThemeData(globalThemeData);
+      }
+    };
+
+    handleRouteChange();
+  }, [pathname, perPageConfig, themeLoaded, globalThemeData, fetchThemeData, activeThemeData]);
 
   // Apply theme when data is loaded and variant changes
   useEffect(() => {
