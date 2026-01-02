@@ -27,18 +27,37 @@ export async function POST(request) {
         const config = await Config.findOne().lean();
         if (config?.n8nWebhookUrl) {
             try {
-                // Determine if webhook requires raw body or specific structure
-                // Defaulting to sending the collected data
-                await fetch(config.n8nWebhookUrl, {
+                // Prepare headers with auth
+                const authKey = process.env.BLOG_API_KEY || process.env.JWT_SECRET;
+                const headers = {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                };
+
+                // Add Authorization header if auth key exists
+                if (authKey) {
+                    headers['Authorization'] = `Bearer ${authKey}`;
+                }
+
+                // Send data with sender name and content as body
+                const webhookResponse = await fetch(config.n8nWebhookUrl, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers,
                     body: JSON.stringify({
-                        type: 'contact_form_submission',
-                        data: { name, email, message, createdAt: newMessage.createdAt },
+                        sender: name,
+                        email: email,
+                        content: message,
+                        timestamp: new Date().toISOString()
                     }),
                 });
+
+                if (webhookResponse.ok) {
+                    console.log('✅ n8n webhook triggered successfully');
+                } else {
+                    console.error('❌ n8n webhook failed with status:', webhookResponse.status);
+                }
             } catch (webhookError) {
-                console.error('Failed to trigger n8n webhook:', webhookError);
+                console.error('❌ Failed to trigger n8n webhook:', webhookError.message);
                 // We don't fail the request if webhook fails, just log it
             }
         }
