@@ -80,6 +80,8 @@ import CommandPalette from "./components/shared/CommandPalette";
 
 import SpaceBackground from "./components/shared/SpaceBackground";
 
+import Preloader from "./components/shared/Preloader";
+
 export default async function RootLayout({ children }) {
   await dbConnect();
   const config = await ConfigModel.findOne().lean();
@@ -112,6 +114,7 @@ export default async function RootLayout({ children }) {
       >
         <GoogleAnalytics gaId={gaId} />
         <ThemeProvider>
+          <Preloader />
           <CommandPalette />
           <div className="fixed inset-0 z-[-1]">
             <SpaceBackground />

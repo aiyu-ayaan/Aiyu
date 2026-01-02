@@ -1,6 +1,15 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
+/* Hide n8n chat widget during preloader */
+body.preloader-active #n8n-chat,
+body.preloader-active [class*="n8n-chat"] {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
 /* Dark Theme - Based on VS Code theme */
 [data-theme="dark"] {
   /* Background Colors */
