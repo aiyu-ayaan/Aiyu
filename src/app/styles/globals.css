@@ -10,6 +10,11 @@ body.preloader-active [class*="n8n-chat"] {
   pointer-events: none !important;
 }
 
+/* 3D Transform Utilities */
+.transform-style-3d {
+  transform-style: preserve-3d;
+}
+
 /* Dark Theme - Based on VS Code theme */
 [data-theme="dark"] {
   /* Background Colors */

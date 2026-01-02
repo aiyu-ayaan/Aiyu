@@ -114,14 +114,15 @@ export default async function RootLayout({ children }) {
       >
         <GoogleAnalytics gaId={gaId} />
         <ThemeProvider>
-          <Preloader />
-          <CommandPalette />
-          <div className="fixed inset-0 z-[-1]">
-            <SpaceBackground />
-          </div>
-          <div className="relative z-0">
-            {children}
-          </div>
+          <Preloader>
+            <CommandPalette />
+            <div className="fixed inset-0 z-[-1]">
+              <SpaceBackground />
+            </div>
+            <div className="relative z-0">
+              {children}
+            </div>
+          </Preloader>
         </ThemeProvider>
       </body>
     </html>
