@@ -33,7 +33,7 @@
     "js-cookie": "^3.0.5",
     "lodash-es": "^4.17.22",
     "lucide-react": "^0.562.0",
-    "mongoose": "^9.1.2",
+    "mongoose": "^9.1.4",
     "next": "^16.1.1",
     "node-fetch": "^3.3.2",
     "react": "^19.0.0",
