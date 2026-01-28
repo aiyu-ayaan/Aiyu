@@ -34,7 +34,7 @@
     "lodash-es": "^4.17.23",
     "lucide-react": "^0.563.0",
     "mongoose": "^9.1.4",
-    "next": "^16.1.5",
+    "next": "^16.1.6",
     "node-fetch": "^3.3.2",
     "react": "^19.0.0",
     "react-confetti": "^6.4.0",
