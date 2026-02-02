@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { Sparkles, Loader2, Wand2 } from 'lucide-react';
 import Toast from './Toast';
 
 const ConfigForm = () => {
@@ -32,10 +33,63 @@ const ConfigForm = () => {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
     const [notification, setNotification] = useState(null);
+    const [aiEnabled, setAiEnabled] = useState(false);
+    const [aiGenerating, setAiGenerating] = useState(null); // 'projects', 'blogs', 'gallery'
 
     useEffect(() => {
         fetchData();
+        checkAiConfig();
     }, []);
+
+    const checkAiConfig = async () => {
+        try {
+            const res = await fetch('/api/admin/ai/config');
+            const data = await res.json();
+            if (data.success && data.data) {
+                setAiEnabled(data.data.enabled);
+            }
+        } catch (error) {
+            console.error('Failed to fetch AI config:', error);
+        }
+    };
+
+    const handleAiAction = async (section) => {
+        if (aiGenerating) return;
+        setAiGenerating(section);
+
+        try {
+            const titleMap = {
+                projects: formData.projectsTitle,
+                blogs: formData.blogsTitle,
+                gallery: formData.galleryTitle
+            };
+
+            const res = await fetch('/api/admin/ai/text', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    mode: 'generate_subtitle',
+                    prompt: titleMap[section],
+                    context: { section }
+                })
+            });
+
+            const data = await res.json();
+
+            if (data.success) {
+                const key = `${section}Subtitle`;
+                setFormData(prev => ({ ...prev, [key]: data.data }));
+                showNotification(true, `${section.charAt(0).toUpperCase() + section.slice(1)} subtitle generated!`);
+            } else {
+                showNotification(false, data.error || 'AI synthesis failed');
+            }
+        } catch (error) {
+            console.error('AI Error:', error);
+            showNotification(false, 'AI uplink interrupted');
+        } finally {
+            setAiGenerating(null);
+        }
+    };
 
     const fetchData = async () => {
         try {
@@ -293,7 +347,24 @@ const ConfigForm = () => {
                                 />
                             </div>
                             <div>
-                                <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Subtitle</label>
+                                <div className="flex justify-between items-center mb-2">
+                                    <label className="block text-slate-400 text-xs font-mono uppercase tracking-wider">Subtitle</label>
+                                    {aiEnabled && (
+                                        <button
+                                            type="button"
+                                            onClick={() => handleAiAction('projects')}
+                                            disabled={aiGenerating === 'projects' || !formData.projectsTitle}
+                                            className="flex items-center gap-1 px-2 py-0.5 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 rounded border border-orange-500/20 transition-all text-[9px] font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed group/ai"
+                                        >
+                                            {aiGenerating === 'projects' ? (
+                                                <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                                            ) : (
+                                                <Sparkles className="w-2.5 h-2.5 group-hover/ai:rotate-12 transition-transform" />
+                                            )}
+                                            AI Suggest
+                                        </button>
+                                    )}
+                                </div>
                                 <input
                                     type="text"
                                     name="projectsSubtitle"
@@ -322,7 +393,24 @@ const ConfigForm = () => {
                                 />
                             </div>
                             <div>
-                                <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Subtitle</label>
+                                <div className="flex justify-between items-center mb-2">
+                                    <label className="block text-slate-400 text-xs font-mono uppercase tracking-wider">Subtitle</label>
+                                    {aiEnabled && (
+                                        <button
+                                            type="button"
+                                            onClick={() => handleAiAction('blogs')}
+                                            disabled={aiGenerating === 'blogs' || !formData.blogsTitle}
+                                            className="flex items-center gap-1 px-2 py-0.5 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 rounded border border-orange-500/20 transition-all text-[9px] font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed group/ai"
+                                        >
+                                            {aiGenerating === 'blogs' ? (
+                                                <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                                            ) : (
+                                                <Sparkles className="w-2.5 h-2.5 group-hover/ai:rotate-12 transition-transform" />
+                                            )}
+                                            AI Suggest
+                                        </button>
+                                    )}
+                                </div>
                                 <textarea
                                     name="blogsSubtitle"
                                     value={formData.blogsSubtitle}
@@ -351,7 +439,24 @@ const ConfigForm = () => {
                                 />
                             </div>
                             <div>
-                                <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Subtitle</label>
+                                <div className="flex justify-between items-center mb-2">
+                                    <label className="block text-slate-400 text-xs font-mono uppercase tracking-wider">Subtitle</label>
+                                    {aiEnabled && (
+                                        <button
+                                            type="button"
+                                            onClick={() => handleAiAction('gallery')}
+                                            disabled={aiGenerating === 'gallery' || !formData.galleryTitle}
+                                            className="flex items-center gap-1 px-2 py-0.5 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 rounded border border-orange-500/20 transition-all text-[9px] font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed group/ai"
+                                        >
+                                            {aiGenerating === 'gallery' ? (
+                                                <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                                            ) : (
+                                                <Sparkles className="w-2.5 h-2.5 group-hover/ai:rotate-12 transition-transform" />
+                                            )}
+                                            AI Suggest
+                                        </button>
+                                    )}
+                                </div>
                                 <input
                                     type="text"
                                     name="gallerySubtitle"

@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { Sparkles, Loader2, Wand2 } from 'lucide-react';
 import Toast from './Toast';
 
 const HomeForm = () => {
@@ -15,10 +16,26 @@ const HomeForm = () => {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
     const [notification, setNotification] = useState(null);
+    const [aiEnabled, setAiEnabled] = useState(false);
+    const [aiGenerating, setAiGenerating] = useState(false);
+    const [aiAction, setAiAction] = useState(null); // 'roles' or 'code'
 
     useEffect(() => {
         fetchData();
+        checkAiConfig();
     }, []);
+
+    const checkAiConfig = async () => {
+        try {
+            const res = await fetch('/api/admin/ai/config');
+            const data = await res.json();
+            if (data.success && data.data) {
+                setAiEnabled(data.data.enabled);
+            }
+        } catch (error) {
+            console.error('Failed to fetch AI config:', error);
+        }
+    };
 
     const fetchData = async () => {
         try {
@@ -37,6 +54,52 @@ const HomeForm = () => {
             console.error('Failed to fetch home data', err);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleAiAction = async (mode) => {
+        if (aiGenerating) return;
+        setAiGenerating(true);
+        setAiAction(mode);
+
+        try {
+            let prompt = '';
+            let context = {};
+
+            if (mode === 'code') {
+                prompt = 'Generate code snippets';
+                context = { name: formData.name, roles: formData.homeRoles };
+            }
+
+            const res = await fetch('/api/admin/ai/text', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    mode: mode === 'code' ? 'generate_home_code' : 'proofread',
+                    prompt: mode === 'code' ? prompt : formData.homeRoles,
+                    context
+                })
+            });
+
+            const data = await res.json();
+
+            if (data.success) {
+                if (mode === 'code') {
+                    setFormData(prev => ({ ...prev, codeSnippets: data.data }));
+                    showNotification(true, 'Terminal snippets synthesized!');
+                } else {
+                    setFormData(prev => ({ ...prev, homeRoles: data.data }));
+                    showNotification(true, 'Role designations refined!');
+                }
+            } else {
+                showNotification(false, data.error || 'AI synthesis failed');
+            }
+        } catch (error) {
+            console.error('AI Error:', error);
+            showNotification(false, 'AI uplink interrupted');
+        } finally {
+            setAiGenerating(false);
+            setAiAction(null);
         }
     };
 
@@ -132,7 +195,24 @@ const HomeForm = () => {
                     </div>
 
                     <div className="md:col-span-2">
-                        <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Role Designations</label>
+                        <div className="flex justify-between items-center mb-2">
+                            <label className="block text-slate-400 text-xs font-mono uppercase tracking-wider">Role Designations</label>
+                            {aiEnabled && (
+                                <button
+                                    type="button"
+                                    onClick={() => handleAiAction('roles')}
+                                    disabled={aiGenerating || !formData.homeRoles}
+                                    className="flex items-center gap-1.5 px-3 py-1 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 rounded-lg border border-cyan-500/20 transition-all text-[10px] font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed group/ai"
+                                >
+                                    {aiGenerating && aiAction === 'roles' ? (
+                                        <Loader2 className="w-3 h-3 animate-spin" />
+                                    ) : (
+                                        <Wand2 className="w-3 h-3 group-hover/ai:scale-110 transition-transform" />
+                                    )}
+                                    Refine Roles
+                                </button>
+                            )}
+                        </div>
                         <input
                             type="text"
                             name="homeRoles"
@@ -157,7 +237,24 @@ const HomeForm = () => {
                 </h2>
 
                 <div>
-                    <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Code Snippets</label>
+                    <div className="flex justify-between items-center mb-2">
+                        <label className="block text-slate-400 text-xs font-mono uppercase tracking-wider">Code Snippets</label>
+                        {aiEnabled && (
+                            <button
+                                type="button"
+                                onClick={() => handleAiAction('code')}
+                                disabled={aiGenerating || !formData.name}
+                                className="flex items-center gap-1.5 px-3 py-1 bg-green-500/10 hover:bg-green-500/20 text-green-400 rounded-lg border border-green-500/20 transition-all text-[10px] font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed group/ai"
+                            >
+                                {aiGenerating && aiAction === 'code' ? (
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : (
+                                    <Sparkles className="w-3 h-3 group-hover/ai:rotate-12 transition-transform" />
+                                )}
+                                Generate Snippets
+                            </button>
+                        )}
+                    </div>
                     <textarea
                         name="codeSnippets"
                         value={formData.codeSnippets}
