@@ -3,6 +3,7 @@ import Theme from "@/models/Theme";
 import Config from "@/models/Config";
 import { getSession } from "@/lib/auth";
 import { NextResponse } from "next/server";
+import mongoose from "mongoose";
 import { isPredefinedTheme, getTheme } from "@/lib/themePresets";
 
 // GET /api/themes/[id] - Get specific theme
@@ -18,7 +19,10 @@ export async function GET(request, { params }) {
         }
 
         // Otherwise, look in database
-        const theme = await Theme.findOne({ $or: [{ slug: id }, { _id: id }] });
+        const query = mongoose.Types.ObjectId.isValid(id)
+            ? { $or: [{ slug: id }, { _id: id }] }
+            : { slug: id };
+        const theme = await Theme.findOne(query);
 
         if (!theme) {
             return NextResponse.json(
@@ -64,7 +68,10 @@ export async function PUT(request, { params }) {
         const { name, description, variants } = body;
 
         // Find the theme
-        const theme = await Theme.findOne({ $or: [{ slug: id }, { _id: id }] });
+        const query = mongoose.Types.ObjectId.isValid(id)
+            ? { $or: [{ slug: id }, { _id: id }] }
+            : { slug: id };
+        const theme = await Theme.findOne(query);
 
         if (!theme) {
             return NextResponse.json(
@@ -123,7 +130,10 @@ export async function DELETE(request, { params }) {
         }
 
         // Find and delete the theme
-        const theme = await Theme.findOneAndDelete({ $or: [{ slug: id }, { _id: id }] });
+        const query = mongoose.Types.ObjectId.isValid(id)
+            ? { $or: [{ slug: id }, { _id: id }] }
+            : { slug: id };
+        const theme = await Theme.findOneAndDelete(query);
 
         if (!theme) {
             return NextResponse.json(

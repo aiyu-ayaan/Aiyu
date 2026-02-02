@@ -129,20 +129,18 @@ const ThemeSchema = new mongoose.Schema({
 });
 
 // Update the updatedAt timestamp before saving
-ThemeSchema.pre('save', function (next) {
+ThemeSchema.pre('save', async function () {
     this.updatedAt = Date.now();
-    next();
 });
 
 // Create slug from name if not provided
-ThemeSchema.pre('validate', function (next) {
+ThemeSchema.pre('validate', async function () {
     if (!this.slug && this.name) {
         this.slug = this.name
             .toLowerCase()
             .replace(/[^a-z0-9]+/g, '-')
             .replace(/(^-|-$)/g, '');
     }
-    next();
 });
 
 export default mongoose.models.Theme || mongoose.model('Theme', ThemeSchema);

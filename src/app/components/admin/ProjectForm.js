@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, Save, Terminal, Code, Layers, Calendar, Link as LinkIcon, Image as ImageIcon, FileText, CheckCircle, Activity, Sparkles, Wand2 } from 'lucide-react';
+import { Loader2, Save, Terminal, Code, Layers, Calendar, Link as LinkIcon, Image as ImageIcon, FileText, CheckCircle, Activity, Sparkles, Wand2, Upload, X } from 'lucide-react';
 import Toast from './Toast';
 
 const ProjectForm = ({ initialData, isEdit = false }) => {
@@ -21,6 +21,7 @@ const ProjectForm = ({ initialData, isEdit = false }) => {
     const [notification, setNotification] = useState(null);
     const [aiEnabled, setAiEnabled] = useState(false);
     const [aiGenerating, setAiGenerating] = useState(null); // 'name', 'description', 'tech'
+    const [uploadingFile, setUploadingFile] = useState(false);
 
     useEffect(() => {
         if (initialData) {
@@ -99,6 +100,36 @@ const ProjectForm = ({ initialData, isEdit = false }) => {
             showNotification(false, 'AI uplink interrupted');
         } finally {
             setAiGenerating(null);
+        }
+    };
+
+    const handleFileUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        setUploadingFile(true);
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const res = await fetch('/api/upload', {
+                method: 'POST',
+                body: formData,
+            });
+
+            const data = await res.json();
+
+            if (data.success) {
+                setFormData(prev => ({ ...prev, image: data.url }));
+                showNotification(true, 'Visual Asset Synchronized!');
+            } else {
+                showNotification(false, data.error || 'Upload failed');
+            }
+        } catch (error) {
+            console.error('Upload error:', error);
+            showNotification(false, 'High-frequency uplink failure');
+        } finally {
+            setUploadingFile(false);
         }
     };
 
@@ -362,7 +393,26 @@ const ProjectForm = ({ initialData, isEdit = false }) => {
 
                     {/* Image Module */}
                     <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-6 relative overflow-hidden group">
-                        <h2 className="text-sm font-mono text-slate-400 uppercase tracking-widest mb-6">Visual Asset</h2>
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-sm font-mono text-slate-400 uppercase tracking-widest">Visual Asset</h2>
+                            <label className={`cursor-pointer group/upload transition-all ${uploadingFile ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
+                                <input
+                                    type="file"
+                                    className="hidden"
+                                    accept="image/*"
+                                    onChange={handleFileUpload}
+                                    disabled={uploadingFile}
+                                />
+                                <div className="flex items-center gap-2 px-3 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 rounded-lg border border-cyan-500/20 transition-all text-[10px] font-bold uppercase tracking-wider">
+                                    {uploadingFile ? (
+                                        <Loader2 size={12} className="animate-spin" />
+                                    ) : (
+                                        <Upload size={12} className="group-hover/upload:scale-110 transition-transform" />
+                                    )}
+                                    {uploadingFile ? 'Uploading...' : 'Upload Asset'}
+                                </div>
+                            </label>
+                        </div>
                         <div className="relative group/input mb-4">
                             <ImageIcon className="absolute left-4 top-3.5 text-slate-400 group-focus-within/input:text-white transition-colors" size={18} />
                             <input

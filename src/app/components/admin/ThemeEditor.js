@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { X, Save, Eraser, Palette, Eye, Layout, Type, Box, Hash, Sun, Moon, Layers } from 'lucide-react';
+import { X, Save, Eraser, Palette, Eye, Layout, Type, Box, Hash, Sun, Moon, Layers, Sparkles, Loader2, Wand2 } from 'lucide-react';
 import Toast from './Toast';
 
 const defaultVariant = {
@@ -74,6 +74,62 @@ export default function ThemeEditor({ theme, onSave, onCancel }) {
     const [lightVariant, setLightVariant] = useState(theme?.variants?.light || defaultVariant);
     const [darkVariant, setDarkVariant] = useState(theme?.variants?.dark || defaultVariant);
     const [notification, setNotification] = useState(null);
+    const [aiEnabled, setAiEnabled] = useState(false);
+    const [aiGenerating, setAiGenerating] = useState(false);
+    const [aiPrompt, setAiPrompt] = useState('');
+
+    useEffect(() => {
+        checkAiConfig();
+    }, []);
+
+    const checkAiConfig = async () => {
+        try {
+            const res = await fetch('/api/admin/ai/config');
+            const data = await res.json();
+            if (data.success && data.data) {
+                setAiEnabled(data.data.enabled);
+            }
+        } catch (error) {
+            console.error('Failed to fetch AI config:', error);
+        }
+    };
+
+    const handleAiGenerate = async () => {
+        if (!aiPrompt.trim() || aiGenerating) return;
+        setAiGenerating(true);
+
+        try {
+            const res = await fetch('/api/admin/ai/text', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    mode: 'generate_theme',
+                    prompt: aiPrompt
+                })
+            });
+
+            const data = await res.json();
+
+            if (data.success) {
+                try {
+                    const parsedTheme = typeof data.data === 'string' ? JSON.parse(data.data) : data.data;
+                    if (parsedTheme.light) setLightVariant(parsedTheme.light);
+                    if (parsedTheme.dark) setDarkVariant(parsedTheme.dark);
+                    showNotification(true, 'Interface skin synthesized!');
+                } catch (parseError) {
+                    console.error('Failed to parse AI theme JSON:', parseError);
+                    showNotification(false, 'Synthesis payload format mismatch');
+                }
+            } else {
+                showNotification(false, data.error || 'AI synthesis failed');
+            }
+        } catch (error) {
+            console.error('AI Error:', error);
+            showNotification(false, 'AI uplink interrupted');
+        } finally {
+            setAiGenerating(false);
+        }
+    };
 
     const showNotification = (success, message) => {
         setNotification({ success, message });
@@ -167,7 +223,7 @@ export default function ThemeEditor({ theme, onSave, onCancel }) {
 
                 {/* Header */}
                 <div className="p-6 border-b border-white/10 flex justify-between items-start bg-slate-900/50 relative z-10 shrink-0">
-                    <div className="flex-1 max-w-2xl">
+                    <div className="flex-1">
                         <div className="flex items-center gap-3 mb-4">
                             <div className="p-2 bg-cyan-500/10 rounded-lg text-cyan-400">
                                 <Palette className="w-6 h-6" />
@@ -180,21 +236,47 @@ export default function ThemeEditor({ theme, onSave, onCancel }) {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <input
-                                type="text"
-                                placeholder="THEME_DESIGNATION"
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
-                                className="w-full bg-slate-950/50 text-white px-4 py-3 rounded-xl border border-white/10 focus:border-cyan-500/50 outline-none text-sm font-bold placeholder:text-slate-700 font-mono"
-                            />
-                            <input
-                                type="text"
-                                placeholder="Description (Optional context)"
-                                value={description}
-                                onChange={(e) => setDescription(e.target.value)}
-                                className="w-full bg-slate-950/50 text-slate-300 px-4 py-3 rounded-xl border border-white/10 focus:border-cyan-500/50 outline-none text-sm placeholder:text-slate-700"
-                            />
+                        <div className="flex gap-4 mb-4">
+                            <div className="w-[450px] shrink-0 grid grid-cols-2 gap-4">
+                                <input
+                                    type="text"
+                                    placeholder="THEME_DESIGNATION"
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    className="w-full bg-slate-950/50 text-white px-4 py-3 rounded-xl border border-white/10 focus:border-cyan-500/50 outline-none text-sm font-bold placeholder:text-slate-700 font-mono"
+                                />
+                                <input
+                                    type="text"
+                                    placeholder="Description (Optional context)"
+                                    value={description}
+                                    onChange={(e) => setDescription(e.target.value)}
+                                    className="w-full bg-slate-950/50 text-slate-300 px-4 py-3 rounded-xl border border-white/10 focus:border-cyan-500/50 outline-none text-sm placeholder:text-slate-700"
+                                />
+                            </div>
+
+                            {aiEnabled && (
+                                <div className="flex-1 flex gap-2 p-1 bg-white/5 rounded-xl border border-white/10 backdrop-blur-sm group/ai-box">
+                                    <input
+                                        type="text"
+                                        placeholder="AI_GENERATE (e.g. 'Midnight Cyberpunk')"
+                                        value={aiPrompt}
+                                        onChange={(e) => setAiPrompt(e.target.value)}
+                                        className="flex-1 bg-transparent text-cyan-400 px-3 py-1 outline-none text-xs font-mono placeholder:text-slate-700"
+                                    />
+                                    <button
+                                        onClick={handleAiGenerate}
+                                        disabled={aiGenerating || !aiPrompt.trim()}
+                                        className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 disabled:bg-slate-800 text-white rounded-lg transition-all flex items-center gap-2 text-xs font-bold uppercase tracking-tighter shadow-lg shadow-cyan-900/20"
+                                    >
+                                        {aiGenerating ? (
+                                            <Loader2 className="w-3 h-3 animate-spin" />
+                                        ) : (
+                                            <Sparkles className="w-3 h-3 group-hover/ai-box:rotate-12 transition-transform" />
+                                        )}
+                                        {aiGenerating ? 'Synthesizing...' : 'Generate Theme'}
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </div>
                     <button

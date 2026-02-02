@@ -79,6 +79,22 @@ async function generateText(request) {
         } else if (mode === 'generate_subtitle') {
             finalSystemInstruction += "\nYou are a creative writer. Generate a short, intriguing, and professional subtitle for a portfolio section named '${context?.section}'. Tone should be futuristic and tech-focused. Output exactly one line. NO quotes or extra text.";
             finalPrompt = `Title of the section: "${prompt}"`;
+        } else if (mode === 'generate_theme') {
+            finalSystemInstruction += `\nYou are a high-end UI/UX theme architect. Generate a complete, harmonious color palette for a futuristic portfolio theme based on the user's description. 
+            You must return a valid JSON object with two keys: "light" and "dark". 
+            Each variant must follow this exact structure (all values are hex colors):
+            {
+              "backgrounds": { "primary": "", "secondary": "", "tertiary": "", "surface": "", "elevated": "", "hover": "" },
+              "text": { "primary": "", "secondary": "", "tertiary": "", "muted": "", "bright": "" },
+              "accents": { "cyan": "", "cyanBright": "", "purple": "", "purpleDark": "", "purpleDarker": "", "pink": "", "pinkBright": "", "pinkHot": "", "orange": "", "orangeBright": "" },
+              "borders": { "primary": "", "secondary": "", "accent": "", "cyan": "" },
+              "status": { "error": "", "warning": "", "success": "", "info": "" },
+              "syntax": { "comment": "", "keyword": "", "control": "", "function": "", "class": "", "string": "", "number": "", "variable": "", "property": "", "operator": "", "punctuation": "" },
+              "shadows": { "sm": "", "md": "", "lg": "" },
+              "overlays": { "bg": "", "hover": "" }
+            }
+            ONLY return the JSON object. No extra text or markdown.`;
+            finalPrompt = `Generate a theme based on this concept: "${prompt}"`;
         }
 
         // 4. Call API
