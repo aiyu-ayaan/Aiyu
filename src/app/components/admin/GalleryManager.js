@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Upload, X, Trash2, Image as ImageIcon, Loader2, RefreshCw } from 'lucide-react';
+import { Upload, X, Trash2, Image as ImageIcon, Loader2, RefreshCw, CheckSquare, Square, Check } from 'lucide-react';
 import Image from 'next/image';
 import Toast from './Toast';
 
@@ -15,6 +15,10 @@ export default function GalleryManager() {
     const [dragActive, setDragActive] = useState(false);
     const [notification, setNotification] = useState(null);
     const [uploadProgress, setUploadProgress] = useState(null);
+
+    // Multi-select state
+    const [selectedImages, setSelectedImages] = useState(new Set());
+    const [deleting, setDeleting] = useState(false);
 
     const showNotification = (success, message) => {
         setNotification({ success, message });
@@ -217,6 +221,12 @@ export default function GalleryManager() {
             const data = await res.json();
             if (data.success) {
                 setImages(images.filter(img => img._id !== id));
+                // Also remove from selection if present
+                if (selectedImages.has(id)) {
+                    const newSelected = new Set(selectedImages);
+                    newSelected.delete(id);
+                    setSelectedImages(newSelected);
+                }
                 showNotification(true, 'Image deleted successfully');
             } else {
                 showNotification(false, data.error);
@@ -226,6 +236,70 @@ export default function GalleryManager() {
             showNotification(false, 'Failed to delete image');
         }
     };
+
+    // --- Bulk Selection & Deletion Logic ---
+
+    const toggleSelection = (id) => {
+        const newSelected = new Set(selectedImages);
+        if (newSelected.has(id)) {
+            newSelected.delete(id);
+        } else {
+            newSelected.add(id);
+        }
+        setSelectedImages(newSelected);
+    };
+
+    const selectAll = () => {
+        if (selectedImages.size === images.length) {
+            setSelectedImages(new Set()); // Deselect all
+        } else {
+            const allIds = new Set(images.map(img => img._id));
+            setSelectedImages(allIds);
+        }
+    };
+
+    const handleBulkDelete = async () => {
+        const count = selectedImages.size;
+        if (count === 0) return;
+
+        if (!confirm(`Are you sure you want to delete these ${count} images? This action cannot be undone.`)) return;
+
+        setDeleting(true);
+        let deletedCount = 0;
+        let failCount = 0;
+
+        // Iterate and delete one by one
+        const idsToDelete = Array.from(selectedImages);
+
+        for (const id of idsToDelete) {
+            try {
+                const res = await fetch(`/api/gallery?id=${id}`, {
+                    method: 'DELETE',
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    deletedCount++;
+                    // Optimistically update UI as we go (optional, but good for feedback)
+                    setImages(prev => prev.filter(img => img._id !== id));
+                } else {
+                    failCount++;
+                }
+            } catch (error) {
+                failCount++;
+            }
+        }
+
+        setSelectedImages(new Set()); // Clear selection
+        setDeleting(false);
+
+        if (deletedCount > 0) {
+            showNotification(true, `Successfully deleted ${deletedCount} images.${failCount > 0 ? ` Failed: ${failCount}` : ''}`);
+        } else {
+            showNotification(false, 'Failed to delete images.');
+        }
+    };
+
 
     const handleMigration = async () => {
         if (!confirm('Generate thumbnails for existing images? This may take a while.')) return;
@@ -265,7 +339,7 @@ export default function GalleryManager() {
 
             alert('Migration completed successfully!');
             showNotification(true, 'Migration completed successfully!');
-            fetchImages();
+            fetchImages(); // Refresh gallery
         } catch (error) {
             console.error('Migration failed:', error);
             showNotification(false, `Migration failed: ${error.message}`);
@@ -471,11 +545,43 @@ export default function GalleryManager() {
 
             {/* Gallery Grid */}
             <div>
-                <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
-                    <span className="w-2 h-8 bg-pink-500 rounded-full" />
-                    Database Content
-                    <span className="text-sm font-mono text-slate-400 font-normal">({images.length} items)</span>
-                </h2>
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                    <h2 className="text-xl font-bold text-white flex items-center gap-3">
+                        <span className="w-2 h-8 bg-pink-500 rounded-full" />
+                        Database Content
+                        <span className="text-sm font-mono text-slate-400 font-normal">({images.length} items)</span>
+                    </h2>
+
+                    <div className="flex gap-3">
+                        {images.length > 0 && (
+                            <button
+                                onClick={selectAll}
+                                className="px-4 py-2 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-white/5 text-xs uppercase tracking-wide flex items-center gap-2 transition-all"
+                            >
+                                {selectedImages.size === images.length ? (
+                                    <>
+                                        <Square size={14} /> Deselect All
+                                    </>
+                                ) : (
+                                    <>
+                                        <CheckSquare size={14} /> Select All
+                                    </>
+                                )}
+                            </button>
+                        )}
+
+                        {selectedImages.size > 0 && (
+                            <button
+                                onClick={handleBulkDelete}
+                                disabled={deleting}
+                                className="px-4 py-2 rounded bg-red-500/20 hover:bg-red-500 hover:text-white text-red-400 border border-red-500/20 transition-all font-bold text-xs uppercase tracking-wide flex items-center gap-2"
+                            >
+                                {deleting ? <Loader2 className="animate-spin" size={14} /> : <Trash2 size={14} />}
+                                Delete Selected ({selectedImages.size})
+                            </button>
+                        )}
+                    </div>
+                </div>
 
                 {loading ? (
                     <div className="flex justify-center py-20">
@@ -483,42 +589,66 @@ export default function GalleryManager() {
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        {images.map(image => (
-                            <div key={image._id} className="group relative bg-slate-900/50 backdrop-blur-xl rounded-xl border border-white/5 overflow-hidden hover:border-pink-500/30 transition-all hover:translate-y-[-4px] hover:shadow-xl">
-                                <div className="aspect-video relative bg-slate-950">
-                                    <Image
-                                        src={image.thumbnail || image.src}
-                                        alt={image.description}
-                                        fill
-                                        className="object-cover transition-transform duration-700 group-hover:scale-105"
-                                    />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-4">
-                                        <div className="flex justify-between items-end">
-                                            <span className="text-[10px] font-mono text-slate-300 bg-slate-900/50 px-2 py-1 rounded backdrop-blur-sm border border-white/10">
-                                                {new Date(image.createdAt).toLocaleDateString()}
-                                            </span>
-                                            <button
-                                                onClick={() => handleDelete(image._id)}
-                                                className="p-2 bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white rounded-lg transition-colors border border-red-500/20 backdrop-blur-md"
-                                                title="Delete Asset"
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
+                        {images.map(image => {
+                            const isSelected = selectedImages.has(image._id);
+                            return (
+                                <div
+                                    key={image._id}
+                                    className={`group relative bg-slate-900/50 backdrop-blur-xl rounded-xl border overflow-hidden transition-all hover:translate-y-[-4px] hover:shadow-xl
+                                        ${isSelected ? 'border-pink-500 ring-1 ring-pink-500' : 'border-white/5 hover:border-pink-500/30'}
+                                    `}
+                                    onClick={() => toggleSelection(image._id)}
+                                >
+                                    <div className="aspect-video relative bg-slate-950 cursor-pointer">
+                                        <Image
+                                            src={image.thumbnail || image.src}
+                                            alt={image.description}
+                                            fill
+                                            className="object-cover transition-transform duration-700 group-hover:scale-105"
+                                        />
+
+                                        {/* Selection Checkbox Overlay */}
+                                        <div className={`absolute top-2 right-2 z-20 transition-all duration-200 transform
+                                            ${isSelected ? 'opacity-100 scale-100' : 'opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100'}
+                                        `}>
+                                            <div className={`w-6 h-6 rounded border flex items-center justify-center
+                                                ${isSelected ? 'bg-pink-500 border-pink-500 text-white' : 'bg-black/50 border-white/50 text-white/50 hover:bg-black/80 hover:border-white'}
+                                            `}>
+                                                {isSelected && <Check size={14} />}
+                                            </div>
                                         </div>
+
+                                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-4 pointer-events-none">
+                                            <div className="flex justify-between items-end pointer-events-auto">
+                                                <span className="text-[10px] font-mono text-slate-300 bg-slate-900/50 px-2 py-1 rounded backdrop-blur-sm border border-white/10">
+                                                    {new Date(image.createdAt).toLocaleDateString()}
+                                                </span>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleDelete(image._id);
+                                                    }}
+                                                    className="p-2 bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white rounded-lg transition-colors border border-red-500/20 backdrop-blur-md"
+                                                    title="Delete Asset"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                        {!image.thumbnail && (
+                                            <div className="absolute top-2 left-2 px-2 py-1 bg-amber-500/90 text-black text-[10px] uppercase font-bold tracking-wider rounded">
+                                                Raw Asset
+                                            </div>
+                                        )}
                                     </div>
-                                    {!image.thumbnail && (
-                                        <div className="absolute top-2 left-2 px-2 py-1 bg-amber-500/90 text-black text-[10px] uppercase font-bold tracking-wider rounded">
-                                            Raw Asset
-                                        </div>
-                                    )}
+                                    <div className="p-4 border-t border-white/5 bg-white/[0.01]">
+                                        <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed" title={image.description}>
+                                            {image.description}
+                                        </p>
+                                    </div>
                                 </div>
-                                <div className="p-4 border-t border-white/5 bg-white/[0.01]">
-                                    <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed" title={image.description}>
-                                        {image.description}
-                                    </p>
-                                </div>
-                            </div>
-                        ))}
+                            );
+                        })}
 
                         {images.length === 0 && (
                             <div className="col-span-full py-20 flex flex-col items-center justify-center border-2 border-dashed border-white/10 rounded-2xl bg-slate-900/30">
@@ -537,4 +667,3 @@ export default function GalleryManager() {
         </div>
     );
 }
-
