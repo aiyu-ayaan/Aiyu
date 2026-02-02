@@ -1,9 +1,10 @@
 "use client";
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { FaPlus, FaBolt, FaCode, FaTerminal, FaRobot, FaRocket, FaBrain } from "react-icons/fa6";
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import TypewriterEffect from '../shared/TypewriterEffect';
 import { useTheme } from '../../context/ThemeContext';
+import useDevicePerformance from '../../hooks/useDevicePerformance';
 
 const ICON_MAP = {
     'FaBolt': FaBolt,
@@ -16,7 +17,46 @@ const ICON_MAP = {
 
 const FuturisticResume = ({ data }) => {
     const { theme } = useTheme();
+    const { tier, prefersReducedMotion } = useDevicePerformance();
     const { name, homeRoles, githubLink, codeSnippets, resumeStatus, resumeMode, resumeIcon } = data || {};
+
+    // Adaptive configuration based on device performance
+    const config = useMemo(() => {
+        if (prefersReducedMotion || tier === 'low') {
+            return {
+                enable3DTilt: false,
+                enableTextRegeneration: false,
+                enableMagneticIcon: false,
+                enableScanline: false,
+                enableMobileAutoAnimation: false,
+                tiltStiffness: 100,
+                tiltDamping: 30,
+                mobileAnimationFps: 0,
+            };
+        } else if (tier === 'medium') {
+            return {
+                enable3DTilt: true,
+                enableTextRegeneration: false, // throttled via callback
+                enableMagneticIcon: true,
+                enableScanline: true,
+                enableMobileAutoAnimation: true,
+                tiltStiffness: 80,
+                tiltDamping: 40,
+                mobileAnimationFps: 30, // Throttled
+            };
+        } else {
+            return {
+                enable3DTilt: true,
+                enableTextRegeneration: true,
+                enableMagneticIcon: true,
+                enableScanline: true,
+                enableMobileAutoAnimation: true,
+                tiltStiffness: 100,
+                tiltDamping: 30,
+                mobileAnimationFps: 60, // Full
+            };
+        }
+    }, [tier, prefersReducedMotion]);
 
     // Select the icon based on prop, default to Bolt
     const SelectedIcon = ICON_MAP[resumeIcon] || FaBolt;
@@ -35,15 +75,27 @@ const FuturisticResume = ({ data }) => {
     const x = useMotionValue(0); // -0.5 to 0.5
     const y = useMotionValue(0); // -0.5 to 0.5
 
-    // Smooth spring animation for tilt
-    const rotateX = useSpring(useTransform(y, [-0.5, 0.5], [20, -20]), { stiffness: 100, damping: 30 });
-    const rotateY = useSpring(useTransform(x, [-0.5, 0.5], [-20, 20]), { stiffness: 100, damping: 30 });
+    // Smooth spring animation for tilt - adaptive stiffness/damping
+    const rotateX = useSpring(
+        useTransform(y, [-0.5, 0.5], config.enable3DTilt ? [20, -20] : [0, 0]),
+        { stiffness: config.tiltStiffness, damping: config.tiltDamping }
+    );
+    const rotateY = useSpring(
+        useTransform(x, [-0.5, 0.5], config.enable3DTilt ? [-20, 20] : [0, 0]),
+        { stiffness: config.tiltStiffness, damping: config.tiltDamping }
+    );
 
-    // Magnetic Icon Movement (moves MORE than the card tilt for parallax)
-    const iconX = useSpring(useTransform(x, [-0.5, 0.5], [-30, 30]), { stiffness: 150, damping: 20 });
-    const iconY = useSpring(useTransform(y, [-0.5, 0.5], [-30, 30]), { stiffness: 150, damping: 20 });
+    // Magnetic Icon Movement (moves MORE than the card tilt for parallax) - adaptive
+    const iconX = useSpring(
+        useTransform(x, [-0.5, 0.5], config.enableMagneticIcon ? [-30, 30] : [0, 0]),
+        { stiffness: 150, damping: 20 }
+    );
+    const iconY = useSpring(
+        useTransform(y, [-0.5, 0.5], config.enableMagneticIcon ? [-30, 30] : [0, 0]),
+        { stiffness: 150, damping: 20 }
+    );
 
-    const generateRandomText = (length) => {
+    const generateRandomText = useCallback((length) => {
         let result = '';
         const charsLength = CHARS.length;
 
@@ -61,14 +113,14 @@ const FuturisticResume = ({ data }) => {
             }
         }
         return result.substring(0, length);
-    };
+    }, []);
 
     useEffect(() => {
         setText(generateRandomText(3000));
-    }, []);
+    }, [generateRandomText]);
 
     const handleMouseMove = (e) => {
-        if (!containerRef.current || isTouch) return;
+        if (!containerRef.current || isTouch || !config.enable3DTilt) return;
         const rect = containerRef.current.getBoundingClientRect();
 
         const mouseX = e.clientX - rect.left;
@@ -85,8 +137,10 @@ const FuturisticResume = ({ data }) => {
         y.set(normalizedY);
 
         setIsHovering(true);
-        // Regenerate text on move for "glitch" feel
-        setText(generateRandomText(3000));
+        // Regenerate text on move for "glitch" feel - only on high-end
+        if (config.enableTextRegeneration) {
+            setText(generateRandomText(3000));
+        }
     };
 
     const handleMouseLeave = () => {
@@ -95,7 +149,9 @@ const FuturisticResume = ({ data }) => {
         x.set(0);
         y.set(0);
         // Reset text to standard state
-        setText(generateRandomText(3000));
+        if (config.enableTextRegeneration) {
+            setText(generateRandomText(3000));
+        }
     };
 
     // --- Touch / Mobile Logic ---
@@ -111,14 +167,24 @@ const FuturisticResume = ({ data }) => {
         return () => window.removeEventListener('resize', checkTouch);
     }, []);
 
-    // Auto-animation for touch devices
+    // Auto-animation for touch devices - adaptive
     useEffect(() => {
-        if (!isTouch) return;
+        if (!isTouch || !config.enableMobileAutoAnimation) return;
 
         setIsHovering(true); // Always active on mobile
 
         const startTime = Date.now();
-        const animate = () => {
+        let lastFrameTime = 0;
+        const frameInterval = config.mobileAnimationFps > 0 ? 1000 / config.mobileAnimationFps : 0;
+
+        const animate = (currentTime) => {
+            // Throttle based on target FPS
+            if (frameInterval > 0 && currentTime - lastFrameTime < frameInterval) {
+                requestAnimationFrame(animate);
+                return;
+            }
+            lastFrameTime = currentTime;
+
             const elapsed = Date.now() - startTime;
 
             // Gentle 3D Float (Sine wave)
@@ -143,7 +209,7 @@ const FuturisticResume = ({ data }) => {
 
         const animationId = requestAnimationFrame(animate);
         return () => cancelAnimationFrame(animationId);
-    }, [isTouch, x, y]);
+    }, [isTouch, x, y, config.enableMobileAutoAnimation, config.mobileAnimationFps]);
     // -------------------------
     // -------------------------
 
@@ -223,14 +289,14 @@ const FuturisticResume = ({ data }) => {
                     <motion.div
                         ref={containerRef}
                         style={{
-                            rotateX,
-                            rotateY,
-                            transformStyle: "preserve-3d",
+                            rotateX: config.enable3DTilt ? rotateX : 0,
+                            rotateY: config.enable3DTilt ? rotateY : 0,
+                            transformStyle: config.enable3DTilt ? "preserve-3d" : "flat",
                         }}
                         className="relative w-[300px] h-[300px] sm:w-[400px] sm:h-[400px] md:w-[450px] md:h-[450px] flex items-center justify-center cursor-pointer"
                         onMouseMove={handleMouseMove}
                         onMouseLeave={handleMouseLeave}
-                        whileTap={{ scale: 0.95 }}
+                        whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
                     >
                         {/* 1. Glassmorphism Card Frame */}
                         <div
@@ -250,8 +316,8 @@ const FuturisticResume = ({ data }) => {
                                 }}
                             />
 
-                            {/* Active Scanline Effect */}
-                            {isHovering && (
+                            {/* Active Scanline Effect - adaptive */}
+                            {config.enableScanline && isHovering && (
                                 <motion.div
                                     className="absolute inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-50 z-20"
                                     animate={{ top: ["0%", "100%"] }}
@@ -308,11 +374,11 @@ const FuturisticResume = ({ data }) => {
                         <motion.div
                             className="relative z-20 w-24 h-24 sm:w-32 sm:h-32 rounded-3xl flex items-center justify-center backdrop-blur-xl border pointer-events-none"
                             style={{
-                                x: iconX,
-                                y: iconY,
+                                x: config.enableMagneticIcon ? iconX : 0,
+                                y: config.enableMagneticIcon ? iconY : 0,
                                 backgroundColor: 'var(--bg-elevated)',
                                 borderColor: isHovering ? 'var(--accent-cyan)' : 'var(--border-secondary)',
-                                transform: "translateZ(80px)", // More depth
+                                transform: config.enable3DTilt ? "translateZ(80px)" : "none", // More depth
                                 boxShadow: isHovering ? '0 0 40px var(--shadow-glow)' : '0 0 20px rgba(0,0,0,0.5)'
                             }}
                         >
@@ -334,3 +400,4 @@ const FuturisticResume = ({ data }) => {
 };
 
 export default FuturisticResume;
+
