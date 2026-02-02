@@ -56,7 +56,15 @@ const ConfigSchema = new mongoose.Schema({
     },
 
     // Secure Data
-    encryptedGithubToken: { type: String, select: false }
+    encryptedGithubToken: { type: String, select: false },
+    encryptedGeminiApiKey: { type: String, select: false },
+
+    // AI Configuration
+    ai: {
+        enabled: { type: Boolean, default: false },
+        model: { type: String, default: 'gemini-1.5-flash' },
+        systemInstruction: { type: String, default: 'You are a helpful assistant for the portfolio admin.' }
+    }
 }, { strict: false }); // Allow other fields to be added later if needed without strict validation issues initially
 
 export default mongoose.models.Config || mongoose.model('Config', ConfigSchema);
