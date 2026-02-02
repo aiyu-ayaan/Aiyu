@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Upload, X, Trash2, Image as ImageIcon, Loader2, RefreshCw, CheckSquare, Square, Check } from 'lucide-react';
+import { Upload, X, Trash2, Image as ImageIcon, Loader2, RefreshCw, CheckSquare, Square, Check, Sparkles } from 'lucide-react';
 import Image from 'next/image';
 import Toast from './Toast';
 
@@ -19,6 +19,9 @@ export default function GalleryManager() {
     // Multi-select state
     const [selectedImages, setSelectedImages] = useState(new Set());
     const [deleting, setDeleting] = useState(false);
+
+    // AI Generation State
+    const [generating, setGenerating] = useState(new Set()); // Set of file IDs currently generating
 
     const showNotification = (success, message) => {
         setNotification({ success, message });
@@ -102,6 +105,41 @@ export default function GalleryManager() {
 
     const clearFiles = () => {
         setFiles([]);
+    };
+
+    // --- AI Generation Logic ---
+    const generateCaption = async (fileId, file) => {
+        try {
+            setGenerating(prev => new Set(prev).add(fileId));
+
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('prompt', "Generate a creative, short caption (5-10 words) for this image.");
+
+            const res = await fetch('/api/admin/ai/generate', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await res.json();
+
+            if (data.success) {
+                updateFileDescription(fileId, data.data);
+                showNotification(true, 'Caption generated successfully');
+            } else {
+                showNotification(false, data.error || 'Failed to generate caption');
+            }
+
+        } catch (error) {
+            console.error('AI Generation failed:', error);
+            showNotification(false, 'AI Generation failed');
+        } finally {
+            setGenerating(prev => {
+                const next = new Set(prev);
+                next.delete(fileId);
+                return next;
+            });
+        }
     };
 
     const uploadSingleFile = async (fileObj) => {
@@ -480,13 +518,29 @@ export default function GalleryManager() {
                                                 <span className="text-white text-xs font-mono truncate max-w-[200px]">{fileObj.file.name}</span>
                                                 <span className="text-slate-500 text-[10px] uppercase font-mono">{(fileObj.file.size / 1024 / 1024).toFixed(2)} MB</span>
                                             </div>
-                                            <textarea
-                                                value={fileObj.description || ''}
-                                                onChange={(e) => updateFileDescription(fileObj.id, e.target.value)}
-                                                className="w-full bg-slate-900 border border-white/10 rounded-md p-2 text-slate-200 text-xs focus:border-pink-500/50 outline-none transition-all placeholder:text-slate-700 font-mono resize-none"
-                                                placeholder="// Enter description (optional)..."
-                                                rows={2}
-                                            />
+
+                                            <div className="relative">
+                                                <textarea
+                                                    value={fileObj.description || ''}
+                                                    onChange={(e) => updateFileDescription(fileObj.id, e.target.value)}
+                                                    className="w-full bg-slate-900 border border-white/10 rounded-md p-2 pr-10 text-slate-200 text-xs focus:border-pink-500/50 outline-none transition-all placeholder:text-slate-700 font-mono resize-none"
+                                                    placeholder="// Enter description (optional)..."
+                                                    rows={2}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => generateCaption(fileObj.id, fileObj.file)}
+                                                    disabled={generating.has(fileObj.id)}
+                                                    className="absolute bottom-2 right-2 p-1.5 rounded-lg bg-pink-500/10 text-pink-400 hover:bg-pink-500 hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed group/ai"
+                                                    title="Generate Caption with AI"
+                                                >
+                                                    {generating.has(fileObj.id) ? (
+                                                        <Loader2 size={12} className="animate-spin" />
+                                                    ) : (
+                                                        <Sparkles size={12} className="transform group-hover/ai:scale-110 transition-transform" />
+                                                    )}
+                                                </button>
+                                            </div>
                                         </div>
 
                                         {/* Remove Action */}
