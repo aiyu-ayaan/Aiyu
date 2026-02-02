@@ -11,7 +11,8 @@ const SyntaxHighlighter = dynamic(() => import('react-syntax-highlighter').then(
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { Loader2, Save, ArrowLeft, Image as ImageIcon, Eye, Edit2, Upload, FileText, Calendar, Tag, X } from 'lucide-react';
+import { Loader2, Save, ArrowLeft, Image as ImageIcon, Eye, Edit2, Upload, FileText, Calendar, Tag, X, Sparkles, Wand2, Check, CheckCircle, XCircle } from 'lucide-react';
+import Toast from '@/app/components/admin/Toast';
 
 export default function EditBlogPage() {
     const router = useRouter();
@@ -32,6 +33,111 @@ export default function EditBlogPage() {
     const [uploading, setUploading] = useState(false);
     const [dragActive, setDragActive] = useState(false);
 
+    // AI States
+    const [aiGenerating, setAiGenerating] = useState(false);
+    const [aiAction, setAiAction] = useState(null); // 'generate' or 'proofread'
+    const [aiTempResult, setAiTempResult] = useState('');
+    const [showAiResult, setShowAiResult] = useState(false);
+    const [notification, setNotification] = useState(null);
+
+    const showNotification = (success, message) => {
+        setNotification({ success, message });
+        setTimeout(() => setNotification(null), 3000);
+    };
+
+    const handleAiAction = async (mode) => {
+        if (aiGenerating) return;
+
+        let prompt = '';
+        if (mode === 'generate') {
+            prompt = formData.title;
+            if (!prompt) {
+                showNotification(false, 'Please enter a title first.');
+                return;
+            }
+        } else if (mode === 'proofread') {
+            prompt = formData.content;
+            if (!prompt) {
+                showNotification(false, 'No content to proofread.');
+                return;
+            }
+        } else if (mode === 'continue') {
+            prompt = formData.content;
+            if (!prompt) {
+                showNotification(false, 'No content to continue from.');
+                return;
+            }
+        } else if (mode === 'suggest_tags') {
+            prompt = formData.content || formData.title;
+            if (!prompt) {
+                showNotification(false, 'Please enter a title or content first.');
+                return;
+            }
+        } else if (mode === 'suggest_title') {
+            prompt = formData.content;
+            if (!prompt) {
+                showNotification(false, 'Please enter some content first.');
+                return;
+            }
+        }
+
+        setAiGenerating(true);
+        setAiAction(mode);
+
+        try {
+            const res = await fetch('/api/admin/ai/text', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    mode: mode === 'generate' ? 'generate_blog' : mode === 'proofread' ? 'proofread' : mode === 'continue' ? 'continue_blog' : mode === 'suggest_tags' ? 'suggest_tags' : 'suggest_title',
+                    prompt: prompt,
+                    context: {
+                        title: formData.title,
+                        tags: formData.tags
+                    }
+                })
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                if (mode === 'suggest_tags' || mode === 'suggest_title') {
+                    // Immediate apply for tags/title as they are small
+                    setFormData(prev => ({ ...prev, [mode === 'suggest_tags' ? 'tags' : 'title']: data.data }));
+                    showNotification(true, mode === 'suggest_tags' ? 'Tags updated!' : 'Title suggested!');
+                } else {
+                    setAiTempResult(data.data);
+                    setShowAiResult(true);
+                    showNotification(true, 'AI generated a suggestion!');
+                }
+            } else {
+                const errMsg = typeof data.error === 'object' ? (data.error.message || JSON.stringify(data.error)) : (data.error || 'AI Action failed');
+                showNotification(false, errMsg);
+            }
+        } catch (error) {
+            console.error('AI error:', error);
+            showNotification(false, 'AI request failed');
+        } finally {
+            setAiGenerating(false);
+        }
+    };
+
+    const applyAiResult = () => {
+        if (aiAction === 'continue') {
+            setFormData(prev => ({ ...prev, content: prev.content + '\n\n' + aiTempResult }));
+        } else {
+            setFormData(prev => ({ ...prev, content: aiTempResult }));
+        }
+        setShowAiResult(false);
+        setAiTempResult('');
+        setAiAction(null);
+    };
+
+    const discardAiResult = () => {
+        setShowAiResult(false);
+        setAiTempResult('');
+        setAiAction(null);
+    };
+
     useEffect(() => {
         const fetchBlog = async () => {
             try {
@@ -50,11 +156,12 @@ export default function EditBlogPage() {
                         date: `${year}-${month}-${day}`,
                     });
                 } else {
-                    alert('Blog not found');
-                    router.push('/admin/blogs');
+                    showNotification(false, 'Blog not found');
+                    setTimeout(() => router.push('/admin/blogs'), 1500);
                 }
             } catch (error) {
                 console.error('Failed to fetch blog:', error);
+                showNotification(false, 'Failed to fetch blog');
             } finally {
                 setLoading(false);
             }
@@ -93,12 +200,14 @@ export default function EditBlogPage() {
             });
 
             if (res.ok) {
-                router.push('/admin/blogs');
+                showNotification(true, 'Blog updated successfully!');
+                setTimeout(() => router.push('/admin/blogs'), 1500);
             } else {
-                alert('Failed to update blog');
+                showNotification(false, 'Failed to update blog');
             }
         } catch (error) {
             console.error('Error updating blog:', error);
+            showNotification(false, 'Error updating blog');
         } finally {
             setSubmitting(false);
         }
@@ -156,13 +265,17 @@ export default function EditBlogPage() {
 
             const data = await res.json();
 
-            if (data.success) {
+            if (res.ok && data.success) {
                 setFormData((prev) => ({ ...prev, image: data.url }));
+                showNotification(true, 'Broadcast image uploaded!');
+                setUploadFile(null);
+                setUploadPreview(null);
             } else {
-                alert('Upload failed: ' + (data.error || 'Unknown error'));
+                showNotification(false, data.error || 'Upload failed');
             }
         } catch (error) {
-            alert('Upload failed: ' + error.message);
+            console.error('Upload error:', error);
+            showNotification(false, 'Upload error');
         } finally {
             setUploading(false);
         }
@@ -228,7 +341,34 @@ export default function EditBlogPage() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
                         <div>
-                            <label className="block text-xs font-mono uppercase tracking-wider text-slate-500 mb-2">Transmission Title</label>
+                            <div className="flex justify-between items-center mb-2">
+                                <label className="block text-xs font-mono uppercase tracking-wider text-slate-500">Transmission Title</label>
+                                <div className="flex gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => handleAiAction('suggest_title')}
+                                        disabled={aiGenerating || !formData.content}
+                                        className="flex items-center gap-1.5 px-3 py-1 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 rounded-lg border border-purple-500/20 transition-all text-[10px] font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed group/ai"
+                                        title="Suggest title from content"
+                                    >
+                                        <Wand2 className="w-3 h-3" />
+                                        AI Title
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleAiAction('generate')}
+                                        disabled={aiGenerating || !formData.title}
+                                        className="flex items-center gap-1.5 px-3 py-1 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 rounded-lg border border-cyan-500/20 transition-all text-[10px] font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed group/ai"
+                                    >
+                                        {aiGenerating && aiAction === 'generate' ? (
+                                            <Loader2 className="w-3 h-3 animate-spin" />
+                                        ) : (
+                                            <Sparkles className="w-3 h-3 group-hover/ai:rotate-12 transition-transform" />
+                                        )}
+                                        {aiGenerating && aiAction === 'generate' ? 'Generating...' : 'AI Generate'}
+                                    </button>
+                                </div>
+                            </div>
                             <div className="relative group/input">
                                 <FileText className="absolute left-4 top-3.5 text-slate-500 group-focus-within/input:text-cyan-400 transition-colors" size={18} />
                                 <input
@@ -270,7 +410,22 @@ export default function EditBlogPage() {
                     </div>
 
                     <div className="mt-6 relative z-10">
-                        <label className="block text-xs font-mono uppercase tracking-wider text-slate-500 mb-2">Topic Vectors (Comma Separated)</label>
+                        <div className="flex justify-between items-center mb-2">
+                            <label className="block text-xs font-mono uppercase tracking-wider text-slate-500">Topic Vectors (Comma Separated)</label>
+                            <button
+                                type="button"
+                                onClick={() => handleAiAction('suggest_tags')}
+                                disabled={aiGenerating || (!formData.content && !formData.title)}
+                                className="flex items-center gap-1.5 px-3 py-1 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 rounded-lg border border-cyan-500/20 transition-all text-[10px] font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed group/ai"
+                            >
+                                {aiGenerating && aiAction === 'suggest_tags' ? (
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : (
+                                    <Tag className="w-3 h-3 group-hover/ai:scale-110 transition-transform" />
+                                )}
+                                {aiGenerating && aiAction === 'suggest_tags' ? 'Analyzing...' : 'Suggest Tags'}
+                            </button>
+                        </div>
                         <div className="relative group/input">
                             <Tag className="absolute left-4 top-3.5 text-slate-500 group-focus-within/input:text-cyan-400 transition-colors" size={18} />
                             <input
@@ -415,12 +570,83 @@ export default function EditBlogPage() {
 
                 {/* Content Editor */}
                 <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 relative overflow-hidden group min-h-[600px] flex flex-col">
-                    <h2 className="text-sm font-mono text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-4">
-                        Data Payload (Markdown)
-                        <div className="h-px bg-white/5 flex-grow" />
+                    <h2 className="text-sm font-mono text-slate-500 uppercase tracking-widest mb-4 flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-4 flex-grow text-[10px] md:text-sm">
+                            Data Payload (Markdown)
+                            <div className="h-px bg-white/5 flex-grow" />
+                        </div>
+                        <div className="flex gap-2 shrink-0">
+                            <button
+                                type="button"
+                                onClick={() => handleAiAction('proofread')}
+                                disabled={aiGenerating || !formData.content}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 rounded-lg border border-purple-500/20 transition-all text-[10px] font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed group/ai"
+                            >
+                                {aiGenerating && aiAction === 'proofread' ? (
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : (
+                                    <Wand2 className="w-3 h-3 group-hover/ai:translate-x-0.5 transition-transform" />
+                                )}
+                                {aiGenerating && aiAction === 'proofread' ? 'Refining...' : 'Refine & Proofread'}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => handleAiAction('continue')}
+                                disabled={aiGenerating || !formData.content}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 rounded-lg border border-cyan-500/20 transition-all text-[10px] font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed group/ai"
+                            >
+                                {aiGenerating && aiAction === 'continue' ? (
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : (
+                                    <Sparkles className="w-3 h-3 group-hover/ai:rotate-12 transition-transform" />
+                                )}
+                                {aiGenerating && aiAction === 'continue' ? 'Writing...' : 'Continue with AI'}
+                            </button>
+                        </div>
                     </h2>
 
-                    <div className="flex-1 bg-slate-950/50 rounded-xl border border-white/10 overflow-hidden relative">
+                    <div className="flex-1 min-h-[500px] bg-slate-950/50 rounded-xl border border-white/10 overflow-hidden relative">
+                        {showAiResult ? (
+                            <div className="absolute inset-0 z-20 bg-slate-950 flex flex-col">
+                                <div className={`flex items-center justify-between px-6 py-3 border-b border-white/10 ${aiAction === 'proofread' ? 'bg-purple-500/10' : 'bg-cyan-500/10'}`}>
+                                    <div className="flex items-center gap-3">
+                                        <div className={`p-1.5 rounded-lg ${aiAction === 'proofread' ? 'bg-purple-500/20 text-purple-400' : 'bg-cyan-500/20 text-cyan-400'}`}>
+                                            {aiAction === 'proofread' ? <Wand2 size={16} /> : <Sparkles size={16} />}
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">AI Suggestion</p>
+                                            <p className="text-xs font-mono text-slate-500">{aiAction === 'continue' ? 'CONTINUE_MODE: APPENDING_CONTENT' : 'REPLACE_MODE: UPDATING_PAYLOAD'}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-3">
+                                        <button
+                                            type="button"
+                                            onClick={discardAiResult}
+                                            className="px-4 py-1.5 rounded-lg border border-white/10 hover:bg-white/5 text-slate-400 text-xs font-bold uppercase tracking-wider transition-all"
+                                        >
+                                            Discard
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={applyAiResult}
+                                            className={`px-6 py-1.5 rounded-lg font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-2 ${aiAction === 'proofread' ? 'bg-purple-500 text-white shadow-[0_0_15px_rgba(168,85,247,0.4)]' : 'bg-cyan-500 text-black shadow-[0_0_15px_rgba(34,211,238,0.4)]'}`}
+                                        >
+                                            <Check size={14} />
+                                            Apply Changes
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="flex-1 overflow-y-auto p-6 font-mono text-sm leading-relaxed text-slate-300">
+                                    <div className={`mb-4 inline-block px-2 py-1 rounded text-[10px] font-bold uppercase ${aiAction === 'proofread' ? 'bg-purple-500/20 text-purple-400' : 'bg-cyan-500/20 text-cyan-400'}`}>
+                                        Proposed Content
+                                    </div>
+                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                        {aiTempResult}
+                                    </ReactMarkdown>
+                                </div>
+                            </div>
+                        ) : null}
+
                         {previewMode ? (
                             <div className="absolute inset-0 overflow-y-auto p-8 prose prose-invert max-w-none prose-headings:font-bold prose-headings:tracking-tight prose-a:text-cyan-400 prose-img:rounded-xl prose-pre:bg-black/50 prose-pre:border prose-pre:border-white/10">
                                 <ReactMarkdown
@@ -454,7 +680,7 @@ export default function EditBlogPage() {
                                 value={formData.content}
                                 onChange={handleChange}
                                 required
-                                className="w-full h-full p-6 bg-transparent resize-none focus:outline-none font-mono text-sm leading-relaxed text-slate-300 placeholder:text-slate-600"
+                                className="absolute inset-0 w-full h-full p-6 bg-transparent resize-none focus:outline-none font-mono text-sm leading-relaxed text-slate-300 placeholder:text-slate-600"
                                 placeholder="# Begin transmission..."
                             />
                         )}
@@ -494,6 +720,8 @@ export default function EditBlogPage() {
                     </div>
                 </div>
             </form>
+
+            <Toast notification={notification} onClose={() => setNotification(null)} />
         </div>
     );
 }
