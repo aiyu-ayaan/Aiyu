@@ -38,10 +38,27 @@ export default function NewBlogPage() {
     const [aiTempResult, setAiTempResult] = useState('');
     const [showAiResult, setShowAiResult] = useState(false);
     const [notification, setNotification] = useState(null);
+    const [aiEnabled, setAiEnabled] = useState(false);
 
     const showNotification = (success, message) => {
         setNotification({ success, message });
         setTimeout(() => setNotification(null), 3000);
+    };
+
+    useEffect(() => {
+        checkAiConfig();
+    }, []);
+
+    const checkAiConfig = async () => {
+        try {
+            const res = await fetch('/api/admin/ai/config');
+            const data = await res.json();
+            if (data.success && data.data) {
+                setAiEnabled(data.data.enabled);
+            }
+        } catch (error) {
+            console.error('Failed to fetch AI config:', error);
+        }
     };
 
     const handleAiAction = async (mode) => {
@@ -283,31 +300,33 @@ export default function NewBlogPage() {
                     <div>
                         <div className="flex justify-between items-center mb-1">
                             <label className="block text-sm font-medium text-slate-300">Title</label>
-                            <div className="flex gap-2">
-                                <button
-                                    type="button"
-                                    onClick={() => handleAiAction('suggest_title')}
-                                    disabled={aiGenerating || !formData.content}
-                                    className="flex items-center gap-1.5 px-3 py-1 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 rounded-lg border border-purple-500/20 transition-all text-[10px] font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed group/ai"
-                                    title="Suggest title from content"
-                                >
-                                    <Wand2 className="w-3 h-3" />
-                                    AI Title
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => handleAiAction('generate')}
-                                    disabled={aiGenerating || !formData.title}
-                                    className="flex items-center gap-1.5 px-3 py-1 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 rounded-lg border border-cyan-500/20 transition-all text-[10px] font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed group/ai"
-                                >
-                                    {aiGenerating && aiAction === 'generate' ? (
-                                        <Loader2 className="w-3 h-3 animate-spin" />
-                                    ) : (
-                                        <Sparkles className="w-3 h-3 group-hover/ai:rotate-12 transition-transform" />
-                                    )}
-                                    {aiGenerating && aiAction === 'generate' ? 'Generating...' : 'AI Generate'}
-                                </button>
-                            </div>
+                            {aiEnabled && (
+                                <div className="flex gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => handleAiAction('suggest_title')}
+                                        disabled={aiGenerating || !formData.content}
+                                        className="flex items-center gap-1.5 px-3 py-1 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 rounded-lg border border-purple-500/20 transition-all text-[10px] font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed group/ai"
+                                        title="Suggest title from content"
+                                    >
+                                        <Wand2 className="w-3 h-3" />
+                                        AI Title
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleAiAction('generate')}
+                                        disabled={aiGenerating || !formData.title}
+                                        className="flex items-center gap-1.5 px-3 py-1 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 rounded-lg border border-cyan-500/20 transition-all text-[10px] font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed group/ai"
+                                    >
+                                        {aiGenerating && aiAction === 'generate' ? (
+                                            <Loader2 className="w-3 h-3 animate-spin" />
+                                        ) : (
+                                            <Sparkles className="w-3 h-3 group-hover/ai:rotate-12 transition-transform" />
+                                        )}
+                                        {aiGenerating && aiAction === 'generate' ? 'Generating...' : 'AI Generate'}
+                                    </button>
+                                </div>
+                            )}
                         </div>
                         <input
                             type="text"
@@ -345,19 +364,21 @@ export default function NewBlogPage() {
                 <div>
                     <div className="flex justify-between items-center mb-1">
                         <label className="block text-sm font-medium text-slate-300">Tags (comma separated)</label>
-                        <button
-                            type="button"
-                            onClick={() => handleAiAction('suggest_tags')}
-                            disabled={aiGenerating || (!formData.content && !formData.title)}
-                            className="flex items-center gap-1.5 px-3 py-1 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 rounded-lg border border-cyan-500/20 transition-all text-[10px] font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed group/ai"
-                        >
-                            {aiGenerating && aiAction === 'suggest_tags' ? (
-                                <Loader2 className="w-3 h-3 animate-spin" />
-                            ) : (
-                                <Tag className="w-3 h-3 group-hover/ai:scale-110 transition-transform" />
-                            )}
-                            {aiGenerating && aiAction === 'suggest_tags' ? 'Analyzing...' : 'AI Suggest Tags'}
-                        </button>
+                        {aiEnabled && (
+                            <button
+                                type="button"
+                                onClick={() => handleAiAction('suggest_tags')}
+                                disabled={aiGenerating || (!formData.content && !formData.title)}
+                                className="flex items-center gap-1.5 px-3 py-1 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 rounded-lg border border-cyan-500/20 transition-all text-[10px] font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed group/ai"
+                            >
+                                {aiGenerating && aiAction === 'suggest_tags' ? (
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : (
+                                    <Tag className="w-3 h-3 group-hover/ai:scale-110 transition-transform" />
+                                )}
+                                {aiGenerating && aiAction === 'suggest_tags' ? 'Analyzing...' : 'AI Suggest Tags'}
+                            </button>
+                        )}
                     </div>
                     <input
                         type="text"
@@ -531,34 +552,36 @@ export default function NewBlogPage() {
                 <div>
                     <div className="flex justify-between items-center mb-2">
                         <label className="block text-sm font-medium text-slate-300">Content (Markdown)</label>
-                        <div className="flex gap-2">
-                            <button
-                                type="button"
-                                onClick={() => handleAiAction('proofread')}
-                                disabled={aiGenerating || !formData.content}
-                                className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 rounded-lg border border-purple-500/20 transition-all text-[10px] font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed group/ai"
-                            >
-                                {aiGenerating && aiAction === 'proofread' ? (
-                                    <Loader2 className="w-3 h-3 animate-spin" />
-                                ) : (
-                                    <Wand2 className="w-3 h-3 group-hover/ai:translate-x-0.5 transition-transform" />
-                                )}
-                                {aiGenerating && aiAction === 'proofread' ? 'Refining...' : 'Refine & Proofread'}
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => handleAiAction('continue')}
-                                disabled={aiGenerating || !formData.content}
-                                className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 rounded-lg border border-cyan-500/20 transition-all text-[10px] font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed group/ai"
-                            >
-                                {aiGenerating && aiAction === 'continue' ? (
-                                    <Loader2 className="w-3 h-3 animate-spin" />
-                                ) : (
-                                    <Sparkles className="w-3 h-3 group-hover/ai:rotate-12 transition-transform" />
-                                )}
-                                {aiGenerating && aiAction === 'continue' ? 'Writing...' : 'Continue with AI'}
-                            </button>
-                        </div>
+                        {aiEnabled && (
+                            <div className="flex gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => handleAiAction('proofread')}
+                                    disabled={aiGenerating || !formData.content}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 rounded-lg border border-purple-500/20 transition-all text-[10px] font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed group/ai"
+                                >
+                                    {aiGenerating && aiAction === 'proofread' ? (
+                                        <Loader2 className="w-3 h-3 animate-spin" />
+                                    ) : (
+                                        <Wand2 className="w-3 h-3 group-hover/ai:translate-x-0.5 transition-transform" />
+                                    )}
+                                    {aiGenerating && aiAction === 'proofread' ? 'Refining...' : 'Refine & Proofread'}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleAiAction('continue')}
+                                    disabled={aiGenerating || !formData.content}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 rounded-lg border border-cyan-500/20 transition-all text-[10px] font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed group/ai"
+                                >
+                                    {aiGenerating && aiAction === 'continue' ? (
+                                        <Loader2 className="w-3 h-3 animate-spin" />
+                                    ) : (
+                                        <Sparkles className="w-3 h-3 group-hover/ai:rotate-12 transition-transform" />
+                                    )}
+                                    {aiGenerating && aiAction === 'continue' ? 'Writing...' : 'Continue with AI'}
+                                </button>
+                            </div>
+                        )}
                     </div>
 
                     <div className="relative min-h-[500px]">

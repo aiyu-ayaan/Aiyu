@@ -19,6 +19,7 @@ export default function GalleryManager() {
     // Multi-select state
     const [selectedImages, setSelectedImages] = useState(new Set());
     const [deleting, setDeleting] = useState(false);
+    const [aiEnabled, setAiEnabled] = useState(false);
 
     // AI Generation State
     const [generating, setGenerating] = useState(new Set()); // Set of file IDs currently generating
@@ -30,7 +31,20 @@ export default function GalleryManager() {
 
     useEffect(() => {
         fetchImages();
+        checkAiConfig();
     }, []);
+
+    const checkAiConfig = async () => {
+        try {
+            const res = await fetch('/api/admin/ai/config');
+            const data = await res.json();
+            if (data.success && data.data) {
+                setAiEnabled(data.data.enabled);
+            }
+        } catch (error) {
+            console.error('Failed to fetch AI config:', error);
+        }
+    };
 
     const fetchImages = async () => {
         try {
@@ -523,23 +537,25 @@ export default function GalleryManager() {
                                                 <textarea
                                                     value={fileObj.description || ''}
                                                     onChange={(e) => updateFileDescription(fileObj.id, e.target.value)}
-                                                    className="w-full bg-slate-900 border border-white/10 rounded-md p-2 pr-10 text-slate-200 text-xs focus:border-pink-500/50 outline-none transition-all placeholder:text-slate-700 font-mono resize-none"
+                                                    className={`w-full bg-slate-900 border border-white/10 rounded-md p-2 ${aiEnabled ? 'pr-10' : ''} text-slate-200 text-xs focus:border-pink-500/50 outline-none transition-all placeholder:text-slate-700 font-mono resize-none`}
                                                     placeholder="// Enter description (optional)..."
                                                     rows={2}
                                                 />
-                                                <button
-                                                    type="button"
-                                                    onClick={() => generateCaption(fileObj.id, fileObj.file)}
-                                                    disabled={generating.has(fileObj.id)}
-                                                    className="absolute bottom-2 right-2 p-1.5 rounded-lg bg-pink-500/10 text-pink-400 hover:bg-pink-500 hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed group/ai"
-                                                    title="Generate Caption with AI"
-                                                >
-                                                    {generating.has(fileObj.id) ? (
-                                                        <Loader2 size={12} className="animate-spin" />
-                                                    ) : (
-                                                        <Sparkles size={12} className="transform group-hover/ai:scale-110 transition-transform" />
-                                                    )}
-                                                </button>
+                                                {aiEnabled && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => generateCaption(fileObj.id, fileObj.file)}
+                                                        disabled={generating.has(fileObj.id)}
+                                                        className="absolute bottom-2 right-2 p-1.5 rounded-lg bg-pink-500/10 text-pink-400 hover:bg-pink-500 hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed group/ai"
+                                                        title="Generate Caption with AI"
+                                                    >
+                                                        {generating.has(fileObj.id) ? (
+                                                            <Loader2 size={12} className="animate-spin" />
+                                                        ) : (
+                                                            <Sparkles size={12} className="transform group-hover/ai:scale-110 transition-transform" />
+                                                        )}
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
 
