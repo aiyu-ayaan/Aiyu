@@ -28,9 +28,9 @@ async function uploadHandler(request) {
     const clientIP = getClientIP(request);
 
     try {
-        // Rate limiting: 10 uploads per minute per IP
+        // Rate limiting: 60 uploads per minute per IP
         const userIdentifier = request.user?.username || clientIP;
-        if (!checkRateLimit(userIdentifier, 10, 60000)) {
+        if (!checkRateLimit(userIdentifier, 60, 60000)) {
             console.warn(`[SECURITY] Rate limit exceeded for ${userIdentifier} from IP ${clientIP}`);
             return NextResponse.json({
                 success: false,
