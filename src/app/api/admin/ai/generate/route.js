@@ -4,6 +4,8 @@ import dbConnect from '@/lib/db';
 import Config from '@/models/Config';
 import { decrypt } from '@/lib/encryption';
 import { withAuth } from '@/middleware/auth';
+import convert from 'heic-convert';
+import sharp from 'sharp';
 
 async function generateCaption(request) {
     try {
@@ -35,9 +37,41 @@ async function generateCaption(request) {
         }
 
         // 3. Prepare Image
-        const buffer = await file.arrayBuffer();
-        const base64Image = Buffer.from(buffer).toString('base64');
-        const mimeType = file.type;
+        let buffer = Buffer.from(await file.arrayBuffer());
+        let mimeType = file.type;
+
+        // Handle HEIC conversion
+        const isHeic = mimeType === 'image/heic' || file.name.toLowerCase().endsWith('.heic');
+        if (isHeic) {
+            console.log(`[AI] Converting HEIC image: ${file.name}`);
+            try {
+                const outputBuffer = await convert({
+                    buffer: buffer,
+                    format: 'JPEG',
+                    quality: 0.8
+                });
+                buffer = Buffer.from(outputBuffer);
+                mimeType = 'image/jpeg';
+            } catch (convError) {
+                console.error('[AI] HEIC conversion failed:', convError);
+                // Continue with original buffer if conversion fails, though Ai might fail too
+            }
+        }
+
+        // 3.5 Optimize Image with Sharp (Resize to 1024px max for speed)
+        try {
+            console.log('[AI] Optimizing image for transmission...');
+            buffer = await sharp(buffer)
+                .resize(1024, 1024, { fit: 'inside', withoutEnlargement: true })
+                .jpeg({ quality: 80 })
+                .toBuffer();
+            mimeType = 'image/jpeg';
+        } catch (sharpError) {
+            console.error('[AI] Sharp optimization failed:', sharpError);
+            // Non-fatal, continue with what we have
+        }
+
+        const base64Image = buffer.toString('base64');
 
         // 4. Call Google GenAI API
         const ai = new GoogleGenAI({ apiKey });
