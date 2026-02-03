@@ -37,6 +37,8 @@ A modern, responsive, and **fully customizable** portfolio website built with Ne
   - Code block support with React Syntax Highlighter
   - Automated posting via API integration (Notion, external CMS)
 - **SEO Optimized**: Built-in sitemap, meta tags, Open Graph, and schema.org structured data
+- **AI Neural Core Integration**: Site-wide intelligent governance for generative features
+
 
 ### 🔧 Admin Panel (Full Content Management System)
 Access the admin panel at `/admin` to manage everything without touching code:
@@ -88,6 +90,20 @@ Access the admin panel at `/admin` to manage everything without touching code:
   - Export full database to JSON
   - Backup and restore functionality
   - Data migration tools
+
+#### 🧠 AI Neural Core (Gemini Integration)
+- **Master Governance**: Centralized toggle to enable/disable all AI-powered protocols
+- **Creative Project Synthesis**:
+  - **AI Name Generation**: Suggets catchy project designations based on technical abstracts
+  - **Description Optimization**: Refines project abstracts for maximum professional impact
+  - **Tech Stack Mapping**: Automatically suggests relevant framework/language specs
+- **System Configuration**:
+  - **Subtitle Generation**: Synthesizes intriguing subtitles for Projects, Blogs, and Gallery
+- **Generative Theme Architect**:
+  - Create complete, balanced design systems from a single creative concept
+  - Real-time generation of both Light and Dark variants
+  - Automated mapping of 64+ design tokens (backgrounds, accents, syntax highlighting)
+
 
 ### 🔒 Security Features
 - **JWT Authentication**: Secure admin panel access

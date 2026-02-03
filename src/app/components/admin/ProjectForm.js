@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, Save, Terminal, Code, Layers, Calendar, Link as LinkIcon, Image as ImageIcon, FileText, CheckCircle, Activity } from 'lucide-react';
+import { Loader2, Save, Terminal, Code, Layers, Calendar, Link as LinkIcon, Image as ImageIcon, FileText, CheckCircle, Activity, Sparkles, Wand2, Upload, X } from 'lucide-react';
 import Toast from './Toast';
 
 const ProjectForm = ({ initialData, isEdit = false }) => {
@@ -19,6 +19,9 @@ const ProjectForm = ({ initialData, isEdit = false }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [notification, setNotification] = useState(null);
+    const [aiEnabled, setAiEnabled] = useState(false);
+    const [aiGenerating, setAiGenerating] = useState(null); // 'name', 'description', 'tech'
+    const [uploadingFile, setUploadingFile] = useState(false);
 
     useEffect(() => {
         if (initialData) {
@@ -27,7 +30,108 @@ const ProjectForm = ({ initialData, isEdit = false }) => {
                 techStack: initialData.techStack.join(', '),
             });
         }
+        checkAiConfig();
     }, [initialData]);
+
+    const checkAiConfig = async () => {
+        try {
+            const res = await fetch('/api/admin/ai/config');
+            const data = await res.json();
+            if (data.success && data.data) {
+                setAiEnabled(data.data.enabled);
+            }
+        } catch (error) {
+            console.error('Failed to fetch AI config:', error);
+        }
+    };
+
+    const handleAiAction = async (mode) => {
+        if (aiGenerating) return;
+        setAiGenerating(mode);
+
+        try {
+            let apiMode = 'proofread';
+            let prompt = '';
+            let context = {};
+
+            if (mode === 'name') {
+                apiMode = 'suggest_project_name';
+                prompt = formData.description;
+                context = { techStack: formData.techStack };
+            } else if (mode === 'description') {
+                apiMode = 'refine_project_description';
+                prompt = formData.description;
+            } else if (mode === 'tech') {
+                apiMode = 'suggest_tech_stack';
+                prompt = formData.description;
+            }
+
+            const res = await fetch('/api/admin/ai/text', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    mode: apiMode,
+                    prompt,
+                    context
+                })
+            });
+
+            const data = await res.json();
+
+            if (data.success) {
+                if (mode === 'name') {
+                    // Suggest project names (pick the first one as a simple implementation or allow user pick?)
+                    // For now, let's just use the first suggested name
+                    const names = data.data.split(',').map(n => n.trim());
+                    setFormData(prev => ({ ...prev, name: names[0] }));
+                    showNotification(true, 'Creative designation synthesized!');
+                } else if (mode === 'description') {
+                    setFormData(prev => ({ ...prev, description: data.data }));
+                    showNotification(true, 'Description payload optimized!');
+                } else if (mode === 'tech') {
+                    setFormData(prev => ({ ...prev, techStack: data.data }));
+                    showNotification(true, 'Technical specs suggested!');
+                }
+            } else {
+                showNotification(false, data.error || 'AI synthesis failed');
+            }
+        } catch (error) {
+            console.error('AI Error:', error);
+            showNotification(false, 'AI uplink interrupted');
+        } finally {
+            setAiGenerating(null);
+        }
+    };
+
+    const handleFileUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        setUploadingFile(true);
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const res = await fetch('/api/upload', {
+                method: 'POST',
+                body: formData,
+            });
+
+            const data = await res.json();
+
+            if (data.success) {
+                setFormData(prev => ({ ...prev, image: data.url }));
+                showNotification(true, 'Visual Asset Synchronized!');
+            } else {
+                showNotification(false, data.error || 'Upload failed');
+            }
+        } catch (error) {
+            console.error('Upload error:', error);
+            showNotification(false, 'High-frequency uplink failure');
+        } finally {
+            setUploadingFile(false);
+        }
+    };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -103,7 +207,25 @@ const ProjectForm = ({ initialData, isEdit = false }) => {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
                             <div>
-                                <label className="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-2">Project Designation</label>
+                                <div className="flex justify-between items-center mb-2">
+                                    <label className="block text-xs font-mono uppercase tracking-wider text-slate-400">Project Designation</label>
+                                    {aiEnabled && (
+                                        <button
+                                            type="button"
+                                            onClick={() => handleAiAction('name')}
+                                            disabled={aiGenerating === 'name' || !formData.description}
+                                            className="flex items-center gap-1.5 px-3 py-1 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 rounded-lg border border-cyan-500/20 transition-all text-[10px] font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed group/ai"
+                                            title="Suggest cool project names from description"
+                                        >
+                                            {aiGenerating === 'name' ? (
+                                                <Loader2 className="w-3 h-3 animate-spin" />
+                                            ) : (
+                                                <Sparkles className="w-3 h-3 group-hover/ai:rotate-12 transition-transform" />
+                                            )}
+                                            AI Name
+                                        </button>
+                                    )}
+                                </div>
                                 <div className="relative group/input">
                                     <Terminal className="absolute left-4 top-3.5 text-slate-400 group-focus-within/input:text-cyan-400 transition-colors" size={18} />
                                     <input
@@ -135,7 +257,24 @@ const ProjectForm = ({ initialData, isEdit = false }) => {
                         </div>
 
                         <div className="mt-6 relative z-10">
-                            <label className="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-2">Description Payload</label>
+                            <div className="flex justify-between items-center mb-2">
+                                <label className="block text-xs font-mono uppercase tracking-wider text-slate-400">Description Payload</label>
+                                {aiEnabled && (
+                                    <button
+                                        type="button"
+                                        onClick={() => handleAiAction('description')}
+                                        disabled={aiGenerating === 'description' || !formData.description}
+                                        className="flex items-center gap-1.5 px-3 py-1 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 rounded-lg border border-cyan-500/20 transition-all text-[10px] font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed group/ai"
+                                    >
+                                        {aiGenerating === 'description' ? (
+                                            <Loader2 className="w-3 h-3 animate-spin" />
+                                        ) : (
+                                            <Wand2 className="w-3 h-3 group-hover/ai:translate-x-0.5 transition-transform" />
+                                        )}
+                                        Refine Description
+                                    </button>
+                                )}
+                            </div>
                             <div className="relative group/input">
                                 <FileText className="absolute left-4 top-3.5 text-slate-400 group-focus-within/input:text-cyan-400 transition-colors" size={18} />
                                 <textarea
@@ -162,7 +301,24 @@ const ProjectForm = ({ initialData, isEdit = false }) => {
 
                         <div className="space-y-6 relative z-10">
                             <div>
-                                <label className="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-2">Tech Stack (Comma Separated)</label>
+                                <div className="flex justify-between items-center mb-2">
+                                    <label className="block text-xs font-mono uppercase tracking-wider text-slate-400">Tech Stack (Comma Separated)</label>
+                                    {aiEnabled && (
+                                        <button
+                                            type="button"
+                                            onClick={() => handleAiAction('tech')}
+                                            disabled={aiGenerating === 'tech' || !formData.description}
+                                            className="flex items-center gap-1.5 px-3 py-1 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 rounded-lg border border-purple-500/20 transition-all text-[10px] font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed group/ai"
+                                        >
+                                            {aiGenerating === 'tech' ? (
+                                                <Loader2 className="w-3 h-3 animate-spin" />
+                                            ) : (
+                                                <Sparkles className="w-3 h-3 group-hover/ai:rotate-12 transition-transform" />
+                                            )}
+                                            AI Suggest
+                                        </button>
+                                    )}
+                                </div>
                                 <div className="relative group/input">
                                     <Code className="absolute left-4 top-3.5 text-slate-400 group-focus-within/input:text-purple-400 transition-colors" size={18} />
                                     <input
@@ -237,7 +393,26 @@ const ProjectForm = ({ initialData, isEdit = false }) => {
 
                     {/* Image Module */}
                     <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-6 relative overflow-hidden group">
-                        <h2 className="text-sm font-mono text-slate-400 uppercase tracking-widest mb-6">Visual Asset</h2>
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-sm font-mono text-slate-400 uppercase tracking-widest">Visual Asset</h2>
+                            <label className={`cursor-pointer group/upload transition-all ${uploadingFile ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
+                                <input
+                                    type="file"
+                                    className="hidden"
+                                    accept="image/*"
+                                    onChange={handleFileUpload}
+                                    disabled={uploadingFile}
+                                />
+                                <div className="flex items-center gap-2 px-3 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 rounded-lg border border-cyan-500/20 transition-all text-[10px] font-bold uppercase tracking-wider">
+                                    {uploadingFile ? (
+                                        <Loader2 size={12} className="animate-spin" />
+                                    ) : (
+                                        <Upload size={12} className="group-hover/upload:scale-110 transition-transform" />
+                                    )}
+                                    {uploadingFile ? 'Uploading...' : 'Upload Asset'}
+                                </div>
+                            </label>
+                        </div>
                         <div className="relative group/input mb-4">
                             <ImageIcon className="absolute left-4 top-3.5 text-slate-400 group-focus-within/input:text-white transition-colors" size={18} />
                             <input

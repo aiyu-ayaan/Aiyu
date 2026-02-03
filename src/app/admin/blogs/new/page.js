@@ -12,6 +12,9 @@ import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
+import { Loader2, Save, ArrowLeft, Image as ImageIcon, Eye, Edit2, Upload, FileText, Calendar, Tag, X, Sparkles, Wand2, Check, CheckCircle, XCircle } from 'lucide-react';
+import Toast from '@/app/components/admin/Toast';
+
 export default function NewBlogPage() {
     const router = useRouter();
     const [formData, setFormData] = useState({
@@ -28,6 +31,127 @@ export default function NewBlogPage() {
     const [uploadPreview, setUploadPreview] = useState(null);
     const [uploading, setUploading] = useState(false);
     const [dragActive, setDragActive] = useState(false);
+
+    // AI States
+    const [aiGenerating, setAiGenerating] = useState(false);
+    const [aiAction, setAiAction] = useState(null);
+    const [aiTempResult, setAiTempResult] = useState('');
+    const [showAiResult, setShowAiResult] = useState(false);
+    const [notification, setNotification] = useState(null);
+    const [aiEnabled, setAiEnabled] = useState(false);
+
+    const showNotification = (success, message) => {
+        setNotification({ success, message });
+        setTimeout(() => setNotification(null), 3000);
+    };
+
+    useEffect(() => {
+        checkAiConfig();
+    }, []);
+
+    const checkAiConfig = async () => {
+        try {
+            const res = await fetch('/api/admin/ai/config');
+            const data = await res.json();
+            if (data.success && data.data) {
+                setAiEnabled(data.data.enabled);
+            }
+        } catch (error) {
+            console.error('Failed to fetch AI config:', error);
+        }
+    };
+
+    const handleAiAction = async (mode) => {
+        if (aiGenerating) return;
+
+        let prompt = '';
+        if (mode === 'generate') {
+            prompt = formData.title;
+            if (!prompt) {
+                showNotification(false, 'Please enter a title first.');
+                return;
+            }
+        } else if (mode === 'proofread') {
+            prompt = formData.content;
+            if (!prompt) {
+                showNotification(false, 'No content to proofread.');
+                return;
+            }
+        } else if (mode === 'continue') {
+            prompt = formData.content;
+            if (!prompt) {
+                showNotification(false, 'No content to continue from.');
+                return;
+            }
+        } else if (mode === 'suggest_tags') {
+            prompt = formData.content || formData.title;
+            if (!prompt) {
+                showNotification(false, 'Please enter a title or content first.');
+                return;
+            }
+        } else if (mode === 'suggest_title') {
+            prompt = formData.content;
+            if (!prompt) {
+                showNotification(false, 'Please enter some content first.');
+                return;
+            }
+        }
+
+        setAiGenerating(true);
+        setAiAction(mode);
+
+        try {
+            const res = await fetch('/api/admin/ai/text', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    mode: mode === 'generate' ? 'generate_blog' : mode === 'proofread' ? 'proofread' : mode === 'continue' ? 'continue_blog' : mode === 'suggest_tags' ? 'suggest_tags' : 'suggest_title',
+                    prompt: prompt,
+                    context: {
+                        title: formData.title,
+                        tags: formData.tags
+                    }
+                })
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                if (mode === 'suggest_tags' || mode === 'suggest_title') {
+                    setFormData(prev => ({ ...prev, [mode === 'suggest_tags' ? 'tags' : 'title']: data.data }));
+                    showNotification(true, mode === 'suggest_tags' ? 'Tags updated!' : 'Title suggested!');
+                } else {
+                    setAiTempResult(data.data);
+                    setShowAiResult(true);
+                    showNotification(true, 'AI generated a suggestion!');
+                }
+            } else {
+                const errMsg = typeof data.error === 'object' ? (data.error.message || JSON.stringify(data.error)) : (data.error || 'AI Action failed');
+                showNotification(false, errMsg);
+            }
+        } catch (error) {
+            console.error('AI error:', error);
+            showNotification(false, 'AI request failed');
+        } finally {
+            setAiGenerating(false);
+        }
+    };
+
+    const applyAiResult = () => {
+        if (aiAction === 'continue') {
+            setFormData(prev => ({ ...prev, content: prev.content + '\n\n' + aiTempResult }));
+        } else {
+            setFormData(prev => ({ ...prev, content: aiTempResult }));
+        }
+        setShowAiResult(false);
+        setAiTempResult('');
+        setAiAction(null);
+    };
+
+    const discardAiResult = () => {
+        setShowAiResult(false);
+        setAiTempResult('');
+        setAiAction(null);
+    };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -90,12 +214,14 @@ export default function NewBlogPage() {
 
             if (data.success) {
                 setFormData((prev) => ({ ...prev, image: data.url }));
-                alert('Image uploaded successfully!');
+                showNotification(true, 'Cloudburst image uploaded!');
+                setUploadFile(null);
+                setUploadPreview(null);
             } else {
-                alert('Upload failed: ' + (data.error || 'Unknown error'));
+                showNotification(false, data.error || 'Upload failed');
             }
         } catch (error) {
-            alert('Upload failed: ' + error.message);
+            showNotification(false, 'Upload failed: ' + error.message);
         } finally {
             setUploading(false);
         }
@@ -132,12 +258,14 @@ export default function NewBlogPage() {
             });
 
             if (res.ok) {
-                router.push('/admin/blogs');
+                showNotification(true, 'Blog created successfully!');
+                setTimeout(() => router.push('/admin/blogs'), 1500);
             } else {
-                alert('Failed to create blog');
+                showNotification(false, 'Failed to create blog');
             }
         } catch (error) {
             console.error('Error creating blog:', error);
+            showNotification(false, 'Error creating blog');
         } finally {
             setSubmitting(false);
         }
@@ -147,9 +275,9 @@ export default function NewBlogPage() {
         if (formData.image) {
             const imageMarkdown = `![Image Alt Text](${formData.image})`;
             setFormData(prev => ({ ...prev, content: prev.content + '\n' + imageMarkdown }));
-            alert('Image markdown appended to content!');
+            showNotification(true, 'Markdown injected into content!');
         } else {
-            alert('No image selected/uploaded to insert.');
+            showNotification(false, 'No image available to insert.');
         }
     };
 
@@ -170,7 +298,36 @@ export default function NewBlogPage() {
                 {/* Meta Fields Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <label className="block text-sm font-medium mb-1 text-slate-300">Title</label>
+                        <div className="flex justify-between items-center mb-1">
+                            <label className="block text-sm font-medium text-slate-300">Title</label>
+                            {aiEnabled && (
+                                <div className="flex gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => handleAiAction('suggest_title')}
+                                        disabled={aiGenerating || !formData.content}
+                                        className="flex items-center gap-1.5 px-3 py-1 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 rounded-lg border border-purple-500/20 transition-all text-[10px] font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed group/ai"
+                                        title="Suggest title from content"
+                                    >
+                                        <Wand2 className="w-3 h-3" />
+                                        AI Title
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleAiAction('generate')}
+                                        disabled={aiGenerating || !formData.title}
+                                        className="flex items-center gap-1.5 px-3 py-1 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 rounded-lg border border-cyan-500/20 transition-all text-[10px] font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed group/ai"
+                                    >
+                                        {aiGenerating && aiAction === 'generate' ? (
+                                            <Loader2 className="w-3 h-3 animate-spin" />
+                                        ) : (
+                                            <Sparkles className="w-3 h-3 group-hover/ai:rotate-12 transition-transform" />
+                                        )}
+                                        {aiGenerating && aiAction === 'generate' ? 'Generating...' : 'AI Generate'}
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                         <input
                             type="text"
                             name="title"
@@ -205,7 +362,24 @@ export default function NewBlogPage() {
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium mb-1 text-slate-300">Tags (comma separated)</label>
+                    <div className="flex justify-between items-center mb-1">
+                        <label className="block text-sm font-medium text-slate-300">Tags (comma separated)</label>
+                        {aiEnabled && (
+                            <button
+                                type="button"
+                                onClick={() => handleAiAction('suggest_tags')}
+                                disabled={aiGenerating || (!formData.content && !formData.title)}
+                                className="flex items-center gap-1.5 px-3 py-1 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 rounded-lg border border-cyan-500/20 transition-all text-[10px] font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed group/ai"
+                            >
+                                {aiGenerating && aiAction === 'suggest_tags' ? (
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : (
+                                    <Tag className="w-3 h-3 group-hover/ai:scale-110 transition-transform" />
+                                )}
+                                {aiGenerating && aiAction === 'suggest_tags' ? 'Analyzing...' : 'AI Suggest Tags'}
+                            </button>
+                        )}
+                    </div>
                     <input
                         type="text"
                         name="tags"
@@ -376,46 +550,121 @@ export default function NewBlogPage() {
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium mb-1 text-slate-300">Content (Markdown)</label>
+                    <div className="flex justify-between items-center mb-2">
+                        <label className="block text-sm font-medium text-slate-300">Content (Markdown)</label>
+                        {aiEnabled && (
+                            <div className="flex gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => handleAiAction('proofread')}
+                                    disabled={aiGenerating || !formData.content}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 rounded-lg border border-purple-500/20 transition-all text-[10px] font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed group/ai"
+                                >
+                                    {aiGenerating && aiAction === 'proofread' ? (
+                                        <Loader2 className="w-3 h-3 animate-spin" />
+                                    ) : (
+                                        <Wand2 className="w-3 h-3 group-hover/ai:translate-x-0.5 transition-transform" />
+                                    )}
+                                    {aiGenerating && aiAction === 'proofread' ? 'Refining...' : 'Refine & Proofread'}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleAiAction('continue')}
+                                    disabled={aiGenerating || !formData.content}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 rounded-lg border border-cyan-500/20 transition-all text-[10px] font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed group/ai"
+                                >
+                                    {aiGenerating && aiAction === 'continue' ? (
+                                        <Loader2 className="w-3 h-3 animate-spin" />
+                                    ) : (
+                                        <Sparkles className="w-3 h-3 group-hover/ai:rotate-12 transition-transform" />
+                                    )}
+                                    {aiGenerating && aiAction === 'continue' ? 'Writing...' : 'Continue with AI'}
+                                </button>
+                            </div>
+                        )}
+                    </div>
 
-                    {previewMode ? (
-                        <div className="w-full min-h-[500px] p-6 bg-slate-900/50 rounded-xl border border-white/10 prose prose-invert max-w-none">
-                            <ReactMarkdown
-                                remarkPlugins={[remarkGfm]}
-                                components={{
-                                    code({ node, inline, className, children, ...props }) {
-                                        const match = /language-(\w+)/.exec(className || '')
-                                        return !inline && match ? (
-                                            <SyntaxHighlighter
-                                                style={vscDarkPlus}
-                                                language={match[1]}
-                                                PreTag="div"
-                                                {...props}
-                                            >
-                                                {String(children).replace(/\n$/, '')}
-                                            </SyntaxHighlighter>
-                                        ) : (
-                                            <code className={className} {...props}>
-                                                {children}
-                                            </code>
-                                        )
-                                    },
-                                    pre: ({ children }) => <>{children}</>
-                                }}
-                            >
-                                {formData.content}
-                            </ReactMarkdown>
-                        </div>
-                    ) : (
-                        <textarea
-                            name="content"
-                            value={formData.content}
-                            onChange={handleChange}
-                            required
-                            className="w-full h-[500px] p-4 bg-slate-950/50 rounded-xl border border-white/10 focus:outline-none focus:border-cyan-500/50 font-mono text-sm leading-relaxed text-slate-200 placeholder:text-slate-600"
-                            placeholder="# Write your blog post in Markdown..."
-                        ></textarea>
-                    )}
+                    <div className="relative min-h-[500px]">
+                        {showAiResult ? (
+                            <div className="absolute inset-0 z-20 bg-slate-950 flex flex-col rounded-xl border border-white/10 overflow-hidden shadow-2xl">
+                                <div className={`flex items-center justify-between px-6 py-3 border-b border-white/10 ${aiAction === 'proofread' ? 'bg-purple-500/10' : 'bg-cyan-500/10'}`}>
+                                    <div className="flex items-center gap-3">
+                                        <div className={`p-1.5 rounded-lg ${aiAction === 'proofread' ? 'bg-purple-500/20 text-purple-400' : 'bg-cyan-500/20 text-cyan-400'}`}>
+                                            {aiAction === 'proofread' ? <Wand2 size={16} /> : <Sparkles size={16} />}
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">AI Suggestion</p>
+                                            <p className="text-xs font-mono text-slate-500">{aiAction === 'continue' ? 'CONTINUE_MODE: APPENDING_CONTENT' : 'REPLACE_MODE: UPDATING_PAYLOAD'}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-3">
+                                        <button
+                                            type="button"
+                                            onClick={discardAiResult}
+                                            className="px-4 py-1.5 rounded-lg border border-white/10 hover:bg-white/5 text-slate-400 text-xs font-bold uppercase tracking-wider transition-all"
+                                        >
+                                            Discard
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={applyAiResult}
+                                            className={`px-6 py-1.5 rounded-lg font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-2 ${aiAction === 'proofread' ? 'bg-purple-500 text-white shadow-[0_0_15px_rgba(168,85,247,0.4)]' : 'bg-cyan-500 text-black shadow-[0_0_15px_rgba(34,211,238,0.4)]'}`}
+                                        >
+                                            <Check size={14} />
+                                            Apply Changes
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="flex-1 overflow-y-auto p-6 font-mono text-sm leading-relaxed text-slate-300">
+                                    <div className={`mb-4 inline-block px-2 py-1 rounded text-[10px] font-bold uppercase ${aiAction === 'proofread' ? 'bg-purple-500/20 text-purple-400' : 'bg-cyan-500/20 text-cyan-400'}`}>
+                                        Proposed Content
+                                    </div>
+                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                        {aiTempResult}
+                                    </ReactMarkdown>
+                                </div>
+                            </div>
+                        ) : null}
+
+                        {previewMode ? (
+                            <div className="w-full min-h-[500px] p-6 bg-slate-900/50 rounded-xl border border-white/10 prose prose-invert max-w-none">
+                                <ReactMarkdown
+                                    remarkPlugins={[remarkGfm]}
+                                    components={{
+                                        code({ node, inline, className, children, ...props }) {
+                                            const match = /language-(\w+)/.exec(className || '')
+                                            return !inline && match ? (
+                                                <SyntaxHighlighter
+                                                    style={vscDarkPlus}
+                                                    language={match[1]}
+                                                    PreTag="div"
+                                                    {...props}
+                                                >
+                                                    {String(children).replace(/\n$/, '')}
+                                                </SyntaxHighlighter>
+                                            ) : (
+                                                <code className={className} {...props}>
+                                                    {children}
+                                                </code>
+                                            )
+                                        },
+                                        pre: ({ children }) => <>{children}</>
+                                    }}
+                                >
+                                    {formData.content}
+                                </ReactMarkdown>
+                            </div>
+                        ) : (
+                            <textarea
+                                name="content"
+                                value={formData.content}
+                                onChange={handleChange}
+                                required
+                                className="absolute inset-0 w-full h-full p-6 bg-slate-950/50 rounded-xl border border-white/10 focus:outline-none focus:border-cyan-500/50 font-mono text-sm leading-relaxed text-slate-200 placeholder:text-slate-600 resize-none"
+                                placeholder="# Write your blog post in Markdown..."
+                            ></textarea>
+                        )}
+                    </div>
                 </div>
 
                 <div className="flex gap-4 pt-4 border-t border-white/10 mt-8">
@@ -435,6 +684,8 @@ export default function NewBlogPage() {
                     </button>
                 </div>
             </form >
+
+            <Toast notification={notification} onClose={() => setNotification(null)} />
         </div >
     );
 }

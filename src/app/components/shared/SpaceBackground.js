@@ -1,16 +1,51 @@
 "use client";
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
+import useDevicePerformance from '../../hooks/useDevicePerformance';
 
 const SpaceBackground = () => {
+    const { tier, prefersReducedMotion } = useDevicePerformance();
+
+    // Adaptive configuration based on device performance
+    const config = useMemo(() => {
+        if (prefersReducedMotion || tier === 'low') {
+            return {
+                starCount: 5,
+                enableShootingStars: false,
+                enableMouseTracking: false,
+                enableAmbientGlow: false,
+                enableAnimatedGrid: false,
+                blurAmount: 30,
+            };
+        } else if (tier === 'medium') {
+            return {
+                starCount: 12,
+                enableShootingStars: true,
+                enableMouseTracking: false,
+                enableAmbientGlow: true,
+                enableAnimatedGrid: false,
+                blurAmount: 60,
+            };
+        } else {
+            return {
+                starCount: 25,
+                enableShootingStars: true,
+                enableMouseTracking: true,
+                enableAmbientGlow: true,
+                enableAnimatedGrid: true,
+                blurAmount: 120,
+            };
+        }
+    }, [tier, prefersReducedMotion]);
+
     // Generate random stars on client side to avoid hydration mismatch
     const [stars, setStars] = useState([]);
     const [shootingStars, setShootingStars] = useState([]);
-    const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+    const [mousePos, setMousePos] = useState({ x: 50, y: 50 });
 
     useEffect(() => {
         // Static stars
-        const generatedStars = [...Array(25)].map((_, i) => ({
+        const generatedStars = [...Array(config.starCount)].map((_, i) => ({
             id: i,
             x: Math.random() * 100,
             y: Math.random() * 100,
@@ -20,6 +55,10 @@ const SpaceBackground = () => {
             duration: Math.random() * 3 + 2,
         }));
         setStars(generatedStars);
+    }, [config.starCount]);
+
+    useEffect(() => {
+        if (!config.enableMouseTracking) return;
 
         // Mouse movement handler
         const handleMouseMove = (e) => {
@@ -29,6 +68,11 @@ const SpaceBackground = () => {
             });
         };
         window.addEventListener('mousemove', handleMouseMove);
+        return () => window.removeEventListener('mousemove', handleMouseMove);
+    }, [config.enableMouseTracking]);
+
+    useEffect(() => {
+        if (!config.enableShootingStars) return;
 
         // Shooting stars loop
         const interval = setInterval(() => {
@@ -48,76 +92,100 @@ const SpaceBackground = () => {
             }
         }, 2500);
 
-        return () => {
-            window.removeEventListener('mousemove', handleMouseMove);
-            clearInterval(interval);
-        };
-    }, []);
+        return () => clearInterval(interval);
+    }, [config.enableShootingStars]);
 
     return (
         <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ backgroundColor: 'var(--bg-primary)' }}>
-            {/* 1. Deep Space Gradient - Dynamic based on mouse */}
-            <motion.div
-                className="absolute inset-0 opacity-40"
-                animate={{
-                    background: `radial-gradient(circle at ${mousePos.x}% ${mousePos.y}%, var(--bg-elevated) 0%, var(--bg-primary) 60%)`
-                }}
-                transition={{ type: "tween", ease: "linear", duration: 0.2 }}
-            />
-
-            {/* 2. Animated Grid (Cyber Floor) */}
-            <div
-                className="absolute inset-0 opacity-30"
-                style={{
-                    backgroundImage: `
-                        linear-gradient(var(--border-secondary) 1px, transparent 1px),
-                        linear-gradient(90deg, var(--border-secondary) 1px, transparent 1px)
-                    `,
-                    backgroundSize: '80px 80px',
-                    transform: 'perspective(500px) rotateX(60deg) translateY(-100px) scale(3)',
-                    transformOrigin: 'top center',
-                    maskImage: 'linear-gradient(to bottom, transparent, black 50%, transparent)'
-                }}
-            >
+            {/* 1. Deep Space Gradient - Dynamic based on mouse (high-end only) */}
+            {config.enableMouseTracking ? (
                 <motion.div
-                    className="absolute inset-0"
-                    animate={{ y: [0, 80] }}
-                    transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-                    style={{
-                        backgroundImage: `inherit`,
-                        backgroundSize: 'inherit'
-                    }}
-                />
-            </div>
-
-            {/* 3. Floating Stars / Particles */}
-            {stars.map((star, i) => (
-                <motion.div
-                    key={star.id}
-                    className="absolute rounded-full"
-                    style={{
-                        left: `${star.x}%`,
-                        top: `${star.y}%`,
-                        width: star.size,
-                        height: star.size,
-                        backgroundColor: i % 3 === 0 ? 'var(--accent-cyan)' : i % 3 === 1 ? 'var(--accent-purple)' : 'white',
-                        boxShadow: `0 0 ${star.size * 2}px ${i % 2 === 0 ? 'var(--accent-cyan)' : 'white'}`
-                    }}
+                    className="absolute inset-0 opacity-40"
                     animate={{
-                        opacity: [star.opacity, 1, star.opacity],
-                        scale: [1, 1.2, 1],
+                        background: `radial-gradient(circle at ${mousePos.x}% ${mousePos.y}%, var(--bg-elevated) 0%, var(--bg-primary) 60%)`
                     }}
-                    transition={{
-                        duration: star.duration,
-                        repeat: Infinity,
-                        delay: star.delay,
-                        ease: "easeInOut"
+                    transition={{ type: "tween", ease: "linear", duration: 0.2 }}
+                />
+            ) : (
+                <div
+                    className="absolute inset-0 opacity-40"
+                    style={{
+                        background: `radial-gradient(circle at 50% 50%, var(--bg-elevated) 0%, var(--bg-primary) 60%)`
                     }}
                 />
+            )}
+
+            {/* 2. Animated Grid (Cyber Floor) - High-end only */}
+            {config.enableAnimatedGrid && (
+                <div
+                    className="absolute inset-0 opacity-30"
+                    style={{
+                        backgroundImage: `
+                            linear-gradient(var(--border-secondary) 1px, transparent 1px),
+                            linear-gradient(90deg, var(--border-secondary) 1px, transparent 1px)
+                        `,
+                        backgroundSize: '80px 80px',
+                        transform: 'perspective(500px) rotateX(60deg) translateY(-100px) scale(3)',
+                        transformOrigin: 'top center',
+                        maskImage: 'linear-gradient(to bottom, transparent, black 50%, transparent)'
+                    }}
+                >
+                    <motion.div
+                        className="absolute inset-0"
+                        animate={{ y: [0, 80] }}
+                        transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+                        style={{
+                            backgroundImage: `inherit`,
+                            backgroundSize: 'inherit'
+                        }}
+                    />
+                </div>
+            )}
+
+            {/* 3. Floating Stars / Particles - Adaptive count */}
+            {stars.map((star, i) => (
+                prefersReducedMotion ? (
+                    // Static stars for reduced motion
+                    <div
+                        key={star.id}
+                        className="absolute rounded-full"
+                        style={{
+                            left: `${star.x}%`,
+                            top: `${star.y}%`,
+                            width: star.size,
+                            height: star.size,
+                            backgroundColor: i % 3 === 0 ? 'var(--accent-cyan)' : i % 3 === 1 ? 'var(--accent-purple)' : 'white',
+                            opacity: star.opacity,
+                        }}
+                    />
+                ) : (
+                    <motion.div
+                        key={star.id}
+                        className="absolute rounded-full"
+                        style={{
+                            left: `${star.x}%`,
+                            top: `${star.y}%`,
+                            width: star.size,
+                            height: star.size,
+                            backgroundColor: i % 3 === 0 ? 'var(--accent-cyan)' : i % 3 === 1 ? 'var(--accent-purple)' : 'white',
+                            boxShadow: `0 0 ${star.size * 2}px ${i % 2 === 0 ? 'var(--accent-cyan)' : 'white'}`
+                        }}
+                        animate={{
+                            opacity: [star.opacity, 1, star.opacity],
+                            scale: [1, 1.2, 1],
+                        }}
+                        transition={{
+                            duration: star.duration,
+                            repeat: Infinity,
+                            delay: star.delay,
+                            ease: "easeInOut"
+                        }}
+                    />
+                )
             ))}
 
-            {/* 4. Shooting Stars */}
-            {shootingStars.map(star => (
+            {/* 4. Shooting Stars - Medium and High only */}
+            {config.enableShootingStars && shootingStars.map(star => (
                 <motion.div
                     key={star.id}
                     className="absolute h-[2px] w-[100px] bg-gradient-to-r from-transparent via-white to-transparent"
@@ -133,28 +201,39 @@ const SpaceBackground = () => {
                 />
             ))}
 
-            {/* 5. Ambient Colored Glows (Theme Aware) */}
-            <motion.div
-                className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full opacity-20 blur-[120px]"
-                animate={{
-                    scale: [1, 1.1, 1],
-                    opacity: [0.2, 0.3, 0.2]
-                }}
-                transition={{ duration: 10, repeat: Infinity }}
-                style={{ backgroundColor: 'var(--accent-cyan)' }}
-            />
+            {/* 5. Ambient Colored Glows (Theme Aware) - Medium and High only */}
+            {config.enableAmbientGlow && (
+                <>
+                    <motion.div
+                        className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full opacity-20"
+                        animate={prefersReducedMotion ? {} : {
+                            scale: [1, 1.1, 1],
+                            opacity: [0.2, 0.3, 0.2]
+                        }}
+                        transition={{ duration: 10, repeat: Infinity }}
+                        style={{
+                            backgroundColor: 'var(--accent-cyan)',
+                            filter: `blur(${config.blurAmount}px)`
+                        }}
+                    />
 
-            <motion.div
-                className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full opacity-20 blur-[120px]"
-                animate={{
-                    scale: [1, 1.2, 1],
-                    opacity: [0.1, 0.2, 0.1]
-                }}
-                transition={{ duration: 12, repeat: Infinity, delay: 2 }}
-                style={{ backgroundColor: 'var(--accent-purple)' }}
-            />
+                    <motion.div
+                        className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full opacity-20"
+                        animate={prefersReducedMotion ? {} : {
+                            scale: [1, 1.2, 1],
+                            opacity: [0.1, 0.2, 0.1]
+                        }}
+                        transition={{ duration: 12, repeat: Infinity, delay: 2 }}
+                        style={{
+                            backgroundColor: 'var(--accent-purple)',
+                            filter: `blur(${config.blurAmount}px)`
+                        }}
+                    />
+                </>
+            )}
         </div>
     );
 };
 
 export default SpaceBackground;
+

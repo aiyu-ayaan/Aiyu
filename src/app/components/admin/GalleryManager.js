@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Upload, X, Trash2, Image as ImageIcon, Loader2, RefreshCw } from 'lucide-react';
+import { Upload, X, Trash2, Image as ImageIcon, Loader2, RefreshCw, CheckSquare, Square, Check, Sparkles } from 'lucide-react';
 import Image from 'next/image';
 import Toast from './Toast';
 
@@ -11,11 +11,18 @@ export default function GalleryManager() {
     const [uploading, setUploading] = useState(false);
     const [migrating, setMigrating] = useState(false);
     const [migrationProgress, setMigrationProgress] = useState(null);
-    const [file, setFile] = useState(null);
-    const [description, setDescription] = useState('');
+    const [files, setFiles] = useState([]); // Array of { file, preview, description, id }
     const [dragActive, setDragActive] = useState(false);
-    const [preview, setPreview] = useState(null);
     const [notification, setNotification] = useState(null);
+    const [uploadProgress, setUploadProgress] = useState(null);
+
+    // Multi-select state
+    const [selectedImages, setSelectedImages] = useState(new Set());
+    const [deleting, setDeleting] = useState(false);
+    const [aiEnabled, setAiEnabled] = useState(false);
+
+    // AI Generation State
+    const [generating, setGenerating] = useState(new Set()); // Set of file IDs currently generating
 
     const showNotification = (success, message) => {
         setNotification({ success, message });
@@ -24,7 +31,20 @@ export default function GalleryManager() {
 
     useEffect(() => {
         fetchImages();
+        checkAiConfig();
     }, []);
+
+    const checkAiConfig = async () => {
+        try {
+            const res = await fetch('/api/admin/ai/config');
+            const data = await res.json();
+            if (data.success && data.data) {
+                setAiEnabled(data.data.enabled);
+            }
+        } catch (error) {
+            console.error('Failed to fetch AI config:', error);
+        }
+    };
 
     const fetchImages = async () => {
         try {
@@ -54,50 +74,93 @@ export default function GalleryManager() {
         e.preventDefault();
         e.stopPropagation();
         setDragActive(false);
-        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-            handleFile(e.dataTransfer.files[0]);
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            handleFiles(Array.from(e.dataTransfer.files));
         }
     };
 
     const handleChange = (e) => {
         e.preventDefault();
-        if (e.target.files && e.target.files[0]) {
-            handleFile(e.target.files[0]);
+        if (e.target.files && e.target.files.length > 0) {
+            handleFiles(Array.from(e.target.files));
         }
     };
 
-    const handleFile = (file) => {
-        setFile(file);
+    const handleFiles = (newFiles) => {
+        const fileObjects = newFiles.map(file => {
+            const isHeic = file.name.toLowerCase().endsWith('.heic') || file.type === 'image/heic';
+            let preview = null;
 
-        // Check if file is HEIC
-        const isHeic = file.name.toLowerCase().endsWith('.heic') || file.type === 'image/heic';
+            if (isHeic) {
+                preview = 'HEIC_PLACEHOLDER';
+            } else {
+                preview = URL.createObjectURL(file);
+            }
 
-        if (isHeic) {
-            // Can't preview HEIC in browser, set a placeholder or null
-            // We use a special string to indicate placeholder
-            setPreview('HEIC_PLACEHOLDER');
-        } else {
-            const url = URL.createObjectURL(file);
-            setPreview(url);
+            return {
+                id: Math.random().toString(36).substring(7),
+                file,
+                preview,
+                description: '', // Individual description
+                isHeic
+            };
+        });
+
+        setFiles(prev => [...prev, ...fileObjects]);
+    };
+
+    const removeFile = (id) => {
+        setFiles(prev => prev.filter(f => f.id !== id));
+    };
+
+    const updateFileDescription = (id, desc) => {
+        setFiles(prev => prev.map(f => f.id === id ? { ...f, description: desc } : f));
+    };
+
+    const clearFiles = () => {
+        setFiles([]);
+    };
+
+    // --- AI Generation Logic ---
+    const generateCaption = async (fileId, file) => {
+        try {
+            setGenerating(prev => new Set(prev).add(fileId));
+
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('prompt', "Generate a creative, short caption (5-10 words) for this image.");
+
+            const res = await fetch('/api/admin/ai/generate', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await res.json();
+
+            if (data.success) {
+                updateFileDescription(fileId, data.data);
+                showNotification(true, 'Caption generated successfully');
+            } else {
+                showNotification(false, data.error || 'Failed to generate caption');
+            }
+
+        } catch (error) {
+            console.error('AI Generation failed:', error);
+            showNotification(false, 'AI Generation failed');
+        } finally {
+            setGenerating(prev => {
+                const next = new Set(prev);
+                next.delete(fileId);
+                return next;
+            });
         }
     };
 
-    const clearFile = () => {
-        setFile(null);
-        setPreview(null);
-        setDescription('');
-    };
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        if (!file || !description) return;
-
-        setUploading(true);
-
+    const uploadSingleFile = async (fileObj) => {
         try {
             // 1. Upload Image
             const formData = new FormData();
-            formData.append('file', file);
+            formData.append('file', fileObj.file);
 
             const uploadRes = await fetch('/api/upload', {
                 method: 'POST',
@@ -114,17 +177,15 @@ export default function GalleryManager() {
             let width = uploadData.width;
             let height = uploadData.height;
 
-            // Fallback to client-side dimension extraction if server didn't provide it (e.g. for non-processed images)
-            // But skip this for HEIC/Placeholders since we can't load them
-            if ((!width || !height) && preview && preview !== 'HEIC_PLACEHOLDER') {
+            if ((!width || !height) && fileObj.preview && fileObj.preview !== 'HEIC_PLACEHOLDER') {
                 try {
                     const img = document.createElement('img');
-                    img.src = preview;
-                    await new Promise((resolve, reject) => {
+                    img.src = fileObj.preview;
+                    await new Promise((resolve) => {
                         img.onload = resolve;
-                        img.onerror = () => resolve(); // Don't fail if image can't load
+                        img.onerror = () => resolve();
                     });
-                    width = img.naturalWidth || 800; // Default fallback
+                    width = img.naturalWidth || 800;
                     height = img.naturalHeight || 600;
                 } catch (e) {
                     console.warn('Failed to get client-side image dimensions', e);
@@ -135,8 +196,8 @@ export default function GalleryManager() {
 
             const galleryData = {
                 src: uploadData.url,
-                thumbnail: uploadData.thumbnailUrl, // Include thumbnail URL
-                description,
+                thumbnail: uploadData.thumbnailUrl,
+                description: fileObj.description || 'No description', // Use individual description or default
                 width: width || 800,
                 height: height || 600
             };
@@ -150,17 +211,55 @@ export default function GalleryManager() {
             const galleryResult = await galleryRes.json();
 
             if (galleryResult.success) {
-                setImages([galleryResult.data, ...images]);
-                clearFile();
-                showNotification(true, 'Image uploaded successfully');
+                return galleryResult.data;
             } else {
                 throw new Error(galleryResult.error);
             }
 
         } catch (error) {
-            showNotification(false, error.message);
+            console.error(`Error uploading ${fileObj.file.name}:`, error);
+            throw error; // Re-throw to handle in the loop
+        }
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (files.length === 0) return;
+
+        setUploading(true);
+        let successCount = 0;
+        let failCount = 0;
+
+        try {
+            for (let i = 0; i < files.length; i++) {
+                const fileObj = files[i];
+                setUploadProgress({
+                    current: i + 1,
+                    total: files.length,
+                    filename: fileObj.file.name
+                });
+
+                try {
+                    const newImage = await uploadSingleFile(fileObj);
+                    setImages(prev => [newImage, ...prev]);
+                    successCount++;
+                } catch (error) {
+                    failCount++;
+                }
+            }
+
+            if (successCount > 0) {
+                showNotification(true, `Successfully uploaded ${successCount} images.${failCount > 0 ? ` Failed: ${failCount}` : ''}`);
+                clearFiles(); // Only clear on success (or partial success)
+            } else {
+                showNotification(false, 'All uploads failed. Please try again.');
+            }
+
+        } catch (error) {
+            showNotification(false, 'Upload process encountered an error.');
         } finally {
             setUploading(false);
+            setUploadProgress(null);
         }
     };
 
@@ -174,6 +273,12 @@ export default function GalleryManager() {
             const data = await res.json();
             if (data.success) {
                 setImages(images.filter(img => img._id !== id));
+                // Also remove from selection if present
+                if (selectedImages.has(id)) {
+                    const newSelected = new Set(selectedImages);
+                    newSelected.delete(id);
+                    setSelectedImages(newSelected);
+                }
                 showNotification(true, 'Image deleted successfully');
             } else {
                 showNotification(false, data.error);
@@ -183,6 +288,70 @@ export default function GalleryManager() {
             showNotification(false, 'Failed to delete image');
         }
     };
+
+    // --- Bulk Selection & Deletion Logic ---
+
+    const toggleSelection = (id) => {
+        const newSelected = new Set(selectedImages);
+        if (newSelected.has(id)) {
+            newSelected.delete(id);
+        } else {
+            newSelected.add(id);
+        }
+        setSelectedImages(newSelected);
+    };
+
+    const selectAll = () => {
+        if (selectedImages.size === images.length) {
+            setSelectedImages(new Set()); // Deselect all
+        } else {
+            const allIds = new Set(images.map(img => img._id));
+            setSelectedImages(allIds);
+        }
+    };
+
+    const handleBulkDelete = async () => {
+        const count = selectedImages.size;
+        if (count === 0) return;
+
+        if (!confirm(`Are you sure you want to delete these ${count} images? This action cannot be undone.`)) return;
+
+        setDeleting(true);
+        let deletedCount = 0;
+        let failCount = 0;
+
+        // Iterate and delete one by one
+        const idsToDelete = Array.from(selectedImages);
+
+        for (const id of idsToDelete) {
+            try {
+                const res = await fetch(`/api/gallery?id=${id}`, {
+                    method: 'DELETE',
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    deletedCount++;
+                    // Optimistically update UI as we go (optional, but good for feedback)
+                    setImages(prev => prev.filter(img => img._id !== id));
+                } else {
+                    failCount++;
+                }
+            } catch (error) {
+                failCount++;
+            }
+        }
+
+        setSelectedImages(new Set()); // Clear selection
+        setDeleting(false);
+
+        if (deletedCount > 0) {
+            showNotification(true, `Successfully deleted ${deletedCount} images.${failCount > 0 ? ` Failed: ${failCount}` : ''}`);
+        } else {
+            showNotification(false, 'Failed to delete images.');
+        }
+    };
+
 
     const handleMigration = async () => {
         if (!confirm('Generate thumbnails for existing images? This may take a while.')) return;
@@ -215,7 +384,6 @@ export default function GalleryManager() {
                 hasMore = data.hasMore;
                 skip = data.nextSkip || skip + batchSize;
 
-                // Small delay between batches
                 if (hasMore) {
                     await new Promise(resolve => setTimeout(resolve, 500));
                 }
@@ -290,79 +458,137 @@ export default function GalleryManager() {
                     <div className="h-px bg-pink-500/20 flex-grow" />
                 </h2>
 
-                <form onSubmit={handleSubmit} className="relative z-10">
-                    {!preview ? (
-                        <div
-                            className={`border-2 border-dashed rounded-xl p-12 text-center transition-all duration-300 group/drop
-                                ${dragActive
-                                    ? 'border-pink-500 bg-pink-500/5'
-                                    : 'border-white/10 hover:border-pink-500/30 hover:bg-slate-800/50'
-                                }
-                            `}
-                            onDragEnter={handleDrag}
-                            onDragLeave={handleDrag}
-                            onDragOver={handleDrag}
-                            onDrop={handleDrop}
-                        >
-                            <input
-                                type="file"
-                                id="file-upload"
-                                className="hidden"
-                                onChange={handleChange}
-                                accept="image/*"
-                            />
-                            <label htmlFor="file-upload" className="cursor-pointer flex flex-col items-center gap-4">
-                                <div className={`p-4 rounded-full bg-pink-500/10 text-pink-400 transform transition-transform duration-500 group-hover/drop:scale-110 group-hover/drop:rotate-12`}>
-                                    <Upload size={32} />
-                                </div>
-                                <div>
-                                    <span className="block text-xl font-bold text-white mb-2">Initialize Upload Sequence</span>
-                                    <span className="block text-sm text-slate-400 font-mono">Drag & drop or click to select visual assets</span>
-                                </div>
-                            </label>
-                        </div>
-                    ) : (
-                        <div className="bg-slate-950/50 rounded-xl border border-white/10 overflow-hidden flex flex-col md:flex-row">
-                            <div className="relative h-64 md:h-auto md:w-1/3 shrink-0 bg-black/20 flex items-center justify-center p-4 border-b md:border-b-0 md:border-r border-white/10">
+                <form onSubmit={handleSubmit} className="relative z-10 space-y-6">
+                    {/* Drop Zone */}
+                    <div
+                        className={`border-2 border-dashed rounded-xl p-12 text-center transition-all duration-300 group/drop
+                            ${dragActive
+                                ? 'border-pink-500 bg-pink-500/5'
+                                : 'border-white/10 hover:border-pink-500/30 hover:bg-slate-800/50'
+                            }
+                        `}
+                        onDragEnter={handleDrag}
+                        onDragLeave={handleDrag}
+                        onDragOver={handleDrag}
+                        onDrop={handleDrop}
+                    >
+                        <input
+                            type="file"
+                            id="file-upload"
+                            className="hidden"
+                            onChange={handleChange}
+                            accept="image/*"
+                            multiple
+                        />
+                        <label htmlFor="file-upload" className="cursor-pointer flex flex-col items-center gap-4">
+                            <div className={`p-4 rounded-full bg-pink-500/10 text-pink-400 transform transition-transform duration-500 group-hover/drop:scale-110 group-hover/drop:rotate-12`}>
+                                <Upload size={32} />
+                            </div>
+                            <div>
+                                <span className="block text-xl font-bold text-white mb-2">Initialize Upload Sequence</span>
+                                <span className="block text-sm text-slate-400 font-mono">Drag & drop or click to select visual assets (Multiple allowed)</span>
+                            </div>
+                        </label>
+                    </div>
+
+                    {/* Previews List */}
+                    {files.length > 0 && (
+                        <div className="space-y-4">
+                            <div className="flex justify-between items-end">
+                                <h3 className="text-white text-sm font-bold uppercase tracking-wider">
+                                    Selected Assets ({files.length})
+                                </h3>
                                 <button
                                     type="button"
-                                    onClick={clearFile}
-                                    className="absolute top-4 right-4 p-2 bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white rounded-lg transition-colors z-20 backdrop-blur-md border border-red-500/20"
+                                    onClick={clearFiles}
+                                    className="text-xs text-red-400 hover:text-red-300 underline"
                                 >
-                                    <X size={16} />
+                                    Clear All
                                 </button>
-
-                                {preview === 'HEIC_PLACEHOLDER' ? (
-                                    <div className="text-center">
-                                        <div className="mx-auto mb-3 w-16 h-16 bg-white/5 rounded-full flex items-center justify-center text-pink-500 font-mono text-xl border border-white/10">
-                                            HEIC
-                                        </div>
-                                        <p className="text-slate-300 font-bold mb-1">High Efficiency Image</p>
-                                        <p className="text-xs text-slate-500 font-mono">Preview Unavailable</p>
-                                    </div>
-                                ) : (
-                                    <div className="relative w-full h-full min-h-[200px]">
-                                        <Image
-                                            src={preview}
-                                            alt="Preview"
-                                            fill
-                                            className="object-contain"
-                                        />
-                                    </div>
-                                )}
                             </div>
 
-                            <div className="p-6 md:p-8 flex-1 space-y-6">
-                                <div>
-                                    <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Asset Description</label>
-                                    <textarea
-                                        value={description}
-                                        onChange={(e) => setDescription(e.target.value)}
-                                        className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-4 text-slate-200 focus:border-pink-500/50 focus:ring-1 focus:ring-pink-500/50 outline-none transition-all placeholder:text-slate-600 min-h-[120px] resize-none font-mono text-sm"
-                                        placeholder="// Enter detailed description..."
-                                        required
-                                    />
-                                </div>
+                            <div className="grid gap-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                                {files.map((fileObj, index) => (
+                                    <div key={fileObj.id} className="bg-slate-950/50 rounded-lg border border-white/10 p-4 flex gap-4 items-start">
+                                        {/* Thumbnail */}
+                                        <div className="w-24 h-24 shrink-0 bg-black/40 rounded border border-white/5 relative overflow-hidden flex items-center justify-center">
+                                            {fileObj.preview === 'HEIC_PLACEHOLDER' ? (
+                                                <div className="text-center p-2">
+                                                    <div className="text-pink-500 text-xs font-bold font-mono">HEIC</div>
+                                                </div>
+                                            ) : (
+                                                <Image
+                                                    src={fileObj.preview}
+                                                    alt="Preview"
+                                                    fill
+                                                    className="object-contain"
+                                                />
+                                            )}
+                                        </div>
+
+                                        {/* Inputs */}
+                                        <div className="flex-1 space-y-2">
+                                            <div className="flex justify-between">
+                                                <span className="text-white text-xs font-mono truncate max-w-[200px]">{fileObj.file.name}</span>
+                                                <span className="text-slate-500 text-[10px] uppercase font-mono">{(fileObj.file.size / 1024 / 1024).toFixed(2)} MB</span>
+                                            </div>
+
+                                            <div className="relative">
+                                                <textarea
+                                                    value={fileObj.description || ''}
+                                                    onChange={(e) => updateFileDescription(fileObj.id, e.target.value)}
+                                                    className={`w-full bg-slate-900 border border-white/10 rounded-md p-2 ${aiEnabled ? 'pr-10' : ''} text-slate-200 text-xs focus:border-pink-500/50 outline-none transition-all placeholder:text-slate-700 font-mono resize-none`}
+                                                    placeholder="// Enter description (optional)..."
+                                                    rows={2}
+                                                />
+                                                {aiEnabled && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => generateCaption(fileObj.id, fileObj.file)}
+                                                        disabled={generating.has(fileObj.id)}
+                                                        className="absolute bottom-2 right-2 p-1.5 rounded-lg bg-pink-500/10 text-pink-400 hover:bg-pink-500 hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed group/ai"
+                                                        title="Generate Caption with AI"
+                                                    >
+                                                        {generating.has(fileObj.id) ? (
+                                                            <Loader2 size={12} className="animate-spin" />
+                                                        ) : (
+                                                            <Sparkles size={12} className="transform group-hover/ai:scale-110 transition-transform" />
+                                                        )}
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Remove Action */}
+                                        <button
+                                            type="button"
+                                            onClick={() => removeFile(fileObj.id)}
+                                            className="text-slate-500 hover:text-red-400 transition-colors p-1"
+                                            title="Remove"
+                                        >
+                                            <X size={16} />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Upload Button & Progress */}
+                            <div className="flex flex-col gap-4 border-t border-white/10 pt-6">
+                                {uploading && uploadProgress && (
+                                    <div className="mb-2">
+                                        <div className="flex justify-between text-xs font-mono mb-1 text-pink-400">
+                                            <span>UPLOADING: {uploadProgress.filename}</span>
+                                            <span>{uploadProgress.current} / {uploadProgress.total}</span>
+                                        </div>
+                                        <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+                                            <div
+                                                className="h-full bg-pink-500 transition-all duration-300"
+                                                style={{ width: `${(uploadProgress.current / uploadProgress.total) * 100}%` }}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
                                 <div className="flex justify-end">
                                     <button
                                         type="submit"
@@ -372,11 +598,11 @@ export default function GalleryManager() {
                                         {uploading ? (
                                             <>
                                                 <Loader2 className="animate-spin" size={14} />
-                                                TRANSMITTING...
+                                                TRANSMITTING BATCH...
                                             </>
                                         ) : (
                                             <>
-                                                COMMENCE_UPLOAD <Upload size={14} />
+                                                COMMENCE_BATCH_UPLOAD <Upload size={14} />
                                             </>
                                         )}
                                     </button>
@@ -389,11 +615,43 @@ export default function GalleryManager() {
 
             {/* Gallery Grid */}
             <div>
-                <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
-                    <span className="w-2 h-8 bg-pink-500 rounded-full" />
-                    Database Content
-                    <span className="text-sm font-mono text-slate-400 font-normal">({images.length} items)</span>
-                </h2>
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                    <h2 className="text-xl font-bold text-white flex items-center gap-3">
+                        <span className="w-2 h-8 bg-pink-500 rounded-full" />
+                        Database Content
+                        <span className="text-sm font-mono text-slate-400 font-normal">({images.length} items)</span>
+                    </h2>
+
+                    <div className="flex gap-3">
+                        {images.length > 0 && (
+                            <button
+                                onClick={selectAll}
+                                className="px-4 py-2 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-white/5 text-xs uppercase tracking-wide flex items-center gap-2 transition-all"
+                            >
+                                {selectedImages.size === images.length ? (
+                                    <>
+                                        <Square size={14} /> Deselect All
+                                    </>
+                                ) : (
+                                    <>
+                                        <CheckSquare size={14} /> Select All
+                                    </>
+                                )}
+                            </button>
+                        )}
+
+                        {selectedImages.size > 0 && (
+                            <button
+                                onClick={handleBulkDelete}
+                                disabled={deleting}
+                                className="px-4 py-2 rounded bg-red-500/20 hover:bg-red-500 hover:text-white text-red-400 border border-red-500/20 transition-all font-bold text-xs uppercase tracking-wide flex items-center gap-2"
+                            >
+                                {deleting ? <Loader2 className="animate-spin" size={14} /> : <Trash2 size={14} />}
+                                Delete Selected ({selectedImages.size})
+                            </button>
+                        )}
+                    </div>
+                </div>
 
                 {loading ? (
                     <div className="flex justify-center py-20">
@@ -401,42 +659,66 @@ export default function GalleryManager() {
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        {images.map(image => (
-                            <div key={image._id} className="group relative bg-slate-900/50 backdrop-blur-xl rounded-xl border border-white/5 overflow-hidden hover:border-pink-500/30 transition-all hover:translate-y-[-4px] hover:shadow-xl">
-                                <div className="aspect-video relative bg-slate-950">
-                                    <Image
-                                        src={image.thumbnail || image.src}
-                                        alt={image.description}
-                                        fill
-                                        className="object-cover transition-transform duration-700 group-hover:scale-105"
-                                    />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-4">
-                                        <div className="flex justify-between items-end">
-                                            <span className="text-[10px] font-mono text-slate-300 bg-slate-900/50 px-2 py-1 rounded backdrop-blur-sm border border-white/10">
-                                                {new Date(image.createdAt).toLocaleDateString()}
-                                            </span>
-                                            <button
-                                                onClick={() => handleDelete(image._id)}
-                                                className="p-2 bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white rounded-lg transition-colors border border-red-500/20 backdrop-blur-md"
-                                                title="Delete Asset"
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
+                        {images.map(image => {
+                            const isSelected = selectedImages.has(image._id);
+                            return (
+                                <div
+                                    key={image._id}
+                                    className={`group relative bg-slate-900/50 backdrop-blur-xl rounded-xl border overflow-hidden transition-all hover:translate-y-[-4px] hover:shadow-xl
+                                        ${isSelected ? 'border-pink-500 ring-1 ring-pink-500' : 'border-white/5 hover:border-pink-500/30'}
+                                    `}
+                                    onClick={() => toggleSelection(image._id)}
+                                >
+                                    <div className="aspect-video relative bg-slate-950 cursor-pointer">
+                                        <Image
+                                            src={image.thumbnail || image.src}
+                                            alt={image.description}
+                                            fill
+                                            className="object-cover transition-transform duration-700 group-hover:scale-105"
+                                        />
+
+                                        {/* Selection Checkbox Overlay */}
+                                        <div className={`absolute top-2 right-2 z-20 transition-all duration-200 transform
+                                            ${isSelected ? 'opacity-100 scale-100' : 'opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100'}
+                                        `}>
+                                            <div className={`w-6 h-6 rounded border flex items-center justify-center
+                                                ${isSelected ? 'bg-pink-500 border-pink-500 text-white' : 'bg-black/50 border-white/50 text-white/50 hover:bg-black/80 hover:border-white'}
+                                            `}>
+                                                {isSelected && <Check size={14} />}
+                                            </div>
                                         </div>
+
+                                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-4 pointer-events-none">
+                                            <div className="flex justify-between items-end pointer-events-auto">
+                                                <span className="text-[10px] font-mono text-slate-300 bg-slate-900/50 px-2 py-1 rounded backdrop-blur-sm border border-white/10">
+                                                    {new Date(image.createdAt).toLocaleDateString()}
+                                                </span>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleDelete(image._id);
+                                                    }}
+                                                    className="p-2 bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white rounded-lg transition-colors border border-red-500/20 backdrop-blur-md"
+                                                    title="Delete Asset"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                        {!image.thumbnail && (
+                                            <div className="absolute top-2 left-2 px-2 py-1 bg-amber-500/90 text-black text-[10px] uppercase font-bold tracking-wider rounded">
+                                                Raw Asset
+                                            </div>
+                                        )}
                                     </div>
-                                    {!image.thumbnail && (
-                                        <div className="absolute top-2 left-2 px-2 py-1 bg-amber-500/90 text-black text-[10px] uppercase font-bold tracking-wider rounded">
-                                            Raw Asset
-                                        </div>
-                                    )}
+                                    <div className="p-4 border-t border-white/5 bg-white/[0.01]">
+                                        <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed" title={image.description}>
+                                            {image.description}
+                                        </p>
+                                    </div>
                                 </div>
-                                <div className="p-4 border-t border-white/5 bg-white/[0.01]">
-                                    <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed" title={image.description}>
-                                        {image.description}
-                                    </p>
-                                </div>
-                            </div>
-                        ))}
+                            );
+                        })}
 
                         {images.length === 0 && (
                             <div className="col-span-full py-20 flex flex-col items-center justify-center border-2 border-dashed border-white/10 rounded-2xl bg-slate-900/30">

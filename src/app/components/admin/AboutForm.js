@@ -5,6 +5,7 @@ import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, us
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, rectSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { getIconNames, IconList } from '@/lib/iconLibrary';
+import { Sparkles, Loader2, Wand2, Plus } from 'lucide-react';
 import Toast from './Toast';
 
 // Helper for Icon Preview
@@ -84,6 +85,8 @@ const AboutForm = () => {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
     const [notification, setNotification] = useState(null);
+    const [aiEnabled, setAiEnabled] = useState(false);
+    const [aiGenerating, setAiGenerating] = useState(null); // ID or 'summary' or 'skills'
 
     // Icon Picker State
     const [iconSearchTerm, setIconSearchTerm] = useState('');
@@ -110,7 +113,89 @@ const AboutForm = () => {
         };
         fetchIcons();
         fetchData();
+        checkAiConfig();
     }, []);
+
+    const checkAiConfig = async () => {
+        try {
+            const res = await fetch('/api/admin/ai/config');
+            const data = await res.json();
+            if (data.success && data.data) {
+                setAiEnabled(data.data.enabled);
+            }
+        } catch (error) {
+            console.error('Failed to fetch AI config:', error);
+        }
+    };
+
+    const handleAiAction = async (mode, contextData = {}) => {
+        if (aiGenerating) return;
+        setAiGenerating(mode === 'experience' ? contextData.id : mode);
+
+        try {
+            let prompt = '';
+            let context = {};
+            let apiMode = 'proofread';
+
+            if (mode === 'summary') {
+                prompt = formData.professionalSummary;
+                apiMode = 'refine_summary';
+            } else if (mode === 'skills') {
+                prompt = formData.experiences.map(e => e.description).join('\n');
+                context = { summary: formData.professionalSummary };
+                apiMode = 'suggest_skills';
+            } else if (mode === 'experience') {
+                prompt = contextData.description;
+                context = { company: contextData.company, role: contextData.role };
+                apiMode = 'refine_experience';
+            }
+
+            const res = await fetch('/api/admin/ai/text', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    mode: apiMode,
+                    prompt,
+                    context
+                })
+            });
+
+            const data = await res.json();
+
+            if (data.success) {
+                if (mode === 'summary') {
+                    setFormData(prev => ({ ...prev, professionalSummary: data.data }));
+                    showNotification(true, 'Narrative polished!');
+                } else if (mode === 'skills') {
+                    const skillNames = data.data.split(',').map(s => s.trim());
+                    const newSkills = skillNames.map(name => ({
+                        _id: `ai-${Math.random().toString(36).substr(2, 9)}`,
+                        name,
+                        level: 70,
+                        icon: ''
+                    }));
+                    setFormData(prev => ({
+                        ...prev,
+                        skills: [...prev.skills, ...newSkills]
+                    }));
+                    showNotification(true, 'Skill set expanded!');
+                } else if (mode === 'experience') {
+                    const newExperiences = formData.experiences.map(exp =>
+                        exp._id === contextData.id ? { ...exp, description: data.data } : exp
+                    );
+                    setFormData(prev => ({ ...prev, experiences: newExperiences }));
+                    showNotification(true, 'Trajectory refined!');
+                }
+            } else {
+                showNotification(false, data.error || 'AI synthesis failed');
+            }
+        } catch (error) {
+            console.error('AI Error:', error);
+            showNotification(false, 'AI uplink interrupted');
+        } finally {
+            setAiGenerating(null);
+        }
+    };
 
     // Hybrid Search: Match local icons first, then CDN icons
     // Hybrid Search: Match local icons first, then CDN icons
@@ -482,17 +567,32 @@ const AboutForm = () => {
                     </div>
                 </div>
 
-                <div>
-                    <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Professional Narrative</label>
-                    <textarea
-                        name="professionalSummary"
-                        value={formData.professionalSummary}
-                        onChange={handleChange}
-                        rows="6"
-                        className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-4 text-slate-300 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-600 leading-relaxed"
-                        required
-                    />
+                <div className="flex justify-between items-center mb-2">
+                    <label className="block text-slate-400 text-xs font-mono uppercase tracking-wider">Professional Narrative</label>
+                    {aiEnabled && (
+                        <button
+                            type="button"
+                            onClick={() => handleAiAction('summary')}
+                            disabled={aiGenerating === 'summary' || !formData.professionalSummary}
+                            className="flex items-center gap-1.5 px-3 py-1 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 rounded-lg border border-cyan-500/20 transition-all text-[10px] font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed group/ai"
+                        >
+                            {aiGenerating === 'summary' ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                                <Wand2 className="w-3 h-3 group-hover/ai:scale-110 transition-transform" />
+                            )}
+                            Refine Narrative
+                        </button>
+                    )}
                 </div>
+                <textarea
+                    name="professionalSummary"
+                    value={formData.professionalSummary}
+                    onChange={handleChange}
+                    rows="6"
+                    className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-4 text-slate-300 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-600 leading-relaxed"
+                    required
+                />
             </div>
 
             {/* Skills Section */}
@@ -504,13 +604,30 @@ const AboutForm = () => {
                         Skill Competencies
                         <div className="h-px w-20 bg-green-500/10" />
                     </h2>
-                    <button
-                        type="button"
-                        onClick={addSkill}
-                        className="text-xs bg-green-500/10 hover:bg-green-500/20 text-green-400 px-4 py-2 rounded-lg border border-green-500/20 hover:border-green-500/50 transition-all font-mono uppercase tracking-wide flex items-center gap-2"
-                    >
-                        + Add Node
-                    </button>
+                    <div className="flex items-center gap-3">
+                        {aiEnabled && (
+                            <button
+                                type="button"
+                                onClick={() => handleAiAction('skills')}
+                                disabled={aiGenerating === 'skills' || formData.experiences.length === 0}
+                                className="text-[10px] bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 px-3 py-1.5 rounded-lg border border-cyan-500/20 hover:border-cyan-500/50 transition-all font-mono uppercase tracking-wide flex items-center gap-2"
+                            >
+                                {aiGenerating === 'skills' ? (
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : (
+                                    <Sparkles className="w-3 h-3" />
+                                )}
+                                AI Suggest
+                            </button>
+                        )}
+                        <button
+                            type="button"
+                            onClick={addSkill}
+                            className="text-xs bg-green-500/10 hover:bg-green-500/20 text-green-400 px-4 py-2 rounded-lg border border-green-500/20 hover:border-green-500/50 transition-all font-mono uppercase tracking-wide flex items-center gap-2"
+                        >
+                            <Plus className="w-3 h-3" /> Add Node
+                        </button>
+                    </div>
                 </div>
 
                 <DndContext
@@ -657,7 +774,24 @@ const AboutForm = () => {
                                         </div>
                                     </div>
                                     <div>
-                                        <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Responsibilities</label>
+                                        <div className="flex justify-between items-center mb-2">
+                                            <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500">Responsibilities</label>
+                                            {aiEnabled && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleAiAction('experience', { id: exp._id, description: exp.description, company: exp.company, role: exp.role })}
+                                                    disabled={aiGenerating === exp._id || !exp.description}
+                                                    className="flex items-center gap-1.5 px-2 py-0.5 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 rounded border border-orange-500/20 transition-all text-[9px] font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed group/ai"
+                                                >
+                                                    {aiGenerating === exp._id ? (
+                                                        <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                                                    ) : (
+                                                        <Wand2 className="w-2.5 h-2.5 group-hover/ai:scale-110 transition-transform" />
+                                                    )}
+                                                    Optimize Description
+                                                </button>
+                                            )}
+                                        </div>
                                         <textarea
                                             value={exp.description}
                                             onChange={(e) => handleExperienceChange(index, 'description', e.target.value)}
