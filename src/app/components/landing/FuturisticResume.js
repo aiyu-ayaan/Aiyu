@@ -49,7 +49,9 @@ const FuturisticResume = ({ data }) => {
         } else {
             return {
                 enable3DTilt: true,
-                enableTextRegeneration: false, // Disabled - too expensive
+                // Text regeneration disabled: constantly regenerating 2500+ chars on mouse move
+                // causes significant jank even on high-end devices due to React re-renders
+                enableTextRegeneration: false,
                 enableMagneticIcon: true,
                 enableScanline: true,
                 enableMobileAutoAnimation: true,
@@ -225,11 +227,7 @@ const FuturisticResume = ({ data }) => {
         };
 
         animationId = requestAnimationFrame(animate);
-        return () => {
-            if (animationId) {
-                cancelAnimationFrame(animationId);
-            }
-        };
+        return () => cancelAnimationFrame(animationId);
     }, [isTouch, x, y, config.enableMobileAutoAnimation, config.mobileAnimationFps, tier]);
     // -------------------------
     // -------------------------

@@ -238,7 +238,7 @@ const SpaceBackground = () => {
             {config.enableShootingStars && isVisible && shootingStars.map(star => (
                 <motion.div
                     key={star.id}
-                    className="absolute h-[2px] w-[80px] bg-gradient-to-r from-transparent via-white to-transparent"
+                    className="absolute h-[2px] w-[80px] bg-gradient-to-r from-transparent via-white to-transparent" // Reduced width from 100px for performance
                     style={{
                         left: `${star.x}%`,
                         top: `${star.y}%`,

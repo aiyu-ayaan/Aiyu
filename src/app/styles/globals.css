@@ -344,7 +344,7 @@ html {
 
 .animate-pulse-glow {
   animation: pulse-glow 2.5s ease-in-out infinite;
-  will-change: box-shadow;
+  /* Note: box-shadow is not GPU-accelerated, so no will-change hint */
 }
 
 /* Fade in up animation - GPU accelerated */
