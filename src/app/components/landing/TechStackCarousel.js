@@ -1,13 +1,33 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from '../../context/ThemeContext';
 import { getIcon } from '../../../lib/iconLibrary';
+import useDevicePerformance from '../../hooks/useDevicePerformance';
 
 const TechStackCarousel = ({ data }) => {
     const { theme } = useTheme();
+    const { tier, prefersReducedMotion } = useDevicePerformance();
     const skills = data?.skills || [];
     const [accentColor, setAccentColor] = useState('#22d3ee');
+    const [isVisible, setIsVisible] = useState(false);
+    const containerRef = useRef(null);
+
+    // Lazy loading: Only animate when in viewport
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                setIsVisible(entry.isIntersecting);
+            },
+            { threshold: 0.01 }
+        );
+
+        if (containerRef.current) {
+            observer.observe(containerRef.current);
+        }
+
+        return () => observer.disconnect();
+    }, []);
 
     // Get the accent color from CSS custom properties
     useEffect(() => {
@@ -22,10 +42,27 @@ const TechStackCarousel = ({ data }) => {
         }
     }, [theme]);
 
-    // If we have 6 or fewer items, don't duplicate (use static grid)
-    // Otherwise duplicate for infinite scroll
-    const shouldAnimate = skills.length > 6;
-    const displayedSkills = shouldAnimate ? [...skills, ...skills] : skills;
+    // Adaptive animation config
+    const animationConfig = useMemo(() => {
+        if (prefersReducedMotion || tier === 'low') {
+            return {
+                shouldAnimate: false,
+                duration: 0,
+            };
+        } else if (tier === 'medium') {
+            return {
+                shouldAnimate: skills.length > 6,
+                duration: 45, // Slower for less CPU usage
+            };
+        } else {
+            return {
+                shouldAnimate: skills.length > 6,
+                duration: 35, // Slightly slower than before (was 30)
+            };
+        }
+    }, [tier, prefersReducedMotion, skills.length]);
+
+    const displayedSkills = animationConfig.shouldAnimate ? [...skills, ...skills] : skills;
 
     const renderSkillIcon = (skill, index) => {
         const cleanName = skill.name.split('(')[0].trim();
@@ -69,11 +106,14 @@ const TechStackCarousel = ({ data }) => {
     };
 
     return (
-        <div className="py-12 overflow-hidden relative"
+        <div 
+            ref={containerRef}
+            className="py-12 overflow-hidden relative"
             style={{
                 background: 'transparent',
                 borderTop: '1px solid var(--border-secondary)',
                 borderBottom: '1px solid var(--border-secondary)',
+                contain: 'layout style', // CSS containment for performance
             }}>
 
             <div className="max-w-6xl mx-auto px-4 mb-8 text-center">
@@ -86,7 +126,7 @@ const TechStackCarousel = ({ data }) => {
                 </h2>
             </div>
 
-            {shouldAnimate ? (
+            {animationConfig.shouldAnimate && isVisible ? (
                 <motion.div
                     className="flex gap-12 items-center"
                     animate={{
@@ -96,14 +136,22 @@ const TechStackCarousel = ({ data }) => {
                         x: {
                             repeat: Infinity,
                             repeatType: "loop",
-                            duration: 30,
+                            duration: animationConfig.duration,
                             ease: "linear",
                         },
                     }}
-                    style={{ width: "fit-content" }}
+                    style={{ 
+                        width: "fit-content",
+                        willChange: 'transform',
+                    }}
                 >
                     {displayedSkills.map((skill, index) => renderSkillIcon(skill, index))}
                 </motion.div>
+            ) : animationConfig.shouldAnimate && !isVisible ? (
+                // Static version when not in viewport
+                <div className="flex gap-12 items-center" style={{ width: "fit-content" }}>
+                    {displayedSkills.map((skill, index) => renderSkillIcon(skill, index))}
+                </div>
             ) : (
                 <div className="max-w-4xl mx-auto px-4">
                     <div className="flex flex-wrap gap-8 items-center justify-center">

@@ -10,9 +10,29 @@ body.preloader-active [class*="n8n-chat"] {
   pointer-events: none !important;
 }
 
-/* 3D Transform Utilities */
+/* 3D Transform Utilities with GPU acceleration */
 .transform-style-3d {
   transform-style: preserve-3d;
+  will-change: transform;
+}
+
+/* Performance optimization for animations */
+.gpu-accelerated {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* Reduce motion preference - disable all animations */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* Dark Theme - Based on VS Code theme */
@@ -252,29 +272,30 @@ body::before {
   width: 100%;
 }
 
-/* Blob animations */
+/* Blob animations - optimized with GPU acceleration */
 @keyframes blob {
 
   0%,
   100% {
-    transform: translate(0, 0) scale(1);
+    transform: translate3d(0, 0, 0) scale(1);
   }
 
   25% {
-    transform: translate(20px, -50px) scale(1.1);
+    transform: translate3d(20px, -50px, 0) scale(1.1);
   }
 
   50% {
-    transform: translate(-20px, 20px) scale(0.9);
+    transform: translate3d(-20px, 20px, 0) scale(0.9);
   }
 
   75% {
-    transform: translate(50px, 50px) scale(1.05);
+    transform: translate3d(50px, 50px, 0) scale(1.05);
   }
 }
 
 .animate-blob {
-  animation: blob 20s infinite;
+  animation: blob 25s infinite; /* Slower for less CPU usage */
+  will-change: transform;
 }
 
 .animation-delay-2000 {
@@ -305,41 +326,43 @@ html {
 
 .animate-gradient-x {
   background-size: 200% 200%;
-  animation: gradient-x 3s ease infinite;
+  animation: gradient-x 4s ease infinite; /* Slightly slower for performance */
 }
 
-/* Pulse glow effect */
+/* Pulse glow effect - optimized */
 @keyframes pulse-glow {
 
   0%,
   100% {
-    box-shadow: 0 0 20px rgba(34, 211, 238, 0.3);
+    box-shadow: 0 0 15px rgba(34, 211, 238, 0.25);
   }
 
   50% {
-    box-shadow: 0 0 40px rgba(34, 211, 238, 0.6);
+    box-shadow: 0 0 30px rgba(34, 211, 238, 0.45);
   }
 }
 
 .animate-pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
+  animation: pulse-glow 2.5s ease-in-out infinite;
+  will-change: box-shadow;
 }
 
-/* Fade in up animation */
+/* Fade in up animation - GPU accelerated */
 @keyframes fadeInUp {
   from {
     opacity: 0;
-    transform: translateY(30px);
+    transform: translate3d(0, 30px, 0);
   }
 
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translate3d(0, 0, 0);
   }
 }
 
 .animate-fadeInUp {
   animation: fadeInUp 0.8s ease-out;
+  will-change: opacity, transform;
 }
 
 /* Scale on hover */
@@ -351,44 +374,45 @@ html {
   transform: scale(1.05);
 }
 
-/* Shimmer effect */
+/* Shimmer effect - GPU accelerated */
 @keyframes shimmer {
   0% {
-    background-position: -1000px 0;
+    transform: translateX(-100%);
   }
 
   100% {
-    background-position: 1000px 0;
+    transform: translateX(100%);
   }
 }
 
 .shimmer {
   background: linear-gradient(to right,
       transparent 0%,
-      rgba(255, 255, 255, 0.3) 50%,
+      rgba(255, 255, 255, 0.2) 50%,
       transparent 100%);
-  background-size: 1000px 100%;
-  animation: shimmer 2s infinite;
+  animation: shimmer 2.5s infinite;
+  will-change: transform;
 }
 
-/* Card hover effects */
+/* Card hover effects - GPU accelerated */
 .card-hover {
-  transition: all 0.3s ease;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  will-change: transform;
 }
 
 .card-hover:hover {
-  transform: translateY(-8px);
+  transform: translate3d(0, -8px, 0);
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
 }
 
-/* Responsive improvements */
+/* Responsive improvements - reduce animations on mobile */
 @media (max-width: 640px) {
   .animate-blob {
-    animation: blob 15s infinite;
+    animation: blob 30s infinite; /* Much slower on mobile */
   }
 
   body::before {
-    filter: blur(50px);
+    filter: blur(40px); /* Reduced blur on mobile */
   }
 }
 

@@ -32,28 +32,31 @@ const FuturisticResume = ({ data }) => {
                 tiltStiffness: 100,
                 tiltDamping: 30,
                 mobileAnimationFps: 0,
+                textLength: 1500, // Reduced text for low-end
             };
         } else if (tier === 'medium') {
             return {
                 enable3DTilt: true,
-                enableTextRegeneration: false, // throttled via callback
-                enableMagneticIcon: true,
-                enableScanline: true,
+                enableTextRegeneration: false,
+                enableMagneticIcon: false, // Disabled for better performance
+                enableScanline: false, // Disabled for better performance
                 enableMobileAutoAnimation: true,
-                tiltStiffness: 80,
-                tiltDamping: 40,
-                mobileAnimationFps: 30, // Throttled
+                tiltStiffness: 60, // Lower for smoother animation
+                tiltDamping: 50, // Higher damping for less jitter
+                mobileAnimationFps: 24, // Lower FPS for medium tier
+                textLength: 2000,
             };
         } else {
             return {
                 enable3DTilt: true,
-                enableTextRegeneration: true,
+                enableTextRegeneration: false, // Disabled - too expensive
                 enableMagneticIcon: true,
                 enableScanline: true,
                 enableMobileAutoAnimation: true,
-                tiltStiffness: 100,
-                tiltDamping: 30,
-                mobileAnimationFps: 60, // Full
+                tiltStiffness: 80, // Slightly reduced
+                tiltDamping: 35,
+                mobileAnimationFps: 45, // Reduced from 60
+                textLength: 2500, // Reduced from 3000
             };
         }
     }, [tier, prefersReducedMotion]);
@@ -116,43 +119,56 @@ const FuturisticResume = ({ data }) => {
     }, []);
 
     useEffect(() => {
-        setText(generateRandomText(3000));
-    }, [generateRandomText]);
+        setText(generateRandomText(config.textLength));
+    }, [generateRandomText, config.textLength]);
 
-    const handleMouseMove = (e) => {
+    // Throttled mouse move handler using RAF
+    const rafRef = useRef(null);
+    const lastMouseEventRef = useRef(null);
+    
+    const handleMouseMove = useCallback((e) => {
         if (!containerRef.current || isTouch || !config.enable3DTilt) return;
-        const rect = containerRef.current.getBoundingClientRect();
+        
+        lastMouseEventRef.current = e;
+        
+        if (rafRef.current === null) {
+            rafRef.current = requestAnimationFrame(() => {
+                const evt = lastMouseEventRef.current;
+                if (!evt || !containerRef.current) {
+                    rafRef.current = null;
+                    return;
+                }
+                
+                const rect = containerRef.current.getBoundingClientRect();
+                const mouseX = evt.clientX - rect.left;
+                const mouseY = evt.clientY - rect.top;
 
-        const mouseX = e.clientX - rect.left;
-        const mouseY = e.clientY - rect.top;
+                // Update gradient position
+                setMousePos({ x: mouseX, y: mouseY });
 
-        // Update gradient position
-        setMousePos({ x: mouseX, y: mouseY });
+                // Calculate normalized position for tilt (-0.5 to 0.5)
+                const normalizedX = (mouseX / rect.width) - 0.5;
+                const normalizedY = (mouseY / rect.height) - 0.5;
 
-        // Calculate normalized position for tilt (-0.5 to 0.5)
-        const normalizedX = (mouseX / rect.width) - 0.5;
-        const normalizedY = (mouseY / rect.height) - 0.5;
+                x.set(normalizedX);
+                y.set(normalizedY);
 
-        x.set(normalizedX);
-        y.set(normalizedY);
-
-        setIsHovering(true);
-        // Regenerate text on move for "glitch" feel - only on high-end
-        if (config.enableTextRegeneration) {
-            setText(generateRandomText(3000));
+                setIsHovering(true);
+                rafRef.current = null;
+            });
         }
-    };
+    }, [isTouch, config.enable3DTilt, x, y]);
 
-    const handleMouseLeave = () => {
+    const handleMouseLeave = useCallback(() => {
         if (isTouch) return;
+        if (rafRef.current !== null) {
+            cancelAnimationFrame(rafRef.current);
+            rafRef.current = null;
+        }
         setIsHovering(false);
         x.set(0);
         y.set(0);
-        // Reset text to standard state
-        if (config.enableTextRegeneration) {
-            setText(generateRandomText(3000));
-        }
-    };
+    }, [isTouch, x, y]);
 
     // --- Touch / Mobile Logic ---
     const [isTouch, setIsTouch] = useState(false);
@@ -167,7 +183,7 @@ const FuturisticResume = ({ data }) => {
         return () => window.removeEventListener('resize', checkTouch);
     }, []);
 
-    // Auto-animation for touch devices - adaptive
+    // Auto-animation for touch devices - adaptive with better performance
     useEffect(() => {
         if (!isTouch || !config.enableMobileAutoAnimation) return;
 
@@ -175,41 +191,46 @@ const FuturisticResume = ({ data }) => {
 
         const startTime = Date.now();
         let lastFrameTime = 0;
+        let animationId = null;
         const frameInterval = config.mobileAnimationFps > 0 ? 1000 / config.mobileAnimationFps : 0;
 
         const animate = (currentTime) => {
             // Throttle based on target FPS
             if (frameInterval > 0 && currentTime - lastFrameTime < frameInterval) {
-                requestAnimationFrame(animate);
+                animationId = requestAnimationFrame(animate);
                 return;
             }
             lastFrameTime = currentTime;
 
             const elapsed = Date.now() - startTime;
 
-            // Gentle 3D Float (Sine wave)
-            const floatSpeed = 0.002;
-            const newX = Math.sin(elapsed * floatSpeed) * 0.2; // +/- 0.2 tilt
-            const newY = Math.cos(elapsed * floatSpeed * 0.8) * 0.2;
+            // Gentle 3D Float (Sine wave) - reduced intensity
+            const floatSpeed = 0.0015; // Slower for smoother animation
+            const newX = Math.sin(elapsed * floatSpeed) * 0.15; // Reduced from 0.2
+            const newY = Math.cos(elapsed * floatSpeed * 0.8) * 0.15;
 
             x.set(newX);
             y.set(newY);
 
-            // Auto-Scan Flashlight (Figure-8 pattern)
-            if (containerRef.current) {
+            // Auto-Scan Flashlight (Figure-8 pattern) - only on high tier mobile
+            if (containerRef.current && tier === 'high') {
                 const rect = containerRef.current.getBoundingClientRect();
-                const scanSpeed = 0.001;
-                const activeX = (Math.sin(elapsed * scanSpeed) * 0.4 + 0.5) * rect.width;
-                const activeY = (Math.cos(elapsed * scanSpeed * 0.7) * 0.4 + 0.5) * rect.height;
+                const scanSpeed = 0.0008; // Slower scan
+                const activeX = (Math.sin(elapsed * scanSpeed) * 0.35 + 0.5) * rect.width;
+                const activeY = (Math.cos(elapsed * scanSpeed * 0.7) * 0.35 + 0.5) * rect.height;
                 setMousePos({ x: activeX, y: activeY });
             }
 
-            requestAnimationFrame(animate);
+            animationId = requestAnimationFrame(animate);
         };
 
-        const animationId = requestAnimationFrame(animate);
-        return () => cancelAnimationFrame(animationId);
-    }, [isTouch, x, y, config.enableMobileAutoAnimation, config.mobileAnimationFps]);
+        animationId = requestAnimationFrame(animate);
+        return () => {
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+            }
+        };
+    }, [isTouch, x, y, config.enableMobileAutoAnimation, config.mobileAnimationFps, tier]);
     // -------------------------
     // -------------------------
 
