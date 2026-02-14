@@ -1,6 +1,6 @@
 
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -431,7 +431,7 @@ export default function NewBlogPage() {
                             {formData.image && (
                                 <div className="mt-2 text-center">
                                     <p className="text-xs text-slate-500 mb-1">Preview:</p>
-                                    <img src={formData.image} alt="Preview" className="h-48 mx-auto rounded-lg object-cover border border-white/10" />
+                                    <img src={formData.image} alt="Preview" className="w-full h-auto max-h-[500px] mx-auto rounded-lg object-contain border border-white/10" />
                                 </div>
                             )}
                         </>
