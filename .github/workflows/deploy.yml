@@ -1,14 +1,104 @@
 name: Deploy to Server
 
 on:
-  # push:
-  #   branches:
-  #     - master
+  push:
+    branches:
+      - master
   workflow_dispatch:
 
 jobs:
-  deploy:
+  ui-tests:
+    timeout-minutes: 60
     runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        browser: [chromium, firefox]
+        viewport: [desktop, mobile]
+        exclude:
+          - browser: firefox
+            viewport: mobile
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Build application
+        run: npm run build
+
+      - name: Run UI tests - ${{ matrix.browser }} on ${{ matrix.viewport }}
+        run: |
+          if [ "${{ matrix.viewport }}" = "mobile" ]; then
+            npx playwright test --project=${{ matrix.browser }} --config=playwright.mobile.config.js
+          else
+            npx playwright test --project=${{ matrix.browser }}
+          fi
+        env:
+          NEXT_PUBLIC_BASE_URL: http://localhost:3000
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report-${{ matrix.browser }}-${{ matrix.viewport }}
+          path: playwright-report/
+          retention-days: 30
+
+      - name: Upload screenshots
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: screenshots-${{ matrix.browser }}-${{ matrix.viewport }}
+          path: test-results/
+          retention-days: 7
+
+      - name: Upload videos
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: videos-${{ matrix.browser }}-${{ matrix.viewport }}
+          path: test-results/
+          retention-days: 7
+
+      - name: Generate Test Report
+        if: always()
+        run: |
+          echo "# UI Test Report" > test-report.md
+          echo "## Test Results for ${{ matrix.browser }} on ${{ matrix.viewport }}" >> test-report.md
+          echo "" >> test-report.md
+          
+          if [ -d "playwright-report" ]; then
+            echo "### Test Summary" >> test-report.md
+            echo "\`\`\`" >> test-report.md
+            find playwright-report -name "*.txt" -exec cat {} \; 2>/dev/null || echo "No detailed results found" >> test-report.md
+            echo "\`\`\`" >> test-report.md
+            echo "" >> test-report.md
+          fi
+
+      - name: Upload Test Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-report-${{ matrix.browser }}-${{ matrix.viewport }}
+          path: test-report.md
+          retention-days: 30
+
+  deploy:
+    needs: ui-tests
+    runs-on: ubuntu-latest
+    if: success() # Only deploy if UI tests pass
+    
     steps:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@master
@@ -17,6 +107,7 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           password: ${{ secrets.SSH_PASSWORD }}
           script: |
+            echo "Starting deployment after successful UI tests..."
             ls -la 
             cd docker/Aiyu/
             git pull origin master
@@ -26,4 +117,80 @@ jobs:
             docker compose up -d
             docker system prune -a --volumes -f
             
- 
+            echo "Deployment completed successfully!"
+
+  deployment-summary:
+    needs: [ui-tests, deploy]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - name: Download all test reports
+        uses: actions/download-artifact@v4
+        with:
+          pattern: test-report-*
+          merge-multiple: true
+          path: reports/
+
+      - name: Generate Deployment Summary
+        run: |
+          echo "# Deployment Summary" > deployment-summary.md
+          echo "" >> deployment-summary.md
+          echo "## UI Test Results" >> deployment-summary.md
+          echo "" >> deployment-summary.md
+          
+          # Check if UI tests passed
+          if [ "${{ needs.ui-tests.result }}" = "success" ]; then
+            echo "✅ **UI Tests**: All tests passed" >> deployment-summary.md
+          else
+            echo "❌ **UI Tests**: Some tests failed" >> deployment-summary.md
+          fi
+          
+          echo "" >> deployment-summary.md
+          echo "## Deployment Status" >> deployment-summary.md
+          echo "" >> deployment-summary.md
+          
+          if [ "${{ needs.deploy.result }}" = "success" ]; then
+            echo "✅ **Deployment**: Successfully deployed to production" >> deployment-summary.md
+          elif [ "${{ needs.deploy.result }}" = "failure" ]; then
+            echo "❌ **Deployment**: Failed to deploy" >> deployment-summary.md
+          elif [ "${{ needs.deploy.result }}" = "skipped" ]; then
+            echo "⏭️ **Deployment**: Skipped due to test failures" >> deployment-summary.md
+          fi
+          
+          echo "" >> deployment-summary.md
+          echo "## Test Reports" >> deployment-summary.md
+          echo "" >> deployment-summary.md
+          
+          # List all test report files
+          for report in reports/*.md; do
+            if [ -f "$report" ]; then
+              echo "### $(basename "$report" .md)" >> deployment-summary.md
+              echo "\`\`\`" >> deployment-summary.md
+              cat "$report" >> deployment-summary.md
+              echo "\`\`\`" >> deployment-summary.md
+              echo "" >> deployment-summary.md
+            fi
+          done
+
+      - name: Upload Deployment Summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-summary
+          path: deployment-summary.md
+          retention-days: 90
+
+      - name: Comment on PR (if applicable)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const summary = fs.readFileSync('deployment-summary.md', 'utf8');
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: summary
+            });

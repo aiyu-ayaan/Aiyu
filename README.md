@@ -404,6 +404,17 @@ npm run build            # Build production bundle
 npm run start            # Start production server
 npm run lint             # Run ESLint
 
+# Testing
+npm test                # Run all UI automation tests
+npm run test:ui         # Run tests with UI mode
+npm run test:headed     # Run tests with visible browser
+npm run test:debug      # Run tests in debug mode
+npm run test:visual     # Run only visual regression tests
+npm run test:public     # Run only public site tests
+npm run test:admin      # Run only admin panel tests
+npm run test:report     # Show test report
+npm run test:update-snapshots # Update visual snapshots
+
 # Docker Operations
 npm run docker:build     # Build Docker images
 npm run docker:up        # Start Docker containers
@@ -415,6 +426,43 @@ npm run security-check   # Run security checks
 npm run docker:verify    # Verify Docker security configuration
 npm run emergency:cleanup # Emergency cleanup script (if compromised)
 ```
+
+### 🧪 UI Automation Testing
+
+This project includes comprehensive UI automation testing using Playwright to ensure quality and prevent regressions.
+
+#### Test Coverage
+- **Public Site Tests**: Home, About, Projects, Blogs, Gallery, Contact pages
+- **Admin Panel Tests**: Login, Dashboard, Content Management (CRUD operations)
+- **Visual Regression Tests**: Screenshots across different viewports and browsers
+- **Responsive Testing**: Mobile, tablet, desktop compatibility
+- **Accessibility Tests**: WCAG 2.1 compliance verification
+
+#### Quick Test Setup
+1. **Install Playwright browsers**:
+   ```bash
+   npx playwright install
+   ```
+
+2. **Create test admin user** (required for admin tests):
+   - Username: `test_admin`
+   - Password: `test_password_123`
+
+3. **Run tests**:
+   ```bash
+   npm test                # Run all tests
+   npm run test:public     # Public site only
+   npm run test:admin      # Admin panel only
+   npm run test:visual     # Visual regression only
+   ```
+
+#### Test Reports
+- **HTML Reports**: Detailed test results with screenshots
+- **CI/CD Integration**: Automatic testing on deployment
+- **Failure Artifacts**: Screenshots and videos on test failures
+- **Coverage Reports**: Multi-browser and viewport testing
+
+📖 **Complete Testing Guide**: See [`tests/README.md`](tests/README.md) for detailed testing documentation
 
 ### 🔍 Development Tips
 

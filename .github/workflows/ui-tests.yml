@@ -1,0 +1,255 @@
+name: UI Automation Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to test'
+        required: false
+        default: 'main'
+      browser:
+        description: 'Browser to test (chromium, firefox, webkit, or all)'
+        required: false
+        default: 'chromium'
+      viewport:
+        description: 'Viewport to test (desktop, mobile, or all)'
+        required: false
+        default: 'desktop'
+
+jobs:
+  ui-tests:
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        # Default matrix for basic testing
+        browser: [chromium]
+        viewport: [desktop]
+        # Additional configurations for specific inputs
+        include:
+          # Firefox desktop
+          - browser: firefox
+            viewport: desktop
+          # Chromium mobile
+          - browser: chromium
+            viewport: mobile
+          # WebKit desktop
+          - browser: webkit
+            viewport: desktop
+        exclude:
+          # Exclude combinations based on inputs
+          - browser: firefox
+            viewport: mobile
+          - browser: webkit
+            viewport: mobile
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Install Playwright Browsers
+      run: npx playwright install --with-deps ${{ matrix.browser }}
+
+    - name: Build application
+      run: npm run build
+
+    - name: Run UI tests - ${{ matrix.browser }} on ${{ matrix.viewport }}
+      run: |
+        if [ "${{ matrix.viewport }}" = "mobile" ]; then
+          npx playwright test --project=${{ matrix.browser }} --config=playwright.mobile.config.js
+        else
+          npx playwright test --project=${{ matrix.browser }}
+        fi
+      env:
+        NEXT_PUBLIC_BASE_URL: http://localhost:3000
+        ADMIN_AUTH_TOKEN: ${{ secrets.ADMIN_AUTH_TOKEN }}
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: standalone-test-report-${{ matrix.browser }}-${{ matrix.viewport }}
+        path: playwright-report/
+        retention-days: 30
+
+    - name: Upload screenshots
+      uses: actions/upload-artifact@v4
+      if: failure()
+      with:
+        name: standalone-screenshots-${{ matrix.browser }}-${{ matrix.viewport }}
+        path: test-results/
+        retention-days: 7
+
+    - name: Upload videos
+      uses: actions/upload-artifact@v4
+      if: failure()
+      with:
+        name: standalone-videos-${{ matrix.browser }}-${{ matrix.viewport }}
+        path: test-results/
+        retention-days: 7
+
+    - name: Generate Test Report
+      if: always()
+      run: |
+        echo "# Standalone UI Test Report" > test-report.md
+        echo "## Test Results for ${{ matrix.browser }} on ${{ matrix.viewport }}" >> test-report.md
+        echo "" >> test-report.md
+        
+        if [ -d "playwright-report" ]; then
+          echo "### Test Summary" >> test-report.md
+          echo "\`\`\`" >> test-report.md
+          find playwright-report -name "*.txt" -exec cat {} \; 2>/dev/null || echo "No detailed results found" >> test-report.md
+          echo "\`\`\`" >> test-report.md
+          echo "" >> test-report.md
+        fi
+
+    - name: Upload Test Report
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: standalone-test-report-${{ matrix.browser }}-${{ matrix.viewport }}
+        path: test-report.md
+        retention-days: 30
+
+  visual-regression:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Install Playwright Browsers
+      run: npx playwright install --with-deps chromium
+
+    - name: Build application
+      run: npm run build
+
+    - name: Run visual regression tests
+      run: npx playwright test tests/visual/ --project=chromium
+      env:
+        NEXT_PUBLIC_BASE_URL: http://localhost:3000
+
+    - name: Upload visual test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: visual-test-results
+        path: playwright-report/
+        retention-days: 30
+
+  accessibility-tests:
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Install Playwright Browsers
+      run: npx playwright install --with-deps chromium
+
+    - name: Install axe CLI
+      run: npm install -g @axe-core/cli
+
+    - name: Build application
+      run: npm run build
+
+    - name: Start application
+      run: npm start &
+      env:
+        NEXT_PUBLIC_BASE_URL: http://localhost:3000
+
+    - name: Wait for application to start
+      run: sleep 10
+
+    - name: Run accessibility tests
+      run: |
+        # Test main pages for accessibility
+        axe http://localhost:3000 --tags wcag2a,wcag2aa --exit
+        axe http://localhost:3000/about-me --tags wcag2a,wcag2aa --exit
+        axe http://localhost:3000/projects --tags wcag2a,wcag2aa --exit
+        axe http://localhost:3000/blogs --tags wcag2a,wcag2aa --exit
+        axe http://localhost:3000/contact-us --tags wcag2a,wcag2aa --exit
+
+  performance-tests:
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Install Playwright Browsers
+      run: npx playwright install --with-deps chromium
+
+    - name: Install Lighthouse CI
+      run: npm install -g @lhci/cli@0.12.x
+
+    - name: Build application
+      run: npm run build
+
+    - name: Run Lighthouse CI
+      run: lhci autorun
+      env:
+        LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+
+    - name: Upload Lighthouse results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: lighthouse-results
+        path: .lighthouseci/
+        retention-days: 30
+
+  notify:
+    needs: [ui-tests, visual-regression, accessibility-tests, performance-tests]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+    - name: Notify on success
+      if: ${{ needs.ui-tests.result == 'success' && needs.visual-regression.result == 'success' && needs.accessibility-tests.result == 'success' && needs.performance-tests.result == 'success' }}
+      run: |
+        echo " All UI tests passed successfully!"
+        # Add Slack/Discord notification here if needed
+
+    - name: Notify on failure
+      if: ${{ needs.ui-tests.result == 'failure' || needs.visual-regression.result == 'failure' || needs.accessibility-tests.result == 'failure' || needs.performance-tests.result == 'failure' }}
+      run: |
+        echo " Some UI tests failed. Check the artifacts for details."
+        # Add Slack/Discord notification here if needed

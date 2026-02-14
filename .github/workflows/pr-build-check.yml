@@ -13,7 +13,66 @@ on:
         default: 'production'
 
 jobs:
+  ui-tests:
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        browser: [chromium]
+        viewport: [desktop]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Create dummy .env file
+        run: |
+          cat > .env.local << 'EOF'
+          MONGODB_URI=mongodb://dummy:dummy@dummy:27017/dummy
+          NEXT_PUBLIC_N8N_WEBHOOK_URL=https://dummy-webhook.example.com
+          NEXT_PUBLIC_AUTHOR_NAME=Portfolio Author
+          ADMIN_USERNAME=dummy
+          ADMIN_PASSWORD=dummy
+          JWT_SECRET=dummy-jwt-secret-for-ci-build
+          GITHUB_TOKEN=dummy-github-token
+          EOF
+
+      - name: Run UI tests - ${{ matrix.browser }} on ${{ matrix.viewport }}
+        run: |
+          npx playwright test --project=${{ matrix.browser }}
+        env:
+          NEXT_PUBLIC_BASE_URL: http://localhost:3000
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr-test-report-${{ matrix.browser }}-${{ matrix.viewport }}
+          path: playwright-report/
+          retention-days: 30
+
+      - name: Upload screenshots
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: pr-screenshots-${{ matrix.browser }}-${{ matrix.viewport }}
+          path: test-results/
+          retention-days: 7
+
   build:
+    needs: ui-tests
     runs-on: ubuntu-latest
     
     strategy:
@@ -67,7 +126,7 @@ jobs:
 
   deploy:
     name: Deploy to Server
-    needs: build
+    needs: [ui-tests, build]
     runs-on: ubuntu-latest
     if: |
       (github.ref == 'refs/heads/master' && github.event_name == 'push' && 

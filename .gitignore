@@ -48,3 +48,20 @@ next-env.d.ts
 # wiki folder
 /wiki
 /Aiyu.wiki
+
+# Playwright test results and artifacts
+/playwright-report/
+/test-results/
+/playwright/.cache/
+/lighthouseci/
+/axe-results/
+
+# Test screenshots and videos
+*.png
+*.mp4
+*.webm
+
+# Test configuration files (needed for GitHub Actions)
+!playwright.mobile.config.js
+!playwright.config.js
+playwright.config.js-temp
