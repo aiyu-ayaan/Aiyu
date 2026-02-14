@@ -1,6 +1,6 @@
 
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -14,9 +14,11 @@ import "react-datepicker/dist/react-datepicker.css";
 
 import { Loader2, Save, ArrowLeft, Image as ImageIcon, Eye, Edit2, Upload, FileText, Calendar, Tag, X, Sparkles, Wand2, Check, CheckCircle, XCircle } from 'lucide-react';
 import Toast from '@/app/components/admin/Toast';
+import MarkdownToolbar from '@/app/components/admin/MarkdownToolbar';
 
 export default function NewBlogPage() {
     const router = useRouter();
+    const contentRef = useRef(null);
     const [formData, setFormData] = useState({
         title: '',
         content: '',
@@ -25,7 +27,7 @@ export default function NewBlogPage() {
         date: new Date().toISOString().split('T')[0],
     });
     const [submitting, setSubmitting] = useState(false);
-    const [previewMode, setPreviewMode] = useState(false);
+    // const [previewMode, setPreviewMode] = useState(false); // Removed in favor of inline tabs
     const [imageMode, setImageMode] = useState('url'); // 'url' or 'upload'
     const [uploadFile, setUploadFile] = useState(null);
     const [uploadPreview, setUploadPreview] = useState(null);
@@ -285,13 +287,7 @@ export default function NewBlogPage() {
         <div className="p-8 min-h-screen text-white w-full">
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-3xl font-bold">Create New Blog</h1>
-                <button
-                    type="button"
-                    onClick={() => setPreviewMode(!previewMode)}
-                    className="text-sm bg-gray-700 px-4 py-2 rounded hover:bg-gray-600 transition-colors"
-                >
-                    {previewMode ? 'Edit Mode' : 'Preview Mode'}
-                </button>
+                {/* Removed preview mode toggle button */}
             </div>
 
             <form onSubmit={handleSubmit} className="w-full bg-slate-900/50 backdrop-blur-xl p-8 rounded-2xl border border-white/10 space-y-6 shadow-2xl">
@@ -584,7 +580,7 @@ export default function NewBlogPage() {
                         )}
                     </div>
 
-                    <div className="relative min-h-[500px]">
+                    <div className="relative min-h-[500px] flex flex-col">
                         {showAiResult ? (
                             <div className="absolute inset-0 z-20 bg-slate-950 flex flex-col rounded-xl border border-white/10 overflow-hidden shadow-2xl">
                                 <div className={`flex items-center justify-between px-6 py-3 border-b border-white/10 ${aiAction === 'proofread' ? 'bg-purple-500/10' : 'bg-cyan-500/10'}`}>
@@ -624,45 +620,36 @@ export default function NewBlogPage() {
                                     </ReactMarkdown>
                                 </div>
                             </div>
-                        ) : null}
-
-                        {previewMode ? (
-                            <div className="w-full min-h-[500px] p-6 bg-slate-900/50 rounded-xl border border-white/10 prose prose-invert max-w-none">
-                                <ReactMarkdown
-                                    remarkPlugins={[remarkGfm]}
-                                    components={{
-                                        code({ node, inline, className, children, ...props }) {
-                                            const match = /language-(\w+)/.exec(className || '')
-                                            return !inline && match ? (
-                                                <SyntaxHighlighter
-                                                    style={vscDarkPlus}
-                                                    language={match[1]}
-                                                    PreTag="div"
-                                                    {...props}
-                                                >
-                                                    {String(children).replace(/\n$/, '')}
-                                                </SyntaxHighlighter>
-                                            ) : (
-                                                <code className={className} {...props}>
-                                                    {children}
-                                                </code>
-                                            )
-                                        },
-                                        pre: ({ children }) => <>{children}</>
-                                    }}
-                                >
-                                    {formData.content}
-                                </ReactMarkdown>
-                            </div>
                         ) : (
-                            <textarea
-                                name="content"
+                            <MarkdownToolbar
+                                textareaRef={contentRef}
                                 value={formData.content}
-                                onChange={handleChange}
-                                required
-                                className="absolute inset-0 w-full h-full p-6 bg-slate-950/50 rounded-xl border border-white/10 focus:outline-none focus:border-cyan-500/50 font-mono text-sm leading-relaxed text-slate-200 placeholder:text-slate-600 resize-none"
-                                placeholder="# Write your blog post in Markdown..."
-                            ></textarea>
+                                onChange={(newContent) => setFormData(prev => ({ ...prev, content: newContent }))}
+                                showNotification={showNotification}
+                                ReactMarkdown={ReactMarkdown}
+                                remarkGfm={remarkGfm}
+                                SyntaxHighlighter={SyntaxHighlighter}
+                                vscDarkPlus={vscDarkPlus}
+                            >
+                                <textarea
+                                    ref={contentRef}
+                                    name="content"
+                                    value={formData.content}
+                                    onChange={handleChange}
+                                    required
+                                    className="w-full h-full min-h-[500px] p-6 bg-slate-950/50 rounded-b-xl border border-white/10 border-t-0 focus:outline-none focus:border-cyan-500/50 font-mono text-sm leading-relaxed text-slate-200 placeholder:text-slate-600 resize-y flex-1"
+                                    placeholder="# Write your blog post in Markdown..."
+                                    onKeyDown={(e) => {
+                                        if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+                                            e.preventDefault();
+                                            document.querySelector('[title*="Bold"]')?.click();
+                                        } else if ((e.ctrlKey || e.metaKey) && e.key === 'i') {
+                                            e.preventDefault();
+                                            document.querySelector('[title*="Italic"]')?.click();
+                                        }
+                                    }}
+                                ></textarea>
+                            </MarkdownToolbar>
                         )}
                     </div>
                 </div>

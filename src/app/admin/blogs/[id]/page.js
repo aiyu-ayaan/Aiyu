@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -13,10 +13,12 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { Loader2, Save, ArrowLeft, Image as ImageIcon, Eye, Edit2, Upload, FileText, Calendar, Tag, X, Sparkles, Wand2, Check, CheckCircle, XCircle } from 'lucide-react';
 import Toast from '@/app/components/admin/Toast';
+import MarkdownToolbar from '@/app/components/admin/MarkdownToolbar';
 
 export default function EditBlogPage() {
     const router = useRouter();
     const { id } = useParams();
+    const contentRef = useRef(null);
     const [formData, setFormData] = useState({
         title: '',
         content: '',
@@ -26,7 +28,8 @@ export default function EditBlogPage() {
     });
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
-    const [previewMode, setPreviewMode] = useState(false);
+
+    // const [previewMode, setPreviewMode] = useState(false); // Removed in favor of inline tabs
     const [imageMode, setImageMode] = useState('url'); // 'url' or 'upload'
     const [uploadFile, setUploadFile] = useState(null);
     const [uploadPreview, setUploadPreview] = useState(null);
@@ -324,23 +327,8 @@ export default function EditBlogPage() {
                     <p className="text-slate-400">Modify existing content entry ID: <span className="font-mono text-xs opacity-50">{id}</span></p>
                 </div>
 
-                {/* Mode Toggle */}
-                <div className="bg-slate-900/50 p-1 rounded-lg border border-white/10 flex">
-                    <button
-                        type="button"
-                        onClick={() => setPreviewMode(false)}
-                        className={`px-4 py-2 rounded-md transition-all flex items-center gap-2 text-sm font-bold uppercase tracking-wide ${!previewMode ? 'bg-cyan-500 text-black shadow-lg shadow-cyan-500/20' : 'text-slate-400 hover:text-white'}`}
-                    >
-                        <Edit2 className="w-3.5 h-3.5" /> Editor
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => setPreviewMode(true)}
-                        className={`px-4 py-2 rounded-md transition-all flex items-center gap-2 text-sm font-bold uppercase tracking-wide ${previewMode ? 'bg-cyan-500 text-black shadow-lg shadow-cyan-500/20' : 'text-slate-400 hover:text-white'}`}
-                    >
-                        <Eye className="w-3.5 h-3.5" /> Preview
-                    </button>
-                </div>
+                {/* Mode Toggle - Removed */}
+                {/* <div className="bg-slate-900/50 p-1 rounded-lg border border-white/10 flex">...</div> */}
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-8">
@@ -625,85 +613,73 @@ export default function EditBlogPage() {
                         )}
                     </h2>
 
-                    <div className="flex-1 min-h-[500px] bg-slate-950/50 rounded-xl border border-white/10 overflow-hidden relative">
-                        {showAiResult ? (
-                            <div className="absolute inset-0 z-20 bg-slate-950 flex flex-col">
-                                <div className={`flex items-center justify-between px-6 py-3 border-b border-white/10 ${aiAction === 'proofread' ? 'bg-purple-500/10' : 'bg-cyan-500/10'}`}>
-                                    <div className="flex items-center gap-3">
-                                        <div className={`p-1.5 rounded-lg ${aiAction === 'proofread' ? 'bg-purple-500/20 text-purple-400' : 'bg-cyan-500/20 text-cyan-400'}`}>
-                                            {aiAction === 'proofread' ? <Wand2 size={16} /> : <Sparkles size={16} />}
+                    <div className="flex-1 min-h-[500px] bg-slate-950/50 rounded-xl border border-white/10 overflow-hidden relative flex flex-col">
+                        <MarkdownToolbar
+                            textareaRef={contentRef}
+                            value={formData.content}
+                            onChange={(newContent) => setFormData(prev => ({ ...prev, content: newContent }))}
+                            showNotification={showNotification}
+                        >
+                            {showAiResult ? (
+                                <div className="absolute inset-0 z-20 bg-slate-950 flex flex-col">
+                                    <div className={`flex items-center justify-between px-6 py-3 border-b border-white/10 ${aiAction === 'proofread' ? 'bg-purple-500/10' : 'bg-cyan-500/10'}`}>
+                                        <div className="flex items-center gap-3">
+                                            <div className={`p-1.5 rounded-lg ${aiAction === 'proofread' ? 'bg-purple-500/20 text-purple-400' : 'bg-cyan-500/20 text-cyan-400'}`}>
+                                                {aiAction === 'proofread' ? <Wand2 size={16} /> : <Sparkles size={16} />}
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">AI Suggestion</p>
+                                                <p className="text-xs font-mono text-slate-500">{aiAction === 'continue' ? 'CONTINUE_MODE: APPENDING_CONTENT' : 'REPLACE_MODE: UPDATING_PAYLOAD'}</p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">AI Suggestion</p>
-                                            <p className="text-xs font-mono text-slate-500">{aiAction === 'continue' ? 'CONTINUE_MODE: APPENDING_CONTENT' : 'REPLACE_MODE: UPDATING_PAYLOAD'}</p>
+                                        <div className="flex gap-3">
+                                            <button
+                                                type="button"
+                                                onClick={discardAiResult}
+                                                className="px-4 py-1.5 rounded-lg border border-white/10 hover:bg-white/5 text-slate-400 text-xs font-bold uppercase tracking-wider transition-all"
+                                            >
+                                                Discard
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={applyAiResult}
+                                                className={`px-6 py-1.5 rounded-lg font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-2 ${aiAction === 'proofread' ? 'bg-purple-500 text-white shadow-[0_0_15px_rgba(168,85,247,0.4)]' : 'bg-cyan-500 text-black shadow-[0_0_15px_rgba(34,211,238,0.4)]'}`}
+                                            >
+                                                <Check size={14} />
+                                                Apply Changes
+                                            </button>
                                         </div>
                                     </div>
-                                    <div className="flex gap-3">
-                                        <button
-                                            type="button"
-                                            onClick={discardAiResult}
-                                            className="px-4 py-1.5 rounded-lg border border-white/10 hover:bg-white/5 text-slate-400 text-xs font-bold uppercase tracking-wider transition-all"
-                                        >
-                                            Discard
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={applyAiResult}
-                                            className={`px-6 py-1.5 rounded-lg font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-2 ${aiAction === 'proofread' ? 'bg-purple-500 text-white shadow-[0_0_15px_rgba(168,85,247,0.4)]' : 'bg-cyan-500 text-black shadow-[0_0_15px_rgba(34,211,238,0.4)]'}`}
-                                        >
-                                            <Check size={14} />
-                                            Apply Changes
-                                        </button>
+                                    <div className="flex-1 overflow-y-auto p-6 font-mono text-sm leading-relaxed text-slate-300">
+                                        <div className={`mb-4 inline-block px-2 py-1 rounded text-[10px] font-bold uppercase ${aiAction === 'proofread' ? 'bg-purple-500/20 text-purple-400' : 'bg-cyan-500/20 text-cyan-400'}`}>
+                                            Proposed Content
+                                        </div>
+                                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                            {aiTempResult}
+                                        </ReactMarkdown>
                                     </div>
                                 </div>
-                                <div className="flex-1 overflow-y-auto p-6 font-mono text-sm leading-relaxed text-slate-300">
-                                    <div className={`mb-4 inline-block px-2 py-1 rounded text-[10px] font-bold uppercase ${aiAction === 'proofread' ? 'bg-purple-500/20 text-purple-400' : 'bg-cyan-500/20 text-cyan-400'}`}>
-                                        Proposed Content
-                                    </div>
-                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                        {aiTempResult}
-                                    </ReactMarkdown>
-                                </div>
-                            </div>
-                        ) : null}
-
-                        {previewMode ? (
-                            <div className="absolute inset-0 overflow-y-auto p-8 prose prose-invert max-w-none prose-headings:font-bold prose-headings:tracking-tight prose-a:text-cyan-400 prose-img:rounded-xl prose-pre:bg-black/50 prose-pre:border prose-pre:border-white/10">
-                                <ReactMarkdown
-                                    remarkPlugins={[remarkGfm]}
-                                    components={{
-                                        code({ node, inline, className, children, ...props }) {
-                                            const match = /language-(\w+)/.exec(className || '')
-                                            return !inline && match ? (
-                                                <SyntaxHighlighter
-                                                    style={vscDarkPlus}
-                                                    language={match[1]}
-                                                    PreTag="div"
-                                                    {...props}
-                                                >
-                                                    {String(children).replace(/\n$/, '')}
-                                                </SyntaxHighlighter>
-                                            ) : (
-                                                <code className={className} {...props}>
-                                                    {children}
-                                                </code>
-                                            )
+                            ) : (
+                                <textarea
+                                    ref={contentRef}
+                                    name="content"
+                                    value={formData.content}
+                                    onChange={handleChange}
+                                    required
+                                    className="w-full h-full min-h-[500px] p-6 bg-transparent resize-y focus:outline-none font-mono text-sm leading-relaxed text-slate-300 placeholder:text-slate-600 flex-1"
+                                    placeholder="# Begin transmission..."
+                                    onKeyDown={(e) => {
+                                        if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+                                            e.preventDefault();
+                                            document.querySelector('[title*="Bold"]')?.click();
+                                        } else if ((e.ctrlKey || e.metaKey) && e.key === 'i') {
+                                            e.preventDefault();
+                                            document.querySelector('[title*="Italic"]')?.click();
                                         }
                                     }}
-                                >
-                                    {formData.content}
-                                </ReactMarkdown>
-                            </div>
-                        ) : (
-                            <textarea
-                                name="content"
-                                value={formData.content}
-                                onChange={handleChange}
-                                required
-                                className="absolute inset-0 w-full h-full p-6 bg-transparent resize-none focus:outline-none font-mono text-sm leading-relaxed text-slate-300 placeholder:text-slate-600"
-                                placeholder="# Begin transmission..."
-                            />
-                        )}
+                                />
+                            )}
+                        </MarkdownToolbar>
                     </div>
                 </div>
 
