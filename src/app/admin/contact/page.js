@@ -17,6 +17,7 @@ export default function ContactAdminPage() {
         contactLocation: '',
         contactEmail: '',
         n8nWebhookUrl: '',
+        n8nWebhookAuthKey: '',
         contactStatus: 'Open to opportunities',
         resume: {
             type: 'url',
@@ -45,6 +46,7 @@ export default function ContactAdminPage() {
                     contactLocation: data.contactLocation || '',
                     contactEmail: data.contactEmail || '',
                     n8nWebhookUrl: data.n8nWebhookUrl || '',
+                    n8nWebhookAuthKey: data.n8nWebhookAuthKey || '',
                     contactStatus: data.contactStatus || 'Open to opportunities',
                     resume: data.resume || { type: 'url', value: '' }
                 });
@@ -201,6 +203,49 @@ export default function ContactAdminPage() {
                                 className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 outline-none transition-all placeholder:text-slate-600 font-mono"
                             />
                         </div>
+
+                        {/* n8n Webhook Auth Key */}
+                        <div>
+                            <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider flex items-center gap-2">
+                                <Webhook className="w-3 h-3 text-yellow-400" /> Webhook Auth Token
+                            </label>
+                            <div className="flex gap-2">
+                                <div className="relative flex-grow">
+                                    <input
+                                        type="text"
+                                        value={config.n8nWebhookAuthKey}
+                                        disabled
+                                        placeholder="Generated Token"
+                                        className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-400 focus:border-white/10 focus:ring-0 outline-none transition-all placeholder:text-slate-600 font-mono cursor-not-allowed pr-10"
+                                    />
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(config.n8nWebhookAuthKey);
+                                        showNotification(true, 'Token copied to clipboard');
+                                    }}
+                                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg border border-white/10 transition-colors text-xs font-mono whitespace-nowrap"
+                                >
+                                    COPY
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const token = crypto.randomUUID();
+                                        setConfig({ ...config, n8nWebhookAuthKey: token });
+                                    }}
+                                    className="px-4 py-2 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-400 rounded-lg border border-yellow-500/20 transition-colors text-xs font-mono whitespace-nowrap"
+                                >
+                                    GENERATE_TOKEN
+                                </button>
+
+
+                            </div>
+                            <p className="text-slate-500 text-[10px] font-mono mt-1">
+                                In n8n, set Header Name to <span className="text-yellow-400">Authorization</span> and Value to this token.
+                            </p>
+                        </div>
                     </div>
                 </div>
 
@@ -228,10 +273,10 @@ export default function ContactAdminPage() {
                         )}
                     </button>
                 </div>
-            </form>
+            </form >
 
             {/* Messages Inbox */}
-            <div className="w-full mt-16">
+            < div className="w-full mt-16" >
                 <div className="flex justify-between items-center mb-8">
                     <h2 className="text-xl font-bold flex items-center gap-3 text-white">
                         <span className="w-2 h-8 bg-cyan-500 rounded-full" />
@@ -283,10 +328,10 @@ export default function ContactAdminPage() {
                         ))
                     )}
                 </div>
-            </div>
+            </div >
 
             {/* Toast Notification */}
-            <Toast notification={notification} />
-        </div>
+            < Toast notification={notification} />
+        </div >
     );
 }
