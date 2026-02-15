@@ -17,6 +17,7 @@ export default function ContactAdminPage() {
         contactLocation: '',
         contactEmail: '',
         n8nWebhookUrl: '',
+        n8nWebhookAuthKey: '',
         contactStatus: 'Open to opportunities',
         resume: {
             type: 'url',
@@ -45,6 +46,7 @@ export default function ContactAdminPage() {
                     contactLocation: data.contactLocation || '',
                     contactEmail: data.contactEmail || '',
                     n8nWebhookUrl: data.n8nWebhookUrl || '',
+                    n8nWebhookAuthKey: data.n8nWebhookAuthKey || '',
                     contactStatus: data.contactStatus || 'Open to opportunities',
                     resume: data.resume || { type: 'url', value: '' }
                 });
@@ -200,6 +202,35 @@ export default function ContactAdminPage() {
                                 placeholder="https://..."
                                 className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 outline-none transition-all placeholder:text-slate-600 font-mono"
                             />
+                        </div>
+
+                        {/* n8n Webhook Auth Key */}
+                        <div>
+                            <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider flex items-center gap-2">
+                                <Webhook className="w-3 h-3 text-yellow-400" /> Webhook Auth Token
+                            </label>
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    value={config.n8nWebhookAuthKey}
+                                    onChange={(e) => setConfig({ ...config, n8nWebhookAuthKey: e.target.value })}
+                                    placeholder="Generated Token"
+                                    className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-yellow-500/50 focus:ring-1 focus:ring-yellow-500/50 outline-none transition-all placeholder:text-slate-600 font-mono"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const token = crypto.randomUUID();
+                                        setConfig({ ...config, n8nWebhookAuthKey: token });
+                                    }}
+                                    className="px-4 py-2 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-400 rounded-lg border border-yellow-500/20 transition-colors text-xs font-mono whitespace-nowrap"
+                                >
+                                    GENERATE_TOKEN
+                                </button>
+                            </div>
+                            <p className="text-slate-500 text-[10px] font-mono mt-1">
+                                In n8n, set Header Name to <span className="text-yellow-400">Authorization</span> and Value to this token.
+                            </p>
                         </div>
                     </div>
                 </div>

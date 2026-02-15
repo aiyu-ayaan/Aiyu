@@ -8,7 +8,7 @@ services:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
     # Port mapping commented out for security - app can access via internal network
-    # Uncomment if external MongoDB access is needed: 
+    # Uncomment if external MongoDB access is needed:
     # ports:
     #   - "27017:27017"
     volumes:
@@ -17,7 +17,7 @@ services:
     networks:
       - aiyu-network
     healthcheck:
-      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')", "--quiet" ]
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')", "--quiet"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -42,7 +42,7 @@ services:
     environment:
       # MongoDB connection
       MONGODB_URI: ${MONGODB_URI}
-      # N8N webhook URL
+      # N8N webhook
       NEXT_PUBLIC_N8N_WEBHOOK_URL: ${NEXT_PUBLIC_N8N_WEBHOOK_URL}
       # Base URL for SEO/OG tags
       NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL}
@@ -51,6 +51,7 @@ services:
       ADMIN_USERNAME: ${ADMIN_USERNAME}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
+      BLOG_API_KEY: ${BLOG_API_KEY}
 
       # Node environment
       NODE_ENV: production
@@ -71,6 +72,7 @@ services:
       - ALL
     cap_add:
       - NET_BIND_SERVICE # Only allow binding to network ports
+      - NET_RAW # Allow outbound network requests
     security_opt:
       - no-new-privileges:true # Prevent privilege escalation
     # Read-only root filesystem (except for writable volumes)
@@ -79,15 +81,15 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '1.0' # Max 1 CPU core
+          cpus: "1.0" # Max 1 CPU core
           memory: 512M # Max 512MB RAM
         reservations:
-          cpus: '0.25' # Reserve 0.25 CPU
+          cpus: "0.25" # Reserve 0.25 CPU
           memory: 256M # Reserve 256MB RAM
     # Health check to detect abnormal behavior
     # Uses curl (installed in Dockerfile) with fallback chain
     healthcheck:
-      test: [ "CMD", "sh", "/app/healthcheck.sh" ]
+      test: ["CMD", "sh", "/app/healthcheck.sh"]
       interval: 30s
       timeout: 10s
       retries: 3

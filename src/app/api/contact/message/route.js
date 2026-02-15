@@ -27,34 +27,37 @@ export async function POST(request) {
         const config = await Config.findOne().lean();
         if (config?.n8nWebhookUrl) {
             try {
-                // Prepare headers with auth
-                const authKey = process.env.BLOG_API_KEY || process.env.JWT_SECRET;
-                const headers = {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
+                const payload = {
+                    sender: name,
+                    email: email,
+                    content: message,
+                    timestamp: new Date().toISOString()
                 };
 
-                // Add Authorization header if auth key exists
-                if (authKey) {
-                    headers['Authorization'] = `Bearer ${authKey}`;
+                const headers = {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'User-Agent': 'AiyuPortfolio/1.0'
+                };
+
+                // Add n8n webhook auth header if configured
+                if (config.n8nWebhookAuthKey) {
+                    // Using standard 'Authorization' header with the stored token value
+                    headers['Authorization'] = config.n8nWebhookAuthKey;
                 }
 
-                // Send data with sender name and content as body
                 const webhookResponse = await fetch(config.n8nWebhookUrl, {
                     method: 'POST',
                     headers,
-                    body: JSON.stringify({
-                        sender: name,
-                        email: email,
-                        content: message,
-                        timestamp: new Date().toISOString()
-                    }),
+                    body: JSON.stringify(payload),
                 });
 
                 if (webhookResponse.ok) {
                     console.log('✅ n8n webhook triggered successfully');
                 } else {
+                    const responseBody = await webhookResponse.text();
                     console.error('❌ n8n webhook failed with status:', webhookResponse.status);
+                    console.error('Response:', responseBody);
                 }
             } catch (webhookError) {
                 console.error('❌ Failed to trigger n8n webhook:', webhookError.message);
