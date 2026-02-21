@@ -21,7 +21,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@google/genai": "^1.40.0",
     "@google/generative-ai": "^0.24.1",
-    "@n8n/chat": "^1.7.0",
+    "@n8n/chat": "^1.9.1",
     "@tailwindcss/typography": "^0.5.19",
     "canvas-confetti": "^1.9.4",
     "clsx": "^2.1.1",
