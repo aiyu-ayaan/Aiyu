@@ -4,7 +4,13 @@ import ProjectModel from '@/models/Project';
 import GalleryModel from '@/models/Gallery';
 
 export default async function sitemap() {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+  // Support both SITE_URL (user preference) and NEXT_PUBLIC_BASE_URL (existing SEO logic)
+  let baseUrl = process.env.SITE_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+  
+  // Remove trailing slash if present to prevent double slashes in routes
+  if (baseUrl.endsWith('/')) {
+    baseUrl = baseUrl.slice(0, -1);
+  }
 
   // Static routes
   const staticRoutes = [
