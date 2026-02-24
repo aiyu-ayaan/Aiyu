@@ -27,22 +27,32 @@ const Timeline = ({ projectsByYear, years, onCardClick }) => {
         <React.Fragment key={year}>
           <VerticalTimelineElement
             contentStyle={{
-              background: 'linear-gradient(135deg, var(--accent-cyan) 0%, var(--accent-purple) 100%)',
+              background: 'linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-secondary) 100%)',
               color: '#fff',
-              boxShadow: '0 10px 30px var(--shadow-lg)',
-              border: 'none'
+              boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+              border: '1px solid var(--border-secondary)',
+              borderRadius: '16px',
+              padding: '1.5rem',
             }}
             contentArrowStyle={{
-              borderRight: '7px solid var(--accent-cyan)',
+              borderRight: '7px solid var(--border-secondary)',
             }}
             iconStyle={{
               background: 'linear-gradient(135deg, var(--accent-cyan) 0%, var(--accent-purple) 100%)',
               color: '#fff',
-              boxShadow: '0 0 20px var(--shadow-glow)',
+              boxShadow: '0 0 15px var(--accent-cyan)',
             }}
             icon={<FaCalendarAlt />}
           >
-            <h3 className="vertical-timeline-element-title text-2xl font-bold">
+            <h3
+              className="vertical-timeline-element-title text-3xl font-bold"
+              style={{
+                background: 'linear-gradient(to right, #22d3ee, #a855f7)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+              }}
+            >
               {year}
             </h3>
           </VerticalTimelineElement>
@@ -50,19 +60,18 @@ const Timeline = ({ projectsByYear, years, onCardClick }) => {
             <VerticalTimelineElement
               key={index}
               contentStyle={{
-                background: 'linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-secondary) 100%)',
-                color: 'var(--text-primary)',
-                boxShadow: '0 10px 30px var(--shadow-md)',
-                border: '1px solid var(--border-secondary)',
-                borderRadius: '16px'
+                background: 'transparent',
+                padding: 0,
+                boxShadow: 'none',
+                border: 'none',
               }}
               contentArrowStyle={{
-                borderRight: '7px solid var(--bg-surface)',
+                borderRight: '7px solid var(--border-secondary)',
               }}
               iconStyle={{
-                background: 'linear-gradient(135deg, var(--accent-orange) 0%, var(--accent-orange-bright) 100%)',
+                background: 'linear-gradient(135deg, var(--accent-orange) 0%, var(--accent-pink) 100%)',
                 color: '#fff',
-                boxShadow: '0 0 20px var(--shadow-glow)',
+                boxShadow: '0 0 15px var(--accent-orange)',
               }}
               icon={getProjectIcon(project.projectType)}
               id={`project-${project._id}`}

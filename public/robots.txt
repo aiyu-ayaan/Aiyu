@@ -17,4 +17,4 @@ Allow: /
 Crawl-delay: 0
 
 # Sitemap location
-Sitemap: https://yourdomain.com/sitemap.xml
+Sitemap: https://me.aiyu.co.in/sitemap.xml
