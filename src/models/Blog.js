@@ -29,6 +29,10 @@ const BlogSchema = new mongoose.Schema({
     },
 }, { timestamps: true });
 
+// Add indexes for frequently sorted/filtered queries
+BlogSchema.index({ published: 1, createdAt: -1 });
+BlogSchema.index({ createdAt: -1 });
+
 // Fix for Next.js HMR: delete the model if it exists to ensure new schema fields are picked up
 if (mongoose.models.Blog) {
     delete mongoose.models.Blog;

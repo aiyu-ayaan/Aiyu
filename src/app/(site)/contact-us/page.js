@@ -1,10 +1,8 @@
-import dbConnect from '@/lib/db';
-import ConfigModel from '@/models/Config';
+import { getConfigData } from '@/lib/dataFetchers';
 import ContactPageClient from './ContactPageClient';
 
 export async function generateMetadata() {
-    await dbConnect();
-    const config = await ConfigModel.findOne().lean();
+    const config = await getConfigData();
     const baseName = config?.siteTitle || config?.logoText || 'Portfolio';
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
     const description = 'Let\'s collaborate on something amazing.';
@@ -34,8 +32,7 @@ export async function generateMetadata() {
 }
 
 export default async function ContactPage() {
-    await dbConnect();
-    const config = await ConfigModel.findOne().lean();
+    const config = await getConfigData();
 
     const location = config?.contactLocation || 'Remote / Worldwide';
     const status = config?.contactStatus || 'Open to opportunities';

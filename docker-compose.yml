@@ -38,8 +38,9 @@ services:
         - NEXT_PUBLIC_AUTHOR_NAME=${NEXT_PUBLIC_AUTHOR_NAME}
     container_name: aiyu-app
     restart: unless-stopped
-    ports:
-      - "${APP_PORT:-3000}:3000"
+    # Port exposed only to internal network (Nginx handles external traffic)
+    expose:
+      - "3000"
     environment:
       # MongoDB connection
       MONGODB_URI: ${MONGODB_URI}
@@ -79,15 +80,15 @@ services:
       - no-new-privileges:true # Prevent privilege escalation
     # Read-only root filesystem (except for writable volumes)
     read_only: true
-    # Resource limits to prevent CPU abuse from crypto miners
+    # Resource limits (optimized for 2GB droplet)
     deploy:
       resources:
         limits:
-          cpus: "1.0" # Max 1 CPU core
-          memory: 512M # Max 512MB RAM
+          cpus: "1.5" # Allow more CPU for request handling
+          memory: 768M # Increased from 512M for better performance
         reservations:
-          cpus: "0.25" # Reserve 0.25 CPU
-          memory: 256M # Reserve 256MB RAM
+          cpus: "0.5" # Reserve half a CPU
+          memory: 384M # Reserve 384MB RAM
     # Health check to detect abnormal behavior
     # Uses curl (installed in Dockerfile) with fallback chain
     healthcheck:
@@ -102,6 +103,36 @@ services:
     networks:
       - aiyu-network
 
+  # Nginx Reverse Proxy (gzip, caching, rate limiting)
+  nginx:
+    image: nginx:alpine
+    container_name: aiyu-nginx
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-3000}:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - nginx_cache:/var/cache/nginx
+    depends_on:
+      app:
+        condition: service_healthy
+    networks:
+      - aiyu-network
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 128M
+        reservations:
+          cpus: "0.1"
+          memory: 64M
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
 # Named volumes for data persistence
 volumes:
   mongodb_data:
@@ -111,6 +142,8 @@ volumes:
   nextjs_cache:
     driver: local
   uploads_data:
+    driver: local
+  nginx_cache:
     driver: local
 
 # Network for inter-service communication

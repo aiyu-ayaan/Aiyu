@@ -1,8 +1,6 @@
 import GitHubStatsClient from '@/app/components/github/GitHubStatsClient';
-import dbConnect from '@/lib/db';
-import ConfigModel from '@/models/Config';
+import { getConfigData } from '@/lib/dataFetchers';
 
-export const dynamic = 'force-dynamic';
 export const revalidate = 300; // Revalidate every 5 minutes
 
 async function getGitHubStats() {
@@ -31,8 +29,7 @@ async function getGitHubStats() {
 }
 
 export async function generateMetadata() {
-    await dbConnect();
-    const config = await ConfigModel.findOne().lean();
+    const config = await getConfigData();
     const baseName = config?.siteTitle || config?.logoText || 'Portfolio';
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
     const description = 'Check out my open source contributions, repositories, and GitHub statistics.';

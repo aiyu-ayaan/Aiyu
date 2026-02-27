@@ -2,11 +2,12 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import Header from '@/models/Header';
 import { getSession } from '@/lib/auth';
+import cache, { CACHE_KEYS } from '@/lib/cache';
 
 export async function GET() {
     await dbConnect();
     try {
-        const header = await Header.findOne();
+        const header = await Header.findOne().lean();
         return NextResponse.json(header);
     } catch (error) {
         return NextResponse.json({ error: 'Failed to fetch header data' }, { status: 500 });
@@ -27,6 +28,7 @@ export async function PUT(request) {
             upsert: true,
             runValidators: true,
         });
+        cache.invalidate(CACHE_KEYS.HEADER);
         return NextResponse.json(header);
     } catch (error) {
         return NextResponse.json({ error: 'Failed to update header data' }, { status: 500 });

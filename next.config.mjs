@@ -9,9 +9,9 @@ const nextConfig = {
     optimizePackageImports: ['framer-motion', 'lucide-react', 'react-icons'],
   },
 
-  // Image configuration for Docker environment
+  // Image configuration - enable optimization with sharp
   images: {
-    unoptimized: true, // Disable image optimization in Docker to avoid issues with volume-mounted images
+    unoptimized: false, // Enable image optimization (sharp is installed)
     remotePatterns: [
       {
         protocol: 'http',

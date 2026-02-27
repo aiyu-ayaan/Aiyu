@@ -2,11 +2,12 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import Home from '@/models/Home';
 import { getSession } from '@/lib/auth';
+import cache, { CACHE_KEYS } from '@/lib/cache';
 
 export async function GET() {
     await dbConnect();
     try {
-        const home = await Home.findOne();
+        const home = await Home.findOne().lean();
         return NextResponse.json(home);
     } catch (error) {
         return NextResponse.json({ error: 'Failed to fetch home data' }, { status: 500 });
@@ -27,6 +28,7 @@ export async function PUT(request) {
             upsert: true, // Create if doesn't exist
             runValidators: true,
         });
+        cache.invalidate(CACHE_KEYS.HOME);
         return NextResponse.json(home);
     } catch (error) {
         return NextResponse.json({ error: 'Failed to update home data' }, { status: 500 });

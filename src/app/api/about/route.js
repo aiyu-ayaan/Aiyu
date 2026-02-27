@@ -2,11 +2,12 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import About from '@/models/About';
 import { getSession } from '@/lib/auth';
+import cache, { CACHE_KEYS } from '@/lib/cache';
 
 export async function GET() {
     await dbConnect();
     try {
-        const about = await About.findOne();
+        const about = await About.findOne().lean();
         return NextResponse.json(about);
     } catch (error) {
         return NextResponse.json({ error: 'Failed to fetch about data' }, { status: 500 });
@@ -27,6 +28,7 @@ export async function PUT(request) {
             upsert: true,
             runValidators: true,
         });
+        cache.invalidate(CACHE_KEYS.ABOUT);
         return NextResponse.json(about);
     } catch (error) {
         return NextResponse.json({ error: 'Failed to update about data' }, { status: 500 });
