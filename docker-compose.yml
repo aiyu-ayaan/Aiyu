@@ -93,10 +93,10 @@ services:
     # Uses curl (installed in Dockerfile) with fallback chain
     healthcheck:
       test: ["CMD", "sh", "/app/healthcheck.sh"]
-      interval: 30s
+      interval: 15s
       timeout: 10s
-      retries: 3
-      start_period: 40s
+      retries: 8
+      start_period: 90s
     depends_on:
       mongodb:
         condition: service_healthy
@@ -115,7 +115,7 @@ services:
       - nginx_cache:/var/cache/nginx
     depends_on:
       app:
-        condition: service_healthy
+        condition: service_started
     networks:
       - aiyu-network
     deploy:

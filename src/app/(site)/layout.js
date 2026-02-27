@@ -4,9 +4,9 @@ import Footer from "../components/Footer";
 import N8nChat from "../components/shared/N8nChat";
 import { getLayoutData } from "@/lib/dataFetchers";
 
-// Use ISR instead of force-dynamic: revalidate every 60 seconds
-// Pages are served from cache and re-generated in background
-export const revalidate = 60;
+// Force dynamic rendering - DB is not available at build time in Docker
+// Runtime performance is handled by in-memory cache + Nginx proxy cache
+export const dynamic = 'force-dynamic';
 
 export default async function SiteLayout({ children }) {
     const { headerData: serializedHeaderData, socialData: serializedSocialData, configData: serializedConfigData, aboutData: serializedAboutData } = await getLayoutData();
