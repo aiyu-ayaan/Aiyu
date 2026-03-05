@@ -230,6 +230,9 @@ export async function GET() {
         // Calculate stats
         const totalStars = filteredRepos.reduce((sum, repo) => sum + (repo.stargazers_count || 0), 0);
         const totalForks = filteredRepos.reduce((sum, repo) => sum + (repo.forks_count || 0), 0);
+        const sourceRepos = filteredRepos.filter(repo => !repo.fork && !repo.private).length;
+        const forkedRepos = filteredRepos.filter(repo => repo.fork).length;
+        const privateRepos = filteredRepos.filter(repo => repo.private).length;
 
         // Get top 6 recently updated repos
         const topRepos = filteredRepos
@@ -334,7 +337,10 @@ export async function GET() {
                 totalStars,
                 totalForks,
                 followers: userData.followers,
-                totalContributions
+                totalContributions,
+                sourceRepos,
+                forkedRepos,
+                privateRepos
             },
             streaks: {
                 current: currentStreak,
@@ -350,6 +356,7 @@ export async function GET() {
                 showContributions: true,
                 showActivity: true,
                 showRepositories: true,
+                showRepoDistribution: true,
                 showLanguages: true
             }
         };
