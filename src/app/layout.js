@@ -25,7 +25,7 @@ export async function generateMetadata() {
   const icon = config?.favicon?.value ? '/api/favicon' : '/favicon.ico';
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://me.aiyu.co.in';
   const siteDescription = config?.siteDescription || 'Professional portfolio showcasing projects, blogs, and expertise.';
-  const ogImage = config?.ogImage || `${baseUrl}/og-image.png`;
+  const ogImage = (typeof config?.ogImage === 'string' ? config.ogImage : typeof config?.ogImage?.value === 'string' && config.ogImage.value.length > 0 ? config.ogImage.value : null) || `${baseUrl}/og-image.png`;
   const authorName = config?.authorName || 'Developer';
 
   return {

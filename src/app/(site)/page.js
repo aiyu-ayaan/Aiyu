@@ -14,7 +14,7 @@ export async function generateMetadata() {
   const baseName = config?.siteTitle || config?.logoText || 'Portfolio';
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
   const siteDescription = config?.siteDescription || 'Professional portfolio showcasing projects, blogs, and expertise.';
-  const ogImage = config?.ogImage || `${baseUrl}/og-image.png`;
+  const ogImage = (typeof config?.ogImage === 'string' ? config.ogImage : typeof config?.ogImage?.value === 'string' && config.ogImage.value.length > 0 ? config.ogImage.value : null) || `${baseUrl}/og-image.png`;
 
   return {
     title: baseName,
