@@ -12,7 +12,7 @@ export default function DatabaseManager() {
     const handleExport = async () => {
         try {
             setIsLoading(true);
-            setMessage({ type: 'info', text: 'INITIATING_DUMP_SEQUENCE...' });
+            setMessage({ type: 'info', text: 'GENERATING_ZIP_ARCHIVE...' });
 
             // Always include Github and Contact data by default
             const queryParams = new URLSearchParams();
@@ -22,30 +22,32 @@ export default function DatabaseManager() {
             const response = await fetch(`/api/admin/export?${queryParams.toString()}`);
 
             if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || 'EXPORT_FAILED');
+                let errorMsg = 'EXPORT_FAILED';
+                try {
+                    const error = await response.json();
+                    errorMsg = error.error || errorMsg;
+                } catch (e) { /* response might not be JSON */ }
+                throw new Error(errorMsg);
             }
 
-            const data = await response.json();
-
-            // Create blob and download
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            // Download ZIP blob
+            const blob = await response.blob();
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
 
-            // Format: database_backup_YYYY-MM-DD_HH-mm-ss.json
+            // Format: backup_YYYY-MM-DD_HH-mm-ss.zip
             const now = new Date();
             const dateStr = now.toISOString().split('T')[0];
             const timeStr = now.toTimeString().split(' ')[0].replace(/:/g, '-');
-            a.download = `database_backup_${dateStr}_${timeStr}.json`;
+            a.download = `backup_${dateStr}_${timeStr}.zip`;
 
             document.body.appendChild(a);
             a.click();
             window.URL.revokeObjectURL(url);
             document.body.removeChild(a);
 
-            setMessage({ type: 'success', text: 'ARCHIVE_CREATED_SUCCESSFULLY' });
+            setMessage({ type: 'success', text: 'ZIP_ARCHIVE_CREATED_SUCCESSFULLY' });
         } catch (error) {
             setMessage({ type: 'error', text: error.message });
         } finally {
@@ -68,20 +70,13 @@ export default function DatabaseManager() {
             setIsLoading(true);
             setMessage({ type: 'info', text: 'OVERWRITING_SYSTEM_DATA...' });
 
-            const fileContent = await importFile.text();
-            let jsonData;
-            try {
-                jsonData = JSON.parse(fileContent);
-            } catch (err) {
-                throw new Error('INVALID_JSON_STRUCTURE');
-            }
+            // Send file as FormData (supports both .zip and .json)
+            const formData = new FormData();
+            formData.append('file', importFile);
 
             const response = await fetch('/api/admin/import', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(jsonData),
+                body: formData,
             });
 
             const result = await response.json();
@@ -92,7 +87,7 @@ export default function DatabaseManager() {
 
             setMessage({ type: 'success', text: 'SYSTEM_RESTORED. REBOOTING_INTERFACE...' });
 
-            // Optional: reset form or reload page
+            // Reset form and reload page
             setImportFile(null);
             setTimeout(() => window.location.reload(), 2000);
 
@@ -151,7 +146,7 @@ export default function DatabaseManager() {
                         </div>
 
                         <p className="text-slate-400 mb-8 text-sm leading-relaxed">
-                            Generate a full JSON dump of current system state. Includes blogs, projects, configurations, terminal settings, and communication logs. Gallery assets are excluded.
+                            Generate a complete ZIP archive of the system state. Includes all database collections and gallery image assets for full restoration capability.
                         </p>
 
                         <button
@@ -196,7 +191,7 @@ export default function DatabaseManager() {
                             <label className="block w-full cursor-pointer group/file">
                                 <input
                                     type="file"
-                                    accept=".json"
+                                    accept=".zip,.json"
                                     onChange={(e) => setImportFile(e.target.files[0])}
                                     className="hidden"
                                 />
@@ -210,7 +205,7 @@ export default function DatabaseManager() {
                                             {importFile.name}
                                         </>
                                     ) : (
-                                        'SELECT_SOURCE_FILE.JSON'
+                                        'SELECT_BACKUP_FILE (.ZIP or .JSON)'
                                     )}
                                 </div>
                             </label>
