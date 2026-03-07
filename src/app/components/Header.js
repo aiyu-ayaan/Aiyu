@@ -58,7 +58,7 @@ export default function Header({ data, logoText, socialData, config }) {
             <motion.header
                 className={clsx(
                     "sticky top-0 z-50 w-full transition-all duration-300",
-                    scrolled ? "py-2" : "py-4"
+                    scrolled ? "py-1" : "py-4"
                 )}
                 style={{
                     backgroundColor: scrolled
@@ -205,7 +205,14 @@ export default function Header({ data, logoText, socialData, config }) {
                         </Link>
                     </div>
                 </nav>
-                <TerminalPath socialData={socialData} config={config} />
+                <div
+                    className={clsx(
+                        "transition-all duration-300 overflow-hidden",
+                        scrolled ? "h-0 opacity-0" : "h-auto opacity-100"
+                    )}
+                >
+                    <TerminalPath socialData={socialData} config={config} />
+                </div>
             </motion.header>
 
             {/* Full Screen Mobile Menu - Moved OUTSIDE header */}
