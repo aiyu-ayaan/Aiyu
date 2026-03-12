@@ -1,15 +1,13 @@
 import GalleryClient from './GalleryClient';
-import dbConnect from '@/lib/db';
-import ConfigModel from '@/models/Config';
+import { getConfigData } from '@/lib/dataFetchers';
 
 export async function generateMetadata() {
     try {
-        await dbConnect();
-        const config = await ConfigModel.findOne().lean();
+        const config = await getConfigData();
         const baseName = config?.siteTitle || config?.logoText || 'Portfolio';
         const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
         const description = 'A collection of my photography and visual work.';
-        const ogImage = config?.ogImage || `${baseUrl}/og-image.png`;
+        const ogImage = (typeof config?.ogImage === 'string' ? config.ogImage : typeof config?.ogImage?.value === 'string' && config.ogImage.value.length > 0 ? config.ogImage.value : null) || `${baseUrl}/og-image.png`;
 
         return {
             title: `${baseName} | Gallery`,

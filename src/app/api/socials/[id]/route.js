@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import Social from '@/models/Social';
 import { getSession } from '@/lib/auth';
+import cache, { CACHE_KEYS } from '@/lib/cache';
 
 export async function PUT(request, { params }) {
     const session = await getSession();
@@ -20,6 +21,7 @@ export async function PUT(request, { params }) {
         if (!social) {
             return NextResponse.json({ error: 'Social link not found' }, { status: 404 });
         }
+        cache.invalidate(CACHE_KEYS.SOCIALS);
         return NextResponse.json(social);
     } catch (error) {
         return NextResponse.json({ error: 'Failed to update social link' }, { status: 500 });
@@ -39,6 +41,7 @@ export async function DELETE(request, { params }) {
         if (!social) {
             return NextResponse.json({ error: 'Social link not found' }, { status: 404 });
         }
+        cache.invalidate(CACHE_KEYS.SOCIALS);
         return NextResponse.json({ message: 'Social link deleted successfully' });
     } catch (error) {
         return NextResponse.json({ error: 'Failed to delete social link' }, { status: 500 });

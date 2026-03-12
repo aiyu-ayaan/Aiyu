@@ -1,26 +1,12 @@
 import About from "../../components/about/About";
-import dbConnect from "@/lib/db";
-import AboutModel from "@/models/About";
-import Config from "@/models/Config";
-
-async function getConfig() {
-  try {
-    await dbConnect();
-    let config = await Config.findOne().lean();
-    if (!config) return null;
-    return config;
-  } catch (error) {
-    console.error('Failed to fetch config:', error);
-    return null;
-  }
-}
+import { getConfigData, getAboutData } from "@/lib/dataFetchers";
 
 export async function generateMetadata() {
-  const config = await getConfig();
+  const config = await getConfigData();
   const baseName = config?.siteTitle || config?.logoText || 'Portfolio';
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
   const description = 'Learn more about my background, skills, and experience.';
-  const ogImage = config?.ogImage || `${baseUrl}/og-image.png`;
+  const ogImage = (typeof config?.ogImage === 'string' ? config.ogImage : typeof config?.ogImage?.value === 'string' && config.ogImage.value.length > 0 ? config.ogImage.value : null) || `${baseUrl}/og-image.png`;
 
   return {
     title: `${baseName} | About Me`,
@@ -45,8 +31,6 @@ export async function generateMetadata() {
   };
 }
 export default async function AboutPage() {
-  await dbConnect();
-  const aboutData = await AboutModel.findOne().lean();
-  const serializedAboutData = JSON.parse(JSON.stringify(aboutData));
+  const serializedAboutData = await getAboutData();
   return <About data={serializedAboutData} />;
 }

@@ -4,12 +4,15 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import clsx from 'clsx';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Search } from 'lucide-react';
 // import { navLinks, contactLink } from '../data/headerData';
 import ThemeToggle from './ThemeToggle';
 import { useTheme } from '../context/ThemeContext';
 import TerminalPath from './admin/TerminalPath';
+
+const SCROLL_DOWN_THRESHOLD = 72;
+const SCROLL_UP_THRESHOLD = 24;
 
 export default function Header({ data, logoText, socialData, config }) {
     const { navLinks, contactLink } = data || { navLinks: [], contactLink: {} };
@@ -21,22 +24,33 @@ export default function Header({ data, logoText, socialData, config }) {
     const [scrolled, setScrolled] = useState(false);
     const pathname = usePathname();
     const { theme } = useTheme();
-    const { scrollY } = useScroll();
-    const headerOpacity = useTransform(scrollY, [0, 100], [1, 0.95]);
-    const headerBlur = useTransform(scrollY, [0, 100], [0, 10]);
 
     const toggleMenu = () => {
         setIsMenuOpen(!isMenuOpen);
     };
 
     useEffect(() => {
-        const handleScroll = () => {
-            setScrolled(window.scrollY > 50);
+        let ticking = false;
+
+        const updateScrollState = () => {
+            const y = window.scrollY;
+
+            // Hysteresis avoids rapid toggling around one exact pixel threshold.
+            setScrolled((prev) => (prev ? y > SCROLL_UP_THRESHOLD : y > SCROLL_DOWN_THRESHOLD));
+            ticking = false;
         };
 
-        window.addEventListener('scroll', handleScroll);
+        const handleScroll = () => {
+            if (ticking) return;
+            ticking = true;
+            window.requestAnimationFrame(updateScrollState);
+        };
+
+        handleScroll();
+        window.addEventListener('scroll', handleScroll, { passive: true });
+
         return () => window.removeEventListener('scroll', handleScroll);
-    }, [isMenuOpen]);
+    }, []);
 
     // Prevent body scroll when mobile menu is open
     useEffect(() => {
@@ -57,8 +71,7 @@ export default function Header({ data, logoText, socialData, config }) {
         <>
             <motion.header
                 className={clsx(
-                    "sticky top-0 z-50 w-full transition-all duration-300",
-                    scrolled ? "py-2" : "py-4"
+                    "sticky top-0 z-50 w-full transition-[background-color,backdrop-filter,border-color,box-shadow,padding] duration-300"
                 )}
                 style={{
                     backgroundColor: scrolled
@@ -71,7 +84,12 @@ export default function Header({ data, logoText, socialData, config }) {
                     boxShadow: scrolled ? '0 4px 30px rgba(0, 0, 0, 0.1)' : 'none',
                 }}
             >
-                <nav className="flex items-center justify-between w-full mx-auto px-4 sm:px-6">
+                <nav
+                    className={clsx(
+                        "flex items-center justify-between w-full mx-auto px-4 sm:px-6 transition-[padding,min-height] duration-300",
+                        scrolled ? "py-2 min-h-[56px]" : "py-4 min-h-[72px]"
+                    )}
+                >
                     {/* Logo/Brand - Left */}
                     <div className="flex-shrink-0">
                         <Link href="/">
@@ -205,7 +223,15 @@ export default function Header({ data, logoText, socialData, config }) {
                         </Link>
                     </div>
                 </nav>
-                <TerminalPath socialData={socialData} config={config} />
+                <div
+                    className={clsx(
+                        "overflow-hidden transition-[max-height,opacity] duration-300",
+                        scrolled ? "max-h-0 opacity-0" : "max-h-20 opacity-100"
+                    )}
+                    aria-hidden={scrolled}
+                >
+                    <TerminalPath socialData={socialData} config={config} />
+                </div>
             </motion.header>
 
             {/* Full Screen Mobile Menu - Moved OUTSIDE header */}

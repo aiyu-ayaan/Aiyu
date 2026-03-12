@@ -17,6 +17,7 @@ export default function GitHubConfigPage() {
             showContributions: true,
             showActivity: true,
             showRepositories: true,
+            showRepoDistribution: true,
             showLanguages: true
         },
         hiddenRepos: [],
@@ -201,6 +202,7 @@ export default function GitHubConfigPage() {
         showContributions: Globe,
         showActivity: CheckCircle,
         showRepositories: Book,
+        showRepoDistribution: BarChart2,
         showLanguages: Code,
     };
 

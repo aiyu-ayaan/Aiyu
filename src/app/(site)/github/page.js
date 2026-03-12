@@ -1,42 +1,12 @@
-import GitHubStatsClient from '@/app/components/github/GitHubStatsClient';
-import dbConnect from '@/lib/db';
-import ConfigModel from '@/models/Config';
-
-export const dynamic = 'force-dynamic';
-export const revalidate = 300; // Revalidate every 5 minutes
-
-async function getGitHubStats() {
-    try {
-        const url = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/github/stats`;
-        console.log(`[GitHub Page] Fetching stats from: ${url}`);
-
-        const res = await fetch(url, {
-            cache: 'no-store'
-        });
-
-        console.log(`[GitHub Page] Stats fetch status: ${res.status} ${res.statusText}`);
-
-        if (!res.ok) {
-            const text = await res.text();
-            console.error(`[GitHub Page] Fetch failed with status ${res.status}. Body preview: ${text.substring(0, 200)}`);
-            return { success: false, error: `API Error: ${res.status}` };
-        }
-
-        const data = await res.json();
-        return data;
-    } catch (error) {
-        console.error('Failed to fetch GitHub stats:', error);
-        return { success: false, error: 'Failed to load stats' };
-    }
-}
+import GitHubStatsLoader from '@/app/components/github/GitHubStatsLoader';
+import { getConfigData } from '@/lib/dataFetchers';
 
 export async function generateMetadata() {
-    await dbConnect();
-    const config = await ConfigModel.findOne().lean();
+    const config = await getConfigData();
     const baseName = config?.siteTitle || config?.logoText || 'Portfolio';
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
     const description = 'Check out my open source contributions, repositories, and GitHub statistics.';
-    const ogImage = config?.ogImage || `${baseUrl}/og-image.png`;
+    const ogImage = (typeof config?.ogImage === 'string' ? config.ogImage : typeof config?.ogImage?.value === 'string' && config.ogImage.value.length > 0 ? config.ogImage.value : null) || `${baseUrl}/og-image.png`;
 
     return {
         title: `${baseName} | GitHub`,
@@ -62,7 +32,5 @@ export async function generateMetadata() {
 }
 
 export default async function GitHubPage() {
-    const result = await getGitHubStats();
-
-    return <GitHubStatsClient data={result} />;
+    return <GitHubStatsLoader />;
 }

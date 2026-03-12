@@ -11,4 +11,7 @@ const ProjectSchema = new mongoose.Schema({
     image: { type: String, required: false },
 });
 
+// Add index for sorted queries
+ProjectSchema.index({ year: -1 });
+
 export default mongoose.models.Project || mongoose.model('Project', ProjectSchema);
