@@ -112,6 +112,8 @@ services:
       - "${APP_PORT:-3000}:80"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./public:/srv/public:ro
+      - uploads_data:/srv/uploads:ro
       - nginx_cache:/var/cache/nginx
     depends_on:
       app:
