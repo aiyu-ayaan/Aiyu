@@ -4,6 +4,7 @@ services:
     image: mongo:7
     container_name: aiyu-mongodb
     restart: unless-stopped
+    command: ["--wiredTigerCacheSizeGB", "0.25"]
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
@@ -58,6 +59,8 @@ services:
 
       # Node environment
       NODE_ENV: production
+      # Keep V8 heap bounded on low-memory servers (2 GB instances)
+      NODE_OPTIONS: --max-old-space-size=512
     volumes:
       # Persistent uploads directory (named volume for proper permissions)
       - uploads_data:/app/public/uploads

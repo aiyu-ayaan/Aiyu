@@ -19,7 +19,7 @@ export async function generateMetadata() {
   const config = await getConfigData();
 
   const baseName = config?.siteTitle || config?.logoText || 'Portfolio';
-  const icon = config?.favicon?.value ? '/api/favicon' : '/favicon.ico';
+  const icon = config?.hasCustomFavicon ? '/api/favicon' : '/favicon.ico';
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://me.aiyu.co.in';
   const siteDescription = config?.siteDescription || 'Professional portfolio showcasing projects, blogs, and expertise.';
   const ogImage = (typeof config?.ogImage === 'string' ? config.ogImage : typeof config?.ogImage?.value === 'string' && config.ogImage.value.length > 0 ? config.ogImage.value : null) || `${baseUrl}/og-image.png`;

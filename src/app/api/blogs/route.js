@@ -3,7 +3,17 @@ import dbConnect from "@/lib/db";
 import Blog from "@/models/Blog";
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import cache, { CACHE_KEYS } from '@/lib/cache';
+import cache, { CACHE_KEYS, CACHE_TTL } from '@/lib/cache';
+
+const BLOG_LIST_SELECT = ['title', 'content', 'image', 'date', 'createdAt', 'updatedAt', 'published'].join(' ');
+
+function toPublicBlogList(blogs, maxLength = 500) {
+    if (!Array.isArray(blogs)) return [];
+    return blogs.map((blog) => ({
+        ...blog,
+        content: typeof blog?.content === 'string' ? blog.content.slice(0, maxLength) : '',
+    }));
+}
 
 export async function GET(request) {
     await dbConnect();
@@ -20,8 +30,17 @@ export async function GET(request) {
             query = { published: { $ne: false } };
         }
 
-        const blogs = await Blog.find(query).sort({ createdAt: -1 }).lean();
-        return NextResponse.json({ success: true, data: blogs });
+        if (session && showAll === 'true') {
+            const blogs = await Blog.find(query).sort({ createdAt: -1 }).lean();
+            return NextResponse.json({ success: true, data: blogs });
+        }
+
+        const blogs = await cache.getOrSet(
+            CACHE_KEYS.BLOGS_PUBLISHED,
+            () => Blog.find(query).sort({ createdAt: -1 }).select(BLOG_LIST_SELECT).lean(),
+            CACHE_TTL.MEDIUM
+        );
+        return NextResponse.json({ success: true, data: toPublicBlogList(blogs) });
     } catch (error) {
         return NextResponse.json({ success: false, error: error.message }, { status: 400 });
     }

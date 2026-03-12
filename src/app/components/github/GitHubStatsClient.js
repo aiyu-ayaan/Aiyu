@@ -1,6 +1,6 @@
 'use client';
 
-import { Github, Star, GitFork, Users, BookOpen, MapPin, Link as LinkIcon, Calendar, Flame, TrendingUp, GitCommit, GitPullRequest, GitMerge, Lock } from 'lucide-react';
+import { Github, Star, GitFork, Users, BookOpen, MapPin, Link as LinkIcon, Calendar, Flame, TrendingUp, GitCommit, GitPullRequest, GitMerge, Lock, Unlock, BarChart2 } from 'lucide-react';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 

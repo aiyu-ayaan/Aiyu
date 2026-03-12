@@ -4,6 +4,7 @@ import GitHub from '@/models/GitHub';
 import Config from '@/models/Config';
 import { withAuth } from '@/middleware/auth';
 import { encrypt, decrypt } from '@/lib/encryption';
+import cache from '@/lib/cache';
 
 // Helper to get token
 async function getDecryptedToken() {
@@ -187,6 +188,7 @@ async function updateConfig(request) {
             // Update token in Config
             const encryptedToken = body.githubToken ? encrypt(body.githubToken) : '';
             await Config.findOneAndUpdate({}, { encryptedGithubToken: encryptedToken }, { upsert: true });
+            cache.invalidatePrefix('db:config');
         }
 
         await config.save();

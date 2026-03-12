@@ -4,6 +4,7 @@ import { getSession } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import { isPredefinedTheme, getTheme } from "@/lib/themePresets";
 import Theme from "@/models/Theme";
+import cache from "@/lib/cache";
 
 // GET /api/themes/active - Get the currently active theme
 export async function GET() {
@@ -126,6 +127,7 @@ export async function PATCH(request) {
         }
 
         await config.save();
+        cache.invalidatePrefix('db:config');
 
         return NextResponse.json({
             success: true,

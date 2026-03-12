@@ -25,6 +25,7 @@ export async function POST(request) {
         const body = await request.json();
         const project = await Project.create(body);
         cache.invalidate(CACHE_KEYS.PROJECTS);
+        cache.invalidatePrefix('db:projects');
         return NextResponse.json(project, { status: 201 });
     } catch (error) {
         return NextResponse.json({ error: 'Failed to create project' }, { status: 500 });
