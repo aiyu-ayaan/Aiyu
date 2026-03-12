@@ -95,8 +95,8 @@ services:
       test: ["CMD", "sh", "/app/healthcheck.sh"]
       interval: 15s
       timeout: 10s
-      retries: 8
-      start_period: 90s
+      retries: 12
+      start_period: 150s
     depends_on:
       mongodb:
         condition: service_healthy
@@ -115,7 +115,7 @@ services:
       - nginx_cache:/var/cache/nginx
     depends_on:
       app:
-        condition: service_healthy
+        condition: service_started
     networks:
       - aiyu-network
     deploy:
@@ -127,7 +127,7 @@ services:
           cpus: "0.1"
           memory: 64M
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/nginx-health"]
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:80/nginx-health || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 5
