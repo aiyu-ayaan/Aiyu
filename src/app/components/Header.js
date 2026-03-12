@@ -11,6 +11,9 @@ import ThemeToggle from './ThemeToggle';
 import { useTheme } from '../context/ThemeContext';
 import TerminalPath from './admin/TerminalPath';
 
+const SCROLL_DOWN_THRESHOLD = 72;
+const SCROLL_UP_THRESHOLD = 24;
+
 export default function Header({ data, logoText, socialData, config }) {
     const { navLinks, contactLink } = data || { navLinks: [], contactLink: {} };
     // Filter out hidden links
@@ -27,11 +30,25 @@ export default function Header({ data, logoText, socialData, config }) {
     };
 
     useEffect(() => {
-        const handleScroll = () => {
-            setScrolled(window.scrollY > 50);
+        let ticking = false;
+
+        const updateScrollState = () => {
+            const y = window.scrollY;
+
+            // Hysteresis avoids rapid toggling around one exact pixel threshold.
+            setScrolled((prev) => (prev ? y > SCROLL_UP_THRESHOLD : y > SCROLL_DOWN_THRESHOLD));
+            ticking = false;
         };
 
+        const handleScroll = () => {
+            if (ticking) return;
+            ticking = true;
+            window.requestAnimationFrame(updateScrollState);
+        };
+
+        handleScroll();
         window.addEventListener('scroll', handleScroll, { passive: true });
+
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
@@ -54,8 +71,7 @@ export default function Header({ data, logoText, socialData, config }) {
         <>
             <motion.header
                 className={clsx(
-                    "sticky top-0 z-50 w-full transition-all duration-300",
-                    scrolled ? "py-1" : "py-4"
+                    "sticky top-0 z-50 w-full transition-[background-color,backdrop-filter,border-color,box-shadow,padding] duration-300"
                 )}
                 style={{
                     backgroundColor: scrolled
@@ -68,7 +84,12 @@ export default function Header({ data, logoText, socialData, config }) {
                     boxShadow: scrolled ? '0 4px 30px rgba(0, 0, 0, 0.1)' : 'none',
                 }}
             >
-                <nav className="flex items-center justify-between w-full mx-auto px-4 sm:px-6">
+                <nav
+                    className={clsx(
+                        "flex items-center justify-between w-full mx-auto px-4 sm:px-6 transition-[padding,min-height] duration-300",
+                        scrolled ? "py-2 min-h-[56px]" : "py-4 min-h-[72px]"
+                    )}
+                >
                     {/* Logo/Brand - Left */}
                     <div className="flex-shrink-0">
                         <Link href="/">
@@ -204,9 +225,10 @@ export default function Header({ data, logoText, socialData, config }) {
                 </nav>
                 <div
                     className={clsx(
-                        "transition-all duration-300 overflow-hidden",
-                        scrolled ? "h-0 opacity-0" : "h-auto opacity-100"
+                        "overflow-hidden transition-[max-height,opacity] duration-300",
+                        scrolled ? "max-h-0 opacity-0" : "max-h-20 opacity-100"
                     )}
+                    aria-hidden={scrolled}
                 >
                     <TerminalPath socialData={socialData} config={config} />
                 </div>
