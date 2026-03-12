@@ -1,26 +1,12 @@
 import Projects from "../../components/projects/Projects";
-import dbConnect from "@/lib/db";
-import ProjectModel from "@/models/Project";
-import Config from "@/models/Config";
-
-async function getConfig() {
-  try {
-    await dbConnect();
-    let config = await Config.findOne().lean();
-    if (!config) return null;
-    return config;
-  } catch (error) {
-    console.error('Failed to fetch config:', error);
-    return null;
-  }
-}
+import { getConfigData, getProjectsData } from "@/lib/dataFetchers";
 
 export async function generateMetadata() {
-  const config = await getConfig();
+  const config = await getConfigData();
   const baseName = config?.siteTitle || config?.logoText || 'Portfolio';
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
   const description = 'Explore my latest projects and portfolio work.';
-  const ogImage = config?.ogImage || `${baseUrl}/og-image.png`;
+  const ogImage = (typeof config?.ogImage === 'string' ? config.ogImage : typeof config?.ogImage?.value === 'string' && config.ogImage.value.length > 0 ? config.ogImage.value : null) || `${baseUrl}/og-image.png`;
 
   return {
     title: `${baseName} | Projects`,
@@ -45,8 +31,6 @@ export async function generateMetadata() {
   };
 }
 export default async function ProjectsPage() {
-  await dbConnect();
-  const projectsData = await ProjectModel.find().lean();
-  const serializedProjectsData = JSON.parse(JSON.stringify(projectsData));
+  const serializedProjectsData = await getProjectsData();
   return <Projects data={serializedProjectsData} />;
 }

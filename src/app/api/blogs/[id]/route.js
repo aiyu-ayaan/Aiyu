@@ -2,12 +2,13 @@
 import dbConnect from "@/lib/db";
 import Blog from "@/models/Blog";
 import { NextResponse } from "next/server";
+import cache, { CACHE_KEYS } from '@/lib/cache';
 
 export async function GET(request, { params }) {
     await dbConnect();
     const { id } = await params;
     try {
-        const blog = await Blog.findById(id);
+        const blog = await Blog.findById(id).lean();
         if (!blog) {
             return NextResponse.json({ success: false, error: "Blog not found" }, { status: 404 });
         }
@@ -35,6 +36,7 @@ export async function PUT(request, { params }) {
         if (!blog) {
             return NextResponse.json({ success: false, error: "Blog not found" }, { status: 404 });
         }
+        cache.invalidatePrefix('db:blog');
         return NextResponse.json({ success: true, data: blog });
     } catch (error) {
         return NextResponse.json({ success: false, error: error.message }, { status: 400 });
@@ -49,6 +51,7 @@ export async function DELETE(request, { params }) {
         if (!blog) {
             return NextResponse.json({ success: false, error: "Blog not found" }, { status: 404 });
         }
+        cache.invalidatePrefix('db:blog');
         return NextResponse.json({ success: true, data: {} });
     } catch (error) {
         return NextResponse.json({ success: false, error: error.message }, { status: 400 });

@@ -5,22 +5,16 @@ import HomeProjects from "../components/landing/HomeProjects";
 import Divider from "../components/landing/Divider";
 import TechStackCarousel from "../components/landing/TechStackCarousel";
 import HomeBlogs from "../components/landing/HomeBlogs";
-import dbConnect from "@/lib/db";
-import HomeModel from "@/models/Home";
-import AboutModel from "@/models/About";
-import ProjectModel from "@/models/Project";
-import BlogModel from "@/models/Blog";
-import ConfigModel from "@/models/Config";
+import { getHomePageData, getConfigData } from "@/lib/dataFetchers";
 import { generateWebsiteSchema, generatePersonSchema, generateOrganizationSchema } from "@/app/schema";
 
 export async function generateMetadata() {
-  await dbConnect();
-  const config = await ConfigModel.findOne().lean();
+  const config = await getConfigData();
 
   const baseName = config?.siteTitle || config?.logoText || 'Portfolio';
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
   const siteDescription = config?.siteDescription || 'Professional portfolio showcasing projects, blogs, and expertise.';
-  const ogImage = config?.ogImage || `${baseUrl}/og-image.png`;
+  const ogImage = (typeof config?.ogImage === 'string' ? config.ogImage : typeof config?.ogImage?.value === 'string' && config.ogImage.value.length > 0 ? config.ogImage.value : null) || `${baseUrl}/og-image.png`;
 
   return {
     title: baseName,
@@ -55,19 +49,7 @@ export async function generateMetadata() {
 }
 
 export default async function Home() {
-  await dbConnect();
-  const homeData = await HomeModel.findOne().lean();
-  const aboutData = await AboutModel.findOne().lean();
-  const projectsData = await ProjectModel.find().lean();
-  const blogsData = await BlogModel.find({ published: { $ne: false } }).sort({ createdAt: -1 }).limit(3).lean();
-  const configData = await ConfigModel.findOne().lean();
-
-  // Serialize data to plain objects
-  const serializedHomeData = JSON.parse(JSON.stringify(homeData));
-  const serializedAboutData = JSON.parse(JSON.stringify(aboutData));
-  const serializedProjectsData = JSON.parse(JSON.stringify(projectsData));
-  const serializedBlogsData = JSON.parse(JSON.stringify(blogsData));
-  const serializedConfigData = JSON.parse(JSON.stringify(configData));
+  const { homeData: serializedHomeData, aboutData: serializedAboutData, projectsData: serializedProjectsData, blogsData: serializedBlogsData, configData: serializedConfigData } = await getHomePageData();
 
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
 

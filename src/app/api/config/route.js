@@ -2,11 +2,12 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import Config from '@/models/Config';
 import { getSession } from '@/lib/auth';
+import cache, { CACHE_KEYS } from '@/lib/cache';
 
 export async function GET() {
     await dbConnect();
     try {
-        let config = await Config.findOne();
+        let config = await Config.findOne().lean();
         if (!config) {
             // Create default if not exists
             config = await Config.create({});
@@ -41,6 +42,7 @@ async function updateConfig(request) {
             upsert: true,
             runValidators: true,
         });
+        cache.invalidate(CACHE_KEYS.CONFIG);
         return NextResponse.json(config);
     } catch (error) {
         console.error('Config update error:', error);

@@ -1,28 +1,14 @@
 
 import React from 'react';
 import BlogList from '../../components/blogs/BlogList';
-
-import dbConnect from '../../../lib/db';
-import Config from '../../../models/Config';
-
-async function getConfig() {
-    try {
-        await dbConnect();
-        let config = await Config.findOne().lean();
-        if (!config) return null;
-        return config;
-    } catch (error) {
-        console.error('Failed to fetch config:', error);
-        return null;
-    }
-}
+import { getConfigData } from '@/lib/dataFetchers';
 
 export async function generateMetadata() {
-    const config = await getConfig();
+    const config = await getConfigData();
     const baseName = config?.siteTitle || config?.logoText || 'Portfolio';
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
     const description = 'Read my latest blogs and articles on web development and technology.';
-    const ogImage = config?.ogImage || `${baseUrl}/og-image.png`;
+    const ogImage = (typeof config?.ogImage === 'string' ? config.ogImage : typeof config?.ogImage?.value === 'string' && config.ogImage.value.length > 0 ? config.ogImage.value : null) || `${baseUrl}/og-image.png`;
 
     return {
         title: `${baseName} | Blogs`,

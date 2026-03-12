@@ -2,10 +2,25 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import dynamic from 'next/dynamic';
 import TypewriterEffect from '../shared/TypewriterEffect';
-import SnakeGame from './SnakeGame';
-import TicTacToe from './TicTacToe';
 import { useTheme } from '../../context/ThemeContext';
+
+const SnakeGame = dynamic(() => import('./SnakeGame'), {
+  loading: () => (
+    <div className="w-[320px] h-[320px] rounded-xl border border-[var(--border-secondary)] bg-[var(--bg-elevated)] flex items-center justify-center text-sm text-[var(--text-secondary)]">
+      Loading snake...
+    </div>
+  ),
+});
+
+const TicTacToe = dynamic(() => import('./TicTacToe'), {
+  loading: () => (
+    <div className="w-[320px] h-[320px] rounded-xl border border-[var(--border-secondary)] bg-[var(--bg-elevated)] flex items-center justify-center text-sm text-[var(--text-secondary)]">
+      Loading game...
+    </div>
+  ),
+});
 
 const GamePortfolio = ({ data, onUnlock = () => { } }) => {
   const { theme } = useTheme();

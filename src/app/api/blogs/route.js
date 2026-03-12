@@ -3,6 +3,7 @@ import dbConnect from "@/lib/db";
 import Blog from "@/models/Blog";
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import cache, { CACHE_KEYS } from '@/lib/cache';
 
 export async function GET(request) {
     await dbConnect();
@@ -19,7 +20,7 @@ export async function GET(request) {
             query = { published: { $ne: false } };
         }
 
-        const blogs = await Blog.find(query).sort({ createdAt: -1 });
+        const blogs = await Blog.find(query).sort({ createdAt: -1 }).lean();
         return NextResponse.json({ success: true, data: blogs });
     } catch (error) {
         return NextResponse.json({ success: false, error: error.message }, { status: 400 });
@@ -73,6 +74,7 @@ export async function POST(request) {
 
         const blog = await Blog.create(blogData);
         console.log('POST /api/blogs - Created:', blog);
+        cache.invalidatePrefix('db:blog');
         return NextResponse.json({ success: true, data: blog }, { status: 201 });
     } catch (error) {
         return NextResponse.json({ success: false, error: error.message }, { status: 400 });

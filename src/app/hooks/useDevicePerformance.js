@@ -14,9 +14,10 @@ import { useState, useEffect } from 'react';
  */
 const useDevicePerformance = () => {
     const [performanceData, setPerformanceData] = useState({
-        tier: 'high',
+        // Start conservative to avoid expensive effects during first paint on weak devices.
+        tier: 'low',
         prefersReducedMotion: false,
-        isLowEnd: false,
+        isLowEnd: true,
         isMobile: false,
     });
 

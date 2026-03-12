@@ -159,6 +159,12 @@ export default function EditBlogPage() {
                         tags: data.data.tags ? data.data.tags.join(', ') : '',
                         date: `${year}-${month}-${day}`,
                     });
+
+                    // Auto-detect uploaded images and show preview
+                    if (data.data.image && data.data.image.startsWith('/api/uploads/')) {
+                        setImageMode('upload');
+                        setUploadPreview(data.data.image);
+                    }
                 } else {
                     showNotification(false, 'Blog not found');
                     setTimeout(() => router.push('/admin/blogs'), 1500);
@@ -497,7 +503,7 @@ export default function EditBlogPage() {
                         ) : (
                             <div className="flex flex-col md:flex-row gap-6">
                                 {/* Upload Box */}
-                                {!uploadFile ? (
+                                {!uploadFile && !uploadPreview ? (
                                     <div
                                         className={`flex-1 border-2 border-dashed rounded-xl p-12 text-center transition-all cursor-pointer group/drop ${dragActive ? 'border-purple-500 bg-purple-500/10' : 'border-white/10 hover:border-purple-500/30 hover:bg-white/[0.02]'
                                             }`}
@@ -523,6 +529,39 @@ export default function EditBlogPage() {
                                                 <p className="text-slate-500 text-xs font-mono">DRAG_AND_DROP_OR_CLICK</p>
                                             </div>
                                         </div>
+                                    </div>
+                                ) : !uploadFile && uploadPreview ? (
+                                    /* Existing uploaded image preview */
+                                    <div className="w-full space-y-4">
+                                        <div className="relative rounded-xl overflow-hidden border border-white/10 group/preview">
+                                            <img src={uploadPreview} alt="Current upload" className="w-full h-48 object-cover opacity-60 group-hover/preview:opacity-100 transition-opacity" />
+                                            <div className="absolute bottom-2 right-2 bg-black/60 backdrop-blur-md px-2 py-1 rounded text-xs font-mono text-emerald-400 border border-emerald-500/30">EXISTING_UPLOAD</div>
+                                        </div>
+                                        <div className="flex gap-3">
+                                            <button
+                                                type="button"
+                                                onClick={() => { clearUpload(); document.getElementById('blog-edit-upload-replace')?.click(); }}
+                                                className="flex-1 py-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 border border-purple-500/30 rounded-lg text-xs font-bold uppercase tracking-wide flex items-center justify-center gap-2"
+                                            >
+                                                <Upload className="w-3 h-3" />
+                                                REPLACE_IMAGE
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => { setFormData(prev => ({ ...prev, image: '' })); clearUpload(); }}
+                                                className="py-2 px-4 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 rounded-lg text-xs font-bold uppercase tracking-wide flex items-center justify-center gap-2"
+                                            >
+                                                <X className="w-3 h-3" />
+                                                REMOVE
+                                            </button>
+                                        </div>
+                                        <input
+                                            type="file"
+                                            id="blog-edit-upload-replace"
+                                            className="hidden"
+                                            onChange={handleFileChange}
+                                            accept="image/*"
+                                        />
                                     </div>
                                 ) : (
                                     <div className="w-full flex gap-4 p-4 bg-slate-950/50 rounded-xl border border-white/10 items-center">

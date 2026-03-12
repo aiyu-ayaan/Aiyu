@@ -244,30 +244,74 @@ export default function GitHubStatsClient({ data }) {
                     </motion.div>
                 )}
 
-                {/* Recent Activity */}
+                {/* Recent Activity Timeline */}
                 {sections?.showActivity && recentActivity?.length > 0 && (
-                    <motion.div className="mb-8" variants={itemVariants}>
-                        <h2 className="text-2xl font-bold mb-4">Recent Activity</h2>
-                        <div className="bg-[var(--surface-card)] rounded-xl p-6 border border-[var(--border-secondary)]">
-                            <div className="space-y-4">
-                                {recentActivity.map((activity, idx) => (
-                                    <div key={idx} className="flex items-start gap-3 pb-4 border-b border-gray-700 last:border-0 last:pb-0">
-                                        <div className="text-[var(--text-secondary)] mt-1">
-                                            {getActivityIcon(activity.type)}
+                    <motion.div className="mb-12" variants={itemVariants}>
+                        <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                            <GitCommit className="text-[var(--primary)]" />
+                            Activity Timeline
+                        </h2>
+                        <div className="bg-[var(--surface-card)] rounded-xl p-6 md:p-8 border border-[var(--border-secondary)]">
+                            <div className="relative border-l-2 border-slate-700/50 ml-4 md:ml-6 space-y-8 pb-4">
+                                {recentActivity.map((activity, idx) => {
+                                    // Determine styling based on activity type
+                                    let iconColor = 'text-slate-400';
+                                    let iconBg = 'bg-slate-800';
+                                    let iconBorder = 'border-slate-600';
+
+                                    if (activity.type === 'PushEvent') {
+                                        iconColor = 'text-green-400';
+                                        iconBg = 'bg-green-500/10';
+                                        iconBorder = 'border-green-500/30';
+                                    } else if (activity.type === 'PullRequestEvent') {
+                                        iconColor = 'text-purple-400';
+                                        iconBg = 'bg-purple-500/10';
+                                        iconBorder = 'border-purple-500/30';
+                                    } else if (activity.type === 'CreateEvent') {
+                                        iconColor = 'text-blue-400';
+                                        iconBg = 'bg-blue-500/10';
+                                        iconBorder = 'border-blue-500/30';
+                                    } else if (activity.type === 'IssuesEvent') {
+                                        iconColor = 'text-amber-400';
+                                        iconBg = 'bg-amber-500/10';
+                                        iconBorder = 'border-amber-500/30';
+                                    }
+
+                                    return (
+                                        <div key={idx} className="relative pl-10 md:pl-12 group">
+                                            {/* Timeline Node */}
+                                            <div
+                                                className={`absolute top-1 w-8 h-8 rounded-full border-2 ${iconBg} ${iconBorder} flex items-center justify-center ${iconColor} z-10 shadow-lg shadow-black/20 group-hover:scale-110 transition-transform`}
+                                                style={{ left: '-17px' }}
+                                            >
+                                                {getActivityIcon(activity.type)}
+                                            </div>
+
+                                            {/* Content Card */}
+                                            <div className="bg-slate-800/20 hover:bg-slate-800/40 border border-white/5 hover:border-white/10 p-4 rounded-xl transition-colors">
+                                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 mb-2">
+                                                    <p className="font-medium text-slate-200">
+                                                        {getActivityText(activity)}
+                                                    </p>
+                                                    <span className="shrink-0 text-xs font-mono text-[var(--text-secondary)] bg-black/20 px-2 py-1 rounded">
+                                                        {new Date(activity.created_at).toLocaleDateString('en-US', {
+                                                            month: 'short',
+                                                            day: 'numeric',
+                                                            hour: '2-digit',
+                                                            minute: '2-digit'
+                                                        })}
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center gap-2 mt-2 text-sm text-[var(--text-secondary)]">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <BookOpen className="w-3.5 h-3.5" />
+                                                        <span className="font-mono text-xs">{activity.repo}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div className="flex-1">
-                                            <p className="text-sm">{getActivityText(activity)}</p>
-                                            <p className="text-xs text-[var(--text-secondary)] mt-1">
-                                                {new Date(activity.created_at).toLocaleDateString('en-US', {
-                                                    month: 'short',
-                                                    day: 'numeric',
-                                                    hour: '2-digit',
-                                                    minute: '2-digit'
-                                                })}
-                                            </p>
-                                        </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </div>
                     </motion.div>
@@ -337,6 +381,89 @@ export default function GitHubStatsClient({ data }) {
                                     </Wrapper>
                                 );
                             })}
+                        </div>
+                    </motion.div>
+                )}
+
+                {/* Repository Distribution */}
+                {sections?.showRepoDistribution && stats && (
+                    <motion.div className="mb-12" variants={itemVariants}>
+                        <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                            <BarChart2 className="text-[var(--primary)] text-cyan-400" />
+                            Repository Landscape
+                        </h2>
+                        <div className="grid md:grid-cols-2 gap-4">
+                            {/* Privacy Distribution */}
+                            <div className="bg-[var(--surface-card)] rounded-xl p-6 border border-[var(--border-secondary)]">
+                                <h3 className="text-sm font-mono text-slate-400 mb-4 uppercase tracking-wider">Visibility</h3>
+                                <div className="flex flex-col gap-4">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <Unlock className="w-4 h-4 text-green-400" />
+                                            <span>Public</span>
+                                        </div>
+                                        <span className="font-mono bg-green-500/10 text-green-400 px-2 py-0.5 rounded text-sm">
+                                            {stats.totalRepos - (stats.privateRepos || 0)}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <Lock className="w-4 h-4 text-amber-500" />
+                                            <span>Private</span>
+                                        </div>
+                                        <span className="font-mono bg-amber-500/10 text-amber-500 px-2 py-0.5 rounded text-sm">
+                                            {stats.privateRepos || 0}
+                                        </span>
+                                    </div>
+                                    {/* Visual Bar */}
+                                    <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden mt-2 flex">
+                                        <div
+                                            className="h-full bg-green-500"
+                                            style={{ width: `${((stats.totalRepos - (stats.privateRepos || 0)) / stats.totalRepos) * 100}%` }}
+                                        />
+                                        <div
+                                            className="h-full bg-amber-500"
+                                            style={{ width: `${((stats.privateRepos || 0) / stats.totalRepos) * 100}%` }}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Source vs Fork */}
+                            <div className="bg-[var(--surface-card)] rounded-xl p-6 border border-[var(--border-secondary)]">
+                                <h3 className="text-sm font-mono text-slate-400 mb-4 uppercase tracking-wider">Type</h3>
+                                <div className="flex flex-col gap-4">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <BookOpen className="w-4 h-4 text-blue-400" />
+                                            <span>Sources</span>
+                                        </div>
+                                        <span className="font-mono bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded text-sm">
+                                            {stats.sourceRepos || 0}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <GitFork className="w-4 h-4 text-purple-400" />
+                                            <span>Forks</span>
+                                        </div>
+                                        <span className="font-mono bg-purple-500/10 text-purple-400 px-2 py-0.5 rounded text-sm">
+                                            {stats.forkedRepos || 0}
+                                        </span>
+                                    </div>
+                                    {/* Visual Bar */}
+                                    <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden mt-2 flex">
+                                        <div
+                                            className="h-full bg-blue-500"
+                                            style={{ width: `${((stats.sourceRepos || 0) / ((stats.sourceRepos || 0) + (stats.forkedRepos || 0) || 1)) * 100}%` }}
+                                        />
+                                        <div
+                                            className="h-full bg-purple-500"
+                                            style={{ width: `${((stats.forkedRepos || 0) / ((stats.sourceRepos || 0) + (stats.forkedRepos || 0) || 1)) * 100}%` }}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </motion.div>
                 )}

@@ -254,7 +254,7 @@ export default function NewBlogPage() {
             const res = await fetch('/api/blogs', {
                 method: 'POST',
                 headers: {
-                    // pending verification of middleware
+                    'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(dataToSubmit),
             });
