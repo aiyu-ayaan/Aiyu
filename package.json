@@ -46,7 +46,7 @@
     "react-icons": "^5.5.0",
     "react-markdown": "^10.1.0",
     "react-masonry-css": "^1.0.16",
-    "react-syntax-highlighter": "^16.1.0",
+    "react-syntax-highlighter": "^16.1.1",
     "react-vertical-timeline-component": "^3.5.3",
     "remark-gfm": "^4.0.1",
     "sharp": "^0.34.5",
