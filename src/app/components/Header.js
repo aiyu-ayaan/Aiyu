@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import clsx from 'clsx';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Search } from 'lucide-react';
 // import { navLinks, contactLink } from '../data/headerData';
 import ThemeToggle from './ThemeToggle';
@@ -21,9 +21,6 @@ export default function Header({ data, logoText, socialData, config }) {
     const [scrolled, setScrolled] = useState(false);
     const pathname = usePathname();
     const { theme } = useTheme();
-    const { scrollY } = useScroll();
-    const headerOpacity = useTransform(scrollY, [0, 100], [1, 0.95]);
-    const headerBlur = useTransform(scrollY, [0, 100], [0, 10]);
 
     const toggleMenu = () => {
         setIsMenuOpen(!isMenuOpen);
@@ -34,9 +31,9 @@ export default function Header({ data, logoText, socialData, config }) {
             setScrolled(window.scrollY > 50);
         };
 
-        window.addEventListener('scroll', handleScroll);
+        window.addEventListener('scroll', handleScroll, { passive: true });
         return () => window.removeEventListener('scroll', handleScroll);
-    }, [isMenuOpen]);
+    }, []);
 
     // Prevent body scroll when mobile menu is open
     useEffect(() => {

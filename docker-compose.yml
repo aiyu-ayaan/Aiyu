@@ -115,7 +115,7 @@ services:
       - nginx_cache:/var/cache/nginx
     depends_on:
       app:
-        condition: service_started
+        condition: service_healthy
     networks:
       - aiyu-network
     deploy:
@@ -127,11 +127,11 @@ services:
           cpus: "0.1"
           memory: 64M
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/api/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/nginx-health"]
       interval: 30s
       timeout: 5s
-      retries: 3
-      start_period: 10s
+      retries: 5
+      start_period: 20s
 
 # Named volumes for data persistence
 volumes:

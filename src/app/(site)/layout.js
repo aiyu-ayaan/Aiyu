@@ -55,7 +55,7 @@ export default async function SiteLayout({ children }) {
                 {children}
             </main>
             <Footer socialData={serializedSocialData} name={serializedAboutData?.name} config={serializedConfigData} />
-            <N8nChat webhookUrl={n8nWebhookUrl} />
+            {n8nWebhookUrl ? <N8nChat webhookUrl={n8nWebhookUrl} /> : null}
         </>
     );
 }

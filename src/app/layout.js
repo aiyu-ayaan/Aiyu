@@ -3,6 +3,7 @@ import "./styles/globals.css";
 import "./styles/timeline.css";
 import "./styles/custom-timeline.css";
 import { ThemeProvider } from "./context/ThemeContext";
+import { getConfigData } from "@/lib/dataFetchers";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,12 +15,8 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-import dbConnect from "@/lib/db";
-import ConfigModel from "@/models/Config";
-
 export async function generateMetadata() {
-  await dbConnect();
-  const config = await ConfigModel.findOne().lean();
+  const config = await getConfigData();
 
   const baseName = config?.siteTitle || config?.logoText || 'Portfolio';
   const icon = config?.favicon?.value ? '/api/favicon' : '/favicon.ico';
@@ -78,15 +75,12 @@ export const viewport = {
 }
 
 import GoogleAnalytics from "./components/GoogleAnalytics";
-import CommandPalette from "./components/shared/CommandPalette";
-
-import SpaceBackground from "./components/shared/SpaceBackground";
+import ClientEnhancements from "./components/shared/ClientEnhancements";
 
 
 
 export default async function RootLayout({ children }) {
-  await dbConnect();
-  const config = await ConfigModel.findOne().lean();
+  const config = await getConfigData();
   const gaId = config?.googleAnalyticsId || process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
   return (
@@ -116,10 +110,7 @@ export default async function RootLayout({ children }) {
       >
         <GoogleAnalytics gaId={gaId} />
         <ThemeProvider>
-          <CommandPalette />
-          <div className="fixed inset-0 z-[-1]">
-            <SpaceBackground />
-          </div>
+          <ClientEnhancements />
           <div className="relative z-0">
             {children}
           </div>

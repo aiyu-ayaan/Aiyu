@@ -26,11 +26,18 @@ function serialize(data) {
     return JSON.parse(JSON.stringify(data));
 }
 
+function hasCacheHit(key) {
+    return cache.get(key) !== null;
+}
+
 /**
  * Fetch all data needed for the site layout (header, footer, config)
  */
 export async function getLayoutData() {
-    await dbConnect();
+    const requiredKeys = [CACHE_KEYS.HEADER, CACHE_KEYS.SOCIALS, CACHE_KEYS.CONFIG, CACHE_KEYS.ABOUT];
+    if (!requiredKeys.every(hasCacheHit)) {
+        await dbConnect();
+    }
 
     const [headerData, socialData, configData, aboutData] = await Promise.all([
         cache.getOrSet(CACHE_KEYS.HEADER, () => HeaderModel.findOne().lean(), CACHE_TTL.LONG),
@@ -51,7 +58,17 @@ export async function getLayoutData() {
  * Fetch all data needed for the home page.
  */
 export async function getHomePageData() {
-    await dbConnect();
+    const requiredKeys = [
+        CACHE_KEYS.HOME,
+        CACHE_KEYS.ABOUT,
+        CACHE_KEYS.PROJECTS,
+        CACHE_KEYS.BLOGS_RECENT,
+        CACHE_KEYS.CONFIG,
+    ];
+
+    if (!requiredKeys.every(hasCacheHit)) {
+        await dbConnect();
+    }
 
     const [homeData, aboutData, projectsData, blogsData, configData] = await Promise.all([
         cache.getOrSet(CACHE_KEYS.HOME, () => HomeModel.findOne().lean(), CACHE_TTL.LONG),
@@ -77,7 +94,10 @@ export async function getHomePageData() {
  * Fetch config data only (for metadata generation across all pages)
  */
 export async function getConfigData() {
-    await dbConnect();
+    if (!hasCacheHit(CACHE_KEYS.CONFIG)) {
+        await dbConnect();
+    }
+
     const configData = await cache.getOrSet(
         CACHE_KEYS.CONFIG,
         () => ConfigModel.findOne().lean(),
@@ -90,7 +110,10 @@ export async function getConfigData() {
  * Fetch about page data
  */
 export async function getAboutData() {
-    await dbConnect();
+    if (!hasCacheHit(CACHE_KEYS.ABOUT)) {
+        await dbConnect();
+    }
+
     const aboutData = await cache.getOrSet(
         CACHE_KEYS.ABOUT,
         () => AboutModel.findOne().lean(),
@@ -103,7 +126,10 @@ export async function getAboutData() {
  * Fetch all projects
  */
 export async function getProjectsData() {
-    await dbConnect();
+    if (!hasCacheHit(CACHE_KEYS.PROJECTS)) {
+        await dbConnect();
+    }
+
     const projectsData = await cache.getOrSet(
         CACHE_KEYS.PROJECTS,
         () => ProjectModel.find().sort({ year: -1 }).lean(),
@@ -116,8 +142,12 @@ export async function getProjectsData() {
  * Fetch a single blog by ID
  */
 export async function getBlogById(id) {
-    await dbConnect();
     const cacheKey = `db:blog:${id}`;
+
+    if (!hasCacheHit(cacheKey)) {
+        await dbConnect();
+    }
+
     const blog = await cache.getOrSet(
         cacheKey,
         () => BlogModel.findById(id).lean(),
@@ -130,7 +160,10 @@ export async function getBlogById(id) {
  * Fetch published blogs
  */
 export async function getPublishedBlogs() {
-    await dbConnect();
+    if (!hasCacheHit(CACHE_KEYS.BLOGS_PUBLISHED)) {
+        await dbConnect();
+    }
+
     const blogs = await cache.getOrSet(
         CACHE_KEYS.BLOGS_PUBLISHED,
         () => BlogModel.find({ published: { $ne: false } }).sort({ createdAt: -1 }).lean(),

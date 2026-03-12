@@ -28,6 +28,8 @@ export default function CommandPalette() {
 
     // Handle Ctrl+K / Cmd+K toggle
     useEffect(() => {
+        const handleOpenCommandPalette = () => setIsOpen(true);
+
         const handleKeyDown = (e) => {
             if ((e.metaKey || e.ctrlKey) && e.key === SHORTCUT_KEY) {
                 e.preventDefault();
@@ -38,11 +40,11 @@ export default function CommandPalette() {
         };
 
         window.addEventListener("keydown", handleKeyDown);
-        window.addEventListener("open-command-palette", () => setIsOpen(true));
+        window.addEventListener("open-command-palette", handleOpenCommandPalette);
 
         return () => {
             window.removeEventListener("keydown", handleKeyDown);
-            window.removeEventListener("open-command-palette", () => setIsOpen(true));
+            window.removeEventListener("open-command-palette", handleOpenCommandPalette);
         };
     }, []);
 
@@ -58,21 +60,30 @@ export default function CommandPalette() {
 
         if (searchTimeout.current) clearTimeout(searchTimeout.current);
 
+        const controller = new AbortController();
+
         setIsSearching(true);
         searchTimeout.current = setTimeout(async () => {
             try {
-                const res = await fetch(`/api/global-search?q=${encodeURIComponent(cleanQuery)}`);
+                const res = await fetch(`/api/global-search?q=${encodeURIComponent(cleanQuery)}`, {
+                    signal: controller.signal,
+                });
                 const data = await res.json();
                 setApiResults(data.results || []);
             } catch (error) {
-                console.error("Search failed", error);
+                if (error.name !== "AbortError") {
+                    console.error("Search failed", error);
+                }
                 setApiResults([]);
             } finally {
                 setIsSearching(false);
             }
         }, 300); // 300ms debounce
 
-        return () => clearTimeout(searchTimeout.current);
+        return () => {
+            clearTimeout(searchTimeout.current);
+            controller.abort();
+        };
     }, [cleanQuery]);
 
     // Combined Results
@@ -99,10 +110,7 @@ export default function CommandPalette() {
         if (!cleanQuery) return MOCK_PAGES;
 
         return [...localMatches, ...remoteMatches];
-
-        return [...localMatches, ...remoteMatches];
-
-    }, [query, cleanQuery, apiResults]);
+    }, [cleanQuery, apiResults]);
 
     // Reset active index on query change
     useEffect(() => {
@@ -133,6 +141,8 @@ export default function CommandPalette() {
     }, [isOpen]);
 
     const handleInputKeyDown = (e) => {
+        if (filteredItems.length === 0) return;
+
         if (e.key === "ArrowDown") {
             e.preventDefault();
             setActiveIndex((prev) => (prev + 1) % filteredItems.length);
