@@ -21,7 +21,6 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@google/genai": "^1.40.0",
     "@google/generative-ai": "^0.24.1",
-    "@n8n/chat": "^1.7.0",
     "@tailwindcss/typography": "^0.5.19",
     "adm-zip": "^0.5.16",
     "archiver": "^7.0.1",

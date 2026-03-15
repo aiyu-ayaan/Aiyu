@@ -34,7 +34,6 @@ const CONFIG_PUBLIC_SELECT = [
     'profession',
     'authorName',
     'googleAnalyticsId',
-    'n8nWebhookUrl',
     'resume',
     'contactLocation',
     'contactEmail',
