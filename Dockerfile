@@ -1,5 +1,7 @@
 # Stage 1: Dependencies
 FROM node:20-alpine AS deps
+# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
+RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 # Copy package files
@@ -39,6 +41,7 @@ ENV SITE_URL=${SITE_URL}
 ENV ADMIN_USERNAME=dummy
 ENV ADMIN_PASSWORD=dummy
 ENV JWT_SECRET=dummy
+ENV NEXT_TELEMETRY_DISABLED=1
 
 
 # Build the application
@@ -50,6 +53,7 @@ WORKDIR /app
 
 # Set to production environment
 ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 
 # Install curl for health checks (lightweight, ~200KB)
 RUN apk add --no-cache curl
@@ -59,19 +63,19 @@ RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
 # Copy necessary files from builder
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 # Copy healthcheck script
-COPY scripts/healthcheck.sh /app/healthcheck.sh
+COPY --chown=nextjs:nodejs scripts/healthcheck.sh /app/healthcheck.sh
 
 # Create necessary writable directories for read-only filesystem
 # These will be mounted as volumes or tmpfs in docker-compose
 RUN mkdir -p /app/public/uploads \
     && mkdir -p /app/.next/cache \
     && chmod +x /app/healthcheck.sh \
-    && chown -R nextjs:nodejs /app
+    && chown -R nextjs:nodejs /app/public/uploads /app/.next/cache
 
 # Switch to non-root user
 USER nextjs

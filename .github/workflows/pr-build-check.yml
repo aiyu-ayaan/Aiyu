@@ -65,9 +65,71 @@ jobs:
           echo "Please review the logs above and fix any issues."
           exit 1
 
+  push-to-docker-hub:
+    name: Push Docker image to Docker Hub
+    needs: build
+    runs-on: ubuntu-latest
+    if: |
+      (github.ref == 'refs/heads/master' && github.event_name == 'push' && 
+       (contains(github.event.head_commit.message, 'Release:') || contains(github.event.head_commit.message, 'Release v'))) ||
+      github.event_name == 'workflow_dispatch'
+    permissions:
+      packages: write
+      contents: read
+      attestations: write
+      id-token: write
+
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+
+      - name: Extract version from commit message
+        id: extract-version
+        run: |
+          if [[ "${{ github.event.head_commit.message }}" =~ Release:\ (v[0-9]+\.[0-9]+\.[0-9]+) ]]; then
+            VERSION="${BASH_REMATCH[1]}"
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            echo "Found version: $VERSION"
+          else
+            echo "version=v0.0.0" >> $GITHUB_OUTPUT
+            echo "No version found, using default: v0.0.0"
+          fi
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: aiyuayaan/aiyu
+          tags: |
+            type=raw,value=${{ steps.extract-version.outputs.version }}
+            type=raw,value=latest
+
+      - name: Build and push Docker image
+        id: push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Generate artifact attestation
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-name: index.docker.io/aiyuayaan/aiyu
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
+
   deploy:
     name: Deploy to Server
-    needs: build
+    needs: push-to-docker-hub
     runs-on: ubuntu-latest
     if: |
       (github.ref == 'refs/heads/master' && github.event_name == 'push' && 
@@ -76,7 +138,6 @@ jobs:
     outputs:
       version: ${{ steps.extract-version.outputs.version }}
 
-    
     steps:
       - name: Extract version from commit message
         id: extract-version
@@ -89,7 +150,6 @@ jobs:
             echo "version=v0.0.0" >> $GITHUB_OUTPUT
             echo "No version found, using default: v0.0.0"
           fi
-      
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@master
@@ -101,30 +161,21 @@ jobs:
             set -e
             
             echo "Starting deployment..."
-            ls -la 
             
             echo "Navigating to project directory..."
             cd docker/Aiyu/ || { echo "Failed to navigate to docker/Aiyu/"; exit 1; }
             
-            echo "Pulling latest code from master..."
-            git pull origin master || { echo "Failed to pull from git"; exit 1; }
+            echo "Pulling latest Docker image..."
+            docker compose pull || { echo "Failed to pull latest image"; exit 1; }
             
-            ls -la 
-            
-            echo "Building Docker image..."
-            docker compose build --memory=512m || { echo "Docker build failed"; exit 1; }
-            
-            echo "Starting containers..."
+            echo "Restarting containers..."
             docker compose up -d || { echo "Failed to start containers"; exit 1; }
-            
-            echo "Cleaning up Docker system..."
-            docker system prune -a --volumes -f || { echo "Cleanup warning (non-critical)"; }
             
             echo "✅ Deployment completed successfully!"
 
   create-release:
     name: Create GitHub Release
-    needs: deploy
+    needs: push-to-docker-hub
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/master' && github.event_name == 'push' && (contains(github.event.head_commit.message, 'Release:') || contains(github.event.head_commit.message, 'Release v'))
     
