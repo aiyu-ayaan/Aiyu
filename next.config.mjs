@@ -6,7 +6,7 @@ const nextConfig = {
   // Enhanced performance optimizations
   experimental: {
     optimizeCss: true,
-    optimizePackageImports: ['framer-motion', 'lucide-react', 'react-icons'],
+    optimizePackageImports: ['framer-motion', 'lucide-react', 'react-icons', 'simple-icons'],
   },
 
   // Image configuration - enable optimization with sharp

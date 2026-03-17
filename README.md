@@ -9,7 +9,6 @@
 
 ![home](./docs/images/home.png)
 
-
 A modern, responsive, and **fully customizable** portfolio website built with Next.js 15, Tailwind CSS, and MongoDB. This project showcases skills, detailed project case studies, blogs, and provides a way for visitors to contact you. It features a comprehensive **Admin Panel** for managing all content without touching code, making it perfect for developers who want a professional portfolio with zero-hassle content management.
 
 **🌟 Perfect for**: Developers, designers, freelancers, and tech professionals looking for a production-ready portfolio solution.
@@ -19,6 +18,7 @@ A modern, responsive, and **fully customizable** portfolio website built with Ne
 ## ✨ Features
 
 ### 🌐 Public Interface
+
 - **Home Page**: Interactive landing page with a dynamic space-themed background and customizable hero section
 - **About Me**: Detailed introduction with skills grid, experience timeline, and professional background
 - **Projects**: Showcase your work with:
@@ -39,11 +39,12 @@ A modern, responsive, and **fully customizable** portfolio website built with Ne
 - **SEO Optimized**: Built-in sitemap, meta tags, Open Graph, and schema.org structured data
 - **AI Neural Core Integration**: Site-wide intelligent governance for generative features
 
-
 ### 🔧 Admin Panel (Full Content Management System)
+
 Access the admin panel at `/admin` to manage everything without touching code:
 
 #### Content Management
+
 - **Home**: Edit hero section text, tagline, and "Open to Work" status
 - **About**: Update biography, manage skills grid with icons, and experience timeline
 - **Projects**: Full CRUD operations with:
@@ -65,6 +66,7 @@ Access the admin panel at `/admin` to manage everything without touching code:
   - Masonry grid layout
 
 #### System Configuration
+
 - **Header**: Configure navigation links, logo text, and menu items
 - **Footer**: Manage footer links, social media, version tags, and copyright text
 - **Contact Messages**: View and manage incoming form messages with:
@@ -77,21 +79,22 @@ Access the admin panel at `/admin` to manage everything without touching code:
   - Custom color generation
   - Real-time preview
   - Export/import theme configurations
-- **GitHub Integration**: 
+- **GitHub Integration**:
   - Fetch repository statistics (stars, forks, language)
   - Display GitHub activity
   - Automated sync with your repos
-- **Global Config**: 
+- **Global Config**:
   - SEO metadata (title, description, keywords)
   - Google Analytics integration
   - Feature flags and site-wide settings
   - Base URL configuration
-- **Database Management**: 
+- **Database Management**:
   - Export full database to JSON
   - Backup and restore functionality
   - Data migration tools
 
 #### 🧠 AI Neural Core (Gemini Integration)
+
 - **Master Governance**: Centralized toggle to enable/disable all AI-powered protocols
 - **Creative Project Synthesis**:
   - **AI Name Generation**: Suggets catchy project designations based on technical abstracts
@@ -104,11 +107,11 @@ Access the admin panel at `/admin` to manage everything without touching code:
   - Real-time generation of both Light and Dark variants
   - Automated mapping of 64+ design tokens (backgrounds, accents, syntax highlighting)
 
-
 ### 🔒 Security Features
+
 - **JWT Authentication**: Secure admin panel access
 - **Rate Limiting**: Protection against brute force attacks
-- **Docker Security**: 
+- **Docker Security**:
   - Non-root user execution
   - Read-only filesystem
   - CPU and memory limits
@@ -116,7 +119,8 @@ Access the admin panel at `/admin` to manage everything without touching code:
 - **Environment Variables**: Secure credential management
 - **API Key Protection**: Secure blog API with token authentication
 
-> **📚 Complete Documentation**: 
+> **📚 Complete Documentation**:
+>
 > - **[GitHub Wiki](https://github.com/aiyu-ayaan/Aiyu/wiki)** - Comprehensive guides and tutorials
 > - **[Quick Start](https://github.com/aiyu-ayaan/Aiyu/wiki/Quick-Start)** - Get running in 5 minutes
 > - **[Admin Panel Manual](docs/admin_manual.md)** - Detailed admin panel guide with screenshots
@@ -126,23 +130,29 @@ Access the admin panel at `/admin` to manage everything without touching code:
 ## Screenshots
 
 ### Home Page
+
 ![Home Page](public/screenshots/home.png)
 
 ### About Me
+
 ![About Me](public/screenshots/about.png)
 
 ### Projects
+
 ![Projects](public/screenshots/projects.png)
 
 ### Contact Us
+
 ![Contact Us](public/screenshots/contact.png)
 
 ### Admin Panel (Homepage)
+
 ![Admin Panel](public/screenshots/admin.png)
 
 ## 🛠️ Tech Stack
 
 ### Frontend
+
 - **Framework**: Next.js 15 with App Router and React 19
 - **Styling**: Tailwind CSS 4 with custom configuration
 - **Animations**: Framer Motion for smooth transitions and interactions
@@ -154,6 +164,7 @@ Access the admin panel at `/admin` to manage everything without touching code:
 - **UI Components**: Custom components with Tailwind CSS
 
 ### Backend
+
 - **API**: Next.js API Routes (serverless functions)
 - **Database**: MongoDB with Mongoose ODM
 - **Authentication**: JWT (JSON Web Tokens) with jose library
@@ -161,19 +172,21 @@ Access the admin panel at `/admin` to manage everything without touching code:
 - **Validation**: Built-in Next.js middleware for route protection
 
 ### Infrastructure & DevOps
+
 - **Containerization**: Docker with Docker Compose
 - **Image Optimization**: Next.js Image component with Sharp
-- **Security**: 
+- **Security**:
   - Rate limiting
   - Content Security Policy
   - Secure headers
   - Environment-based configuration
-- **Deployment**: 
+- **Deployment**:
   - Docker-ready (VPS, DigitalOcean, AWS EC2)
   - Vercel-compatible (with external storage setup)
   - PM2-ready for traditional Node.js hosting
 
 ### Developer Experience
+
 - **Linting**: ESLint with Next.js configuration
 - **Type Safety**: JSConfig for JavaScript projects
 - **Scripts**: Automated security checks, Docker management, emergency cleanup
@@ -189,7 +202,7 @@ The fastest and most secure way to run this application is using Docker. Everyth
 
 - **Docker Engine**: 20.10+ ([Install Docker](https://docs.docker.com/get-docker/))
 - **Docker Compose**: v2.0+ (included with Docker Desktop)
-- **System Requirements**: 
+- **System Requirements**:
   - 2GB+ available RAM
   - 1 CPU core minimum
   - 5GB disk space
@@ -197,12 +210,14 @@ The fastest and most secure way to run this application is using Docker. Everyth
 ### Installation & Running
 
 #### 1. **Clone the Repository**
+
 ```bash
 git clone https://github.com/aiyu-ayaan/Aiyu.git
 cd Aiyu
 ```
 
 #### 2. **Configure Environment Variables**
+
 Copy the example environment file and update with your credentials:
 
 ```bash
@@ -210,6 +225,7 @@ cp .env.example .env
 ```
 
 **🔐 IMPORTANT - Generate Secure Credentials**:
+
 ```bash
 # Generate JWT Secret (64 characters)
 node -e "console.log('JWT_SECRET=' + require('crypto').randomBytes(64).toString('hex'))"
@@ -222,6 +238,7 @@ node -e "console.log('BLOG_API_KEY=' + require('crypto').randomBytes(32).toStrin
 ```
 
 **Edit `.env` file and update these CRITICAL variables**:
+
 ```env
 # MongoDB Configuration
 MONGODB_URI=mongodb://admin:YOUR_GENERATED_PASSWORD@mongodb:27017/aiyu?authSource=admin
@@ -249,6 +266,7 @@ NEXT_PUBLIC_N8N_WEBHOOK_URL=https://your-n8n-instance/webhook/contact
 > 💡 **Tip**: Never use default passwords! The security of your admin panel depends on strong credentials.
 
 #### 3. **Build and Start the Application**
+
 ```bash
 # Build with security hardening
 npm run docker:build
@@ -261,10 +279,13 @@ npm run docker:logs
 ```
 
 #### 4. **Verify Security (CRITICAL)**
+
 ```bash
 npm run docker:verify
 ```
+
 All security checks must pass! This verifies:
+
 - /tmp directory is non-executable (crypto miner prevention)
 - Read-only filesystem is enabled
 - Resource limits are active
@@ -280,16 +301,19 @@ http://localhost:3000/api/seed
 ```
 
 Or using curl:
+
 ```bash
 curl http://localhost:3000/api/seed
 ```
 
 **Expected Response**:
+
 ```json
 {"message": "Database seeded successfully"}
 ```
 
 This populates the database with:
+
 - Default home page content
 - Sample projects
 - About section data
@@ -300,6 +324,7 @@ This populates the database with:
 **Note**: Only run this ONCE during initial setup. Running it again will reset all data to defaults!
 
 #### 6. **Access Your Portfolio**
+
 - **🌐 Main Site**: [http://localhost:3000](http://localhost:3000)
 - **⚙️ Admin Panel**: [http://localhost:3000/admin](http://localhost:3000/admin)
   - Username: `admin` (or your configured username)
@@ -315,6 +340,155 @@ This populates the database with:
 6. **Customize Theme**: Choose or create a theme that matches your brand
 7. **Setup SEO**: Configure meta tags, analytics, and sitemap settings
 
+### 🔄 Updating to the Latest Version
+
+When a new release is published to Docker Hub, update your running instance with two commands:
+
+```bash
+# Pull the latest image from Docker Hub
+docker compose pull
+
+# Restart containers with the new image (zero-downtime recreate)
+docker compose up -d
+```
+
+No `git pull`, no rebuilding — the CI/CD pipeline builds and pushes the image automatically on every release.
+
+> 💡 **Tip**: Run `docker image prune -f` afterwards to remove the old image and free up disk space.
+
+### 🐳 docker-compose.yml
+
+The full compose file that powers the stack. Save this as `docker-compose.yml` in your project root (already included in the repo):
+
+```yaml
+services:
+  # MongoDB Database Service
+  mongodb:
+    image: mongo:7
+    container_name: aiyu-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+    # Port mapping commented out for security - app accesses via internal network
+    # ports:
+    #   - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+    networks:
+      - aiyu-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')", "--quiet"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # Next.js Application Service
+  app:
+    image: aiyuayaan/aiyu
+    container_name: aiyu-app
+    restart: unless-stopped
+    expose:
+      - "3000"
+    environment:
+      MONGODB_URI: ${MONGODB_URI}
+      NEXT_PUBLIC_N8N_WEBHOOK_URL: ${NEXT_PUBLIC_N8N_WEBHOOK_URL}
+      NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL}
+      SITE_URL: ${SITE_URL}
+      NEXT_PUBLIC_AUTHOR_NAME: ${NEXT_PUBLIC_AUTHOR_NAME}
+      ADMIN_USERNAME: ${ADMIN_USERNAME}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      BLOG_API_KEY: ${BLOG_API_KEY}
+      NODE_ENV: production
+    volumes:
+      - uploads_data:/app/public/uploads
+      - nextjs_cache:/app/.next/cache
+    tmpfs:
+      - /tmp:noexec,nosuid,nodev,mode=1777,size=100M
+      - /var/tmp:noexec,nosuid,nodev,mode=1777,size=50M
+      - /run:noexec,nosuid,nodev,mode=755,size=10M
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+      - NET_RAW
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    deploy:
+      resources:
+        limits:
+          cpus: "1.5"
+          memory: 768M
+        reservations:
+          cpus: "0.5"
+          memory: 384M
+    healthcheck:
+      test: ["CMD", "sh", "/app/healthcheck.sh"]
+      interval: 15s
+      timeout: 10s
+      retries: 12
+      start_period: 150s
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - aiyu-network
+
+  # Nginx Reverse Proxy (gzip, caching, rate limiting)
+  nginx:
+    image: nginx:alpine
+    container_name: aiyu-nginx
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-3000}:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./public:/srv/public:ro
+      - uploads_data:/srv/uploads:ro
+      - nginx_cache:/var/cache/nginx
+    depends_on:
+      app:
+        condition: service_started
+    networks:
+      - aiyu-network
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 128M
+        reservations:
+          cpus: "0.1"
+          memory: 64M
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:80/nginx-health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+volumes:
+  mongodb_data:
+  mongodb_config:
+  nextjs_cache:
+  uploads_data:
+  nginx_cache:
+
+networks:
+  aiyu-network:
+    driver: bridge
+```
+
+**Stack overview**:
+| Service | Image | Role |
+|---------|-------|------|
+| `mongodb` | `mongo:7` | Database — internal only, not exposed to host |
+| `app` | `aiyuayaan/aiyu` | Next.js app — pulled from Docker Hub on each release |
+| `nginx` | `nginx:alpine` | Reverse proxy — handles gzip, caching, rate limiting, serves on `APP_PORT` (default `3000`) |
+
 ## 💻 Manual Installation (Development)
 
 If you wish to run the project without Docker for local development:
@@ -322,6 +496,7 @@ If you wish to run the project without Docker for local development:
 > **📖 Full Guide**: [Manual Installation Steps](https://github.com/aiyu-ayaan/Aiyu/wiki/Installation-Guide#-manual-installation)
 
 ### Prerequisites
+
 - **Node.js**: 18.17+ or 20.0+ ([Download Node.js](https://nodejs.org/))
 - **MongoDB**: 6.0+ running locally or remote instance
 - **npm**: 9.0+ (comes with Node.js)
@@ -329,14 +504,17 @@ If you wish to run the project without Docker for local development:
 ### Setup Steps
 
 #### 1. **Install Dependencies**
+
 ```bash
 npm install
 ```
 
 #### 2. **Setup MongoDB**
+
 You need a running MongoDB instance:
 
 **Option A: Local MongoDB**
+
 ```bash
 # Install MongoDB Community Edition
 # https://docs.mongodb.com/manual/installation/
@@ -346,16 +524,19 @@ mongod --dbpath /path/to/your/data/directory
 ```
 
 **Option B: MongoDB Atlas (Cloud)**
+
 1. Create a free cluster at [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
 2. Get your connection string
 3. Update `.env` file
 
 #### 3. **Configure Environment**
+
 ```bash
 cp .env.example .env
 ```
 
 **Update `.env` for local development**:
+
 ```env
 # For LOCAL MongoDB (not Docker)
 MONGODB_URI=mongodb://localhost:27017/aiyu
@@ -374,6 +555,7 @@ NEXT_PUBLIC_AUTHOR_NAME=Your Name
 ```
 
 #### 4. **Run Development Server**
+
 ```bash
 npm run dev
 ```
@@ -410,6 +592,9 @@ npm run docker:up        # Start Docker containers
 npm run docker:down      # Stop Docker containers
 npm run docker:logs      # View container logs
 
+# Updating (pull latest image from Docker Hub and restart)
+docker compose pull && docker compose up -d
+
 # Security & Maintenance
 npm run security-check   # Run security checks
 npm run docker:verify    # Verify Docker security configuration
@@ -430,7 +615,8 @@ npm run emergency:cleanup # Emergency cleanup script (if compromised)
 
 This project includes enterprise-grade security features and has been hardened against common attacks, including crypto mining exploits.
 
-> **📖 Complete Guides**: 
+> **📖 Complete Guides**:
+>
 > - **[Security Guide](https://github.com/aiyu-ayaan/Aiyu/wiki/Security-Guide)** - Comprehensive security practices
 > - **[Deployment Guide](https://github.com/aiyu-ayaan/Aiyu/wiki/Deployment-Guide)** - Production deployment options
 > - **[Quick Security Guide](QUICK_SECURITY_GUIDE.md)** - Essential security checklist
@@ -462,11 +648,13 @@ This project includes enterprise-grade security features and has been hardened a
 ### 🚀 Production Deployment Options
 
 #### **Option 1: Docker on VPS (Recommended)**
+
 Perfect for DigitalOcean, AWS EC2, Linode, Vultr, etc.
 
 **See detailed guide**: **[Deployment Guide - Docker on VPS](https://github.com/aiyu-ayaan/Aiyu/wiki/Deployment-Guide#-option-1-docker-on-vps-recommended)**
 
 **Quick Steps**:
+
 ```bash
 # 1. SSH into your server
 ssh user@your-server-ip
@@ -492,11 +680,14 @@ npm run docker:verify  # CRITICAL: Verify security
 ```
 
 #### **Option 2: Vercel (Serverless)**
+
 ⚠️ **Important Limitations**:
+
 - File uploads won't persist (use S3, Cloudinary, or UploadThing instead)
 - Need external MongoDB (MongoDB Atlas recommended)
 
 **Steps**:
+
 1. Connect GitHub repo to Vercel
 2. Add environment variables in Vercel dashboard
 3. Update upload API to use cloud storage
@@ -505,6 +696,7 @@ npm run docker:verify  # CRITICAL: Verify security
 **See**: [DEPLOYMENT.md](docs/DEPLOYMENT.md) for detailed Vercel setup
 
 #### **Option 3: PM2 on VPS**
+
 Traditional Node.js hosting without Docker.
 
 ```bash
@@ -541,6 +733,7 @@ Before deploying to production:
 ### 🚨 Emergency Response
 
 If you suspect compromise:
+
 ```bash
 npm run emergency:cleanup
 # Follow the script prompts for forensic analysis and cleanup
@@ -571,29 +764,34 @@ This project includes extensive documentation to help you get started and make t
 **Visit our [Complete Documentation Wiki](https://github.com/aiyu-ayaan/Aiyu/wiki)** for comprehensive guides:
 
 #### Getting Started
+
 - **[📖 Home](https://github.com/aiyu-ayaan/Aiyu/wiki)** - Wiki overview and navigation
 - **[⚡ Quick Start Guide](https://github.com/aiyu-ayaan/Aiyu/wiki/Quick-Start)** - Get running in 5 minutes
 - **[🔧 Installation Guide](https://github.com/aiyu-ayaan/Aiyu/wiki/Installation-Guide)** - Detailed setup instructions
 - **[⚙️ Configuration](https://github.com/aiyu-ayaan/Aiyu/wiki/Configuration)** - Environment variables and settings
 
 #### Features & Usage  
+
 - **[🎛️ Admin Panel Guide](https://github.com/aiyu-ayaan/Aiyu/wiki/Admin-Panel)** - Complete admin panel documentation
 - **[📝 Content Management](https://github.com/aiyu-ayaan/Aiyu/wiki/Content-Management)** - Managing projects, blogs, and gallery
 - **[🎨 Theme Customization](https://github.com/aiyu-ayaan/Aiyu/wiki/Theme-Customization)** - Creating and applying themes
 - **[🔗 GitHub Integration](https://github.com/aiyu-ayaan/Aiyu/wiki/GitHub-Integration)** - Repository statistics and automation
 
 #### Development
+
 - **[🔌 API Documentation](https://github.com/aiyu-ayaan/Aiyu/wiki/API-Documentation)** - REST API endpoints and usage
 - **[💾 Database Seeding](https://github.com/aiyu-ayaan/Aiyu/wiki/Database-Seeding)** - Populating initial data (REQUIRED)
 - **[🏗️ Architecture](https://github.com/aiyu-ayaan/Aiyu/wiki/Architecture)** - Project structure and design patterns
 - **[🤝 Contributing Guide](https://github.com/aiyu-ayaan/Aiyu/wiki/Contributing-Guide)** - How to contribute
 
 #### Deployment
+
 - **[🚀 Deployment Guide](https://github.com/aiyu-ayaan/Aiyu/wiki/Deployment-Guide)** - Production deployment options
 - **[🔒 Security Guide](https://github.com/aiyu-ayaan/Aiyu/wiki/Security-Guide)** - Security best practices and hardening
 - **[📊 Monitoring](https://github.com/aiyu-ayaan/Aiyu/wiki/Monitoring)** - Health checks and performance monitoring
 
 #### Help & Troubleshooting
+
 - **[❓ Common Issues & FAQ](https://github.com/aiyu-ayaan/Aiyu/wiki/Common-Issues)** - Solutions to frequent problems
 - **[🐛 Debugging](https://github.com/aiyu-ayaan/Aiyu/wiki/Debugging)** - Debugging tips and tools
 
@@ -604,10 +802,12 @@ This project includes extensive documentation to help you get started and make t
 Additional detailed guides available in the `docs/` directory:
 
 #### Getting Started
+
 - **[README.md](README.md)** (this file) - Overview, installation, and quick start
 - **[QUICK_SECURITY_GUIDE.md](QUICK_SECURITY_GUIDE.md)** - Essential security setup and crypto miner prevention
 
 #### Admin & Usage
+
 - **[Admin Panel User Manual](docs/admin_manual.md)** - Complete guide with screenshots
   - Content management (Projects, Blogs, Gallery)
   - Theme customization
@@ -616,6 +816,7 @@ Additional detailed guides available in the `docs/` directory:
   - Database exports
 
 #### Development & Integration
+
 - **[API Documentation](docs/API_DOCUMENTATION.md)** - Technical API details
   - Authentication endpoints
   - Blog automation API (integrate with Notion, n8n, Zapier)
@@ -624,6 +825,7 @@ Additional detailed guides available in the `docs/` directory:
   - Example requests with cURL and JavaScript
 
 #### Deployment & Operations
+
 - **[DEPLOYMENT.md](docs/DEPLOYMENT.md)** - Step-by-step deployment guides
   - Docker on VPS (DigitalOcean, AWS, Linode)
   - Vercel serverless deployment
@@ -638,6 +840,7 @@ Additional detailed guides available in the `docs/` directory:
   - Troubleshooting
 
 #### Optimization & Performance
+
 - **[SEO_OPTIMIZATION.md](docs/SEO_OPTIMIZATION.md)** - SEO best practices
   - Meta tags and Open Graph
   - Structured data (schema.org)
@@ -660,6 +863,7 @@ Additional detailed guides available in the `docs/` directory:
 ### 🎯 Quick Links by Use Case
 
 **I want to...**
+
 - **Get started quickly**: Read [Quick Start Guide](https://github.com/aiyu-ayaan/Aiyu/wiki/Quick-Start) (5 minutes)
 - **Install from scratch**: Follow [Installation Guide](https://github.com/aiyu-ayaan/Aiyu/wiki/Installation-Guide)
 - **Seed the database**: See [Database Seeding Guide](https://github.com/aiyu-ayaan/Aiyu/wiki/Database-Seeding) ⚠️ REQUIRED
@@ -683,7 +887,9 @@ Additional detailed guides available in the `docs/` directory:
 This portfolio is built to be **fully customizable** without touching code!
 
 ### Live Theme Editor
+
 Access the theme editor in the admin panel to:
+
 - Choose from **21 pre-built themes**: VS Code Dark, Ocean Blue, Forest Green, Sunset Orange, Royal Purple, Monochrome, Dracula, Nord, Cyberpunk, Gruvbox, Solarized, Catppuccin, Tokyo Night, Material Ocean, Synthwave, Forest, Sunset, Aurora, Coral Reef, Espresso, and Midnight Blue
 - Create **custom themes** with real-time preview
 - Configure colors, fonts, and spacing
@@ -691,7 +897,9 @@ Access the theme editor in the admin panel to:
 - Apply themes instantly across the entire site
 
 ### Content Customization
+
 Everything can be managed through the admin panel:
+
 - **Hero Section**: Headline, tagline, description, CTA buttons
 - **About Page**: Biography, skills with icons, experience timeline
 - **Navigation**: Add/remove/reorder menu items
@@ -700,7 +908,9 @@ Everything can be managed through the admin panel:
 - **Analytics**: Google Analytics ID, tracking configuration
 
 ### Design System
+
 Built on **Tailwind CSS 4** with:
+
 - Utility-first CSS approach
 - Responsive design (mobile, tablet, desktop)
 - Dark/light theme support
@@ -722,38 +932,52 @@ We welcome contributions from the community! Here's how you can help:
 
 1. **Fork the repository** on GitHub
 2. **Clone your fork**:
+
    ```bash
    git clone https://github.com/YOUR_USERNAME/Aiyu.git
    cd Aiyu
    ```
+
 3. **Create a feature branch**:
+
    ```bash
    git checkout -b feature/your-feature-name
    ```
+
 4. **Install dependencies**:
+
    ```bash
    npm install
    ```
+
 5. **Setup environment**:
+
    ```bash
    cp .env.example .env
    # Update .env with local development values
    ```
+
 6. **Start development server**:
+
    ```bash
    npm run dev
    ```
+
 7. **Make your changes** and test thoroughly
 8. **Commit with meaningful messages**:
+
    ```bash
    git add .
    git commit -m "feat: add new feature X"
    ```
+
    Follow [Conventional Commits](https://www.conventionalcommits.org/) format
 9. **Push to your fork**:
+
    ```bash
    git push origin feature/your-feature-name
    ```
+
 10. **Open a Pull Request** on GitHub with:
     - Clear description of changes
     - Screenshots (if UI changes)
@@ -781,6 +1005,7 @@ type(scope): brief description
 **Types**: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `chore`
 
 **Examples**:
+
 ```
 feat(admin): add bulk delete for projects
 fix(contact): resolve email validation issue
@@ -823,11 +1048,12 @@ portfolio/
 - **❓ [Common Issues](https://github.com/aiyu-ayaan/Aiyu/wiki/Common-Issues)** - Quick solutions to frequent problems
 - **🐛 [GitHub Issues](https://github.com/aiyu-ayaan/Aiyu/issues)** - Report bugs or request features
 - **💬 [GitHub Discussions](https://github.com/aiyu-ayaan/Aiyu/discussions)** - Ask questions and share ideas
-- **📧 Email** - Contact the maintainer at ayaan35200@gmail.com
+- **📧 Email** - Contact the maintainer at <ayaan35200@gmail.com>
 
 ---
 
-**Estimated Time**: 
+**Estimated Time**:
+
 - Basic setup: **5 minutes** (with Docker)
 - Full customization: **30 minutes**
 - Production deployment: **1-2 hours**
@@ -841,6 +1067,7 @@ Be respectful, inclusive, and constructive. We're all here to learn and build to
 ## 🌟 Show Your Support
 
 If you find this project helpful, consider:
+
 - ⭐ **[Star the repository](https://github.com/aiyu-ayaan/Aiyu)** on GitHub
 - 📚 **[Explore the Wiki](https://github.com/aiyu-ayaan/Aiyu/wiki)** for comprehensive guides
 - 🍴 **Fork and customize** for your own use
@@ -848,7 +1075,6 @@ If you find this project helpful, consider:
 - 🐛 **Report issues** to help improve the project
 - 💡 **Contribute** features or fixes (see [Contributing Guide](https://github.com/aiyu-ayaan/Aiyu/wiki/Contributing-Guide))
 - 📝 **Improve documentation** in the Wiki
-
 
 ## 📄 License
 
@@ -880,6 +1106,7 @@ SOFTWARE.
 ```
 
 ### What This Means
+
 - ✅ **Free to use** for personal and commercial projects
 - ✅ **Modify** the code as you wish
 - ✅ **Distribute** your modified versions
@@ -900,13 +1127,13 @@ SOFTWARE.
 
 ### 📚 Quick Links
 
-**[Home](https://github.com/aiyu-ayaan/Aiyu)** • 
-**[Wiki](https://github.com/aiyu-ayaan/Aiyu/wiki)** • 
-**[Quick Start](https://github.com/aiyu-ayaan/Aiyu/wiki/Quick-Start)** • 
-**[Installation](https://github.com/aiyu-ayaan/Aiyu/wiki/Installation-Guide)** • 
-**[API Docs](https://github.com/aiyu-ayaan/Aiyu/wiki/API-Documentation)** • 
-**[Deployment](https://github.com/aiyu-ayaan/Aiyu/wiki/Deployment-Guide)** • 
-**[Security](https://github.com/aiyu-ayaan/Aiyu/wiki/Security-Guide)** • 
+**[Home](https://github.com/aiyu-ayaan/Aiyu)** •
+**[Wiki](https://github.com/aiyu-ayaan/Aiyu/wiki)** •
+**[Quick Start](https://github.com/aiyu-ayaan/Aiyu/wiki/Quick-Start)** •
+**[Installation](https://github.com/aiyu-ayaan/Aiyu/wiki/Installation-Guide)** •
+**[API Docs](https://github.com/aiyu-ayaan/Aiyu/wiki/API-Documentation)** •
+**[Deployment](https://github.com/aiyu-ayaan/Aiyu/wiki/Deployment-Guide)** •
+**[Security](https://github.com/aiyu-ayaan/Aiyu/wiki/Security-Guide)** •
 **[FAQ](https://github.com/aiyu-ayaan/Aiyu/wiki/Common-Issues)**
 
 ---
@@ -914,5 +1141,3 @@ SOFTWARE.
 **[⬆ Back to Top](#portfolio-website)**
 
 </div>
-
-
