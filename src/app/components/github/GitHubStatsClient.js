@@ -389,7 +389,7 @@ export default function GitHubStatsClient({ data }) {
                 {sections?.showRepoDistribution && stats && (
                     <motion.div className="mb-12" variants={itemVariants}>
                         <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                            <BarChart2 className="text-[var(--primary)] text-cyan-400" />
+                            <BarChart2 className="text-[var(--primary)]" />
                             Repository Landscape
                         </h2>
                         <div className="grid md:grid-cols-2 gap-4">

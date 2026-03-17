@@ -49,3 +49,5 @@ next-env.d.ts
 /wiki
 /Aiyu.wiki
 test.js
+
+docker-compose-local.yml

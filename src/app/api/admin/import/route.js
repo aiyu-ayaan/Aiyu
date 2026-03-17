@@ -39,15 +39,22 @@ export async function POST(request) {
             }
 
             const fileBuffer = Buffer.from(await file.arrayBuffer());
-            const fileName = file.name || '';
+            const fileName = (file.name || '').toLowerCase();
+            const isZipBySignature = fileBuffer.length >= 4
+                && fileBuffer[0] === 0x50
+                && fileBuffer[1] === 0x4b;
+            const isZipFile = fileName.endsWith('.zip')
+                || file.type === 'application/zip'
+                || file.type === 'application/x-zip-compressed'
+                || isZipBySignature;
 
-            if (fileName.endsWith('.zip') || file.type === 'application/zip' || file.type === 'application/x-zip-compressed') {
+            if (isZipFile) {
                 // Process ZIP file
                 const zip = new AdmZip(fileBuffer);
                 const zipEntries = zip.getEntries();
 
                 // Find and parse data.json
-                const dataEntry = zipEntries.find(e => e.entryName === 'data.json');
+                const dataEntry = zipEntries.find(e => !e.isDirectory && /(^|\/)data\.json$/i.test(e.entryName));
                 if (!dataEntry) {
                     return NextResponse.json({ success: false, error: "ZIP does not contain data.json" }, { status: 400 });
                 }
@@ -60,7 +67,7 @@ export async function POST(request) {
 
                 // Collect image entries from uploads/ folder
                 imageEntries = zipEntries.filter(e =>
-                    e.entryName.startsWith('uploads/') && !e.isDirectory
+                    !e.isDirectory && /(^|\/)uploads\/.+/i.test(e.entryName)
                 );
             } else {
                 // Legacy JSON file upload
@@ -125,7 +132,10 @@ export async function POST(request) {
 
             for (const entry of imageEntries) {
                 try {
-                    const filename = entry.entryName.replace('uploads/', '');
+                    const uploadsIndex = entry.entryName.toLowerCase().lastIndexOf('uploads/');
+                    const filename = uploadsIndex >= 0
+                        ? entry.entryName.slice(uploadsIndex + 'uploads/'.length)
+                        : entry.entryName;
                     // Security: prevent directory traversal
                     if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
                         console.warn(`[IMPORT] Skipping suspicious path: ${entry.entryName}`);
