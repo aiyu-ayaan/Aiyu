@@ -76,6 +76,7 @@ export const viewport = {
 
 import GoogleAnalytics from "./components/GoogleAnalytics";
 import ClientEnhancements from "./components/shared/ClientEnhancements";
+import LiveCommitStream from "./components/shared/LiveCommitStream";
 
 
 
@@ -111,6 +112,7 @@ export default async function RootLayout({ children }) {
         <GoogleAnalytics gaId={gaId} />
         <ThemeProvider>
           <ClientEnhancements />
+          <LiveCommitStream />
           <div className="relative z-0">
             {children}
           </div>

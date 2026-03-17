@@ -42,8 +42,8 @@ const ProjectCard = ({ project, onCardClick }) => {
         <div
           className="relative z-10 w-full h-full rounded-2xl border flex flex-col transition-all duration-300 backdrop-blur-md"
           style={{
-            background: 'linear-gradient(145deg, rgba(17, 24, 39, 0.7), rgba(15, 23, 42, 0.9))',
-            borderColor: 'rgba(255, 255, 255, 0.08)',
+            backgroundColor: 'var(--bg-surface)',
+            borderColor: 'var(--border-secondary)',
             boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)'
           }}
         >
@@ -59,7 +59,7 @@ const ProjectCard = ({ project, onCardClick }) => {
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-in-out"
                 />
                 {/* Clean gradient fade into the card body */}
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0f172a] via-[#0f172a]/40 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t via-transparent to-transparent" style={{ backgroundImage: 'linear-gradient(to top, var(--bg-surface), rgba(0,0,0,0))' }} />
 
                 <div className="absolute top-3 right-3 z-20">
                   <motion.span
@@ -116,15 +116,14 @@ const ProjectCard = ({ project, onCardClick }) => {
                   key={i}
                   className="px-3 py-1.5 rounded-md text-xs font-semibold tracking-wide border transition-all duration-300 cursor-default shadow-sm"
                   style={{
-                    backgroundColor: 'rgba(56, 189, 248, 0.05)',
-                    borderColor: 'rgba(56, 189, 248, 0.2)',
-                    color: '#38bdf8',
+                    backgroundColor: 'var(--bg-elevated)',
+                    borderColor: 'var(--border-secondary)',
+                    color: 'var(--accent-cyan)',
                   }}
                   whileHover={{
                     scale: 1.05,
-                    backgroundColor: 'rgba(56, 189, 248, 0.15)',
-                    borderColor: 'rgba(56, 189, 248, 0.4)',
-                    boxShadow: '0 0 12px rgba(56, 189, 248, 0.3)',
+                    backgroundColor: 'var(--bg-hover)',
+                    borderColor: 'var(--accent-cyan)',
                     color: '#fff',
                   }}
                 >
@@ -135,16 +134,15 @@ const ProjectCard = ({ project, onCardClick }) => {
                 <motion.span
                   className="px-3 py-1.5 rounded-md text-xs font-semibold tracking-wide border cursor-pointer transition-all duration-300 shadow-sm"
                   style={{
-                    backgroundColor: 'rgba(236, 72, 153, 0.05)',
-                    borderColor: 'rgba(236, 72, 153, 0.2)',
-                    color: '#ec4899',
+                    backgroundColor: 'var(--bg-elevated)',
+                    borderColor: 'var(--border-secondary)',
+                    color: 'var(--accent-orange)',
                   }}
                   onClick={openTechStackDialog}
                   whileHover={{
                     scale: 1.05,
-                    backgroundColor: 'rgba(236, 72, 153, 0.15)',
-                    borderColor: 'rgba(236, 72, 153, 0.4)',
-                    boxShadow: '0 0 12px rgba(236, 72, 153, 0.3)',
+                    backgroundColor: 'var(--bg-hover)',
+                    borderColor: 'var(--accent-orange)',
                     color: '#fff',
                   }}
                   whileTap={{ scale: 0.95 }}
@@ -156,11 +154,11 @@ const ProjectCard = ({ project, onCardClick }) => {
 
             <motion.div
               layout
-              className="flex items-center gap-2 pt-4 border-t border-gray-700/50 mt-4"
+              className="flex items-center gap-2 pt-4 border-t border-[var(--border-secondary)] mt-4"
             >
-              <FaCalendarDay className="text-cyan-400 text-sm" />
-              <span className="text-sm font-semibold tracking-wide text-gray-200">
-                <span className="text-gray-400 mr-1">Year:</span> {project.year}
+              <FaCalendarDay className="text-[var(--accent-cyan)] text-sm" />
+              <span className="text-sm font-semibold tracking-wide text-[var(--text-secondary)]">
+                <span className="text-[var(--text-tertiary)] mr-1">Year:</span> {project.year}
               </span>
             </motion.div>
           </motion.div>

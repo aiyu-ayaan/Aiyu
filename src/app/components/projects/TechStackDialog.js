@@ -24,9 +24,7 @@ const TechStackDialog = ({ techStack, onClose }) => {
           exit={{ scale: 0.9, opacity: 0 }}
           className="rounded-2xl overflow-hidden max-w-md w-full m-4 shadow-2xl"
           style={{
-            background: theme === 'dark'
-              ? 'linear-gradient(to bottom right, #1e1433, #1a0f2e)'
-              : 'linear-gradient(to bottom right, #f1f5f9, #e2e8f0)',
+            background: 'var(--bg-surface)',
             borderWidth: '1px',
             borderStyle: 'solid',
             borderColor: 'var(--border-accent)',
@@ -52,10 +50,9 @@ const TechStackDialog = ({ techStack, onClose }) => {
                   key={i}
                   className="px-3 py-1 rounded-lg text-sm font-medium"
                   style={{
-                    background: theme === 'dark'
-                      ? 'linear-gradient(to right, #374151, #1f2937)'
-                      : 'linear-gradient(to right, #e2e8f0, #cbd5e1)',
-                    color: theme === 'dark' ? '#22d3ee' : '#0891b2',
+                    backgroundColor: 'var(--bg-elevated)',
+                    color: 'var(--accent-cyan)',
+                    border: '1px solid var(--border-secondary)',
                   }}
                 >
                   {tech}
