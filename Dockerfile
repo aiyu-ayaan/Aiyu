@@ -4,11 +4,12 @@ FROM node:20-alpine AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Copy package files
-COPY package.json package-lock.json* ./
+# Copy package manifest only
+COPY package.json ./
 
-# Install dependencies
-RUN npm ci
+# Always generate a fresh lockfile inside Docker, then install deps
+RUN npm install --package-lock-only --no-audit --no-fund \
+    && npm install --no-audit --no-fund
 
 # Stage 2: Builder
 FROM node:20-alpine AS builder
