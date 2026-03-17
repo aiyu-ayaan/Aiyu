@@ -19,12 +19,28 @@ export default function LiveCommitStream() {
     const [eventsCount, setEventsCount] = useState(0);
     const [isExpanded, setIsExpanded] = useState(false); // Collapsible state
     const [isMobile, setIsMobile] = useState(false);
+    const [isEnabled, setIsEnabled] = useState(false);
 
     useEffect(() => {
         const checkMobile = () => setIsMobile(window.innerWidth < 768);
         checkMobile();
         window.addEventListener('resize', checkMobile);
         return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
+    useEffect(() => {
+        const checkConfig = async () => {
+            try {
+                const res = await fetch('/api/github/config');
+                const data = await res.json();
+                if (data.success && data.data?.sections) {
+                    setIsEnabled(data.data.sections.showLiveCommit !== false);
+                }
+            } catch (err) {
+                console.error("Failed to fetch widget config", err);
+            }
+        };
+        checkConfig();
     }, []);
 
     useEffect(() => {
@@ -101,7 +117,7 @@ export default function LiveCommitStream() {
         return Math.floor(seconds) + "s ago";
     };
 
-    if (error || pathname !== '/') {
+    if (error || pathname !== '/' || !isEnabled) {
         return null;
     }
 
