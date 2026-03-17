@@ -1,6 +1,6 @@
 import {
     SiN8N, SiDocker, SiAndroid, SiKotlin, SiFirebase,
-    SiGit, SiHtml5, SiCss3, SiJavascript, SiNextdotjs,
+    SiGit, SiHtml5, SiCss, SiJavascript, SiNextdotjs,
     SiPython, SiReact, SiDotnet, SiWordpress,
     SiMysql, SiUnity, SiUnrealengine, SiBlender, SiCplusplus,
     SiGo, SiRust, SiSwift, SiFlutter, SiDart,
@@ -29,7 +29,7 @@ export const IconList = {
     'Firebase': SiFirebase,
     'Git': SiGit,
     'HTML5': SiHtml5,
-    'CSS3': SiCss3,
+    'CSS3': SiCss,
     'JavaScript': SiJavascript,
     'TypeScript': SiTypescript,
     'Next.js': SiNextdotjs,
@@ -83,7 +83,7 @@ export const getIcon = (name) => {
     if (lowerName.includes('kotlin')) return SiKotlin;
     if (lowerName.includes('java') && !lowerName.includes('script')) return FaJava;
     if (lowerName.includes('js') || lowerName.includes('script')) return SiJavascript;
-    if (lowerName.includes('css')) return SiCss3;
+    if (lowerName.includes('css')) return SiCss;
     if (lowerName.includes('html')) return SiHtml5;
     if (lowerName.includes('python')) return SiPython;
     if (lowerName.includes('c#') || lowerName.includes('dotnet')) return SiDotnet;

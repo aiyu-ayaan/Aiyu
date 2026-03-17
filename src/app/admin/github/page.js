@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, Github, CheckCircle, XCircle, ArrowLeft, BarChart2, Book, Code, Globe, User, EyeOff, Lock, Unlock, Search } from 'lucide-react';
+import { Loader2, Github, CheckCircle, XCircle, ArrowLeft, BarChart2, Book, Code, Globe, User, EyeOff, Lock, Unlock, Search, GitCommit, Activity } from 'lucide-react';
 import Link from 'next/link';
 
 export default function GitHubConfigPage() {
@@ -18,7 +18,9 @@ export default function GitHubConfigPage() {
             showActivity: true,
             showRepositories: true,
             showRepoDistribution: true,
-            showLanguages: true
+            showLanguages: true,
+            showLiveCommit: true,
+            showRadarChart: true
         },
         hiddenRepos: [],
         hasToken: false
@@ -42,7 +44,7 @@ export default function GitHubConfigPage() {
             if (data.success && data.data) {
                 setConfig({
                     ...data.data,
-                    sections: data.data.sections || config.sections,
+                    sections: { ...config.sections, ...(data.data.sections || {}) },
                     hiddenRepos: data.data.hiddenRepos || [],
                     includePrivate: data.data.includePrivate || false,
                     hasToken: data.data.hasToken || false
@@ -204,6 +206,8 @@ export default function GitHubConfigPage() {
         showRepositories: Book,
         showRepoDistribution: BarChart2,
         showLanguages: Code,
+        showLiveCommit: GitCommit,
+        showRadarChart: Activity
     };
 
     if (loading) {

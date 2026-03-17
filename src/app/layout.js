@@ -19,7 +19,7 @@ export async function generateMetadata() {
   const config = await getConfigData();
 
   const baseName = config?.siteTitle || config?.logoText || 'Portfolio';
-  const icon = config?.favicon?.value ? '/api/favicon' : '/favicon.ico';
+  const icon = config?.hasCustomFavicon ? '/api/favicon' : '/favicon.ico';
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://me.aiyu.co.in';
   const siteDescription = config?.siteDescription || 'Professional portfolio showcasing projects, blogs, and expertise.';
   const ogImage = (typeof config?.ogImage === 'string' ? config.ogImage : typeof config?.ogImage?.value === 'string' && config.ogImage.value.length > 0 ? config.ogImage.value : null) || `${baseUrl}/og-image.png`;
@@ -76,6 +76,7 @@ export const viewport = {
 
 import GoogleAnalytics from "./components/GoogleAnalytics";
 import ClientEnhancements from "./components/shared/ClientEnhancements";
+import LiveCommitStream from "./components/shared/LiveCommitStream";
 
 
 
@@ -111,6 +112,7 @@ export default async function RootLayout({ children }) {
         <GoogleAnalytics gaId={gaId} />
         <ThemeProvider>
           <ClientEnhancements />
+          <LiveCommitStream />
           <div className="relative z-0">
             {children}
           </div>

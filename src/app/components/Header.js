@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import clsx from 'clsx';
-import { motion } from 'framer-motion';
+import { motion, useScroll } from 'framer-motion';
 import { Search } from 'lucide-react';
 // import { navLinks, contactLink } from '../data/headerData';
 import ThemeToggle from './ThemeToggle';
@@ -24,6 +24,7 @@ export default function Header({ data, logoText, socialData, config }) {
     const [scrolled, setScrolled] = useState(false);
     const pathname = usePathname();
     const { theme } = useTheme();
+    const { scrollYProgress } = useScroll();
 
     const toggleMenu = () => {
         setIsMenuOpen(!isMenuOpen);
@@ -69,6 +70,14 @@ export default function Header({ data, logoText, socialData, config }) {
 
     return (
         <>
+            {/* Scroll Progress Bar at the very top */}
+            <motion.div
+                className="fixed top-0 left-0 right-0 h-1 z-[60] origin-left"
+                style={{
+                    scaleX: scrollYProgress,
+                    background: 'linear-gradient(to right, var(--accent-cyan), var(--accent-purple))',
+                }}
+            />
             <motion.header
                 className={clsx(
                     "sticky top-0 z-50 w-full transition-[background-color,backdrop-filter,border-color,box-shadow,padding] duration-300"

@@ -29,6 +29,7 @@ export async function PUT(request) {
             runValidators: true,
         });
         cache.invalidate(CACHE_KEYS.ABOUT);
+        cache.invalidatePrefix('db:about');
         return NextResponse.json(about);
     } catch (error) {
         return NextResponse.json({ error: 'Failed to update about data' }, { status: 500 });

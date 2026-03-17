@@ -79,10 +79,18 @@ export default function DatabaseManager() {
                 body: formData,
             });
 
-            const result = await response.json();
+            let result = null;
+            try {
+                result = await response.json();
+            } catch {
+                result = null;
+            }
 
             if (!response.ok) {
-                throw new Error(result.error || 'IMPORT_FAILED');
+                if (response.status === 413) {
+                    throw new Error('BACKUP_FILE_TOO_LARGE_FOR_SERVER_LIMIT');
+                }
+                throw new Error(result?.error || 'IMPORT_FAILED');
             }
 
             setMessage({ type: 'success', text: 'SYSTEM_RESTORED. REBOOTING_INTERFACE...' });

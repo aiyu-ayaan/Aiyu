@@ -7,7 +7,6 @@ import Toast from './Toast';
 const ConfigForm = () => {
     const router = useRouter();
     const [formData, setFormData] = useState({
-        n8nWebhookUrl: '',
         googleAnalyticsId: '',
         logoText: '< aiyu />',
         siteTitle: '',
@@ -98,7 +97,6 @@ const ConfigForm = () => {
                 const data = await res.json();
                 if (data) {
                     setFormData({
-                        n8nWebhookUrl: data.n8nWebhookUrl || '',
                         googleAnalyticsId: data.googleAnalyticsId || '',
                         logoText: data.logoText || '< aiyu />',
                         siteTitle: data.siteTitle || '',
@@ -480,20 +478,6 @@ const ConfigForm = () => {
                 </h2>
 
                 <div className="space-y-6 relative z-10">
-                    <div>
-                        <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">N8n Webhook Endpoint</label>
-                        <input
-                            type="url"
-                            name="n8nWebhookUrl"
-                            value={formData.n8nWebhookUrl}
-                            onChange={handleChange}
-                            placeholder="https://your-n8n-instance.com/webhook/..."
-                            className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-yellow-500/50 focus:ring-1 focus:ring-yellow-500/50 outline-none transition-all placeholder:text-slate-600"
-                        />
-                        <p className="text-xs text-slate-500 mt-2 font-mono">
-                            {'// Used for the AI Assistant chat widget.'}
-                        </p>
-                    </div>
                     <div>
                         <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Google Analytics Measurement ID</label>
                         <input

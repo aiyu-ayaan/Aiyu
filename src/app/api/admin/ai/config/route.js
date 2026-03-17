@@ -3,6 +3,7 @@ import dbConnect from '@/lib/db';
 import Config from '@/models/Config';
 import { withAuth } from '@/middleware/auth';
 import { encrypt, decrypt } from '@/lib/encryption';
+import cache from '@/lib/cache';
 
 // Helper to get key
 async function getDecryptedKey() {
@@ -78,6 +79,7 @@ async function updateAiConfig(request) {
         }
 
         await config.save();
+        cache.invalidatePrefix('db:config');
 
         return NextResponse.json({
             success: true,

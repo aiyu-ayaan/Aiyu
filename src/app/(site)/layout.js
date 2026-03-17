@@ -1,7 +1,6 @@
 import Header from "../components/Header";
 
 import Footer from "../components/Footer";
-import N8nChat from "../components/shared/N8nChat";
 import { getLayoutData } from "@/lib/dataFetchers";
 
 // Force dynamic rendering - DB is not available at build time in Docker
@@ -11,7 +10,7 @@ export const dynamic = 'force-dynamic';
 export default async function SiteLayout({ children }) {
     const { headerData: serializedHeaderData, socialData: serializedSocialData, configData: serializedConfigData, aboutData: serializedAboutData } = await getLayoutData();
     // Default to empty string if config doesn't exist yet
-    const n8nWebhookUrl = serializedConfigData?.n8nWebhookUrl || '';
+
     const logoText = serializedConfigData?.logoText || '< aiyu />';
 
     // Handle Resume Link Logic
@@ -55,7 +54,6 @@ export default async function SiteLayout({ children }) {
                 {children}
             </main>
             <Footer socialData={serializedSocialData} name={serializedAboutData?.name} config={serializedConfigData} />
-            {n8nWebhookUrl ? <N8nChat webhookUrl={n8nWebhookUrl} /> : null}
         </>
     );
 }

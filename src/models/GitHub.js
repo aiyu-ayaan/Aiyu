@@ -22,7 +22,9 @@ const GitHubSchema = new mongoose.Schema({
         showActivity: { type: Boolean, default: true },
         showRepositories: { type: Boolean, default: true },
         showRepoDistribution: { type: Boolean, default: true },
-        showLanguages: { type: Boolean, default: true }
+        showLanguages: { type: Boolean, default: true },
+        showLiveCommit: { type: Boolean, default: true },
+        showRadarChart: { type: Boolean, default: true }
     },
     hiddenRepos: {
         type: [String],

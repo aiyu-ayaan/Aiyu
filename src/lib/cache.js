@@ -9,6 +9,7 @@
 class MemoryCache {
     constructor() {
         this.cache = new Map();
+        this.pending = new Map();
         this.defaultTTL = 60 * 1000; // 60 seconds
     }
 
@@ -48,6 +49,7 @@ class MemoryCache {
      */
     invalidate(key) {
         this.cache.delete(key);
+        this.pending.delete(key);
     }
 
     /**
@@ -60,6 +62,11 @@ class MemoryCache {
                 this.cache.delete(key);
             }
         }
+        for (const key of this.pending.keys()) {
+            if (key.startsWith(prefix)) {
+                this.pending.delete(key);
+            }
+        }
     }
 
     /**
@@ -67,6 +74,7 @@ class MemoryCache {
      */
     invalidateAll() {
         this.cache.clear();
+        this.pending.clear();
     }
 
     /**
@@ -82,9 +90,23 @@ class MemoryCache {
             return cached;
         }
 
-        const value = await fn();
-        this.set(key, value, ttl);
-        return value;
+        const pending = this.pending.get(key);
+        if (pending) {
+            return pending;
+        }
+
+        const inflight = (async () => {
+            try {
+                const value = await fn();
+                this.set(key, value, ttl);
+                return value;
+            } finally {
+                this.pending.delete(key);
+            }
+        })();
+
+        this.pending.set(key, inflight);
+        return inflight;
     }
 }
 

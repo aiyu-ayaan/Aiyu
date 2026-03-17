@@ -1,15 +1,6 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
-/* Hide n8n chat widget during preloader */
-body.preloader-active #n8n-chat,
-body.preloader-active [class*="n8n-chat"] {
-  display: none !important;
-  opacity: 0 !important;
-  visibility: hidden !important;
-  pointer-events: none !important;
-}
-
 /* 3D Transform Utilities */
 .transform-style-3d {
   transform-style: preserve-3d;
@@ -229,6 +220,48 @@ body::before {
   /* IE and Edge */
   scrollbar-width: none;
   /* Firefox */
+}
+
+/* 100% Absolute Scrollbar Removal (Keep Scrolling Enabled) */
+html, body, * {
+  -ms-overflow-style: none !important; /* IE and Edge */
+  scrollbar-width: none !important; /* Firefox */
+}
+
+::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+}
+
+*::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+}
+
+/* Revive Scrollbars for Admin Screens */
+html.admin-screen,
+html.admin-screen body,
+html.admin-screen * {
+  -ms-overflow-style: auto !important;
+  scrollbar-width: auto !important;
+}
+
+html.admin-screen ::-webkit-scrollbar,
+html.admin-screen *::-webkit-scrollbar {
+  width: 8px !important;
+  height: 8px !important;
+  display: block !important;
+}
+
+html.admin-screen ::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.2) !important;
+  border-radius: 4px !important;
+}
+
+html.admin-screen ::-webkit-scrollbar-track {
+  background: transparent !important;
 }
 
 .line-hover-effect {
