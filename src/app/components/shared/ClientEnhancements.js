@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
+import { motion, AnimatePresence } from "framer-motion";
+import { usePathname } from "next/navigation";
 
 const CommandPalette = dynamic(() => import("./CommandPalette"), {
     ssr: false,
@@ -29,9 +31,22 @@ export default function ClientEnhancements() {
     const [mountPalette, setMountPalette] = useState(false);
     const [mountBackground, setMountBackground] = useState(false);
     const [pendingPaletteOpen, setPendingPaletteOpen] = useState(false);
+    const [showScrollTop, setShowScrollTop] = useState(false);
+    
+    const pathname = usePathname();
 
     const paletteMountedRef = useRef(false);
     const lowEndRef = useRef(false);
+
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            if (pathname.startsWith('/admin')) {
+                document.documentElement.classList.add('admin-screen');
+            } else {
+                document.documentElement.classList.remove('admin-screen');
+            }
+        }
+    }, [pathname]);
 
     useEffect(() => {
         paletteMountedRef.current = mountPalette;
@@ -66,6 +81,12 @@ export default function ClientEnhancements() {
         window.addEventListener("open-command-palette", handlePaletteOpenRequest);
         window.addEventListener("keydown", handleKeyDown);
 
+        // Scroll Top Visibility Handler
+        const handleScroll = () => {
+            setShowScrollTop(window.scrollY > 400);
+        };
+        window.addEventListener("scroll", handleScroll, { passive: true });
+
         let idleCallbackId;
         let timeoutId;
 
@@ -80,6 +101,7 @@ export default function ClientEnhancements() {
         return () => {
             window.removeEventListener("open-command-palette", handlePaletteOpenRequest);
             window.removeEventListener("keydown", handleKeyDown);
+            window.removeEventListener("scroll", handleScroll);
 
             if (typeof window.cancelIdleCallback === "function" && idleCallbackId !== undefined) {
                 window.cancelIdleCallback(idleCallbackId);
@@ -109,6 +131,42 @@ export default function ClientEnhancements() {
                 </div>
             )}
             {mountPalette && <CommandPalette />}
+
+            {/* Scroll to top button */}
+            <AnimatePresence>
+                {showScrollTop && (
+                    <motion.button
+                        id="scroll-to-top"
+                        className="fixed bottom-6 right-6 w-12 h-12 rounded-full cursor-pointer flex items-center justify-center z-[100] backdrop-blur-md border border-[rgba(255,255,255,0.08)] shadow-lg transition-transform"
+                        style={{
+                            backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                        }}
+                        initial={{ opacity: 0, y: 20, scale: 0.8 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 20, scale: 0.8 }}
+                        whileHover={{ scale: 1.1, backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                        aria-label="Scroll to Top"
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="text-[var(--text-primary)]"
+                        >
+                            <path d="m18 15-6-6-6 6" />
+                        </svg>
+                        <div className="absolute inset-0 rounded-full bg-gradient-to-r from-[var(--accent-cyan)] to-[var(--accent-purple)] opacity-0 group-hover:opacity-10 dark:group-hover:opacity-20 transition-opacity duration-300" />
+                    </motion.button>
+                )}
+            </AnimatePresence>
         </>
     );
 }
