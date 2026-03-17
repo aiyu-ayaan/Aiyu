@@ -19,12 +19,26 @@ function detectLowEndDevice() {
     if (typeof window === "undefined") return false;
 
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const cores = navigator.hardwareConcurrency || 2;
+    
+    // Check hardware concurrency (CPU cores) - most modern phones have 8+
+    // If under 4, it's definitely a low-end or older device
+    const cores = navigator.hardwareConcurrency || 4;
+    
+    // Check device memory (RAM) in GB
+    // If strictly under 4GB, it likely will struggle with complex canvas
     const memory = navigator.deviceMemory || 4;
+    
     const saveData = navigator.connection?.saveData || false;
-    const isSmallScreen = window.innerWidth < 768;
+    
+    // Also disable on slow mobile network connections (2g/3g)
+    const slowNetwork = navigator.connection?.effectiveType 
+        ? ['2g', '3g'].includes(navigator.connection.effectiveType) 
+        : false;
 
-    return prefersReducedMotion || saveData || cores <= 4 || memory <= 4 || isSmallScreen;
+    // Detect if the device is specifically low-end mobile/tablet
+    const isLowEndMobile = window.innerWidth < 1024 && (cores < 4 || memory < 4);
+
+    return prefersReducedMotion || saveData || slowNetwork || isLowEndMobile;
 }
 
 export default function ClientEnhancements() {
@@ -32,7 +46,7 @@ export default function ClientEnhancements() {
     const [mountBackground, setMountBackground] = useState(false);
     const [pendingPaletteOpen, setPendingPaletteOpen] = useState(false);
     const [showScrollTop, setShowScrollTop] = useState(false);
-    
+
     const pathname = usePathname();
 
     const paletteMountedRef = useRef(false);
