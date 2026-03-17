@@ -223,9 +223,38 @@ export async function GET() {
             totalContributions = contributions.reduce((sum, c) => sum + c.count, 0);
         }
 
-        // Fetch recent events for activity feed
-        const eventsRes = await fetch(`https://api.github.com/users/${username}/events/public?per_page=30`, { headers });
+        // Fetch larger recent events history for activity feed and distribution
+        const eventsRes = await fetch(`https://api.github.com/users/${username}/events/public?per_page=100`, { headers });
         const events = eventsRes.ok ? await eventsRes.json() : [];
+
+        // Build radar chart distribution data from recent events
+        const distributionCounts = {
+            commits: 0,
+            issues: 0,
+            pullRequests: 0,
+            codeReview: 0
+        };
+
+        events.forEach(event => {
+            if (event.type === 'PushEvent') {
+                distributionCounts.commits += event.payload.commits?.length || 1;
+            } else if (event.type === 'IssuesEvent' || event.type === 'IssueCommentEvent') {
+                distributionCounts.issues += 1;
+            } else if (event.type === 'PullRequestEvent') {
+                distributionCounts.pullRequests += 1;
+            } else if (event.type === 'PullRequestReviewEvent' || event.type === 'PullRequestReviewCommentEvent') {
+                distributionCounts.codeReview += 1;
+            }
+        });
+
+        // Calculate distribution percentages totaling 100%
+        const totalDist = Object.values(distributionCounts).reduce((a, b) => a + b, 0);
+        const activityDistribution = totalDist > 0 ? {
+            commits: Math.round((distributionCounts.commits / totalDist) * 100),
+            issues: Math.round((distributionCounts.issues / totalDist) * 100),
+            pullRequests: Math.round((distributionCounts.pullRequests / totalDist) * 100),
+            codeReview: Math.round((distributionCounts.codeReview / totalDist) * 100)
+        } : { commits: 0, issues: 0, pullRequests: 0, codeReview: 0 };
 
         // Calculate stats
         const totalStars = filteredRepos.reduce((sum, repo) => sum + (repo.stargazers_count || 0), 0);
@@ -357,8 +386,11 @@ export async function GET() {
                 showActivity: true,
                 showRepositories: true,
                 showRepoDistribution: true,
-                showLanguages: true
-            }
+                showLanguages: true,
+                showLiveCommit: true,
+                showRadarChart: true
+            },
+            activityDistribution
         };
 
         // Cache the result

@@ -1,14 +1,16 @@
 'use client';
 
-import { Github, Star, GitFork, Users, BookOpen, MapPin, Link as LinkIcon, Calendar, Flame, TrendingUp, GitCommit, GitPullRequest, GitMerge, Lock, Unlock, BarChart2 } from 'lucide-react';
+import { Github, Star, GitFork, Users, BookOpen, MapPin, Link as LinkIcon, Calendar, Flame, TrendingUp, GitCommit, GitPullRequest, GitMerge, Lock, Unlock, BarChart2, Activity, ChevronDown, ChevronUp } from 'lucide-react';
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 import { useTheme } from '../../context/ThemeContext';
 
 export default function GitHubStatsClient({ data }) {
     const { theme } = useTheme();
     const [selectedRepo, setSelectedRepo] = useState(null);
+    const [isTimelineExpanded, setIsTimelineExpanded] = useState(false);
+    const [showAllActivities, setShowAllActivities] = useState(false);
 
     const containerVariants = {
         hidden: { opacity: 0 },
@@ -39,7 +41,7 @@ export default function GitHubStatsClient({ data }) {
         );
     }
 
-    const { profile, stats, topRepos, languages, contributions, streaks, recentActivity, sections } = data.data;
+    const { profile, stats, topRepos, languages, contributions, streaks, recentActivity, sections, activityDistribution } = data.data;
 
     // Language colors (GitHub standard colors)
     const languageColors = {
@@ -253,7 +255,7 @@ export default function GitHubStatsClient({ data }) {
                         </h2>
                         <div className="bg-[var(--surface-card)] rounded-xl p-6 md:p-8 border border-[var(--border-secondary)]">
                             <div className="relative border-l-2 border-slate-700/50 ml-4 md:ml-6 space-y-8 pb-4">
-                                {recentActivity.map((activity, idx) => {
+                                {recentActivity.slice(0, showAllActivities ? undefined : 2).map((activity, idx) => {
                                     // Determine styling based on activity type
                                     let iconColor = 'text-slate-400';
                                     let iconBg = 'bg-slate-800';
@@ -312,9 +314,19 @@ export default function GitHubStatsClient({ data }) {
                                         </div>
                                     );
                                 })}
+                                </div>
+                                {recentActivity.length > 2 && (
+                                    <div className="flex justify-center mt-6 border-t border-slate-700/30 pt-4">
+                                        <button 
+                                            onClick={() => setShowAllActivities(!showAllActivities)}
+                                            className="text-sm font-mono text-[var(--accent-cyan)] hover:text-cyan-300 transition-colors flex items-center gap-2 bg-cyan-500/5 hover:bg-cyan-500/10 px-4 py-2 rounded-full border border-cyan-500/20 shadow-lg shadow-cyan-500/10"
+                                        >
+                                            {showAllActivities ? 'Show Less' : `Show More (${recentActivity.length - 2} more)`}
+                                        </button>
+                                    </div>
+                                )}
                             </div>
-                        </div>
-                    </motion.div>
+                        </motion.div>
                 )}
 
                 {/* Recently Updated Repositories */}
@@ -324,7 +336,7 @@ export default function GitHubStatsClient({ data }) {
                             <TrendingUp className="text-[var(--primary)]" />
                             Recently Updated Repositories
                         </h2>
-                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div className="flex overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 gap-4 pb-4 md:pb-0 snap-x snap-mandatory scrollbar-hide">
                             {topRepos.map((repo, index) => {
                                 const isPrivate = repo.isPrivate;
                                 const Wrapper = isPrivate ? 'div' : 'a';
@@ -338,7 +350,7 @@ export default function GitHubStatsClient({ data }) {
                                     <Wrapper
                                         key={index}
                                         {...wrapperProps}
-                                        className={`bg-[var(--surface-card)] rounded-xl p-6 border border-[var(--border-secondary)] transition-colors ${isPrivate ? 'opacity-80 cursor-default' : 'hover:border-[var(--primary)] group cursor-pointer'
+                                        className={`snap-center shrink-0 w-[85%] sm:w-[320px] md:w-auto bg-[var(--surface-card)] rounded-xl p-6 border border-[var(--border-secondary)] transition-colors ${isPrivate ? 'opacity-80 cursor-default' : 'hover:border-[var(--primary)] group cursor-pointer'
                                             }`}
                                     >
                                         <div className="flex items-start justify-between mb-3">
@@ -463,6 +475,98 @@ export default function GitHubStatsClient({ data }) {
                                         />
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                    </motion.div>
+                 )}
+
+                {/* Activity Radar Chart */}
+                {sections?.showRadarChart && activityDistribution && (
+                    <motion.div className="mb-12" variants={itemVariants}>
+                        <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                            <Activity className="text-[var(--primary)]" />
+                            Activity Distribution
+                        </h2>
+                        <div className="bg-[var(--surface-card)] rounded-xl p-6 md:p-8 border border-[var(--border-secondary)] min-h-[400px] flex items-center justify-center relative">
+                            {/* Premium dynamic SVG Radar Implementation */}
+                            <div className="w-full max-w-[320px] aspect-square flex items-center justify-center mx-auto">
+                                <svg viewBox="0 0 400 400" className="w-full h-full overflow-visible">
+                                    <defs>
+                                        <radialGradient id="radarGlow" cx="50%" cy="50%" r="50%">
+                                            <stop offset="0%" stopColor="var(--accent-cyan)" stopOpacity="0.4" />
+                                            <stop offset="100%" stopColor="var(--accent-cyan)" stopOpacity="0" />
+                                        </radialGradient>
+                                        <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" stopColor="var(--accent-cyan)" />
+                                            <stop offset="100%" stopColor="var(--accent-purple)" />
+                                        </linearGradient>
+                                    </defs>
+
+                                    {/* Concentric grid diamonds */}
+                                    {[0.25, 0.5, 0.75, 1].map((f, i) => (
+                                        <polygon
+                                            key={i}
+                                            points={`200,${200 - f * 130} ${200 + f * 130},200 200,${200 + f * 130} ${200 - f * 130},200`}
+                                            fill="none"
+                                            stroke="rgba(255,255,255,0.06)"
+                                            strokeWidth="1"
+                                            strokeDasharray={i === 3 ? "0" : "3,3"}
+                                        />
+                                    ))}
+
+                                    {/* Cross Axes background lines */}
+                                    <line x1="200" y1="70" x2="200" y2="330" stroke="rgba(255,255,255,0.08)" strokeWidth="1.5" />
+                                    <line x1="70" y1="200" x2="330" y2="200" stroke="rgba(255,255,255,0.08)" strokeWidth="1.5" />
+
+                                    {/* Center ambient Glow */}
+                                    <circle cx="200" cy="200" r="90" fill="url(#radarGlow)" className="opacity-40 animate-pulse" />
+
+                                    {/* Data Polygon */}
+                                    <motion.polygon
+                                        points={`
+                                            ${200 - (activityDistribution.commits / 100) * 130},200 
+                                            200,${200 - (activityDistribution.codeReview / 100) * 130} 
+                                            ${200 + (activityDistribution.issues / 100) * 130},200 
+                                            200,${200 + (activityDistribution.pullRequests / 100) * 130}
+                                        `}
+                                        fill="var(--accent-cyan)"
+                                        fillOpacity="0.1"
+                                        stroke="url(#lineGrad)"
+                                        strokeWidth="3.5"
+                                        strokeLinejoin="round"
+                                        initial={{ opacity: 0, scale: 0.1, transformOrigin: 'center' }}
+                                        whileInView={{ opacity: 1, scale: 1 }}
+                                        viewport={{ once: true }}
+                                        transition={{ duration: 1, ease: "easeOut", type: "spring", bounce: 0.3 }}
+                                    />
+
+                                    {/* Handle dots with glow */}
+                                    {/* Commits (Left) */}
+                                    <circle cx={200 - (activityDistribution.commits / 100) * 130} cy="200" r="5" fill="var(--surface-card)" stroke="var(--accent-cyan)" strokeWidth="2.5" />
+                                    {/* Code Review (Top) */}
+                                    <circle cx="200" cy={200 - (activityDistribution.codeReview / 100) * 130} r="5" fill="var(--surface-card)" stroke="var(--accent-purple)" strokeWidth="2.5" />
+                                    {/* Issues (Right) */}
+                                    <circle cx={200 + (activityDistribution.issues / 100) * 130} cy="200" r="5" fill="var(--surface-card)" stroke="var(--accent-cyan)" strokeWidth="2.5" />
+                                    {/* Pull Requests (Bottom) */}
+                                    <circle cx="200" cy={200 + (activityDistribution.pullRequests / 100) * 130} r="5" fill="var(--surface-card)" stroke="var(--accent-purple)" strokeWidth="2.5" />
+
+                                    {/* SVG Labels */}
+                                    {/* Top - Code Review */}
+                                    <text x="200" y="25" textAnchor="middle" fill="var(--accent-cyan)" className="font-mono font-bold text-base">{activityDistribution.codeReview}%</text>
+                                    <text x="200" y="42" textAnchor="middle" fill="var(--text-secondary)" className="text-[10px] sm:text-xs font-bold tracking-wider uppercase">Code Review</text>
+
+                                    {/* Bottom - PRs */}
+                                    <text x="200" y="372" textAnchor="middle" fill="var(--accent-cyan)" className="font-mono font-bold text-base">{activityDistribution.pullRequests}%</text>
+                                    <text x="200" y="388" textAnchor="middle" fill="var(--text-secondary)" className="text-[10px] sm:text-xs font-bold tracking-wider uppercase">Pull Requests</text>
+
+                                    {/* Left - Commits */}
+                                    <text x="45" y="195" textAnchor="end" fill="var(--accent-cyan)" className="font-mono font-bold text-base">{activityDistribution.commits}%</text>
+                                    <text x="45" y="211" textAnchor="end" fill="var(--text-secondary)" className="text-[10px] sm:text-xs font-bold tracking-wider uppercase">Commits</text>
+
+                                    {/* Right - Issues */}
+                                    <text x="355" y="195" textAnchor="start" fill="var(--accent-cyan)" className="font-mono font-bold text-base">{activityDistribution.issues}%</text>
+                                    <text x="355" y="211" textAnchor="start" fill="var(--text-secondary)" className="text-[10px] sm:text-xs font-bold tracking-wider uppercase">Issues</text>
+                                </svg>
                             </div>
                         </div>
                     </motion.div>
