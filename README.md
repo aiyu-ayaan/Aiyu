@@ -1,11 +1,13 @@
 # Portfolio Website
-
+[![Status](https://badge.aiyu.co.in/badge/stable)](https://github.com/aiyu-ayaan/Aiyu)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Next.js](https://img.shields.io/badge/Next.js-15.0-black?logo=next.js)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19.0-blue?logo=react)](https://reactjs.org/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-6.0-green?logo=mongodb)](https://www.mongodb.com/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker)](https://www.docker.com/)
 [![Documentation](https://img.shields.io/badge/Wiki-Documentation-blue?logo=github)](https://github.com/aiyu-ayaan/Aiyu/wiki)
+
+[![LOC](https://badge.aiyu.co.in/repo-batch?owner=aiyu-ayaan&repo=aiyu&fields=loc)](https://github.com/aiyu-ayaan/Aiyu)
 
 ![home](./docs/images/home.png)
 
