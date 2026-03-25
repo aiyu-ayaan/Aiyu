@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
 import dbConnect from '@/lib/db';
 import Config from '@/models/Config';
+import AiLog from '@/models/AiLog';
 import { decrypt } from '@/lib/encryption';
 import { withAuth } from '@/middleware/auth';
 
@@ -10,17 +11,26 @@ async function generateText(request) {
         await dbConnect();
 
         // 1. Get Configuration & API Key
-        const config = await Config.findOne().select('+encryptedGeminiApiKey').lean();
+        const config = await Config.findOne().select('+encryptedGeminiApiKey +encryptedGroqApiKey +encryptedOpenRouterApiKey').lean();
 
         if (!config?.ai?.enabled) {
             return NextResponse.json({ success: false, error: 'AI system is disabled.' }, { status: 403 });
         }
 
-        if (!config.encryptedGeminiApiKey) {
-            return NextResponse.json({ success: false, error: 'Gemini API Key is missing.' }, { status: 500 });
+        const provider = config.ai.provider || 'gemini';
+        let apiKey;
+
+        if (provider === 'gemini') {
+            if (!config.encryptedGeminiApiKey) return NextResponse.json({ success: false, error: 'Gemini API Key is missing.' }, { status: 500 });
+            apiKey = decrypt(config.encryptedGeminiApiKey);
+        } else if (provider === 'groq') {
+            if (!config.encryptedGroqApiKey) return NextResponse.json({ success: false, error: 'Groq API Key is missing.' }, { status: 500 });
+            apiKey = decrypt(config.encryptedGroqApiKey);
+        } else if (provider === 'openrouter') {
+            if (!config.encryptedOpenRouterApiKey) return NextResponse.json({ success: false, error: 'OpenRouter API Key is missing.' }, { status: 500 });
+            apiKey = decrypt(config.encryptedOpenRouterApiKey);
         }
 
-        const apiKey = decrypt(config.encryptedGeminiApiKey);
         if (!apiKey) {
             return NextResponse.json({ success: false, error: 'Failed to decrypt API Key.' }, { status: 500 });
         }
@@ -32,8 +42,7 @@ async function generateText(request) {
             return NextResponse.json({ success: false, error: 'No prompt provided.' }, { status: 400 });
         }
 
-        // 3. Prepare AI
-        const ai = new GoogleGenAI({ apiKey });
+        // 3. Prepare AI Prompt
         let modelName = config.ai.model || 'gemini-3-flash-preview';
         const systemInstruction = config.ai.systemInstruction || "You are a helpful assistant.";
 
@@ -97,24 +106,93 @@ async function generateText(request) {
             finalPrompt = `Generate a theme based on this concept: "${prompt}"`;
         }
 
-        // 4. Call API
-        const result = await ai.models.generateContent({
-            model: modelName,
-            config: {
-                systemInstruction: finalSystemInstruction
-            },
-            contents: [{ text: finalPrompt }]
-        });
+        // 4. Call Active Provider API
+        let responseText = '';
+        let usageData = { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
 
-        const text = typeof result.text === 'function' ? result.text() : (result.text || JSON.stringify(result));
+        if (provider === 'gemini') {
+            const ai = new GoogleGenAI({ apiKey });
+            const result = await ai.models.generateContent({
+                model: modelName,
+                config: {
+                    systemInstruction: finalSystemInstruction
+                },
+                contents: [{ text: finalPrompt }]
+            });
+            responseText = typeof result.text === 'function' ? result.text() : (result.text || JSON.stringify(result));
+            
+            if (result.usageMetadata) {
+                 usageData = {
+                     inputTokens: result.usageMetadata.promptTokenCount || 0,
+                     outputTokens: result.usageMetadata.candidatesTokenCount || 0,
+                     totalTokens: result.usageMetadata.totalTokenCount || 0
+                 };
+            }
+
+        } else if (provider === 'groq' || provider === 'openrouter') {
+            const endpoint = provider === 'groq' ? 'https://api.groq.com/openai/v1/chat/completions' : 'https://openrouter.ai/api/v1/chat/completions';
+            
+            const headers = {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`
+            };
+
+            if (provider === 'openrouter') {
+                headers['HTTP-Referer'] = 'https://aiyu.dev';
+                headers['X-Title'] = 'Aiyu Portfolio'; 
+            }
+
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({
+                    model: modelName,
+                    messages: [
+                        { role: 'system', content: finalSystemInstruction },
+                        { role: 'user', content: finalPrompt }
+                    ]
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.text();
+                throw new Error(`${provider.toUpperCase()} API Error: ${response.status} ${errorData}`);
+            }
+
+            const data = await response.json();
+            responseText = data.choices?.[0]?.message?.content || '';
+            
+            if (data.usage) {
+                usageData = {
+                    inputTokens: data.usage.prompt_tokens || 0,
+                    outputTokens: data.usage.completion_tokens || 0,
+                    totalTokens: data.usage.total_tokens || 0
+                };
+            }
+        }
+
+        // 5. Log Telemetry
+        try {
+            await AiLog.create({
+                provider,
+                model: modelName,
+                mode: mode || 'text',
+                prompt: prompt,
+                response: responseText.trim(),
+                ...usageData
+            });
+        } catch (logError) {
+            console.error('[AI Telemetry Logging Error]:', logError);
+            // Non-fatal, let the request succeed
+        }
 
         return NextResponse.json({
             success: true,
-            data: text.trim()
+            data: responseText.trim()
         });
 
     } catch (error) {
-        console.error('[AI Text Error]:', error);
+        console.error(`[AI Text Error]:`, error);
         return NextResponse.json({
             success: false,
             error: error.message || 'Failed to generate text.'

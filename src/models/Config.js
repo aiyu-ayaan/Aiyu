@@ -59,10 +59,13 @@ const ConfigSchema = new mongoose.Schema({
     // Secure Data
     encryptedGithubToken: { type: String, select: false },
     encryptedGeminiApiKey: { type: String, select: false },
+    encryptedGroqApiKey: { type: String, select: false },
+    encryptedOpenRouterApiKey: { type: String, select: false },
 
     // AI Configuration
     ai: {
         enabled: { type: Boolean, default: false },
+        provider: { type: String, enum: ['gemini', 'groq', 'openrouter'], default: 'gemini' },
         model: { type: String, default: 'gemini-1.5-flash' },
         systemInstruction: { type: String, default: 'You are a helpful assistant for the portfolio admin.' }
     }

@@ -6,12 +6,13 @@ import { encrypt, decrypt } from '@/lib/encryption';
 import cache from '@/lib/cache';
 
 // Helper to get key
-async function getDecryptedKey() {
-    const config = await Config.findOne().select('+encryptedGeminiApiKey').lean();
-    if (config?.encryptedGeminiApiKey) {
-        return decrypt(config.encryptedGeminiApiKey);
-    }
-    return null;
+async function getDecryptedKeys() {
+    const config = await Config.findOne().select('+encryptedGeminiApiKey +encryptedGroqApiKey +encryptedOpenRouterApiKey').lean();
+    return {
+        gemini: config?.encryptedGeminiApiKey ? decrypt(config.encryptedGeminiApiKey) : null,
+        groq: config?.encryptedGroqApiKey ? decrypt(config.encryptedGroqApiKey) : null,
+        openrouter: config?.encryptedOpenRouterApiKey ? decrypt(config.encryptedOpenRouterApiKey) : null
+    };
 }
 
 // GET: Fetch AI configuration
@@ -26,11 +27,11 @@ async function getAiConfig(request) {
             config = await Config.create({});
         }
 
-        const key = await getDecryptedKey();
-        const hasKey = !!key;
+        const keys = await getDecryptedKeys();
 
         const aiConfig = config.ai || {
             enabled: false,
+            provider: 'gemini',
             model: 'gemini-1.5-flash',
             systemInstruction: 'You are a helpful assistant for the portfolio admin.'
         };
@@ -39,7 +40,11 @@ async function getAiConfig(request) {
             success: true,
             data: {
                 ...aiConfig,
-                hasKey
+                hasKey: {
+                    gemini: !!keys.gemini,
+                    groq: !!keys.groq,
+                    openrouter: !!keys.openrouter
+                }
             }
         });
     } catch (error) {
@@ -56,9 +61,9 @@ async function updateAiConfig(request) {
     try {
         await dbConnect();
         const body = await request.json();
-        const { enabled, model, systemInstruction, apiKey } = body;
+        const { enabled, provider, model, systemInstruction, keys } = body;
 
-        console.log('[AI Config] Update request:', { enabled, model });
+        console.log('[AI Config] Update request:', { enabled, provider, model });
 
         let config = await Config.findOne();
         if (!config) {
@@ -69,13 +74,19 @@ async function updateAiConfig(request) {
         if (!config.ai) config.ai = {};
 
         if (enabled !== undefined) config.ai.enabled = enabled;
+        if (provider !== undefined) config.ai.provider = provider;
         if (model !== undefined) config.ai.model = model;
         if (systemInstruction !== undefined) config.ai.systemInstruction = systemInstruction;
 
-        // Update API Key if provided
-        if (apiKey !== undefined) {
-            const encryptedKey = apiKey ? encrypt(apiKey) : '';
-            config.encryptedGeminiApiKey = encryptedKey;
+        // Update API Keys if provided
+        if (keys?.gemini !== undefined) {
+            config.encryptedGeminiApiKey = keys.gemini ? encrypt(keys.gemini) : '';
+        }
+        if (keys?.groq !== undefined) {
+            config.encryptedGroqApiKey = keys.groq ? encrypt(keys.groq) : '';
+        }
+        if (keys?.openrouter !== undefined) {
+            config.encryptedOpenRouterApiKey = keys.openrouter ? encrypt(keys.openrouter) : '';
         }
 
         await config.save();
@@ -85,7 +96,11 @@ async function updateAiConfig(request) {
             success: true,
             data: {
                 ...config.ai,
-                hasKey: !!config.encryptedGeminiApiKey
+                hasKey: {
+                    gemini: !!config.encryptedGeminiApiKey,
+                    groq: !!config.encryptedGroqApiKey,
+                    openrouter: !!config.encryptedOpenRouterApiKey
+                }
             }
         });
 

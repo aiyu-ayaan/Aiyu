@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
 import dbConnect from '@/lib/db';
 import Config from '@/models/Config';
+import AiLog from '@/models/AiLog';
 import { decrypt } from '@/lib/encryption';
 import { withAuth } from '@/middleware/auth';
 import convert from 'heic-convert';
@@ -12,17 +13,26 @@ async function generateCaption(request) {
         await dbConnect();
 
         // 1. Get Configuration & API Key
-        const config = await Config.findOne().select('+encryptedGeminiApiKey').lean();
+        const config = await Config.findOne().select('+encryptedGeminiApiKey +encryptedGroqApiKey +encryptedOpenRouterApiKey').lean();
 
         if (!config?.ai?.enabled) {
             return NextResponse.json({ success: false, error: 'AI system is disabled.' }, { status: 403 });
         }
 
-        if (!config.encryptedGeminiApiKey) {
-            return NextResponse.json({ success: false, error: 'Gemini API Key is missing.' }, { status: 500 });
+        const provider = config.ai.provider || 'gemini';
+        let apiKey;
+
+        if (provider === 'gemini') {
+            if (!config.encryptedGeminiApiKey) return NextResponse.json({ success: false, error: 'Gemini API Key is missing.' }, { status: 500 });
+            apiKey = decrypt(config.encryptedGeminiApiKey);
+        } else if (provider === 'groq') {
+            if (!config.encryptedGroqApiKey) return NextResponse.json({ success: false, error: 'Groq API Key is missing.' }, { status: 500 });
+            apiKey = decrypt(config.encryptedGroqApiKey);
+        } else if (provider === 'openrouter') {
+            if (!config.encryptedOpenRouterApiKey) return NextResponse.json({ success: false, error: 'OpenRouter API Key is missing.' }, { status: 500 });
+            apiKey = decrypt(config.encryptedOpenRouterApiKey);
         }
 
-        const apiKey = decrypt(config.encryptedGeminiApiKey);
         if (!apiKey) {
             return NextResponse.json({ success: false, error: 'Failed to decrypt API Key.' }, { status: 500 });
         }
@@ -54,11 +64,10 @@ async function generateCaption(request) {
                 mimeType = 'image/jpeg';
             } catch (convError) {
                 console.error('[AI] HEIC conversion failed:', convError);
-                // Continue with original buffer if conversion fails, though Ai might fail too
             }
         }
 
-        // 3.5 Optimize Image with Sharp (Resize to 1024px max for speed)
+        // 3.5 Optimize Image with Sharp
         try {
             console.log('[AI] Optimizing image for transmission...');
             buffer = await sharp(buffer)
@@ -68,62 +77,127 @@ async function generateCaption(request) {
             mimeType = 'image/jpeg';
         } catch (sharpError) {
             console.error('[AI] Sharp optimization failed:', sharpError);
-            // Non-fatal, continue with what we have
         }
 
         const base64Image = buffer.toString('base64');
-
-        // 4. Call Google GenAI API
-        const ai = new GoogleGenAI({ apiKey });
-
-        // Ensure we use the newest model if nothing is set or if it's an old default
-        let modelName = config.ai.model;
-        if (!modelName || modelName.includes('1.5-flash')) {
-            modelName = 'gemini-3-flash-preview';
-        }
-
         const systemInstruction = config.ai.systemInstruction || "You are a helpful assistant.";
 
-        const parts = [
-            { text: prompt },
-            {
-                inlineData: {
-                    mimeType: mimeType,
-                    data: base64Image
-                }
+        // 4. Call Selected Provider
+        let responseText = '';
+        let modelName = config.ai.model;
+        let usageData = { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
+
+        if (provider === 'gemini') {
+            const ai = new GoogleGenAI({ apiKey });
+            
+            if (!modelName || modelName.includes('1.5-flash')) {
+                modelName = 'gemini-3-flash-preview';
             }
-        ];
 
-        const generateWithFallback = async (currentModel) => {
-            try {
-                return await ai.models.generateContent({
-                    model: currentModel,
-                    config: {
-                        systemInstruction: systemInstruction
-                    },
-                    contents: parts
-                });
-            } catch (error) {
-                if (error.message.includes('404') || error.message.includes('not found')) {
-                    console.warn(`[AI Warning] Model ${currentModel} not found, trying fallback...`);
+            const parts = [
+                { text: prompt },
+                {
+                    inlineData: {
+                        mimeType: mimeType,
+                        data: base64Image
+                    }
+                }
+            ];
 
-                    const fallbackName = 'gemini-3-flash-preview';
+            const generateWithFallback = async (currentModel) => {
+                try {
                     return await ai.models.generateContent({
-                        model: fallbackName,
-                        config: {
-                            systemInstruction: systemInstruction
-                        },
+                        model: currentModel,
+                        config: { systemInstruction },
                         contents: parts
                     });
+                } catch (error) {
+                    if (error.message.includes('404') || error.message.includes('not found')) {
+                        console.warn(`[AI Warning] Model ${currentModel} not found, trying fallback...`);
+                        const fallbackName = 'gemini-2.0-flash';
+                        return await ai.models.generateContent({
+                            model: fallbackName,
+                            config: { systemInstruction },
+                            contents: parts
+                        });
+                    }
+                    throw error;
                 }
-                throw error;
+            };
+
+            const result = await generateWithFallback(modelName);
+            responseText = typeof result.text === 'function' ? result.text() : (result.text || JSON.stringify(result));
+            
+            if (result.usageMetadata) {
+                 usageData = {
+                     inputTokens: result.usageMetadata.promptTokenCount || 0,
+                     outputTokens: result.usageMetadata.candidatesTokenCount || 0,
+                     totalTokens: result.usageMetadata.totalTokenCount || 0
+                 };
             }
-        };
 
-        const result = await generateWithFallback(modelName);
+        } else if (provider === 'groq' || provider === 'openrouter') {
+            const endpoint = provider === 'groq' ? 'https://api.groq.com/openai/v1/chat/completions' : 'https://openrouter.ai/api/v1/chat/completions';
+            
+            if (provider === 'groq' && (!modelName || !modelName.includes('vision'))) {
+                modelName = 'llama-3.2-90b-vision-preview'; // Fallback to vision compatible model for Groq
+            }
 
-        // Result handling based on new SDK: .text is a property string
-        const responseText = typeof result.text === 'function' ? result.text() : (result.text || JSON.stringify(result));
+            const headers = {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`
+            };
+
+            if (provider === 'openrouter') {
+                headers['HTTP-Referer'] = 'https://aiyu.dev';
+                headers['X-Title'] = 'Aiyu Portfolio'; 
+            }
+
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({
+                    model: modelName,
+                    messages: [
+                        { role: 'system', content: systemInstruction },
+                        { role: 'user', content: [
+                            { type: 'text', text: prompt },
+                            { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64Image}` } }
+                        ]}
+                    ]
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.text();
+                throw new Error(`${provider.toUpperCase()} Vision API Error: ${response.status} ${errorData}`);
+            }
+
+            const data = await response.json();
+            responseText = data.choices?.[0]?.message?.content || '';
+            
+            if (data.usage) {
+                usageData = {
+                    inputTokens: data.usage.prompt_tokens || 0,
+                    outputTokens: data.usage.completion_tokens || 0,
+                    totalTokens: data.usage.total_tokens || 0
+                };
+            }
+        }
+
+        // 5. Log Telemetry
+        try {
+            await AiLog.create({
+                provider,
+                model: modelName,
+                mode: 'generate_caption', // Vision mode
+                prompt: prompt, // We don't log the base64 image string to DB, just text prompt
+                response: responseText.trim(),
+                ...usageData
+            });
+        } catch (logError) {
+            console.error('[AI Telemetry Logging Error]:', logError);
+        }
 
         return NextResponse.json({
             success: true,
