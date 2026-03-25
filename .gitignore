@@ -51,3 +51,4 @@ next-env.d.ts
 test.js
 
 docker-compose-local.yml
+lint

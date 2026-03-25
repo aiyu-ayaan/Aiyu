@@ -59,11 +59,20 @@ const ConfigSchema = new mongoose.Schema({
     // Secure Data
     encryptedGithubToken: { type: String, select: false },
     encryptedGeminiApiKey: { type: String, select: false },
+    encryptedGroqApiKey: { type: String, select: false },
+    encryptedOpenRouterApiKey: { type: String, select: false },
 
     // AI Configuration
     ai: {
         enabled: { type: Boolean, default: false },
+        provider: { type: String, enum: ['gemini', 'groq', 'openrouter'], default: 'gemini' },
         model: { type: String, default: 'gemini-1.5-flash' },
+        models: {
+            gemini: { type: String, default: '' },
+            groq: { type: String, default: '' },
+            openrouter: { type: String, default: '' }
+        },
+        enabledProviders: { type: [String], default: ['gemini'] },
         systemInstruction: { type: String, default: 'You are a helpful assistant for the portfolio admin.' }
     }
 }, { strict: false }); // Allow other fields to be added later if needed without strict validation issues initially

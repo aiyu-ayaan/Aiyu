@@ -18,7 +18,6 @@ export default function ThemePreviewCard({
 
             {/* Color Preview Header */}
             <div className="h-32 relative" style={{ backgroundColor: colors?.backgrounds?.primary }}>
-                <div className="absolute inset-0 opacity-20 bg-[linear-gradient(45deg,transparent_25%,rgba(0,0,0,.3)_25%,rgba(0,0,0,.3)_50%,transparent_50%,transparent_75%,rgba(0,0,0,.3)_75%,rgba(0,0,0,.3)),linear-gradient(45deg,transparent_25%,rgba(0,0,0,.3)_25%,rgba(0,0,0,.3)_50%,transparent_50%,transparent_75%,rgba(0,0,0,.3)_75%,rgba(0,0,0,.3))]" style={{ backgroundSize: "20px 20px" }}></div>
 
                 {/* Overlay Elements imitating UI */}
                 <div className="absolute top-4 left-4 right-4 bottom-4 flex flex-col gap-2">
