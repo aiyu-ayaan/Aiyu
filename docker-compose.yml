@@ -26,7 +26,7 @@ services:
 
   # Next.js Application Service
   app:
-    image: aiyuayaan/aiyu
+    image: aiyuayaan/aiyu:latest
     container_name: aiyu-app
     restart: unless-stopped
     # Port exposed only to internal network (Nginx handles external traffic)
