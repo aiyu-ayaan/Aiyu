@@ -51,6 +51,8 @@ services:
       NODE_ENV: production
       # Keep V8 heap bounded on low-memory servers (2 GB instances)
       NODE_OPTIONS: --max-old-space-size=512
+      # Keep V8 heap bounded on low-memory servers (2 GB instances)
+      NODE_OPTIONS: --max-old-space-size=512
     volumes:
       # Persistent uploads directory (named volume for proper permissions)
       - uploads_data:/app/public/uploads
@@ -73,6 +75,7 @@ services:
       - no-new-privileges:true # Prevent privilege escalation
     # Read-only root filesystem (except for writable volumes)
     read_only: true
+    # Resource limits removed
     # Resource limits removed
     # Health check to detect abnormal behavior
     # Uses curl (installed in Dockerfile) with fallback chain
@@ -105,6 +108,7 @@ services:
         condition: service_started
     networks:
       - aiyu-network
+      # Resource limits removed
       # Resource limits removed
     healthcheck:
       test: [ "CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:80/nginx-health || exit 1" ]
