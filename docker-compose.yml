@@ -4,7 +4,7 @@ services:
     image: mongo:7
     container_name: aiyu-mongodb
     restart: unless-stopped
-    command: ["--wiredTigerCacheSizeGB", "0.25"]
+    command: [ "--wiredTigerCacheSizeGB", "0.25" ]
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
@@ -18,7 +18,7 @@ services:
     networks:
       - aiyu-network
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')", "--quiet"]
+      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')", "--quiet" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -77,7 +77,7 @@ services:
     # Health check to detect abnormal behavior
     # Uses curl (installed in Dockerfile) with fallback chain
     healthcheck:
-      test: ["CMD", "sh", "/app/healthcheck.sh"]
+      test: [ "CMD", "sh", "/app/healthcheck.sh" ]
       interval: 15s
       timeout: 10s
       retries: 12
@@ -107,7 +107,7 @@ services:
       - aiyu-network
       # Resource limits removed
     healthcheck:
-      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:80/nginx-health || exit 1"]
+      test: [ "CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:80/nginx-health || exit 1" ]
       interval: 30s
       timeout: 5s
       retries: 5
