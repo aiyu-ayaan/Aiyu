@@ -20,19 +20,19 @@ export default function AiConfigPage() {
         systemInstruction: '',
         hasKey: { gemini: false, groq: false, openrouter: false }
     });
-    
+
     const [newKeys, setNewKeys] = useState({ gemini: '', groq: '', openrouter: '' });
     const [showKeyInput, setShowKeyInput] = useState({ gemini: false, groq: false, openrouter: false });
-    
+
     const [availableModels, setAvailableModels] = useState([]);
     const [loadingModels, setLoadingModels] = useState(false);
-    
+
     // Telemetry State
     const [telemetryLogs, setTelemetryLogs] = useState([]);
     const [telemetryStats, setTelemetryStats] = useState(null);
     const [overallTotalTokens, setOverallTotalTokens] = useState(0);
     const [loadingTelemetry, setLoadingTelemetry] = useState(true);
-    
+
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [notification, setNotification] = useState(null);
@@ -117,11 +117,12 @@ export default function AiConfigPage() {
         setSaving(true);
 
         try {
-            // Only send keys that have been explicitly modified (including cleared)
+            // Send keys that have been explicitly modified (including cleared)
+            // Also include keys typed into the default input (when no existing key is stored)
             const keysToUpdate = {};
-            if (showKeyInput.gemini) keysToUpdate.gemini = newKeys.gemini;
-            if (showKeyInput.groq) keysToUpdate.groq = newKeys.groq;
-            if (showKeyInput.openrouter) keysToUpdate.openrouter = newKeys.openrouter;
+            if (showKeyInput.gemini || (!config.hasKey?.gemini && newKeys.gemini)) keysToUpdate.gemini = newKeys.gemini;
+            if (showKeyInput.groq || (!config.hasKey?.groq && newKeys.groq)) keysToUpdate.groq = newKeys.groq;
+            if (showKeyInput.openrouter || (!config.hasKey?.openrouter && newKeys.openrouter)) keysToUpdate.openrouter = newKeys.openrouter;
 
             // Dynamically build enabledProviders based on which keys are active/being added
             const nextHasKey = {
@@ -149,15 +150,15 @@ export default function AiConfigPage() {
 
             if (data.success) {
                 // Ensure data.data is an object containing all fields, then explicitly merge hasKey
-                setConfig(prev => ({ 
-                    ...prev, 
-                    ...data.data, 
-                    hasKey: data.data.hasKey 
+                setConfig(prev => ({
+                    ...prev,
+                    ...data.data,
+                    hasKey: data.data.hasKey
                 }));
                 setNewKeys({ gemini: '', groq: '', openrouter: '' });
                 setShowKeyInput({ gemini: false, groq: false, openrouter: false });
                 showNotification(true, 'AI System Configuration Updated');
-                
+
                 // Refresh models just in case a new key was saved and it unlocks them
                 fetchModels('all');
             } else {
@@ -256,7 +257,7 @@ export default function AiConfigPage() {
                             const hasKeyValue = config.hasKey[provider.id];
                             const isShowingInput = showKeyInput[provider.id];
                             const inputValue = newKeys[provider.id];
-                            
+
                             return (
                                 <div key={provider.id} className={`p-4 rounded-xl border transition-all ${isProviderActive ? 'border-purple-500/30 bg-purple-500/5' : 'border-white/5 bg-slate-950/30 opacity-70 hover:opacity-100'}`}>
                                     <label className="block text-xs font-mono uppercase tracking-wider text-slate-500 mb-2 flex items-center gap-2">
@@ -293,9 +294,9 @@ export default function AiConfigPage() {
                                                 {isShowingInput && (
                                                     <button
                                                         type="button"
-                                                        onClick={() => { 
-                                                            setShowKeyInput(prev => ({ ...prev, [provider.id]: false })); 
-                                                            setNewKeys(prev => ({ ...prev, [provider.id]: '' })); 
+                                                        onClick={() => {
+                                                            setShowKeyInput(prev => ({ ...prev, [provider.id]: false }));
+                                                            setNewKeys(prev => ({ ...prev, [provider.id]: '' }));
                                                         }}
                                                         className="px-4 text-slate-400 hover:text-white border border-white/10 hover:border-white/30 rounded-lg transition-colors"
                                                     >
@@ -336,7 +337,7 @@ export default function AiConfigPage() {
 
                                     const providerModels = availableModels.filter(m => m.provider === provider.id);
                                     let currentModelValue = config.models?.[provider.id] || '';
-                                    
+
                                     // Fallback to legacy structure if specific model isn't mapped yet
                                     if (!currentModelValue && config.provider === provider.id && config.model) {
                                         currentModelValue = config.model;
@@ -348,14 +349,14 @@ export default function AiConfigPage() {
                                                 <span>{provider.name} MODEL</span>
                                                 {loadingModels && <Loader2 className="animate-spin text-blue-400/50" size={12} />}
                                             </label>
-                                            
+
                                             {providerModels.length === 0 && !loadingModels ? (
                                                 <input
                                                     type="text"
                                                     value={currentModelValue}
-                                                    onChange={(e) => setConfig({ 
-                                                        ...config, 
-                                                        models: { ...(config.models || {}), [provider.id]: e.target.value } 
+                                                    onChange={(e) => setConfig({
+                                                        ...config,
+                                                        models: { ...(config.models || {}), [provider.id]: e.target.value }
                                                     })}
                                                     placeholder={`Fallback ${provider.name} model ID...`}
                                                     className="w-full bg-slate-950/80 border border-white/10 rounded-lg p-3 text-slate-200 outline-none text-sm font-mono focus:border-blue-500/50 transition-all shadow-inner"
@@ -364,9 +365,9 @@ export default function AiConfigPage() {
                                                 <div className="relative">
                                                     <select
                                                         value={currentModelValue}
-                                                        onChange={(e) => setConfig({ 
-                                                            ...config, 
-                                                            models: { ...(config.models || {}), [provider.id]: e.target.value } 
+                                                        onChange={(e) => setConfig({
+                                                            ...config,
+                                                            models: { ...(config.models || {}), [provider.id]: e.target.value }
                                                         })}
                                                         className="w-full appearance-none bg-slate-950/80 border border-white/10 rounded-lg p-3 pr-10 text-slate-200 outline-none text-sm font-mono focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all cursor-pointer shadow-inner"
                                                     >
@@ -382,7 +383,7 @@ export default function AiConfigPage() {
                                                     </select>
                                                     <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
                                                         <svg width="10" height="6" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                            <path d="M1 1.5L6 6.5L11 1.5" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                                            <path d="M1 1.5L6 6.5L11 1.5" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                                                         </svg>
                                                     </div>
                                                 </div>
@@ -395,7 +396,6 @@ export default function AiConfigPage() {
                                         </div>
                                     );
                                 })}
-
                                 {(!config.hasKey?.gemini && !config.hasKey?.groq && !config.hasKey?.openrouter) && (
                                     <div className="p-4 bg-slate-950/50 border border-red-500/20 rounded-lg text-red-400/80 text-sm font-mono text-center">
                                         NO ACTIVE PROVIDERS. PLEASE CONFIGURE API KEYS BELOW.
@@ -451,7 +451,7 @@ export default function AiConfigPage() {
                 <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
                     <Database className="text-cyan-400" /> AI Telemetry & Access Logs
                 </h2>
-                
+
                 {loadingTelemetry ? (
                     <div className="p-12 flex flex-col items-center justify-center bg-slate-900/30 rounded-2xl border border-white/5">
                         <Loader2 className="animate-spin text-cyan-500 mb-4" size={32} />
@@ -466,16 +466,15 @@ export default function AiConfigPage() {
                                 <span className="text-3xl font-bold text-white truncate">{overallTotalTokens.toLocaleString()}</span>
                                 <span className="text-xs text-emerald-400 mt-2 flex items-center gap-1"><BarChart3 size={12} /> Total Tokens Used</span>
                             </div>
-                            
+
                             {PROVIDERS.map(p => {
                                 const statLine = telemetryStats?.[p.id];
                                 return (
                                     <div key={p.id} className="bg-slate-900/30 rounded-xl border border-white/5 p-6 relative overflow-hidden">
                                         {/* Subtle colored shadow depending on provider */}
-                                        <div className={`absolute -right-4 -top-4 w-24 h-24 rounded-full blur-[40px] opacity-20 ${
-                                            p.id === 'gemini' ? 'bg-blue-500' : p.id === 'groq' ? 'bg-emerald-500' : 'bg-purple-500'
-                                        }`} />
-                                        
+                                        <div className={`absolute -right-4 -top-4 w-24 h-24 rounded-full blur-[40px] opacity-20 ${p.id === 'gemini' ? 'bg-blue-500' : p.id === 'groq' ? 'bg-emerald-500' : 'bg-purple-500'
+                                            }`} />
+
                                         <span className="text-[10px] uppercase font-mono tracking-widest text-slate-500 mb-1">{p.name}</span>
                                         <span className="text-2xl font-bold text-slate-200 truncate block">
                                             {statLine ? statLine.total.toLocaleString() : '0'} <span className="text-xs font-normal text-slate-500">Tokens</span>
@@ -498,7 +497,7 @@ export default function AiConfigPage() {
                                     <Clock size={12} /> Refresh
                                 </button>
                             </div>
-                            
+
                             {telemetryLogs.length === 0 ? (
                                 <div className="p-12 text-center text-slate-500 text-sm font-mono">No telemetry records found.</div>
                             ) : (
@@ -519,11 +518,10 @@ export default function AiConfigPage() {
                                                         {new Date(log.createdAt).toLocaleString()}
                                                     </td>
                                                     <td className="p-4 text-xs">
-                                                        <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider mb-1 ${
-                                                            log.provider === 'gemini' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' :
-                                                            log.provider === 'groq' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                                                            'bg-purple-500/10 text-purple-400 border border-purple-500/20'
-                                                        }`}>
+                                                        <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider mb-1 ${log.provider === 'gemini' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' :
+                                                                log.provider === 'groq' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                                                                    'bg-purple-500/10 text-purple-400 border border-purple-500/20'
+                                                            }`}>
                                                             {log.provider}
                                                         </span>
                                                         <div className="text-[10px] text-slate-500 font-mono mt-1">{log.mode}</div>
@@ -552,7 +550,6 @@ export default function AiConfigPage() {
                     </div>
                 )}
             </div>
-
             {/* Notification Toast */}
             {notification && (
                 <div className={`fixed bottom-8 right-8 p-4 rounded-xl border shadow-2xl backdrop-blur-xl z-50 flex items-center gap-3 animate-in slide-in-from-bottom-5 fade-in duration-300 ${notification.success
