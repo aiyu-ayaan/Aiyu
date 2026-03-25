@@ -86,13 +86,19 @@ jobs:
       - name: Extract version from commit message
         id: extract-version
         run: |
-          if [[ "${{ github.event.head_commit.message }}" =~ Release:\ (v[0-9]+\.[0-9]+\.[0-9]+) ]]; then
+          if [[ "${{ github.event.head_commit.message }}" =~ Release\ (v[0-9]+\.[0-9]+\.[0-9]+) ]]; then
+            VERSION="${BASH_REMATCH[1]}"
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            echo "Found version: $VERSION"
+          elif [[ "${{ github.event.head_commit.message }}" =~ Release:\ (v[0-9]+\.[0-9]+\.[0-9]+) ]]; then
             VERSION="${BASH_REMATCH[1]}"
             echo "version=$VERSION" >> $GITHUB_OUTPUT
             echo "Found version: $VERSION"
           else
-            echo "version=v0.0.0" >> $GITHUB_OUTPUT
-            echo "No version found, using default: v0.0.0"
+            # Fallback to latest git tag
+            VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            echo "No version in commit message, using git tag: $VERSION"
           fi
 
       - name: Log in to Docker Hub
@@ -151,8 +157,10 @@ jobs:
             echo "version=$VERSION" >> $GITHUB_OUTPUT
             echo "Found version: $VERSION"
           else
-            echo "version=v0.0.0" >> $GITHUB_OUTPUT
-            echo "No version found, using default: v0.0.0"
+            # Fallback to latest git tag
+            VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            echo "No version in commit message, using git tag: $VERSION"
           fi
 
       - name: Deploy via SSH
@@ -199,8 +207,10 @@ jobs:
             echo "version=$VERSION" >> $GITHUB_OUTPUT
             echo "Found version: $VERSION"
           else
-            echo "version=v0.0.0" >> $GITHUB_OUTPUT
-            echo "No version found, using default: v0.0.0"
+            # Fallback to latest git tag
+            VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            echo "No version in commit message, using git tag: $VERSION"
           fi
       
       - name: Create Release

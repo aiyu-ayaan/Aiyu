@@ -117,11 +117,12 @@ export default function AiConfigPage() {
         setSaving(true);
 
         try {
-            // Only send keys that have been explicitly modified (including cleared)
+            // Send keys that have been explicitly modified (including cleared)
+            // Also include keys typed into the default input (when no existing key is stored)
             const keysToUpdate = {};
-            if (showKeyInput.gemini) keysToUpdate.gemini = newKeys.gemini;
-            if (showKeyInput.groq) keysToUpdate.groq = newKeys.groq;
-            if (showKeyInput.openrouter) keysToUpdate.openrouter = newKeys.openrouter;
+            if (showKeyInput.gemini || (!config.hasKey?.gemini && newKeys.gemini)) keysToUpdate.gemini = newKeys.gemini;
+            if (showKeyInput.groq || (!config.hasKey?.groq && newKeys.groq)) keysToUpdate.groq = newKeys.groq;
+            if (showKeyInput.openrouter || (!config.hasKey?.openrouter && newKeys.openrouter)) keysToUpdate.openrouter = newKeys.openrouter;
 
             // Dynamically build enabledProviders based on which keys are active/being added
             const nextHasKey = {
