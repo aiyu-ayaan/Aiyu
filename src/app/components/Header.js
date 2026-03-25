@@ -234,8 +234,8 @@ export default function Header({ data, logoText, socialData, config }) {
                 </nav>
                 <div
                     className={clsx(
-                        "overflow-hidden transition-[max-height,opacity] duration-300",
-                        scrolled ? "max-h-0 opacity-0" : "max-h-20 opacity-100"
+                        "transition-[max-height,opacity] duration-300",
+                        scrolled ? "max-h-0 opacity-0 overflow-hidden pointer-events-none" : "max-h-20 opacity-100 overflow-visible"
                     )}
                     aria-hidden={scrolled}
                 >
