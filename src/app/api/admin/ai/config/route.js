@@ -33,8 +33,14 @@ async function getAiConfig(request) {
             enabled: false,
             provider: 'gemini',
             model: 'gemini-1.5-flash',
+            enabledProviders: ['gemini'], // Defaults to Gemini only
             systemInstruction: 'You are a helpful assistant for the portfolio admin.'
         };
+
+        // Migrate old config if enabledProviders missing
+        if (!aiConfig.enabledProviders) {
+            aiConfig.enabledProviders = aiConfig.provider ? [aiConfig.provider] : ['gemini'];
+        }
 
         return NextResponse.json({
             success: true,
@@ -61,11 +67,9 @@ async function updateAiConfig(request) {
     try {
         await dbConnect();
         const body = await request.json();
-        const { enabled, provider, model, systemInstruction, keys } = body;
+        const { enabled, provider, model, models, enabledProviders, systemInstruction, keys } = body;
 
-        console.log('[AI Config] Update request:', { enabled, provider, model });
-
-        let config = await Config.findOne();
+        let config = await Config.findOne().select('+encryptedGeminiApiKey +encryptedGroqApiKey +encryptedOpenRouterApiKey');
         if (!config) {
             config = new Config({});
         }
@@ -76,6 +80,8 @@ async function updateAiConfig(request) {
         if (enabled !== undefined) config.ai.enabled = enabled;
         if (provider !== undefined) config.ai.provider = provider;
         if (model !== undefined) config.ai.model = model;
+        if (models !== undefined) config.ai.models = models;
+        if (enabledProviders !== undefined) config.ai.enabledProviders = enabledProviders;
         if (systemInstruction !== undefined) config.ai.systemInstruction = systemInstruction;
 
         // Update API Keys if provided

@@ -113,8 +113,21 @@ export default function ThemeEditor({ theme, onSave, onCancel }) {
             if (data.success) {
                 try {
                     const parsedTheme = typeof data.data === 'string' ? JSON.parse(data.data) : data.data;
-                    if (parsedTheme.light) setLightVariant(parsedTheme.light);
-                    if (parsedTheme.dark) setDarkVariant(parsedTheme.dark);
+                    
+                    const mergeVariant = (defaultVar, newVar) => {
+                        if (!newVar) return defaultVar;
+                        const merged = { ...defaultVar };
+                        for (const category in defaultVar) {
+                            if (newVar[category]) {
+                                merged[category] = { ...defaultVar[category], ...newVar[category] };
+                            }
+                        }
+                        return merged;
+                    };
+
+                    if (parsedTheme.light) setLightVariant(mergeVariant(defaultVariant, parsedTheme.light));
+                    if (parsedTheme.dark) setDarkVariant(mergeVariant(defaultVariant, parsedTheme.dark));
+                    
                     showNotification(true, 'Interface skin synthesized!');
                 } catch (parseError) {
                     console.error('Failed to parse AI theme JSON:', parseError);

@@ -6,9 +6,9 @@ import { Loader2, Bot, CheckCircle, XCircle, ArrowLeft, Cpu, Key, Radio, Lock, S
 import Link from 'next/link';
 
 const PROVIDERS = [
-    { id: 'gemini', name: 'Google Gemini' },
-    { id: 'groq', name: 'Groq' },
-    { id: 'openrouter', name: 'OpenRouter' }
+    { id: 'gemini', name: 'Google Gemini', desc: 'Text & Images' },
+    { id: 'groq', name: 'Groq', desc: 'Text Only' },
+    { id: 'openrouter', name: 'OpenRouter', desc: 'Text Only' }
 ];
 
 export default function AiConfigPage() {
@@ -42,12 +42,12 @@ export default function AiConfigPage() {
         fetchTelemetry();
     }, []);
 
-    // Re-fetch models whenever the provider changes, but only if we have the config loaded
+    // Re-fetch models whenever the API keys change to update unified model list
     useEffect(() => {
         if (!loading) {
-            fetchModels(config.provider);
+            fetchModels('all');
         }
-    }, [config.provider, loading, config.hasKey]);
+    }, [loading, config.hasKey]);
 
     const fetchConfig = async () => {
         try {
@@ -58,6 +58,8 @@ export default function AiConfigPage() {
                     enabled: data.data.enabled || false,
                     provider: data.data.provider || 'gemini',
                     model: data.data.model || 'gemini-1.5-flash',
+                    models: data.data.models || { gemini: '', groq: '', openrouter: '' },
+                    enabledProviders: data.data.enabledProviders || ['gemini'],
                     systemInstruction: data.data.systemInstruction || '',
                     hasKey: data.data.hasKey || { gemini: false, groq: false, openrouter: false }
                 });
@@ -73,7 +75,7 @@ export default function AiConfigPage() {
     const fetchModels = async (providerId) => {
         setLoadingModels(true);
         try {
-            const res = await fetch(`/api/admin/ai/models?provider=${providerId}`);
+            const res = await fetch(`/api/admin/ai/models?provider=all`);
             const data = await res.json();
             if (data.success) {
                 setAvailableModels(data.data || []);
@@ -115,11 +117,19 @@ export default function AiConfigPage() {
         setSaving(true);
 
         try {
-            // Only send keys that have been modified
+            // Only send keys that have been explicitly modified (including cleared)
             const keysToUpdate = {};
-            if (newKeys.gemini) keysToUpdate.gemini = newKeys.gemini;
-            if (newKeys.groq) keysToUpdate.groq = newKeys.groq;
-            if (newKeys.openrouter) keysToUpdate.openrouter = newKeys.openrouter;
+            if (showKeyInput.gemini) keysToUpdate.gemini = newKeys.gemini;
+            if (showKeyInput.groq) keysToUpdate.groq = newKeys.groq;
+            if (showKeyInput.openrouter) keysToUpdate.openrouter = newKeys.openrouter;
+
+            // Dynamically build enabledProviders based on which keys are active/being added
+            const nextHasKey = {
+                gemini: showKeyInput.gemini ? !!newKeys.gemini : config.hasKey?.gemini,
+                groq: showKeyInput.groq ? !!newKeys.groq : config.hasKey?.groq,
+                openrouter: showKeyInput.openrouter ? !!newKeys.openrouter : config.hasKey?.openrouter
+            };
+            const enabledProviders = Object.keys(nextHasKey).filter(k => nextHasKey[k]);
 
             const res = await fetch('/api/admin/ai/config', {
                 method: 'PUT',
@@ -128,6 +138,8 @@ export default function AiConfigPage() {
                     enabled: config.enabled,
                     provider: config.provider,
                     model: config.model,
+                    models: config.models,
+                    enabledProviders,
                     systemInstruction: config.systemInstruction,
                     keys: keysToUpdate
                 })
@@ -136,13 +148,18 @@ export default function AiConfigPage() {
             const data = await res.json();
 
             if (data.success) {
-                setConfig(prev => ({ ...prev, hasKey: data.data.hasKey }));
+                // Ensure data.data is an object containing all fields, then explicitly merge hasKey
+                setConfig(prev => ({ 
+                    ...prev, 
+                    ...data.data, 
+                    hasKey: data.data.hasKey 
+                }));
                 setNewKeys({ gemini: '', groq: '', openrouter: '' });
                 setShowKeyInput({ gemini: false, groq: false, openrouter: false });
                 showNotification(true, 'AI System Configuration Updated');
                 
                 // Refresh models just in case a new key was saved and it unlocks them
-                fetchModels(config.provider);
+                fetchModels('all');
             } else {
                 showNotification(false, `Failed to save: ${data.error || 'Unknown error'}`);
             }
@@ -154,14 +171,7 @@ export default function AiConfigPage() {
         }
     };
 
-    const handleProviderChange = (newProvider) => {
-        let newModel = config.model;
-        if (newProvider === 'gemini') newModel = 'gemini-1.5-flash';
-        else if (newProvider === 'groq') newModel = 'llama-3.1-8b-instant';
-        else if (newProvider === 'openrouter') newModel = 'anthropic/claude-3-haiku';
-
-        setConfig({ ...config, provider: newProvider, model: newModel });
-    };
+    // handleProviderChange removed as selection is now model-driven
 
     if (loading) {
         return (
@@ -230,50 +240,7 @@ export default function AiConfigPage() {
                     </div>
                 </div>
 
-                {/* Provider Selection */}
-                <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
-
-                    <h2 className="text-sm font-mono text-emerald-400 uppercase tracking-widest mb-6 flex items-center gap-3">
-                        <Server size={14} /> Intelligence Provider
-                        <div className="h-px bg-emerald-500/20 flex-grow" />
-                    </h2>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 relative z-10">
-                        {PROVIDERS.map((provider) => (
-                            <label
-                                key={provider.id}
-                                className={`flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-all
-                                    ${config.provider === provider.id
-                                        ? 'bg-emerald-500/10 border-emerald-500/40 shadow-[0_0_15px_rgba(16,185,129,0.15)]'
-                                        : 'bg-slate-900/30 border-white/5 hover:border-white/10'
-                                    }
-                                `}
-                            >
-                                <div className="flex items-center gap-3">
-                                    <div className={`p-1.5 rounded-full border ${config.provider === provider.id ? 'border-emerald-400 bg-emerald-400' : 'border-slate-600'}`}>
-                                        <div className="w-2 h-2 bg-slate-900 rounded-full" />
-                                    </div>
-                                    <input
-                                        type="radio"
-                                        name="provider"
-                                        value={provider.id}
-                                        checked={config.provider === provider.id}
-                                        onChange={() => handleProviderChange(provider.id)}
-                                        className="hidden"
-                                    />
-                                    <span className={`font-bold ${config.provider === provider.id ? 'text-emerald-300' : 'text-slate-300'}`}>
-                                        {provider.name}
-                                    </span>
-                                </div>
-                                {config.provider === provider.id && (
-                                    <span className="text-[10px] uppercase font-mono tracking-wider text-emerald-400 bg-emerald-400/10 px-2 py-1 rounded">Active</span>
-                                )}
-                            </label>
-                        ))}
-                    </div>
-                </div>
-
+                {/* Intelligence Provider Section intentionally removed: Model selection is now unified below */}
                 {/* API Key Configuration */}
                 <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 relative overflow-hidden group">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
@@ -294,6 +261,7 @@ export default function AiConfigPage() {
                                 <div key={provider.id} className={`p-4 rounded-xl border transition-all ${isProviderActive ? 'border-purple-500/30 bg-purple-500/5' : 'border-white/5 bg-slate-950/30 opacity-70 hover:opacity-100'}`}>
                                     <label className="block text-xs font-mono uppercase tracking-wider text-slate-500 mb-2 flex items-center gap-2">
                                         {provider.name} API Key
+                                        {provider.id === 'gemini' && <span className="text-[9px] bg-purple-500/20 text-purple-300 border border-purple-500/30 px-1.5 py-0.5 rounded">COMPULSORY</span>}
                                         {isProviderActive && <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" />}
                                     </label>
                                     <div className="flex gap-3">
@@ -358,55 +326,79 @@ export default function AiConfigPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
                         <div className="flex flex-col">
                             <label className="block text-xs font-mono uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-2">
-                                Active Model ({PROVIDERS.find(p => p.id === config.provider)?.name})
+                                Active Model
                                 {loadingModels && <Loader2 className="animate-spin text-blue-400" size={12} />}
                             </label>
 
-                            <div className="space-y-4">
-                                {availableModels.length === 0 && !loadingModels ? (
-                                    <div className="p-4 bg-slate-950/50 border border-white/5 rounded-lg text-amber-400/80 text-sm">
-                                        No models dynamically loaded. Please ensure your API key is valid.
-                                        <div className="mt-4">
-                                            <p className="text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-2">Fallback Selection:</p>
-                                            <input
-                                                type="text"
-                                                value={config.model}
-                                                onChange={(e) => setConfig({ ...config, model: e.target.value })}
-                                                placeholder="Fallback model ID..."
-                                                className="w-full bg-slate-900 border border-white/10 rounded-lg p-3 text-slate-200 outline-none text-sm font-mono focus:border-blue-500/50 transition-all"
-                                            />
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="relative">
-                                        <select
-                                            value={config.model}
-                                            onChange={(e) => setConfig({ ...config, model: e.target.value })}
-                                            className="w-full appearance-none bg-slate-950/80 border border-white/10 rounded-xl p-4 pr-10 text-slate-200 outline-none text-sm font-mono focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all cursor-pointer shadow-inner"
-                                        >
-                                            {availableModels.map(model => (
-                                                <option key={model.id} value={model.id}>
-                                                    {model.name} {model.desc && `- ${model.desc}`}
-                                                </option>
-                                            ))}
-                                            {/* Allow the selected model to persist if it somehow isn't in the list currently */}
-                                            {!availableModels.some(m => m.id === config.model) && config.model && (
-                                                <option value={config.model}>{config.model} (Custom/Fallback)</option>
+                            <div className="space-y-6">
+                                {PROVIDERS.map(provider => {
+                                    if (!config.hasKey?.[provider.id]) return null;
+
+                                    const providerModels = availableModels.filter(m => m.provider === provider.id);
+                                    let currentModelValue = config.models?.[provider.id] || '';
+                                    
+                                    // Fallback to legacy structure if specific model isn't mapped yet
+                                    if (!currentModelValue && config.provider === provider.id && config.model) {
+                                        currentModelValue = config.model;
+                                    }
+
+                                    return (
+                                        <div key={provider.id} className="relative bg-slate-900/40 p-5 rounded-xl border border-white/5">
+                                            <label className="block text-[10px] font-mono uppercase tracking-widest text-blue-400 mb-3 flex justify-between items-center">
+                                                <span>{provider.name} MODEL</span>
+                                                {loadingModels && <Loader2 className="animate-spin text-blue-400/50" size={12} />}
+                                            </label>
+                                            
+                                            {providerModels.length === 0 && !loadingModels ? (
+                                                <input
+                                                    type="text"
+                                                    value={currentModelValue}
+                                                    onChange={(e) => setConfig({ 
+                                                        ...config, 
+                                                        models: { ...(config.models || {}), [provider.id]: e.target.value } 
+                                                    })}
+                                                    placeholder={`Fallback ${provider.name} model ID...`}
+                                                    className="w-full bg-slate-950/80 border border-white/10 rounded-lg p-3 text-slate-200 outline-none text-sm font-mono focus:border-blue-500/50 transition-all shadow-inner"
+                                                />
+                                            ) : (
+                                                <div className="relative">
+                                                    <select
+                                                        value={currentModelValue}
+                                                        onChange={(e) => setConfig({ 
+                                                            ...config, 
+                                                            models: { ...(config.models || {}), [provider.id]: e.target.value } 
+                                                        })}
+                                                        className="w-full appearance-none bg-slate-950/80 border border-white/10 rounded-lg p-3 pr-10 text-slate-200 outline-none text-sm font-mono focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all cursor-pointer shadow-inner"
+                                                    >
+                                                        <option value="" disabled>Select a {provider.name} model...</option>
+                                                        {providerModels.map(model => (
+                                                            <option key={model.id} value={model.id}>
+                                                                {model.name} {model.desc && `- ${model.desc}`}
+                                                            </option>
+                                                        ))}
+                                                        {currentModelValue && !providerModels.some(m => m.id === currentModelValue) && (
+                                                            <option value={currentModelValue}>{currentModelValue} (Custom/Fallback)</option>
+                                                        )}
+                                                    </select>
+                                                    <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                                                        <svg width="10" height="6" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                            <path d="M1 1.5L6 6.5L11 1.5" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                                        </svg>
+                                                    </div>
+                                                </div>
                                             )}
-                                        </select>
-                                        <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
-                                            <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                <path d="M1 1.5L6 6.5L11 1.5" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                            </svg>
+                                            {provider.id === 'openrouter' && (
+                                                <p className="text-[10px] text-slate-500 mt-3 font-mono">
+                                                    Pro Tip: You can type overriding model IDs if the key is empty first.
+                                                </p>
+                                            )}
                                         </div>
-                                    </div>
-                                )}
-                                
-                                {config.provider === 'openrouter' && (
-                                    <div className="p-4 bg-slate-950/30 rounded-lg border border-white/5">
-                                        <p className="text-[11px] text-slate-400 leading-relaxed font-mono">
-                                            <span className="text-blue-400">Pro Tip:</span> If your preferred OpenRouter model isn't listed, you can override the selection by saving an empty/invalid key, typing the exact model string (e.g. <span className="text-slate-200">anthropic/claude-3-opus</span>), and saving your key again.
-                                        </p>
+                                    );
+                                })}
+
+                                {(!config.hasKey?.gemini && !config.hasKey?.groq && !config.hasKey?.openrouter) && (
+                                    <div className="p-4 bg-slate-950/50 border border-red-500/20 rounded-lg text-red-400/80 text-sm font-mono text-center">
+                                        NO ACTIVE PROVIDERS. PLEASE CONFIGURE API KEYS BELOW.
                                     </div>
                                 )}
                             </div>

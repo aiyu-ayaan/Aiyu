@@ -17,23 +17,7 @@ async function generateText(request) {
             return NextResponse.json({ success: false, error: 'AI system is disabled.' }, { status: 403 });
         }
 
-        const provider = config.ai.provider || 'gemini';
-        let apiKey;
-
-        if (provider === 'gemini') {
-            if (!config.encryptedGeminiApiKey) return NextResponse.json({ success: false, error: 'Gemini API Key is missing.' }, { status: 500 });
-            apiKey = decrypt(config.encryptedGeminiApiKey);
-        } else if (provider === 'groq') {
-            if (!config.encryptedGroqApiKey) return NextResponse.json({ success: false, error: 'Groq API Key is missing.' }, { status: 500 });
-            apiKey = decrypt(config.encryptedGroqApiKey);
-        } else if (provider === 'openrouter') {
-            if (!config.encryptedOpenRouterApiKey) return NextResponse.json({ success: false, error: 'OpenRouter API Key is missing.' }, { status: 500 });
-            apiKey = decrypt(config.encryptedOpenRouterApiKey);
-        }
-
-        if (!apiKey) {
-            return NextResponse.json({ success: false, error: 'Failed to decrypt API Key.' }, { status: 500 });
-        }
+        // API keys are now securely decrypted and validated dynamically within the failover loop
 
         // 2. Parse Request
         const { prompt, mode, context } = await request.json();
@@ -89,93 +73,141 @@ async function generateText(request) {
             finalSystemInstruction += "\nYou are a creative writer. Generate a short, intriguing, and professional subtitle for a portfolio section named '${context?.section}'. Tone should be futuristic and tech-focused. Output exactly one line. NO quotes or extra text.";
             finalPrompt = `Title of the section: "${prompt}"`;
         } else if (mode === 'generate_theme') {
-            finalSystemInstruction += `\nYou are a high-end UI/UX theme architect. Generate a complete, harmonious color palette for a futuristic portfolio theme based on the user's description. 
-            You must return a valid JSON object with two keys: "light" and "dark". 
-            Each variant must follow this exact structure (all values are hex colors):
-            {
-              "backgrounds": { "primary": "", "secondary": "", "tertiary": "", "surface": "", "elevated": "", "hover": "" },
-              "text": { "primary": "", "secondary": "", "tertiary": "", "muted": "", "bright": "" },
-              "accents": { "cyan": "", "cyanBright": "", "purple": "", "purpleDark": "", "purpleDarker": "", "pink": "", "pinkBright": "", "pinkHot": "", "orange": "", "orangeBright": "" },
-              "borders": { "primary": "", "secondary": "", "accent": "", "cyan": "" },
-              "status": { "error": "", "warning": "", "success": "", "info": "" },
-              "syntax": { "comment": "", "keyword": "", "control": "", "function": "", "class": "", "string": "", "number": "", "variable": "", "property": "", "operator": "", "punctuation": "" },
-              "shadows": { "sm": "", "md": "", "lg": "" },
-              "overlays": { "bg": "", "hover": "" }
-            }
-            ONLY return the JSON object. No extra text or markdown.`;
-            finalPrompt = `Generate a theme based on this concept: "${prompt}"`;
+            finalSystemInstruction += `\nYou are an expert UI theme designer. Generate a complete color palette for a developer portfolio.
+
+CRITICAL: Dark mode backgrounds must be VERY DARK (hex values in the #08-#1f range). Here is a REFERENCE dark theme:
+backgrounds: primary "#0a1628", secondary "#0f1e36", tertiary "#051020", surface "#1a2942", elevated "#152138", hover "#1e3a5f"
+text: primary "#e0f2fe", secondary "#bae6fd", tertiary "#7dd3fc", muted "#38bdf8", bright "#f0f9ff"
+
+For light mode, backgrounds should be very light (#f0-#ff range).
+
+The theme concept should influence the HUE of backgrounds, not the luminance. Examples:
+- "Ocean": dark backgrounds are very dark blues (#0a1628), light backgrounds are pale blues (#f0f9ff)
+- "Forest": dark backgrounds are very dark greens (#0a1f0f), light backgrounds are pale greens (#ecfdf5)  
+- "Sunset": dark backgrounds are very dark reds (#1f0a0a), light backgrounds are warm creams (#fff7ed)
+- "Purple": dark backgrounds are very dark purples (#1a0a2e), light backgrounds are pale lavenders (#faf5ff)
+
+Shadows MUST use rgba() format like: "rgba(0, 0, 0, 0.3)"
+Overlays MUST use rgba() format like: "rgba(0, 0, 0, 0.5)"
+
+Return ONLY a valid JSON object (NO markdown, NO backticks, NO explanation) with keys "light" and "dark":
+{
+  "backgrounds": { "primary": "", "secondary": "", "tertiary": "", "surface": "", "elevated": "", "hover": "" },
+  "text": { "primary": "", "secondary": "", "tertiary": "", "muted": "", "bright": "" },
+  "accents": { "cyan": "", "cyanBright": "", "purple": "", "purpleDark": "", "purpleDarker": "", "pink": "", "pinkBright": "", "pinkHot": "", "orange": "", "orangeBright": "" },
+  "borders": { "primary": "", "secondary": "", "accent": "", "cyan": "" },
+  "status": { "error": "", "warning": "", "success": "", "info": "" },
+  "syntax": { "comment": "", "keyword": "", "control": "", "function": "", "class": "", "string": "", "number": "", "variable": "", "property": "", "operator": "", "punctuation": "" },
+  "shadows": { "sm": "", "md": "", "lg": "" },
+  "overlays": { "bg": "", "hover": "" }
+}`;
+            finalPrompt = `Generate a "${prompt}" theme. Dark backgrounds must be VERY dark (hex #08-#1f range). Light backgrounds must be very light (#f0-#ff range). All accent keys including "cyan", "cyanBright" must be filled.`;
         }
 
-        // 4. Call Active Provider API
+        // 4. Call Active Provider API with strict fallback sequence
+        const enabledProviders = config.ai.enabledProviders || ['gemini']; // Default
+        const order = ['groq', 'openrouter', 'gemini'].filter(p => enabledProviders.includes(p));
+        
+        if (order.length === 0) {
+            return NextResponse.json({ success: false, error: 'No AI providers enabled for text generation. Please check settings.' }, { status: 403 });
+        }
+
         let responseText = '';
         let usageData = { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
+        let finalProviderUsed = '';
+        let finalModelUsed = '';
+        let lastError = null;
 
-        if (provider === 'gemini') {
-            const ai = new GoogleGenAI({ apiKey });
-            const result = await ai.models.generateContent({
-                model: modelName,
-                config: {
-                    systemInstruction: finalSystemInstruction
-                },
-                contents: [{ text: finalPrompt }]
-            });
-            responseText = typeof result.text === 'function' ? result.text() : (result.text || JSON.stringify(result));
-            
-            if (result.usageMetadata) {
-                 usageData = {
-                     inputTokens: result.usageMetadata.promptTokenCount || 0,
-                     outputTokens: result.usageMetadata.candidatesTokenCount || 0,
-                     totalTokens: result.usageMetadata.totalTokenCount || 0
-                 };
+        for (const currentProvider of order) {
+            try {
+                let currentApiKey;
+                if (currentProvider === 'gemini') currentApiKey = config.encryptedGeminiApiKey ? decrypt(config.encryptedGeminiApiKey) : null;
+                else if (currentProvider === 'groq') currentApiKey = config.encryptedGroqApiKey ? decrypt(config.encryptedGroqApiKey) : null;
+                else if (currentProvider === 'openrouter') currentApiKey = config.encryptedOpenRouterApiKey ? decrypt(config.encryptedOpenRouterApiKey) : null;
+
+                if (!currentApiKey) {
+                    console.warn(`[AI Text] ${currentProvider} skipped: No API Key configured.`);
+                    continue; // Skip silently
+                }
+
+                // Determine model
+                let currentModelName = config.ai?.models?.[currentProvider];
+                if (!currentModelName) {
+                    if (currentProvider === 'groq') currentModelName = 'llama-3.1-8b-instant';
+                    else if (currentProvider === 'openrouter') currentModelName = 'anthropic/claude-3-haiku';
+                    else if (currentProvider === 'gemini') currentModelName = 'gemini-1.5-flash';
+                }
+
+                if (currentProvider === 'gemini') {
+                    const ai = new GoogleGenAI({ apiKey: currentApiKey });
+                    const result = await ai.models.generateContent({
+                        model: currentModelName,
+                        config: { systemInstruction: finalSystemInstruction },
+                        contents: [{ text: finalPrompt }]
+                    });
+                    responseText = typeof result.text === 'function' ? result.text() : (result.text || JSON.stringify(result));
+                    if (result.usageMetadata) {
+                         usageData = {
+                             inputTokens: result.usageMetadata.promptTokenCount || 0,
+                             outputTokens: result.usageMetadata.candidatesTokenCount || 0,
+                             totalTokens: result.usageMetadata.totalTokenCount || 0
+                         };
+                    }
+                } else if (currentProvider === 'groq' || currentProvider === 'openrouter') {
+                    const endpoint = currentProvider === 'groq' ? 'https://api.groq.com/openai/v1/chat/completions' : 'https://openrouter.ai/api/v1/chat/completions';
+                    const headers = {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentApiKey}`
+                    };
+                    if (currentProvider === 'openrouter') {
+                        headers['HTTP-Referer'] = 'https://aiyu.dev';
+                        headers['X-Title'] = 'Aiyu Portfolio'; 
+                    }
+                    const response = await fetch(endpoint, {
+                        method: 'POST',
+                        headers,
+                        body: JSON.stringify({
+                            model: currentModelName,
+                            messages: [
+                                { role: 'system', content: finalSystemInstruction },
+                                { role: 'user', content: finalPrompt }
+                            ]
+                        })
+                    });
+                    if (!response.ok) {
+                        throw new Error(`${currentProvider.toUpperCase()} Error: ${response.status} ${await response.text()}`);
+                    }
+                    const data = await response.json();
+                    responseText = data.choices?.[0]?.message?.content || '';
+                    if (data.usage) {
+                        usageData = {
+                            inputTokens: data.usage.prompt_tokens || 0,
+                            outputTokens: data.usage.completion_tokens || 0,
+                            totalTokens: data.usage.total_tokens || 0
+                        };
+                    }
+                }
+
+                if (responseText) {
+                    finalProviderUsed = currentProvider;
+                    finalModelUsed = currentModelName;
+                    break; // SUCCESS! Break the failover loop
+                }
+            } catch (e) {
+                console.error(`[AI Text Fallback] ${currentProvider} failed:`, e.message);
+                lastError = e;
             }
+        }
 
-        } else if (provider === 'groq' || provider === 'openrouter') {
-            const endpoint = provider === 'groq' ? 'https://api.groq.com/openai/v1/chat/completions' : 'https://openrouter.ai/api/v1/chat/completions';
-            
-            const headers = {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`
-            };
-
-            if (provider === 'openrouter') {
-                headers['HTTP-Referer'] = 'https://aiyu.dev';
-                headers['X-Title'] = 'Aiyu Portfolio'; 
-            }
-
-            const response = await fetch(endpoint, {
-                method: 'POST',
-                headers,
-                body: JSON.stringify({
-                    model: modelName,
-                    messages: [
-                        { role: 'system', content: finalSystemInstruction },
-                        { role: 'user', content: finalPrompt }
-                    ]
-                })
-            });
-
-            if (!response.ok) {
-                const errorData = await response.text();
-                throw new Error(`${provider.toUpperCase()} API Error: ${response.status} ${errorData}`);
-            }
-
-            const data = await response.json();
-            responseText = data.choices?.[0]?.message?.content || '';
-            
-            if (data.usage) {
-                usageData = {
-                    inputTokens: data.usage.prompt_tokens || 0,
-                    outputTokens: data.usage.completion_tokens || 0,
-                    totalTokens: data.usage.total_tokens || 0
-                };
-            }
+        if (!responseText) {
+             throw new Error(`All configured AI fallback mechanisms failed. Last API error: ${lastError?.message || 'Unknown configuration issue.'}`);
         }
 
         // 5. Log Telemetry
         try {
             await AiLog.create({
-                provider,
-                model: modelName,
+                provider: finalProviderUsed,
+                model: finalModelUsed,
                 mode: mode || 'text',
                 prompt: prompt,
                 response: responseText.trim(),
@@ -186,10 +218,23 @@ async function generateText(request) {
             // Non-fatal, let the request succeed
         }
 
+        // Clean up markdown wrappers in case the AI ignored instructions
+        let cleanText = responseText.trim();
+        if (cleanText.startsWith('```')) {
+            const match = cleanText.match(/^```(?:json|javascript|js)?\s*([\s\S]*?)```$/);
+            if (match && match[1]) {
+                cleanText = match[1].trim();
+            } else {
+                // Fallback aggressive strip if regex doesn't match perfectly
+                cleanText = cleanText.replace(/^```[a-z]*\n/, '').replace(/```$/, '').trim();
+            }
+        }
+
         return NextResponse.json({
             success: true,
-            data: responseText.trim()
+            data: cleanText
         });
+
 
     } catch (error) {
         console.error(`[AI Text Error]:`, error);

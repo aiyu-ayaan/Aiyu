@@ -19,23 +19,14 @@ async function generateCaption(request) {
             return NextResponse.json({ success: false, error: 'AI system is disabled.' }, { status: 403 });
         }
 
-        const provider = config.ai.provider || 'gemini';
+        // Force Gemini for image captioning regardless of global AI provider setting
+        const provider = 'gemini';
         let apiKey;
 
-        if (provider === 'gemini') {
-            if (!config.encryptedGeminiApiKey) return NextResponse.json({ success: false, error: 'Gemini API Key is missing.' }, { status: 500 });
-            apiKey = decrypt(config.encryptedGeminiApiKey);
-        } else if (provider === 'groq') {
-            if (!config.encryptedGroqApiKey) return NextResponse.json({ success: false, error: 'Groq API Key is missing.' }, { status: 500 });
-            apiKey = decrypt(config.encryptedGroqApiKey);
-        } else if (provider === 'openrouter') {
-            if (!config.encryptedOpenRouterApiKey) return NextResponse.json({ success: false, error: 'OpenRouter API Key is missing.' }, { status: 500 });
-            apiKey = decrypt(config.encryptedOpenRouterApiKey);
+        if (!config.encryptedGeminiApiKey) {
+            return NextResponse.json({ success: false, error: 'Gemini API Key is missing. It is compulsory for image tasks.' }, { status: 500 });
         }
-
-        if (!apiKey) {
-            return NextResponse.json({ success: false, error: 'Failed to decrypt API Key.' }, { status: 500 });
-        }
+        apiKey = decrypt(config.encryptedGeminiApiKey);
 
         // 2. Parse Request
         const formData = await request.formData();
@@ -84,14 +75,14 @@ async function generateCaption(request) {
 
         // 4. Call Selected Provider
         let responseText = '';
-        let modelName = config.ai.model;
+        let modelName = config.ai.models?.gemini || config.ai.model;
         let usageData = { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
 
         if (provider === 'gemini') {
             const ai = new GoogleGenAI({ apiKey });
             
             if (!modelName || modelName.includes('1.5-flash')) {
-                modelName = 'gemini-3-flash-preview';
+                modelName = 'gemini-2.0-flash-lite';
             }
 
             const parts = [
@@ -114,7 +105,7 @@ async function generateCaption(request) {
                 } catch (error) {
                     if (error.message.includes('404') || error.message.includes('not found')) {
                         console.warn(`[AI Warning] Model ${currentModel} not found, trying fallback...`);
-                        const fallbackName = 'gemini-2.0-flash';
+                        const fallbackName = 'gemini-2.0-flash-lite';
                         return await ai.models.generateContent({
                             model: fallbackName,
                             config: { systemInstruction },
@@ -199,9 +190,12 @@ async function generateCaption(request) {
             console.error('[AI Telemetry Logging Error]:', logError);
         }
 
+        // Sanitize: strip surrounding quotes and extra whitespace
+        let sanitized = responseText.trim().replace(/^["']+|["']+$/g, '').trim();
+
         return NextResponse.json({
             success: true,
-            data: responseText.trim()
+            data: sanitized
         });
 
     } catch (error) {
