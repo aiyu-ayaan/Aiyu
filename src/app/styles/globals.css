@@ -173,6 +173,14 @@ body {
   font-family: 'Fira Code', monospace;
   position: relative;
   transition: color 0.3s ease;
+  caret-color: transparent;
+}
+
+input,
+textarea,
+[contenteditable="true"],
+[contenteditable="plaintext-only"] {
+  caret-color: auto;
 }
 
 body::before {
