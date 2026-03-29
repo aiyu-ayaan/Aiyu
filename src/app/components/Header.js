@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import clsx from 'clsx';
 import { motion, useScroll } from 'framer-motion';
 import { ArrowUpRight, Menu, Search, X } from 'lucide-react';
@@ -24,6 +24,7 @@ export default function Header({ data, logoText, socialData, config }) {
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const overflowRestoreRef = useRef({ body: null, html: null });
 
   useEffect(() => {
     let ticking = false;
@@ -46,17 +47,29 @@ export default function Header({ data, logoText, socialData, config }) {
   }, []);
 
   useEffect(() => {
-    if (isMenuOpen) {
-      document.body.style.overflow = 'hidden';
-      document.documentElement.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-      document.documentElement.style.overflow = 'unset';
+    if (!isMenuOpen) {
+      if (overflowRestoreRef.current.body !== null) {
+        document.body.style.overflow = overflowRestoreRef.current.body;
+        document.documentElement.style.overflow = overflowRestoreRef.current.html;
+        overflowRestoreRef.current = { body: null, html: null };
+      }
+      return;
     }
 
+    overflowRestoreRef.current = {
+      body: document.body.style.overflow,
+      html: document.documentElement.style.overflow,
+    };
+
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+
     return () => {
-      document.body.style.overflow = 'unset';
-      document.documentElement.style.overflow = 'unset';
+      if (overflowRestoreRef.current.body !== null) {
+        document.body.style.overflow = overflowRestoreRef.current.body;
+        document.documentElement.style.overflow = overflowRestoreRef.current.html;
+        overflowRestoreRef.current = { body: null, html: null };
+      }
     };
   }, [isMenuOpen]);
 
@@ -303,6 +316,7 @@ export default function Header({ data, logoText, socialData, config }) {
                 <Link
                   href={link.href}
                   target={link.target}
+                  onClick={() => setIsMenuOpen(false)}
                   className="flex items-center justify-between rounded-xl border px-4 py-3 text-base font-semibold"
                   style={{
                     borderColor: pathname === link.href
