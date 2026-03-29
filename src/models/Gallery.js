@@ -22,6 +22,14 @@ const GallerySchema = new mongoose.Schema({
         type: Number,
         required: true,
     },
+    isPinned: {
+        type: Boolean,
+        default: false,
+    },
+    order: {
+        type: Number,
+        default: 0,
+    },
     createdAt: {
         type: Date,
         default: Date.now,

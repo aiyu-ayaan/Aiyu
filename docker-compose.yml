@@ -26,7 +26,7 @@ services:
 
   # Next.js Application Service
   app:
-    image: aiyuayaan/aiyu:latest
+    image: aiyuayaan/aiyu:${APP_IMAGE_TAG:-latest}
     container_name: aiyu-app
     restart: unless-stopped
     # Port exposed only to internal network (Nginx handles external traffic)
@@ -49,8 +49,6 @@ services:
 
       # Node environment
       NODE_ENV: production
-      # Keep V8 heap bounded on low-memory servers (2 GB instances)
-      NODE_OPTIONS: --max-old-space-size=512
       # Keep V8 heap bounded on low-memory servers (2 GB instances)
       NODE_OPTIONS: --max-old-space-size=512
     volumes:
