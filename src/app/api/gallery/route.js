@@ -9,7 +9,7 @@ export async function GET() {
     await dbConnect();
 
     try {
-        const images = await Gallery.find({}).sort({ createdAt: -1 });
+        const images = await Gallery.find({}).sort({ isPinned: -1, order: 1, createdAt: -1 });
         return NextResponse.json({ success: true, data: images });
     } catch (error) {
         return NextResponse.json({ success: false, error: error.message }, { status: 400 });
@@ -60,9 +60,48 @@ async function deleteGalleryItem(req) {
     }
 }
 
+// PUT: Update gallery items (Admin only)
+async function updateGalleryItem(req) {
+    await dbConnect();
+
+    try {
+        const body = await req.json();
+        
+        // Bulk update for ordering
+        if (body.items && Array.isArray(body.items)) {
+            const bulkOps = body.items.map((item) => ({
+                updateOne: {
+                    filter: { _id: item.id },
+                    update: { order: item.order }
+                }
+            }));
+            await Gallery.bulkWrite(bulkOps);
+            return NextResponse.json({ success: true, message: 'Ordering updated successfully' });
+        }
+        
+        // Single update (e.g. isPinned toggle)
+        if (body.id) {
+            const updatedItem = await Gallery.findByIdAndUpdate(
+                body.id,
+                { $set: body.update },
+                { new: true }
+            );
+            if (!updatedItem) {
+                return NextResponse.json({ success: false, error: 'Item not found' }, { status: 404 });
+            }
+            return NextResponse.json({ success: true, data: updatedItem });
+        }
+
+        return NextResponse.json({ success: false, error: 'Invalid request payload' }, { status: 400 });
+    } catch (error) {
+        return NextResponse.json({ success: false, error: error.message }, { status: 400 });
+    }
+}
+
 // Export authenticated handlers
 export const POST = withAuth(createGalleryItem);
 export const DELETE = withAuth(deleteGalleryItem);
+export const PUT = withAuth(updateGalleryItem);
 
 // Use nodejs runtime for file system operations
 export const runtime = 'nodejs';

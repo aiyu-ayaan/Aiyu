@@ -1,358 +1,491 @@
 "use client";
-import React, { useState } from 'react';
+
+import React, { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { VerticalTimeline, VerticalTimelineElement } from 'react-vertical-timeline-component';
 import 'react-vertical-timeline-component/style.min.css';
-import { FaBriefcase, FaGraduationCap, FaCertificate } from 'react-icons/fa';
-import TypewriterEffect from '../shared/TypewriterEffect';
-// import { name, roles, professionalSummary, skills, experiences, education, certifications } from '../../data/aboutData';
+import {
+  FaArrowRight,
+  FaBriefcase,
+  FaCertificate,
+  FaCode,
+  FaGraduationCap,
+  FaLaptopCode,
+  FaLayerGroup,
+  FaMedal,
+} from 'react-icons/fa';
 import Link from 'next/link';
+import TypewriterEffect from '../shared/TypewriterEffect';
 import Divider from '../landing/Divider';
-import { useTheme } from '../../context/ThemeContext';
+
+const cardStyle = {
+  background: 'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 92%, transparent), color-mix(in srgb, var(--bg-secondary) 92%, transparent))',
+  border: '1px solid var(--border-secondary)',
+  boxShadow: '0 14px 28px var(--shadow-sm)',
+};
+
+const timelineContentStyle = {
+  background: 'linear-gradient(135deg, var(--bg-surface), var(--bg-secondary))',
+  color: 'var(--text-primary)',
+  border: '1px solid var(--border-secondary)',
+  borderRadius: '0.95rem',
+  boxShadow: '0 10px 24px var(--shadow-sm)',
+};
+
+const sectionNavItems = [
+  { href: '#summary', label: 'Summary' },
+  { href: '#experience', label: 'Experience' },
+  { href: '#skills', label: 'Skills' },
+  { href: '#education', label: 'Education' },
+  { href: '#certifications', label: 'Certifications' },
+];
+
+const statIconMap = {
+  projects: FaLayerGroup,
+  skills: FaCode,
+  education: FaGraduationCap,
+  certifications: FaMedal,
+};
+
+const getSkillBand = (level = 0) => {
+  if (level >= 85) return 'Expert';
+  if (level >= 70) return 'Advanced';
+  if (level >= 55) return 'Intermediate';
+  return 'Fundamentals';
+};
 
 const About = ({ data }) => {
-  const { theme } = useTheme();
   const [isSkillsExpanded, setIsSkillsExpanded] = useState(false);
-  const { name, roles, professionalSummary, skills, experiences, education, certifications } = data || {};
+
+  const {
+    name = 'Developer',
+    roles = [],
+    professionalSummary = 'I build software with focus, curiosity, and care for the user experience.',
+    skills = [],
+    experiences = [],
+    education = [],
+    certifications = [],
+  } = data || {};
+
+  const safeRoles = roles.length ? roles : ['Software Developer'];
+
+  const topSkills = useMemo(
+    () => [...skills].sort((a, b) => (b.level || 0) - (a.level || 0)).slice(0, 6),
+    [skills]
+  );
+
+  const visibleSkills = isSkillsExpanded ? skills : skills.slice(0, 8);
+
+  const statCards = [
+    {
+      key: 'projects',
+      value: experiences.length,
+      label: 'Professional Roles',
+      accent: 'var(--accent-orange)',
+    },
+    {
+      key: 'skills',
+      value: skills.length,
+      label: 'Technical Skills',
+      accent: 'var(--accent-cyan)',
+    },
+    {
+      key: 'education',
+      value: education.length,
+      label: 'Education Milestones',
+      accent: 'var(--accent-purple)',
+    },
+    {
+      key: 'certifications',
+      value: certifications.length,
+      label: 'Certifications',
+      accent: 'var(--accent-pink)',
+    },
+  ];
 
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      transition={{ duration: 0.6 }}
-      className="min-h-screen p-4 lg:p-8 transition-colors duration-300"
-      style={{
-        backgroundColor: 'transparent',
-        color: 'var(--text-primary)',
-      }}
+      transition={{ duration: 0.5 }}
+      className="relative min-h-screen overflow-hidden p-4 lg:p-8"
+      style={{ color: 'var(--text-primary)' }}
     >
-      <div className="max-w-6xl mx-auto">
-        <motion.div
-          initial={{ y: -20, opacity: 0 }}
+      <div
+        className="pointer-events-none absolute -left-32 top-10 h-72 w-72 rounded-full blur-3xl"
+        style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--accent-cyan) 42%, transparent), transparent 70%)' }}
+      />
+      <div
+        className="pointer-events-none absolute -right-24 top-1/3 h-72 w-72 rounded-full blur-3xl"
+        style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--accent-pink) 32%, transparent), transparent 68%)' }}
+      />
+
+      <div className="relative mx-auto max-w-6xl">
+        <motion.section
+          id="summary"
+          initial={{ y: 24, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="text-center mb-12"
+          transition={{ duration: 0.65, ease: 'easeOut' }}
+          className="rounded-3xl border p-6 sm:p-8 lg:p-10"
+          style={{
+            ...cardStyle,
+            borderColor: 'color-mix(in srgb, var(--border-cyan) 48%, var(--border-secondary))',
+          }}
         >
-          <h1
-            className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4 pb-2 bg-gradient-to-r bg-clip-text text-transparent"
+          <div className="mb-5 inline-flex rounded-full border px-3 py-1 text-xs uppercase tracking-[0.2em]"
             style={{
-              backgroundImage: 'linear-gradient(to right, var(--accent-cyan), var(--accent-purple), var(--accent-pink))',
+              borderColor: 'color-mix(in srgb, var(--accent-cyan) 45%, var(--border-secondary))',
+              color: 'var(--accent-cyan)',
+              backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 78%, transparent)',
+            }}
+          >
+            About Me
+          </div>
+
+          <h1
+            className="mb-3 bg-gradient-to-r bg-clip-text text-4xl font-bold text-transparent sm:text-5xl lg:text-6xl"
+            style={{
+              backgroundImage: 'linear-gradient(to right, var(--accent-cyan), var(--accent-purple), var(--accent-orange-bright))',
             }}
           >
             {name}
           </h1>
-          <TypewriterEffect roles={roles} />
-        </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-1 gap-8">
-          <motion.div
-            initial={{ x: -50, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.4 }}
-            className="p-8 rounded-2xl shadow-2xl transition-all duration-300"
-            style={{
-              background: 'linear-gradient(to bottom right, var(--bg-surface), var(--bg-secondary))',
-              borderWidth: '1px',
-              borderStyle: 'solid',
-              borderColor: 'var(--border-secondary)',
-            }}
-            id="summary"
-            whileHover={{
-              scale: 1.02,
-              y: -5,
-              borderColor: 'var(--accent-cyan)',
-            }}
+          <TypewriterEffect roles={safeRoles} />
 
+          <p
+            className="mt-6 max-w-4xl text-base leading-relaxed sm:text-lg"
+            style={{ color: 'var(--text-secondary)' }}
           >
-            <h2
-              className="text-xl sm:text-2xl md:text-3xl font-bold mb-6 flex items-center gap-3"
-              style={{ color: 'var(--accent-cyan)' }}
+            {professionalSummary}
+          </p>
+
+          <div className="mt-8 flex flex-wrap items-center gap-3">
+            <Link
+              href="#experience"
+              className="inline-flex items-center gap-2 rounded-lg border px-4 py-2 font-semibold transition-all duration-300"
+              style={{
+                borderColor: 'var(--accent-cyan)',
+                color: 'var(--accent-cyan)',
+                backgroundColor: 'color-mix(in srgb, var(--accent-cyan) 9%, transparent)',
+              }}
             >
-              <span style={{ color: 'var(--accent-orange)' }}>{"</>"}</span>
-              Professional Summary
-            </h2>
-            <p
-              className="text-lg leading-relaxed"
-              style={{ color: 'var(--text-secondary)' }}
+              Explore Journey <FaArrowRight size={14} />
+            </Link>
+            <Link
+              href="/contact-us"
+              className="inline-flex items-center gap-2 rounded-lg border px-4 py-2 font-semibold transition-all duration-300"
+              style={{
+                borderColor: 'var(--border-secondary)',
+                color: 'var(--text-secondary)',
+                backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 70%, transparent)',
+              }}
             >
-              {professionalSummary}
-            </p>
-          </motion.div>
+              Let&apos;s Connect
+            </Link>
+          </div>
+        </motion.section>
+
+        <motion.section
+          initial={{ y: 24, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.65, delay: 0.2, ease: 'easeOut' }}
+          className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4"
+        >
+          {statCards.map((item) => {
+            const Icon = statIconMap[item.key];
+            return (
+              <motion.div
+                key={item.key}
+                whileHover={{ y: -4 }}
+                className="rounded-2xl border p-4"
+                style={{
+                  ...cardStyle,
+                  borderColor: 'color-mix(in srgb, var(--border-secondary) 80%, transparent)',
+                }}
+              >
+                <div className="mb-3 inline-flex rounded-lg p-2" style={{ backgroundColor: 'color-mix(in srgb, ' + item.accent + ' 14%, transparent)' }}>
+                  <Icon size={16} style={{ color: item.accent }} />
+                </div>
+                <p className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{item.value}</p>
+                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{item.label}</p>
+              </motion.div>
+            );
+          })}
+        </motion.section>
+
+        <div className="sticky top-[76px] z-10 mt-6 overflow-x-auto pb-1">
+          <div
+            className="inline-flex min-w-full gap-2 rounded-xl border p-2"
+            style={{
+              backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 88%, transparent)',
+              borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
+              backdropFilter: 'blur(8px)',
+            }}
+          >
+            {sectionNavItems.map((item) => (
+              <a
+                key={item.href}
+                href={item.href}
+                className="rounded-lg px-3 py-2 text-sm font-medium whitespace-nowrap transition-colors duration-200"
+                style={{
+                  color: 'var(--text-secondary)',
+                  backgroundColor: 'transparent',
+                }}
+              >
+                {item.label}
+              </a>
+            ))}
+          </div>
         </div>
 
         <Divider />
 
-        <motion.div
-          initial={{ y: 50, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.8, delay: 0.6 }}
-          className="mt-8"
+        <motion.section
+          id="experience"
+          initial={{ y: 24, opacity: 0 }}
+          whileInView={{ y: 0, opacity: 1 }}
+          viewport={{ once: true, amount: 0.15 }}
+          transition={{ duration: 0.65 }}
+          className="mt-10"
         >
-          <h2
-            className="text-2xl sm:text-3xl md:text-4xl font-bold mb-8 text-center flex items-center justify-center gap-2 sm:gap-3"
-            style={{ color: 'var(--accent-cyan)' }}
-          >
-            <span style={{ color: 'var(--accent-orange)' }}>{"<"}</span>
+          <h2 className="mb-8 flex items-center justify-center gap-3 text-center text-2xl font-bold sm:text-3xl md:text-4xl" style={{ color: 'var(--accent-cyan)' }}>
+            <FaLaptopCode size={24} style={{ color: 'var(--accent-orange)' }} />
             Professional Experience
-            <span style={{ color: 'var(--accent-orange)' }}>{"/>"}</span>
           </h2>
           <VerticalTimeline>
             {experiences.map((exp, index) => (
               <VerticalTimelineElement
-                key={index}
+                key={`${exp.company}-${exp.role}-${index}`}
                 className="vertical-timeline-element--work"
-                contentStyle={{
-                  background: 'var(--bg-surface)',
-                  color: 'var(--text-primary)',
-                }}
-                contentArrowStyle={{
-                  borderRight: '7px solid var(--bg-surface)',
-                }}
+                contentStyle={timelineContentStyle}
+                contentArrowStyle={{ borderRight: '7px solid var(--bg-surface)' }}
                 iconStyle={{
-                  background: 'var(--accent-orange)',
+                  background: 'linear-gradient(135deg, var(--accent-orange), var(--accent-orange-bright))',
                   color: '#fff',
+                  boxShadow: '0 0 0 4px color-mix(in srgb, var(--accent-orange) 20%, transparent)',
                 }}
                 icon={<FaBriefcase />}
               >
-                <h3
-                  className="vertical-timeline-element-title text-xl font-bold"
-                  style={{ color: 'var(--accent-orange-bright)' }}
-                >
+                <h3 className="vertical-timeline-element-title text-xl font-bold" style={{ color: 'var(--accent-orange-bright)' }}>
                   {exp.role}
                 </h3>
-                <h4
-                  className="vertical-timeline-element-subtitle"
-                  style={{ color: 'var(--text-tertiary)' }}
-                >
+                <h4 className="vertical-timeline-element-subtitle" style={{ color: 'var(--text-secondary)' }}>
                   {exp.company}
                 </h4>
-                <p style={{ color: 'var(--text-secondary)' }}>{exp.duration}</p>
-                <p style={{ color: 'var(--text-secondary)' }}>{exp.description}</p>
+                <p style={{ color: 'var(--text-tertiary)' }}>{exp.duration}</p>
+                <p className="mt-2" style={{ color: 'var(--text-secondary)' }}>{exp.description}</p>
               </VerticalTimelineElement>
             ))}
           </VerticalTimeline>
-        </motion.div>
+        </motion.section>
 
         <Divider />
 
-        <div className="grid grid-cols-1 md:grid-cols-1 gap-8 mt-8">
-          <motion.div
-            layout
-            initial={{ x: 50, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.4, layout: { duration: 0.3 } }}
-            className="p-8 rounded-2xl shadow-2xl transition-all duration-300"
-            style={{
-              background: 'linear-gradient(to bottom right, var(--bg-surface), var(--bg-secondary))',
-              borderWidth: '1px',
-              borderStyle: 'solid',
-              borderColor: 'var(--border-secondary)',
-            }}
-            id="skills"
-          >
-            <h2
-              className="text-xl sm:text-2xl md:text-3xl font-bold mb-6 flex items-center gap-3"
-              style={{ color: 'var(--accent-cyan)' }}
-            >
-              <span style={{ color: 'var(--accent-orange)' }}>{"<"}</span>
-              Technical Skills
-              <span style={{ color: 'var(--accent-orange)' }}>{"/>"}</span>
-            </h2>
-            <div className="space-y-4">
-              {skills.map((skill, index) => (
-                <motion.div
-                  key={skill.name}
-                  layout
-                  initial={{ opacity: 0, y: -20 }}
-                  animate={{
-                    opacity: isSkillsExpanded || index < 5 ? 1 : 0,
-                    y: isSkillsExpanded || index < 5 ? 0 : -20,
-                    height: isSkillsExpanded || index < 5 ? 'auto' : 0,
-                    marginBottom: isSkillsExpanded || index < 5 ? '1rem' : 0,
+        <motion.section
+          id="skills"
+          layout
+          initial={{ y: 24, opacity: 0 }}
+          whileInView={{ y: 0, opacity: 1 }}
+          viewport={{ once: true, amount: 0.15 }}
+          transition={{ duration: 0.65 }}
+          className="rounded-3xl border p-6 sm:p-8"
+          style={cardStyle}
+        >
+          <h2 className="mb-5 text-2xl font-bold sm:text-3xl" style={{ color: 'var(--accent-cyan)' }}>
+            Technical Skills
+          </h2>
+
+          {topSkills.length > 0 && (
+            <div className="mb-8 flex flex-wrap gap-2">
+              {topSkills.map((skill) => (
+                <span
+                  key={`tag-${skill.name}`}
+                  className="rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide"
+                  style={{
+                    borderColor: 'color-mix(in srgb, var(--accent-purple) 45%, var(--border-secondary))',
+                    color: 'var(--accent-purple)',
+                    backgroundColor: 'color-mix(in srgb, var(--accent-purple) 12%, transparent)',
                   }}
-                  transition={{ duration: 0.3, delay: index * 0.05 }}
                 >
-                  <div className="flex justify-between mb-2">
-                    <span
-                      className="text-base font-medium"
-                      style={{ color: 'var(--text-secondary)' }}
-                    >
-                      {skill.name}
-                    </span>
-                    <span
-                      className="text-sm font-medium"
-                      style={{ color: 'var(--accent-cyan)' }}
-                    >
-                      {skill.level}%
-                    </span>
-                  </div>
-                  <div
-                    className="w-full rounded-full h-3 overflow-hidden shadow-inner"
-                    style={{
-                      backgroundColor: 'var(--bg-elevated)',
-                    }}
-                  >
-                    <motion.div
-                      className="h-3 rounded-full relative"
-                      style={{
-                        width: `${skill.level}%`,
-                        background: 'linear-gradient(to right, var(--accent-cyan), var(--accent-purple), var(--accent-pink))',
-                      }}
-                      initial={{ width: 0 }}
-                      animate={{ width: `${skill.level}%` }}
-                      transition={{ duration: 1.5, delay: 0.5, ease: "easeOut" }}
-                    >
-                      <motion.div
-                        className="absolute inset-0 bg-white"
-                        initial={{ x: '-100%' }}
-                        animate={{ x: '100%' }}
-                        transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 2, ease: "easeInOut" }}
-                        style={{ opacity: 0.3 }}
-                      />
-                    </motion.div>
-                  </div>
-                </motion.div>
+                  {skill.name}
+                </span>
               ))}
             </div>
-            {skills.length > 5 && (
-              <motion.button
-                onClick={() => setIsSkillsExpanded(!isSkillsExpanded)}
-                className="font-semibold mt-6 px-4 py-2 border rounded-lg transition-all duration-300"
-                style={{
-                  color: 'var(--accent-cyan)',
-                  borderColor: 'var(--accent-cyan)',
-                }}
-                whileHover={{
-                  scale: 1.05,
-                  backgroundColor: 'var(--bg-hover)',
-                }}
-                whileTap={{ scale: 0.95 }}
+          )}
+
+          <div className="space-y-4">
+            {visibleSkills.map((skill, index) => (
+              <motion.div
+                key={skill.name}
+                initial={{ opacity: 0, y: 14 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.45 }}
+                transition={{ duration: 0.35, delay: index * 0.03 }}
               >
-                {isSkillsExpanded ? '↑ Show Less' : '↓ Show More Skills'}
-              </motion.button>
-            )}
-          </motion.div>
-        </div>
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <span className="text-base font-medium" style={{ color: 'var(--text-secondary)' }}>
+                    {skill.name}
+                  </span>
+                  <div className="flex items-center gap-2 text-xs sm:text-sm">
+                    <span style={{ color: 'var(--text-muted)' }}>{getSkillBand(skill.level)}</span>
+                    <span className="font-semibold" style={{ color: 'var(--accent-cyan)' }}>{skill.level}%</span>
+                  </div>
+                </div>
+
+                <div
+                  className="h-3 w-full overflow-hidden rounded-full"
+                  style={{ backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 85%, transparent)' }}
+                >
+                  <motion.div
+                    className="relative h-3 rounded-full"
+                    style={{
+                      background: 'linear-gradient(to right, var(--accent-cyan), var(--accent-purple), var(--accent-pink))',
+                    }}
+                    initial={{ width: 0 }}
+                    whileInView={{ width: `${skill.level || 0}%` }}
+                    viewport={{ once: true, amount: 0.8 }}
+                    transition={{ duration: 1.05, ease: 'easeOut', delay: 0.1 + index * 0.04 }}
+                  >
+                    <motion.span
+                      className="absolute inset-y-0 right-0 w-6"
+                      style={{
+                        background: 'linear-gradient(to right, transparent, rgba(255,255,255,0.45))',
+                      }}
+                      initial={{ opacity: 0 }}
+                      whileInView={{ opacity: 1 }}
+                      transition={{ duration: 0.35, delay: 0.7 + index * 0.04 }}
+                    />
+                  </motion.div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          {skills.length > 8 && (
+            <motion.button
+              onClick={() => setIsSkillsExpanded((prev) => !prev)}
+              className="mt-6 rounded-lg border px-4 py-2 font-semibold transition-all duration-300"
+              style={{
+                color: 'var(--accent-cyan)',
+                borderColor: 'var(--accent-cyan)',
+                backgroundColor: 'color-mix(in srgb, var(--accent-cyan) 7%, transparent)',
+              }}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+            >
+              {isSkillsExpanded ? 'Show fewer skills' : 'Show all skills'}
+            </motion.button>
+          )}
+        </motion.section>
 
         <Divider />
 
-        <motion.div
-          initial={{ y: 50, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.8, delay: 0.6 }}
-          className="mt-8"
+        <motion.section
+          id="education"
+          initial={{ y: 24, opacity: 0 }}
+          whileInView={{ y: 0, opacity: 1 }}
+          viewport={{ once: true, amount: 0.15 }}
+          transition={{ duration: 0.65 }}
+          className="mt-10"
         >
-          <h2
-            className="text-2xl sm:text-3xl md:text-4xl font-bold mb-8 text-center flex items-center justify-center gap-2 sm:gap-3"
-            style={{ color: 'var(--accent-cyan)' }}
-          >
-            <span style={{ color: 'var(--accent-orange)' }}>{"<"}</span>
+          <h2 className="mb-8 text-center text-2xl font-bold sm:text-3xl md:text-4xl" style={{ color: 'var(--accent-cyan)' }}>
             Education
-            <span style={{ color: 'var(--accent-orange)' }}>{"/>"}</span>
           </h2>
           <VerticalTimeline>
             {education.map((edu, index) => (
               <VerticalTimelineElement
-                key={index}
+                key={`${edu.institution}-${edu.degree}-${index}`}
                 className="vertical-timeline-element--education"
-                contentStyle={{
-                  background: 'var(--bg-surface)',
-                  color: 'var(--text-primary)',
-                }}
-                contentArrowStyle={{
-                  borderRight: '7px solid var(--bg-surface)',
-                }}
+                contentStyle={timelineContentStyle}
+                contentArrowStyle={{ borderRight: '7px solid var(--bg-surface)' }}
                 iconStyle={{
-                  background: 'var(--accent-orange)',
+                  background: 'linear-gradient(135deg, var(--accent-purple-dark), var(--accent-purple))',
                   color: '#fff',
+                  boxShadow: '0 0 0 4px color-mix(in srgb, var(--accent-purple) 20%, transparent)',
                 }}
                 icon={<FaGraduationCap />}
               >
-                <h3
-                  className="vertical-timeline-element-title text-xl font-bold"
-                  style={{ color: 'var(--accent-orange-bright)' }}
-                >
+                <h3 className="vertical-timeline-element-title text-xl font-bold" style={{ color: 'var(--accent-purple)' }}>
                   {edu.institution}
                 </h3>
-                <h4
-                  className="vertical-timeline-element-subtitle"
-                  style={{ color: 'var(--text-secondary)' }}
-                >
+                <h4 className="vertical-timeline-element-subtitle" style={{ color: 'var(--text-secondary)' }}>
                   {edu.degree}
                 </h4>
                 <p style={{ color: 'var(--text-tertiary)' }}>{edu.duration}</p>
-                <p style={{ color: 'var(--text-muted)' }}>{edu.cgpa}</p>
+                {edu.cgpa && <p style={{ color: 'var(--text-muted)' }}>CGPA: {edu.cgpa}</p>}
               </VerticalTimelineElement>
             ))}
           </VerticalTimeline>
-        </motion.div>
+        </motion.section>
 
         <Divider />
 
-        <motion.div
-          initial={{ y: 50, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.8, delay: 0.6 }}
-          className="mt-8"
+        <motion.section
+          id="certifications"
+          initial={{ y: 24, opacity: 0 }}
+          whileInView={{ y: 0, opacity: 1 }}
+          viewport={{ once: true, amount: 0.15 }}
+          transition={{ duration: 0.65 }}
+          className="mt-10"
         >
-          <h2
-            className="text-2xl sm:text-3xl md:text-4xl font-bold mb-8 text-center flex items-center justify-center gap-2 sm:gap-3"
-            style={{ color: 'var(--accent-cyan)' }}
-          >
-            <span style={{ color: 'var(--accent-orange)' }}>{"<"}</span>
+          <h2 className="mb-8 text-center text-2xl font-bold sm:text-3xl md:text-4xl" style={{ color: 'var(--accent-cyan)' }}>
             Certifications
-            <span style={{ color: 'var(--accent-orange)' }}>{"/>"}</span>
           </h2>
           <VerticalTimeline>
             {certifications.map((cert, index) => (
               <VerticalTimelineElement
-                key={index}
+                key={`${cert.name}-${cert.issuer}-${index}`}
                 className="vertical-timeline-element--education"
-                contentStyle={{
-                  background: 'var(--bg-surface)',
-                  color: 'var(--text-primary)',
-                }}
-                contentArrowStyle={{
-                  borderRight: '7px solid var(--bg-surface)',
-                }}
+                contentStyle={timelineContentStyle}
+                contentArrowStyle={{ borderRight: '7px solid var(--bg-surface)' }}
                 iconStyle={{
-                  background: 'var(--accent-orange)',
+                  background: 'linear-gradient(135deg, var(--accent-pink), var(--accent-orange-bright))',
                   color: '#fff',
+                  boxShadow: '0 0 0 4px color-mix(in srgb, var(--accent-pink) 20%, transparent)',
                 }}
                 icon={<FaCertificate />}
               >
                 {cert.url ? (
-                  <Link href={cert.url} target="_blank" rel="noopener noreferrer" legacyBehavior>
-                    <a>
-                      <h3
-                        className="vertical-timeline-element-title text-xl font-bold hover:underline cursor-pointer"
-                        style={{ color: 'var(--accent-orange-bright)' }}
-                      >
-                        {cert.name}
-                      </h3>
-                    </a>
+                  <Link href={cert.url} target="_blank" rel="noopener noreferrer" className="group inline-block">
+                    <h3 className="vertical-timeline-element-title text-xl font-bold transition-all group-hover:underline" style={{ color: 'var(--accent-orange-bright)' }}>
+                      {cert.name}
+                    </h3>
                   </Link>
                 ) : (
-                  <h3
-                    className="vertical-timeline-element-title text-xl font-bold"
-                    style={{ color: 'var(--accent-orange-bright)' }}
-                  >
+                  <h3 className="vertical-timeline-element-title text-xl font-bold" style={{ color: 'var(--accent-orange-bright)' }}>
                     {cert.name}
                   </h3>
                 )}
-                <h4
-                  className="vertical-timeline-element-subtitle"
-                  style={{ color: 'var(--text-secondary)' }}
-                >
+
+                <h4 className="vertical-timeline-element-subtitle" style={{ color: 'var(--text-secondary)' }}>
                   {cert.issuer}
                 </h4>
                 <p style={{ color: 'var(--text-tertiary)' }}>{cert.date}</p>
+
+                {Array.isArray(cert.skills) && cert.skills.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {cert.skills.map((skill) => (
+                      <span
+                        key={`${cert.name}-${skill}`}
+                        className="rounded-md border px-2 py-1 text-xs"
+                        style={{
+                          borderColor: 'color-mix(in srgb, var(--accent-orange) 45%, var(--border-secondary))',
+                          color: 'var(--accent-orange-bright)',
+                          backgroundColor: 'color-mix(in srgb, var(--accent-orange) 10%, transparent)',
+                        }}
+                      >
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </VerticalTimelineElement>
             ))}
           </VerticalTimeline>
-        </motion.div>
+        </motion.section>
       </div>
-    </motion.div >
+    </motion.div>
   );
 };
 

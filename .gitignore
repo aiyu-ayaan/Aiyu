@@ -52,3 +52,4 @@ test.js
 
 docker-compose-local.yml
 lint
+releasenote.md

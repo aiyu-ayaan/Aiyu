@@ -1,613 +1,656 @@
 'use client';
 
-import { Github, Star, GitFork, Users, BookOpen, MapPin, Link as LinkIcon, Calendar, Flame, TrendingUp, GitCommit, GitPullRequest, GitMerge, Lock, Unlock, BarChart2, Activity, ChevronDown, ChevronUp } from 'lucide-react';
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useMemo, useState } from 'react';
+import {
+  Activity,
+  BarChart2,
+  BookOpen,
+  Calendar,
+  ExternalLink,
+  Flame,
+  GitCommit,
+  GitFork,
+  Github,
+  GitPullRequest,
+  Lock,
+  MapPin,
+  Star,
+  TrendingUp,
+  Unlock,
+  Users,
+} from 'lucide-react';
+import { motion } from 'framer-motion';
 
-import { useTheme } from '../../context/ThemeContext';
+const languageColors = {
+  JavaScript: '#f1e05a',
+  TypeScript: '#3178c6',
+  Python: '#3572A5',
+  Java: '#b07219',
+  'C++': '#f34b7d',
+  C: '#555555',
+  Go: '#00ADD8',
+  Rust: '#dea584',
+  Ruby: '#701516',
+  PHP: '#4F5D95',
+  Swift: '#F05138',
+  Kotlin: '#A97BFF',
+  Dart: '#00B4AB',
+  HTML: '#e34c26',
+  CSS: '#563d7c',
+  Vue: '#41b883',
+  Shell: '#89e051',
+};
+
+const defaultSections = {
+  showProfile: true,
+  showStats: true,
+  showContributions: true,
+  showActivity: true,
+  showRepositories: true,
+  showRepoDistribution: true,
+  showLanguages: true,
+  showRadarChart: true,
+};
+
+const toDateLabel = (value) => {
+  if (!value) return 'Unknown';
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return 'Unknown';
+  return parsed.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+};
+
+const getContributionColor = (count) => {
+  if (count === 0) return '#1f2937';
+  if (count < 3) return '#14532d';
+  if (count < 6) return '#166534';
+  if (count < 10) return '#22c55e';
+  return '#4ade80';
+};
+
+const getActivityLabel = (activity) => {
+  if (!activity) return 'Recent activity';
+
+  switch (activity.type) {
+    case 'PushEvent':
+      return `Pushed ${activity.payload?.commits || 0} commit${activity.payload?.commits === 1 ? '' : 's'}`;
+    case 'PullRequestEvent':
+      return `${activity.payload?.action || 'updated'} a pull request`;
+    case 'CreateEvent':
+      return `Created ${activity.payload?.ref || 'repository'} `;
+    case 'IssuesEvent':
+      return `${activity.payload?.action || 'updated'} an issue`;
+    default:
+      return 'Recent activity';
+  }
+};
+
+const getActivityIcon = (type) => {
+  if (type === 'PushEvent') return GitCommit;
+  if (type === 'PullRequestEvent') return GitPullRequest;
+  return Activity;
+};
+
+const getRepoType = (repo) => {
+  if (repo?.isPrivate) return 'private';
+  if (repo?.fork) return 'fork';
+  return 'public';
+};
 
 export default function GitHubStatsClient({ data }) {
-    const { theme } = useTheme();
-    const [selectedRepo, setSelectedRepo] = useState(null);
-    const [isTimelineExpanded, setIsTimelineExpanded] = useState(false);
-    const [showAllActivities, setShowAllActivities] = useState(false);
+  const [showAllActivities, setShowAllActivities] = useState(false);
+  const [repoSearch, setRepoSearch] = useState('');
+  const [repoType, setRepoType] = useState('all');
+  const hasValidData = Boolean(data?.success);
 
-    const containerVariants = {
-        hidden: { opacity: 0 },
-        visible: {
-            opacity: 1,
-            transition: {
-                staggerChildren: 0.1
-            }
-        }
-    };
+  const payload = data?.data || {};
+  const profile = payload?.profile || {};
+  const stats = payload?.stats || {};
+  const topRepos = Array.isArray(payload?.topRepos) ? payload.topRepos : [];
+  const languages = Array.isArray(payload?.languages) ? payload.languages : [];
+  const contributions = Array.isArray(payload?.contributions) ? payload.contributions : [];
+  const streaks = payload?.streaks || {};
+  const recentActivity = Array.isArray(payload?.recentActivity) ? payload.recentActivity : [];
+  const activityDistribution = payload?.activityDistribution || {};
+  const sections = { ...defaultSections, ...(payload?.sections || {}) };
 
-    const itemVariants = {
-        hidden: { opacity: 0, y: 20 },
-        visible: { opacity: 1, y: 0 }
-    };
-
-    if (!data.success) {
-        return (
-            <div className="min-h-screen flex items-center justify-center p-8">
-                <div className="text-center max-w-md">
-                    <Github className="w-16 h-16 mx-auto mb-4 text-gray-500" />
-                    <h1 className="text-2xl font-bold mb-2">GitHub Stats Not Available</h1>
-                    <p className="text-[var(--text-secondary)]">
-                        {data.error || 'This page has not been configured yet.'}
-                    </p>
-                </div>
-            </div>
-        );
-    }
-
-    const { profile, stats, topRepos, languages, contributions, streaks, recentActivity, sections, activityDistribution } = data.data;
-
-    // Language colors (GitHub standard colors)
-    const languageColors = {
-        'JavaScript': '#f1e05a',
-        'TypeScript': '#3178c6',
-        'Python': '#3572A5',
-        'Java': '#b07219',
-        'C++': '#f34b7d',
-        'C': '#555555',
-        'Go': '#00ADD8',
-        'Rust': '#dea584',
-        'Ruby': '#701516',
-        'PHP': '#4F5D95',
-        'Swift': '#F05138',
-        'Kotlin': '#A97BFF',
-        'Dart': '#00B4AB',
-        'HTML': '#e34c26',
-        'CSS': '#563d7c',
-        'Vue': '#41b883',
-        'Shell': '#89e051'
-    };
-
-    // Helper to get contribution color
-    const getContributionColor = (count) => {
-        if (count === 0) return 'bg-gray-800';
-        if (count < 3) return 'bg-green-900';
-        if (count < 6) return 'bg-green-700';
-        if (count < 9) return 'bg-green-500';
-        return 'bg-green-400';
-    };
-
-    // Format activity type
-    const getActivityIcon = (type) => {
-        switch (type) {
-            case 'PushEvent': return <GitCommit className="w-4 h-4" />;
-            case 'PullRequestEvent': return <GitPullRequest className="w-4 h-4" />;
-            case 'CreateEvent': return <GitMerge className="w-4 h-4" />;
-            case 'IssuesEvent': return <BookOpen className="w-4 h-4" />;
-            default: return <Github className="w-4 h-4" />;
-        }
-    };
-
-    const getActivityText = (activity) => {
-        switch (activity.type) {
-            case 'PushEvent':
-                return `Pushed ${activity.payload.commits} commit${activity.payload.commits !== 1 ? 's' : ''} to ${activity.repo}`;
-            case 'PullRequestEvent':
-                return `${activity.payload.action} a pull request in ${activity.repo}`;
-            case 'CreateEvent':
-                return `Created ${activity.payload.ref || 'repository'} in ${activity.repo}`;
-            case 'IssuesEvent':
-                return `${activity.payload.action} an issue in ${activity.repo}`;
-            default:
-                return `Activity in ${activity.repo}`;
-        }
-    };
-
-    // Prepare contribution grid (52 weeks × 7 days)
+  const contributionWeeks = useMemo(() => {
+    if (contributions.length === 0) return [];
     const weeks = [];
-    if (contributions && contributions.length > 0) {
-        for (let i = 0; i < contributions.length; i += 7) {
-            weeks.push(contributions.slice(i, i + 7));
-        }
+    for (let index = 0; index < contributions.length; index += 7) {
+      weeks.push(contributions.slice(index, index + 7));
     }
+    return weeks;
+  }, [contributions]);
 
+  const filteredRepos = useMemo(() => {
+    const normalizedSearch = repoSearch.trim().toLowerCase();
+
+    return topRepos.filter((repo) => {
+      const matchesSearch = !normalizedSearch || [repo?.name, repo?.description, repo?.language]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+        .includes(normalizedSearch);
+
+      const currentType = getRepoType(repo);
+      const matchesType = repoType === 'all' || repoType === currentType;
+
+      return matchesSearch && matchesType;
+    });
+  }, [topRepos, repoSearch, repoType]);
+
+  const visibleActivities = showAllActivities ? recentActivity : recentActivity.slice(0, 5);
+
+  const statCards = [
+    {
+      label: 'Repositories',
+      value: stats.totalRepos || 0,
+      icon: BookOpen,
+      accent: 'var(--accent-cyan)',
+    },
+    {
+      label: 'Total Stars',
+      value: stats.totalStars || 0,
+      icon: Star,
+      accent: 'var(--accent-orange)',
+    },
+    {
+      label: 'Total Forks',
+      value: stats.totalForks || 0,
+      icon: GitFork,
+      accent: 'var(--accent-purple)',
+    },
+    {
+      label: 'Contributions',
+      value: stats.totalContributions || 0,
+      icon: TrendingUp,
+      accent: 'var(--accent-pink)',
+    },
+    {
+      label: 'Current Streak',
+      value: streaks.current || 0,
+      icon: Flame,
+      accent: 'var(--status-success)',
+    },
+  ];
+
+  const totalRepos = Math.max(0, Number(stats.totalRepos) || 0);
+  const privateReposRaw = Math.max(0, Number(stats.privateRepos) || 0);
+  const effectiveTotalRepos = Math.max(totalRepos, privateReposRaw);
+  const privateRepos = Math.min(privateReposRaw, effectiveTotalRepos);
+  const publicRepos = Math.max(0, effectiveTotalRepos - privateRepos);
+  const publicPercent = effectiveTotalRepos > 0 ? Math.round((publicRepos / effectiveTotalRepos) * 100) : 0;
+  const privatePercent = effectiveTotalRepos > 0 ? Math.max(0, 100 - publicPercent) : 0;
+
+  if (!hasValidData) {
     return (
-        <motion.div
-            className="min-h-screen py-16 px-4 sm:px-6 lg:px-8"
-            initial="hidden"
-            animate="visible"
-            variants={containerVariants}
+      <div className="min-h-screen p-4 lg:p-8">
+        <div
+          className="mx-auto max-w-2xl rounded-2xl border p-8 text-center"
+          style={{
+            background:
+              'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 94%, transparent), color-mix(in srgb, var(--bg-secondary) 94%, transparent))',
+            borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
+          }}
         >
-            <div className="max-w-7xl mx-auto">
-                {/* Header Section */}
-                <motion.div className="text-center mb-12" variants={itemVariants}>
-                    <Github className="w-16 h-16 mx-auto mb-4 text-[var(--primary)]" />
-                    <h1
-                        className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4 pb-2 bg-gradient-to-r bg-clip-text text-transparent"
-                        style={{
-                            backgroundImage: 'linear-gradient(to right, var(--accent-cyan), var(--accent-purple), var(--accent-pink))'
-                        }}
-                    >
-                        GitHub Statistics
-                    </h1>
-                    <p className="text-lg max-w-2xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
-                        My open source journey and contributions
-                    </p>
-                </motion.div>
-
-                {/* Profile Card */}
-                {sections?.showProfile && (
-                    <motion.div className="bg-[var(--surface-card)] rounded-xl p-6 mb-8 border border-[var(--border-secondary)]" variants={itemVariants}>
-                        <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
-                            <img
-                                src={profile.avatar}
-                                alt={profile.name}
-                                className="w-32 h-32 rounded-full border-4 border-[var(--primary)]"
-                            />
-                            <div className="flex-1 text-center md:text-left">
-                                <h2 className="text-2xl font-bold mb-2">{profile.name || profile.username}</h2>
-                                <p className="text-[var(--text-secondary)] mb-4">@{profile.username}</p>
-                                {profile.bio && (
-                                    <p className="text-[var(--text-secondary)] mb-4">{profile.bio}</p>
-                                )}
-                                <div className="flex flex-wrap gap-4 justify-center md:justify-start text-sm text-[var(--text-secondary)]">
-                                    {profile.location && (
-                                        <div className="flex items-center gap-1">
-                                            <MapPin className="w-4 h-4" />
-                                            {profile.location}
-                                        </div>
-                                    )}
-                                    {profile.blog && (
-                                        <a href={profile.blog.startsWith('http') ? profile.blog : `https://${profile.blog}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-[var(--primary)]">
-                                            <LinkIcon className="w-4 h-4" />
-                                            {profile.blog}
-                                        </a>
-                                    )}
-                                    <div className="flex items-center gap-1">
-                                        <Calendar className="w-4 h-4" />
-                                        Joined {new Date(profile.createdAt).getFullYear()}
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="flex gap-6">
-                                <div className="text-center">
-                                    <div className="text-2xl font-bold">{profile.followers}</div>
-                                    <div className="text-sm text-[var(--text-secondary)]">Followers</div>
-                                </div>
-                                <div className="text-center">
-                                    <div className="text-2xl font-bold">{profile.following}</div>
-                                    <div className="text-sm text-[var(--text-secondary)]">Following</div>
-                                </div>
-                            </div>
-                        </div>
-                    </motion.div>
-                )}
-
-                {/* Stats Grid */}
-                {sections?.showStats && (
-                    <motion.div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8" variants={itemVariants}>
-                        <div className="bg-[var(--surface-card)] rounded-xl p-6 border border-[var(--border-secondary)] text-center">
-                            <BookOpen className="w-8 h-8 mx-auto mb-2 text-blue-400" />
-                            <div className="text-3xl font-bold mb-1">{stats.totalRepos}</div>
-                            <div className="text-sm text-[var(--text-secondary)]">Repositories</div>
-                        </div>
-                        <div className="bg-[var(--surface-card)] rounded-xl p-6 border border-[var(--border-secondary)] text-center">
-                            <Star className="w-8 h-8 mx-auto mb-2 text-yellow-400" />
-                            <div className="text-3xl font-bold mb-1">{stats.totalStars}</div>
-                            <div className="text-sm text-[var(--text-secondary)]">Total Stars</div>
-                        </div>
-                        <div className="bg-[var(--surface-card)] rounded-xl p-6 border border-[var(--border-secondary)] text-center">
-                            <GitFork className="w-8 h-8 mx-auto mb-2 text-green-400" />
-                            <div className="text-3xl font-bold mb-1">{stats.totalForks}</div>
-                            <div className="text-sm text-[var(--text-secondary)]">Total Forks</div>
-                        </div>
-                        <div className="bg-[var(--surface-card)] rounded-xl p-6 border border-[var(--border-secondary)] text-center">
-                            <TrendingUp className="w-8 h-8 mx-auto mb-2 text-purple-400" />
-                            <div className="text-3xl font-bold mb-1">{stats.totalContributions}</div>
-                            <div className="text-sm text-[var(--text-secondary)]">Contributions</div>
-                        </div>
-                        <div className="bg-[var(--surface-card)] rounded-xl p-6 border border-[var(--border-secondary)] text-center">
-                            <Flame className="w-8 h-8 mx-auto mb-2 text-orange-400" />
-                            <div className="text-3xl font-bold mb-1">{streaks.current}</div>
-                            <div className="text-sm text-[var(--text-secondary)]">Day Streak</div>
-                        </div>
-                    </motion.div>
-                )}
-
-                {/* Contribution Graph */}
-                {sections?.showContributions && weeks.length > 0 && (
-                    <motion.div className="mb-8" variants={itemVariants}>
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
-                            <h2 className="text-2xl font-bold">Contribution Activity</h2>
-                            <div className="text-sm text-[var(--text-secondary)]">
-                                Longest Streak: <span className="text-orange-400 font-bold">{streaks.longest} days</span>
-                            </div>
-                        </div>
-                        <div className="bg-[var(--surface-card)] rounded-xl p-4 sm:p-6 border border-[var(--border-secondary)] overflow-x-auto">
-                            <div className="flex gap-1 w-fit mx-auto">
-                                {weeks.map((week, weekIdx) => (
-                                    <div key={weekIdx} className="flex flex-col gap-1">
-                                        {week.map((day, dayIdx) => (
-                                            <div
-                                                key={dayIdx}
-                                                className={`w-3 h-3 rounded-sm ${getContributionColor(day.count)} transition-opacity hover:opacity-75`}
-                                                title={`${day.date}: ${day.count} contribution${day.count !== 1 ? 's' : ''}`}
-                                            />
-                                        ))}
-                                    </div>
-                                ))}
-                            </div>
-                            <div className="flex items-center gap-2 mt-4 text-xs text-[var(--text-secondary)]">
-                                <span>Less</span>
-                                <div className="w-3 h-3 rounded-sm bg-gray-800"></div>
-                                <div className="w-3 h-3 rounded-sm bg-green-900"></div>
-                                <div className="w-3 h-3 rounded-sm bg-green-700"></div>
-                                <div className="w-3 h-3 rounded-sm bg-green-500"></div>
-                                <div className="w-3 h-3 rounded-sm bg-green-400"></div>
-                                <span>More</span>
-                            </div>
-                        </div>
-                    </motion.div>
-                )}
-
-                {/* Recent Activity Timeline */}
-                {sections?.showActivity && recentActivity?.length > 0 && (
-                    <motion.div className="mb-12" variants={itemVariants}>
-                        <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                            <GitCommit className="text-[var(--primary)]" />
-                            Activity Timeline
-                        </h2>
-                        <div className="bg-[var(--surface-card)] rounded-xl p-6 md:p-8 border border-[var(--border-secondary)]">
-                            <div className="relative border-l-2 border-slate-700/50 ml-4 md:ml-6 space-y-8 pb-4">
-                                {recentActivity.slice(0, showAllActivities ? undefined : 2).map((activity, idx) => {
-                                    // Determine styling based on activity type
-                                    let iconColor = 'text-slate-400';
-                                    let iconBg = 'bg-slate-800';
-                                    let iconBorder = 'border-slate-600';
-
-                                    if (activity.type === 'PushEvent') {
-                                        iconColor = 'text-green-400';
-                                        iconBg = 'bg-green-500/10';
-                                        iconBorder = 'border-green-500/30';
-                                    } else if (activity.type === 'PullRequestEvent') {
-                                        iconColor = 'text-purple-400';
-                                        iconBg = 'bg-purple-500/10';
-                                        iconBorder = 'border-purple-500/30';
-                                    } else if (activity.type === 'CreateEvent') {
-                                        iconColor = 'text-blue-400';
-                                        iconBg = 'bg-blue-500/10';
-                                        iconBorder = 'border-blue-500/30';
-                                    } else if (activity.type === 'IssuesEvent') {
-                                        iconColor = 'text-amber-400';
-                                        iconBg = 'bg-amber-500/10';
-                                        iconBorder = 'border-amber-500/30';
-                                    }
-
-                                    return (
-                                        <div key={idx} className="relative pl-10 md:pl-12 group">
-                                            {/* Timeline Node */}
-                                            <div
-                                                className={`absolute top-1 w-8 h-8 rounded-full border-2 ${iconBg} ${iconBorder} flex items-center justify-center ${iconColor} z-10 shadow-lg shadow-black/20 group-hover:scale-110 transition-transform`}
-                                                style={{ left: '-17px' }}
-                                            >
-                                                {getActivityIcon(activity.type)}
-                                            </div>
-
-                                            {/* Content Card */}
-                                            <div className="bg-slate-800/20 hover:bg-slate-800/40 border border-white/5 hover:border-white/10 p-4 rounded-xl transition-colors">
-                                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 mb-2">
-                                                    <p className="font-medium text-slate-200">
-                                                        {getActivityText(activity)}
-                                                    </p>
-                                                    <span className="shrink-0 text-xs font-mono text-[var(--text-secondary)] bg-black/20 px-2 py-1 rounded">
-                                                        {new Date(activity.created_at).toLocaleDateString('en-US', {
-                                                            month: 'short',
-                                                            day: 'numeric',
-                                                            hour: '2-digit',
-                                                            minute: '2-digit'
-                                                        })}
-                                                    </span>
-                                                </div>
-                                                <div className="flex items-center gap-2 mt-2 text-sm text-[var(--text-secondary)]">
-                                                    <div className="flex items-center gap-1.5">
-                                                        <BookOpen className="w-3.5 h-3.5" />
-                                                        <span className="font-mono text-xs">{activity.repo}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                                </div>
-                                {recentActivity.length > 2 && (
-                                    <div className="flex justify-center mt-6 border-t border-slate-700/30 pt-4">
-                                        <button 
-                                            onClick={() => setShowAllActivities(!showAllActivities)}
-                                            className="text-sm font-mono text-[var(--accent-cyan)] hover:text-cyan-300 transition-colors flex items-center gap-2 bg-cyan-500/5 hover:bg-cyan-500/10 px-4 py-2 rounded-full border border-cyan-500/20 shadow-lg shadow-cyan-500/10"
-                                        >
-                                            {showAllActivities ? 'Show Less' : `Show More (${recentActivity.length - 2} more)`}
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-                        </motion.div>
-                )}
-
-                {/* Recently Updated Repositories */}
-                {sections?.showRepositories && topRepos?.length > 0 && (
-                    <motion.div className="mb-8" variants={itemVariants}>
-                        <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
-                            <TrendingUp className="text-[var(--primary)]" />
-                            Recently Updated Repositories
-                        </h2>
-                        <div className="flex overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 gap-4 pb-4 md:pb-0 snap-x snap-mandatory scrollbar-hide">
-                            {topRepos.map((repo, index) => {
-                                const isPrivate = repo.isPrivate;
-                                const Wrapper = isPrivate ? 'div' : 'a';
-                                const wrapperProps = isPrivate ? {} : {
-                                    href: repo.url,
-                                    target: "_blank",
-                                    rel: "noopener noreferrer"
-                                };
-
-                                return (
-                                    <Wrapper
-                                        key={index}
-                                        {...wrapperProps}
-                                        className={`snap-center shrink-0 w-[85%] sm:w-[320px] md:w-auto bg-[var(--surface-card)] rounded-xl p-6 border border-[var(--border-secondary)] transition-colors ${isPrivate ? 'opacity-80 cursor-default' : 'hover:border-[var(--primary)] group cursor-pointer'
-                                            }`}
-                                    >
-                                        <div className="flex items-start justify-between mb-3">
-                                            <div className="flex items-center gap-2 truncate pr-2">
-                                                <h3 className={`font-bold text-lg transition-colors truncate ${isPrivate ? '' : 'group-hover:text-[var(--primary)]'
-                                                    }`}>
-                                                    {repo.name}
-                                                </h3>
-                                                {repo.isPrivate && (
-                                                    <span className="shrink-0 flex items-center gap-1 bg-amber-500/10 text-amber-500 text-[10px] font-bold px-2 py-0.5 rounded border border-amber-500/20 uppercase tracking-wide">
-                                                        <Lock className="w-2.5 h-2.5" />
-                                                        Private
-                                                    </span>
-                                                )}
-                                            </div>
-                                            <Github className="w-5 h-5 text-[var(--text-secondary)] flex-shrink-0" />
-                                        </div>
-                                        <p className="text-sm text-[var(--text-secondary)] mb-4 line-clamp-2 min-h-[40px]">
-                                            {repo.description || 'No description provided'}
-                                        </p>
-                                        <div className="flex items-center gap-4 text-sm text-[var(--text-secondary)]">
-                                            {repo.language && (
-                                                <div className="flex items-center gap-1">
-                                                    <span
-                                                        className="w-3 h-3 rounded-full"
-                                                        style={{ backgroundColor: languageColors[repo.language] || '#gray' }}
-                                                    />
-                                                    {repo.language}
-                                                </div>
-                                            )}
-                                            <div className="flex items-center gap-1">
-                                                <Star className="w-4 h-4" />
-                                                {repo.stars}
-                                            </div>
-                                            <div className="flex items-center gap-1">
-                                                <GitFork className="w-4 h-4" />
-                                                {repo.forks}
-                                            </div>
-                                        </div>
-                                    </Wrapper>
-                                );
-                            })}
-                        </div>
-                    </motion.div>
-                )}
-
-                {/* Repository Distribution */}
-                {sections?.showRepoDistribution && stats && (
-                    <motion.div className="mb-12" variants={itemVariants}>
-                        <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                            <BarChart2 className="text-[var(--primary)]" />
-                            Repository Landscape
-                        </h2>
-                        <div className="grid md:grid-cols-2 gap-4">
-                            {/* Privacy Distribution */}
-                            <div className="bg-[var(--surface-card)] rounded-xl p-6 border border-[var(--border-secondary)]">
-                                <h3 className="text-sm font-mono text-slate-400 mb-4 uppercase tracking-wider">Visibility</h3>
-                                <div className="flex flex-col gap-4">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <Unlock className="w-4 h-4 text-green-400" />
-                                            <span>Public</span>
-                                        </div>
-                                        <span className="font-mono bg-green-500/10 text-green-400 px-2 py-0.5 rounded text-sm">
-                                            {stats.totalRepos - (stats.privateRepos || 0)}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <Lock className="w-4 h-4 text-amber-500" />
-                                            <span>Private</span>
-                                        </div>
-                                        <span className="font-mono bg-amber-500/10 text-amber-500 px-2 py-0.5 rounded text-sm">
-                                            {stats.privateRepos || 0}
-                                        </span>
-                                    </div>
-                                    {/* Visual Bar */}
-                                    <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden mt-2 flex">
-                                        <div
-                                            className="h-full bg-green-500"
-                                            style={{ width: `${((stats.totalRepos - (stats.privateRepos || 0)) / stats.totalRepos) * 100}%` }}
-                                        />
-                                        <div
-                                            className="h-full bg-amber-500"
-                                            style={{ width: `${((stats.privateRepos || 0) / stats.totalRepos) * 100}%` }}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Source vs Fork */}
-                            <div className="bg-[var(--surface-card)] rounded-xl p-6 border border-[var(--border-secondary)]">
-                                <h3 className="text-sm font-mono text-slate-400 mb-4 uppercase tracking-wider">Type</h3>
-                                <div className="flex flex-col gap-4">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <BookOpen className="w-4 h-4 text-blue-400" />
-                                            <span>Sources</span>
-                                        </div>
-                                        <span className="font-mono bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded text-sm">
-                                            {stats.sourceRepos || 0}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <GitFork className="w-4 h-4 text-purple-400" />
-                                            <span>Forks</span>
-                                        </div>
-                                        <span className="font-mono bg-purple-500/10 text-purple-400 px-2 py-0.5 rounded text-sm">
-                                            {stats.forkedRepos || 0}
-                                        </span>
-                                    </div>
-                                    {/* Visual Bar */}
-                                    <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden mt-2 flex">
-                                        <div
-                                            className="h-full bg-blue-500"
-                                            style={{ width: `${((stats.sourceRepos || 0) / ((stats.sourceRepos || 0) + (stats.forkedRepos || 0) || 1)) * 100}%` }}
-                                        />
-                                        <div
-                                            className="h-full bg-purple-500"
-                                            style={{ width: `${((stats.forkedRepos || 0) / ((stats.sourceRepos || 0) + (stats.forkedRepos || 0) || 1)) * 100}%` }}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </motion.div>
-                 )}
-
-                {/* Activity Radar Chart */}
-                {sections?.showRadarChart && activityDistribution && (
-                    <motion.div className="mb-12" variants={itemVariants}>
-                        <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                            <Activity className="text-[var(--primary)]" />
-                            Activity Distribution
-                        </h2>
-                        <div className="bg-[var(--surface-card)] rounded-xl p-6 md:p-8 border border-[var(--border-secondary)] min-h-[400px] flex items-center justify-center relative">
-                            {/* Premium dynamic SVG Radar Implementation */}
-                            <div className="w-full max-w-[320px] aspect-square flex items-center justify-center mx-auto">
-                                <svg viewBox="0 0 400 400" className="w-full h-full overflow-visible">
-                                    <defs>
-                                        <radialGradient id="radarGlow" cx="50%" cy="50%" r="50%">
-                                            <stop offset="0%" stopColor="var(--accent-cyan)" stopOpacity="0.4" />
-                                            <stop offset="100%" stopColor="var(--accent-cyan)" stopOpacity="0" />
-                                        </radialGradient>
-                                        <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                                            <stop offset="0%" stopColor="var(--accent-cyan)" />
-                                            <stop offset="100%" stopColor="var(--accent-purple)" />
-                                        </linearGradient>
-                                    </defs>
-
-                                    {/* Concentric grid diamonds */}
-                                    {[0.25, 0.5, 0.75, 1].map((f, i) => (
-                                        <polygon
-                                            key={i}
-                                            points={`200,${200 - f * 130} ${200 + f * 130},200 200,${200 + f * 130} ${200 - f * 130},200`}
-                                            fill="none"
-                                            stroke="rgba(255,255,255,0.06)"
-                                            strokeWidth="1"
-                                            strokeDasharray={i === 3 ? "0" : "3,3"}
-                                        />
-                                    ))}
-
-                                    {/* Cross Axes background lines */}
-                                    <line x1="200" y1="70" x2="200" y2="330" stroke="rgba(255,255,255,0.08)" strokeWidth="1.5" />
-                                    <line x1="70" y1="200" x2="330" y2="200" stroke="rgba(255,255,255,0.08)" strokeWidth="1.5" />
-
-                                    {/* Center ambient Glow */}
-                                    <circle cx="200" cy="200" r="90" fill="url(#radarGlow)" className="opacity-40 animate-pulse" />
-
-                                    {/* Data Polygon */}
-                                    <motion.polygon
-                                        points={`
-                                            ${200 - (activityDistribution.commits / 100) * 130},200 
-                                            200,${200 - (activityDistribution.codeReview / 100) * 130} 
-                                            ${200 + (activityDistribution.issues / 100) * 130},200 
-                                            200,${200 + (activityDistribution.pullRequests / 100) * 130}
-                                        `}
-                                        fill="var(--accent-cyan)"
-                                        fillOpacity="0.1"
-                                        stroke="url(#lineGrad)"
-                                        strokeWidth="3.5"
-                                        strokeLinejoin="round"
-                                        initial={{ opacity: 0, scale: 0.1, transformOrigin: 'center' }}
-                                        whileInView={{ opacity: 1, scale: 1 }}
-                                        viewport={{ once: true }}
-                                        transition={{ duration: 1, ease: "easeOut", type: "spring", bounce: 0.3 }}
-                                    />
-
-                                    {/* Handle dots with glow */}
-                                    {/* Commits (Left) */}
-                                    <circle cx={200 - (activityDistribution.commits / 100) * 130} cy="200" r="5" fill="var(--surface-card)" stroke="var(--accent-cyan)" strokeWidth="2.5" />
-                                    {/* Code Review (Top) */}
-                                    <circle cx="200" cy={200 - (activityDistribution.codeReview / 100) * 130} r="5" fill="var(--surface-card)" stroke="var(--accent-purple)" strokeWidth="2.5" />
-                                    {/* Issues (Right) */}
-                                    <circle cx={200 + (activityDistribution.issues / 100) * 130} cy="200" r="5" fill="var(--surface-card)" stroke="var(--accent-cyan)" strokeWidth="2.5" />
-                                    {/* Pull Requests (Bottom) */}
-                                    <circle cx="200" cy={200 + (activityDistribution.pullRequests / 100) * 130} r="5" fill="var(--surface-card)" stroke="var(--accent-purple)" strokeWidth="2.5" />
-
-                                    {/* SVG Labels */}
-                                    {/* Top - Code Review */}
-                                    <text x="200" y="25" textAnchor="middle" fill="var(--accent-cyan)" className="font-mono font-bold text-base">{activityDistribution.codeReview}%</text>
-                                    <text x="200" y="42" textAnchor="middle" fill="var(--text-secondary)" className="text-[10px] sm:text-xs font-bold tracking-wider uppercase">Code Review</text>
-
-                                    {/* Bottom - PRs */}
-                                    <text x="200" y="372" textAnchor="middle" fill="var(--accent-cyan)" className="font-mono font-bold text-base">{activityDistribution.pullRequests}%</text>
-                                    <text x="200" y="388" textAnchor="middle" fill="var(--text-secondary)" className="text-[10px] sm:text-xs font-bold tracking-wider uppercase">Pull Requests</text>
-
-                                    {/* Left - Commits */}
-                                    <text x="45" y="195" textAnchor="end" fill="var(--accent-cyan)" className="font-mono font-bold text-base">{activityDistribution.commits}%</text>
-                                    <text x="45" y="211" textAnchor="end" fill="var(--text-secondary)" className="text-[10px] sm:text-xs font-bold tracking-wider uppercase">Commits</text>
-
-                                    {/* Right - Issues */}
-                                    <text x="355" y="195" textAnchor="start" fill="var(--accent-cyan)" className="font-mono font-bold text-base">{activityDistribution.issues}%</text>
-                                    <text x="355" y="211" textAnchor="start" fill="var(--text-secondary)" className="text-[10px] sm:text-xs font-bold tracking-wider uppercase">Issues</text>
-                                </svg>
-                            </div>
-                        </div>
-                    </motion.div>
-                )}
-
-                {/* Language Statistics */}
-                {sections?.showLanguages && languages?.length > 0 && (
-                    <motion.div variants={itemVariants}>
-                        <h2 className="text-2xl font-bold mb-4">Most Used Languages</h2>
-                        <div className="bg-[var(--surface-card)] rounded-xl p-6 border border-[var(--border-secondary)]">
-                            <div className="space-y-4">
-                                {languages.map((lang, index) => (
-                                    <div key={index}>
-                                        <div className="flex justify-between mb-2">
-                                            <div className="flex items-center gap-2">
-                                                <span
-                                                    className="w-3 h-3 rounded-full"
-                                                    style={{ backgroundColor: languageColors[lang.name] || '#gray' }}
-                                                />
-                                                <span className="font-medium">{lang.name}</span>
-                                            </div>
-                                            <span className="text-[var(--text-secondary)]">
-                                                {lang.percentage}% ({lang.count} repos)
-                                            </span>
-                                        </div>
-                                        <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
-                                            <div
-                                                className="h-full rounded-full transition-all duration-500"
-                                                style={{
-                                                    width: `${lang.percentage}%`,
-                                                    backgroundColor: languageColors[lang.name] || '#gray'
-                                                }}
-                                            />
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </motion.div>
-                )}
-            </div>
-        </motion.div >
+          <Github className="mx-auto mb-4 h-12 w-12" style={{ color: 'var(--text-tertiary)' }} />
+          <h2 className="mb-2 text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+            GitHub Stats Not Available
+          </h2>
+          <p style={{ color: 'var(--text-secondary)' }}>
+            {data?.error || 'This page has not been configured yet.'}
+          </p>
+        </div>
+      </div>
     );
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 18 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.7, ease: 'easeOut' }}
+      className="relative min-h-screen overflow-hidden p-4 lg:p-8"
+      style={{ color: 'var(--text-primary)' }}
+    >
+      <div className="pointer-events-none absolute -left-24 top-8 h-72 w-72 rounded-full blur-3xl" style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--accent-cyan) 30%, transparent), transparent 70%)' }} />
+      <div className="pointer-events-none absolute -right-20 top-1/4 h-64 w-64 rounded-full blur-3xl" style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--accent-purple) 24%, transparent), transparent 70%)' }} />
+
+      <div className="relative mx-auto max-w-7xl">
+        <section
+          className="rounded-3xl border p-6 sm:p-8"
+          style={{
+            background:
+              'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 93%, transparent), color-mix(in srgb, var(--bg-secondary) 93%, transparent))',
+            borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
+            boxShadow: '0 16px 36px var(--shadow-sm)',
+          }}
+        >
+          <p className="mb-3 inline-flex rounded-full border px-3 py-1 text-xs uppercase tracking-[0.2em]" style={{ borderColor: 'color-mix(in srgb, var(--accent-cyan) 42%, var(--border-secondary))', color: 'var(--accent-cyan)' }}>
+            Open Source Dashboard
+          </p>
+          <h1 className="mb-3 bg-gradient-to-r bg-clip-text text-4xl font-bold text-transparent sm:text-5xl lg:text-6xl" style={{ backgroundImage: 'linear-gradient(to right, var(--accent-cyan), var(--accent-purple), var(--accent-pink))' }}>
+            GitHub Statistics
+          </h1>
+          <p className="max-w-2xl text-base sm:text-lg" style={{ color: 'var(--text-secondary)' }}>
+            A live view of repositories, contribution patterns, and recent development activity.
+          </p>
+
+          {sections.showProfile && (
+            <div className="mt-6 rounded-2xl border p-5" style={{ borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)', backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 82%, transparent)' }}>
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                <img src={profile.avatar} alt={profile.name || profile.username || 'GitHub avatar'} className="h-20 w-20 rounded-full border-2 object-cover" style={{ borderColor: 'var(--accent-cyan)' }} />
+                <div className="min-w-0 flex-1">
+                  <h2 className="truncate text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+                    {profile.name || profile.username}
+                  </h2>
+                  <p className="mb-1 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                    @{profile.username}
+                  </p>
+                  {profile.bio && (
+                    <p className="text-sm sm:text-base" style={{ color: 'var(--text-secondary)' }}>
+                      {profile.bio}
+                    </p>
+                  )}
+                  <div className="mt-3 flex flex-wrap items-center gap-3 text-xs sm:text-sm" style={{ color: 'var(--text-tertiary)' }}>
+                    {profile.location && (
+                      <span className="inline-flex items-center gap-1.5"><MapPin size={14} /> {profile.location}</span>
+                    )}
+                    {profile.createdAt && (
+                      <span className="inline-flex items-center gap-1.5"><Calendar size={14} /> Joined {new Date(profile.createdAt).getFullYear()}</span>
+                    )}
+                    {profile.blog && (
+                      <a href={profile.blog.startsWith('http') ? profile.blog : `https://${profile.blog}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 hover:underline" style={{ color: 'var(--accent-cyan)' }}>
+                        <ExternalLink size={14} /> Website
+                      </a>
+                    )}
+                  </div>
+                </div>
+                <div className="flex gap-4 text-center">
+                  <div className="rounded-lg border px-3 py-2" style={{ borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)' }}>
+                    <p className="text-lg font-bold">{profile.followers || 0}</p>
+                    <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Followers</p>
+                  </div>
+                  <div className="rounded-lg border px-3 py-2" style={{ borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)' }}>
+                    <p className="text-lg font-bold">{profile.following || 0}</p>
+                    <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Following</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </section>
+
+        {sections.showStats && (
+          <section className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
+            {statCards.map((item) => {
+              const Icon = item.icon;
+              return (
+                <div
+                  key={item.label}
+                  className="rounded-xl border p-3"
+                  style={{
+                    borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)',
+                    backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 82%, transparent)',
+                  }}
+                >
+                  <div className="mb-2 inline-flex rounded-lg p-2" style={{ backgroundColor: `color-mix(in srgb, ${item.accent} 14%, transparent)` }}>
+                    <Icon size={14} style={{ color: item.accent }} />
+                  </div>
+                  <p className="text-2xl font-bold">{item.value}</p>
+                  <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{item.label}</p>
+                </div>
+              );
+            })}
+          </section>
+        )}
+
+        {sections.showRepositories && (
+          <section
+            className="mt-8 rounded-2xl border p-5"
+            style={{
+              background:
+                'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 94%, transparent), color-mix(in srgb, var(--bg-secondary) 94%, transparent))',
+              borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
+            }}
+          >
+            <h2 className="mb-4 text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+              Top Repositories
+            </h2>
+            <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-2">
+              <input
+                type="text"
+                value={repoSearch}
+                onChange={(event) => setRepoSearch(event.target.value)}
+                placeholder="Search repositories"
+                className="rounded-lg border px-3 py-2.5 text-sm focus:outline-none"
+                style={{
+                  backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 80%, transparent)',
+                  borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
+                  color: 'var(--text-primary)',
+                }}
+              />
+              <div className="flex flex-wrap items-center gap-2">
+                {[
+                  { key: 'all', label: 'All' },
+                  { key: 'public', label: 'Public' },
+                  { key: 'private', label: 'Private' },
+                  { key: 'fork', label: 'Forks' },
+                ].map((option) => {
+                  const active = repoType === option.key;
+                  return (
+                    <button
+                      key={option.key}
+                      type="button"
+                      onClick={() => setRepoType(option.key)}
+                      className="rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-wide"
+                      style={{
+                        borderColor: active
+                          ? 'color-mix(in srgb, var(--accent-cyan) 55%, var(--border-secondary))'
+                          : 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
+                        color: active ? 'var(--accent-cyan)' : 'var(--text-secondary)',
+                        backgroundColor: active
+                          ? 'color-mix(in srgb, var(--accent-cyan) 11%, transparent)'
+                          : 'color-mix(in srgb, var(--bg-elevated) 80%, transparent)',
+                      }}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {filteredRepos.length > 0 ? (
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {filteredRepos.map((repo) => {
+                  const Wrapper = repo?.isPrivate ? 'div' : 'a';
+                  const wrapperProps = repo?.isPrivate
+                    ? {}
+                    : {
+                        href: repo?.url,
+                        target: '_blank',
+                        rel: 'noopener noreferrer',
+                      };
+
+                  return (
+                    <Wrapper
+                      key={`${repo?.name}-${repo?.updated_at}`}
+                      {...wrapperProps}
+                      className="rounded-xl border p-4 transition-colors"
+                      style={{
+                        borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)',
+                        backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 82%, transparent)',
+                      }}
+                    >
+                      <div className="mb-2 flex items-start justify-between gap-2">
+                        <h3 className="truncate text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
+                          {repo?.name}
+                        </h3>
+                        {repo?.isPrivate ? (
+                          <span className="inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-wide" style={{ borderColor: 'color-mix(in srgb, #f59e0b 40%, transparent)', color: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.12)' }}>
+                            <Lock size={10} /> Private
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-wide" style={{ borderColor: 'color-mix(in srgb, #10b981 40%, transparent)', color: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.12)' }}>
+                            <Unlock size={10} /> Public
+                          </span>
+                        )}
+                      </div>
+
+                      <p className="mb-3 min-h-[40px] text-sm" style={{ color: 'var(--text-secondary)' }}>
+                        {repo?.description || 'No description provided.'}
+                      </p>
+
+                      <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm" style={{ color: 'var(--text-secondary)' }}>
+                        {repo?.language && (
+                          <span className="inline-flex items-center gap-1.5">
+                            <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: languageColors[repo.language] || '#64748b' }} />
+                            {repo.language}
+                          </span>
+                        )}
+                        <span className="inline-flex items-center gap-1.5"><Star size={13} /> {repo?.stars || 0}</span>
+                        <span className="inline-flex items-center gap-1.5"><GitFork size={13} /> {repo?.forks || 0}</span>
+                      </div>
+                    </Wrapper>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="rounded-xl border p-8 text-center" style={{ borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)', backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 80%, transparent)' }}>
+                <p style={{ color: 'var(--text-secondary)' }}>No repositories match this filter.</p>
+              </div>
+            )}
+          </section>
+        )}
+
+        {sections.showContributions && contributionWeeks.length > 0 && (
+          <section
+            className="mt-8 rounded-2xl border p-5"
+            style={{
+              background:
+                'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 94%, transparent), color-mix(in srgb, var(--bg-secondary) 94%, transparent))',
+              borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
+            }}
+          >
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+                Contribution Activity
+              </h2>
+              <span className="rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide" style={{ borderColor: 'color-mix(in srgb, var(--accent-orange) 45%, var(--border-secondary))', color: 'var(--accent-orange)', backgroundColor: 'color-mix(in srgb, var(--accent-orange) 10%, transparent)' }}>
+                Longest Streak: {streaks.longest || 0} days
+              </span>
+            </div>
+
+            <div className="w-full overflow-x-auto pb-4">
+              <div
+                className="grid min-w-[750px] gap-1 xl:min-w-full"
+                style={{ gridTemplateColumns: `repeat(${Math.max(contributionWeeks.length, 1)}, minmax(0, 1fr))` }}
+              >
+                {contributionWeeks.map((week, weekIdx) => (
+                  <div key={`week-${weekIdx}`} className="grid gap-1" style={{ gridTemplateRows: 'repeat(7, minmax(0, 1fr))' }}>
+                    {Array.from({ length: 7 }, (_, dayIdx) => {
+                      const day = week[dayIdx];
+                      const count = day?.count || 0;
+                      return (
+                        <div
+                          key={`day-${weekIdx}-${dayIdx}`}
+                          className="aspect-square w-full rounded-sm"
+                          style={{
+                            backgroundColor: day ? getContributionColor(count) : 'transparent',
+                            opacity: day ? 1 : 0.35,
+                          }}
+                          title={
+                            day
+                              ? `${day?.date || ''}: ${count} contribution${count === 1 ? '' : 's'}`
+                              : 'No data'
+                          }
+                        />
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {sections.showActivity && recentActivity.length > 0 && (
+          <section
+            className="mt-8 rounded-2xl border p-5"
+            style={{
+              background:
+                'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 94%, transparent), color-mix(in srgb, var(--bg-secondary) 94%, transparent))',
+              borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
+            }}
+          >
+            <h2 className="mb-4 text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+              Activity Timeline
+            </h2>
+            <div className="space-y-3">
+              {visibleActivities.map((activity, index) => {
+                const Icon = getActivityIcon(activity?.type);
+                return (
+                  <div
+                    key={`${activity?.repo}-${activity?.created_at}-${index}`}
+                    className="rounded-xl border p-3"
+                    style={{
+                      borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)',
+                      backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 82%, transparent)',
+                    }}
+                  >
+                    <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
+                      <p className="inline-flex items-center gap-2 text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                        <Icon size={14} style={{ color: 'var(--accent-cyan)' }} />
+                        {getActivityLabel(activity)}
+                      </p>
+                      <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                        {toDateLabel(activity?.created_at)}
+                      </span>
+                    </div>
+                    <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{activity?.repo}</p>
+                  </div>
+                );
+              })}
+            </div>
+            {recentActivity.length > 5 && (
+              <div className="mt-4 text-center">
+                <button
+                  type="button"
+                  onClick={() => setShowAllActivities((prev) => !prev)}
+                  className="rounded-full border px-4 py-2 text-sm font-semibold"
+                  style={{
+                    borderColor: 'color-mix(in srgb, var(--accent-cyan) 50%, var(--border-secondary))',
+                    color: 'var(--accent-cyan)',
+                    backgroundColor: 'color-mix(in srgb, var(--accent-cyan) 10%, transparent)',
+                  }}
+                >
+                  {showAllActivities ? 'Show Less Activity' : `Show More (${recentActivity.length - 5})`}
+                </button>
+              </div>
+            )}
+          </section>
+        )}
+
+        {sections.showRepoDistribution && (
+          <section className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="rounded-2xl border p-5" style={{ borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)', backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 82%, transparent)' }}>
+              <h3 className="mb-3 inline-flex items-center gap-2 text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
+                <BarChart2 size={18} style={{ color: 'var(--accent-cyan)' }} /> Repository Visibility
+              </h3>
+
+              <div className="rounded-xl border p-3" style={{ borderColor: 'color-mix(in srgb, var(--border-secondary) 70%, transparent)', backgroundColor: 'color-mix(in srgb, var(--bg-secondary) 65%, transparent)' }}>
+                <p className="text-xs uppercase tracking-[0.14em]" style={{ color: 'var(--text-tertiary)' }}>Total Repositories</p>
+                <p className="mt-1 text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{effectiveTotalRepos}</p>
+                <p className="mt-1 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                  {publicPercent}% public and {privatePercent}% private
+                </p>
+              </div>
+
+              <div className="mt-4 h-2.5 overflow-hidden rounded-full border" style={{ borderColor: 'color-mix(in srgb, var(--border-secondary) 70%, transparent)', backgroundColor: 'color-mix(in srgb, var(--bg-secondary) 90%, transparent)' }}>
+                <div className="flex h-full w-full">
+                  <div style={{ width: `${publicPercent}%`, backgroundColor: 'var(--accent-cyan)' }} />
+                  <div style={{ width: `${privatePercent}%`, backgroundColor: 'var(--accent-orange)' }} />
+                </div>
+              </div>
+
+              <div className="mt-4 space-y-3">
+                <div className="rounded-lg border p-3" style={{ borderColor: 'color-mix(in srgb, var(--accent-cyan) 40%, var(--border-secondary))', backgroundColor: 'color-mix(in srgb, var(--accent-cyan) 10%, transparent)' }}>
+                  <div className="mb-1 flex items-center justify-between text-sm">
+                    <span className="inline-flex items-center gap-1.5 font-semibold" style={{ color: 'var(--text-primary)' }}>
+                      <Unlock size={14} style={{ color: 'var(--accent-cyan)' }} /> Public Repos
+                    </span>
+                    <span style={{ color: 'var(--accent-cyan)' }}>{publicRepos}</span>
+                  </div>
+                  <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{publicPercent}% of repository portfolio</p>
+                </div>
+
+                <div className="rounded-lg border p-3" style={{ borderColor: 'color-mix(in srgb, var(--accent-orange) 40%, var(--border-secondary))', backgroundColor: 'color-mix(in srgb, var(--accent-orange) 10%, transparent)' }}>
+                  <div className="mb-1 flex items-center justify-between text-sm">
+                    <span className="inline-flex items-center gap-1.5 font-semibold" style={{ color: 'var(--text-primary)' }}>
+                      <Lock size={14} style={{ color: 'var(--accent-orange)' }} /> Private Repos
+                    </span>
+                    <span style={{ color: 'var(--accent-orange)' }}>{privateRepos}</span>
+                  </div>
+                  <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{privatePercent}% of repository portfolio</p>
+                </div>
+              </div>
+            </div>
+
+            {sections.showRadarChart && (
+              <div className="rounded-2xl border p-5" style={{ borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)', backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 82%, transparent)' }}>
+                <h3 className="mb-3 inline-flex items-center gap-2 text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
+                  <Activity size={18} style={{ color: 'var(--accent-purple)' }} /> Activity Distribution
+                </h3>
+                <div className="space-y-3">
+                  {[
+                    { label: 'Commits', value: activityDistribution.commits || 0, color: 'var(--accent-cyan)', icon: GitCommit },
+                    { label: 'Pull Requests', value: activityDistribution.pullRequests || 0, color: 'var(--accent-purple)', icon: GitPullRequest },
+                    { label: 'Issues', value: activityDistribution.issues || 0, color: 'var(--accent-orange)', icon: Users },
+                    { label: 'Code Review', value: activityDistribution.codeReview || 0, color: 'var(--accent-pink)', icon: TrendingUp },
+                  ].map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <div key={item.label}>
+                        <div className="mb-1 flex items-center justify-between text-sm">
+                          <span className="inline-flex items-center gap-1.5" style={{ color: 'var(--text-secondary)' }}>
+                            <Icon size={14} style={{ color: item.color }} /> {item.label}
+                          </span>
+                          <span style={{ color: item.color }}>{item.value}%</span>
+                        </div>
+                        <div className="h-2 rounded-full" style={{ backgroundColor: 'color-mix(in srgb, var(--bg-secondary) 85%, transparent)' }}>
+                          <div
+                            className="h-2 rounded-full"
+                            style={{
+                              width: `${Math.max(0, Math.min(100, item.value))}%`,
+                              backgroundColor: item.color,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </section>
+        )}
+
+        {sections.showLanguages && languages.length > 0 && (
+          <section
+            className="mt-8 rounded-2xl border p-5"
+            style={{
+              background:
+                'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 94%, transparent), color-mix(in srgb, var(--bg-secondary) 94%, transparent))',
+              borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
+            }}
+          >
+            <h2 className="mb-4 text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+              Most Used Languages
+            </h2>
+            <div className="space-y-3">
+              {languages.map((lang) => (
+                <div key={lang.name}>
+                  <div className="mb-1 flex items-center justify-between text-sm">
+                    <span className="inline-flex items-center gap-1.5" style={{ color: 'var(--text-secondary)' }}>
+                      <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: languageColors[lang.name] || '#64748b' }} />
+                      {lang.name}
+                    </span>
+                    <span style={{ color: 'var(--text-tertiary)' }}>{lang.percentage}% ({lang.count} repos)</span>
+                  </div>
+                  <div className="h-2 rounded-full" style={{ backgroundColor: 'color-mix(in srgb, var(--bg-secondary) 85%, transparent)' }}>
+                    <div className="h-2 rounded-full" style={{ width: `${Math.max(0, Math.min(100, lang.percentage || 0))}%`, backgroundColor: languageColors[lang.name] || '#64748b' }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+      </div>
+    </motion.div>
+  );
 }

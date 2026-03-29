@@ -1,16 +1,10 @@
-name: Build & Deploy
+name: Build, Release, and Deploy
 
 on:
   pull_request:
     types: [opened, synchronize, reopened]
   push:
     branches: [master]
-  workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Deployment environment'
-        required: false
-        default: 'production'
 
 jobs:
   build:
@@ -47,7 +41,6 @@ jobs:
       
       - name: Run ESLint
         run: npm run lint
-        continue-on-error: true
       
       - name: Build project
         run: npm run build
@@ -65,14 +58,31 @@ jobs:
           echo "Please review the logs above and fix any issues."
           exit 1
 
-  push-to-docker-hub:
-    name: Push Docker image to Docker Hub
+  release:
+    name: Create Tag and GitHub Release
     needs: build
     runs-on: ubuntu-latest
-    if: |
-      (github.ref == 'refs/heads/master' && github.event_name == 'push' && 
-       (contains(github.event.head_commit.message, 'Release:') || contains(github.event.head_commit.message, 'Release v'))) ||
-      github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+
+    steps:
+      - name: Release Please
+        id: release
+        uses: googleapis/release-please-action@v4
+        with:
+          release-type: node
+          target-branch: master
+
+  push-to-docker-hub:
+    name: Push Docker image to Docker Hub
+    needs: [build, release]
+    runs-on: ubuntu-latest
+    if: needs.release.outputs.release_created == 'true'
     permissions:
       packages: write
       contents: read
@@ -82,24 +92,6 @@ jobs:
     steps:
       - name: Check out the repo
         uses: actions/checkout@v4
-
-      - name: Extract version from commit message
-        id: extract-version
-        run: |
-          if [[ "${{ github.event.head_commit.message }}" =~ Release\ (v[0-9]+\.[0-9]+\.[0-9]+) ]]; then
-            VERSION="${BASH_REMATCH[1]}"
-            echo "version=$VERSION" >> $GITHUB_OUTPUT
-            echo "Found version: $VERSION"
-          elif [[ "${{ github.event.head_commit.message }}" =~ Release:\ (v[0-9]+\.[0-9]+\.[0-9]+) ]]; then
-            VERSION="${BASH_REMATCH[1]}"
-            echo "version=$VERSION" >> $GITHUB_OUTPUT
-            echo "Found version: $VERSION"
-          else
-            # Fallback to latest git tag
-            VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
-            echo "version=$VERSION" >> $GITHUB_OUTPUT
-            echo "No version in commit message, using git tag: $VERSION"
-          fi
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
@@ -113,7 +105,7 @@ jobs:
         with:
           images: aiyuayaan/aiyu
           tags: |
-            type=raw,value=${{ steps.extract-version.outputs.version }}
+            type=raw,value=${{ needs.release.outputs.tag_name }}
             type=raw,value=latest
 
       - name: Build and push Docker image
@@ -135,103 +127,51 @@ jobs:
 
   deploy:
     name: Deploy to Server
-    needs: push-to-docker-hub
+    needs: [release, push-to-docker-hub]
     runs-on: ubuntu-latest
-    if: |
-      (github.ref == 'refs/heads/master' && github.event_name == 'push' && 
-       (contains(github.event.head_commit.message, 'Release:') || contains(github.event.head_commit.message, 'Release v'))) ||
-      github.event_name == 'workflow_dispatch'
-    outputs:
-      version: ${{ steps.extract-version.outputs.version }}
+    if: needs.release.outputs.release_created == 'true'
 
     steps:
-      - name: Extract version from commit message
-        id: extract-version
-        run: |
-          if [[ "${{ github.event.head_commit.message }}" =~ Release\ (v[0-9]+\.[0-9]+\.[0-9]+) ]]; then
-            VERSION="${BASH_REMATCH[1]}"
-            echo "version=$VERSION" >> $GITHUB_OUTPUT
-            echo "Found version: $VERSION"
-          elif [[ "${{ github.event.head_commit.message }}" =~ Release:\ (v[0-9]+\.[0-9]+\.[0-9]+) ]]; then
-            VERSION="${BASH_REMATCH[1]}"
-            echo "version=$VERSION" >> $GITHUB_OUTPUT
-            echo "Found version: $VERSION"
-          else
-            # Fallback to latest git tag
-            VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
-            echo "version=$VERSION" >> $GITHUB_OUTPUT
-            echo "No version in commit message, using git tag: $VERSION"
-          fi
-
       - name: Deploy via SSH
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           password: ${{ secrets.SSH_PASSWORD }}
+          envs: RELEASE_TAG
           script: |
             set -e
             
             echo "Starting deployment..."
+            echo "Deploying release tag: $RELEASE_TAG"
             
             echo "Navigating to project directory..."
             cd docker/Aiyu/ || { echo "Failed to navigate to docker/Aiyu/"; exit 1; }
+
+            echo "Writing release tag to .env..."
+            if grep -q '^APP_IMAGE_TAG=' .env; then
+              sed -i "s/^APP_IMAGE_TAG=.*/APP_IMAGE_TAG=$RELEASE_TAG/" .env
+            else
+              echo "APP_IMAGE_TAG=$RELEASE_TAG" >> .env
+            fi
             
-            echo "Pulling latest Docker image..."
-            docker compose pull || { echo "Failed to pull latest image"; exit 1; }
+            echo "Pulling tagged Docker image..."
+            docker compose pull app || { echo "Failed to pull tagged image"; exit 1; }
             
             echo "Restarting containers..."
             docker compose up -d || { echo "Failed to start containers"; exit 1; }
             
             echo "✅ Deployment completed successfully!"
+        env:
+          RELEASE_TAG: ${{ needs.release.outputs.tag_name }}
 
   create-release:
-    name: Create GitHub Release
-    needs: push-to-docker-hub
+    name: Release Summary
+    needs: [release, push-to-docker-hub]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master' && github.event_name == 'push' && (contains(github.event.head_commit.message, 'Release:') || contains(github.event.head_commit.message, 'Release v'))
+    if: needs.release.outputs.release_created == 'true'
     
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
-      - name: Extract version from commit message
-        id: extract-version
+      - name: Release created
         run: |
-          if [[ "${{ github.event.head_commit.message }}" =~ Release\ (v[0-9]+\.[0-9]+\.[0-9]+) ]]; then
-            VERSION="${BASH_REMATCH[1]}"
-            echo "version=$VERSION" >> $GITHUB_OUTPUT
-            echo "Found version: $VERSION"
-          elif [[ "${{ github.event.head_commit.message }}" =~ Release:\ (v[0-9]+\.[0-9]+\.[0-9]+) ]]; then
-            VERSION="${BASH_REMATCH[1]}"
-            echo "version=$VERSION" >> $GITHUB_OUTPUT
-            echo "Found version: $VERSION"
-          else
-            # Fallback to latest git tag
-            VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
-            echo "version=$VERSION" >> $GITHUB_OUTPUT
-            echo "No version in commit message, using git tag: $VERSION"
-          fi
-      
-      - name: Create Release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.USER_TOKEN }}
-        with:
-          tag_name: ${{ steps.extract-version.outputs.version }}
-          release_name: Release ${{ steps.extract-version.outputs.version }}
-          body: |
-            ## Release ${{ steps.extract-version.outputs.version }}
-            
-            **Commit Message:**
-            ```
-            ${{ github.event.head_commit.message }}
-            ```
-            
-            **Commit SHA:** ${{ github.event.head_commit.id }}
-            
-            **Author:** ${{ github.event.head_commit.author.name }}
-            
-            This release was automatically created by GitHub Actions.
-          draft: false
-          prerelease: false
+          echo "Release created successfully for ${{ needs.release.outputs.tag_name }}"

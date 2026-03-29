@@ -25,7 +25,6 @@ const ConfigForm = () => {
         blogsTitle: '',
         blogsSubtitle: '',
         galleryTitle: '',
-        galleryTitle: '',
         gallerySubtitle: '',
     });
     const [loading, setLoading] = useState(true);
@@ -114,7 +113,6 @@ const ConfigForm = () => {
                         projectsSubtitle: data.projectsSubtitle || 'A collection of my work',
                         blogsTitle: data.blogsTitle || 'Latest Insights',
                         blogsSubtitle: data.blogsSubtitle || 'Thoughts, tutorials, and updates on web development and technology.',
-                        galleryTitle: data.galleryTitle || 'Gallery',
                         galleryTitle: data.galleryTitle || 'Gallery',
                         gallerySubtitle: data.gallerySubtitle || 'A visual journey through my lens.',
                     });

@@ -90,7 +90,10 @@ function sanitizeConfigForPublic(configData) {
 function toBlogPreview(blogs, maxLength = 320) {
     if (!Array.isArray(blogs)) return [];
 
-    return blogs.map((blog) => ({
+    const plainBlogs = serialize(blogs);
+    if (!Array.isArray(plainBlogs)) return [];
+
+    return plainBlogs.map((blog) => ({
         ...blog,
         content: typeof blog?.content === 'string' ? blog.content.slice(0, maxLength) : '',
     }));

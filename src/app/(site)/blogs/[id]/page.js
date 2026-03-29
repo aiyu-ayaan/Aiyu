@@ -1,4 +1,3 @@
-
 import BlogDetailClient from '../../../components/blogs/BlogDetailClient';
 import { getBlogById, getConfigData } from '@/lib/dataFetchers';
 

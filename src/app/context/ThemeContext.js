@@ -1,20 +1,32 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 
-// Theme configuration constants
-const VALID_THEMES = ['dark', 'light'];
-const DEFAULT_THEME = 'dark';
+const VALID_VARIANTS = ['dark', 'light'];
+const VALID_THEME_MODES = ['auto', 'dark', 'light'];
+const DEFAULT_VARIANT = 'dark';
+const DEFAULT_THEME_MODE = 'auto';
 
-const isValidTheme = (theme) => VALID_THEMES.includes(theme);
+const isValidVariant = (variant) => VALID_VARIANTS.includes(variant);
+const isValidThemeMode = (mode) => VALID_THEME_MODES.includes(mode);
+
+const getSystemVariant = () => {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+    return DEFAULT_VARIANT;
+  }
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+};
 
 const ThemeContext = createContext({
-  theme: DEFAULT_THEME,
+  theme: DEFAULT_VARIANT,
+  themeMode: DEFAULT_THEME_MODE,
+  setThemeMode: () => { },
   toggleTheme: () => { },
   mounted: false,
   activeThemeData: null,
-  activeVariant: DEFAULT_THEME,
+  activeVariant: DEFAULT_VARIANT,
+  resolvedTheme: DEFAULT_VARIANT,
   switchVariant: () => { },
 });
 
@@ -26,13 +38,11 @@ export const useTheme = () => {
   return context;
 };
 
-// Apply theme colors to CSS custom properties
 const applyThemeColors = (variant, variantData) => {
   if (!variantData) return;
 
   const root = document.documentElement;
 
-  // Apply background colors
   if (variantData.backgrounds) {
     root.style.setProperty('--bg-primary', variantData.backgrounds.primary);
     root.style.setProperty('--bg-secondary', variantData.backgrounds.secondary);
@@ -42,7 +52,6 @@ const applyThemeColors = (variant, variantData) => {
     root.style.setProperty('--bg-hover', variantData.backgrounds.hover);
   }
 
-  // Apply text colors
   if (variantData.text) {
     root.style.setProperty('--text-primary', variantData.text.primary);
     root.style.setProperty('--text-secondary', variantData.text.secondary);
@@ -51,7 +60,6 @@ const applyThemeColors = (variant, variantData) => {
     root.style.setProperty('--text-bright', variantData.text.bright);
   }
 
-  // Apply accent colors
   if (variantData.accents) {
     root.style.setProperty('--accent-cyan', variantData.accents.cyan);
     root.style.setProperty('--accent-cyan-bright', variantData.accents.cyanBright);
@@ -65,7 +73,6 @@ const applyThemeColors = (variant, variantData) => {
     root.style.setProperty('--accent-orange-bright', variantData.accents.orangeBright);
   }
 
-  // Apply border colors
   if (variantData.borders) {
     root.style.setProperty('--border-primary', variantData.borders.primary);
     root.style.setProperty('--border-secondary', variantData.borders.secondary);
@@ -73,7 +80,6 @@ const applyThemeColors = (variant, variantData) => {
     root.style.setProperty('--border-cyan', variantData.borders.cyan);
   }
 
-  // Apply status colors
   if (variantData.status) {
     root.style.setProperty('--status-error', variantData.status.error);
     root.style.setProperty('--status-warning', variantData.status.warning);
@@ -81,7 +87,6 @@ const applyThemeColors = (variant, variantData) => {
     root.style.setProperty('--status-info', variantData.status.info);
   }
 
-  // Apply syntax colors
   if (variantData.syntax) {
     root.style.setProperty('--syntax-comment', variantData.syntax.comment);
     root.style.setProperty('--syntax-keyword', variantData.syntax.keyword);
@@ -96,7 +101,6 @@ const applyThemeColors = (variant, variantData) => {
     root.style.setProperty('--syntax-punctuation', variantData.syntax.punctuation);
   }
 
-  // Apply shadow and overlay colors
   if (variantData.shadows) {
     root.style.setProperty('--shadow-sm', variantData.shadows.sm);
     root.style.setProperty('--shadow-md', variantData.shadows.md);
@@ -110,81 +114,96 @@ const applyThemeColors = (variant, variantData) => {
 };
 
 export const ThemeProvider = ({ children }) => {
-  const [theme, setTheme] = useState(DEFAULT_THEME);
   const [mounted, setMounted] = useState(false);
-  const [activeThemeData, setActiveThemeData] = useState(null);
-  const [activeVariant, setActiveVariant] = useState(DEFAULT_THEME);
   const [themeLoaded, setThemeLoaded] = useState(false);
 
-  // Per-page theme logic
-  const pathname = usePathname();
-  const [globalThemeData, setGlobalThemeData] = useState(null); // Backup for global theme
-  const [globalVariant, setGlobalVariant] = useState(DEFAULT_THEME);
-  const [perPageConfig, setPerPageConfig] = useState({ enabled: false, pages: {} });
-  const [themeCache, setThemeCache] = useState({}); // Cache for fetched themes
+  const [themeMode, setThemeModeState] = useState(DEFAULT_THEME_MODE);
+  const [resolvedTheme, setResolvedTheme] = useState(DEFAULT_VARIANT);
+  const [activeVariant, setActiveVariant] = useState(DEFAULT_VARIANT);
+  const [activeThemeData, setActiveThemeData] = useState(null);
 
-  // Fetch active theme from API - this is the source of truth
+  const pathname = usePathname();
+  const [globalThemeData, setGlobalThemeData] = useState(null);
+  const [perPageConfig, setPerPageConfig] = useState({ enabled: false, pages: {} });
+  const [themeCache, setThemeCache] = useState({});
+
+  const resolveThemeByMode = useCallback((mode, fallbackVariant = DEFAULT_VARIANT) => {
+    if (mode === 'auto') {
+      const systemTheme = getSystemVariant();
+      return isValidVariant(systemTheme) ? systemTheme : fallbackVariant;
+    }
+    if (isValidVariant(mode)) return mode;
+    return fallbackVariant;
+  }, []);
+
   useEffect(() => {
     const fetchActiveTheme = async () => {
+      const savedMode = localStorage.getItem('themeMode');
+      const legacyVariant = localStorage.getItem('themeVariant') || localStorage.getItem('theme');
+      const initialMode = isValidThemeMode(savedMode)
+        ? savedMode
+        : (isValidVariant(legacyVariant) ? legacyVariant : DEFAULT_THEME_MODE);
+
       try {
         const response = await fetch('/api/themes/active');
         const data = await response.json();
 
         if (data.success && data.data.theme) {
           setActiveThemeData(data.data.theme);
-          setGlobalThemeData(data.data.theme); // Store as global default
+          setGlobalThemeData(data.data.theme);
 
-          // Use the variant from database as the source of truth
-          const dbVariant = data.data.activeVariant || 'dark';
-          setActiveVariant(dbVariant);
-          setGlobalVariant(dbVariant);
-          setTheme(dbVariant);
+          const dbVariant = isValidVariant(data.data.activeVariant)
+            ? data.data.activeVariant
+            : DEFAULT_VARIANT;
+
+          setThemeModeState(initialMode);
+          const nextResolved = resolveThemeByMode(initialMode, dbVariant);
+          setResolvedTheme(nextResolved);
+          setActiveVariant(nextResolved);
 
           if (data.data.perPageThemes) {
             setPerPageConfig(data.data.perPageThemes);
           }
-
-          // Update localStorage to match database
-          localStorage.setItem('themeVariant', dbVariant);
-
-          setThemeLoaded(true);
         } else {
-          // Fallback to localStorage only if API fails
-          const savedVariant = localStorage.getItem('themeVariant');
-          if (savedVariant && isValidTheme(savedVariant)) {
-            setActiveVariant(savedVariant);
-            setTheme(savedVariant);
-          }
-          setThemeLoaded(true);
+          setThemeModeState(initialMode);
+          const fallbackResolved = resolveThemeByMode(initialMode, DEFAULT_VARIANT);
+          setResolvedTheme(fallbackResolved);
+          setActiveVariant(fallbackResolved);
         }
       } catch (error) {
         console.error('Failed to fetch active theme:', error);
-        // Fallback to localStorage on error
-        const savedVariant = localStorage.getItem('themeVariant');
-        if (savedVariant && isValidTheme(savedVariant)) {
-          setActiveVariant(savedVariant);
-          setTheme(savedVariant);
+        setThemeModeState(initialMode);
+        const fallbackResolved = resolveThemeByMode(initialMode, DEFAULT_VARIANT);
+        setResolvedTheme(fallbackResolved);
+        setActiveVariant(fallbackResolved);
+      } finally {
+        localStorage.setItem('themeMode', initialMode);
+        if (initialMode === 'auto') {
+          localStorage.removeItem('themeVariant');
+          localStorage.setItem('theme', 'auto');
+        } else {
+          localStorage.setItem('themeVariant', initialMode);
+          localStorage.setItem('theme', initialMode);
         }
+
         setThemeLoaded(true);
       }
     };
 
     fetchActiveTheme();
     setMounted(true);
-  }, []);
+  }, [resolveThemeByMode]);
 
-  // Helper to fetch theme data
   const fetchThemeData = useCallback(async (slug) => {
     if (!slug) return null;
 
-    // Check cache first
     if (themeCache[slug]) return themeCache[slug];
 
     try {
       const res = await fetch(`/api/themes/${slug}`);
       const data = await res.json();
       if (data.success) {
-        setThemeCache(prev => ({ ...prev, [slug]: data.data }));
+        setThemeCache((prev) => ({ ...prev, [slug]: data.data }));
         return data.data;
       }
     } catch (error) {
@@ -193,31 +212,20 @@ export const ThemeProvider = ({ children }) => {
     return null;
   }, [themeCache]);
 
-  // Handle route changes and per-page themes
   useEffect(() => {
     if (!themeLoaded || !globalThemeData) return;
 
     const handleRouteChange = async () => {
-      // Logic to determine if current path has a specific theme
       if (perPageConfig.enabled && perPageConfig.pages) {
-
-        // Find matching rule
-        // We look for exact match first, then prefix match for "Details" style paths if needed
-        // Based on Admin UI:
-        // /projects -> List
-        // /projects/ -> Details (prefix)
-
         let targetThemeSlug = null;
 
-        // 1. Exact match
         if (perPageConfig.pages[pathname]) {
           targetThemeSlug = perPageConfig.pages[pathname];
         }
 
-        // 2. Prefix match (longest prefix wins)
         if (!targetThemeSlug) {
           const sortedPrefixes = Object.keys(perPageConfig.pages)
-            .filter(key => key.endsWith('/')) // Only keys ending in / are treated as prefixes
+            .filter((key) => key.endsWith('/'))
             .sort((a, b) => b.length - a.length);
 
           for (const prefix of sortedPrefixes) {
@@ -229,18 +237,11 @@ export const ThemeProvider = ({ children }) => {
         }
 
         if (targetThemeSlug) {
-          // Check if we already have this data
-          // If it's the global theme, just revert
           if (targetThemeSlug === globalThemeData.slug) {
             if (activeThemeData?.slug !== globalThemeData.slug) {
               setActiveThemeData(globalThemeData);
-              // Optionally keep current variant or revert to global variant?
-              // Usually per-page themes might want to enforce their own variant preference if stored,
-              // but for now let's keep user's selected variant or global variant.
-              // The requirement implies visual theme changes. 
             }
           } else {
-            // Fetch and apply
             const newThemeData = await fetchThemeData(targetThemeSlug);
             if (newThemeData && newThemeData.slug !== activeThemeData?.slug) {
               setActiveThemeData(newThemeData);
@@ -250,7 +251,6 @@ export const ThemeProvider = ({ children }) => {
         }
       }
 
-      // Default: Revert to global theme if not already
       if (activeThemeData?.slug !== globalThemeData.slug) {
         setActiveThemeData(globalThemeData);
       }
@@ -259,46 +259,91 @@ export const ThemeProvider = ({ children }) => {
     handleRouteChange();
   }, [pathname, perPageConfig, themeLoaded, globalThemeData, fetchThemeData, activeThemeData]);
 
-  // Apply theme when data is loaded and variant changes
   useEffect(() => {
-    if (themeLoaded && activeThemeData) {
-      const root = document.documentElement;
-      root.setAttribute('data-theme', activeVariant);
+    if (!mounted || themeMode !== 'auto') return;
 
-      // Apply custom theme colors
-      const variantData = activeThemeData.variants?.[activeVariant];
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handlePreferenceChange = () => {
+      const systemTheme = mediaQuery.matches ? 'dark' : 'light';
+      setResolvedTheme(systemTheme);
+      setActiveVariant(systemTheme);
+    };
+
+    handlePreferenceChange();
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', handlePreferenceChange);
+      return () => mediaQuery.removeEventListener('change', handlePreferenceChange);
+    }
+
+    mediaQuery.addListener(handlePreferenceChange);
+    return () => mediaQuery.removeListener(handlePreferenceChange);
+  }, [themeMode, mounted]);
+
+  useEffect(() => {
+    if (!mounted || themeMode === 'auto') return;
+    const explicitTheme = resolveThemeByMode(themeMode, DEFAULT_VARIANT);
+    setResolvedTheme(explicitTheme);
+    setActiveVariant(explicitTheme);
+  }, [mounted, resolveThemeByMode, themeMode]);
+
+  useEffect(() => {
+    if (!themeLoaded) return;
+
+    const root = document.documentElement;
+    root.setAttribute('data-theme', resolvedTheme);
+
+    if (activeThemeData?.variants) {
+      const variantData = activeThemeData.variants[resolvedTheme] || activeThemeData.variants[DEFAULT_VARIANT];
       if (variantData) {
-        applyThemeColors(activeVariant, variantData);
+        applyThemeColors(resolvedTheme, variantData);
       }
     }
-  }, [activeThemeData, activeVariant, themeLoaded]);
+  }, [activeThemeData, resolvedTheme, themeLoaded]);
 
-  const toggleTheme = () => {
-    const newVariant = theme === 'dark' ? 'light' : 'dark';
-    setTheme(newVariant);
-    setActiveVariant(newVariant);
-    // Save user preference to localStorage (but this doesn't change the active theme in DB)
-    localStorage.setItem('themeVariant', newVariant);
-  };
+  const setThemeMode = useCallback((mode) => {
+    if (!isValidThemeMode(mode)) return;
 
-  const switchVariant = (variant) => {
-    if (isValidTheme(variant)) {
-      setTheme(variant);
-      setActiveVariant(variant);
-      // Save user preference to localStorage
-      localStorage.setItem('themeVariant', variant);
+    const resolved = resolveThemeByMode(mode, activeVariant || DEFAULT_VARIANT);
+    setThemeModeState(mode);
+    setResolvedTheme(resolved);
+    setActiveVariant(resolved);
+
+    localStorage.setItem('themeMode', mode);
+    if (mode === 'auto') {
+      localStorage.removeItem('themeVariant');
+      localStorage.setItem('theme', 'auto');
+    } else {
+      localStorage.setItem('themeVariant', mode);
+      localStorage.setItem('theme', mode);
     }
-  };
+  }, [activeVariant, resolveThemeByMode]);
+
+  const toggleTheme = useCallback(() => {
+    const nextVariant = resolvedTheme === 'dark' ? 'light' : 'dark';
+    setThemeMode(nextVariant);
+  }, [resolvedTheme, setThemeMode]);
+
+  const switchVariant = useCallback((variant) => {
+    if (isValidVariant(variant)) {
+      setThemeMode(variant);
+    }
+  }, [setThemeMode]);
 
   return (
-    <ThemeContext.Provider value={{
-      theme,
-      toggleTheme,
-      mounted,
-      activeThemeData,
-      activeVariant,
-      switchVariant
-    }}>
+    <ThemeContext.Provider
+      value={{
+        theme: resolvedTheme,
+        themeMode,
+        setThemeMode,
+        toggleTheme,
+        mounted,
+        activeThemeData,
+        activeVariant,
+        resolvedTheme,
+        switchVariant,
+      }}
+    >
       {children}
     </ThemeContext.Provider>
   );

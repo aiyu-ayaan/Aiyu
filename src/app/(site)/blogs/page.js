@@ -1,5 +1,3 @@
-
-import React from 'react';
 import BlogList from '../../components/blogs/BlogList';
 import { getConfigData } from '@/lib/dataFetchers';
 
@@ -34,7 +32,5 @@ export async function generateMetadata() {
 }
 
 export default function BlogsPage() {
-    return (
-        <BlogList />
-    );
+    return <BlogList />;
 }

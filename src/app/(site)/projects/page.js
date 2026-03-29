@@ -1,4 +1,4 @@
-import Projects from "../../components/projects/Projects";
+import Projects from '../../components/projects/Projects';
 import { getConfigData, getProjectsData } from "@/lib/dataFetchers";
 
 export async function generateMetadata() {

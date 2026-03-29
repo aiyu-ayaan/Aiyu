@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Upload, X, Trash2, Image as ImageIcon, Loader2, RefreshCw, CheckSquare, Square, Check, Sparkles } from 'lucide-react';
+import { Upload, X, Trash2, Image as ImageIcon, Loader2, RefreshCw, CheckSquare, Square, Check, Sparkles, Pin } from 'lucide-react';
 import Image from 'next/image';
 import Toast from './Toast';
 
@@ -23,6 +23,11 @@ export default function GalleryManager() {
 
     // AI Generation State
     const [generating, setGenerating] = useState(new Set()); // Set of file IDs currently generating
+
+    // Drag and Drop ordering state
+    const [draggedItemIdx, setDraggedItemIdx] = useState(null);
+    const [dragOverItemIdx, setDragOverItemIdx] = useState(null);
+    const [isSavingOrder, setIsSavingOrder] = useState(false);
 
     const showNotification = (success, message) => {
         setNotification({ success, message });
@@ -352,6 +357,82 @@ export default function GalleryManager() {
         }
     };
 
+    // --- Pin and Order Logic ---
+
+    const togglePin = async (id, currentStatus) => {
+        try {
+            const res = await fetch(`/api/gallery`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id, update: { isPinned: !currentStatus } })
+            });
+            const data = await res.json();
+            if (data.success) {
+                fetchImages();
+                showNotification(true, currentStatus ? 'Image unpinned' : 'Image pinned to top');
+            } else {
+                showNotification(false, data.error);
+            }
+        } catch (error) {
+            console.error('Failed to toggle pin:', error);
+            showNotification(false, 'Failed to update pin status');
+        }
+    };
+
+    const handleDragStartItem = (e, index) => {
+        setDraggedItemIdx(index);
+        // Required for Firefox
+        if (e.dataTransfer) {
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/html', e.target);
+        }
+    };
+
+    const handleDragEnterItem = (e, index) => {
+        e.preventDefault();
+        setDragOverItemIdx(index);
+    };
+
+    const handleDragOverItem = (e) => {
+        e.preventDefault(); // Necessary to allow dropping
+    };
+
+    const handleDragEndItem = async () => {
+        if (draggedItemIdx !== null && dragOverItemIdx !== null && draggedItemIdx !== dragOverItemIdx) {
+            const newImages = [...images];
+            const draggedItem = newImages[draggedItemIdx];
+            newImages.splice(draggedItemIdx, 1);
+            newImages.splice(dragOverItemIdx, 0, draggedItem);
+            setImages(newImages); // Optimistic UI update
+
+            setIsSavingOrder(true);
+            try {
+                // We map all images on the page to assign a new sequential order index
+                const updates = newImages.map((img, i) => ({ id: img._id, order: i }));
+                const res = await fetch('/api/gallery', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ items: updates })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showNotification(true, 'New arrangement saved successfully');
+                } else {
+                    showNotification(false, data.error || 'Failed to save order');
+                    fetchImages(); // Revert to old order on failure
+                }
+            } catch (error) {
+                console.error('Order save error:', error);
+                showNotification(false, 'Failed to save order');
+                fetchImages();
+            } finally {
+                setIsSavingOrder(false);
+            }
+        }
+        setDraggedItemIdx(null);
+        setDragOverItemIdx(null);
+    };
+
 
     const handleMigration = async () => {
         if (!confirm('Generate thumbnails for existing images? This may take a while.')) return;
@@ -659,13 +740,24 @@ export default function GalleryManager() {
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        {images.map(image => {
+                        {images.map((image, idx) => {
                             const isSelected = selectedImages.has(image._id);
+                            const isBeingDragged = draggedItemIdx === idx;
+                            const isDragOver = dragOverItemIdx === idx;
+
                             return (
                                 <div
                                     key={image._id}
-                                    className={`group relative bg-slate-900/50 backdrop-blur-xl rounded-xl border overflow-hidden transition-all hover:translate-y-[-4px] hover:shadow-xl
+                                    draggable
+                                    onDragStart={(e) => handleDragStartItem(e, idx)}
+                                    onDragEnter={(e) => handleDragEnterItem(e, idx)}
+                                    onDragEnd={handleDragEndItem}
+                                    onDragOver={handleDragOverItem}
+                                    className={`group relative bg-slate-900/50 backdrop-blur-xl rounded-xl border overflow-hidden transition-all
                                         ${isSelected ? 'border-pink-500 ring-1 ring-pink-500' : 'border-white/5 hover:border-pink-500/30'}
+                                        ${isBeingDragged ? 'opacity-40 scale-95' : 'opacity-100 scale-100'}
+                                        ${isDragOver && !isBeingDragged ? 'border-cyan-400 bg-cyan-400/5 translate-y-[-8px]' : ''}
+                                        ${!isBeingDragged ? 'hover:translate-y-[-4px] hover:shadow-xl' : ''}
                                     `}
                                     onClick={() => toggleSelection(image._id)}
                                 >
@@ -677,22 +769,49 @@ export default function GalleryManager() {
                                             className="object-cover transition-transform duration-700 group-hover:scale-105"
                                         />
 
-                                        {/* Selection Checkbox Overlay */}
-                                        <div className={`absolute top-2 right-2 z-20 transition-all duration-200 transform
-                                            ${isSelected ? 'opacity-100 scale-100' : 'opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100'}
-                                        `}>
-                                            <div className={`w-6 h-6 rounded border flex items-center justify-center
-                                                ${isSelected ? 'bg-pink-500 border-pink-500 text-white' : 'bg-black/50 border-white/50 text-white/50 hover:bg-black/80 hover:border-white'}
+                                        {/* Selection & Pin Overlays */}
+                                        <div className="absolute top-2 right-2 z-20 flex gap-2">
+                                            {/* Pin Button */}
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    togglePin(image._id, image.isPinned);
+                                                }}
+                                                className={`w-8 h-8 rounded-lg border flex items-center justify-center transition-all transform
+                                                    ${image.isPinned 
+                                                        ? 'bg-cyan-500 border-cyan-500 text-white opacity-100 scale-100' 
+                                                        : 'bg-black/50 border-white/20 text-white/50 opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100 hover:bg-black/80 hover:border-white'
+                                                    }
+                                                `}
+                                                title={image.isPinned ? "Unpin from top" : "Pin to top"}
+                                            >
+                                                <Pin size={14} className={image.isPinned ? "fill-current" : ""} />
+                                            </button>
+
+                                            {/* Selection Checkbox */}
+                                            <div className={`transition-all duration-200 transform
+                                                ${isSelected ? 'opacity-100 scale-100' : 'opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100'}
                                             `}>
-                                                {isSelected && <Check size={14} />}
+                                                <div className={`w-8 h-8 rounded-lg border flex items-center justify-center
+                                                    ${isSelected ? 'bg-pink-500 border-pink-500 text-white' : 'bg-black/50 border-white/20 text-white/50 hover:bg-black/80 hover:border-white'}
+                                                `}>
+                                                    {isSelected && <Check size={14} />}
+                                                </div>
                                             </div>
                                         </div>
 
                                         <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-4 pointer-events-none">
                                             <div className="flex justify-between items-end pointer-events-auto">
-                                                <span className="text-[10px] font-mono text-slate-300 bg-slate-900/50 px-2 py-1 rounded backdrop-blur-sm border border-white/10">
-                                                    {new Date(image.createdAt).toLocaleDateString()}
-                                                </span>
+                                                <div className="flex flex-col gap-1">
+                                                    <span className="text-[10px] font-mono text-slate-300 bg-slate-900/50 px-2 py-1 rounded backdrop-blur-sm border border-white/10 w-fit">
+                                                        {new Date(image.createdAt).toLocaleDateString()}
+                                                    </span>
+                                                    {image.isPinned && (
+                                                        <span className="text-[10px] font-bold text-cyan-400 flex items-center gap-1">
+                                                            <Pin size={10} className="fill-current" /> PINNED_PRIORITY
+                                                        </span>
+                                                    )}
+                                                </div>
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
@@ -708,6 +827,12 @@ export default function GalleryManager() {
                                         {!image.thumbnail && (
                                             <div className="absolute top-2 left-2 px-2 py-1 bg-amber-500/90 text-black text-[10px] uppercase font-bold tracking-wider rounded">
                                                 Raw Asset
+                                            </div>
+                                        )}
+                                        {isSavingOrder && isBeingDragged && (
+                                            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center z-30">
+                                                <Loader2 className="animate-spin text-cyan-400 mb-2" size={24} />
+                                                <span className="text-[10px] font-mono text-cyan-400">SAVING_POSITION...</span>
                                             </div>
                                         )}
                                     </div>

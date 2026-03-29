@@ -1,124 +1,142 @@
 "use client";
-import React from 'react';
+
+import React, { useMemo } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { FaCalendarAlt, FaArrowRight } from 'react-icons/fa';
-import { useTheme } from '../../context/ThemeContext';
+import { FaArrowRight, FaCalendarAlt, FaPenNib } from 'react-icons/fa';
+
+const estimateReadTime = (content = '') => {
+  const words = String(content).trim().split(/\s+/).filter(Boolean).length;
+  const minutes = Math.max(1, Math.round(words / 200));
+  return `${minutes} min read`;
+};
 
 const HomeBlogs = ({ blogs }) => {
-    const { theme } = useTheme();
+  const sortedBlogs = useMemo(() => {
+    const safeBlogs = Array.isArray(blogs) ? blogs : [];
+    return [...safeBlogs].sort((a, b) => new Date(b?.createdAt || b?.date || 0) - new Date(a?.createdAt || a?.date || 0));
+  }, [blogs]);
 
-    // Sort by date (newest first) just in case, though backend should handle it
-    const sortedBlogs = blogs?.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) || [];
-    const recentBlogs = sortedBlogs.slice(0, 3);
+  const recentBlogs = sortedBlogs.slice(0, 3);
 
-    if (recentBlogs.length === 0) return null;
+  if (recentBlogs.length === 0) return null;
 
-    return (
-        <section className="py-20 px-4 sm:px-6">
-            <div className="max-w-6xl mx-auto">
-                <motion.div
-                    initial={{ y: 20, opacity: 0 }}
-                    whileInView={{ y: 0, opacity: 1 }}
-                    transition={{ duration: 0.5 }}
-                    viewport={{ once: true }}
-                    className="text-center mb-12"
-                >
-                    <h2
-                        className="text-3xl sm:text-4xl font-bold mb-4 flex items-center justify-center gap-3"
-                        style={{ color: 'var(--accent-cyan)' }}
-                    >
-                        <span style={{ color: 'var(--accent-orange)' }}>{"<"}</span>
-                        Recent Writings
-                        <span style={{ color: 'var(--accent-orange)' }}>{"/>"}</span>
-                    </h2>
-                    <p style={{ color: 'var(--text-secondary)' }} className="max-w-2xl mx-auto">
-                        Thoughts, tutorials, and insights on development and technology.
-                    </p>
-                </motion.div>
+  return (
+    <section className="relative px-4 py-14 sm:px-6 lg:py-20">
+      <div
+        className="pointer-events-none absolute left-10 top-16 h-44 w-44 rounded-full blur-3xl"
+        style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--accent-cyan) 25%, transparent), transparent 70%)' }}
+      />
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {recentBlogs.map((blog, index) => (
-                        <motion.div
-                            key={blog._id}
-                            initial={{ y: 30, opacity: 0 }}
-                            whileInView={{ y: 0, opacity: 1 }}
-                            whileHover={{
-                                y: -5,
-                                borderColor: 'var(--accent-cyan)',
-                                boxShadow: 'var(--shadow-lg)'
-                            }}
-                            transition={{ duration: 0.3 }}
-                            viewport={{ once: true }}
-                            className="group flex flex-col h-full rounded-2xl overflow-hidden border transition-all duration-300 shadow-lg"
-                            style={{
-                                backgroundColor: 'var(--bg-elevated)',
-                                backdropFilter: 'blur(10px)',
-                                borderColor: 'var(--border-secondary)',
-                            }}
-                        >
-                            {/* Card Content */}
-                            <div className="p-6 flex flex-col flex-grow">
-                                <div className="flex items-center gap-2 mb-4 text-sm" style={{ color: 'var(--text-tertiary)' }}>
-                                    <FaCalendarAlt className="w-4 h-4" />
-                                    <span>
-                                        {new Date(blog.date || blog.createdAt).toLocaleDateString('en-US', {
-                                            year: 'numeric',
-                                            month: 'long',
-                                            day: 'numeric'
-                                        })}
-                                    </span>
-                                </div>
+      <div className="relative mx-auto max-w-6xl rounded-3xl border p-6 sm:p-8"
+        style={{
+          background: 'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 92%, transparent), color-mix(in srgb, var(--bg-secondary) 92%, transparent))',
+          borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
+          boxShadow: '0 16px 36px var(--shadow-sm)',
+        }}
+      >
+        <motion.div
+          initial={{ y: 18, opacity: 0 }}
+          whileInView={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.55 }}
+          viewport={{ once: true }}
+          className="mb-10 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"
+        >
+          <div>
+            <p className="mb-2 inline-flex rounded-full border px-3 py-1 text-xs uppercase tracking-[0.2em]"
+              style={{
+                borderColor: 'color-mix(in srgb, var(--accent-purple) 45%, var(--border-secondary))',
+                color: 'var(--accent-purple)',
+              }}
+            >
+              Writing Desk
+            </p>
+            <h2 className="text-3xl font-bold sm:text-4xl" style={{ color: 'var(--text-primary)' }}>
+              Recent Writings
+            </h2>
+            <p className="mt-2 max-w-2xl text-sm sm:text-base" style={{ color: 'var(--text-secondary)' }}>
+              Practical notes, tutorials, and reflections from projects and day-to-day engineering.
+            </p>
+          </div>
 
-                                <Link href={`/blogs/${blog._id}`} className="block group-hover:underline decoration-2 underline-offset-4 decoration-[var(--accent-cyan)]">
-                                    <h3
-                                        className="text-xl font-bold mb-3 line-clamp-2 transition-colors duration-300"
-                                        style={{ color: 'var(--text-primary)' }}
-                                    >
-                                        {blog.title}
-                                    </h3>
-                                </Link>
+          <Link
+            href="/blogs"
+            className="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold"
+            style={{
+              borderColor: 'var(--accent-cyan)',
+              color: 'var(--accent-cyan)',
+              backgroundColor: 'color-mix(in srgb, var(--accent-cyan) 10%, transparent)',
+            }}
+          >
+            View All Posts <FaArrowRight size={12} />
+          </Link>
+        </motion.div>
 
-                                <div
-                                    className="mb-6 line-clamp-3 text-sm flex-grow"
-                                    style={{ color: 'var(--text-secondary)' }}
-                                >
-                                    {/* Simple way to strip markdown or just show content raw if not markdown heavy */}
-                                    {blog.content?.replace(/[#*`_\[\]]/g, '').substring(0, 150)}...
-                                </div>
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {recentBlogs.map((blog, index) => {
+            const previewText = String(blog?.content || '').replace(/[#*`_\[\]]/g, '').trim();
+            const displayText = previewText.length > 160 ? `${previewText.slice(0, 160)}...` : previewText;
 
-                                <div className="mt-auto pt-4 border-t transition-colors duration-300" style={{ borderColor: 'var(--border-secondary)' }}>
-                                    <Link
-                                        href={`/blogs/${blog._id}`}
-                                        className="inline-flex items-center gap-2 font-medium transition-colors duration-300"
-                                        style={{ color: 'var(--accent-cyan)' }}
-                                    >
-                                        Read Article <FaArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                                    </Link>
-                                </div>
-                            </div>
-                        </motion.div>
-                    ))}
+            return (
+              <motion.article
+                key={blog?._id || `${blog?.title}-${index}`}
+                initial={{ y: 24, opacity: 0 }}
+                whileInView={{ y: 0, opacity: 1 }}
+                viewport={{ once: true, amount: 0.2 }}
+                transition={{ duration: 0.35, delay: index * 0.06 }}
+                whileHover={{ y: -4 }}
+                className="group flex h-full flex-col rounded-2xl border p-5 transition-all duration-300"
+                style={{
+                  borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
+                  backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 84%, transparent)',
+                }}
+              >
+                <div className="mb-4 flex items-center justify-between gap-2 text-xs sm:text-sm" style={{ color: 'var(--text-tertiary)' }}>
+                  <span className="inline-flex items-center gap-2">
+                    <FaCalendarAlt className="h-3.5 w-3.5" />
+                    {new Date(blog?.date || blog?.createdAt).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                    })}
+                  </span>
+                  <span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px]"
+                    style={{
+                      borderColor: 'color-mix(in srgb, var(--accent-orange) 46%, var(--border-secondary))',
+                      color: 'var(--accent-orange)',
+                    }}
+                  >
+                    <FaPenNib className="h-3 w-3" />
+                    {estimateReadTime(blog?.content)}
+                  </span>
                 </div>
 
-                <div className="mt-12 text-center">
-                    <Link href="/blogs">
-                        <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            className="px-8 py-3 rounded-full font-semibold transition-all shadow-lg"
-                            style={{
-                                background: 'linear-gradient(to right, var(--accent-cyan), var(--accent-purple))',
-                                color: '#ffffff',
-                            }}
-                        >
-                            View All Posts
-                        </motion.button>
-                    </Link>
+                <Link href={`/blogs/${blog?._id}`} className="group-hover:underline" style={{ textDecorationColor: 'var(--accent-cyan)' }}>
+                  <h3 className="mb-3 text-xl font-bold leading-snug" style={{ color: 'var(--text-primary)' }}>
+                    {blog?.title}
+                  </h3>
+                </Link>
+
+                <p className="mb-6 text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                  {displayText || 'Open this article to read the full write-up.'}
+                </p>
+
+                <div className="mt-auto border-t pt-4" style={{ borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)' }}>
+                  <Link
+                    href={`/blogs/${blog?._id}`}
+                    className="inline-flex items-center gap-2 text-sm font-semibold"
+                    style={{ color: 'var(--accent-cyan)' }}
+                  >
+                    Read Article <FaArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
+                  </Link>
                 </div>
-            </div>
-        </section>
-    );
+              </motion.article>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
 };
 
 export default HomeBlogs;

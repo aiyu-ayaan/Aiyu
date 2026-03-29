@@ -4,7 +4,8 @@ services:
     image: mongo:7
     container_name: aiyu-mongodb
     restart: unless-stopped
-    command: [ "--wiredTigerCacheSizeGB", "0.25" ]
+    # Removed wiredTigerCacheSizeGB limit
+    command: [ "mongod" ]
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
@@ -26,7 +27,7 @@ services:
 
   # Next.js Application Service
   app:
-    image: aiyuayaan/aiyu:latest
+    image: aiyuayaan/aiyu:${APP_IMAGE_TAG:-latest}
     container_name: aiyu-app
     restart: unless-stopped
     # Port exposed only to internal network (Nginx handles external traffic)
@@ -49,22 +50,20 @@ services:
 
       # Node environment
       NODE_ENV: production
-      # Keep V8 heap bounded on low-memory servers (2 GB instances)
-      NODE_OPTIONS: --max-old-space-size=512
-      # Keep V8 heap bounded on low-memory servers (2 GB instances)
-      NODE_OPTIONS: --max-old-space-size=512
+      # Memory limits removed for V8 heap
+      # NODE_OPTIONS: --max-old-space-size=512
     volumes:
       # Persistent uploads directory (named volume for proper permissions)
       - uploads_data:/app/public/uploads
       # Writable Next.js cache directory (volume for read-only filesystem)
       - nextjs_cache:/app/.next/cache
     tmpfs:
-      # CRITICAL SECURITY: Mount /tmp with noexec to prevent crypto miners from executing
-      - /tmp:noexec,nosuid,nodev,mode=1777,size=100M
-      # Additional tmpfs mounts with noexec and nosuid for security
-      - /var/tmp:noexec,nosuid,nodev,mode=1777,size=50M
-      # /run uses 755 (not 1777) - only owner (nextjs user) needs write access for PID files
-      - /run:noexec,nosuid,nodev,mode=755,size=10M
+      # CRITICAL SECURITY: Mount /tmp with noexec
+      - /tmp:noexec,nosuid,nodev,mode=1777
+      # Additional tmpfs mounts
+      - /var/tmp:noexec,nosuid,nodev,mode=1777
+      # /run
+      - /run:noexec,nosuid,nodev,mode=755
     # CRITICAL SECURITY: Drop all capabilities and enable security restrictions
     cap_drop:
       - ALL

@@ -1,78 +1,134 @@
 "use client";
-import React, { useState } from 'react';
+
+import React, { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import { FaArrowRight, FaBoxes, FaCheckCircle, FaTools } from 'react-icons/fa';
 import ProjectCard from '../projects/ProjectCard';
 import ProjectDialog from '../projects/ProjectDialog';
-import { useTheme } from '../../context/ThemeContext';
 
 const HomeProjects = ({ data }) => {
-  const { theme } = useTheme();
   const [selectedProject, setSelectedProject] = useState(null);
-  const projects = data || [];
+  const projects = Array.isArray(data) ? data : [];
 
-  const openDialog = (project) => {
-    setSelectedProject(project);
-  };
+  const latestProjects = useMemo(() => projects.slice(0, 3), [projects]);
+  const doneProjects = useMemo(
+    () => projects.filter((project) => String(project?.status || '').toLowerCase() === 'done').length,
+    [projects]
+  );
+  const uniqueStacks = useMemo(() => {
+    const stackSet = new Set(projects.flatMap((project) => project?.techStack || []));
+    return stackSet.size;
+  }, [projects]);
 
-  const closeDialog = () => {
-    setSelectedProject(null);
-  };
-
-  const latestProjects = projects.slice(0, 2);
+  const statCards = [
+    { label: 'Total Projects', value: projects.length, icon: FaBoxes, accent: 'var(--accent-cyan)' },
+    { label: 'Completed', value: doneProjects, icon: FaCheckCircle, accent: 'var(--status-success)' },
+    { label: 'Tech Used', value: uniqueStacks, icon: FaTools, accent: 'var(--accent-purple)' },
+  ];
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.8, ease: 'easeOut' }}
-      className="p-4 lg:p-8 transition-colors duration-300"
+      transition={{ duration: 0.7, ease: 'easeOut' }}
+      className="relative p-4 lg:p-8"
       style={{
         backgroundColor: 'transparent',
         color: 'var(--text-primary)',
       }}
     >
-      <div className="max-w-6xl mx-auto">
-        <h2
-          className="text-4xl font-bold mb-8 flex items-center gap-3"
-          style={{ color: 'var(--accent-cyan)' }}
-        >
-          <span style={{ color: 'var(--accent-orange)' }}>{"<"}</span>
-          Latest Projects
-          <span style={{ color: 'var(--accent-orange)' }}>{"/>"}</span>
-        </h2>
+      <div
+        className="pointer-events-none absolute -right-6 top-4 h-44 w-44 rounded-full blur-3xl"
+        style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--accent-cyan) 26%, transparent), transparent 70%)' }}
+      />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {latestProjects.map((project, index) => (
-            <ProjectCard key={index} project={project} onCardClick={openDialog} />
-          ))}
-        </div>
-        <div className="text-center mt-12">
+      <div className="relative mx-auto max-w-6xl rounded-3xl border p-6 sm:p-8"
+        style={{
+          background: 'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 92%, transparent), color-mix(in srgb, var(--bg-secondary) 92%, transparent))',
+          borderColor: 'color-mix(in srgb, var(--border-secondary) 74%, transparent)',
+          boxShadow: '0 16px 36px var(--shadow-sm)',
+        }}
+      >
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="mb-2 inline-flex rounded-full border px-3 py-1 text-xs uppercase tracking-[0.18em]"
+              style={{
+                borderColor: 'color-mix(in srgb, var(--accent-orange) 45%, var(--border-secondary))',
+                color: 'var(--accent-orange)',
+              }}
+            >
+              Featured Work
+            </p>
+            <h2 className="text-3xl font-bold sm:text-4xl" style={{ color: 'var(--text-primary)' }}>
+              Latest Projects
+            </h2>
+            <p className="mt-2 text-sm sm:text-base" style={{ color: 'var(--text-secondary)' }}>
+              Recent builds with production-focused architecture and clean user experience.
+            </p>
+          </div>
           <Link
             href="/projects"
-            className="inline-flex items-center gap-2 font-semibold text-lg px-6 py-3 rounded-lg border-2 transition-all duration-300 group"
+            className="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold"
             style={{
-              color: 'var(--accent-cyan)',
               borderColor: 'var(--accent-cyan)',
+              color: 'var(--accent-cyan)',
+              backgroundColor: 'color-mix(in srgb, var(--accent-cyan) 10%, transparent)',
             }}
           >
-            <motion.span
-              className="inline-flex items-center gap-2"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              View All Projects
-              <motion.span
-                animate={{ x: [0, 5, 0] }}
-                transition={{ duration: 1.5, repeat: Infinity }}
-              >
-                →
-              </motion.span>
-            </motion.span>
+            View All Projects <FaArrowRight size={12} />
           </Link>
         </div>
+
+        <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          {statCards.map((item) => {
+            const Icon = item.icon;
+            return (
+              <div
+                key={item.label}
+                className="rounded-xl border p-3"
+                style={{
+                  borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)',
+                  backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 82%, transparent)',
+                }}
+              >
+                <div className="mb-2 inline-flex rounded-lg p-2"
+                  style={{ backgroundColor: `color-mix(in srgb, ${item.accent} 14%, transparent)` }}
+                >
+                  <Icon size={14} style={{ color: item.accent }} />
+                </div>
+                <p className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{item.value}</p>
+                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{item.label}</p>
+              </div>
+            );
+          })}
+        </div>
+
+        {latestProjects.length > 0 ? (
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+            {latestProjects.map((project, index) => (
+              <ProjectCard key={project?._id || `${project?.name}-${index}`} project={project} onCardClick={setSelectedProject} />
+            ))}
+          </div>
+        ) : (
+          <div
+            className="rounded-2xl border p-8 text-center"
+            style={{
+              borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)',
+              backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 80%, transparent)',
+            }}
+          >
+            <h3 className="mb-2 text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>
+              Projects Coming Soon
+            </h3>
+            <p style={{ color: 'var(--text-secondary)' }}>
+              Add projects from the admin panel and they will appear here automatically.
+            </p>
+          </div>
+        )}
       </div>
-      <ProjectDialog project={selectedProject} onClose={closeDialog} />
+
+      <ProjectDialog project={selectedProject} onClose={() => setSelectedProject(null)} />
     </motion.div>
   );
 };

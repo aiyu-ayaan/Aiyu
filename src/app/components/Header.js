@@ -2,11 +2,10 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import clsx from 'clsx';
 import { motion, useScroll } from 'framer-motion';
-import { Search } from 'lucide-react';
-// import { navLinks, contactLink } from '../data/headerData';
+import { ArrowUpRight, Menu, Search, X } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import { useTheme } from '../context/ThemeContext';
 import TerminalPath from './admin/TerminalPath';
@@ -15,305 +14,337 @@ const SCROLL_DOWN_THRESHOLD = 72;
 const SCROLL_UP_THRESHOLD = 24;
 
 export default function Header({ data, logoText, socialData, config }) {
-    const { navLinks, contactLink } = data || { navLinks: [], contactLink: {} };
-    // Filter out hidden links
-    const visibleNavLinks = navLinks.filter(link => link.visible !== false);
+  const { navLinks, contactLink } = data || { navLinks: [], contactLink: {} };
+  const visibleNavLinks = navLinks.filter((link) => link.visible !== false);
+  const displayLogo = logoText || "< aiyu />";
 
-    const displayLogo = logoText || "< aiyu />";
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [scrolled, setScrolled] = useState(false);
-    const pathname = usePathname();
-    const { theme } = useTheme();
-    const { scrollYProgress } = useScroll();
+  const pathname = usePathname();
+  const { theme } = useTheme();
+  const { scrollYProgress } = useScroll();
 
-    const toggleMenu = () => {
-        setIsMenuOpen(!isMenuOpen);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    let ticking = false;
+
+    const updateScrollState = () => {
+      const y = window.scrollY;
+      setScrolled((prev) => (prev ? y > SCROLL_UP_THRESHOLD : y > SCROLL_DOWN_THRESHOLD));
+      ticking = false;
     };
 
-    useEffect(() => {
-        let ticking = false;
+    const handleScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      window.requestAnimationFrame(updateScrollState);
+    };
 
-        const updateScrollState = () => {
-            const y = window.scrollY;
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
-            // Hysteresis avoids rapid toggling around one exact pixel threshold.
-            setScrolled((prev) => (prev ? y > SCROLL_UP_THRESHOLD : y > SCROLL_DOWN_THRESHOLD));
-            ticking = false;
-        };
+  useEffect(() => {
+    if (isMenuOpen) {
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+      document.documentElement.style.overflow = 'unset';
+    }
 
-        const handleScroll = () => {
-            if (ticking) return;
-            ticking = true;
-            window.requestAnimationFrame(updateScrollState);
-        };
+    return () => {
+      document.body.style.overflow = 'unset';
+      document.documentElement.style.overflow = 'unset';
+    };
+  }, [isMenuOpen]);
 
-        handleScroll();
-        window.addEventListener('scroll', handleScroll, { passive: true });
+  useEffect(() => {
+    setIsMenuOpen(false);
+  }, [pathname]);
 
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
+  return (
+    <>
+      <motion.div
+        className="fixed left-0 right-0 top-0 z-[60] h-1 origin-left"
+        style={{
+          scaleX: scrollYProgress,
+          background: 'linear-gradient(to right, var(--accent-cyan), var(--accent-purple), var(--accent-pink))',
+        }}
+      />
 
-    // Prevent body scroll when mobile menu is open
-    useEffect(() => {
-        if (isMenuOpen) {
-            document.body.style.overflow = 'hidden';
-            document.documentElement.style.overflow = 'hidden';
-        } else {
-            document.body.style.overflow = 'unset';
-            document.documentElement.style.overflow = 'unset';
-        }
-        return () => {
-            document.body.style.overflow = 'unset';
-            document.documentElement.style.overflow = 'unset';
-        };
-    }, [isMenuOpen]);
-
-    return (
-        <>
-            {/* Scroll Progress Bar at the very top */}
-            <motion.div
-                className="fixed top-0 left-0 right-0 h-1 z-[60] origin-left"
+      <header className="sticky top-0 z-50 px-3 pb-0 pt-3 sm:px-4 lg:px-6">
+        <motion.div
+          className="mx-auto w-full max-w-7xl rounded-2xl border transition-all duration-300"
+          style={{
+            background: scrolled
+              ? 'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 90%, transparent), color-mix(in srgb, var(--bg-secondary) 92%, transparent))'
+              : 'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 70%, transparent), color-mix(in srgb, var(--bg-secondary) 70%, transparent))',
+            borderColor: scrolled
+              ? 'color-mix(in srgb, var(--border-secondary) 75%, transparent)'
+              : 'color-mix(in srgb, var(--border-secondary) 40%, transparent)',
+            backdropFilter: 'blur(18px)',
+            boxShadow: scrolled
+              ? '0 14px 36px color-mix(in srgb, var(--shadow-md) 85%, transparent)'
+              : '0 8px 22px color-mix(in srgb, var(--shadow-sm) 60%, transparent)',
+          }}
+        >
+          <nav
+            className={clsx(
+              "relative flex items-center gap-3 transition-[padding,min-height] duration-300",
+              scrolled ? "min-h-[60px] px-3 py-2 sm:px-4" : "min-h-[72px] px-3 py-3 sm:px-4"
+            )}
+          >
+            <Link href="/" className="min-w-0 flex-shrink-0">
+              <motion.div
+                className="inline-flex items-center gap-2 rounded-xl border px-3 py-2"
                 style={{
-                    scaleX: scrollYProgress,
-                    background: 'linear-gradient(to right, var(--accent-cyan), var(--accent-purple))',
+                  borderColor: 'color-mix(in srgb, var(--border-secondary) 70%, transparent)',
+                  backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 75%, transparent)',
                 }}
-            />
-            <motion.header
-                className={clsx(
-                    "sticky top-0 z-50 w-full transition-[background-color,backdrop-filter,border-color,box-shadow,padding] duration-300"
-                )}
-                style={{
-                    backgroundColor: scrolled
-                        ? theme === 'dark' ? 'rgba(13, 17, 23, 0.6)' : 'rgba(255, 255, 255, 0.6)'
-                        : 'transparent',
-                    backdropFilter: scrolled ? 'blur(16px)' : 'none',
-                    borderBottom: scrolled
-                        ? `1px solid ${theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)'}`
-                        : '1px solid transparent',
-                    boxShadow: scrolled ? '0 4px 30px rgba(0, 0, 0, 0.1)' : 'none',
-                }}
-            >
-                <nav
-                    className={clsx(
-                        "flex items-center justify-between w-full mx-auto px-4 sm:px-6 transition-[padding,min-height] duration-300",
-                        scrolled ? "py-2 min-h-[56px]" : "py-4 min-h-[72px]"
-                    )}
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+              >
+                <span
+                  className="text-xl font-bold"
+                  style={{
+                    backgroundImage: 'linear-gradient(to right, var(--accent-cyan), var(--accent-orange))',
+                    WebkitBackgroundClip: 'text',
+                    backgroundClip: 'text',
+                    color: 'transparent',
+                  }}
                 >
-                    {/* Logo/Brand - Left */}
-                    <div className="flex-shrink-0">
-                        <Link href="/">
-                            <motion.div
-                                className="text-2xl font-bold bg-gradient-to-r bg-clip-text text-transparent cursor-pointer flex items-center gap-2"
-                                style={{
-                                    backgroundImage: 'linear-gradient(to right, var(--accent-cyan), var(--accent-orange))',
-                                }}
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                            >
-                                {displayLogo}
-                            </motion.div>
-                        </Link>
-                    </div>
+                  {displayLogo}
+                </span>
+              </motion.div>
+            </Link>
 
-                    {/* Mobile Search Button */}
-                    <div className="flex md:hidden items-center ml-auto mr-2">
-                        <motion.button
-                            className="p-2 rounded-full transition-colors relative"
-                            style={{
-                                color: 'var(--text-primary)',
-                                backgroundColor: scrolled ? 'rgba(125, 125, 125, 0.1)' : 'transparent',
-                            }}
-                            onClick={() => window.dispatchEvent(new CustomEvent("open-command-palette"))}
-                            whileTap={{ scale: 0.9 }}
-                            aria-label="Search"
-                        >
-                            <Search size={22} strokeWidth={2.5} />
-                        </motion.button>
-                    </div>
-
-                    {/* Mobile Menu Button - Styled */}
-                    <motion.button
-                        className="md:hidden relative z-[110] p-2 rounded-full transition-colors"
-                        style={{
-                            color: 'var(--text-primary)',
-                            backgroundColor: isMenuOpen ? 'transparent' : 'rgba(125, 125, 125, 0.1)',
-                            opacity: isMenuOpen ? 0 : 1,
-                            pointerEvents: isMenuOpen ? 'none' : 'auto',
-                        }}
-                        onClick={toggleMenu}
-                        whileTap={{ scale: 0.9 }}
+            <div className="hidden min-w-0 flex-1 justify-center px-2 md:flex">
+              <div
+                className="flex max-w-full items-center gap-1 overflow-x-auto rounded-full border p-1"
+                style={{
+                  borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
+                  backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 70%, transparent)',
+                }}
+              >
+                {visibleNavLinks.map((link) => {
+                  const isActive = pathname === link.href;
+                  return (
+                    <Link
+                      key={link.name}
+                      href={link.href}
+                      target={link.target}
+                      className="relative rounded-full px-3 py-1.5 text-sm font-semibold transition-colors"
+                      style={{ color: isActive ? 'var(--text-bright)' : 'var(--text-secondary)' }}
                     >
-                        <div className="w-6 h-5 flex flex-col justify-between items-center">
-                            <motion.span
-                                animate={isMenuOpen ? { rotate: 45, y: 9 } : { rotate: 0, y: 0 }}
-                                className="w-full h-0.5 bg-current rounded-full origin-center transition-transform"
-                            />
-                            <motion.span
-                                animate={isMenuOpen ? { opacity: 0 } : { opacity: 1 }}
-                                className="w-full h-0.5 bg-current rounded-full transition-opacity"
-                            />
-                            <motion.span
-                                animate={isMenuOpen ? { rotate: -45, y: -9 } : { rotate: 0, y: 0 }}
-                                className="w-full h-0.5 bg-current rounded-full origin-center transition-transform"
-                            />
-                        </div>
-                    </motion.button>
-
-                    {/* Navigation Links - Desktop Center */}
-                    <div className="hidden md:block absolute left-1/2 transform -translate-x-1/2">
-                        <div className="flex items-center gap-1 p-1 rounded-full border border-transparent transition-all duration-300"
-                            style={{
-                                backgroundColor: scrolled ? (theme === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)') : 'transparent',
-                                borderColor: scrolled ? (theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)') : 'transparent',
-                            }}
-                        >
-                            {visibleNavLinks.map((link) => {
-                                const isActive = pathname === link.href;
-                                return (
-                                    <Link
-                                        key={link.name}
-                                        href={link.href}
-                                        target={link.target}
-                                        className="relative px-4 py-2 rounded-full text-sm font-medium transition-all duration-300"
-                                        style={{
-                                            color: isActive
-                                                ? (theme === 'dark' ? '#fff' : '#000')
-                                                : 'var(--text-secondary)'
-                                        }}
-                                    >
-                                        {isActive && (
-                                            <motion.div
-                                                layoutId="navbar-pill"
-                                                className="absolute inset-0 rounded-full z-[-1]"
-                                                style={{
-                                                    backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
-                                                }}
-                                                transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                                            />
-                                        )}
-                                        <span className="relative z-10">{link.name}</span>
-                                    </Link>
-                                );
-                            })}
-                        </div>
-                    </div>
-
-                    {/* Contact Link and Theme Toggle - Desktop Right */}
-                    <div className="hidden md:flex items-center gap-4">
-                        {/* Shortcut Hints */}
-                        <div className="hidden lg:flex items-center gap-3 mr-2 font-mono text-[10px] font-medium opacity-60" style={{ color: 'var(--text-secondary)' }}>
-                            <div className="flex items-center gap-1">
-                                <span className="px-1.5 py-0.5 rounded border border-[var(--border-primary)] bg-[var(--bg-secondary)] shadow-sm">Ctrl</span>
-                                <span>+</span>
-                                <span className="px-1.5 py-0.5 rounded border border-[var(--border-primary)] bg-[var(--bg-secondary)] shadow-sm">K</span>
-                            </div>
-                            <div className="w-[1px] h-4 bg-[var(--border-secondary)]"></div>
-                            <div className="flex items-center gap-1">
-                                <span className="px-1.5 py-0.5 rounded border border-[var(--border-primary)] bg-[var(--bg-secondary)] shadow-sm">Ctrl</span>
-                                <span>+</span>
-                                <span className="px-1.5 py-0.5 rounded border border-[var(--border-primary)] bg-[var(--bg-secondary)] shadow-sm">`</span>
-                            </div>
-                        </div>
-
-                        <ThemeToggle />
-                        <Link href={contactLink.href}>
-                            <motion.button
-                                className="px-5 py-2 rounded-full font-semibold text-sm transition-all shadow-lg relative overflow-hidden group"
-                                style={{
-                                    background: 'linear-gradient(to right, var(--accent-cyan), var(--accent-purple))',
-                                    color: '#ffffff',
-                                }}
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                            >
-                                <span className="relative z-10">{contactLink.name}</span>
-                                <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-                            </motion.button>
-                        </Link>
-                    </div>
-                </nav>
-                <div
-                    className={clsx(
-                        "transition-[max-height,opacity] duration-300",
-                        scrolled ? "max-h-0 opacity-0 overflow-hidden pointer-events-none" : "max-h-20 opacity-100 overflow-visible"
-                    )}
-                    aria-hidden={scrolled}
-                >
-                    <TerminalPath socialData={socialData} config={config} />
-                </div>
-            </motion.header>
-
-            {/* Full Screen Mobile Menu - Moved OUTSIDE header */}
-            <motion.div
-                className="fixed inset-0 z-[100] md:hidden backdrop-blur-3xl flex flex-col pt-6 px-6 gap-6 overflow-y-auto"
-                style={{
-                    backgroundColor: theme === 'dark' ? 'rgba(13, 17, 23, 0.95)' : 'rgba(255, 255, 255, 0.95)',
-                    overscrollBehavior: 'contain',
-                }}
-                initial={{ y: "-100%" }}
-                animate={{ y: isMenuOpen ? "0%" : "-100%" }}
-                transition={{ type: "spring", damping: 30, stiffness: 300 }}
-            >
-                {/* Close Button Row */}
-                <div className="flex justify-end pb-2">
-                    <motion.button
-                        className="p-2 rounded-full transition-colors"
-                        style={{ color: 'var(--text-primary)' }}
-                        onClick={() => setIsMenuOpen(false)}
-                        whileTap={{ scale: 0.9 }}
-                    >
-                        <div className="w-6 h-5 flex flex-col justify-between items-center relative">
-                            <span className="w-full h-0.5 bg-current rounded-full absolute top-1/2 -translate-y-1/2 rotate-45" />
-                            <span className="w-full h-0.5 bg-current rounded-full absolute top-1/2 -translate-y-1/2 -rotate-45" />
-                        </div>
-                    </motion.button>
-                </div>
-
-                <div className="flex flex-col gap-4">
-                    {visibleNavLinks.map((link, index) => (
-                        <motion.div
-                            key={link.name}
-                            initial={{ x: -20, opacity: 0 }}
-                            animate={isMenuOpen ? { x: 0, opacity: 1 } : { x: -20, opacity: 0 }}
-                            transition={{ delay: 0.1 + index * 0.1 }}
-                        >
-                            <Link
-                                href={link.href}
-                                onClick={() => setIsMenuOpen(false)}
-                                className="text-3xl font-bold tracking-tight block py-2"
-                                style={{
-                                    color: pathname === link.href ? 'var(--accent-cyan)' : 'var(--text-primary)'
-                                }}
-                            >
-                                {link.name}
-                            </Link>
-                        </motion.div>
-                    ))}
-                </div>
-
-                <motion.div
-                    className="mt-auto mb-10 space-y-6"
-                    initial={{ opacity: 0 }}
-                    animate={isMenuOpen ? { opacity: 1 } : { opacity: 0 }}
-                    transition={{ delay: 0.4 }}
-                >
-                    <div className="h-px w-full bg-[var(--border-secondary)]" />
-                    <div className="flex items-center justify-between">
-                        <span className="text-lg font-medium text-[var(--text-secondary)]">Appearance</span>
-                        <ThemeToggle />
-                    </div>
-                    <Link href={contactLink.href} onClick={() => setIsMenuOpen(false)}>
-                        <button
-                            className="w-full py-4 rounded-xl font-bold text-white text-lg shadow-lg"
-                            style={{
-                                background: 'linear-gradient(to right, var(--accent-cyan), var(--accent-purple))',
-                            }}
-                        >
-                            {contactLink.name}
-                        </button>
+                      {isActive && (
+                        <motion.span
+                          layoutId="header-nav-active-pill"
+                          className="absolute inset-0 rounded-full"
+                          style={{
+                            background:
+                              'linear-gradient(120deg, color-mix(in srgb, var(--accent-cyan) 25%, transparent), color-mix(in srgb, var(--accent-purple) 30%, transparent))',
+                            border: '1px solid color-mix(in srgb, var(--accent-cyan) 55%, transparent)',
+                          }}
+                          transition={{ type: 'spring', stiffness: 360, damping: 32 }}
+                        />
+                      )}
+                      <span className="relative z-10">{link.name}</span>
                     </Link>
-                </motion.div>
-            </motion.div>
-        </>
-    );
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="ml-auto hidden flex-shrink-0 items-center gap-2 lg:flex xl:gap-3">
+              <button
+                type="button"
+                onClick={() => window.dispatchEvent(new CustomEvent('open-command-palette'))}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full border transition-colors"
+                style={{
+                  borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)',
+                  color: 'var(--text-primary)',
+                  backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 75%, transparent)',
+                }}
+                aria-label="Open search"
+                title="Search (Ctrl + K)"
+              >
+                <Search size={16} />
+              </button>
+
+              <div className="hidden items-center gap-2 font-mono text-[10px] 2xl:flex" style={{ color: 'var(--text-tertiary)' }}>
+                <span className="rounded border px-1.5 py-0.5" style={{ borderColor: 'var(--border-secondary)' }}>Ctrl</span>
+                <span>+</span>
+                <span className="rounded border px-1.5 py-0.5" style={{ borderColor: 'var(--border-secondary)' }}>K</span>
+              </div>
+
+              <ThemeToggle />
+
+              <Link href={contactLink?.href || '/contact-us'}>
+                <motion.button
+                  className="hidden items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold xl:inline-flex"
+                  style={{
+                    background: 'linear-gradient(to right, var(--accent-cyan), var(--accent-purple))',
+                    color: '#ffffff',
+                    boxShadow: '0 10px 20px color-mix(in srgb, var(--shadow-md) 65%, transparent)',
+                  }}
+                  whileHover={{ scale: 1.04 }}
+                  whileTap={{ scale: 0.96 }}
+                >
+                  <span>{contactLink?.name || 'contact-me'}</span>
+                  <ArrowUpRight size={14} />
+                </motion.button>
+              </Link>
+            </div>
+
+            <div className="ml-auto flex items-center gap-2 md:hidden">
+              <button
+                type="button"
+                onClick={() => window.dispatchEvent(new CustomEvent('open-command-palette'))}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full border"
+                style={{
+                  borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)',
+                  color: 'var(--text-primary)',
+                  backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 75%, transparent)',
+                }}
+                aria-label="Open search"
+              >
+                <Search size={17} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsMenuOpen(true)}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full border"
+                style={{
+                  borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)',
+                  color: 'var(--text-primary)',
+                  backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 75%, transparent)',
+                }}
+                aria-label="Open menu"
+              >
+                <Menu size={18} />
+              </button>
+            </div>
+          </nav>
+
+          <div
+            className={clsx(
+              "transition-[max-height,opacity,padding] duration-300",
+              scrolled
+                ? "pointer-events-none max-h-0 overflow-hidden px-0 opacity-0"
+                : "max-h-24 overflow-visible px-2 pb-2 opacity-100 sm:px-3"
+            )}
+            aria-hidden={scrolled}
+          >
+            <div
+              className="rounded-xl border"
+              style={{
+                borderColor: 'color-mix(in srgb, var(--border-secondary) 60%, transparent)',
+                backgroundColor: 'color-mix(in srgb, var(--bg-secondary) 65%, transparent)',
+              }}
+            >
+              <TerminalPath socialData={socialData} config={config} />
+            </div>
+          </div>
+        </motion.div>
+      </header>
+
+      <motion.aside
+        className="fixed inset-0 z-[110] md:hidden"
+        style={{
+          backgroundColor: theme === 'dark' ? 'rgba(8, 10, 14, 0.9)' : 'rgba(248, 250, 252, 0.9)',
+          backdropFilter: 'blur(20px)',
+          pointerEvents: isMenuOpen ? 'auto' : 'none',
+        }}
+        initial={{ opacity: 0, y: '-4%' }}
+        animate={{
+          opacity: isMenuOpen ? 1 : 0,
+          y: isMenuOpen ? '0%' : '-4%',
+        }}
+        transition={{ duration: 0.22, ease: 'easeOut' }}
+      >
+        <div className="mx-auto mt-4 flex h-[calc(100dvh-2rem)] w-[92%] max-w-xl flex-col rounded-2xl border p-4" style={{ borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)', backgroundColor: 'color-mix(in srgb, var(--bg-surface) 88%, transparent)' }}>
+          <div className="mb-4 flex items-center justify-between">
+            <span
+              className="text-lg font-bold"
+              style={{
+                backgroundImage: 'linear-gradient(to right, var(--accent-cyan), var(--accent-orange))',
+                WebkitBackgroundClip: 'text',
+                backgroundClip: 'text',
+                color: 'transparent',
+              }}
+            >
+              {displayLogo}
+            </span>
+            <button
+              type="button"
+              onClick={() => setIsMenuOpen(false)}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full border"
+              style={{
+                borderColor: 'color-mix(in srgb, var(--border-secondary) 70%, transparent)',
+                color: 'var(--text-primary)',
+                backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 72%, transparent)',
+              }}
+              aria-label="Close menu"
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            {visibleNavLinks.map((link, index) => (
+              <motion.div
+                key={link.name}
+                initial={{ opacity: 0, x: -18 }}
+                animate={{ opacity: isMenuOpen ? 1 : 0, x: isMenuOpen ? 0 : -18 }}
+                transition={{ delay: 0.04 * index }}
+              >
+                <Link
+                  href={link.href}
+                  target={link.target}
+                  className="flex items-center justify-between rounded-xl border px-4 py-3 text-base font-semibold"
+                  style={{
+                    borderColor: pathname === link.href
+                      ? 'color-mix(in srgb, var(--accent-cyan) 55%, transparent)'
+                      : 'color-mix(in srgb, var(--border-secondary) 70%, transparent)',
+                    color: pathname === link.href ? 'var(--accent-cyan)' : 'var(--text-primary)',
+                    backgroundColor: pathname === link.href
+                      ? 'color-mix(in srgb, var(--accent-cyan) 10%, transparent)'
+                      : 'color-mix(in srgb, var(--bg-elevated) 75%, transparent)',
+                  }}
+                >
+                  <span>{link.name}</span>
+                  <ArrowUpRight size={15} />
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+
+          <div className="mt-auto space-y-4 pt-6">
+            <div className="rounded-xl border p-3" style={{ borderColor: 'color-mix(in srgb, var(--border-secondary) 70%, transparent)', backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 75%, transparent)' }}>
+              <p className="mb-3 text-xs uppercase tracking-[0.14em]" style={{ color: 'var(--text-tertiary)' }}>
+                Theme Mode
+              </p>
+              <ThemeToggle />
+            </div>
+
+            <Link href={contactLink?.href || '/contact-us'}>
+              <button
+                type="button"
+                className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold"
+                style={{
+                  background: 'linear-gradient(to right, var(--accent-cyan), var(--accent-purple))',
+                  color: '#ffffff',
+                }}
+              >
+                <span>{contactLink?.name || 'contact-me'}</span>
+                <ArrowUpRight size={15} />
+              </button>
+            </Link>
+          </div>
+        </div>
+      </motion.aside>
+    </>
+  );
 }
