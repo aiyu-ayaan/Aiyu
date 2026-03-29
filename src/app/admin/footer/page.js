@@ -10,7 +10,6 @@ export default function AdminFooter() {
         footerText: '',
         workStatus: '',
         showWorkStatus: true,
-        showWorkStatus: true,
         footerVersion: '',
         footerVersionLink: ''
     });
@@ -36,7 +35,6 @@ export default function AdminFooter() {
                 setConfig({
                     footerText: data.footerText || '',
                     workStatus: data.workStatus || '',
-                    showWorkStatus: data.showWorkStatus ?? true,
                     showWorkStatus: data.showWorkStatus ?? true,
                     footerVersion: data.footerVersion || '',
                     footerVersionLink: data.footerVersionLink || ''

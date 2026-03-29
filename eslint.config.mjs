@@ -7,7 +7,7 @@ import globals from "globals";
 export default [
   js.configs.recommended,
   {
-    files: ["**/*.{js,jsx,ts,tsx}"],
+    files: ["**/*.{js,jsx,ts,tsx,mjs,cjs}"],
     plugins: {
       "@next/next": nextPlugin,
       "react": reactPlugin,
@@ -34,7 +34,14 @@ export default [
       ...hooksPlugin.configs.recommended.rules,
       "react/react-in-jsx-scope": "off",
       "react/prop-types": "off",
+      "react/no-unescaped-entities": "warn",
+      "react-hooks/purity": "warn",
+      "react-hooks/set-state-in-effect": "warn",
+      "react-hooks/static-components": "warn",
+      "react-hooks/immutability": "warn",
+      "react-hooks/preserve-manual-memoization": "warn",
       "no-undef": "error",
+      "no-useless-escape": "warn",
       "no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
     },
     settings: {
