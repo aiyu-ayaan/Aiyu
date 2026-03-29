@@ -41,7 +41,6 @@ jobs:
       
       - name: Run ESLint
         run: npm run lint
-        continue-on-error: true
       
       - name: Build project
         run: npm run build
@@ -49,14 +48,14 @@ jobs:
       - name: Build success summary
         if: success()
         run: |
-          echo "✅ Build project successful!"
+          echo "✅ Build and lint checks passed!"
           echo "The project is ready for merge."
       
       - name: Build failure summary
         if: failure()
         run: |
-          echo "❌ Build project failed!"
-          echo "Please review the build logs above and fix any issues."
+          echo "❌ Build or lint checks failed!"
+          echo "Please review the logs above and fix any issues."
           exit 1
 
   release:
