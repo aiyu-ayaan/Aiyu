@@ -446,9 +446,9 @@ export default function GitHubStatsClient({ data }) {
               </span>
             </div>
 
-            <div className="w-full">
+            <div className="w-full overflow-x-auto pb-4">
               <div
-                className="grid w-full gap-1"
+                className="grid min-w-[750px] gap-1 xl:min-w-full"
                 style={{ gridTemplateColumns: `repeat(${Math.max(contributionWeeks.length, 1)}, minmax(0, 1fr))` }}
               >
                 {contributionWeeks.map((week, weekIdx) => (
