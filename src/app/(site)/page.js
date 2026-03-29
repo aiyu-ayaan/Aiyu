@@ -1,11 +1,7 @@
 import Link from "next/link";
 import FuturisticResume from "../components/landing/FuturisticResume";
 import GamePortfolio from "../components/landing/GamePortfolio";
-import HomeAbout from "../components/landing/HomeAbout";
-import HomeProjects from "../components/landing/HomeProjects";
-import Divider from "../components/landing/Divider";
-import TechStackCarousel from "../components/landing/TechStackCarousel";
-import HomeBlogs from "../components/landing/HomeBlogs";
+import HomeLazySections from "../components/landing/HomeLazySections";
 import { getHomePageData, getConfigData } from "@/lib/dataFetchers";
 import { generateWebsiteSchema, generatePersonSchema, generateOrganizationSchema } from "@/app/schema";
 
@@ -191,27 +187,11 @@ export default async function Home() {
         </div>
       </section>
 
-      <section id="home-tech">
-        <TechStackCarousel data={serializedAboutData} />
-      </section>
-
-      <Divider />
-
-      <section id="home-about">
-        <HomeAbout data={serializedAboutData} />
-      </section>
-
-      <Divider />
-
-      <section id="home-projects">
-        <HomeProjects data={serializedProjectsData} />
-      </section>
-
-      <Divider />
-
-      <section id="home-blogs">
-        <HomeBlogs blogs={serializedBlogsData} />
-      </section>
+      <HomeLazySections
+        aboutData={serializedAboutData}
+        projectsData={serializedProjectsData}
+        blogsData={serializedBlogsData}
+      />
     </div>
   );
 }
