@@ -85,7 +85,12 @@ export default async function RootLayout({ children }) {
   const gaId = config?.googleAnalyticsId || process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
   return (
-    <html lang="en" suppressHydrationWarning style={{ backgroundColor: '#0d1117' }}>
+    <html
+      lang="en"
+      data-scroll-behavior="smooth"
+      suppressHydrationWarning
+      style={{ backgroundColor: '#0d1117' }}
+    >
       <head>
         <script
           dangerouslySetInnerHTML={{

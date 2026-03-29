@@ -1,4 +1,22 @@
+"use client";
+
+import { useEffect } from 'react';
+
 export default function SiteLoading() {
+    useEffect(() => {
+        const previousHtmlOverflow = document.documentElement.style.overflow;
+        const previousBodyOverflow = document.body.style.overflow;
+
+        window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+        document.documentElement.style.overflow = 'hidden';
+        document.body.style.overflow = 'hidden';
+
+        return () => {
+            document.documentElement.style.overflow = previousHtmlOverflow;
+            document.body.style.overflow = previousBodyOverflow;
+        };
+    }, []);
+
     return (
         <div className="min-h-[60vh] p-4 lg:p-8">
             <div

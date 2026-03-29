@@ -7,9 +7,11 @@ export default function ViewportLazySection({
   className = '',
   placeholderHeight = 380,
   rootMargin = '240px 0px',
+  initialDelayMs = 0,
   children,
 }) {
   const hostRef = useRef(null);
+  const revealTimerRef = useRef(null);
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -28,9 +30,21 @@ export default function ViewportLazySection({
       return rect.top <= window.innerHeight + preloadDistance && rect.bottom >= -preloadDistance;
     };
 
+    const reveal = () => {
+      if (initialDelayMs > 0) {
+        if (revealTimerRef.current) return;
+        revealTimerRef.current = window.setTimeout(() => {
+          setIsVisible(true);
+          revealTimerRef.current = null;
+        }, initialDelayMs);
+        return;
+      }
+      setIsVisible(true);
+    };
+
     const revealIfNeeded = () => {
       if (shouldRevealByPosition()) {
-        setIsVisible(true);
+        reveal();
       }
     };
 
@@ -40,7 +54,7 @@ export default function ViewportLazySection({
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries.some((entry) => entry.isIntersecting)) {
-          setIsVisible(true);
+          reveal();
           observer.disconnect();
         }
       },
@@ -55,7 +69,7 @@ export default function ViewportLazySection({
     window.addEventListener('resize', revealIfNeeded);
 
     const fallbackTimer = window.setTimeout(() => {
-      setIsVisible(true);
+      reveal();
     }, 3500);
 
     return () => {
@@ -63,8 +77,11 @@ export default function ViewportLazySection({
       window.removeEventListener('scroll', revealIfNeeded);
       window.removeEventListener('resize', revealIfNeeded);
       window.clearTimeout(fallbackTimer);
+      if (revealTimerRef.current) {
+        window.clearTimeout(revealTimerRef.current);
+      }
     };
-  }, [isVisible, rootMargin]);
+  }, [initialDelayMs, isVisible, rootMargin]);
 
   return (
     <section id={id} ref={hostRef} className={className}>

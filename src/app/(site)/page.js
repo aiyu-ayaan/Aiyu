@@ -2,6 +2,7 @@ import Link from "next/link";
 import FuturisticResume from "../components/landing/FuturisticResume";
 import GamePortfolio from "../components/landing/GamePortfolio";
 import HomeLazySections from "../components/landing/HomeLazySections";
+import ViewportLazySection from "../components/shared/ViewportLazySection";
 import { getHomePageData, getConfigData } from "@/lib/dataFetchers";
 import { generateWebsiteSchema, generatePersonSchema, generateOrganizationSchema } from "@/app/schema";
 
@@ -95,7 +96,13 @@ export default async function Home() {
         <FuturisticResume data={serializedHomeData} />
       )}
 
-      <section className="relative z-20 px-4 pb-10 lg:px-8 lg:pb-12">
+      <ViewportLazySection
+        id="home-snapshot"
+        className="relative z-20 px-4 pb-10 lg:px-8 lg:pb-12"
+        placeholderHeight={380}
+        rootMargin="180px 0px"
+        initialDelayMs={220}
+      >
         <div className="mx-auto max-w-6xl rounded-3xl border p-5 sm:p-7"
           style={{
             background: 'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 92%, transparent), color-mix(in srgb, var(--bg-secondary) 92%, transparent))',
@@ -185,7 +192,7 @@ export default async function Home() {
             </div>
           )}
         </div>
-      </section>
+      </ViewportLazySection>
 
       <HomeLazySections
         aboutData={serializedAboutData}
