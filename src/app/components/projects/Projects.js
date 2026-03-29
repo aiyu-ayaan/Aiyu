@@ -1,114 +1,278 @@
 "use client";
-import React, { useState, useMemo, useEffect } from 'react';
+
+import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-// import projects, { roles } from '../../data/projectsData';
+import {
+  FaCheckCircle,
+  FaFilter,
+  FaLayerGroup,
+  FaSearch,
+  FaStream,
+  FaThLarge,
+  FaTools,
+} from 'react-icons/fa';
 import ProjectDialog from './ProjectDialog';
+import ProjectCard from './ProjectCard';
 import TypewriterEffect from '../shared/TypewriterEffect';
 import Timeline from './Timeline';
-import { useTheme } from '../../context/ThemeContext';
+import { getPlaceholderGradient, getProjectInitials } from './projectPlaceholder';
+
+const heroCardStyle = {
+  background:
+    'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 92%, transparent), color-mix(in srgb, var(--bg-secondary) 92%, transparent))',
+  border: '1px solid color-mix(in srgb, var(--border-secondary) 75%, transparent)',
+  boxShadow: '0 16px 36px var(--shadow-sm)',
+};
+
+const toPascalCase = (value) => {
+  if (!value) return '';
+  return String(value)
+    .split(' ')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+};
+
+const normalizeStatus = (status) => {
+  const safeStatus = String(status || '').trim().toLowerCase();
+  if (safeStatus === 'done' || safeStatus === 'completed') return 'Done';
+  if (safeStatus === 'working' || safeStatus === 'in progress') return 'Working';
+  return safeStatus ? toPascalCase(safeStatus) : 'Unknown';
+};
+
+const extractGroupYear = (yearValue) => {
+  const safeYear = String(yearValue || '').trim();
+  if (!safeYear) return 'Unknown';
+
+  const parts = safeYear
+    .split('-')
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  return parts.length ? parts[parts.length - 1] : safeYear;
+};
+
+const extractSortYear = (yearValue) => {
+  const matches = String(yearValue || '').match(/\d{4}/g);
+  if (!matches || matches.length === 0) return 0;
+  const finalYear = Number.parseInt(matches[matches.length - 1], 10);
+  return Number.isNaN(finalYear) ? 0 : finalYear;
+};
+
+const sortYearsDesc = (a, b) => {
+  const parsedA = Number.parseInt(a, 10);
+  const parsedB = Number.parseInt(b, 10);
+
+  if (Number.isNaN(parsedA) && Number.isNaN(parsedB)) return b.localeCompare(a);
+  if (Number.isNaN(parsedA)) return 1;
+  if (Number.isNaN(parsedB)) return -1;
+  return parsedB - parsedA;
+};
 
 const Projects = ({ data }) => {
-  const { theme } = useTheme();
-  const projects = data || [];
+  const projects = Array.isArray(data) ? data : [];
+
   const [config, setConfig] = useState(null);
   const [configLoading, setConfigLoading] = useState(true);
-
-  useEffect(() => {
-    fetch('/api/config')
-      .then(res => res.json())
-      .then(data => {
-        setConfig(data);
-        setConfigLoading(false);
-      })
-      .catch(err => {
-        console.error('Failed to fetch config', err);
-        setConfigLoading(false);
-      });
-  }, []);
-
-  const roles = [
-    config?.projectsSubtitle || 'A collection of my work',
-    'Click on a project to learn more'
-  ];
-
   const [selectedProject, setSelectedProject] = useState(null);
   const [selectedTechStack, setSelectedTechStack] = useState('All');
   const [selectedProjectType, setSelectedProjectType] = useState('All');
+  const [selectedStatus, setSelectedStatus] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [viewMode, setViewMode] = useState('grid');
 
-  const openDialog = (project) => {
-    setSelectedProject(project);
-  };
+  useEffect(() => {
+    let isMounted = true;
 
-  const closeDialog = () => {
-    setSelectedProject(null);
-  };
+    fetch('/api/config')
+      .then((res) => res.json())
+      .then((payload) => {
+        if (!isMounted) return;
+        setConfig(payload);
+        setConfigLoading(false);
+      })
+      .catch((error) => {
+        if (!isMounted) return;
+        console.error('Failed to fetch config', error);
+        setConfigLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const roles = [
+    config?.projectsSubtitle || 'A curated collection of products and experiments',
+    'Search and filter to quickly focus on what matters',
+  ];
 
   const uniqueTechStacks = useMemo(() => {
-    const allTechStacks = projects.flatMap(project => project.techStack);
-    return ['All', ...new Set(allTechStacks)].sort();
+    const allTechStacks = projects.flatMap((project) =>
+      Array.isArray(project?.techStack) ? project.techStack : []
+    );
+    return ['All', ...new Set(allTechStacks)].sort((a, b) => a.localeCompare(b));
   }, [projects]);
 
   const uniqueProjectTypes = useMemo(() => {
-    const allProjectTypes = projects.map(project => project.projectType);
-    return ['All', ...new Set(allProjectTypes)].sort();
+    const allProjectTypes = projects.map((project) => project?.projectType).filter(Boolean);
+    return ['All', ...new Set(allProjectTypes)].sort((a, b) => a.localeCompare(b));
+  }, [projects]);
+
+  const uniqueStatuses = useMemo(() => {
+    const statuses = projects.map((project) => normalizeStatus(project?.status));
+    return ['All', ...new Set(statuses)].sort((a, b) => a.localeCompare(b));
   }, [projects]);
 
   const filteredProjects = useMemo(() => {
-    return projects.filter(project => {
-      const matchesTechStack = selectedTechStack === 'All' || project.techStack.includes(selectedTechStack);
-      const matchesProjectType = selectedProjectType === 'All' || project.projectType === selectedProjectType;
-      return matchesTechStack && matchesProjectType;
-    });
-  }, [projects, selectedTechStack, selectedProjectType]);
+    const normalizedQuery = searchQuery.trim().toLowerCase();
 
-  const projectsByYear = filteredProjects.reduce((acc, project) => {
-    const yearParts = project.year.split(' - ');
-    const year = yearParts.length > 1 ? yearParts[1] : yearParts[0];
-    if (!acc[year]) {
-      acc[year] = [];
-    }
-    acc[year].push(project);
-    return acc;
-  }, {});
+    return projects
+      .filter((project) => {
+        const stackList = Array.isArray(project?.techStack) ? project.techStack : [];
+        const normalizedStatus = normalizeStatus(project?.status);
 
-  const years = Object.keys(projectsByYear).sort((a, b) => b - a);
+        const searchText = [
+          project?.name,
+          project?.description,
+          project?.projectType,
+          project?.year,
+          normalizedStatus,
+          ...stackList,
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
 
-  const toPascalCase = (str) => {
-    if (!str) return '';
-    return str.split(' ')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join(' ');
+        const matchesSearch = !normalizedQuery || searchText.includes(normalizedQuery);
+        const matchesTechStack = selectedTechStack === 'All' || stackList.includes(selectedTechStack);
+        const matchesProjectType =
+          selectedProjectType === 'All' || project?.projectType === selectedProjectType;
+        const matchesStatus = selectedStatus === 'All' || normalizedStatus === selectedStatus;
+
+        return matchesSearch && matchesTechStack && matchesProjectType && matchesStatus;
+      })
+      .sort((a, b) => extractSortYear(b?.year) - extractSortYear(a?.year));
+  }, [projects, searchQuery, selectedTechStack, selectedProjectType, selectedStatus]);
+
+  const projectsByYear = useMemo(() => {
+    return filteredProjects.reduce((accumulator, project) => {
+      const year = extractGroupYear(project?.year);
+      if (!accumulator[year]) {
+        accumulator[year] = [];
+      }
+      accumulator[year].push(project);
+      return accumulator;
+    }, {});
+  }, [filteredProjects]);
+
+  const years = useMemo(() => Object.keys(projectsByYear).sort(sortYearsDesc), [projectsByYear]);
+
+  const filteredUniqueStacks = useMemo(() => {
+    const stackSet = new Set(filteredProjects.flatMap((project) => project?.techStack || []));
+    return stackSet.size;
+  }, [filteredProjects]);
+
+  const completedFiltered = useMemo(() => {
+    return filteredProjects.filter((project) => normalizeStatus(project?.status) === 'Done').length;
+  }, [filteredProjects]);
+
+  const spotlightProject = filteredProjects[0] || null;
+  const remainingProjects = spotlightProject ? filteredProjects.slice(1) : [];
+
+  const activeFilters = [
+    selectedTechStack !== 'All' ? `Tech: ${toPascalCase(selectedTechStack)}` : null,
+    selectedProjectType !== 'All' ? `Type: ${toPascalCase(selectedProjectType)}` : null,
+    selectedStatus !== 'All' ? `Status: ${selectedStatus}` : null,
+    searchQuery.trim().length > 0 ? `Search: ${searchQuery.trim()}` : null,
+  ].filter(Boolean);
+
+  const resetFilters = () => {
+    setSelectedTechStack('All');
+    setSelectedProjectType('All');
+    setSelectedStatus('All');
+    setSearchQuery('');
   };
+
+  const statCards = [
+    {
+      label: 'Visible Projects',
+      value: filteredProjects.length,
+      icon: FaLayerGroup,
+      accent: 'var(--accent-cyan)',
+    },
+    {
+      label: 'Completed',
+      value: completedFiltered,
+      icon: FaCheckCircle,
+      accent: 'var(--status-success)',
+    },
+    {
+      label: 'Tech In View',
+      value: filteredUniqueStacks,
+      icon: FaTools,
+      accent: 'var(--accent-purple)',
+    },
+  ];
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 18 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.8, ease: 'easeOut' }}
-      className="min-h-screen p-4 lg:p-8 transition-colors duration-300"
-      style={{
-        backgroundColor: 'transparent',
-        color: 'var(--text-primary)',
-      }}
+      transition={{ duration: 0.7, ease: 'easeOut' }}
+      className="relative min-h-screen overflow-hidden p-4 lg:p-8"
+      style={{ color: 'var(--text-primary)' }}
     >
-      <div className="max-w-6xl mx-auto">
-        <motion.div
-          initial={{ y: -20, opacity: 0 }}
+      <div
+        className="pointer-events-none absolute -left-24 top-8 h-72 w-72 rounded-full blur-3xl"
+        style={{
+          background:
+            'radial-gradient(circle, color-mix(in srgb, var(--accent-cyan) 34%, transparent), transparent 70%)',
+        }}
+      />
+      <div
+        className="pointer-events-none absolute -right-24 top-1/4 h-72 w-72 rounded-full blur-3xl"
+        style={{
+          background:
+            'radial-gradient(circle, color-mix(in srgb, var(--accent-pink) 28%, transparent), transparent 70%)',
+        }}
+      />
+
+      <div className="relative mx-auto max-w-6xl">
+        <motion.section
+          initial={{ y: 22, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="text-center mb-12"
+          transition={{ duration: 0.6 }}
+          className="rounded-3xl p-6 sm:p-8"
+          style={heroCardStyle}
         >
+          <p
+            className="mb-3 inline-flex rounded-full border px-3 py-1 text-xs uppercase tracking-[0.2em]"
+            style={{
+              borderColor: 'color-mix(in srgb, var(--accent-cyan) 40%, var(--border-secondary))',
+              color: 'var(--accent-cyan)',
+            }}
+          >
+            Project Command Center
+          </p>
+
           {configLoading ? (
-            <div className="animate-pulse flex flex-col items-center">
-              <div className="h-16 w-3/4 max-w-lg bg-gray-700/50 rounded-lg mb-4"></div>
-              <div className="h-8 w-1/2 max-w-md bg-gray-700/50 rounded-lg"></div>
+            <div className="animate-pulse">
+              <div
+                className="mb-4 h-14 w-2/3 rounded-lg"
+                style={{ backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 90%, transparent)' }}
+              />
+              <div
+                className="h-7 w-1/2 rounded-lg"
+                style={{ backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 85%, transparent)' }}
+              />
             </div>
           ) : (
             <>
               <h1
-                className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4 pb-2 bg-gradient-to-r bg-clip-text text-transparent"
+                className="mb-3 bg-gradient-to-r bg-clip-text text-4xl font-bold text-transparent sm:text-5xl lg:text-6xl"
                 style={{
-                  backgroundImage: 'linear-gradient(to right, var(--accent-cyan), var(--accent-purple), var(--accent-pink))',
+                  backgroundImage:
+                    'linear-gradient(to right, var(--accent-cyan), var(--accent-purple), var(--accent-orange-bright))',
                 }}
               >
                 {config?.projectsTitle || 'Projects Portfolio'}
@@ -116,81 +280,358 @@ const Projects = ({ data }) => {
               <TypewriterEffect roles={roles} />
             </>
           )}
-        </motion.div>
 
-        <div className="flex flex-col sm:flex-row justify-center gap-4 mb-8">
-          <motion.div
-            className="flex flex-col items-center"
-            whileHover={{ scale: 1.02 }}
-          >
-            <label
-              htmlFor="techStackFilter"
-              className="text-lg mb-2 font-semibold"
-              style={{ color: 'var(--text-secondary)' }}
-            >
-              Filter by Tech Stack:
-            </label>
-            <select
-              id="techStackFilter"
-              className="p-3 rounded-lg border-2 focus:outline-none focus:ring-2 w-full md:w-auto cursor-pointer transition-all duration-300"
-              style={{
-                background: 'linear-gradient(to bottom right, var(--bg-surface), var(--bg-secondary))',
-                color: 'var(--text-primary)',
-                borderColor: 'var(--border-secondary)',
-              }}
-              value={selectedTechStack}
-              onChange={(e) => setSelectedTechStack(e.target.value)}
-            >
-              {uniqueTechStacks.map((tech) => (
-                <option
-                  key={tech}
-                  value={tech}
-                  className={theme === 'dark' ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}
+          <div className="mt-7 grid grid-cols-1 gap-3 sm:grid-cols-3">
+            {statCards.map((item) => {
+              const Icon = item.icon;
+              return (
+                <div
+                  key={item.label}
+                  className="rounded-xl border p-3"
+                  style={{
+                    borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)',
+                    backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 82%, transparent)',
+                  }}
                 >
-                  {toPascalCase(tech)}
-                </option>
-              ))}
-            </select>
-          </motion.div>
+                  <div
+                    className="mb-2 inline-flex rounded-lg p-2"
+                    style={{ backgroundColor: `color-mix(in srgb, ${item.accent} 14%, transparent)` }}
+                  >
+                    <Icon size={14} style={{ color: item.accent }} />
+                  </div>
+                  <p className="text-2xl font-bold">{item.value}</p>
+                  <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                    {item.label}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </motion.section>
 
-          <motion.div
-            className="flex flex-col items-center"
-            whileHover={{ scale: 1.02 }}
-          >
-            <label
-              htmlFor="projectTypeFilter"
-              className="text-lg mb-2 font-semibold"
-              style={{ color: 'var(--text-secondary)' }}
-            >
-              Filter by Project Type:
-            </label>
-            <select
-              id="projectTypeFilter"
-              className="p-3 rounded-lg border-2 focus:outline-none focus:ring-2 w-full md:w-auto cursor-pointer transition-all duration-300"
+        <motion.section
+          initial={{ y: 22, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.12 }}
+          className="mt-6 rounded-2xl border p-4 sm:p-5"
+          style={{
+            ...heroCardStyle,
+            border: '1px solid color-mix(in srgb, var(--border-secondary) 72%, transparent)',
+          }}
+        >
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>
+              <FaFilter style={{ color: 'var(--accent-orange)' }} />
+              Filter + Search
+            </div>
+
+            <div className="inline-flex rounded-lg border p-1"
               style={{
-                background: 'linear-gradient(to bottom right, var(--bg-surface), var(--bg-secondary))',
-                color: 'var(--text-primary)',
-                borderColor: 'var(--border-secondary)',
+                borderColor: 'color-mix(in srgb, var(--border-secondary) 76%, transparent)',
+                backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 80%, transparent)',
               }}
-              value={selectedProjectType}
-              onChange={(e) => setSelectedProjectType(e.target.value)}
             >
-              {uniqueProjectTypes.map((type) => (
-                <option
-                  key={type}
-                  value={type}
-                  className={theme === 'dark' ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}
+              <button
+                type="button"
+                onClick={() => setViewMode('grid')}
+                className="rounded-md px-3 py-1.5 text-xs font-semibold uppercase tracking-wide"
+                style={{
+                  color: viewMode === 'grid' ? 'var(--accent-cyan)' : 'var(--text-secondary)',
+                  backgroundColor:
+                    viewMode === 'grid'
+                      ? 'color-mix(in srgb, var(--accent-cyan) 12%, transparent)'
+                      : 'transparent',
+                }}
+              >
+                <span className="inline-flex items-center gap-1.5"><FaThLarge /> Grid</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('timeline')}
+                className="rounded-md px-3 py-1.5 text-xs font-semibold uppercase tracking-wide"
+                style={{
+                  color: viewMode === 'timeline' ? 'var(--accent-cyan)' : 'var(--text-secondary)',
+                  backgroundColor:
+                    viewMode === 'timeline'
+                      ? 'color-mix(in srgb, var(--accent-cyan) 12%, transparent)'
+                      : 'transparent',
+                }}
+              >
+                <span className="inline-flex items-center gap-1.5"><FaStream /> Timeline</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="mb-4">
+            <label htmlFor="projectSearch" className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+              Search Projects
+            </label>
+            <div className="relative">
+              <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-sm" style={{ color: 'var(--text-tertiary)' }} />
+              <input
+                id="projectSearch"
+                type="text"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Search by name, stack, type, or description"
+                className="w-full rounded-lg border py-2.5 pl-9 pr-3 text-sm focus:outline-none"
+                style={{
+                  backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 80%, transparent)',
+                  borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
+                  color: 'var(--text-primary)',
+                }}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div>
+              <label htmlFor="techStackFilter" className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+                Tech Stack
+              </label>
+              <select
+                id="techStackFilter"
+                className="w-full rounded-lg border px-3 py-2.5 focus:outline-none"
+                style={{
+                  backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 80%, transparent)',
+                  borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
+                  color: 'var(--text-primary)',
+                }}
+                value={selectedTechStack}
+                onChange={(event) => setSelectedTechStack(event.target.value)}
+              >
+                {uniqueTechStacks.map((tech) => (
+                  <option key={tech} value={tech}>
+                    {toPascalCase(tech)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label htmlFor="projectTypeFilter" className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+                Project Type
+              </label>
+              <select
+                id="projectTypeFilter"
+                className="w-full rounded-lg border px-3 py-2.5 focus:outline-none"
+                style={{
+                  backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 80%, transparent)',
+                  borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
+                  color: 'var(--text-primary)',
+                }}
+                value={selectedProjectType}
+                onChange={(event) => setSelectedProjectType(event.target.value)}
+              >
+                {uniqueProjectTypes.map((type) => (
+                  <option key={type} value={type}>
+                    {toPascalCase(type)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            {uniqueStatuses.map((status) => {
+              const isActive = selectedStatus === status;
+              return (
+                <button
+                  key={status}
+                  type="button"
+                  onClick={() => setSelectedStatus(status)}
+                  className="rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-wide transition-colors duration-200"
+                  style={{
+                    borderColor: isActive
+                      ? 'color-mix(in srgb, var(--accent-cyan) 55%, var(--border-secondary))'
+                      : 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
+                    color: isActive ? 'var(--accent-cyan)' : 'var(--text-secondary)',
+                    backgroundColor: isActive
+                      ? 'color-mix(in srgb, var(--accent-cyan) 11%, transparent)'
+                      : 'color-mix(in srgb, var(--bg-elevated) 80%, transparent)',
+                  }}
                 >
-                  {toPascalCase(type)}
-                </option>
+                  {status}
+                </button>
+              );
+            })}
+
+            <button
+              type="button"
+              onClick={resetFilters}
+              className="rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-wide"
+              style={{
+                borderColor: 'color-mix(in srgb, var(--accent-orange) 50%, var(--border-secondary))',
+                color: 'var(--accent-orange)',
+                backgroundColor: 'color-mix(in srgb, var(--accent-orange) 10%, transparent)',
+              }}
+            >
+              Reset Filters
+            </button>
+          </div>
+
+          {activeFilters.length > 0 && (
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              {activeFilters.map((filter) => (
+                <span
+                  key={filter}
+                  className="rounded-full border px-3 py-1 text-xs font-semibold"
+                  style={{
+                    borderColor: 'color-mix(in srgb, var(--accent-purple) 45%, var(--border-secondary))',
+                    color: 'var(--accent-purple)',
+                    backgroundColor: 'color-mix(in srgb, var(--accent-purple) 10%, transparent)',
+                  }}
+                >
+                  {filter}
+                </span>
               ))}
-            </select>
-          </motion.div>
-        </div>
+            </div>
+          )}
+        </motion.section>
 
-        <Timeline projectsByYear={projectsByYear} years={years} onCardClick={openDialog} />
+        <motion.section
+          initial={{ y: 22, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="mt-8"
+        >
+          {filteredProjects.length > 0 ? (
+            viewMode === 'grid' ? (
+              <div className="space-y-6">
+                {spotlightProject && (
+                  <motion.article
+                    whileHover={{ y: -3 }}
+                    className="cursor-pointer rounded-2xl border p-5 sm:p-6"
+                    style={heroCardStyle}
+                    onClick={() => setSelectedProject(spotlightProject)}
+                  >
+                    <div className="grid grid-cols-1 gap-5 md:grid-cols-2 md:items-center">
+                      <div>
+                        <p
+                          className="mb-2 inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide"
+                          style={{
+                            borderColor: 'color-mix(in srgb, var(--accent-orange) 48%, var(--border-secondary))',
+                            color: 'var(--accent-orange)',
+                            backgroundColor: 'color-mix(in srgb, var(--accent-orange) 10%, transparent)',
+                          }}
+                        >
+                          Spotlight Project
+                        </p>
+                        <h3 className="mb-2 text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+                          {spotlightProject.name}
+                        </h3>
+                        <p className="mb-4 text-sm leading-relaxed sm:text-base" style={{ color: 'var(--text-secondary)' }}>
+                          {String(spotlightProject.description || '').slice(0, 220)}
+                          {String(spotlightProject.description || '').length > 220 ? '...' : ''}
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {(spotlightProject.techStack || []).slice(0, 4).map((tech) => (
+                            <span
+                              key={`${spotlightProject.name}-${tech}`}
+                              className="rounded-md border px-2.5 py-1 text-xs font-semibold"
+                              style={{
+                                borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
+                                color: 'var(--accent-cyan)',
+                                backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 80%, transparent)',
+                              }}
+                            >
+                              {tech}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
 
-        <ProjectDialog project={selectedProject} onClose={closeDialog} />
+                      <div className="overflow-hidden rounded-xl border"
+                        style={{
+                          borderColor: 'color-mix(in srgb, var(--border-secondary) 70%, transparent)',
+                          backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 82%, transparent)',
+                          minHeight: '180px',
+                        }}
+                      >
+                        {spotlightProject.image ? (
+                          <img
+                            src={spotlightProject.image}
+                            alt={spotlightProject.name}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <div
+                            className="relative flex h-full min-h-[180px] items-center justify-center overflow-hidden"
+                            style={{ backgroundImage: getPlaceholderGradient(spotlightProject?.name) }}
+                          >
+                            <div
+                              className="absolute -left-8 -top-8 h-28 w-28 rounded-full blur-2xl"
+                              style={{ background: 'color-mix(in srgb, var(--accent-cyan) 35%, transparent)' }}
+                            />
+                            <div
+                              className="absolute -bottom-8 -right-8 h-28 w-28 rounded-full blur-2xl"
+                              style={{ background: 'color-mix(in srgb, var(--accent-purple) 35%, transparent)' }}
+                            />
+                            <div
+                              className="absolute inset-0"
+                              style={{
+                                backgroundImage:
+                                  'linear-gradient(color-mix(in srgb, var(--border-secondary) 24%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, var(--border-secondary) 24%, transparent) 1px, transparent 1px)',
+                                backgroundSize: '22px 22px',
+                                opacity: 0.35,
+                              }}
+                            />
+                            <div className="relative z-10 flex flex-col items-center px-4 text-center">
+                              <div
+                                className="mb-2 rounded-xl border px-4 py-1.5 text-xl font-bold tracking-wide"
+                                style={{
+                                  borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)',
+                                  color: 'var(--text-bright)',
+                                  backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 70%, transparent)',
+                                }}
+                              >
+                                {getProjectInitials(spotlightProject?.name)}
+                              </div>
+                              <p className="text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>
+                                Placeholder Preview
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </motion.article>
+                )}
+
+                {remainingProjects.length > 0 && (
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+                    {remainingProjects.map((project, index) => (
+                      <ProjectCard
+                        key={project?._id || `${project?.name}-${index}`}
+                        project={project}
+                        onCardClick={setSelectedProject}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Timeline projectsByYear={projectsByYear} years={years} onCardClick={setSelectedProject} />
+            )
+          ) : (
+            <div
+              className="rounded-2xl border p-10 text-center"
+              style={{
+                ...heroCardStyle,
+                border: '1px solid color-mix(in srgb, var(--border-secondary) 72%, transparent)',
+              }}
+            >
+              <h3 className="mb-2 text-2xl font-semibold" style={{ color: 'var(--text-primary)' }}>
+                No Projects Match These Filters
+              </h3>
+              <p style={{ color: 'var(--text-secondary)' }}>
+                Try adjusting search or filters to reveal more work.
+              </p>
+            </div>
+          )}
+        </motion.section>
+
+        <ProjectDialog project={selectedProject} onClose={() => setSelectedProject(null)} />
       </div>
     </motion.div>
   );
