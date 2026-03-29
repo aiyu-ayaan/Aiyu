@@ -46,7 +46,7 @@ const ASCII_ARTS = [
 export default function TerminalPath({ socialData, config }) {
     const pathname = usePathname();
     const router = useRouter();
-    const { switchVariant, theme, activeThemeData } = useTheme();
+    const { switchVariant, setThemeMode, theme, themeMode, activeThemeData } = useTheme();
     const [mounted, setMounted] = useState(false);
     const [input, setInput] = useState('');
     const [isFocused, setIsFocused] = useState(false);
@@ -315,7 +315,7 @@ export default function TerminalPath({ socialData, config }) {
                     { cmd: 'email', desc: 'Get contact email' },
                     { cmd: 'socials', desc: 'List social links' },
                     { cmd: 'projects', desc: 'View projects' },
-                    { cmd: 'theme [mode]', desc: 'Switch theme (light/dark)' },
+                    { cmd: 'theme [mode]', desc: 'Switch theme (auto/light/dark)' },
                     { cmd: 'echo [text]', desc: 'Print text' },
                     { cmd: 'sysinfo', desc: 'System information' },
                     { cmd: 'joke', desc: 'Tell a joke' },
@@ -329,13 +329,19 @@ export default function TerminalPath({ socialData, config }) {
             });
             setTimeout(() => setOutput(null), 10000);
         } else if (command === 'theme') {
+            const requestedMode = arg.toLowerCase();
             if (!arg) {
-                setOutput({ type: 'text', message: `Current theme: ${theme}. Usage: theme [light|dark]` });
-            } else if (['light', 'dark'].includes(arg.toLowerCase())) {
-                switchVariant(arg.toLowerCase());
-                setOutput({ type: 'success', message: `Theme switched to ${arg.toLowerCase()}` });
+                setOutput({ type: 'text', message: `Current theme: ${theme} (mode: ${themeMode}). Usage: theme [auto|light|dark]` });
+            } else if (['auto', 'light', 'dark'].includes(requestedMode)) {
+                if (requestedMode === 'auto') {
+                    setThemeMode('auto');
+                    setOutput({ type: 'success', message: 'Theme mode set to auto (uses system preference).' });
+                } else {
+                    switchVariant(requestedMode);
+                    setOutput({ type: 'success', message: `Theme switched to ${requestedMode}` });
+                }
             } else {
-                setOutput({ type: 'error', message: `Invalid theme: ${arg}. Use 'light' or 'dark'.` });
+                setOutput({ type: 'error', message: `Invalid theme: ${arg}. Use 'auto', 'light', or 'dark'.` });
             }
             setTimeout(() => setOutput(null), 3000);
         } else if (command === 'echo') {
@@ -348,6 +354,7 @@ export default function TerminalPath({ socialData, config }) {
                 `Browser: ${navigator.appName}`,
                 `Resolution: ${window.screen.width}x${window.screen.height}`,
                 `Theme: ${theme}`,
+                `Theme Mode: ${themeMode}`,
             ];
             setOutput({ type: 'list', items: info });
             setTimeout(() => setOutput(null), 8000);

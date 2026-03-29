@@ -1,82 +1,64 @@
 "use client";
 
+import clsx from 'clsx';
 import { motion } from 'framer-motion';
+import { Monitor, Moon, Sun } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
-// Removed hardcoded colors - now using CSS custom properties
+const MODE_ORDER = ['auto', 'dark', 'light'];
 
-export default function ThemeToggle() {
-  const { theme, toggleTheme, mounted } = useTheme();
+const MODE_META = {
+  auto: { label: 'Auto', icon: Monitor },
+  dark: { label: 'Dark', icon: Moon },
+  light: { label: 'Light', icon: Sun },
+};
 
-  // Prevent hydration mismatch by rendering a placeholder until mounted
+export default function ThemeToggle({ compact = false }) {
+  const { themeMode, setThemeMode, mounted } = useTheme();
+
+  const safeMode = MODE_META[themeMode] ? themeMode : 'auto';
+  const currentIndex = MODE_ORDER.indexOf(safeMode);
+  const nextMode = MODE_ORDER[(currentIndex + 1) % MODE_ORDER.length];
+  const currentMeta = MODE_META[safeMode];
+  const nextMeta = MODE_META[nextMode];
+  const Icon = currentMeta.icon;
+
   if (!mounted) {
     return (
       <div
-        className="relative w-14 h-7 rounded-full p-1"
-        style={{ backgroundColor: 'var(--bg-surface)' }}
-        aria-label="Loading theme toggle"
-      >
-        <div
-          className="w-5 h-5 rounded-full"
-          style={{ backgroundColor: 'var(--accent-purple)' }}
-        />
-      </div>
+        className={clsx(
+          "inline-flex items-center rounded-full border",
+          compact ? "h-9 w-9 justify-center" : "h-9 px-3"
+        )}
+        style={{
+          borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
+          backgroundColor: 'color-mix(in srgb, var(--bg-surface) 92%, transparent)',
+        }}
+        aria-label="Loading theme button"
+      />
     );
   }
 
-  const isDark = theme === 'dark';
-
   return (
     <motion.button
-      onClick={toggleTheme}
-      className="relative w-14 h-7 rounded-full p-1 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2"
+      type="button"
+      onClick={() => setThemeMode(nextMode)}
+      className={clsx(
+        "inline-flex items-center gap-1.5 rounded-full border text-sm font-semibold",
+        compact ? "h-9 w-9 justify-center" : "h-9 px-3"
+      )}
       style={{
-        backgroundColor: 'var(--bg-surface)',
-        outlineColor: 'var(--accent-purple)',
+        borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
+        backgroundColor: 'color-mix(in srgb, var(--bg-surface) 92%, transparent)',
+        color: 'var(--text-primary)',
       }}
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
-      aria-label={`Switch to ${isDark ? 'light' : 'dark'} theme`}
-      role="switch"
-      aria-checked={isDark}
+      whileHover={{ scale: 1.03 }}
+      whileTap={{ scale: 0.97 }}
+      aria-label={`Theme mode: ${currentMeta.label}. Click to switch to ${nextMeta.label}.`}
+      title={`Theme: ${currentMeta.label} -> ${nextMeta.label}`}
     >
-      <motion.div
-        className="w-5 h-5 rounded-full flex items-center justify-center shadow-md"
-        style={{
-          backgroundColor: 'var(--accent-purple)',
-        }}
-        initial={false}
-        animate={{
-          x: isDark ? 0 : 28,
-        }}
-        transition={{
-          type: "spring",
-          stiffness: 500,
-          damping: 30,
-        }}
-      >
-        {isDark ? (
-          <svg
-            className="w-3 h-3 text-white"
-            fill="currentColor"
-            viewBox="0 0 20 20"
-          >
-            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
-          </svg>
-        ) : (
-          <svg
-            className="w-3 h-3 text-white"
-            fill="currentColor"
-            viewBox="0 0 20 20"
-          >
-            <path
-              fillRule="evenodd"
-              d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"
-              clipRule="evenodd"
-            />
-          </svg>
-        )}
-      </motion.div>
+      <Icon size={14} style={{ color: 'var(--accent-cyan)' }} />
+      {!compact && <span>{currentMeta.label}</span>}
     </motion.button>
   );
 }

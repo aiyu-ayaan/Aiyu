@@ -92,13 +92,21 @@ export default async function RootLayout({ children }) {
             __html: `
               (function() {
                 try {
-                  var theme = localStorage.getItem('themeVariant') || localStorage.getItem('theme');
-                  if (!theme) {
-                    theme = 'dark';
+                  var mode = localStorage.getItem('themeMode');
+                  var legacy = localStorage.getItem('themeVariant') || localStorage.getItem('theme');
+                  if (mode !== 'auto' && mode !== 'dark' && mode !== 'light') {
+                    mode = (legacy === 'dark' || legacy === 'light') ? legacy : 'auto';
                   }
-                  document.documentElement.setAttribute('data-theme', theme);
+
+                  var resolved = mode === 'auto'
+                    ? (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+                    : mode;
+
+                  document.documentElement.setAttribute('data-theme', resolved);
+                  document.documentElement.style.backgroundColor = resolved === 'dark' ? '#0d1117' : '#ffffff';
                 } catch (e) {
                   document.documentElement.setAttribute('data-theme', 'dark');
+                  document.documentElement.style.backgroundColor = '#0d1117';
                 }
               })();
             `,

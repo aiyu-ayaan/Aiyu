@@ -6,13 +6,19 @@ import GitHubStatsClient from './GitHubStatsClient';
 
 function GitHubLoadingState() {
     return (
-        <div className="min-h-screen flex items-center justify-center px-6">
-            <div className="w-full max-w-md text-center">
-                <h2 className="text-lg font-semibold mb-4">Loading GitHub Stats...</h2>
-                <div
-                    className="w-full h-1.5 rounded-full overflow-hidden"
-                    style={{ backgroundColor: 'var(--border-secondary)' }}
-                >
+        <div className="min-h-screen p-4 lg:p-8">
+            <div
+                className="mx-auto mt-20 w-full max-w-3xl rounded-2xl border p-8 text-center"
+                style={{
+                    background:
+                        'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 94%, transparent), color-mix(in srgb, var(--bg-secondary) 94%, transparent))',
+                    borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
+                }}
+            >
+                <h2 className="mb-4 text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>
+                    Loading GitHub Dashboard...
+                </h2>
+                <div className="h-1.5 w-full overflow-hidden rounded-full" style={{ backgroundColor: 'var(--border-secondary)' }}>
                     <motion.div
                         className="h-full w-1/3 rounded-full"
                         style={{
@@ -24,7 +30,7 @@ function GitHubLoadingState() {
                     />
                 </div>
                 <p className="mt-3 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                    Fetching latest repositories and contributions
+                    Fetching repositories, contributions, and activity
                 </p>
             </div>
         </div>
