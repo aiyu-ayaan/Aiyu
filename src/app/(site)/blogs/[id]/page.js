@@ -1,22 +1,5 @@
-
-import dynamic from 'next/dynamic';
+import BlogDetailClient from '../../../components/blogs/BlogDetailClient';
 import { getBlogById, getConfigData } from '@/lib/dataFetchers';
-
-const BlogDetailClient = dynamic(() => import('../../../components/blogs/BlogDetailClient'), {
-    loading: () => (
-        <div className="min-h-screen p-4 lg:p-8">
-            <div
-                className="mx-auto max-w-5xl animate-pulse rounded-3xl border"
-                style={{
-                    minHeight: '420px',
-                    borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)',
-                    background:
-                        'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 84%, transparent), color-mix(in srgb, var(--bg-secondary) 86%, transparent))',
-                }}
-            />
-        </div>
-    ),
-});
 
 export async function generateMetadata({ params }) {
     const { id } = await params;

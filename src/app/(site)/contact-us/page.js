@@ -1,21 +1,5 @@
 import { getConfigData } from '@/lib/dataFetchers';
-import dynamic from 'next/dynamic';
-
-const ContactPageClient = dynamic(() => import('./ContactPageClient'), {
-    loading: () => (
-        <div className="min-h-screen p-4 lg:p-8">
-            <div
-                className="mx-auto max-w-5xl animate-pulse rounded-3xl border"
-                style={{
-                    minHeight: '380px',
-                    borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)',
-                    background:
-                        'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 84%, transparent), color-mix(in srgb, var(--bg-secondary) 86%, transparent))',
-                }}
-            />
-        </div>
-    ),
-});
+import ContactPageClient from './ContactPageClient';
 
 export async function generateMetadata() {
     const config = await getConfigData();

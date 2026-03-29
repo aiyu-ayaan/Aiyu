@@ -1,7 +1,10 @@
 /** @type {import('next').NextConfig} */
+const isProduction = process.env.NODE_ENV === 'production';
+
 const nextConfig = {
   // output: 'export' // Disabled to allow dynamic API routes
   output: 'standalone', // Enable standalone output for Docker
+  allowedDevOrigins: ['192.168.31.54'],
 
   // Enhanced performance optimizations
   experimental: {
@@ -34,8 +37,10 @@ const nextConfig = {
 
   // Headers for performance
   async headers() {
-    return [
-      {
+    const headers = [];
+
+    if (isProduction) {
+      headers.push({
         source: '/_next/static/(.*)',
         headers: [
           {
@@ -43,26 +48,30 @@ const nextConfig = {
             value: 'public, max-age=31536000, immutable',
           },
         ],
-      },
-      {
-        source: '/api/(.*)',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=60, stale-while-revalidate=300',
-          },
-        ],
-      },
-      {
-        source: '/images/(.*)',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=86400, stale-while-revalidate=43200',
-          },
-        ],
-      },
-    ];
+      });
+    }
+
+    headers.push({
+      source: '/api/(.*)',
+      headers: [
+        {
+          key: 'Cache-Control',
+          value: isProduction ? 'public, max-age=60, stale-while-revalidate=300' : 'no-store',
+        },
+      ],
+    });
+
+    headers.push({
+      source: '/images/(.*)',
+      headers: [
+        {
+          key: 'Cache-Control',
+          value: isProduction ? 'public, max-age=86400, stale-while-revalidate=43200' : 'no-store',
+        },
+      ],
+    });
+
+    return headers;
   },
 
   // Turbopack config (Next.js 16 default bundler)
