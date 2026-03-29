@@ -104,29 +104,7 @@ export default function GitHubStatsClient({ data }) {
   const [showAllActivities, setShowAllActivities] = useState(false);
   const [repoSearch, setRepoSearch] = useState('');
   const [repoType, setRepoType] = useState('all');
-
-  if (!data?.success) {
-    return (
-      <div className="min-h-screen p-4 lg:p-8">
-        <div
-          className="mx-auto max-w-2xl rounded-2xl border p-8 text-center"
-          style={{
-            background:
-              'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 94%, transparent), color-mix(in srgb, var(--bg-secondary) 94%, transparent))',
-            borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
-          }}
-        >
-          <Github className="mx-auto mb-4 h-12 w-12" style={{ color: 'var(--text-tertiary)' }} />
-          <h2 className="mb-2 text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
-            GitHub Stats Not Available
-          </h2>
-          <p style={{ color: 'var(--text-secondary)' }}>
-            {data?.error || 'This page has not been configured yet.'}
-          </p>
-        </div>
-      </div>
-    );
-  }
+  const hasValidData = Boolean(data?.success);
 
   const payload = data?.data || {};
   const profile = payload?.profile || {};
@@ -207,6 +185,29 @@ export default function GitHubStatsClient({ data }) {
   const publicRepos = Math.max(0, effectiveTotalRepos - privateRepos);
   const publicPercent = effectiveTotalRepos > 0 ? Math.round((publicRepos / effectiveTotalRepos) * 100) : 0;
   const privatePercent = effectiveTotalRepos > 0 ? Math.max(0, 100 - publicPercent) : 0;
+
+  if (!hasValidData) {
+    return (
+      <div className="min-h-screen p-4 lg:p-8">
+        <div
+          className="mx-auto max-w-2xl rounded-2xl border p-8 text-center"
+          style={{
+            background:
+              'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 94%, transparent), color-mix(in srgb, var(--bg-secondary) 94%, transparent))',
+            borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
+          }}
+        >
+          <Github className="mx-auto mb-4 h-12 w-12" style={{ color: 'var(--text-tertiary)' }} />
+          <h2 className="mb-2 text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+            GitHub Stats Not Available
+          </h2>
+          <p style={{ color: 'var(--text-secondary)' }}>
+            {data?.error || 'This page has not been configured yet.'}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <motion.div

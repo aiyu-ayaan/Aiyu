@@ -20,6 +20,23 @@ export default function ViewportLazySection({
       return;
     }
 
+    const preloadDistance = Number.parseInt(String(rootMargin).split(' ')[0], 10) || 240;
+
+    const shouldRevealByPosition = () => {
+      if (!hostRef.current) return false;
+      const rect = hostRef.current.getBoundingClientRect();
+      return rect.top <= window.innerHeight + preloadDistance && rect.bottom >= -preloadDistance;
+    };
+
+    const revealIfNeeded = () => {
+      if (shouldRevealByPosition()) {
+        setIsVisible(true);
+      }
+    };
+
+    revealIfNeeded();
+    if (shouldRevealByPosition()) return;
+
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries.some((entry) => entry.isIntersecting)) {
@@ -34,7 +51,19 @@ export default function ViewportLazySection({
       observer.observe(hostRef.current);
     }
 
-    return () => observer.disconnect();
+    window.addEventListener('scroll', revealIfNeeded, { passive: true });
+    window.addEventListener('resize', revealIfNeeded);
+
+    const fallbackTimer = window.setTimeout(() => {
+      setIsVisible(true);
+    }, 3500);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('scroll', revealIfNeeded);
+      window.removeEventListener('resize', revealIfNeeded);
+      window.clearTimeout(fallbackTimer);
+    };
   }, [isVisible, rootMargin]);
 
   return (

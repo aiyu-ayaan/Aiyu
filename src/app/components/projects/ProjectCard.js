@@ -96,9 +96,9 @@ const ProjectCard = ({ project, onCardClick = () => {} }) => {
                     opacity: 0.35,
                   }}
                 />
-                <div className="relative z-10 flex flex-col items-center px-4 text-center">
+                <div className="relative z-10 flex items-center justify-center px-4 text-center">
                   <div
-                    className="mb-2 rounded-xl border px-3 py-1 text-lg font-bold tracking-wide"
+                    className="rounded-xl border px-3 py-1 text-lg font-bold tracking-wide"
                     style={{
                       borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)',
                       color: 'var(--text-bright)',
@@ -107,9 +107,6 @@ const ProjectCard = ({ project, onCardClick = () => {} }) => {
                   >
                     {projectInitials}
                   </div>
-                  <p className="max-w-[230px] text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>
-                    Placeholder Preview
-                  </p>
                 </div>
               </div>
             )}
