@@ -1,97 +1,131 @@
-
 "use client";
-import React from 'react';
+
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { useTheme } from '../../context/ThemeContext';
-
 import Link from 'next/link';
+import { FaArrowRight, FaClock } from 'react-icons/fa';
+import {
+  formatBlogDate,
+  getBlogInitials,
+  getBlogPlaceholderGradient,
+  getReadTime,
+  stripMarkdown,
+} from './blogUtils';
 
-const stripMarkdown = (markdown) => {
-    if (!markdown) return '';
-    return markdown
-        .replace(/!\[([^\]]*)\]\([^\)]+\)/g, '') // Remove images
-        .replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1') // Replace links with text
-        .replace(/#{1,6} /g, '') // Remove headers
-        .replace(/(\*\*|__)(.*?)\1/g, '$2') // Remove bold
-        .replace(/(\*|_)(.*?)\1/g, '$2') // Remove italic
-        .replace(/`{3,}[\s\S]*?`{3,}/g, '') // Remove code blocks
-        .replace(/`(.+?)`/g, '$1') // Remove inline code
-        .replace(/^\s*>\s+/gm, '') // Remove blockquotes
-        .replace(/^\s*[\*\-\+]\s+/gm, '') // Remove list items
-        .replace(/^\s*\d+\.\s+/gm, '') // Remove ordered list items
-        .replace(/\n{2,}/g, '\n') // Consolidate newlines
-        .trim();
-};
+const BlogCard = ({ blog, featured = false }) => {
+  const [imageError, setImageError] = useState(false);
 
-const BlogCard = ({ blog }) => {
-    const { theme } = useTheme();
+  useEffect(() => {
+    setImageError(false);
+  }, [blog?.image]);
 
-    return (
-        <motion.div
-            layout
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            whileHover={{ y: -5 }}
-            className="rounded-xl overflow-hidden shadow-lg transition-all duration-300 flex flex-col h-full border border-opacity-50"
-            style={{
-                background: 'linear-gradient(to bottom right, var(--bg-surface), var(--bg-secondary))',
-                borderColor: 'var(--border-secondary)',
-            }}
-        >
-            {blog.image && blog.image.trim() !== '' && (
-                <div className="h-48 overflow-hidden relative">
-                    <img
-                        src={blog.image}
-                        alt={blog.title}
-                        className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
-                        onError={(e) => {
-                            e.target.style.display = 'none';
-                            e.target.parentElement.style.display = 'none';
-                        }}
-                    />
-                </div>
-            )}
+  const cleanExcerpt = stripMarkdown(blog?.content || '');
+  const excerpt = cleanExcerpt.length > (featured ? 240 : 140)
+    ? `${cleanExcerpt.slice(0, featured ? 240 : 140)}...`
+    : cleanExcerpt;
 
-            <div className="p-6 flex flex-col flex-grow">
-                <div className="flex justify-between items-start mb-2">
-                    <span className="text-xs font-semibold uppercase tracking-wider opacity-70" style={{ color: 'var(--text-tertiary)' }}>
-                        {blog.date}
-                    </span>
-                </div>
+  const tags = Array.isArray(blog?.tags) ? blog.tags : [];
+  const hasImage = Boolean(blog?.image && String(blog.image).trim() !== '');
+  const showPlaceholder = !hasImage || imageError;
 
-                <h3
-                    className="text-xl font-bold mb-3 line-clamp-2"
-                    style={{ color: 'var(--text-primary)' }}
-                >
-                    {blog.title}
-                </h3>
-
-                <p
-                    className="text-sm mb-4 line-clamp-3 flex-grow"
-                    style={{ color: 'var(--text-secondary)' }}
-                >
-                    {stripMarkdown(blog.content)}
-                </p>
-
-                <Link href={`/blogs/${blog._id}`} passHref legacyBehavior>
-                    <motion.a
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        className="w-full py-2 px-4 rounded-lg font-medium text-sm transition-colors mt-auto text-center block"
-                        style={{
-                            backgroundColor: 'var(--bg-hover)',
-                            color: 'var(--accent-cyan)',
-                            border: '1px solid',
-                            borderColor: 'var(--border-cyan)',
-                        }}
-                    >
-                        Read Story
-                    </motion.a>
-                </Link>
+  return (
+    <motion.article
+      layout
+      initial={{ opacity: 0, y: 18 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ y: -4 }}
+      transition={{ duration: 0.35 }}
+      className="group relative overflow-hidden rounded-2xl border"
+      style={{
+        borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
+        background:
+          'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 95%, transparent), color-mix(in srgb, var(--bg-secondary) 95%, transparent))',
+        boxShadow: '0 14px 28px var(--shadow-sm)',
+      }}
+    >
+      <div className="relative h-48 overflow-hidden border-b" style={{ borderColor: 'color-mix(in srgb, var(--border-secondary) 70%, transparent)' }}>
+        {!showPlaceholder ? (
+          <img
+            src={blog.image}
+            alt={blog?.title || 'Blog'}
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            onError={() => setImageError(true)}
+          />
+        ) : (
+          <div
+            className="relative flex h-full w-full items-center justify-center overflow-hidden"
+            style={{ backgroundImage: getBlogPlaceholderGradient(blog?.title) }}
+          >
+            <div className="absolute inset-0"
+              style={{
+                backgroundImage:
+                  'linear-gradient(color-mix(in srgb, var(--border-secondary) 24%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, var(--border-secondary) 24%, transparent) 1px, transparent 1px)',
+                backgroundSize: '22px 22px',
+                opacity: 0.35,
+              }}
+            />
+            <div className="relative z-10 rounded-xl border px-4 py-2 text-lg font-bold"
+              style={{
+                borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)',
+                color: 'var(--text-bright)',
+                backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 70%, transparent)',
+              }}
+            >
+              {getBlogInitials(blog?.title)}
             </div>
-        </motion.div>
-    );
+          </div>
+        )}
+      </div>
+
+      <div className="p-5 sm:p-6">
+        <div className="mb-3 flex items-center justify-between gap-2 text-xs sm:text-sm" style={{ color: 'var(--text-tertiary)' }}>
+          <span>{formatBlogDate(blog?.date || blog?.createdAt)}</span>
+          <span className="inline-flex items-center gap-1">
+            <FaClock className="h-3 w-3" />
+            {getReadTime(blog?.content)}
+          </span>
+        </div>
+
+        <h3 className="mb-3 text-xl font-bold leading-snug" style={{ color: 'var(--text-primary)' }}>
+          {blog?.title}
+        </h3>
+
+        <p className="mb-4 text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+          {excerpt || 'Open the article to read the full write-up.'}
+        </p>
+
+        {tags.length > 0 && (
+          <div className="mb-4 flex flex-wrap gap-2">
+            {tags.slice(0, featured ? 4 : 3).map((tag) => (
+              <span
+                key={`${blog?._id}-${tag}`}
+                className="rounded-md border px-2 py-1 text-[11px] font-semibold"
+                style={{
+                  borderColor: 'color-mix(in srgb, var(--accent-purple) 45%, var(--border-secondary))',
+                  color: 'var(--accent-purple)',
+                  backgroundColor: 'color-mix(in srgb, var(--accent-purple) 10%, transparent)',
+                }}
+              >
+                #{tag}
+              </span>
+            ))}
+          </div>
+        )}
+
+        <Link
+          href={`/blogs/${blog?._id}`}
+          className="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold"
+          style={{
+            borderColor: 'var(--accent-cyan)',
+            color: 'var(--accent-cyan)',
+            backgroundColor: 'color-mix(in srgb, var(--accent-cyan) 10%, transparent)',
+          }}
+        >
+          Read Story <FaArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
+        </Link>
+      </div>
+    </motion.article>
+  );
 };
 
 export default BlogCard;
