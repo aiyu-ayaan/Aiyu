@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { CalendarDays, Download, Loader2, Search } from 'lucide-react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
+import { GalleryPageSkeleton } from '../../components/shared/skeletons/PublicPageSkeletons';
 
 const getImageInitials = (description) => {
   const words = String(description || '')
@@ -252,15 +253,7 @@ const GalleryClient = () => {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen p-4 lg:p-8">
-        <div className="mx-auto max-w-7xl animate-pulse space-y-4">
-          <div className="h-14 w-2/3 rounded-lg" style={{ backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 88%, transparent)' }} />
-          <div className="h-8 w-1/2 rounded-lg" style={{ backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 80%, transparent)' }} />
-          <div className="h-64 rounded-xl" style={{ backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 76%, transparent)' }} />
-        </div>
-      </div>
-    );
+    return <GalleryPageSkeleton />;
   }
 
   return (
@@ -286,7 +279,7 @@ const GalleryClient = () => {
           <p className="mb-3 inline-flex rounded-full border px-3 py-1 text-xs uppercase tracking-[0.2em]" style={{ borderColor: 'color-mix(in srgb, var(--accent-cyan) 42%, var(--border-secondary))', color: 'var(--accent-cyan)' }}>
             Visual Archive
           </p>
-          <h1 className="mb-3 bg-gradient-to-r bg-clip-text text-4xl font-bold text-transparent sm:text-5xl lg:text-6xl" style={{ backgroundImage: 'linear-gradient(to right, var(--accent-cyan), var(--accent-purple), var(--accent-pink))' }}>
+          <h1 className="mb-3 bg-linear-to-r bg-clip-text text-4xl font-bold text-transparent sm:text-5xl lg:text-6xl" style={{ backgroundImage: 'linear-gradient(to right, var(--accent-cyan), var(--accent-purple), var(--accent-pink))' }}>
             {headerInfo.title}
           </h1>
           <p className="max-w-2xl text-base sm:text-lg" style={{ color: 'var(--text-secondary)' }}>
@@ -496,7 +489,7 @@ const GalleryClient = () => {
                               {orientation}
                             </div>
 
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                            <div className="absolute inset-0 bg-linear-to-t from-black/85 via-black/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                             <div className="pointer-events-none absolute inset-x-0 bottom-0 translate-y-5 p-4 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
                               <p className="mb-3 line-clamp-2 text-left text-sm font-medium text-white">
                                 {image?.description || 'Untitled visual'}
