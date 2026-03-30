@@ -436,7 +436,18 @@ const GalleryClient = () => {
                           backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 85%, transparent)',
                         }}
                       >
-                        <button type="button" className="group relative block w-full cursor-pointer" onClick={() => openLightbox(image)}>
+                        <div
+                          role="button"
+                          tabIndex={0}
+                          className="group relative block w-full cursor-pointer"
+                          onClick={() => openLightbox(image)}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter' || event.key === ' ') {
+                              event.preventDefault();
+                              openLightbox(image);
+                            }
+                          }}
+                        >
                           <div className="relative w-full" style={{ aspectRatio }}>
                             {!showPlaceholder ? (
                               <Image
@@ -494,6 +505,7 @@ const GalleryClient = () => {
                                 <span>{formatDate(image?.createdAt)}</span>
                                 {image?.src && (
                                   <button
+                                    type="button"
                                     onClick={(event) => handleDownload(event, image)}
                                     className="pointer-events-auto inline-flex items-center gap-1 rounded-full border border-white/25 bg-black/30 px-3 py-1 font-semibold hover:bg-white/20"
                                   >
@@ -503,7 +515,7 @@ const GalleryClient = () => {
                               </div>
                             </div>
                           </div>
-                        </button>
+                        </div>
                       </motion.div>
                     );
                   })}
