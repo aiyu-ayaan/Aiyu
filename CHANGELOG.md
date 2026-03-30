@@ -1,12 +1,5 @@
 # Changelog
 
-## [3.1.0](https://github.com/aiyu-ayaan/Aiyu/compare/v3.0.1...v3.1.0) (2026-03-30)
-
-
-### Features
-
-* User Experience & UI Improvements([#129](https://github.com/aiyu-ayaan/Aiyu/issues/129)) ([1834a62](https://github.com/aiyu-ayaan/Aiyu/commit/1834a6251866201363891a0306a2ba75aca3df7e))
-
 ## [3.0.1](https://github.com/aiyu-ayaan/Aiyu/compare/v3.0.0...v3.0.1) (2026-03-29)
 
 
