@@ -24,9 +24,12 @@ const OptimizedImage = ({
         src
     );
 
-    // Intersection Observer for lazy loading
+    // Intersection Observer for lazy loading with optimized settings
     useEffect(() => {
         if (!imgRef.current || priority) return;
+
+        // Use a more aggressive rootMargin for better UX
+        const rootMarginValue = '200px 0px';
 
         const observer = new IntersectionObserver(
             ([entry]) => {
@@ -36,8 +39,9 @@ const OptimizedImage = ({
                 }
             },
             {
-                rootMargin: '50px 0px',
-                threshold: 0.01
+                rootMargin: rootMarginValue,
+                threshold: 0, // Trigger as soon as any part is visible
+                // Add root element for better performance in some cases
             }
         );
 

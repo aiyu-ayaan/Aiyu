@@ -308,7 +308,7 @@ const ConfigForm = () => {
                             </label>
                             {formData.favicon.value && (
                                 <div className="h-12 w-12 rounded-lg bg-slate-950/50 border border-white/10 flex items-center justify-center p-2 shrink-0">
-                                    <img src={formData.favicon.value} alt="Favicon Preview" className="w-full h-full object-contain" />
+                                    <img src={formData.favicon.value} alt="Favicon Preview" className="w-full h-full object-contain" loading="lazy" decoding="async" />
                                 </div>
                             )}
                         </div>

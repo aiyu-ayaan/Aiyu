@@ -20,6 +20,8 @@ const IconPreview = ({ name }) => {
                 src={`https://cdn.simpleicons.org/${name.toLowerCase().replace(/[^a-z0-9]/g, '')}/22d3ee`}
                 alt={name}
                 className="w-5 h-5 object-contain"
+                loading="lazy"
+                decoding="async"
                 onError={(e) => { e.target.style.display = 'none'; }}
             />
         );
@@ -479,6 +481,8 @@ const AboutForm = () => {
                                                 src={`https://cdn.simpleicons.org/${slug}/22d3ee`}
                                                 alt={name}
                                                 className="w-full h-full object-contain filter grayscale group-hover:grayscale-0 transition-all opacity-70 group-hover:opacity-100"
+                                                loading="lazy"
+                                                decoding="async"
                                                 onError={(e) => { e.target.style.opacity = '0.3'; }}
                                             />
                                         ) : (

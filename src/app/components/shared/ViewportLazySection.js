@@ -13,6 +13,8 @@ export default function ViewportLazySection({
   const hostRef = useRef(null);
   const revealTimerRef = useRef(null);
   const [isVisible, setIsVisible] = useState(false);
+  const scrollTimeoutRef = useRef(null);
+  const lastScrollTimeRef = useRef(0);
 
   useEffect(() => {
     if (isVisible) return;
@@ -42,7 +44,13 @@ export default function ViewportLazySection({
       setIsVisible(true);
     };
 
+    // Throttled scroll handler to prevent lag on fast scrolls
     const revealIfNeeded = () => {
+      const now = Date.now();
+      // Only check every 100ms during scroll to prevent lag
+      if (now - lastScrollTimeRef.current < 100) return;
+      lastScrollTimeRef.current = now;
+
       if (shouldRevealByPosition()) {
         reveal();
       }
@@ -65,7 +73,16 @@ export default function ViewportLazySection({
       observer.observe(hostRef.current);
     }
 
-    window.addEventListener('scroll', revealIfNeeded, { passive: true });
+    // Use requestAnimationFrame for scroll handling to sync with paint
+    let scrollRAF = null;
+    const handleScroll = () => {
+      if (scrollTimeoutRef.current) {
+        window.clearTimeout(scrollTimeoutRef.current);
+      }
+      scrollTimeoutRef.current = window.setTimeout(revealIfNeeded, 100);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
     window.addEventListener('resize', revealIfNeeded);
 
     const fallbackTimer = window.setTimeout(() => {
@@ -74,11 +91,15 @@ export default function ViewportLazySection({
 
     return () => {
       observer.disconnect();
-      window.removeEventListener('scroll', revealIfNeeded);
+      window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', revealIfNeeded);
       window.clearTimeout(fallbackTimer);
+      window.clearTimeout(scrollTimeoutRef.current);
       if (revealTimerRef.current) {
         window.clearTimeout(revealTimerRef.current);
+      }
+      if (scrollRAF) {
+        window.cancelAnimationFrame(scrollRAF);
       }
     };
   }, [initialDelayMs, isVisible, rootMargin]);

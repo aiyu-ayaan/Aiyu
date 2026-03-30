@@ -553,6 +553,8 @@ const Projects = ({ data }) => {
                             src={spotlightProject.image}
                             alt={spotlightProject.name}
                             className="h-full w-full object-cover"
+                            loading="lazy"
+                            decoding="async"
                           />
                         ) : (
                           <div

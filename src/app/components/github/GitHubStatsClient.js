@@ -243,7 +243,7 @@ export default function GitHubStatsClient({ data }) {
           {sections.showProfile && (
             <div className="mt-6 rounded-2xl border p-5" style={{ borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)', backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 82%, transparent)' }}>
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                <img src={profile.avatar} alt={profile.name || profile.username || 'GitHub avatar'} className="h-20 w-20 rounded-full border-2 object-cover" style={{ borderColor: 'var(--accent-cyan)' }} />
+                <img src={profile.avatar} alt={profile.name || profile.username || 'GitHub avatar'} className="h-20 w-20 rounded-full border-2 object-cover" loading="lazy" decoding="async" style={{ borderColor: 'var(--accent-cyan)' }} />
                 <div className="min-w-0 flex-1">
                   <h2 className="truncate text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
                     {profile.name || profile.username}

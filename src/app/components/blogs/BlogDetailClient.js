@@ -227,6 +227,8 @@ export default function BlogDetailClient({ blog }) {
                 src={blog.image}
                 alt={blog.title}
                 className="max-h-[620px] w-full object-cover"
+                loading="lazy"
+                decoding="async"
                 onError={() => setImageError(true)}
               />
             </button>

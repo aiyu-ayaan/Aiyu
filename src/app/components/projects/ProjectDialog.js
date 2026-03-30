@@ -43,7 +43,7 @@ const ProjectDialog = ({ project, onClose }) => {
             &times;
           </button>
           <div className="relative">
-            {project.image && <img src={project.image} alt={project.name} className="w-full h-64 object-contain" />}
+            {project.image && <img src={project.image} alt={project.name} className="w-full h-64 object-contain" loading="lazy" decoding="async" />}
           </div>
           <div className="p-8">
             <h3

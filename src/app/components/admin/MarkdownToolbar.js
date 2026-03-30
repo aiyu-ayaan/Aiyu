@@ -500,7 +500,7 @@ export default function MarkdownToolbar({ textareaRef, value, onChange, showNoti
                                         ) : (
                                             <div className="w-full flex gap-4 p-4 bg-slate-950/50 rounded-xl border border-white/10 items-center">
                                                 <div className="w-16 h-16 bg-white/5 rounded-lg overflow-hidden flex items-center justify-center shrink-0 border border-white/5">
-                                                    {imageUploadPreview && <img src={imageUploadPreview} className="w-full h-full object-cover" />}
+                                                    {imageUploadPreview && <img src={imageUploadPreview} className="w-full h-full object-cover" loading="lazy" decoding="async" />}
                                                 </div>
                                                 <div className="flex-1 min-w-0">
                                                     <div className="flex justify-between items-start mb-2">
