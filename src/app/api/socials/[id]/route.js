@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import Social from '@/models/Social';
 import { getSession } from '@/lib/auth';
-import cache, { CACHE_KEYS } from '@/lib/cache';
+import cache, { CACHE_KEYS, CACHE_TTL } from '@/lib/cache';
+import { createPublicCacheHeaders, RESPONSE_CACHE } from '@/lib/httpCache';
 
 export async function PUT(request, { params }) {
     const session = await getSession();
@@ -22,6 +23,7 @@ export async function PUT(request, { params }) {
             return NextResponse.json({ error: 'Social link not found' }, { status: 404 });
         }
         cache.invalidate(CACHE_KEYS.SOCIALS);
+        cache.invalidatePrefix('db:socials');
         return NextResponse.json(social);
     } catch (error) {
         return NextResponse.json({ error: 'Failed to update social link' }, { status: 500 });
@@ -42,6 +44,7 @@ export async function DELETE(request, { params }) {
             return NextResponse.json({ error: 'Social link not found' }, { status: 404 });
         }
         cache.invalidate(CACHE_KEYS.SOCIALS);
+        cache.invalidatePrefix('db:socials');
         return NextResponse.json({ message: 'Social link deleted successfully' });
     } catch (error) {
         return NextResponse.json({ error: 'Failed to delete social link' }, { status: 500 });
@@ -52,11 +55,19 @@ export async function GET(request, { params }) {
     await dbConnect();
     try {
         const { id } = await params;
-        const social = await Social.findById(id);
+        const social = await cache.getOrSet(
+            `db:socials:item:${id}`,
+            () => Social.findById(id).lean(),
+            CACHE_TTL.LONG
+        );
+
         if (!social) {
             return NextResponse.json({ error: 'Social link not found' }, { status: 404 });
         }
-        return NextResponse.json(social);
+
+        return NextResponse.json(social, {
+            headers: createPublicCacheHeaders(RESPONSE_CACHE.PUBLIC_LONG),
+        });
     } catch (error) {
         return NextResponse.json({ error: 'Failed to fetch social link' }, { status: 500 });
     }

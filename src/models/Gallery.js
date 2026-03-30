@@ -36,4 +36,8 @@ const GallerySchema = new mongoose.Schema({
     },
 });
 
+// Optimize gallery list sorting and admin ordering updates.
+GallerySchema.index({ isPinned: -1, order: 1, createdAt: -1 });
+GallerySchema.index({ createdAt: -1 });
+
 export default mongoose.models.Gallery || mongoose.model('Gallery', GallerySchema);

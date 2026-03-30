@@ -2,13 +2,21 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import Project from '@/models/Project';
 import { getSession } from '@/lib/auth';
-import cache, { CACHE_KEYS } from '@/lib/cache';
+import cache, { CACHE_KEYS, CACHE_TTL } from '@/lib/cache';
+import { createPublicCacheHeaders, RESPONSE_CACHE } from '@/lib/httpCache';
 
 export async function GET() {
     await dbConnect();
     try {
-        const projects = await Project.find({}).sort({ year: -1 }).lean();
-        return NextResponse.json(projects);
+        const projects = await cache.getOrSet(
+            CACHE_KEYS.PROJECTS,
+            () => Project.find({}).sort({ year: -1 }).lean(),
+            CACHE_TTL.MEDIUM
+        );
+
+        return NextResponse.json(projects, {
+            headers: createPublicCacheHeaders(RESPONSE_CACHE.PUBLIC_MEDIUM),
+        });
     } catch (error) {
         return NextResponse.json({ error: 'Failed to fetch projects' }, { status: 500 });
     }

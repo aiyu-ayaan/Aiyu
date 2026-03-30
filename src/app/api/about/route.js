@@ -2,13 +2,21 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import About from '@/models/About';
 import { getSession } from '@/lib/auth';
-import cache, { CACHE_KEYS } from '@/lib/cache';
+import cache, { CACHE_KEYS, CACHE_TTL } from '@/lib/cache';
+import { createPublicCacheHeaders, RESPONSE_CACHE } from '@/lib/httpCache';
 
 export async function GET() {
     await dbConnect();
     try {
-        const about = await About.findOne().lean();
-        return NextResponse.json(about);
+        const about = await cache.getOrSet(
+            CACHE_KEYS.ABOUT,
+            () => About.findOne().lean(),
+            CACHE_TTL.LONG
+        );
+
+        return NextResponse.json(about, {
+            headers: createPublicCacheHeaders(RESPONSE_CACHE.PUBLIC_LONG),
+        });
     } catch (error) {
         return NextResponse.json({ error: 'Failed to fetch about data' }, { status: 500 });
     }

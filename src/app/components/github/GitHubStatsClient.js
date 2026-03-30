@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import Image from 'next/image';
 import {
   Activity,
   BarChart2,
@@ -98,6 +99,14 @@ const getRepoType = (repo) => {
   if (repo?.isPrivate) return 'private';
   if (repo?.fork) return 'fork';
   return 'public';
+};
+
+const isOptimizableImage = (src) =>
+  typeof src === 'string' && (src.startsWith('/') || src.startsWith('https://'));
+
+const getAvatarFallback = (profile) => {
+  const seed = profile?.name || profile?.username || 'GH';
+  return seed.slice(0, 2).toUpperCase();
 };
 
 export default function GitHubStatsClient({ data }) {
@@ -243,7 +252,23 @@ export default function GitHubStatsClient({ data }) {
           {sections.showProfile && (
             <div className="mt-6 rounded-2xl border p-5" style={{ borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)', backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 82%, transparent)' }}>
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                <img src={profile.avatar} alt={profile.name || profile.username || 'GitHub avatar'} className="h-20 w-20 rounded-full border-2 object-cover" loading="lazy" decoding="async" style={{ borderColor: 'var(--accent-cyan)' }} />
+                {isOptimizableImage(profile.avatar) ? (
+                  <Image
+                    src={profile.avatar}
+                    alt={profile.name || profile.username || 'GitHub avatar'}
+                    width={80}
+                    height={80}
+                    className="h-20 w-20 rounded-full border-2 object-cover"
+                    style={{ borderColor: 'var(--accent-cyan)' }}
+                  />
+                ) : (
+                  <div
+                    className="flex h-20 w-20 items-center justify-center rounded-full border-2 text-lg font-semibold"
+                    style={{ borderColor: 'var(--accent-cyan)', color: 'var(--accent-cyan)' }}
+                  >
+                    {getAvatarFallback(profile)}
+                  </div>
+                )}
                 <div className="min-w-0 flex-1">
                   <h2 className="truncate text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
                     {profile.name || profile.username}
@@ -372,10 +397,10 @@ export default function GitHubStatsClient({ data }) {
                   const wrapperProps = repo?.isPrivate
                     ? {}
                     : {
-                        href: repo?.url,
-                        target: '_blank',
-                        rel: 'noopener noreferrer',
-                      };
+                      href: repo?.url,
+                      target: '_blank',
+                      rel: 'noopener noreferrer',
+                    };
 
                   return (
                     <Wrapper

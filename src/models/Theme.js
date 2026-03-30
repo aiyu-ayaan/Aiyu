@@ -143,4 +143,8 @@ ThemeSchema.pre('validate', async function () {
     }
 });
 
+// Optimize theme catalog reads and admin filtering.
+ThemeSchema.index({ createdAt: -1 });
+ThemeSchema.index({ isCustom: 1, createdAt: -1 });
+
 export default mongoose.models.Theme || mongoose.model('Theme', ThemeSchema);

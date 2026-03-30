@@ -1,12 +1,13 @@
 
 "use client";
 import React from 'react';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useTheme } from '../../context/ThemeContext';
+
+const isOptimizableImage = (src) =>
+  typeof src === 'string' && (src.startsWith('/') || src.startsWith('https://'));
 
 const ProjectDialog = ({ project, onClose }) => {
-  const { theme } = useTheme();
-
   if (!project) return null;
 
   return (
@@ -43,7 +44,20 @@ const ProjectDialog = ({ project, onClose }) => {
             &times;
           </button>
           <div className="relative">
-            {project.image && <img src={project.image} alt={project.name} className="w-full h-64 object-contain" loading="lazy" decoding="async" />}
+            {project.image && (
+              isOptimizableImage(project.image) ? (
+                <Image
+                  src={project.image}
+                  alt={project.name}
+                  width={1280}
+                  height={720}
+                  sizes="(max-width: 768px) 92vw, 768px"
+                  className="h-64 w-full object-contain"
+                />
+              ) : (
+                <img src={project.image} alt={project.name} className="w-full h-64 object-contain" loading="lazy" decoding="async" />
+              )
+            )}
           </div>
           <div className="p-8">
             <h3

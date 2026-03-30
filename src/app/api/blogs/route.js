@@ -4,6 +4,7 @@ import Blog from "@/models/Blog";
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import cache, { CACHE_KEYS, CACHE_TTL } from '@/lib/cache';
+import { createPublicCacheHeaders, RESPONSE_CACHE } from '@/lib/httpCache';
 
 const BLOG_LIST_SELECT = ['title', 'content', 'image', 'date', 'createdAt', 'updatedAt', 'published'].join(' ');
 
@@ -40,7 +41,11 @@ export async function GET(request) {
             () => Blog.find(query).sort({ createdAt: -1 }).select(BLOG_LIST_SELECT).lean(),
             CACHE_TTL.MEDIUM
         );
-        return NextResponse.json({ success: true, data: toPublicBlogList(blogs) });
+
+        return NextResponse.json(
+            { success: true, data: toPublicBlogList(blogs) },
+            { headers: createPublicCacheHeaders(RESPONSE_CACHE.PUBLIC_MEDIUM) }
+        );
     } catch (error) {
         return NextResponse.json({ success: false, error: error.message }, { status: 400 });
     }
