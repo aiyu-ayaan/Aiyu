@@ -1,10 +1,12 @@
 /** @type {import('next').NextConfig} */
 const isProduction = process.env.NODE_ENV === 'production';
+const cdnUrl = (process.env.NEXT_PUBLIC_CDN_URL || '').replace(/\/+$/, '');
 
 const nextConfig = {
   // output: 'export' // Disabled to allow dynamic API routes
   output: 'standalone', // Enable standalone output for Docker
   allowedDevOrigins: ['192.168.31.54'],
+  assetPrefix: isProduction && cdnUrl ? cdnUrl : undefined,
 
   // Enhanced performance optimizations
   experimental: {
@@ -39,30 +41,18 @@ const nextConfig = {
   async headers() {
     const headers = [];
 
-    if (isProduction) {
-      headers.push({
-        source: '/_next/static/(.*)',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-        ],
-      });
-    }
-
     headers.push({
-      source: '/api/(.*)',
+      source: '/images/(.*)',
       headers: [
         {
           key: 'Cache-Control',
-          value: isProduction ? 'public, max-age=60, stale-while-revalidate=300' : 'no-store',
+          value: isProduction ? 'public, max-age=86400, stale-while-revalidate=43200' : 'no-store',
         },
       ],
     });
 
     headers.push({
-      source: '/images/(.*)',
+      source: '/uploads/(.*)',
       headers: [
         {
           key: 'Cache-Control',

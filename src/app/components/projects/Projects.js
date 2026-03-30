@@ -16,6 +16,7 @@ import ProjectCard from './ProjectCard';
 import TypewriterEffect from '../shared/TypewriterEffect';
 import Timeline from './Timeline';
 import { getPlaceholderGradient, getProjectInitials } from './projectPlaceholder';
+import { ProjectsPageSkeleton } from '../shared/skeletons/PublicPageSkeletons';
 
 const heroCardStyle = {
   background:
@@ -214,6 +215,10 @@ const Projects = ({ data }) => {
     },
   ];
 
+  if (configLoading) {
+    return <ProjectsPageSkeleton />;
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 18 }}
@@ -255,31 +260,18 @@ const Projects = ({ data }) => {
             Project Command Center
           </p>
 
-          {configLoading ? (
-            <div className="animate-pulse">
-              <div
-                className="mb-4 h-14 w-2/3 rounded-lg"
-                style={{ backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 90%, transparent)' }}
-              />
-              <div
-                className="h-7 w-1/2 rounded-lg"
-                style={{ backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 85%, transparent)' }}
-              />
-            </div>
-          ) : (
-            <>
-              <h1
-                className="mb-3 bg-gradient-to-r bg-clip-text text-4xl font-bold text-transparent sm:text-5xl lg:text-6xl"
-                style={{
-                  backgroundImage:
-                    'linear-gradient(to right, var(--accent-cyan), var(--accent-purple), var(--accent-orange-bright))',
-                }}
-              >
-                {config?.projectsTitle || 'Projects Portfolio'}
-              </h1>
-              <TypewriterEffect roles={roles} />
-            </>
-          )}
+          <>
+            <h1
+              className="mb-3 bg-linear-to-r bg-clip-text text-4xl font-bold text-transparent sm:text-5xl lg:text-6xl"
+              style={{
+                backgroundImage:
+                  'linear-gradient(to right, var(--accent-cyan), var(--accent-purple), var(--accent-orange-bright))',
+              }}
+            >
+              {config?.projectsTitle || 'Projects Portfolio'}
+            </h1>
+            <TypewriterEffect roles={roles} />
+          </>
 
           <div className="mt-7 grid grid-cols-1 gap-3 sm:grid-cols-3">
             {statCards.map((item) => {
@@ -553,10 +545,12 @@ const Projects = ({ data }) => {
                             src={spotlightProject.image}
                             alt={spotlightProject.name}
                             className="h-full w-full object-cover"
+                            loading="lazy"
+                            decoding="async"
                           />
                         ) : (
                           <div
-                            className="relative flex h-full min-h-[180px] items-center justify-center overflow-hidden"
+                            className="relative flex h-full min-h-45 items-center justify-center overflow-hidden"
                             style={{ backgroundImage: getPlaceholderGradient(spotlightProject?.name) }}
                           >
                             <div

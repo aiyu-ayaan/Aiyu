@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { FaFilter, FaNewspaper, FaSearch, FaTags } from 'react-icons/fa';
 import BlogCard from './BlogCard';
 import { formatBlogDate } from './blogUtils';
+import { BlogListPageSkeleton } from '../shared/skeletons/PublicPageSkeletons';
 
 const getBlogPublishTimestamp = (blog) => {
   const primaryDate = blog?.date ? new Date(blog.date) : null;
@@ -108,15 +109,7 @@ const BlogList = () => {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen p-4 lg:p-8">
-        <div className="mx-auto max-w-6xl animate-pulse space-y-4">
-          <div className="h-14 w-2/3 rounded-lg" style={{ backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 88%, transparent)' }} />
-          <div className="h-8 w-1/2 rounded-lg" style={{ backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 80%, transparent)' }} />
-          <div className="h-56 rounded-xl" style={{ backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 76%, transparent)' }} />
-        </div>
-      </div>
-    );
+    return <BlogListPageSkeleton />;
   }
 
   return (
@@ -160,7 +153,7 @@ const BlogList = () => {
           </p>
 
           <h1
-            className="mb-3 bg-gradient-to-r bg-clip-text text-4xl font-bold text-transparent sm:text-5xl lg:text-6xl"
+            className="mb-3 bg-linear-to-r bg-clip-text text-4xl font-bold text-transparent sm:text-5xl lg:text-6xl"
             style={{
               backgroundImage: 'linear-gradient(to right, var(--accent-cyan), var(--accent-purple), var(--accent-pink))',
             }}

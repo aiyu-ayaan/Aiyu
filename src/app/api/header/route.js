@@ -2,13 +2,21 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import Header from '@/models/Header';
 import { getSession } from '@/lib/auth';
-import cache, { CACHE_KEYS } from '@/lib/cache';
+import cache, { CACHE_KEYS, CACHE_TTL } from '@/lib/cache';
+import { createPublicCacheHeaders, RESPONSE_CACHE } from '@/lib/httpCache';
 
 export async function GET() {
     await dbConnect();
     try {
-        const header = await Header.findOne().lean();
-        return NextResponse.json(header);
+        const header = await cache.getOrSet(
+            CACHE_KEYS.HEADER,
+            () => Header.findOne().lean(),
+            CACHE_TTL.LONG
+        );
+
+        return NextResponse.json(header, {
+            headers: createPublicCacheHeaders(RESPONSE_CACHE.PUBLIC_LONG),
+        });
     } catch (error) {
         return NextResponse.json({ error: 'Failed to fetch header data' }, { status: 500 });
     }
@@ -29,6 +37,7 @@ export async function PUT(request) {
             runValidators: true,
         });
         cache.invalidate(CACHE_KEYS.HEADER);
+        cache.invalidatePrefix('db:header');
         return NextResponse.json(header);
     } catch (error) {
         return NextResponse.json({ error: 'Failed to update header data' }, { status: 500 });

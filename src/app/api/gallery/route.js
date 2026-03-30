@@ -3,14 +3,23 @@ import dbConnect from '@/lib/db';
 import Gallery from '@/models/Gallery';
 import { withAuth } from '@/middleware/auth';
 import { deleteThumbnail } from '@/utils/imageProcessing';
+import cache, { CACHE_KEYS, CACHE_TTL } from '@/lib/cache';
+import { createPublicCacheHeaders, RESPONSE_CACHE } from '@/lib/httpCache';
 
 // GET: Fetch all gallery items (Public)
 export async function GET() {
     await dbConnect();
 
     try {
-        const images = await Gallery.find({}).sort({ isPinned: -1, order: 1, createdAt: -1 });
-        return NextResponse.json({ success: true, data: images });
+        const images = await cache.getOrSet(
+            CACHE_KEYS.GALLERY,
+            () => Gallery.find({}).sort({ isPinned: -1, order: 1, createdAt: -1 }).lean(),
+            CACHE_TTL.MEDIUM
+        );
+
+        return NextResponse.json({ success: true, data: images }, {
+            headers: createPublicCacheHeaders(RESPONSE_CACHE.PUBLIC_MEDIUM),
+        });
     } catch (error) {
         return NextResponse.json({ success: false, error: error.message }, { status: 400 });
     }
@@ -23,6 +32,8 @@ async function createGalleryItem(req) {
     try {
         const body = await req.json();
         const galleryItem = await Gallery.create(body);
+        cache.invalidate(CACHE_KEYS.GALLERY);
+        cache.invalidatePrefix('db:gallery');
         return NextResponse.json({ success: true, data: galleryItem }, { status: 201 });
     } catch (error) {
         return NextResponse.json({ success: false, error: error.message }, { status: 400 });
@@ -47,9 +58,12 @@ async function deleteGalleryItem(req) {
             return NextResponse.json({ success: false, error: 'Item not found' }, { status: 404 });
         }
 
+        cache.invalidate(CACHE_KEYS.GALLERY);
+        cache.invalidatePrefix('db:gallery');
+
         // Delete associated thumbnail file (non-blocking)
         if (deletedItem.thumbnail) {
-            deleteThumbnail(deletedItem.thumbnail).catch(err => 
+            deleteThumbnail(deletedItem.thumbnail).catch(err =>
                 console.warn('[WARN] Failed to delete thumbnail:', err.message)
             );
         }
@@ -66,7 +80,7 @@ async function updateGalleryItem(req) {
 
     try {
         const body = await req.json();
-        
+
         // Bulk update for ordering
         if (body.items && Array.isArray(body.items)) {
             const bulkOps = body.items.map((item) => ({
@@ -76,9 +90,11 @@ async function updateGalleryItem(req) {
                 }
             }));
             await Gallery.bulkWrite(bulkOps);
+            cache.invalidate(CACHE_KEYS.GALLERY);
+            cache.invalidatePrefix('db:gallery');
             return NextResponse.json({ success: true, message: 'Ordering updated successfully' });
         }
-        
+
         // Single update (e.g. isPinned toggle)
         if (body.id) {
             const updatedItem = await Gallery.findByIdAndUpdate(
@@ -89,6 +105,9 @@ async function updateGalleryItem(req) {
             if (!updatedItem) {
                 return NextResponse.json({ success: false, error: 'Item not found' }, { status: 404 });
             }
+
+            cache.invalidate(CACHE_KEYS.GALLERY);
+            cache.invalidatePrefix('db:gallery');
             return NextResponse.json({ success: true, data: updatedItem });
         }
 

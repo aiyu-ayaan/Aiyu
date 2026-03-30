@@ -51,6 +51,8 @@ const SkillIcon = ({ iconName, cleanName, accentColor }) => {
         src={`https://cdn.simpleicons.org/${iconSlug}/${accentColor}`}
         alt={cleanName}
         className="h-6 w-6 object-contain"
+        loading="lazy"
+        decoding="async"
         onError={() => setImgFailed(true)}
       />
     );

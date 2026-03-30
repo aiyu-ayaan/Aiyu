@@ -1,15 +1,14 @@
 # Stage 1: Dependencies
 FROM node:20-alpine AS deps
-# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
+# Keep libc6-compat for native module compatibility on Alpine.
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Copy package manifest only
-COPY package.json ./
+# Copy manifests for deterministic installs.
+COPY package.json package-lock.json ./
 
-# Always generate a fresh lockfile inside Docker, then install deps
-RUN npm install --package-lock-only --no-audit --no-fund \
-    && npm install --no-audit --no-fund
+# Install dependencies from lockfile for reproducible builds.
+RUN npm ci --include=dev --no-audit --no-fund
 
 # Stage 2: Builder
 FROM node:20-alpine AS builder
@@ -55,9 +54,6 @@ WORKDIR /app
 # Set to production environment
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
-
-# Install curl for health checks (lightweight, ~200KB)
-RUN apk add --no-cache curl
 
 # Create a non-root user
 RUN addgroup --system --gid 1001 nodejs

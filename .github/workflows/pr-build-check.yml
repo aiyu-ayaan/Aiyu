@@ -6,10 +6,14 @@ on:
   push:
     branches: [master]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate-pr-title:
     name: Validate PR Title (Conventional Commits)
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && github.actor != 'release-please[bot]' && !startsWith(github.head_ref, 'release-please--')
     runs-on: ubuntu-latest
     steps:
       - name: Validate PR title
@@ -18,6 +22,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build:
+    if: github.event_name == 'pull_request' && github.actor != 'release-please[bot]' && !startsWith(github.head_ref, 'release-please--')
     runs-on: ubuntu-latest
     
     strategy:
@@ -70,7 +75,6 @@ jobs:
 
   release:
     name: Create Tag and GitHub Release
-    needs: build
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     permissions:
@@ -90,7 +94,7 @@ jobs:
 
   push-to-docker-hub:
     name: Push Docker image to Docker Hub
-    needs: [build, release]
+    needs: [release]
     runs-on: ubuntu-latest
     if: needs.release.outputs.release_created == 'true'
     permissions:

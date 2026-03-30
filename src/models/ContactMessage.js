@@ -8,6 +8,10 @@ const ContactMessageSchema = new mongoose.Schema({
     createdAt: { type: Date, default: Date.now },
 });
 
+// Optimize admin inbox ordering and read-state filtering.
+ContactMessageSchema.index({ createdAt: -1 });
+ContactMessageSchema.index({ read: 1, createdAt: -1 });
+
 // Force model recompilation if it exists, to pick up schema changes in dev
 if (mongoose.models.ContactMessage) {
     delete mongoose.models.ContactMessage;

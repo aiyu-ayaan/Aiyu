@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import Project from '@/models/Project';
 import { getSession } from '@/lib/auth';
-import cache, { CACHE_KEYS } from '@/lib/cache';
+import cache, { CACHE_KEYS, CACHE_TTL } from '@/lib/cache';
+import { createPublicCacheHeaders, RESPONSE_CACHE } from '@/lib/httpCache';
 
 export async function PUT(request, { params }) {
     const session = await getSession();
@@ -54,11 +55,19 @@ export async function GET(request, { params }) {
     await dbConnect();
     try {
         const { id } = await params;
-        const project = await Project.findById(id).lean();
+        const project = await cache.getOrSet(
+            `db:projects:item:${id}`,
+            () => Project.findById(id).lean(),
+            CACHE_TTL.MEDIUM
+        );
+
         if (!project) {
             return NextResponse.json({ error: 'Project not found' }, { status: 404 });
         }
-        return NextResponse.json(project);
+
+        return NextResponse.json(project, {
+            headers: createPublicCacheHeaders(RESPONSE_CACHE.PUBLIC_MEDIUM),
+        });
     } catch (error) {
         return NextResponse.json({ error: 'Failed to fetch project' }, { status: 500 });
     }

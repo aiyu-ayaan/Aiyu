@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -21,6 +22,9 @@ const SyntaxHighlighter = dynamic(
   () => import('react-syntax-highlighter').then((module) => module.Prism),
   { ssr: false }
 );
+
+const isOptimizableImage = (src) =>
+  typeof src === 'string' && (src.startsWith('/') || src.startsWith('https://'));
 
 export default function BlogDetailClient({ blog }) {
   const [selectedImage, setSelectedImage] = useState(null);
@@ -223,12 +227,26 @@ export default function BlogDetailClient({ blog }) {
         >
           {!showPlaceholder ? (
             <button type="button" onClick={() => setSelectedImage(blog.image)} className="block w-full cursor-zoom-in">
-              <img
-                src={blog.image}
-                alt={blog.title}
-                className="max-h-[620px] w-full object-cover"
-                onError={() => setImageError(true)}
-              />
+              {isOptimizableImage(blog.image) ? (
+                <Image
+                  src={blog.image}
+                  alt={blog.title}
+                  width={1600}
+                  height={900}
+                  sizes="(max-width: 1024px) 100vw, 1200px"
+                  className="max-h-[620px] w-full object-cover"
+                  onError={() => setImageError(true)}
+                />
+              ) : (
+                <img
+                  src={blog.image}
+                  alt={blog.title}
+                  className="max-h-[620px] w-full object-cover"
+                  loading="lazy"
+                  decoding="async"
+                  onError={() => setImageError(true)}
+                />
+              )}
             </button>
           ) : (
             <div
@@ -399,7 +417,18 @@ export default function BlogDetailClient({ blog }) {
             >
               Close
             </button>
-            <img src={selectedImage} alt="Blog full view" className="max-h-[90vh] max-w-full rounded-lg object-contain" />
+            {isOptimizableImage(selectedImage) ? (
+              <Image
+                src={selectedImage}
+                alt="Blog full view"
+                width={1800}
+                height={1200}
+                sizes="90vw"
+                className="max-h-[90vh] max-w-full rounded-lg object-contain"
+              />
+            ) : (
+              <img src={selectedImage} alt="Blog full view" className="max-h-[90vh] max-w-full rounded-lg object-contain" />
+            )}
           </motion.div>
         </motion.div>
       )}

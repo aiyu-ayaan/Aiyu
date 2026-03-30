@@ -426,7 +426,7 @@ const ProjectForm = ({ initialData, isEdit = false }) => {
                         </div>
                         <div className="aspect-video w-full rounded-lg bg-slate-950/50 border border-white/10 flex items-center justify-center overflow-hidden relative group/preview">
                             {formData.image ? (
-                                <img src={formData.image} alt="Preview" className="w-full h-full object-cover transition-transform group-hover/preview:scale-105" />
+                                <img src={formData.image} alt="Preview" className="w-full h-full object-cover transition-transform group-hover/preview:scale-105" loading="lazy" decoding="async" />
                             ) : (
                                 <div className="text-slate-600 flex flex-col items-center gap-2">
                                     <ImageIcon size={24} />

@@ -2,13 +2,21 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import Home from '@/models/Home';
 import { getSession } from '@/lib/auth';
-import cache, { CACHE_KEYS } from '@/lib/cache';
+import cache, { CACHE_KEYS, CACHE_TTL } from '@/lib/cache';
+import { createPublicCacheHeaders, RESPONSE_CACHE } from '@/lib/httpCache';
 
 export async function GET() {
     await dbConnect();
     try {
-        const home = await Home.findOne().lean();
-        return NextResponse.json(home);
+        const home = await cache.getOrSet(
+            CACHE_KEYS.HOME,
+            () => Home.findOne().lean(),
+            CACHE_TTL.LONG
+        );
+
+        return NextResponse.json(home, {
+            headers: createPublicCacheHeaders(RESPONSE_CACHE.PUBLIC_LONG),
+        });
     } catch (error) {
         return NextResponse.json({ error: 'Failed to fetch home data' }, { status: 500 });
     }
