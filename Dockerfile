@@ -1,14 +1,17 @@
 # Stage 1: Dependencies
 FROM node:20-alpine AS deps
 # Keep libc6-compat for native module compatibility on Alpine.
+# Keep libc6-compat for native module compatibility on Alpine.
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 # Copy manifests for deterministic installs.
 COPY package.json package-lock.json ./
+# Copy manifests for deterministic installs.
+COPY package.json package-lock.json ./
 
-# Install dependencies from lockfile for reproducible builds.
-RUN npm ci --include=dev --no-audit --no-fund
+# Install dependencies from lockfile using legacy peer resolution to match CI and local installs.
+RUN npm ci --include=dev --legacy-peer-deps --no-audit --no-fund
 
 # Stage 2: Builder
 FROM node:20-alpine AS builder
