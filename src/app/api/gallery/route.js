@@ -63,7 +63,7 @@ async function deleteGalleryItem(req) {
 
         // Delete associated thumbnail file (non-blocking)
         if (deletedItem.thumbnail) {
-            deleteThumbnail(deletedItem.thumbnail).catch(err => 
+            deleteThumbnail(deletedItem.thumbnail).catch(err =>
                 console.warn('[WARN] Failed to delete thumbnail:', err.message)
             );
         }
@@ -80,7 +80,7 @@ async function updateGalleryItem(req) {
 
     try {
         const body = await req.json();
-        
+
         // Bulk update for ordering
         if (body.items && Array.isArray(body.items)) {
             const bulkOps = body.items.map((item) => ({
@@ -94,7 +94,7 @@ async function updateGalleryItem(req) {
             cache.invalidatePrefix('db:gallery');
             return NextResponse.json({ success: true, message: 'Ordering updated successfully' });
         }
-        
+
         // Single update (e.g. isPinned toggle)
         if (body.id) {
             const updatedItem = await Gallery.findByIdAndUpdate(
