@@ -2,6 +2,8 @@ import Header from "../components/Header";
 
 import Footer from "../components/Footer";
 import { getLayoutData } from "@/lib/dataFetchers";
+import { promises as fs } from 'fs';
+import path from 'path';
 
 // Force dynamic rendering - DB is not available at build time in Docker
 // Runtime performance is handled by in-memory cache + Nginx proxy cache
@@ -12,6 +14,18 @@ export default async function SiteLayout({ children }) {
     // Default to empty string if config doesn't exist yet
 
     const logoText = serializedConfigData?.logoText || '< aiyu />';
+
+    let packageVersion = null;
+    try {
+        const packageJsonPath = path.join(process.cwd(), 'package.json');
+        const packageJsonRaw = await fs.readFile(packageJsonPath, 'utf8');
+        const packageJson = JSON.parse(packageJsonRaw);
+        if (packageJson?.version) {
+            packageVersion = String(packageJson.version);
+        }
+    } catch {
+        packageVersion = null;
+    }
 
     // Handle Resume Link Logic
     if (serializedHeaderData && serializedHeaderData.navLinks) {
@@ -65,7 +79,7 @@ export default async function SiteLayout({ children }) {
                 <main className="min-h-screen">
                     {children}
                 </main>
-                <Footer socialData={serializedSocialData} name={serializedAboutData?.name} config={serializedConfigData} />
+                <Footer socialData={serializedSocialData} name={serializedAboutData?.name} config={serializedConfigData} packageVersion={packageVersion} />
             </div>
         </div>
     );

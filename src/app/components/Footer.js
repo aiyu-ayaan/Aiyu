@@ -7,7 +7,7 @@ import { FaArrowUp, FaGithub, FaPalette, FaTerminal } from 'react-icons/fa';
 import { getIconByName } from '../../lib/icons';
 import { useTheme } from '../context/ThemeContext';
 
-export default function Footer({ socialData, name, config }) {
+export default function Footer({ socialData, name, config, packageVersion }) {
     const { activeThemeData, mounted } = useTheme();
     const socials = socialData?.map(s => ({
         ...s,
@@ -18,7 +18,10 @@ export default function Footer({ socialData, name, config }) {
     const currentYear = new Date().getFullYear();
     const footerPrimaryText = config?.footerText || `Crafted with intent by ${name || 'Ayaaan'}.`;
     const footerSecondaryText = config?.footerText2 || 'Designing meaningful products with clean engineering.';
-    const footerVersionText = config?.footerVersion || null;
+    const normalizedPackageVersion = packageVersion
+        ? (String(packageVersion).startsWith('v') ? String(packageVersion) : `v${packageVersion}`)
+        : null;
+    const footerVersionText = normalizedPackageVersion || config?.footerVersion || null;
 
     const scrollToTop = () => {
         if (typeof window === 'undefined') return;

@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Loader2, RefreshCw, CheckCircle, XCircle } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle } from 'lucide-react';
 
 export default function AdminFooter() {
     const [socials, setSocials] = useState([]);
@@ -9,11 +9,8 @@ export default function AdminFooter() {
     const [config, setConfig] = useState({
         footerText: '',
         workStatus: '',
-        showWorkStatus: true,
-        footerVersion: '',
-        footerVersionLink: ''
+        showWorkStatus: true
     });
-    const [fetchingVersion, setFetchingVersion] = useState(false);
     const [saving, setSaving] = useState(false);
     const [notification, setNotification] = useState(null);
 
@@ -35,9 +32,7 @@ export default function AdminFooter() {
                 setConfig({
                     footerText: data.footerText || '',
                     workStatus: data.workStatus || '',
-                    showWorkStatus: data.showWorkStatus ?? true,
-                    footerVersion: data.footerVersion || '',
-                    footerVersionLink: data.footerVersionLink || ''
+                    showWorkStatus: data.showWorkStatus ?? true
                 });
             }
         } catch (error) {
@@ -54,53 +49,6 @@ export default function AdminFooter() {
             console.error('Failed to fetch socials', error);
         } finally {
             setLoading(false);
-        }
-    };
-
-    const fetchLatestVersion = async () => {
-        if (!config.footerVersionLink) {
-            showNotification(false, 'PROVIDE_VERSION_LINK_FIRST');
-            return;
-        }
-
-        let owner, repo;
-        try {
-            const url = new URL(config.footerVersionLink);
-            if (url.hostname !== 'github.com') {
-                throw new Error('Only GitHub links are supported.');
-            }
-            const paths = url.pathname.split('/').filter(Boolean);
-            if (paths.length < 2) {
-                throw new Error('Invalid GitHub repository link.');
-            }
-            owner = paths[0];
-            repo = paths[1];
-        } catch (error) {
-            showNotification(false, error.message || 'INVALID_VERSION_LINK');
-            return;
-        }
-
-        setFetchingVersion(true);
-        try {
-            const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/releases/latest`);
-            if (!res.ok) {
-                if (res.status === 404) {
-                    throw new Error('No releases found for this repository.');
-                }
-                throw new Error('Failed to fetch latest release from GitHub.');
-            }
-            const data = await res.json();
-            if (data.tag_name) {
-                setConfig(prev => ({ ...prev, footerVersion: data.tag_name }));
-                showNotification(true, `VERSION_RETRIEVED: ${data.tag_name}`);
-            } else {
-                throw new Error('NO_TAG_NAME_FOUND');
-            }
-        } catch (error) {
-            console.error('Fetch version error:', error);
-            showNotification(false, error.message || 'FETCH_VERSION_FAILED');
-        } finally {
-            setFetchingVersion(false);
         }
     };
 
@@ -217,42 +165,6 @@ export default function AdminFooter() {
                                 onChange={(e) => setConfig({ ...config, workStatus: e.target.value })}
                                 className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-600"
                                 placeholder="Available for work"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">System Version Identifier</label>
-                            <div className="flex gap-2">
-                                <input
-                                    type="text"
-                                    value={config.footerVersion || ''}
-                                    onChange={(e) => setConfig({ ...config, footerVersion: e.target.value })}
-                                    className="flex-1 bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-600 font-mono"
-                                    placeholder="v1.0.0"
-                                />
-                                <button
-                                    type="button"
-                                    onClick={fetchLatestVersion}
-                                    disabled={fetchingVersion || !config.footerVersionLink}
-                                    className="px-4 py-2 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/20 rounded-lg transition-all disabled:opacity-50 flex items-center gap-2 group/btn"
-                                    title="Fetch latest version from GitHub"
-                                >
-                                    {fetchingVersion ? (
-                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                    ) : (
-                                        <RefreshCw className="w-4 h-4 group-hover/btn:rotate-180 transition-transform duration-500" />
-                                    )}
-                                    <span className="text-xs font-bold uppercase tracking-wider hidden sm:inline">Fetch</span>
-                                </button>
-                            </div>
-                        </div>
-                        <div>
-                            <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">System Version Link</label>
-                            <input
-                                type="url"
-                                value={config.footerVersionLink || ''}
-                                onChange={(e) => setConfig({ ...config, footerVersionLink: e.target.value })}
-                                className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-600 font-mono"
-                                placeholder="https://github.com/..."
                             />
                         </div>
                     </div>
