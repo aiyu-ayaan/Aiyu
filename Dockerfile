@@ -1,9 +1,12 @@
 # Stage 1: Dependencies
 FROM node:20-alpine AS deps
 # Keep libc6-compat for native module compatibility on Alpine.
+# Keep libc6-compat for native module compatibility on Alpine.
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
+# Copy manifests for deterministic installs.
+COPY package.json package-lock.json ./
 # Copy manifests for deterministic installs.
 COPY package.json package-lock.json ./
 
