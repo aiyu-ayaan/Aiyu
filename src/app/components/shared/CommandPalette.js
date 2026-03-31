@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Command, Search, Terminal, FileCode, Hash, ArrowRight, BookOpen, Briefcase } from "lucide-react";
+import { Command, Search, Terminal, FileCode, Hash, ArrowRight, BookOpen, Briefcase, Server } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const SHORTCUT_KEY = "k";
@@ -11,6 +11,7 @@ const MOCK_PAGES = [
     { title: "Home", path: "/", type: "page", icon: <Command size={16} /> },
     { title: "About", path: "/about-me", type: "page", icon: <Hash size={16} /> },
     { title: "Projects", path: "/projects", type: "page", icon: <FileCode size={16} /> },
+    { title: "Apps", path: "/apps", type: "page", icon: <Server size={16} /> },
     { title: "Blogs", path: "/blogs", type: "page", icon: <BookOpen size={16} /> },
     { title: "Contact", path: "/contact-us", type: "page", icon: <Hash size={16} /> },
     { title: "GitHub", path: "/github", type: "page", icon: <FileCode size={16} /> },
@@ -98,6 +99,7 @@ export default function CommandPalette() {
             let icon = <Hash size={16} />;
             if (item.type === 'blog') icon = <BookOpen size={16} />;
             else if (item.type === 'project') icon = <Briefcase size={16} />;
+            else if (item.path === '/apps') icon = <Server size={16} />;
             else if (item.title === 'Home') icon = <Command size={16} />;
 
             return {
@@ -190,7 +192,7 @@ export default function CommandPalette() {
                             <input
                                 autoFocus
                                 type="text"
-                                placeholder="Search pages, blogs, projects..."
+                                placeholder="Search pages, blogs, projects, apps..."
                                 className="flex-1 bg-transparent text-lg text-gray-200 placeholder-gray-500 focus:outline-none"
                                 value={query}
                                 onChange={(e) => setQuery(e.target.value)}

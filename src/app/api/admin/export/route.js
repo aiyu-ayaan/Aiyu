@@ -8,6 +8,7 @@ import Gallery from "@/models/Gallery";
 import Header from "@/models/Header";
 import Home from "@/models/Home";
 import Project from "@/models/Project";
+import Deployment from "@/models/Deployment";
 import Social from "@/models/Social";
 import GitHub from "@/models/GitHub";
 import ContactMessage from "@/models/ContactMessage";
@@ -38,6 +39,7 @@ export async function GET(request) {
             header: await Header.find({}),
             home: await Home.find({}),
             projects: await Project.find({}),
+            deployments: await Deployment.find({}),
             socials: await Social.find({}),
             themes: await Theme.find({}),
             exportedAt: new Date().toISOString(),
@@ -81,7 +83,7 @@ export async function GET(request) {
                 await access(filePath);
                 const fileBuffer = await readFile(filePath);
                 archive.append(fileBuffer, { name: `uploads/${filename}` });
-            } catch (err) {
+            } catch {
                 // File doesn't exist locally, skip it
                 console.warn(`[EXPORT] Skipping missing file: ${filename}`);
             }

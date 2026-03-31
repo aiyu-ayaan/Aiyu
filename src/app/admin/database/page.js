@@ -26,7 +26,7 @@ export default function DatabaseManager() {
                 try {
                     const error = await response.json();
                     errorMsg = error.error || errorMsg;
-                } catch (e) { /* response might not be JSON */ }
+                } catch { /* response might not be JSON */ }
                 throw new Error(errorMsg);
             }
 
@@ -154,7 +154,7 @@ export default function DatabaseManager() {
                         </div>
 
                         <p className="text-slate-400 mb-8 text-sm leading-relaxed">
-                            Generate a complete ZIP archive of the system state. Includes all database collections and gallery image assets for full restoration capability.
+                            Generate a complete ZIP archive of the system state. Includes all database collections, app records, and gallery image assets for full restoration capability.
                         </p>
 
                         <button

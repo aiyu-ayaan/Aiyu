@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import Blog from '@/models/Blog';
 import Project from '@/models/Project';
+import Deployment from '@/models/Deployment';
 import cache, { CACHE_TTL } from '@/lib/cache';
 import { createPublicCacheHeaders, RESPONSE_CACHE } from '@/lib/httpCache';
 
@@ -32,7 +33,7 @@ export async function GET(request) {
             async () => {
                 const regex = new RegExp(escapeRegex(query), 'i');
 
-                const [blogs, projects, homeData, aboutData] = await Promise.all([
+                const [blogs, projects, deployments, homeData, aboutData] = await Promise.all([
                     Blog.find({
                         $or: [
                             { title: regex },
@@ -49,6 +50,17 @@ export async function GET(request) {
                             { techStack: regex }
                         ]
                     }).select('name description year _id').lean(),
+
+                    Deployment.find({
+                        $or: [
+                            { name: regex },
+                            { description: regex },
+                            { techStack: regex },
+                            { hostingProvider: regex },
+                            { appType: regex },
+                            { environment: regex },
+                        ]
+                    }).select('name description hostingProvider environment _id').lean(),
 
                     // Search Home (usually singleton, but using find in case of multiple or just 1)
                     import('@/models/Home').then(mod => mod.default.find({
@@ -86,6 +98,14 @@ export async function GET(request) {
                     path: `/projects#project-${project._id}`,
                     // path: project.codeLink || '/projects', // User wanted deep linking to dashboard/details likely, but since no details page, we scroll to it.
                     date: project.year // Rough approximation for date sorting
+                }));
+
+                const formattedDeployments = deployments.map(deployment => ({
+                    type: 'page',
+                    title: deployment.name,
+                    description: `${deployment.hostingProvider || 'Hosted'} ${deployment.environment ? `• ${deployment.environment}` : ''}`.trim(),
+                    path: '/apps',
+                    date: new Date().toISOString()
                 }));
 
                 const formattedHome = (homeData || []).map(h => ({
@@ -148,7 +168,7 @@ export async function GET(request) {
                     return matches;
                 });
 
-                return [...formattedBlogs, ...formattedProjects, ...formattedHome, ...formattedAbout].sort((a, b) => {
+                return [...formattedBlogs, ...formattedProjects, ...formattedDeployments, ...formattedHome, ...formattedAbout].sort((a, b) => {
                     // Simple string comparison for now as formats might differ
                     return (b.date || '').localeCompare(a.date || '');
                 });

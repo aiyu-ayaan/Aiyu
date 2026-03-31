@@ -2,12 +2,11 @@
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
 import {
     FaHouse, FaUser, FaBriefcase, FaPenNib, FaImages,
     FaHeading, FaShareNodes, FaEnvelope,
 
-    FaPalette, FaGithub, FaSliders, FaDatabase, FaRightFromBracket, FaArrowRight, FaTerminal, FaRobot
+    FaPalette, FaGithub, FaSliders, FaDatabase, FaRightFromBracket, FaArrowRight, FaTerminal, FaRobot, FaServer
 } from "react-icons/fa6";
 
 export default function AdminDashboard() {
@@ -27,6 +26,7 @@ export default function AdminDashboard() {
             { label: 'Home', description: 'Hero & Intro', icon: <FaHouse />, color: 'from-purple-500/10 to-purple-500/5', textColor: 'text-purple-400', path: '/admin/home' },
             { label: 'About', description: 'Bio & Skills', icon: <FaUser />, color: 'from-green-500/10 to-green-500/5', textColor: 'text-green-400', path: '/admin/about' },
             { label: 'Projects', description: 'Portfolio Items', icon: <FaBriefcase />, color: 'from-blue-500/10 to-blue-500/5', textColor: 'text-blue-400', path: '/admin/projects' },
+            { label: 'Apps', description: 'Hosted Apps & Services', icon: <FaServer />, color: 'from-cyan-500/10 to-cyan-500/5', textColor: 'text-cyan-400', path: '/admin/apps' },
             { label: 'Blogs', description: 'Articles & Posts', icon: <FaPenNib />, color: 'from-teal-500/10 to-teal-500/5', textColor: 'text-teal-400', path: '/admin/blogs' },
             { label: 'Gallery', description: 'Photos & Certs', icon: <FaImages />, color: 'from-indigo-500/10 to-indigo-500/5', textColor: 'text-indigo-400', path: '/admin/gallery' },
         ],
