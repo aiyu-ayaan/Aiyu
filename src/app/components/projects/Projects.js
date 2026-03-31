@@ -36,6 +36,7 @@ const toPascalCase = (value) => {
 const normalizeStatus = (status) => {
   const safeStatus = String(status || '').trim().toLowerCase();
   if (safeStatus === 'done' || safeStatus === 'completed') return 'Done';
+  if (safeStatus === 'deferred' || safeStatus === 'deffered' || safeStatus === 'on hold') return 'Deferred';
   if (safeStatus === 'working' || safeStatus === 'in progress') return 'Working';
   return safeStatus ? toPascalCase(safeStatus) : 'Unknown';
 };
@@ -57,6 +58,17 @@ const extractSortYear = (yearValue) => {
   if (!matches || matches.length === 0) return 0;
   const finalYear = Number.parseInt(matches[matches.length - 1], 10);
   return Number.isNaN(finalYear) ? 0 : finalYear;
+};
+
+const getDisplayOrderValue = (project) => {
+  const parsedOrder = Number.parseInt(project?.displayOrder, 10);
+  return Number.isNaN(parsedOrder) ? Number.MAX_SAFE_INTEGER : parsedOrder;
+};
+
+const sortProjects = (firstProject, secondProject) => {
+  const orderDifference = getDisplayOrderValue(firstProject) - getDisplayOrderValue(secondProject);
+  if (orderDifference !== 0) return orderDifference;
+  return extractSortYear(secondProject?.year) - extractSortYear(firstProject?.year);
 };
 
 const sortYearsDesc = (a, b) => {
@@ -152,7 +164,7 @@ const Projects = ({ data }) => {
 
         return matchesSearch && matchesTechStack && matchesProjectType && matchesStatus;
       })
-      .sort((a, b) => extractSortYear(b?.year) - extractSortYear(a?.year));
+      .sort(sortProjects);
   }, [projects, searchQuery, selectedTechStack, selectedProjectType, selectedStatus]);
 
   const projectsByYear = useMemo(() => {

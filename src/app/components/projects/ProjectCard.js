@@ -11,13 +11,16 @@ const normalizeStatus = (status) => {
   if (safeStatus === 'done' || safeStatus === 'completed') {
     return { label: 'Done', color: '#34d399', bg: 'rgba(16, 185, 129, 0.18)' };
   }
+  if (safeStatus === 'deferred' || safeStatus === 'deffered' || safeStatus === 'on hold') {
+    return { label: 'Deferred', color: '#cbd5e1', bg: 'rgba(100, 116, 139, 0.22)' };
+  }
   if (safeStatus === 'working' || safeStatus === 'in progress') {
     return { label: 'Working', color: '#fbbf24', bg: 'rgba(245, 158, 11, 0.18)' };
   }
   return { label: safeStatus ? safeStatus : 'Unknown', color: '#93c5fd', bg: 'rgba(59, 130, 246, 0.18)' };
 };
 
-const ProjectCard = ({ project, onCardClick = () => {} }) => {
+const ProjectCard = ({ project, onCardClick = () => { } }) => {
   const [showTechStackDialog, setShowTechStackDialog] = useState(false);
 
   const stackList = Array.isArray(project?.techStack) ? project.techStack : [];
