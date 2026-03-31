@@ -46,6 +46,7 @@ export default function ClientEnhancements() {
     const [mountBackground, setMountBackground] = useState(false);
     const [pendingPaletteOpen, setPendingPaletteOpen] = useState(false);
     const [showScrollTop, setShowScrollTop] = useState(false);
+    const [isFooterVisible, setIsFooterVisible] = useState(false);
 
     const pathname = usePathname();
 
@@ -127,6 +128,46 @@ export default function ClientEnhancements() {
     }, []);
 
     useEffect(() => {
+        if (typeof window === "undefined") return;
+
+        let footerObserver = null;
+        let footerRetryInterval = null;
+
+        const observeFooter = () => {
+            const footer = document.getElementById("site-footer");
+            if (!footer) return false;
+
+            footerObserver = new IntersectionObserver(
+                ([entry]) => {
+                    setIsFooterVisible(entry.isIntersecting);
+                },
+                { threshold: 0.01 }
+            );
+
+            footerObserver.observe(footer);
+            return true;
+        };
+
+        if (!observeFooter()) {
+            footerRetryInterval = window.setInterval(() => {
+                if (observeFooter() && footerRetryInterval !== null) {
+                    window.clearInterval(footerRetryInterval);
+                    footerRetryInterval = null;
+                }
+            }, 500);
+        }
+
+        return () => {
+            if (footerObserver) {
+                footerObserver.disconnect();
+            }
+            if (footerRetryInterval !== null) {
+                window.clearInterval(footerRetryInterval);
+            }
+        };
+    }, [pathname]);
+
+    useEffect(() => {
         if (!mountPalette || !pendingPaletteOpen) return;
 
         const timer = window.setTimeout(() => {
@@ -148,7 +189,7 @@ export default function ClientEnhancements() {
 
             {/* Scroll to top button */}
             <AnimatePresence>
-                {showScrollTop && (
+                {showScrollTop && !isFooterVisible && (
                     <motion.button
                         id="scroll-to-top"
                         className="fixed bottom-6 right-6 w-12 h-12 rounded-full cursor-pointer flex items-center justify-center z-[100] backdrop-blur-md border border-[rgba(255,255,255,0.08)] shadow-lg transition-transform"
