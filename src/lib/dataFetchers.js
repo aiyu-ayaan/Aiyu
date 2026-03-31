@@ -15,6 +15,7 @@ import cache, { CACHE_KEYS, CACHE_TTL } from '@/lib/cache';
 import HomeModel from '@/models/Home';
 import AboutModel from '@/models/About';
 import ProjectModel from '@/models/Project';
+import DeploymentModel from '@/models/Deployment';
 import BlogModel from '@/models/Blog';
 import ConfigModel from '@/models/Config';
 import HeaderModel from '@/models/Header';
@@ -25,6 +26,22 @@ const CACHE_KEY_CONFIG_LAYOUT = 'db:config:layout';
 const CACHE_KEY_ABOUT_LAYOUT = 'db:about:layout';
 const CACHE_KEY_ABOUT_HOME = 'db:about:home';
 const CACHE_KEY_PROJECTS_HOME = 'db:projects:home';
+
+const extractDeploymentOrder = (deployment) => {
+    const parsedOrder = Number.parseInt(deployment?.displayOrder, 10);
+    return Number.isNaN(parsedOrder) ? Number.MAX_SAFE_INTEGER : parsedOrder;
+};
+
+const sortDeployments = (deployments = []) => {
+    return [...deployments].sort((a, b) => {
+        const orderDifference = extractDeploymentOrder(a) - extractDeploymentOrder(b);
+        if (orderDifference !== 0) return orderDifference;
+
+        const firstUpdatedAt = new Date(a?.updatedAt || 0).getTime();
+        const secondUpdatedAt = new Date(b?.updatedAt || 0).getTime();
+        return secondUpdatedAt - firstUpdatedAt;
+    });
+};
 
 const CONFIG_PUBLIC_SELECT = [
     'siteTitle',
@@ -209,6 +226,26 @@ export async function getProjectsData() {
         CACHE_TTL.LONG
     );
     return projectsData ? JSON.parse(JSON.stringify(projectsData)) : [];
+}
+
+/**
+ * Fetch all apps / deployments
+ */
+export async function getDeploymentsData() {
+    if (!hasCacheHit(CACHE_KEYS.DEPLOYMENTS)) {
+        await dbConnect();
+    }
+
+    const deploymentsData = await cache.getOrSet(
+        CACHE_KEYS.DEPLOYMENTS,
+        async () => {
+            const deployments = await DeploymentModel.find().lean();
+            return sortDeployments(deployments);
+        },
+        CACHE_TTL.LONG
+    );
+
+    return deploymentsData ? JSON.parse(JSON.stringify(deploymentsData)) : [];
 }
 
 /**

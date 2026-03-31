@@ -46,6 +46,12 @@ export default async function sitemap() {
       priority: 0.9,
     },
     {
+      url: `${baseUrl}/apps`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.85,
+    },
+    {
       url: `${baseUrl}/blogs`,
       lastModified: new Date(),
       changeFrequency: 'weekly',

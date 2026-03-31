@@ -128,6 +128,7 @@ export const CACHE_KEYS = {
     HEADER: 'db:header',
     SOCIALS: 'db:socials',
     PROJECTS: 'db:projects',
+    DEPLOYMENTS: 'db:deployments',
     BLOGS_PUBLISHED: 'db:blogs:published',
     BLOGS_ALL: 'db:blogs:all',
     BLOGS_RECENT: 'db:blogs:recent',

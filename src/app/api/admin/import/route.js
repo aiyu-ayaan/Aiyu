@@ -8,10 +8,12 @@ import Gallery from "@/models/Gallery";
 import Header from "@/models/Header";
 import Home from "@/models/Home";
 import Project from "@/models/Project";
+import Deployment from "@/models/Deployment";
 import Social from "@/models/Social";
 import GitHub from "@/models/GitHub";
 import ContactMessage from "@/models/ContactMessage";
 import Theme from "@/models/Theme";
+import cache from "@/lib/cache";
 import AdmZip from "adm-zip";
 import { join } from "path";
 import { writeFile, mkdir } from "fs/promises";
@@ -61,7 +63,7 @@ export async function POST(request) {
 
                 try {
                     jsonData = JSON.parse(dataEntry.getData().toString('utf8'));
-                } catch (err) {
+                } catch {
                     return NextResponse.json({ success: false, error: "Invalid JSON in data.json" }, { status: 400 });
                 }
 
@@ -73,7 +75,7 @@ export async function POST(request) {
                 // Legacy JSON file upload
                 try {
                     jsonData = JSON.parse(fileBuffer.toString('utf8'));
-                } catch (err) {
+                } catch {
                     return NextResponse.json({ success: false, error: "INVALID_JSON_STRUCTURE" }, { status: 400 });
                 }
             }
@@ -81,7 +83,7 @@ export async function POST(request) {
             // Legacy: direct JSON body (backward compat)
             try {
                 jsonData = await request.json();
-            } catch (err) {
+            } catch {
                 return NextResponse.json({ success: false, error: "INVALID_JSON_STRUCTURE" }, { status: 400 });
             }
         }
@@ -100,6 +102,7 @@ export async function POST(request) {
             { model: Header, key: 'header' },
             { model: Home, key: 'home' },
             { model: Project, key: 'projects' },
+            { model: Deployment, key: 'deployments' },
             { model: Social, key: 'socials' },
             { model: GitHub, key: 'github' },
             { model: ContactMessage, key: 'contactMessages' },
@@ -150,6 +153,9 @@ export async function POST(request) {
             }
             results.images = { count: imagesRestored, status: 'restored' };
         }
+
+        // Clear in-memory caches so restored data is visible immediately.
+        cache.invalidateAll();
 
         return NextResponse.json({ success: true, results });
     } catch (error) {

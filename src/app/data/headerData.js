@@ -12,6 +12,10 @@ export const navLinks = [
     href: '/projects',
   },
   {
+    name: '_apps',
+    href: '/apps',
+  },
+  {
     name: '_resume',
     href: '/resume.pdf',
     target: '_blank',
