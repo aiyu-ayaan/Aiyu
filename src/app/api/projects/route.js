@@ -5,12 +5,35 @@ import { getSession } from '@/lib/auth';
 import cache, { CACHE_KEYS, CACHE_TTL } from '@/lib/cache';
 import { createPublicCacheHeaders, RESPONSE_CACHE } from '@/lib/httpCache';
 
+const extractSortYear = (yearValue) => {
+    const matches = String(yearValue || '').match(/\d{4}/g);
+    if (!matches || matches.length === 0) return 0;
+    const finalYear = Number.parseInt(matches[matches.length - 1], 10);
+    return Number.isNaN(finalYear) ? 0 : finalYear;
+};
+
+const getDisplayOrderValue = (project) => {
+    const parsedOrder = Number.parseInt(project?.displayOrder, 10);
+    return Number.isNaN(parsedOrder) ? Number.MAX_SAFE_INTEGER : parsedOrder;
+};
+
+const sortProjects = (projects = []) => {
+    return [...projects].sort((a, b) => {
+        const orderDifference = getDisplayOrderValue(a) - getDisplayOrderValue(b);
+        if (orderDifference !== 0) return orderDifference;
+        return extractSortYear(b?.year) - extractSortYear(a?.year);
+    });
+};
+
 export async function GET() {
     await dbConnect();
     try {
         const projects = await cache.getOrSet(
             CACHE_KEYS.PROJECTS,
-            () => Project.find({}).sort({ year: -1 }).lean(),
+            async () => {
+                const allProjects = await Project.find({}).lean();
+                return sortProjects(allProjects);
+            },
             CACHE_TTL.MEDIUM
         );
 
@@ -31,7 +54,20 @@ export async function POST(request) {
     await dbConnect();
     try {
         const body = await request.json();
-        const project = await Project.create(body);
+        const payload = { ...body };
+
+        if (!Number.isFinite(payload.displayOrder)) {
+            const maxOrderedProject = await Project.findOne({ displayOrder: { $type: 'number' } })
+                .sort({ displayOrder: -1 })
+                .select('displayOrder')
+                .lean();
+
+            payload.displayOrder = Number.isFinite(maxOrderedProject?.displayOrder)
+                ? maxOrderedProject.displayOrder + 1
+                : 0;
+        }
+
+        const project = await Project.create(payload);
         cache.invalidate(CACHE_KEYS.PROJECTS);
         cache.invalidatePrefix('db:projects');
         return NextResponse.json(project, { status: 201 });

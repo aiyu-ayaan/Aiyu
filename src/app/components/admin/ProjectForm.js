@@ -4,6 +4,32 @@ import { useRouter } from 'next/navigation';
 import { Loader2, Save, Terminal, Code, Layers, Calendar, Link as LinkIcon, Image as ImageIcon, FileText, CheckCircle, Activity, Sparkles, Wand2, Upload, X } from 'lucide-react';
 import Toast from './Toast';
 
+const getStatusState = (status) => {
+    const safeStatus = String(status || '').trim().toLowerCase();
+
+    if (safeStatus === 'done' || safeStatus === 'completed') {
+        return {
+            panelClass: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+            dotClass: 'bg-emerald-500',
+            message: 'System Stable',
+        };
+    }
+
+    if (safeStatus === 'deferred' || safeStatus === 'deffered' || safeStatus === 'on hold') {
+        return {
+            panelClass: 'bg-slate-500/10 text-slate-300 border-slate-500/20',
+            dotClass: 'bg-slate-400',
+            message: 'Deferred / On Hold',
+        };
+    }
+
+    return {
+        panelClass: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+        dotClass: 'bg-amber-500 animate-pulse',
+        message: 'Work In Progress',
+    };
+};
+
 const ProjectForm = ({ initialData, isEdit = false }) => {
     const router = useRouter();
     const [formData, setFormData] = useState({
@@ -184,6 +210,8 @@ const ProjectForm = ({ initialData, isEdit = false }) => {
         }
     };
 
+    const statusState = getStatusState(formData.status);
+
     return (
         <form onSubmit={handleSubmit} className="space-y-8">
             {error && (
@@ -202,7 +230,7 @@ const ProjectForm = ({ initialData, isEdit = false }) => {
 
                         <h2 className="text-sm font-mono text-cyan-400 uppercase tracking-widest mb-8 flex items-center gap-4 relative z-10">
                             Project Identity
-                            <div className="h-px bg-cyan-500/20 flex-grow" />
+                            <div className="h-px bg-cyan-500/20 grow" />
                         </h2>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
@@ -296,7 +324,7 @@ const ProjectForm = ({ initialData, isEdit = false }) => {
 
                         <h2 className="text-sm font-mono text-purple-400 uppercase tracking-widest mb-8 flex items-center gap-4 relative z-10">
                             Technical Specifications
-                            <div className="h-px bg-purple-500/20 flex-grow" />
+                            <div className="h-px bg-purple-500/20 grow" />
                         </h2>
 
                         <div className="space-y-6 relative z-10">
@@ -383,11 +411,12 @@ const ProjectForm = ({ initialData, isEdit = false }) => {
                             >
                                 <option value="Done" className="bg-slate-900 text-slate-200">Done (Completed)</option>
                                 <option value="In Progress" className="bg-slate-900 text-slate-200">In Progress (Active)</option>
+                                <option value="Deferred" className="bg-slate-900 text-slate-200">Deferred (On Hold)</option>
                             </select>
                         </div>
-                        <div className={`mt-4 flex items-center gap-2 text-xs font-mono uppercase tracking-wide justify-center p-2 rounded border ${formData.status === 'Done' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'}`}>
-                            <div className={`w-2 h-2 rounded-full ${formData.status === 'Done' ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse'}`} />
-                            {formData.status === 'Done' ? 'System Stable' : 'Work In Progress'}
+                        <div className={`mt-4 flex items-center gap-2 text-xs font-mono uppercase tracking-wide justify-center p-2 rounded border ${statusState.panelClass}`}>
+                            <div className={`w-2 h-2 rounded-full ${statusState.dotClass}`} />
+                            {statusState.message}
                         </div>
                     </div>
 
@@ -439,7 +468,7 @@ const ProjectForm = ({ initialData, isEdit = false }) => {
             </div>
 
             {/* Sticky Action Footer */}
-            <div className="sticky bottom-8 flex justify-end gap-4 pt-6 border-t border-white/5 bg-slate-900/90 backdrop-blur-lg p-4 rounded-xl border border-white/5 shadow-2xl z-50 mt-12">
+            <div className="sticky bottom-8 flex justify-end gap-4 pt-6 border border-white/5 bg-slate-900/90 backdrop-blur-lg p-4 rounded-xl shadow-2xl z-50 mt-12">
                 <button
                     type="button"
                     onClick={() => router.back()}
