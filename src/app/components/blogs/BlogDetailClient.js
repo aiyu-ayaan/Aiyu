@@ -17,6 +17,7 @@ import {
   getBlogPlaceholderGradient,
   getReadTime,
 } from './blogUtils';
+import RouteBetaBadge from '../shared/RouteBetaBadge';
 
 const SyntaxHighlighter = dynamic(
   () => import('react-syntax-highlighter').then((module) => module.Prism),
@@ -175,15 +176,18 @@ export default function BlogDetailClient({ blog }) {
             boxShadow: '0 16px 36px var(--shadow-sm)',
           }}
         >
-          <p
-            className="mb-3 inline-flex rounded-full border px-3 py-1 text-xs uppercase tracking-[0.2em]"
-            style={{
-              borderColor: 'color-mix(in srgb, var(--accent-cyan) 44%, var(--border-secondary))',
-              color: 'var(--accent-cyan)',
-            }}
-          >
-            Article
-          </p>
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <p
+              className="inline-flex rounded-full border px-3 py-1 text-xs uppercase tracking-[0.2em]"
+              style={{
+                borderColor: 'color-mix(in srgb, var(--accent-cyan) 44%, var(--border-secondary))',
+                color: 'var(--accent-cyan)',
+              }}
+            >
+              Article
+            </p>
+            <RouteBetaBadge />
+          </div>
 
           <h1
             className="mb-4 bg-gradient-to-r bg-clip-text text-3xl font-bold text-transparent sm:text-4xl lg:text-5xl"

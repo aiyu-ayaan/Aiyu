@@ -17,6 +17,7 @@ import {
     FaScrewdriverWrench,
 } from 'react-icons/fa6';
 import TypewriterEffect from '../shared/TypewriterEffect';
+import RouteBetaBadge from '../shared/RouteBetaBadge';
 import { getPlaceholderGradient, getProjectInitials } from '../projects/projectPlaceholder';
 import DeploymentDialog from './DeploymentDialog';
 
@@ -181,15 +182,18 @@ export default function Deployments({ data, config }) {
                     className="rounded-3xl p-6 sm:p-8"
                     style={heroCardStyle}
                 >
-                    <p
-                        className="mb-3 inline-flex rounded-full border px-3 py-1 text-xs uppercase tracking-[0.2em]"
-                        style={{
-                            borderColor: 'color-mix(in srgb, var(--accent-cyan) 40%, var(--border-secondary))',
-                            color: 'var(--accent-cyan)',
-                        }}
-                    >
-                        Apps
-                    </p>
+                    <div className="mb-3 flex flex-wrap items-center gap-2">
+                        <p
+                            className="inline-flex rounded-full border px-3 py-1 text-xs uppercase tracking-[0.2em]"
+                            style={{
+                                borderColor: 'color-mix(in srgb, var(--accent-cyan) 40%, var(--border-secondary))',
+                                color: 'var(--accent-cyan)',
+                            }}
+                        >
+                            Apps
+                        </p>
+                        <RouteBetaBadge />
+                    </div>
 
                     <h1
                         className="mb-3 bg-linear-to-r bg-clip-text text-4xl font-bold text-transparent sm:text-5xl lg:text-6xl"

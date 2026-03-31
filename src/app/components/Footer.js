@@ -30,6 +30,7 @@ export default function Footer({ socialData, name, config, packageVersion }) {
 
     return (
         <footer
+            id="site-footer"
             className="relative w-full px-4 pb-8 pt-12 sm:px-6"
             style={{ color: 'var(--text-primary)' }}
         >

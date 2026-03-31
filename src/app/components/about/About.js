@@ -17,6 +17,7 @@ import {
 import Link from 'next/link';
 import TypewriterEffect from '../shared/TypewriterEffect';
 import Divider from '../landing/Divider';
+import RouteBetaBadge from '../shared/RouteBetaBadge';
 
 const cardStyle = {
   background: 'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 92%, transparent), color-mix(in srgb, var(--bg-secondary) 92%, transparent))',
@@ -132,14 +133,17 @@ const About = ({ data }) => {
             borderColor: 'color-mix(in srgb, var(--border-cyan) 48%, var(--border-secondary))',
           }}
         >
-          <div className="mb-5 inline-flex rounded-full border px-3 py-1 text-xs uppercase tracking-[0.2em]"
-            style={{
-              borderColor: 'color-mix(in srgb, var(--accent-cyan) 45%, var(--border-secondary))',
-              color: 'var(--accent-cyan)',
-              backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 78%, transparent)',
-            }}
-          >
-            About Me
+          <div className="mb-5 flex flex-wrap items-center gap-2">
+            <div className="inline-flex rounded-full border px-3 py-1 text-xs uppercase tracking-[0.2em]"
+              style={{
+                borderColor: 'color-mix(in srgb, var(--accent-cyan) 45%, var(--border-secondary))',
+                color: 'var(--accent-cyan)',
+                backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 78%, transparent)',
+              }}
+            >
+              About Me
+            </div>
+            <RouteBetaBadge />
           </div>
 
           <h1

@@ -5,6 +5,7 @@ import { CalendarDays, Download, Loader2, Search } from 'lucide-react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GalleryPageSkeleton } from '../../components/shared/skeletons/PublicPageSkeletons';
+import RouteBetaBadge from '../../components/shared/RouteBetaBadge';
 
 const getImageInitials = (description) => {
   const words = String(description || '')
@@ -276,9 +277,12 @@ const GalleryClient = () => {
             boxShadow: '0 16px 36px var(--shadow-sm)',
           }}
         >
-          <p className="mb-3 inline-flex rounded-full border px-3 py-1 text-xs uppercase tracking-[0.2em]" style={{ borderColor: 'color-mix(in srgb, var(--accent-cyan) 42%, var(--border-secondary))', color: 'var(--accent-cyan)' }}>
-            Visual Archive
-          </p>
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <p className="inline-flex rounded-full border px-3 py-1 text-xs uppercase tracking-[0.2em]" style={{ borderColor: 'color-mix(in srgb, var(--accent-cyan) 42%, var(--border-secondary))', color: 'var(--accent-cyan)' }}>
+              Visual Archive
+            </p>
+            <RouteBetaBadge />
+          </div>
           <h1 className="mb-3 bg-linear-to-r bg-clip-text text-4xl font-bold text-transparent sm:text-5xl lg:text-6xl" style={{ backgroundImage: 'linear-gradient(to right, var(--accent-cyan), var(--accent-purple), var(--accent-pink))' }}>
             {headerInfo.title}
           </h1>

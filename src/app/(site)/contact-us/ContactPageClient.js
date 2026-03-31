@@ -3,6 +3,7 @@
 import { Activity, Clock3, Download, Mail, MapPin, Sparkles } from 'lucide-react';
 import ContactForm from '@/app/components/contact/ContactForm';
 import { motion } from 'framer-motion';
+import RouteBetaBadge from '../../components/shared/RouteBetaBadge';
 
 const cardStyle = {
   borderColor: 'color-mix(in srgb, var(--border-secondary) 74%, transparent)',
@@ -60,16 +61,19 @@ export default function ContactPageClient({ location, status, email, hasResume, 
             boxShadow: '0 16px 36px var(--shadow-sm)',
           }}
         >
-          <p
-            className="mb-3 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs uppercase tracking-[0.2em]"
-            style={{
-              borderColor: 'color-mix(in srgb, var(--accent-cyan) 44%, var(--border-secondary))',
-              color: 'var(--accent-cyan)',
-            }}
-          >
-            <Sparkles size={12} />
-            Contact Command Center
-          </p>
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <p
+              className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs uppercase tracking-[0.2em]"
+              style={{
+                borderColor: 'color-mix(in srgb, var(--accent-cyan) 44%, var(--border-secondary))',
+                color: 'var(--accent-cyan)',
+              }}
+            >
+              <Sparkles size={12} />
+              Contact Command Center
+            </p>
+            <RouteBetaBadge />
+          </div>
 
           <h1
             className="mb-3 bg-gradient-to-r bg-clip-text text-4xl font-bold text-transparent sm:text-5xl lg:text-6xl"
