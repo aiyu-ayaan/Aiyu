@@ -14,6 +14,7 @@ import {
 import ProjectDialog from './ProjectDialog';
 import ProjectCard from './ProjectCard';
 import TypewriterEffect from '../shared/TypewriterEffect';
+import RouteBetaBadge from '../shared/RouteBetaBadge';
 import Timeline from './Timeline';
 import { getPlaceholderGradient, getProjectInitials } from './projectPlaceholder';
 import { ProjectsPageSkeleton } from '../shared/skeletons/PublicPageSkeletons';
@@ -262,15 +263,18 @@ const Projects = ({ data }) => {
           className="rounded-3xl p-6 sm:p-8"
           style={heroCardStyle}
         >
-          <p
-            className="mb-3 inline-flex rounded-full border px-3 py-1 text-xs uppercase tracking-[0.2em]"
-            style={{
-              borderColor: 'color-mix(in srgb, var(--accent-cyan) 40%, var(--border-secondary))',
-              color: 'var(--accent-cyan)',
-            }}
-          >
-            Project Command Center
-          </p>
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <p
+              className="inline-flex rounded-full border px-3 py-1 text-xs uppercase tracking-[0.2em]"
+              style={{
+                borderColor: 'color-mix(in srgb, var(--accent-cyan) 40%, var(--border-secondary))',
+                color: 'var(--accent-cyan)',
+              }}
+            >
+              Project Command Center
+            </p>
+            <RouteBetaBadge />
+          </div>
 
           <>
             <h1

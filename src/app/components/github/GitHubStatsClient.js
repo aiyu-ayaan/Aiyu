@@ -21,6 +21,7 @@ import {
   Users,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import RouteBetaBadge from '../shared/RouteBetaBadge';
 
 const languageColors = {
   JavaScript: '#f1e05a',
@@ -239,9 +240,12 @@ export default function GitHubStatsClient({ data }) {
             boxShadow: '0 16px 36px var(--shadow-sm)',
           }}
         >
-          <p className="mb-3 inline-flex rounded-full border px-3 py-1 text-xs uppercase tracking-[0.2em]" style={{ borderColor: 'color-mix(in srgb, var(--accent-cyan) 42%, var(--border-secondary))', color: 'var(--accent-cyan)' }}>
-            Open Source Dashboard
-          </p>
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <p className="inline-flex rounded-full border px-3 py-1 text-xs uppercase tracking-[0.2em]" style={{ borderColor: 'color-mix(in srgb, var(--accent-cyan) 42%, var(--border-secondary))', color: 'var(--accent-cyan)' }}>
+              Open Source Dashboard
+            </p>
+            <RouteBetaBadge />
+          </div>
           <h1 className="mb-3 bg-gradient-to-r bg-clip-text text-4xl font-bold text-transparent sm:text-5xl lg:text-6xl" style={{ backgroundImage: 'linear-gradient(to right, var(--accent-cyan), var(--accent-purple), var(--accent-pink))' }}>
             GitHub Statistics
           </h1>

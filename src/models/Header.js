@@ -5,6 +5,7 @@ const NavLinkSchema = new mongoose.Schema({
     href: { type: String, required: true },
     target: { type: String, required: false },
     visible: { type: Boolean, default: true },
+    beta: { type: Boolean, default: false },
 });
 
 const ContactLinkSchema = new mongoose.Schema({

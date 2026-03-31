@@ -160,7 +160,7 @@ const HeaderForm = () => {
     const handleAddNavLink = () => {
         setFormData({
             ...formData,
-            navLinks: [...formData.navLinks, { _id: `temp-${Date.now()}`, name: '', href: '', visible: true }]
+            navLinks: [...formData.navLinks, { _id: `temp-${Date.now()}`, name: '', href: '', visible: true, beta: false }]
         });
     };
 
@@ -245,14 +245,25 @@ const HeaderForm = () => {
                                             </div>
                                         </div>
 
-                                        <div className="flex flex-col items-center gap-2 border-l border-white/10 pl-4 ml-2">
-                                            <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500">Visible</label>
-                                            <input
-                                                type="checkbox"
-                                                checked={link.visible !== false}
-                                                onChange={(e) => handleNavLinkChange(index, 'visible', e.target.checked)}
-                                                className="w-5 h-5 rounded border-white/20 bg-slate-950/50 text-blue-500 focus:ring-blue-500 focus:ring-offset-0 focus:ring-offset-transparent transition-all cursor-pointer accent-blue-500"
-                                            />
+                                        <div className="flex flex-col items-center gap-3 border-l border-white/10 pl-4 ml-2">
+                                            <div className="flex flex-col items-center gap-1">
+                                                <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500">Visible</label>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={link.visible !== false}
+                                                    onChange={(e) => handleNavLinkChange(index, 'visible', e.target.checked)}
+                                                    className="w-5 h-5 rounded border-white/20 bg-slate-950/50 text-blue-500 focus:ring-blue-500 focus:ring-offset-0 focus:ring-offset-transparent transition-all cursor-pointer accent-blue-500"
+                                                />
+                                            </div>
+                                            <div className="flex flex-col items-center gap-1">
+                                                <label className="block text-[10px] font-mono uppercase tracking-wider text-amber-400">Beta</label>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={link.beta === true}
+                                                    onChange={(e) => handleNavLinkChange(index, 'beta', e.target.checked)}
+                                                    className="w-5 h-5 rounded border-white/20 bg-slate-950/50 text-amber-500 focus:ring-amber-500 focus:ring-offset-0 focus:ring-offset-transparent transition-all cursor-pointer accent-amber-500"
+                                                />
+                                            </div>
                                         </div>
                                     </div>
                                 </SortableItem>

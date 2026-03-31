@@ -6,6 +6,7 @@ import { FaFilter, FaNewspaper, FaSearch, FaTags } from 'react-icons/fa';
 import BlogCard from './BlogCard';
 import { formatBlogDate } from './blogUtils';
 import { BlogListPageSkeleton } from '../shared/skeletons/PublicPageSkeletons';
+import RouteBetaBadge from '../shared/RouteBetaBadge';
 
 const getBlogPublishTimestamp = (blog) => {
   const primaryDate = blog?.date ? new Date(blog.date) : null;
@@ -142,15 +143,18 @@ const BlogList = () => {
             boxShadow: '0 16px 36px var(--shadow-sm)',
           }}
         >
-          <p
-            className="mb-3 inline-flex rounded-full border px-3 py-1 text-xs uppercase tracking-[0.2em]"
-            style={{
-              borderColor: 'color-mix(in srgb, var(--accent-cyan) 42%, var(--border-secondary))',
-              color: 'var(--accent-cyan)',
-            }}
-          >
-            Writing Hub
-          </p>
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <p
+              className="inline-flex rounded-full border px-3 py-1 text-xs uppercase tracking-[0.2em]"
+              style={{
+                borderColor: 'color-mix(in srgb, var(--accent-cyan) 42%, var(--border-secondary))',
+                color: 'var(--accent-cyan)',
+              }}
+            >
+              Writing Hub
+            </p>
+            <RouteBetaBadge />
+          </div>
 
           <h1
             className="mb-3 bg-linear-to-r bg-clip-text text-4xl font-bold text-transparent sm:text-5xl lg:text-6xl"

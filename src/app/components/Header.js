@@ -12,6 +12,43 @@ import TerminalPath from './admin/TerminalPath';
 
 const SCROLL_DOWN_THRESHOLD = 72;
 const SCROLL_UP_THRESHOLD = 24;
+const ROUTE_ALIASES = [
+  ['/live-deployments', '/apps'],
+  ['/deployments', '/apps'],
+  ['/contact', '/contact-us'],
+  ['/about', '/about-me'],
+  ['/blog', '/blogs'],
+];
+
+const normalizePath = (value) => {
+  const path = String(value || '').trim();
+  if (!path) return '/';
+
+  const stripped = path.split('?')[0].split('#')[0];
+  if (stripped === '/') return '/';
+  return stripped.endsWith('/') ? stripped.slice(0, -1) : stripped;
+};
+
+const canonicalizePath = (value) => {
+  const normalized = normalizePath(value);
+
+  for (const [from, to] of ROUTE_ALIASES) {
+    if (normalized === from) return to;
+    if (normalized.startsWith(`${from}/`)) {
+      return `${to}${normalized.slice(from.length)}`;
+    }
+  }
+
+  return normalized;
+};
+
+const isRouteMatch = (pathname, href) => {
+  const current = canonicalizePath(pathname);
+  const route = canonicalizePath(href);
+
+  if (route === '/') return current === '/';
+  return current === route || current.startsWith(`${route}/`);
+};
 
 export default function Header({ data, logoText, socialData, config }) {
   const { navLinks, contactLink } = data || { navLinks: [], contactLink: {} };
@@ -142,7 +179,7 @@ export default function Header({ data, logoText, socialData, config }) {
                 }}
               >
                 {visibleNavLinks.map((link) => {
-                  const isActive = pathname === link.href;
+                  const isActive = isRouteMatch(pathname, link.href);
                   return (
                     <Link
                       key={link.name}
@@ -163,7 +200,21 @@ export default function Header({ data, logoText, socialData, config }) {
                           transition={{ type: 'spring', stiffness: 360, damping: 32 }}
                         />
                       )}
-                      <span className="relative z-10">{link.name}</span>
+                      <span className="relative z-10 inline-flex items-center gap-1.5">
+                        <span>{link.name}</span>
+                        {link.beta === true && (
+                          <span
+                            className="rounded-full border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
+                            style={{
+                              borderColor: 'color-mix(in srgb, var(--accent-orange) 55%, var(--border-secondary))',
+                              color: 'var(--accent-orange-bright)',
+                              backgroundColor: 'color-mix(in srgb, var(--accent-orange) 12%, transparent)',
+                            }}
+                          >
+                            Beta
+                          </span>
+                        )}
+                      </span>
                     </Link>
                   );
                 })}
@@ -319,16 +370,30 @@ export default function Header({ data, logoText, socialData, config }) {
                   onClick={() => setIsMenuOpen(false)}
                   className="flex items-center justify-between rounded-xl border px-4 py-3 text-base font-semibold"
                   style={{
-                    borderColor: pathname === link.href
+                    borderColor: isRouteMatch(pathname, link.href)
                       ? 'color-mix(in srgb, var(--accent-cyan) 55%, transparent)'
                       : 'color-mix(in srgb, var(--border-secondary) 70%, transparent)',
-                    color: pathname === link.href ? 'var(--accent-cyan)' : 'var(--text-primary)',
-                    backgroundColor: pathname === link.href
+                    color: isRouteMatch(pathname, link.href) ? 'var(--accent-cyan)' : 'var(--text-primary)',
+                    backgroundColor: isRouteMatch(pathname, link.href)
                       ? 'color-mix(in srgb, var(--accent-cyan) 10%, transparent)'
                       : 'color-mix(in srgb, var(--bg-elevated) 75%, transparent)',
                   }}
                 >
-                  <span>{link.name}</span>
+                  <span className="inline-flex items-center gap-2">
+                    <span>{link.name}</span>
+                    {link.beta === true && (
+                      <span
+                        className="rounded-full border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
+                        style={{
+                          borderColor: 'color-mix(in srgb, var(--accent-orange) 55%, var(--border-secondary))',
+                          color: 'var(--accent-orange-bright)',
+                          backgroundColor: 'color-mix(in srgb, var(--accent-orange) 12%, transparent)',
+                        }}
+                      >
+                        Beta
+                      </span>
+                    )}
+                  </span>
                   <ArrowUpRight size={15} />
                 </Link>
               </motion.div>
