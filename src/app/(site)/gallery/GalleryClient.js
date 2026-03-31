@@ -497,13 +497,19 @@ const GalleryClient = () => {
                               <div className="flex items-center justify-between gap-2 text-xs text-white/80">
                                 <span>{formatDate(image?.createdAt)}</span>
                                 {image?.src && (
-                                  <button
-                                    type="button"
+                                  <span
+                                    role="button"
+                                    tabIndex={0}
                                     onClick={(event) => handleDownload(event, image)}
+                                    onKeyDown={(event) => {
+                                      if (event.key === 'Enter' || event.key === ' ') {
+                                        handleDownload(event, image);
+                                      }
+                                    }}
                                     className="pointer-events-auto inline-flex items-center gap-1 rounded-full border border-white/25 bg-black/30 px-3 py-1 font-semibold hover:bg-white/20"
                                   >
                                     <Download size={12} /> Download
-                                  </button>
+                                  </span>
                                 )}
                               </div>
                             </div>
