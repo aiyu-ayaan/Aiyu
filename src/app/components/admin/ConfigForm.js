@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Sparkles, Loader2, Wand2 } from 'lucide-react';
+import { Sparkles, Loader2 } from 'lucide-react';
 import Toast from './Toast';
 
 const ConfigForm = () => {
@@ -10,6 +10,7 @@ const ConfigForm = () => {
         googleAnalyticsId: '',
         logoText: '< aiyu />',
         siteTitle: '',
+        ogImage: '',
         favicon: {
             value: '',
             filename: '',
@@ -33,6 +34,7 @@ const ConfigForm = () => {
     const [notification, setNotification] = useState(null);
     const [aiEnabled, setAiEnabled] = useState(false);
     const [aiGenerating, setAiGenerating] = useState(null); // 'projects', 'blogs', 'gallery'
+    const [uploadingOgImage, setUploadingOgImage] = useState(false);
 
     useEffect(() => {
         fetchData();
@@ -99,6 +101,7 @@ const ConfigForm = () => {
                         googleAnalyticsId: data.googleAnalyticsId || '',
                         logoText: data.logoText || '< aiyu />',
                         siteTitle: data.siteTitle || '',
+                        ogImage: data.ogImage || '',
                         favicon: {
                             value: data.favicon?.value || '',
                             filename: data.favicon?.filename || '',
@@ -197,6 +200,43 @@ const ConfigForm = () => {
         }
     };
 
+    const handleOgImageUpload = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setUploadingOgImage(true);
+        setError('');
+
+        try {
+            const payload = new FormData();
+            payload.append('file', file);
+
+            const response = await fetch('/api/upload', {
+                method: 'POST',
+                body: payload,
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                throw new Error(data.error || 'Failed to upload OG image');
+            }
+
+            setFormData((prev) => ({
+                ...prev,
+                ogImage: data.url,
+            }));
+            showNotification(true, 'OG image uploaded and preview updated.');
+        } catch (err) {
+            const message = err instanceof Error ? err.message : 'Failed to upload OG image';
+            setError(message);
+            showNotification(false, message);
+        } finally {
+            setUploadingOgImage(false);
+            e.target.value = '';
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setSaving(true);
@@ -213,13 +253,14 @@ const ConfigForm = () => {
 
             if (response.ok) {
                 showNotification(true, 'System Configuration Updated Successfully');
+                router.refresh();
                 fetchData(); // Refresh data
             } else {
                 const data = await response.json();
                 setError(data.error || 'Something went wrong');
                 showNotification(false, data.error || 'Failed to update');
             }
-        } catch (err) {
+        } catch {
             setError('An error occurred');
             showNotification(false, 'An error occurred');
         } finally {
@@ -309,6 +350,47 @@ const ConfigForm = () => {
                             {formData.favicon.value && (
                                 <div className="h-12 w-12 rounded-lg bg-slate-950/50 border border-white/10 flex items-center justify-center p-2 shrink-0">
                                     <img src={formData.favicon.value} alt="Favicon Preview" className="w-full h-full object-contain" loading="lazy" decoding="async" />
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                    <div>
+                        <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Open Graph Image</label>
+                        <div className="space-y-3">
+                            <input
+                                type="text"
+                                name="ogImage"
+                                value={formData.ogImage}
+                                onChange={handleChange}
+                                placeholder="/api/uploads/your-og-image.webp or https://example.com/og-image.png"
+                                className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-green-500/50 focus:ring-1 focus:ring-green-500/50 outline-none transition-all placeholder:text-slate-600 font-mono text-sm"
+                            />
+                            <div className="flex flex-col gap-4 md:flex-row md:items-center">
+                                <label className={`cursor-pointer bg-slate-950/50 border border-white/10 hover:border-green-500/50 text-slate-300 px-4 py-3 rounded-lg transition-all flex items-center gap-3 ${uploadingOgImage ? 'opacity-60 pointer-events-none' : ''}`}>
+                                    <span className="bg-green-500/10 text-green-400 px-2 py-1 rounded text-xs font-bold uppercase">
+                                        {uploadingOgImage ? 'Uploading' : 'Upload'}
+                                    </span>
+                                    <span className="text-sm opacity-70">Select OG image</span>
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleOgImageUpload}
+                                        className="hidden"
+                                    />
+                                </label>
+                                <p className="text-xs text-slate-500 font-mono">
+                                    {'// Preview updates instantly here. Public metadata updates after save.'}
+                                </p>
+                            </div>
+                            {formData.ogImage && (
+                                <div className="overflow-hidden rounded-xl border border-white/10 bg-slate-950/50">
+                                    <img
+                                        src={formData.ogImage}
+                                        alt="OG Image Preview"
+                                        className="w-full max-h-64 object-cover"
+                                        loading="lazy"
+                                        decoding="async"
+                                    />
                                 </div>
                             )}
                         </div>

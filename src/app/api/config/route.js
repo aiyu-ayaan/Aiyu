@@ -42,9 +42,13 @@ function sanitizePublicConfig(config) {
 
     const safeConfig = JSON.parse(JSON.stringify(config));
     const hasCustomFavicon = Boolean(safeConfig?.favicon?.value || safeConfig?.favicon?.filename || safeConfig?.favicon?.mimeType);
+    const baseUrl = process.env.SITE_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
 
     if (safeConfig.favicon && typeof safeConfig.favicon === 'object') {
         delete safeConfig.favicon.value;
+    }
+    if (typeof safeConfig?.ogImage === 'string' && safeConfig.ogImage.trim()) {
+        safeConfig.ogImage = new URL(safeConfig.ogImage.trim(), baseUrl).toString();
     }
     delete safeConfig.encryptedGithubToken;
     delete safeConfig.encryptedGeminiApiKey;
@@ -81,7 +85,7 @@ export async function GET() {
         }
 
         return NextResponse.json(config);
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: 'Failed to fetch config' }, { status: 500 });
     }
 }

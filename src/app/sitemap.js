@@ -1,8 +1,7 @@
 import { headers } from 'next/headers';
 import dbConnect from '@/lib/db';
 import BlogModel from '@/models/Blog';
-import ProjectModel from '@/models/Project';
-import GalleryModel from '@/models/Gallery';
+import { backfillMissingBlogSlugs, getBlogSlug } from '@/lib/blogSlugs';
 
 export default async function sitemap() {
   // Support both SITE_URL (user preference) and NEXT_PUBLIC_BASE_URL (existing SEO logic)
@@ -80,35 +79,18 @@ export default async function sitemap() {
   try {
     // Attempt database connection
     await dbConnect();
+    await backfillMissingBlogSlugs(BlogModel);
 
     // Dynamic blog routes
-    const blogs = await BlogModel.find({ published: { $ne: false } }, { slug: 1, updatedAt: 1 }).lean();
+    const blogs = await BlogModel.find({ published: { $ne: false } }, { title: 1, slug: 1, updatedAt: 1 }).lean();
     const blogRoutes = blogs.map((blog) => ({
-      url: `${baseUrl}/blogs/${blog.slug}`,
+      url: `${baseUrl}/blogs/${getBlogSlug(blog)}`,
       lastModified: blog.updatedAt || new Date(),
       changeFrequency: 'monthly',
       priority: 0.7,
     }));
 
-    // Dynamic project routes
-    const projects = await ProjectModel.find({}, { slug: 1, updatedAt: 1 }).lean();
-    const projectRoutes = projects.map((project) => ({
-      url: `${baseUrl}/projects/${project.slug}`,
-      lastModified: project.updatedAt || new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.8,
-    }));
-
-    // Dynamic gallery routes (if paginated)
-    const galleries = await GalleryModel.find({}, { _id: 1, updatedAt: 1 }).lean();
-    const galleryRoutes = galleries.map((gallery) => ({
-      url: `${baseUrl}/gallery/${gallery._id}`,
-      lastModified: gallery.updatedAt || new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.6,
-    }));
-
-    return [...staticRoutes, ...blogRoutes, ...projectRoutes, ...galleryRoutes];
+    return [...staticRoutes, ...blogRoutes];
   } catch (error) {
     console.error('Error generating sitemap:', error);
     console.warn('Database unavailable during sitemap generation. Returning static routes only.');

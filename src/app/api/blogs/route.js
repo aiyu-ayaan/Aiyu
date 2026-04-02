@@ -5,8 +5,9 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import cache, { CACHE_KEYS, CACHE_TTL } from '@/lib/cache';
 import { createPublicCacheHeaders, RESPONSE_CACHE } from '@/lib/httpCache';
+import { backfillMissingBlogSlugs, createUniqueBlogSlug } from '@/lib/blogSlugs';
 
-const BLOG_LIST_SELECT = ['title', 'content', 'image', 'date', 'createdAt', 'updatedAt', 'published'].join(' ');
+const BLOG_LIST_SELECT = ['title', 'slug', 'content', 'image', 'date', 'createdAt', 'updatedAt', 'published', 'tags'].join(' ');
 
 function toPublicBlogList(blogs, maxLength = 500) {
     if (!Array.isArray(blogs)) return [];
@@ -23,6 +24,8 @@ export async function GET(request) {
     const showAll = searchParams.get('all');
 
     try {
+        await backfillMissingBlogSlugs(Blog);
+
         let query = {};
         // Only show drafts if 'all' param is requested AND user is admin
         if (session && showAll === 'true') {
@@ -93,6 +96,7 @@ export async function POST(request) {
         // Use provided published status or default to false (Draft)
         const blogData = {
             ...body,
+            slug: await createUniqueBlogSlug(Blog, body.title),
             published: body.published !== undefined ? body.published : false
         };
 

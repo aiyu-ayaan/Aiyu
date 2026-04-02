@@ -20,6 +20,7 @@ import BlogModel from '@/models/Blog';
 import ConfigModel from '@/models/Config';
 import HeaderModel from '@/models/Header';
 import SocialModel from '@/models/Social';
+import { backfillMissingBlogSlugs, resolveBlogByIdentifier } from '@/lib/blogSlugs';
 
 const CACHE_KEY_CONFIG_PUBLIC = 'db:config:public';
 const CACHE_KEY_CONFIG_LAYOUT = 'db:config:layout';
@@ -74,7 +75,7 @@ const CONFIG_PUBLIC_SELECT = [
 
 const HOME_ABOUT_SELECT = ['name', 'skills', 'professionalSummary'].join(' ');
 const HOME_PROJECTS_SELECT = ['name', 'techStack', 'year', 'status', 'projectType', 'description', 'codeLink', 'image'].join(' ');
-const HOME_BLOGS_SELECT = ['title', 'content', 'image', 'date', 'createdAt'].join(' ');
+const HOME_BLOGS_SELECT = ['title', 'slug', 'content', 'image', 'date', 'createdAt'].join(' ');
 
 // Helper to safely serialize Mongoose docs to plain objects
 function serialize(data) {
@@ -97,6 +98,12 @@ function sanitizeConfigForPublic(configData) {
     }
     delete config.encryptedGithubToken;
     delete config.encryptedGeminiApiKey;
+
+    const baseUrl = process.env.SITE_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    const ogImageValue = typeof config?.ogImage === 'string' ? config.ogImage.trim() : '';
+    if (ogImageValue) {
+        config.ogImage = new URL(ogImageValue, baseUrl).toString();
+    }
 
     return {
         ...config,
@@ -124,6 +131,8 @@ export async function getLayoutData() {
     if (!requiredKeys.every(hasCacheHit)) {
         await dbConnect();
     }
+
+    await backfillMissingBlogSlugs(BlogModel);
 
     const [headerData, socialData, configData, aboutData] = await Promise.all([
         cache.getOrSet(CACHE_KEYS.HEADER, () => HeaderModel.findOne().lean(), CACHE_TTL.LONG),
@@ -260,7 +269,7 @@ export async function getBlogById(id) {
 
     const blog = await cache.getOrSet(
         cacheKey,
-        () => BlogModel.findById(id).lean(),
+        () => resolveBlogByIdentifier(BlogModel, id),
         CACHE_TTL.MEDIUM
     );
     return serialize(blog);
@@ -273,6 +282,8 @@ export async function getPublishedBlogs() {
     if (!hasCacheHit(CACHE_KEYS.BLOGS_PUBLISHED)) {
         await dbConnect();
     }
+
+    await backfillMissingBlogSlugs(BlogModel);
 
     const blogs = await cache.getOrSet(
         CACHE_KEYS.BLOGS_PUBLISHED,

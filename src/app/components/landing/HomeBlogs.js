@@ -4,6 +4,7 @@ import React, { useMemo } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { FaArrowRight, FaCalendarAlt, FaPenNib } from 'react-icons/fa';
+import { generateSlug } from '../blogs/blogUtils';
 
 const estimateReadTime = (content = '') => {
   const words = String(content).trim().split(/\s+/).filter(Boolean).length;
@@ -74,8 +75,9 @@ const HomeBlogs = ({ blogs }) => {
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {recentBlogs.map((blog, index) => {
-            const previewText = String(blog?.content || '').replace(/[#*`_\[\]]/g, '').trim();
+            const previewText = String(blog?.content || '').replace(/[#[\]*`_]/g, '').trim();
             const displayText = previewText.length > 160 ? `${previewText.slice(0, 160)}...` : previewText;
+            const blogPath = `/blogs/${blog?.slug || generateSlug(blog?.title) || blog?._id}`;
 
             return (
               <motion.article
@@ -111,7 +113,7 @@ const HomeBlogs = ({ blogs }) => {
                   </span>
                 </div>
 
-                <Link href={`/blogs/${blog?._id}`} className="group-hover:underline" style={{ textDecorationColor: 'var(--accent-cyan)' }}>
+                <Link href={blogPath} className="group-hover:underline" style={{ textDecorationColor: 'var(--accent-cyan)' }}>
                   <h3 className="mb-3 text-xl font-bold leading-snug" style={{ color: 'var(--text-primary)' }}>
                     {blog?.title}
                   </h3>
@@ -123,7 +125,7 @@ const HomeBlogs = ({ blogs }) => {
 
                 <div className="mt-auto border-t pt-4" style={{ borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)' }}>
                   <Link
-                    href={`/blogs/${blog?._id}`}
+                    href={blogPath}
                     className="inline-flex items-center gap-2 text-sm font-semibold"
                     style={{ color: 'var(--accent-cyan)' }}
                   >
