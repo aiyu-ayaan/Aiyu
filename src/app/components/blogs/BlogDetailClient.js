@@ -130,12 +130,14 @@ export default function BlogDetailClient({ blog }) {
       }}
     >
       <div
-        className="pointer-events-none absolute -left-24 top-8 h-72 w-72 rounded-full blur-3xl"
-        style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--accent-cyan) 30%, transparent), transparent 70%)' }}
-      />
-      <div
-        className="pointer-events-none absolute -right-16 top-1/4 h-64 w-64 rounded-full blur-3xl"
-        style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--accent-purple) 24%, transparent), transparent 70%)' }}
+        className="pointer-events-none absolute inset-x-0 top-0 h-[420px] opacity-80"
+        style={{
+          backgroundImage: `
+            radial-gradient(circle at 14% 14%, color-mix(in srgb, var(--accent-cyan) 16%, transparent), transparent 26%),
+            radial-gradient(circle at 86% 22%, color-mix(in srgb, var(--accent-purple) 14%, transparent), transparent 24%),
+            linear-gradient(180deg, color-mix(in srgb, var(--bg-surface) 18%, transparent), transparent 74%)
+          `,
+        }}
       />
 
       <div className="relative mx-auto max-w-6xl">
@@ -284,6 +286,8 @@ export default function BlogDetailClient({ blog }) {
             background:
               'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 95%, transparent), color-mix(in srgb, var(--bg-secondary) 95%, transparent))',
             borderColor: 'color-mix(in srgb, var(--border-secondary) 74%, transparent)',
+            contentVisibility: 'auto',
+            containIntrinsicSize: '1px 1400px',
           }}
         >
           <div
@@ -366,6 +370,8 @@ export default function BlogDetailClient({ blog }) {
               borderColor: 'color-mix(in srgb, var(--border-secondary) 74%, transparent)',
               background:
                 'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 94%, transparent), color-mix(in srgb, var(--bg-secondary) 94%, transparent))',
+              contentVisibility: 'auto',
+              containIntrinsicSize: '1px 540px',
             }}
           >
             <h2 className="mb-5 text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
