@@ -247,6 +247,10 @@ MONGODB_URI=mongodb://admin:YOUR_GENERATED_PASSWORD@mongodb:27017/aiyu?authSourc
 MONGO_ROOT_USERNAME=admin
 MONGO_ROOT_PASSWORD=YOUR_GENERATED_PASSWORD  # Must match password in MONGODB_URI!
 
+# Redis Cache (recommended)
+REDIS_URL=redis://redis:6379/0
+REDIS_DEFAULT_TTL_SECONDS=30
+
 # Admin Credentials
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD=YourSecurePassword123!  # Change this! (min 12 chars)
@@ -260,9 +264,14 @@ BLOG_API_KEY=your_32_character_generated_key
 # SEO Configuration
 NEXT_PUBLIC_BASE_URL=https://yourdomain.com  # Your website URL
 NEXT_PUBLIC_AUTHOR_NAME=Your Name  # Your name for SEO
+SITE_URL=https://yourdomain.com
 
 # Optional: n8n Webhook for contact form
 NEXT_PUBLIC_N8N_WEBHOOK_URL=https://your-n8n-instance/webhook/contact
+
+# Optional compose controls
+APP_PORT=3000
+APP_IMAGE_TAG=latest
 ```
 
 > 💡 **Tip**: Never use default passwords! The security of your admin panel depends on strong credentials.
@@ -273,7 +282,7 @@ NEXT_PUBLIC_N8N_WEBHOOK_URL=https://your-n8n-instance/webhook/contact
 # Build with security hardening
 npm run docker:build
 
-# Start all services (app + MongoDB)
+# Start all services (app + MongoDB + Redis + Nginx in docker-compose.yml)
 npm run docker:up
 
 # View logs
@@ -358,138 +367,68 @@ No `git pull`, no rebuilding — the CI/CD pipeline builds and pushes the image 
 
 > 💡 **Tip**: Run `docker image prune -f` afterwards to remove the old image and free up disk space.
 
-### 🐳 docker-compose.yml
+### 🐳 Docker Compose Files
 
-The full compose file that powers the stack. Save this as `docker-compose.yml` in your project root (already included in the repo):
+This repo now ships with **two compose files**:
 
-```yaml
-services:
-  # MongoDB Database Service
-  mongodb:
-    image: mongo:7
-    container_name: aiyu-mongodb
-    restart: unless-stopped
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
-    # Port mapping commented out for security - app accesses via internal network
-    # ports:
-    #   - "27017:27017"
-    volumes:
-      - mongodb_data:/data/db
-      - mongodb_config:/data/configdb
-    networks:
-      - aiyu-network
-    healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')", "--quiet"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
+- `docker-compose.yml` for **production-style runs** (prebuilt app image + Nginx reverse proxy)
+- `docker-compose-local.yml` for **local image builds** (build from current source, app exposed directly)
 
-  # Next.js Application Service
-  app:
-    image: aiyuayaan/aiyu
-    container_name: aiyu-app
-    restart: unless-stopped
-    expose:
-      - "3000"
-    environment:
-      MONGODB_URI: ${MONGODB_URI}
-      NEXT_PUBLIC_N8N_WEBHOOK_URL: ${NEXT_PUBLIC_N8N_WEBHOOK_URL}
-      NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL}
-      SITE_URL: ${SITE_URL}
-      NEXT_PUBLIC_AUTHOR_NAME: ${NEXT_PUBLIC_AUTHOR_NAME}
-      ADMIN_USERNAME: ${ADMIN_USERNAME}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
-      JWT_SECRET: ${JWT_SECRET}
-      BLOG_API_KEY: ${BLOG_API_KEY}
-      NODE_ENV: production
-    volumes:
-      - uploads_data:/app/public/uploads
-      - nextjs_cache:/app/.next/cache
-    tmpfs:
-      - /tmp:noexec,nosuid,nodev,mode=1777,size=100M
-      - /var/tmp:noexec,nosuid,nodev,mode=1777,size=50M
-      - /run:noexec,nosuid,nodev,mode=755,size=10M
-    cap_drop:
-      - ALL
-    cap_add:
-      - NET_BIND_SERVICE
-      - NET_RAW
-    security_opt:
-      - no-new-privileges:true
-    read_only: true
-    deploy:
-      resources:
-        limits:
-          cpus: "1.5"
-          memory: 768M
-        reservations:
-          cpus: "0.5"
-          memory: 384M
-    healthcheck:
-      test: ["CMD", "sh", "/app/healthcheck.sh"]
-      interval: 15s
-      timeout: 10s
-      retries: 12
-      start_period: 150s
-    depends_on:
-      mongodb:
-        condition: service_healthy
-    networks:
-      - aiyu-network
+#### `docker-compose.yml` (Production-Style)
 
-  # Nginx Reverse Proxy (gzip, caching, rate limiting)
-  nginx:
-    image: nginx:alpine
-    container_name: aiyu-nginx
-    restart: unless-stopped
-    ports:
-      - "${APP_PORT:-3000}:80"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./public:/srv/public:ro
-      - uploads_data:/srv/uploads:ro
-      - nginx_cache:/var/cache/nginx
-    depends_on:
-      app:
-        condition: service_started
-    networks:
-      - aiyu-network
-    deploy:
-      resources:
-        limits:
-          cpus: "0.5"
-          memory: 128M
-        reservations:
-          cpus: "0.1"
-          memory: 64M
-    healthcheck:
-      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:80/nginx-health || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 5
-      start_period: 20s
+Use this when you want to run like production and pull a published image:
 
-volumes:
-  mongodb_data:
-  mongodb_config:
-  nextjs_cache:
-  uploads_data:
-  nginx_cache:
-
-networks:
-  aiyu-network:
-    driver: bridge
+```bash
+docker compose -f docker-compose.yml pull
+docker compose -f docker-compose.yml up -d
 ```
 
-**Stack overview**:
+Key services and new additions:
+
+- `mongodb` (`mongo:7`) with healthcheck and persistent `mongodb_data`/`mongodb_config` volumes
+- `redis` (`redis:7-alpine`) added for shared API cache (`REDIS_URL`, `REDIS_DEFAULT_TTL_SECONDS`)
+- `app` now uses Docker Hub image tag `aiyuayaan/aiyu:${APP_IMAGE_TAG:-latest}`
+- `app` includes `SITE_URL`, Redis env vars, and depends on both MongoDB and Redis health
+- `nginx` reverse proxy in front of app for gzip, static asset caching, and route-level proxy behavior
+- `nginx_cache` volume added for proxy cache persistence
+
+#### `docker-compose-local.yml` (Local Build Profile)
+
+Use this when developing or validating local Docker changes from current source:
+
+```bash
+docker compose -f docker-compose-local.yml build --no-cache
+docker compose -f docker-compose-local.yml up -d
+```
+
+Key differences from production-style compose:
+
+- `app` is built from local `Dockerfile` with build args:
+  - `NEXT_PUBLIC_N8N_WEBHOOK_URL`
+  - `NEXT_PUBLIC_BASE_URL`
+  - `NEXT_PUBLIC_AUTHOR_NAME`
+- `app` binds directly to host port `${APP_PORT:-3000}:3000` (no Nginx service)
+- `redis` is still included and wired the same way for cache behavior parity
+- local profile keeps explicit CPU/RAM `deploy.resources` limits for app service
+
+#### Compose Comparison
+
+| Area | `docker-compose.yml` | `docker-compose-local.yml` |
+|---|---|---|
+| App source | Pull image `aiyuayaan/aiyu:${APP_IMAGE_TAG:-latest}` | Build from local source |
+| Public entrypoint | `nginx` on `${APP_PORT:-3000}:80` | `app` on `${APP_PORT:-3000}:3000` |
+| Redis cache | Yes | Yes |
+| Nginx proxy/cache | Yes (`nginx_cache` volume) | No |
+| App health start window | Longer (`start_period: 150s`) | Shorter (`start_period: 40s`) |
+
+#### Services Overview
+
 | Service | Image | Role |
-|---------|-------|------|
-| `mongodb` | `mongo:7` | Database — internal only, not exposed to host |
-| `app` | `aiyuayaan/aiyu` | Next.js app — pulled from Docker Hub on each release |
-| `nginx` | `nginx:alpine` | Reverse proxy — handles gzip, caching, rate limiting, serves on `APP_PORT` (default `3000`) |
+|---|---|---|
+| `mongodb` | `mongo:7` | Persistent database (internal network) |
+| `redis` | `redis:7-alpine` | Shared cache for API/database responses |
+| `app` | `aiyuayaan/aiyu:${APP_IMAGE_TAG:-latest}` or local build | Next.js standalone app |
+| `nginx` | `nginx:alpine` | Reverse proxy + static/cache layer (`docker-compose.yml` only) |
 
 ## 💻 Manual Installation (Development)
 
@@ -588,11 +527,16 @@ npm run build            # Build production bundle
 npm run start            # Start production server
 npm run lint             # Run ESLint
 
-# Docker Operations
-npm run docker:build     # Build Docker images
-npm run docker:up        # Start Docker containers
-npm run docker:down      # Stop Docker containers
-npm run docker:logs      # View container logs
+# Docker Operations (default: docker-compose.yml)
+npm run docker:build     # Build images using docker-compose.yml
+npm run docker:up        # Start containers using docker-compose.yml
+npm run docker:down      # Stop containers using docker-compose.yml
+npm run docker:logs      # View app logs using docker-compose.yml
+
+# Docker Operations (local build profile)
+docker compose -f docker-compose-local.yml build --no-cache
+docker compose -f docker-compose-local.yml up -d
+docker compose -f docker-compose-local.yml down
 
 # Updating (pull latest image from Docker Hub and restart)
 docker compose pull && docker compose up -d

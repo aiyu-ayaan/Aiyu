@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 
 const TypewriterEffect = ({ roles }) => {
@@ -10,9 +10,19 @@ const TypewriterEffect = ({ roles }) => {
 
   const timeoutRef = useRef(null);
   const cursorIntervalRef = useRef(null);
+  const resolvedRoles = useMemo(() => {
+    const safeRoles = Array.isArray(roles)
+      ? roles
+        .filter((role) => typeof role === 'string' && role.trim().length > 0)
+        .map((role) => role.trim())
+      : [];
+
+    return safeRoles.length > 0 ? safeRoles : ['Software Developer'];
+  }, [roles]);
 
   useEffect(() => {
-    const currentRole = roles[currentIndex];
+    const safeIndex = currentIndex % resolvedRoles.length;
+    const currentRole = resolvedRoles[safeIndex];
     let charIndex = 0;
     let isDeleting = false;
 
@@ -38,7 +48,7 @@ const TypewriterEffect = ({ roles }) => {
           charIndex--;
           timeoutRef.current = setTimeout(typeWriter, 50);
         } else {
-          setCurrentIndex((prev) => (prev + 1) % roles.length);
+          setCurrentIndex((prev) => (prev + 1) % resolvedRoles.length);
         }
       }
     };
@@ -50,7 +60,7 @@ const TypewriterEffect = ({ roles }) => {
         clearTimeout(timeoutRef.current);
       }
     };
-  }, [currentIndex, roles]);
+  }, [currentIndex, resolvedRoles]);
 
   useEffect(() => {
     cursorIntervalRef.current = setInterval(() => {

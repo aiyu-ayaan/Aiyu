@@ -48,8 +48,6 @@ next-env.d.ts
 # wiki folder
 /wiki
 /Aiyu.wiki
-test.js
 
-docker-compose-local.yml
 lint
 releasenote.md

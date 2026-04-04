@@ -66,34 +66,6 @@ const nextConfig = {
 
   // Turbopack config (Next.js 16 default bundler)
   turbopack: {},
-
-  // Bundle analyzer for optimization (used with --webpack flag)
-  webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
-    if (!dev && !isServer) {
-      config.optimization.splitChunks.cacheGroups = {
-        ...config.optimization.splitChunks.cacheGroups,
-        vendor: {
-          test: /[\\/]node_modules[\\/]/,
-          name: 'vendors',
-          chunks: 'all',
-          priority: 10,
-        },
-        framer: {
-          test: /[\\/]node_modules[\\/]framer-motion[\\/]/,
-          name: 'framer-motion',
-          chunks: 'all',
-          priority: 20,
-        },
-        icons: {
-          test: /[\\/]node_modules[\\/](react-icons|lucide-react)[\\/]/,
-          name: 'icons',
-          chunks: 'all',
-          priority: 15,
-        },
-      };
-    }
-    return config;
-  },
 };
 
 
