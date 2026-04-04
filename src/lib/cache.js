@@ -8,12 +8,16 @@
 import { getRedisClient } from '@/lib/redis';
 
 const REDIS_KEY_REGISTRY = 'db:cache:keys';
+const DEFAULT_REDIS_TTL_SECONDS = Number.parseInt(process.env.REDIS_DEFAULT_TTL_SECONDS || '60', 10);
+const SAFE_DEFAULT_REDIS_TTL_SECONDS = Number.isFinite(DEFAULT_REDIS_TTL_SECONDS) && DEFAULT_REDIS_TTL_SECONDS > 0
+    ? DEFAULT_REDIS_TTL_SECONDS
+    : 60;
 
 class MemoryCache {
     constructor() {
         this.cache = new Map();
         this.pending = new Map();
-        this.defaultTTL = 60 * 1000; // 60 seconds
+        this.defaultTTL = SAFE_DEFAULT_REDIS_TTL_SECONDS * 1000;
         this.redis = getRedisClient();
     }
 
@@ -254,4 +258,3 @@ export const CACHE_TTL = {
     LONG: 5 * 60 * 1000,
     VERY_LONG: 15 * 60 * 1000,
 };
-
