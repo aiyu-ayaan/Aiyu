@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { Search } from 'lucide-react';
 
 const getStatusMeta = (status) => {
     const normalizedStatus = String(status || '').trim().toLowerCase();
@@ -35,6 +36,7 @@ export default function AdminProjects() {
     const [isSavingOrder, setIsSavingOrder] = useState(false);
     const [draggedIndex, setDraggedIndex] = useState(null);
     const [dragOverIndex, setDragOverIndex] = useState(null);
+    const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
         fetchProjects();
@@ -148,6 +150,11 @@ export default function AdminProjects() {
 
     if (loading) return <div className="p-8 text-white">Loading...</div>;
 
+    const filteredProjects = projects.filter(p => 
+        (p.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
+        (p.projectType || '').toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
     return (
         <div className="p-8 max-w-7xl mx-auto">
             <div className="mb-8">
@@ -171,6 +178,20 @@ export default function AdminProjects() {
                 </div>
             </div>
 
+            <div className="mb-6 relative max-w-2xl">
+                <div className="absolute -inset-1 bg-linear-to-r from-cyan-500 to-purple-600 rounded-2xl blur opacity-20 group-focus-within:opacity-40 transition duration-1000 group-focus-within:duration-200"></div>
+                <div className="relative group">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-cyan-400 transition-colors" size={18} />
+                    <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search projects..."
+                        className="w-full bg-slate-900/80 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-slate-200 focus:outline-none focus:border-cyan-500/50 shadow-inner transition-all"
+                    />
+                </div>
+            </div>
+
             <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
@@ -185,7 +206,7 @@ export default function AdminProjects() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/10 text-sm">
-                            {projects.map((project, index) => {
+                            {filteredProjects.map((project, index) => {
                                 const statusMeta = getStatusMeta(project.status);
                                 const isDragging = draggedIndex === index;
                                 const isDragTarget = dragOverIndex === index && draggedIndex !== index;
@@ -249,10 +270,10 @@ export default function AdminProjects() {
                                     </motion.tr>
                                 );
                             })}
-                            {projects.length === 0 && !loading && (
+                            {filteredProjects.length === 0 && !loading && (
                                 <tr>
                                     <td colSpan="6" className="px-6 py-12 text-center text-slate-500">
-                                        No projects found in the database.
+                                        No projects found matching your search.
                                     </td>
                                 </tr>
                             )}
