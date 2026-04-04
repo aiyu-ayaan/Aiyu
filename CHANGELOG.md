@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.4.1](https://github.com/aiyu-ayaan/Aiyu/compare/v3.4.0...v3.4.1) (2026-04-04)
+
+
+### Bug Fixes
+
+* enhance Docker setup with Redis and PM2 support, update README and add local compose file ([017102d](https://github.com/aiyu-ayaan/Aiyu/commit/017102dd4b40cef0f7b01f54502d6f0068221219))
+
 ## [3.4.0](https://github.com/aiyu-ayaan/Aiyu/compare/v3.3.0...v3.4.0) (2026-04-04)
 
 
