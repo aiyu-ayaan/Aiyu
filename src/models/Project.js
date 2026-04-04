@@ -8,6 +8,7 @@ const ProjectSchema = new mongoose.Schema({
     projectType: { type: String, required: true },
     description: { type: String, required: true },
     codeLink: { type: String, required: false },
+    blogLink: { type: String, required: false },
     image: { type: String, required: false },
     displayOrder: { type: Number, required: false, default: 0 },
 });

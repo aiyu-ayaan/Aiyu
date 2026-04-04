@@ -130,12 +130,14 @@ export default function BlogDetailClient({ blog }) {
       }}
     >
       <div
-        className="pointer-events-none absolute -left-24 top-8 h-72 w-72 rounded-full blur-3xl"
-        style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--accent-cyan) 30%, transparent), transparent 70%)' }}
-      />
-      <div
-        className="pointer-events-none absolute -right-16 top-1/4 h-64 w-64 rounded-full blur-3xl"
-        style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--accent-purple) 24%, transparent), transparent 70%)' }}
+        className="pointer-events-none absolute left-1/2 top-[-140px] h-[560px] w-[min(1180px,140vw)] -translate-x-1/2 opacity-60"
+        style={{
+          backgroundImage: `
+            radial-gradient(ellipse at 20% 32%, color-mix(in srgb, var(--accent-cyan) 16%, transparent), transparent 28%),
+            radial-gradient(ellipse at 80% 24%, color-mix(in srgb, var(--accent-purple) 14%, transparent), transparent 26%),
+            radial-gradient(ellipse at 50% 18%, color-mix(in srgb, var(--bg-surface) 24%, transparent), transparent 58%)
+          `,
+        }}
       />
 
       <div className="relative mx-auto max-w-6xl">
@@ -284,6 +286,8 @@ export default function BlogDetailClient({ blog }) {
             background:
               'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 95%, transparent), color-mix(in srgb, var(--bg-secondary) 95%, transparent))',
             borderColor: 'color-mix(in srgb, var(--border-secondary) 74%, transparent)',
+            contentVisibility: 'auto',
+            containIntrinsicSize: '1px 1400px',
           }}
         >
           <div
@@ -366,6 +370,8 @@ export default function BlogDetailClient({ blog }) {
               borderColor: 'color-mix(in srgb, var(--border-secondary) 74%, transparent)',
               background:
                 'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 94%, transparent), color-mix(in srgb, var(--bg-secondary) 94%, transparent))',
+              contentVisibility: 'auto',
+              containIntrinsicSize: '1px 540px',
             }}
           >
             <h2 className="mb-5 text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>

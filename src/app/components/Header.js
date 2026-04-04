@@ -56,6 +56,7 @@ export default function Header({ data, logoText, socialData, config }) {
   const displayLogo = logoText || "< aiyu />";
 
   const pathname = usePathname();
+  const isContentHeavyRoute = pathname?.startsWith('/blogs/');
   const { theme } = useTheme();
   const { scrollYProgress } = useScroll();
 
@@ -129,12 +130,16 @@ export default function Header({ data, logoText, socialData, config }) {
           className="mx-auto w-full max-w-7xl rounded-2xl border transition-all duration-300"
           style={{
             background: scrolled
-              ? 'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 90%, transparent), color-mix(in srgb, var(--bg-secondary) 92%, transparent))'
-              : 'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 70%, transparent), color-mix(in srgb, var(--bg-secondary) 70%, transparent))',
+              ? isContentHeavyRoute
+                ? 'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 96%, transparent), color-mix(in srgb, var(--bg-secondary) 97%, transparent))'
+                : 'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 90%, transparent), color-mix(in srgb, var(--bg-secondary) 92%, transparent))'
+              : isContentHeavyRoute
+                ? 'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 88%, transparent), color-mix(in srgb, var(--bg-secondary) 90%, transparent))'
+                : 'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 70%, transparent), color-mix(in srgb, var(--bg-secondary) 70%, transparent))',
             borderColor: scrolled
               ? 'color-mix(in srgb, var(--border-secondary) 75%, transparent)'
               : 'color-mix(in srgb, var(--border-secondary) 40%, transparent)',
-            backdropFilter: 'blur(18px)',
+            backdropFilter: isContentHeavyRoute ? 'blur(8px)' : 'blur(18px)',
             boxShadow: scrolled
               ? '0 14px 36px color-mix(in srgb, var(--shadow-md) 85%, transparent)'
               : '0 8px 22px color-mix(in srgb, var(--shadow-sm) 60%, transparent)',

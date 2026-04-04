@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { FaArrowRight, FaClock } from 'react-icons/fa';
 import {
   formatBlogDate,
+  generateSlug,
   getBlogInitials,
   getBlogPlaceholderGradient,
   getReadTime,
@@ -13,11 +14,7 @@ import {
 } from './blogUtils';
 
 const BlogCard = ({ blog, featured = false }) => {
-  const [imageError, setImageError] = useState(false);
-
-  useEffect(() => {
-    setImageError(false);
-  }, [blog?.image]);
+  const [failedImageSrc, setFailedImageSrc] = useState('');
 
   const cleanExcerpt = stripMarkdown(blog?.content || '');
   const excerpt = cleanExcerpt.length > (featured ? 240 : 140)
@@ -26,7 +23,8 @@ const BlogCard = ({ blog, featured = false }) => {
 
   const tags = Array.isArray(blog?.tags) ? blog.tags : [];
   const hasImage = Boolean(blog?.image && String(blog.image).trim() !== '');
-  const showPlaceholder = !hasImage || imageError;
+  const showPlaceholder = !hasImage || failedImageSrc === blog?.image;
+  const blogPath = `/blogs/${blog?.slug || generateSlug(blog?.title) || blog?._id}`;
 
   return (
     <motion.article
@@ -51,7 +49,7 @@ const BlogCard = ({ blog, featured = false }) => {
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
             loading="lazy"
             decoding="async"
-            onError={() => setImageError(true)}
+            onError={() => setFailedImageSrc(blog?.image || '')}
           />
         ) : (
           <div
@@ -115,7 +113,7 @@ const BlogCard = ({ blog, featured = false }) => {
         )}
 
         <Link
-          href={`/blogs/${blog?._id}`}
+          href={blogPath}
           className="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold"
           style={{
             borderColor: 'var(--accent-cyan)',

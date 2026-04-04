@@ -18,6 +18,115 @@ import AdmZip from "adm-zip";
 import { join } from "path";
 import { writeFile, mkdir } from "fs/promises";
 
+function isZipBuffer(buffer) {
+    return buffer.length >= 4
+        && buffer[0] === 0x50
+        && buffer[1] === 0x4b;
+}
+
+function parseZipImport(fileBuffer) {
+    const zip = new AdmZip(fileBuffer);
+    const zipEntries = zip.getEntries();
+
+    const dataEntry = zipEntries.find((entry) => !entry.isDirectory && /(^|\/)data\.json$/i.test(entry.entryName));
+    if (!dataEntry) {
+        throw new Error("ZIP does not contain data.json");
+    }
+
+    let jsonData;
+    try {
+        jsonData = JSON.parse(dataEntry.getData().toString('utf8'));
+    } catch {
+        throw new Error("Invalid JSON in data.json");
+    }
+
+    const imageEntries = zipEntries.filter((entry) =>
+        !entry.isDirectory && /(^|\/)uploads\/.+/i.test(entry.entryName)
+    );
+
+    return { jsonData, imageEntries };
+}
+
+function parseJsonImport(fileBuffer) {
+    try {
+        return JSON.parse(fileBuffer.toString('utf8'));
+    } catch {
+        throw new Error("INVALID_JSON_STRUCTURE");
+    }
+}
+
+async function parseImportPayload(request) {
+    const contentType = request.headers.get('content-type') || '';
+    const headerFileName = (request.headers.get('x-backup-filename') || '').toLowerCase();
+
+    if (contentType.includes('multipart/form-data')) {
+        let formData;
+        try {
+            formData = await request.formData();
+        } catch {
+            throw new Error("Failed to read multipart upload. Try selecting the backup again.");
+        }
+
+        const file = formData.get('file');
+
+        if (!file) {
+            throw new Error("No file uploaded");
+        }
+
+        const fileBuffer = Buffer.from(await file.arrayBuffer());
+        const fileName = (file.name || '').toLowerCase();
+        const isZipFile = fileName.endsWith('.zip')
+            || file.type === 'application/zip'
+            || file.type === 'application/x-zip-compressed'
+            || isZipBuffer(fileBuffer);
+
+        if (isZipFile) {
+            return parseZipImport(fileBuffer);
+        }
+
+        return {
+            jsonData: parseJsonImport(fileBuffer),
+            imageEntries: [],
+        };
+    }
+
+    if (contentType.includes('application/json')) {
+        return {
+            jsonData: await request.json(),
+            imageEntries: [],
+        };
+    }
+
+    const fileBuffer = Buffer.from(await request.arrayBuffer());
+    if (!fileBuffer.length) {
+        throw new Error("No file uploaded");
+    }
+
+    const isZipFile = headerFileName.endsWith('.zip')
+        || contentType.includes('application/zip')
+        || contentType.includes('application/x-zip-compressed')
+        || isZipBuffer(fileBuffer);
+
+    if (isZipFile) {
+        return parseZipImport(fileBuffer);
+    }
+
+    const isJsonFile = headerFileName.endsWith('.json')
+        || contentType.includes('application/octet-stream')
+        || contentType.includes('text/json')
+        || contentType.includes('application/json')
+        || contentType.includes('text/plain');
+
+    if (isJsonFile) {
+        return {
+            jsonData: parseJsonImport(fileBuffer),
+            imageEntries: [],
+        };
+    }
+
+    throw new Error("Unsupported backup format");
+}
+
 export async function POST(request) {
     try {
         await dbConnect();
@@ -27,65 +136,21 @@ export async function POST(request) {
             return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
         }
 
-        const contentType = request.headers.get('content-type') || '';
         let jsonData;
         let imageEntries = [];
 
-        if (contentType.includes('multipart/form-data')) {
-            // Handle ZIP or JSON file upload via FormData
-            const formData = await request.formData();
-            const file = formData.get('file');
-
-            if (!file) {
-                return NextResponse.json({ success: false, error: "No file uploaded" }, { status: 400 });
-            }
-
-            const fileBuffer = Buffer.from(await file.arrayBuffer());
-            const fileName = (file.name || '').toLowerCase();
-            const isZipBySignature = fileBuffer.length >= 4
-                && fileBuffer[0] === 0x50
-                && fileBuffer[1] === 0x4b;
-            const isZipFile = fileName.endsWith('.zip')
-                || file.type === 'application/zip'
-                || file.type === 'application/x-zip-compressed'
-                || isZipBySignature;
-
-            if (isZipFile) {
-                // Process ZIP file
-                const zip = new AdmZip(fileBuffer);
-                const zipEntries = zip.getEntries();
-
-                // Find and parse data.json
-                const dataEntry = zipEntries.find(e => !e.isDirectory && /(^|\/)data\.json$/i.test(e.entryName));
-                if (!dataEntry) {
-                    return NextResponse.json({ success: false, error: "ZIP does not contain data.json" }, { status: 400 });
-                }
-
-                try {
-                    jsonData = JSON.parse(dataEntry.getData().toString('utf8'));
-                } catch {
-                    return NextResponse.json({ success: false, error: "Invalid JSON in data.json" }, { status: 400 });
-                }
-
-                // Collect image entries from uploads/ folder
-                imageEntries = zipEntries.filter(e =>
-                    !e.isDirectory && /(^|\/)uploads\/.+/i.test(e.entryName)
-                );
-            } else {
-                // Legacy JSON file upload
-                try {
-                    jsonData = JSON.parse(fileBuffer.toString('utf8'));
-                } catch {
-                    return NextResponse.json({ success: false, error: "INVALID_JSON_STRUCTURE" }, { status: 400 });
-                }
-            }
-        } else {
-            // Legacy: direct JSON body (backward compat)
-            try {
-                jsonData = await request.json();
-            } catch {
-                return NextResponse.json({ success: false, error: "INVALID_JSON_STRUCTURE" }, { status: 400 });
-            }
+        try {
+            const parsedPayload = await parseImportPayload(request);
+            jsonData = parsedPayload.jsonData;
+            imageEntries = parsedPayload.imageEntries;
+        } catch (parseError) {
+            return NextResponse.json(
+                {
+                    success: false,
+                    error: parseError.message || "Failed to parse import payload",
+                },
+                { status: 400 }
+            );
         }
 
         // Basic validation

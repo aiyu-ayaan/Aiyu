@@ -25,6 +25,21 @@ services:
       retries: 5
       start_period: 10s
 
+  # Redis Cache Service (shared API cache)
+  redis:
+    image: redis:7-alpine
+    container_name: aiyu-redis
+    restart: unless-stopped
+    command: [ "redis-server", "--save", "", "--appendonly", "no", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru" ]
+    networks:
+      - aiyu-network
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
   # Next.js Application Service
   app:
     image: aiyuayaan/aiyu:${APP_IMAGE_TAG:-latest}
@@ -42,6 +57,8 @@ services:
       NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL}
       SITE_URL: ${SITE_URL}
       NEXT_PUBLIC_AUTHOR_NAME: ${NEXT_PUBLIC_AUTHOR_NAME}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      REDIS_DEFAULT_TTL_SECONDS: ${REDIS_DEFAULT_TTL_SECONDS:-30}
       # Admin credentials
       ADMIN_USERNAME: ${ADMIN_USERNAME}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
@@ -50,8 +67,7 @@ services:
 
       # Node environment
       NODE_ENV: production
-      # Memory limits removed for V8 heap
-      # NODE_OPTIONS: --max-old-space-size=512
+      NODE_OPTIONS: --max-old-space-size=512
     volumes:
       # Persistent uploads directory (named volume for proper permissions)
       - uploads_data:/app/public/uploads
@@ -86,6 +102,8 @@ services:
       start_period: 150s
     depends_on:
       mongodb:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     networks:
       - aiyu-network

@@ -10,6 +10,7 @@ const ConfigSchema = new mongoose.Schema({
     },
     logoText: { type: String, default: '< aiyu />' },
     siteTitle: { type: String, default: '' },
+    ogImage: { type: String, default: '' },
     favicon: {
         value: { type: String, default: '' }, // Base64
         filename: { type: String, default: '' },

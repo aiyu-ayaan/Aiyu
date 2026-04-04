@@ -22,14 +22,19 @@ const getBlogPublishTimestamp = (blog) => {
   return 0;
 };
 
-const BlogList = () => {
-  const [blogs, setBlogs] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [config, setConfig] = useState(null);
+const BlogList = ({ initialBlogs, initialConfig }) => {
+  const hasInitialData = initialBlogs !== undefined || initialConfig !== undefined;
+  const [blogs, setBlogs] = useState(Array.isArray(initialBlogs) ? initialBlogs : []);
+  const [loading, setLoading] = useState(!hasInitialData);
+  const [config, setConfig] = useState(initialConfig ?? null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTag, setSelectedTag] = useState('All');
 
   useEffect(() => {
+    if (hasInitialData) {
+      return;
+    }
+
     let isMounted = true;
 
     const fetchBlogs = async () => {
@@ -59,7 +64,7 @@ const BlogList = () => {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [hasInitialData]);
 
   const allTags = useMemo(() => {
     const tagSet = new Set();
