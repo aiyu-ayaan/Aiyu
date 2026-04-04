@@ -86,8 +86,14 @@ function serialize(data) {
     return JSON.parse(JSON.stringify(data));
 }
 
-function hasCacheHit(key) {
-    return cache.get(key) !== null;
+function createDbEnsurer() {
+    let connectionPromise = null;
+    return async () => {
+        if (!connectionPromise) {
+            connectionPromise = dbConnect();
+        }
+        await connectionPromise;
+    };
 }
 
 function sanitizeConfigForPublic(configData) {
@@ -130,18 +136,25 @@ function toBlogPreview(blogs, maxLength = 320) {
  * Fetch all data needed for the site layout (header, footer, config)
  */
 export async function getLayoutData() {
-    const requiredKeys = [CACHE_KEYS.HEADER, CACHE_KEYS.SOCIALS, CACHE_KEY_CONFIG_LAYOUT, CACHE_KEY_ABOUT_LAYOUT];
-    if (!requiredKeys.every(hasCacheHit)) {
-        await dbConnect();
-    }
-
-    await backfillMissingBlogSlugs(BlogModel);
+    const ensureDb = createDbEnsurer();
 
     const [headerData, socialData, configData, aboutData] = await Promise.all([
-        cache.getOrSet(CACHE_KEYS.HEADER, () => HeaderModel.findOne().lean(), CACHE_TTL.LONG),
-        cache.getOrSet(CACHE_KEYS.SOCIALS, () => SocialModel.find().lean(), CACHE_TTL.LONG),
-        cache.getOrSet(CACHE_KEY_CONFIG_LAYOUT, () => ConfigModel.findOne().select(CONFIG_PUBLIC_SELECT).lean(), CACHE_TTL.LONG),
-        cache.getOrSet(CACHE_KEY_ABOUT_LAYOUT, () => AboutModel.findOne().select('name').lean(), CACHE_TTL.LONG),
+        cache.getOrSet(CACHE_KEYS.HEADER, async () => {
+            await ensureDb();
+            return HeaderModel.findOne().lean();
+        }, CACHE_TTL.LONG),
+        cache.getOrSet(CACHE_KEYS.SOCIALS, async () => {
+            await ensureDb();
+            return SocialModel.find().lean();
+        }, CACHE_TTL.LONG),
+        cache.getOrSet(CACHE_KEY_CONFIG_LAYOUT, async () => {
+            await ensureDb();
+            return ConfigModel.findOne().select(CONFIG_PUBLIC_SELECT).lean();
+        }, CACHE_TTL.LONG),
+        cache.getOrSet(CACHE_KEY_ABOUT_LAYOUT, async () => {
+            await ensureDb();
+            return AboutModel.findOne().select('name').lean();
+        }, CACHE_TTL.LONG),
     ]);
 
     return {
@@ -156,31 +169,36 @@ export async function getLayoutData() {
  * Fetch all data needed for the home page.
  */
 export async function getHomePageData() {
-    const requiredKeys = [
-        CACHE_KEYS.HOME,
-        CACHE_KEY_ABOUT_HOME,
-        CACHE_KEY_PROJECTS_HOME,
-        CACHE_KEYS.BLOGS_RECENT,
-        CACHE_KEY_CONFIG_PUBLIC,
-    ];
-
-    if (!requiredKeys.every(hasCacheHit)) {
-        await dbConnect();
-    }
+    const ensureDb = createDbEnsurer();
 
     const [homeData, aboutData, projectsData, blogsData, configData] = await Promise.all([
-        cache.getOrSet(CACHE_KEYS.HOME, () => HomeModel.findOne().lean(), CACHE_TTL.LONG),
-        cache.getOrSet(CACHE_KEY_ABOUT_HOME, () => AboutModel.findOne().select(HOME_ABOUT_SELECT).lean(), CACHE_TTL.LONG),
+        cache.getOrSet(CACHE_KEYS.HOME, async () => {
+            await ensureDb();
+            return HomeModel.findOne().lean();
+        }, CACHE_TTL.LONG),
+        cache.getOrSet(CACHE_KEY_ABOUT_HOME, async () => {
+            await ensureDb();
+            return AboutModel.findOne().select(HOME_ABOUT_SELECT).lean();
+        }, CACHE_TTL.LONG),
         cache.getOrSet(
             CACHE_KEY_PROJECTS_HOME,
-            () => ProjectModel.find().sort({ year: -1 }).limit(2).select(HOME_PROJECTS_SELECT).lean(),
+            async () => {
+                await ensureDb();
+                return ProjectModel.find().sort({ year: -1 }).limit(2).select(HOME_PROJECTS_SELECT).lean();
+            },
             CACHE_TTL.LONG
         ),
-        cache.getOrSet(CACHE_KEYS.BLOGS_RECENT, () =>
-            BlogModel.find({ published: { $ne: false } }).sort({ createdAt: -1 }).limit(3).select(HOME_BLOGS_SELECT).lean(),
+        cache.getOrSet(CACHE_KEYS.BLOGS_RECENT, async () => {
+            await ensureDb();
+            await backfillMissingBlogSlugs(BlogModel);
+            return BlogModel.find({ published: { $ne: false } }).sort({ createdAt: -1 }).limit(3).select(HOME_BLOGS_SELECT).lean();
+        },
             CACHE_TTL.MEDIUM
         ),
-        cache.getOrSet(CACHE_KEY_CONFIG_PUBLIC, () => ConfigModel.findOne().select(CONFIG_PUBLIC_SELECT).lean(), CACHE_TTL.LONG),
+        cache.getOrSet(CACHE_KEY_CONFIG_PUBLIC, async () => {
+            await ensureDb();
+            return ConfigModel.findOne().select(CONFIG_PUBLIC_SELECT).lean();
+        }, CACHE_TTL.LONG),
     ]);
 
     return {
@@ -196,13 +214,14 @@ export async function getHomePageData() {
  * Fetch config data only (for metadata generation across all pages)
  */
 export async function getConfigData() {
-    if (!hasCacheHit(CACHE_KEY_CONFIG_PUBLIC)) {
-        await dbConnect();
-    }
+    const ensureDb = createDbEnsurer();
 
     const configData = await cache.getOrSet(
         CACHE_KEY_CONFIG_PUBLIC,
-        () => ConfigModel.findOne().select(CONFIG_PUBLIC_SELECT).lean(),
+        async () => {
+            await ensureDb();
+            return ConfigModel.findOne().select(CONFIG_PUBLIC_SELECT).lean();
+        },
         CACHE_TTL.LONG
     );
     return sanitizeConfigForPublic(configData);
@@ -212,13 +231,14 @@ export async function getConfigData() {
  * Fetch about page data
  */
 export async function getAboutData() {
-    if (!hasCacheHit(CACHE_KEYS.ABOUT)) {
-        await dbConnect();
-    }
+    const ensureDb = createDbEnsurer();
 
     const aboutData = await cache.getOrSet(
         CACHE_KEYS.ABOUT,
-        () => AboutModel.findOne().lean(),
+        async () => {
+            await ensureDb();
+            return AboutModel.findOne().lean();
+        },
         CACHE_TTL.LONG
     );
     return serialize(aboutData);
@@ -228,13 +248,14 @@ export async function getAboutData() {
  * Fetch all projects
  */
 export async function getProjectsData() {
-    if (!hasCacheHit(CACHE_KEYS.PROJECTS)) {
-        await dbConnect();
-    }
+    const ensureDb = createDbEnsurer();
 
     const projectsData = await cache.getOrSet(
         CACHE_KEYS.PROJECTS,
-        () => ProjectModel.find().sort({ year: -1 }).lean(),
+        async () => {
+            await ensureDb();
+            return ProjectModel.find().sort({ year: -1 }).lean();
+        },
         CACHE_TTL.LONG
     );
     return projectsData ? JSON.parse(JSON.stringify(projectsData)) : [];
@@ -244,13 +265,12 @@ export async function getProjectsData() {
  * Fetch all apps / deployments
  */
 export async function getDeploymentsData() {
-    if (!hasCacheHit(CACHE_KEYS.DEPLOYMENTS)) {
-        await dbConnect();
-    }
+    const ensureDb = createDbEnsurer();
 
     const deploymentsData = await cache.getOrSet(
         CACHE_KEYS.DEPLOYMENTS,
         async () => {
+            await ensureDb();
             const deployments = await DeploymentModel.find().lean();
             return sortDeployments(deployments);
         },
@@ -265,14 +285,14 @@ export async function getDeploymentsData() {
  */
 export async function getBlogById(id) {
     const cacheKey = `db:blog:${id}`;
-
-    if (!hasCacheHit(cacheKey)) {
-        await dbConnect();
-    }
+    const ensureDb = createDbEnsurer();
 
     const blog = await cache.getOrSet(
         cacheKey,
-        () => resolveBlogByIdentifier(BlogModel, id),
+        async () => {
+            await ensureDb();
+            return resolveBlogByIdentifier(BlogModel, id);
+        },
         CACHE_TTL.MEDIUM
     );
     return serialize(blog);
@@ -282,15 +302,15 @@ export async function getBlogById(id) {
  * Fetch published blogs
  */
 export async function getPublishedBlogs() {
-    if (!hasCacheHit(CACHE_KEYS.BLOGS_PUBLISHED)) {
-        await dbConnect();
-    }
-
-    await backfillMissingBlogSlugs(BlogModel);
+    const ensureDb = createDbEnsurer();
 
     const blogs = await cache.getOrSet(
         CACHE_KEYS.BLOGS_PUBLISHED,
-        () => BlogModel.find({ published: { $ne: false } }).sort({ createdAt: -1 }).select(BLOG_LIST_SELECT).lean(),
+        async () => {
+            await ensureDb();
+            await backfillMissingBlogSlugs(BlogModel);
+            return BlogModel.find({ published: { $ne: false } }).sort({ createdAt: -1 }).select(BLOG_LIST_SELECT).lean();
+        },
         CACHE_TTL.MEDIUM
     );
     return blogs ? toBlogPreview(blogs, 500) : [];
@@ -300,13 +320,14 @@ export async function getPublishedBlogs() {
  * Fetch all gallery items.
  */
 export async function getGalleryData() {
-    if (!hasCacheHit(CACHE_KEYS.GALLERY)) {
-        await dbConnect();
-    }
+    const ensureDb = createDbEnsurer();
 
     const galleryData = await cache.getOrSet(
         CACHE_KEYS.GALLERY,
-        () => GalleryModel.find({}).sort({ isPinned: -1, order: 1, createdAt: -1 }).select(GALLERY_LIST_SELECT).lean(),
+        async () => {
+            await ensureDb();
+            return GalleryModel.find({}).sort({ isPinned: -1, order: 1, createdAt: -1 }).select(GALLERY_LIST_SELECT).lean();
+        },
         CACHE_TTL.MEDIUM
     );
 
