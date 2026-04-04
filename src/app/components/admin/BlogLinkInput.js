@@ -3,15 +3,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Globe, Book, Search, X, ChevronRight, ExternalLink } from 'lucide-react';
 
 export default function BlogLinkInput({ value, onChange }) {
-    const [mode, setMode] = useState(value?.startsWith('/blogs/') ? 'internal' : 'external');
+    const [mode, setMode] = useState(value && !value.startsWith('/blogs/') ? 'external' : 'internal');
     const [blogs, setBlogs] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     
     // Initialize mode if value changes from outside
     useEffect(() => {
-        if (value && mode === 'external' && value.startsWith('/blogs/')) {
-            setMode('internal');
+        if (value && mode === 'internal' && !value.startsWith('/blogs/')) {
+            setMode('external');
         }
     }, [value]);
 
@@ -35,9 +35,9 @@ export default function BlogLinkInput({ value, onChange }) {
         if (newMode === mode) return;
         setMode(newMode);
         // Clear if current value doesn't match new mode format
-        if (newMode === 'internal' && !value?.startsWith('/blogs/')) {
+        if (newMode === 'internal' && value && !value.startsWith('/blogs/')) {
             onChange({ target: { name: 'blogLink', value: '' } });
-        } else if (newMode === 'external' && value?.startsWith('/blogs/')) {
+        } else if (newMode === 'external' && value && value.startsWith('/blogs/')) {
             onChange({ target: { name: 'blogLink', value: '' } });
         }
     };
@@ -55,17 +55,17 @@ export default function BlogLinkInput({ value, onChange }) {
                 <div className="flex bg-slate-950/50 rounded-lg p-1 border border-white/10">
                     <button
                         type="button"
-                        onClick={() => handleModeSwitch('external')}
-                        className={`px-3 py-1 rounded-md text-[10px] font-bold uppercase transition-all ${mode === 'external' ? 'bg-purple-500/20 text-purple-400 border border-purple-500/20' : 'text-slate-500 hover:text-slate-300'}`}
-                    >
-                        External URL
-                    </button>
-                    <button
-                        type="button"
                         onClick={() => handleModeSwitch('internal')}
                         className={`px-3 py-1 rounded-md text-[10px] font-bold uppercase transition-all ${mode === 'internal' ? 'bg-purple-500/20 text-purple-400 border border-purple-500/20' : 'text-slate-500 hover:text-slate-300'}`}
                     >
                         Internal Blog
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => handleModeSwitch('external')}
+                        className={`px-3 py-1 rounded-md text-[10px] font-bold uppercase transition-all ${mode === 'external' ? 'bg-purple-500/20 text-purple-400 border border-purple-500/20' : 'text-slate-500 hover:text-slate-300'}`}
+                    >
+                        External URL
                     </button>
                 </div>
             </div>
