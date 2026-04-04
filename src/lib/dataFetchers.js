@@ -20,6 +20,12 @@ import BlogModel from '@/models/Blog';
 import ConfigModel from '@/models/Config';
 import HeaderModel from '@/models/Header';
 import SocialModel from '@/models/Social';
+import GalleryModel from '@/models/Gallery';
+import { backfillMissingBlogSlugs, resolveBlogByIdentifier } from '@/lib/blogSlugs';
+
+const IS_PRODUCTION_BUILD = process.env.NEXT_PHASE === 'phase-production-build';
+const ALLOW_DB_DURING_BUILD = process.env.ALLOW_DB_DURING_BUILD === 'true';
+const SKIP_DB_DURING_BUILD = IS_PRODUCTION_BUILD && !ALLOW_DB_DURING_BUILD;
 
 const CACHE_KEY_CONFIG_PUBLIC = 'db:config:public';
 const CACHE_KEY_CONFIG_LAYOUT = 'db:config:layout';
@@ -73,8 +79,39 @@ const CONFIG_PUBLIC_SELECT = [
 ].join(' ');
 
 const HOME_ABOUT_SELECT = ['name', 'skills', 'professionalSummary'].join(' ');
-const HOME_PROJECTS_SELECT = ['name', 'techStack', 'year', 'status', 'projectType', 'description', 'codeLink', 'image'].join(' ');
-const HOME_BLOGS_SELECT = ['title', 'content', 'image', 'date', 'createdAt'].join(' ');
+const HOME_PROJECTS_SELECT = ['name', 'techStack', 'year', 'status', 'projectType', 'description', 'codeLink', 'blogLink', 'image'].join(' ');
+const HOME_BLOGS_SELECT = ['title', 'slug', 'content', 'image', 'date', 'createdAt'].join(' ');
+const BLOG_LIST_SELECT = ['title', 'slug', 'content', 'image', 'date', 'createdAt', 'updatedAt', 'published', 'tags'].join(' ');
+const GALLERY_LIST_SELECT = ['src', 'thumbnail', 'description', 'width', 'height', 'isPinned', 'order', 'createdAt'].join(' ');
+const DEFAULT_SITE_DESCRIPTION = 'Professional portfolio showcasing projects, blogs, and expertise.';
+const FALLBACK_CONFIG = {
+    siteTitle: 'Portfolio',
+    siteDescription: DEFAULT_SITE_DESCRIPTION,
+    logoText: '< aiyu />',
+    profession: 'full stack',
+    hasCustomFavicon: false,
+};
+
+if (!global.__dataFetcherFallbackWarnings) {
+    global.__dataFetcherFallbackWarnings = new Set();
+}
+
+function warnFetcherFallback(scope, error = null) {
+    const warningKey = error ? `${scope}:error` : `${scope}:build`;
+    if (global.__dataFetcherFallbackWarnings.has(warningKey)) {
+        return;
+    }
+    global.__dataFetcherFallbackWarnings.add(warningKey);
+
+    if (error) {
+        console.warn(`[dataFetchers] ${scope} fallback used: ${error?.message || 'Unknown error'}`);
+        return;
+    }
+
+    console.warn(
+        `[dataFetchers] ${scope} fallback used during production build. Set ALLOW_DB_DURING_BUILD=true to enable DB reads at build time.`
+    );
+}
 
 // Helper to safely serialize Mongoose docs to plain objects
 function serialize(data) {
@@ -82,8 +119,14 @@ function serialize(data) {
     return JSON.parse(JSON.stringify(data));
 }
 
-function hasCacheHit(key) {
-    return cache.get(key) !== null;
+function createDbEnsurer() {
+    let connectionPromise = null;
+    return async () => {
+        if (!connectionPromise) {
+            connectionPromise = dbConnect();
+        }
+        await connectionPromise;
+    };
 }
 
 function sanitizeConfigForPublic(configData) {
@@ -97,6 +140,12 @@ function sanitizeConfigForPublic(configData) {
     }
     delete config.encryptedGithubToken;
     delete config.encryptedGeminiApiKey;
+
+    const baseUrl = process.env.SITE_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    const ogImageValue = typeof config?.ogImage === 'string' ? config.ogImage.trim() : '';
+    if (ogImageValue) {
+        config.ogImage = new URL(ogImageValue, baseUrl).toString();
+    }
 
     return {
         ...config,
@@ -120,164 +169,312 @@ function toBlogPreview(blogs, maxLength = 320) {
  * Fetch all data needed for the site layout (header, footer, config)
  */
 export async function getLayoutData() {
-    const requiredKeys = [CACHE_KEYS.HEADER, CACHE_KEYS.SOCIALS, CACHE_KEY_CONFIG_LAYOUT, CACHE_KEY_ABOUT_LAYOUT];
-    if (!requiredKeys.every(hasCacheHit)) {
-        await dbConnect();
+    if (SKIP_DB_DURING_BUILD) {
+        warnFetcherFallback('getLayoutData');
+        return {
+            headerData: null,
+            socialData: [],
+            configData: FALLBACK_CONFIG,
+            aboutData: null,
+        };
     }
 
-    const [headerData, socialData, configData, aboutData] = await Promise.all([
-        cache.getOrSet(CACHE_KEYS.HEADER, () => HeaderModel.findOne().lean(), CACHE_TTL.LONG),
-        cache.getOrSet(CACHE_KEYS.SOCIALS, () => SocialModel.find().lean(), CACHE_TTL.LONG),
-        cache.getOrSet(CACHE_KEY_CONFIG_LAYOUT, () => ConfigModel.findOne().select(CONFIG_PUBLIC_SELECT).lean(), CACHE_TTL.LONG),
-        cache.getOrSet(CACHE_KEY_ABOUT_LAYOUT, () => AboutModel.findOne().select('name').lean(), CACHE_TTL.LONG),
-    ]);
+    const ensureDb = createDbEnsurer();
 
-    return {
-        headerData: serialize(headerData),
-        socialData: socialData ? JSON.parse(JSON.stringify(socialData)) : [],
-        configData: sanitizeConfigForPublic(configData),
-        aboutData: serialize(aboutData),
-    };
+    try {
+        const [headerData, socialData, configData, aboutData] = await Promise.all([
+            cache.getOrSet(CACHE_KEYS.HEADER, async () => {
+                await ensureDb();
+                return HeaderModel.findOne().lean();
+            }, CACHE_TTL.LONG),
+            cache.getOrSet(CACHE_KEYS.SOCIALS, async () => {
+                await ensureDb();
+                return SocialModel.find().lean();
+            }, CACHE_TTL.LONG),
+            cache.getOrSet(CACHE_KEY_CONFIG_LAYOUT, async () => {
+                await ensureDb();
+                return ConfigModel.findOne().select(CONFIG_PUBLIC_SELECT).lean();
+            }, CACHE_TTL.LONG),
+            cache.getOrSet(CACHE_KEY_ABOUT_LAYOUT, async () => {
+                await ensureDb();
+                return AboutModel.findOne().select('name').lean();
+            }, CACHE_TTL.LONG),
+        ]);
+
+        return {
+            headerData: serialize(headerData),
+            socialData: socialData ? JSON.parse(JSON.stringify(socialData)) : [],
+            configData: sanitizeConfigForPublic(configData) || FALLBACK_CONFIG,
+            aboutData: serialize(aboutData),
+        };
+    } catch (error) {
+        warnFetcherFallback('getLayoutData', error);
+        return {
+            headerData: null,
+            socialData: [],
+            configData: FALLBACK_CONFIG,
+            aboutData: null,
+        };
+    }
 }
 
 /**
  * Fetch all data needed for the home page.
  */
 export async function getHomePageData() {
-    const requiredKeys = [
-        CACHE_KEYS.HOME,
-        CACHE_KEY_ABOUT_HOME,
-        CACHE_KEY_PROJECTS_HOME,
-        CACHE_KEYS.BLOGS_RECENT,
-        CACHE_KEY_CONFIG_PUBLIC,
-    ];
-
-    if (!requiredKeys.every(hasCacheHit)) {
-        await dbConnect();
+    if (SKIP_DB_DURING_BUILD) {
+        warnFetcherFallback('getHomePageData');
+        return {
+            homeData: null,
+            aboutData: null,
+            projectsData: [],
+            blogsData: [],
+            configData: FALLBACK_CONFIG,
+        };
     }
 
-    const [homeData, aboutData, projectsData, blogsData, configData] = await Promise.all([
-        cache.getOrSet(CACHE_KEYS.HOME, () => HomeModel.findOne().lean(), CACHE_TTL.LONG),
-        cache.getOrSet(CACHE_KEY_ABOUT_HOME, () => AboutModel.findOne().select(HOME_ABOUT_SELECT).lean(), CACHE_TTL.LONG),
-        cache.getOrSet(
-            CACHE_KEY_PROJECTS_HOME,
-            () => ProjectModel.find().sort({ year: -1 }).limit(2).select(HOME_PROJECTS_SELECT).lean(),
-            CACHE_TTL.LONG
-        ),
-        cache.getOrSet(CACHE_KEYS.BLOGS_RECENT, () =>
-            BlogModel.find({ published: { $ne: false } }).sort({ createdAt: -1 }).limit(3).select(HOME_BLOGS_SELECT).lean(),
-            CACHE_TTL.MEDIUM
-        ),
-        cache.getOrSet(CACHE_KEY_CONFIG_PUBLIC, () => ConfigModel.findOne().select(CONFIG_PUBLIC_SELECT).lean(), CACHE_TTL.LONG),
-    ]);
+    const ensureDb = createDbEnsurer();
 
-    return {
-        homeData: serialize(homeData),
-        aboutData: serialize(aboutData),
-        projectsData: projectsData ? JSON.parse(JSON.stringify(projectsData)) : [],
-        blogsData: toBlogPreview(blogsData),
-        configData: sanitizeConfigForPublic(configData),
-    };
+    try {
+        const [homeData, aboutData, projectsData, blogsData, configData] = await Promise.all([
+            cache.getOrSet(CACHE_KEYS.HOME, async () => {
+                await ensureDb();
+                return HomeModel.findOne().lean();
+            }, CACHE_TTL.LONG),
+            cache.getOrSet(CACHE_KEY_ABOUT_HOME, async () => {
+                await ensureDb();
+                return AboutModel.findOne().select(HOME_ABOUT_SELECT).lean();
+            }, CACHE_TTL.LONG),
+            cache.getOrSet(
+                CACHE_KEY_PROJECTS_HOME,
+                async () => {
+                    await ensureDb();
+                    return ProjectModel.find().sort({ year: -1 }).limit(2).select(HOME_PROJECTS_SELECT).lean();
+                },
+                CACHE_TTL.LONG
+            ),
+            cache.getOrSet(CACHE_KEYS.BLOGS_RECENT, async () => {
+                await ensureDb();
+                await backfillMissingBlogSlugs(BlogModel);
+                return BlogModel.find({ published: { $ne: false } }).sort({ createdAt: -1 }).limit(3).select(HOME_BLOGS_SELECT).lean();
+            },
+                CACHE_TTL.MEDIUM
+            ),
+            cache.getOrSet(CACHE_KEY_CONFIG_PUBLIC, async () => {
+                await ensureDb();
+                return ConfigModel.findOne().select(CONFIG_PUBLIC_SELECT).lean();
+            }, CACHE_TTL.LONG),
+        ]);
+
+        return {
+            homeData: serialize(homeData),
+            aboutData: serialize(aboutData),
+            projectsData: projectsData ? JSON.parse(JSON.stringify(projectsData)) : [],
+            blogsData: toBlogPreview(blogsData),
+            configData: sanitizeConfigForPublic(configData) || FALLBACK_CONFIG,
+        };
+    } catch (error) {
+        warnFetcherFallback('getHomePageData', error);
+        return {
+            homeData: null,
+            aboutData: null,
+            projectsData: [],
+            blogsData: [],
+            configData: FALLBACK_CONFIG,
+        };
+    }
 }
 
 /**
  * Fetch config data only (for metadata generation across all pages)
  */
 export async function getConfigData() {
-    if (!hasCacheHit(CACHE_KEY_CONFIG_PUBLIC)) {
-        await dbConnect();
+    if (SKIP_DB_DURING_BUILD) {
+        warnFetcherFallback('getConfigData');
+        return FALLBACK_CONFIG;
     }
 
-    const configData = await cache.getOrSet(
-        CACHE_KEY_CONFIG_PUBLIC,
-        () => ConfigModel.findOne().select(CONFIG_PUBLIC_SELECT).lean(),
-        CACHE_TTL.LONG
-    );
-    return sanitizeConfigForPublic(configData);
+    const ensureDb = createDbEnsurer();
+
+    try {
+        const configData = await cache.getOrSet(
+            CACHE_KEY_CONFIG_PUBLIC,
+            async () => {
+                await ensureDb();
+                return ConfigModel.findOne().select(CONFIG_PUBLIC_SELECT).lean();
+            },
+            CACHE_TTL.LONG
+        );
+        return sanitizeConfigForPublic(configData) || FALLBACK_CONFIG;
+    } catch (error) {
+        warnFetcherFallback('getConfigData', error);
+        return FALLBACK_CONFIG;
+    }
 }
 
 /**
  * Fetch about page data
  */
 export async function getAboutData() {
-    if (!hasCacheHit(CACHE_KEYS.ABOUT)) {
-        await dbConnect();
+    if (SKIP_DB_DURING_BUILD) {
+        warnFetcherFallback('getAboutData');
+        return null;
     }
 
-    const aboutData = await cache.getOrSet(
-        CACHE_KEYS.ABOUT,
-        () => AboutModel.findOne().lean(),
-        CACHE_TTL.LONG
-    );
-    return serialize(aboutData);
+    const ensureDb = createDbEnsurer();
+
+    try {
+        const aboutData = await cache.getOrSet(
+            CACHE_KEYS.ABOUT,
+            async () => {
+                await ensureDb();
+                return AboutModel.findOne().lean();
+            },
+            CACHE_TTL.LONG
+        );
+        return serialize(aboutData);
+    } catch (error) {
+        warnFetcherFallback('getAboutData', error);
+        return null;
+    }
 }
 
 /**
  * Fetch all projects
  */
 export async function getProjectsData() {
-    if (!hasCacheHit(CACHE_KEYS.PROJECTS)) {
-        await dbConnect();
+    if (SKIP_DB_DURING_BUILD) {
+        warnFetcherFallback('getProjectsData');
+        return [];
     }
 
-    const projectsData = await cache.getOrSet(
-        CACHE_KEYS.PROJECTS,
-        () => ProjectModel.find().sort({ year: -1 }).lean(),
-        CACHE_TTL.LONG
-    );
-    return projectsData ? JSON.parse(JSON.stringify(projectsData)) : [];
+    const ensureDb = createDbEnsurer();
+
+    try {
+        const projectsData = await cache.getOrSet(
+            CACHE_KEYS.PROJECTS,
+            async () => {
+                await ensureDb();
+                return ProjectModel.find().sort({ year: -1 }).lean();
+            },
+            CACHE_TTL.LONG
+        );
+        return projectsData ? JSON.parse(JSON.stringify(projectsData)) : [];
+    } catch (error) {
+        warnFetcherFallback('getProjectsData', error);
+        return [];
+    }
 }
 
 /**
  * Fetch all apps / deployments
  */
 export async function getDeploymentsData() {
-    if (!hasCacheHit(CACHE_KEYS.DEPLOYMENTS)) {
-        await dbConnect();
+    if (SKIP_DB_DURING_BUILD) {
+        warnFetcherFallback('getDeploymentsData');
+        return [];
     }
 
-    const deploymentsData = await cache.getOrSet(
-        CACHE_KEYS.DEPLOYMENTS,
-        async () => {
-            const deployments = await DeploymentModel.find().lean();
-            return sortDeployments(deployments);
-        },
-        CACHE_TTL.LONG
-    );
+    const ensureDb = createDbEnsurer();
 
-    return deploymentsData ? JSON.parse(JSON.stringify(deploymentsData)) : [];
+    try {
+        const deploymentsData = await cache.getOrSet(
+            CACHE_KEYS.DEPLOYMENTS,
+            async () => {
+                await ensureDb();
+                const deployments = await DeploymentModel.find().lean();
+                return sortDeployments(deployments);
+            },
+            CACHE_TTL.LONG
+        );
+
+        return deploymentsData ? JSON.parse(JSON.stringify(deploymentsData)) : [];
+    } catch (error) {
+        warnFetcherFallback('getDeploymentsData', error);
+        return [];
+    }
 }
 
 /**
  * Fetch a single blog by ID
  */
 export async function getBlogById(id) {
-    const cacheKey = `db:blog:${id}`;
-
-    if (!hasCacheHit(cacheKey)) {
-        await dbConnect();
+    if (SKIP_DB_DURING_BUILD) {
+        warnFetcherFallback('getBlogById');
+        return null;
     }
 
-    const blog = await cache.getOrSet(
-        cacheKey,
-        () => BlogModel.findById(id).lean(),
-        CACHE_TTL.MEDIUM
-    );
-    return serialize(blog);
+    const cacheKey = `db:blog:${id}`;
+    const ensureDb = createDbEnsurer();
+
+    try {
+        const blog = await cache.getOrSet(
+            cacheKey,
+            async () => {
+                await ensureDb();
+                return resolveBlogByIdentifier(BlogModel, id);
+            },
+            CACHE_TTL.MEDIUM
+        );
+        return serialize(blog);
+    } catch (error) {
+        warnFetcherFallback('getBlogById', error);
+        return null;
+    }
 }
 
 /**
  * Fetch published blogs
  */
 export async function getPublishedBlogs() {
-    if (!hasCacheHit(CACHE_KEYS.BLOGS_PUBLISHED)) {
-        await dbConnect();
+    if (SKIP_DB_DURING_BUILD) {
+        warnFetcherFallback('getPublishedBlogs');
+        return [];
     }
 
-    const blogs = await cache.getOrSet(
-        CACHE_KEYS.BLOGS_PUBLISHED,
-        () => BlogModel.find({ published: { $ne: false } }).sort({ createdAt: -1 }).lean(),
-        CACHE_TTL.MEDIUM
-    );
-    return blogs ? JSON.parse(JSON.stringify(blogs)) : [];
+    const ensureDb = createDbEnsurer();
+
+    try {
+        const blogs = await cache.getOrSet(
+            CACHE_KEYS.BLOGS_PUBLISHED,
+            async () => {
+                await ensureDb();
+                await backfillMissingBlogSlugs(BlogModel);
+                return BlogModel.find({ published: { $ne: false } }).sort({ createdAt: -1 }).select(BLOG_LIST_SELECT).lean();
+            },
+            CACHE_TTL.MEDIUM
+        );
+        return blogs ? toBlogPreview(blogs, 500) : [];
+    } catch (error) {
+        warnFetcherFallback('getPublishedBlogs', error);
+        return [];
+    }
+}
+
+/**
+ * Fetch all gallery items.
+ */
+export async function getGalleryData() {
+    if (SKIP_DB_DURING_BUILD) {
+        warnFetcherFallback('getGalleryData');
+        return [];
+    }
+
+    const ensureDb = createDbEnsurer();
+
+    try {
+        const galleryData = await cache.getOrSet(
+            CACHE_KEYS.GALLERY,
+            async () => {
+                await ensureDb();
+                return GalleryModel.find({}).sort({ isPinned: -1, order: 1, createdAt: -1 }).select(GALLERY_LIST_SELECT).lean();
+            },
+            CACHE_TTL.MEDIUM
+        );
+
+        return galleryData ? JSON.parse(JSON.stringify(galleryData)) : [];
+    } catch (error) {
+        warnFetcherFallback('getGalleryData', error);
+        return [];
+    }
 }

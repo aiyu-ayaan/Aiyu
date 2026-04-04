@@ -2,11 +2,15 @@ import BlogDetailClient from '../../../components/blogs/BlogDetailClient';
 import { getBlogById, getConfigData } from '@/lib/dataFetchers';
 
 export async function generateMetadata({ params }) {
-    const { id } = await params;
-    const blog = await getBlogById(id);
+    const { id: identifier } = await params;
+    const blog = await getBlogById(identifier);
     const config = await getConfigData();
 
     const baseName = config?.siteTitle || config?.logoText || 'Portfolio';
+    const baseUrl = process.env.SITE_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    const blogUrl = `${baseUrl}/blogs/${blog?.slug || identifier}`;
+    const description = blog?.content?.substring(0, 160) || `Read ${baseName}`;
+    const ogImage = blog?.image || config?.ogImage || `${baseUrl}/og-image.png`;
 
     if (!blog) {
         return {
@@ -16,27 +20,30 @@ export async function generateMetadata({ params }) {
 
     return {
         title: `${baseName} | ${blog.title}`,
-        description: blog.content.substring(0, 160),
+        description,
         openGraph: {
             title: blog.title,
-            description: blog.content.substring(0, 160),
-            // url: `/blogs/${id}`, //  // Ideally this should be an absolute URL
+            description,
+            url: blogUrl,
             siteName: baseName,
-            images: blog.image ? [blog.image] : [],
+            images: [{ url: ogImage, width: 1200, height: 630 }],
             type: 'article',
         },
         twitter: {
             card: 'summary_large_image',
             title: blog.title,
-            description: blog.content.substring(0, 160),
-            images: blog.image ? [blog.image] : [],
+            description,
+            images: [ogImage],
+        },
+        alternates: {
+            canonical: blogUrl,
         },
     };
 }
 
 export default async function BlogDetailPage({ params }) {
-    const { id } = await params;
-    const blog = await getBlogById(id);
+    const { id: identifier } = await params;
+    const blog = await getBlogById(identifier);
 
     return <BlogDetailClient blog={blog} />;
 }

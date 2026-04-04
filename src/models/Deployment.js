@@ -10,6 +10,7 @@ const DeploymentSchema = new mongoose.Schema(
         hostingProvider: { type: String, required: true, trim: true },
         description: { type: String, required: true, trim: true },
         hostedUrl: { type: String, required: false, trim: true },
+        blogLink: { type: String, required: false, trim: true },
         image: { type: String, required: false, trim: true },
         displayOrder: { type: Number, required: false, default: 0 },
     },

@@ -3,14 +3,22 @@ import Theme from "@/models/Theme";
 import { getSession } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import { themePresets, isPredefinedTheme } from "@/lib/themePresets";
+import cache, { CACHE_TTL, createCacheDebugHeaders } from "@/lib/cache";
+import { createPublicCacheHeaders, RESPONSE_CACHE } from "@/lib/httpCache";
+
+const CACHE_KEY_THEMES_LIST = 'db:themes:list';
 
 // GET /api/themes - Fetch all themes (predefined + custom)
 export async function GET() {
     try {
-        await dbConnect();
-
-        // Get custom themes from database
-        const customThemes = await Theme.find({}).sort({ createdAt: -1 });
+        const { value: customThemes, meta } = await cache.getOrSetWithMeta(
+            CACHE_KEY_THEMES_LIST,
+            async () => {
+                await dbConnect();
+                return Theme.find({}).sort({ createdAt: -1 }).lean();
+            },
+            CACHE_TTL.MEDIUM
+        );
 
         // Convert predefined themes to array format
         const predefinedThemes = Object.values(themePresets);
@@ -26,6 +34,11 @@ export async function GET() {
                 custom: customThemes.length,
                 total: allThemes.length
             }
+        }, {
+            headers: {
+                ...createPublicCacheHeaders(RESPONSE_CACHE.PUBLIC_MEDIUM),
+                ...createCacheDebugHeaders(meta),
+            },
         });
     } catch (error) {
         console.error("Error fetching themes:", error);
@@ -39,7 +52,6 @@ export async function GET() {
 // POST /api/themes - Create new custom theme
 export async function POST(request) {
     try {
-        await dbConnect();
         const session = await getSession();
 
         if (!session) {
@@ -49,6 +61,7 @@ export async function POST(request) {
             );
         }
 
+        await dbConnect();
         const body = await request.json();
         const { name, description, variants } = body;
 
@@ -74,7 +87,7 @@ export async function POST(request) {
         }
 
         // Check if custom theme with this slug already exists
-        const existing = await Theme.findOne({ slug });
+        const existing = await Theme.findOne({ slug }).select('_id').lean();
         if (existing) {
             return NextResponse.json(
                 { success: false, error: "A theme with this name already exists" },
@@ -91,6 +104,8 @@ export async function POST(request) {
             isPredefined: false,
             variants
         });
+
+        cache.invalidatePrefix('db:themes');
 
         return NextResponse.json(
             { success: true, data: theme },

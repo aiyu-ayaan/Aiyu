@@ -17,7 +17,7 @@ export async function POST(request) {
         }
 
         // 1. Save to Database
-        const newMessage = await ContactMessage.create({
+        await ContactMessage.create({
             name,
             email,
             message,
@@ -81,8 +81,15 @@ export async function POST(request) {
 
 export async function GET(request) {
     try {
+        const { searchParams } = new URL(request.url);
+        const requestedLimit = Number.parseInt(searchParams.get('limit') || '100', 10);
+        const limit = Number.isFinite(requestedLimit) ? Math.min(Math.max(requestedLimit, 1), 500) : 100;
+
         await dbConnect();
-        const messages = await ContactMessage.find().sort({ createdAt: -1 });
+        const messages = await ContactMessage.find()
+            .sort({ createdAt: -1 })
+            .limit(limit)
+            .lean();
         return NextResponse.json({ success: true, data: messages }, { status: 200 });
     } catch (error) {
         console.error('Failed to fetch messages:', error);

@@ -185,21 +185,21 @@ textarea,
 
 body::before {
   content: "";
-  position: absolute;
+  position: fixed;
   top: 20%;
   left: 30%;
   /* Reduced from 20% */
-  width: min(400px, 80vw);
+  width: min(320px, 72vw);
   /* Responsive width */
-  height: min(400px, 80vw);
+  height: min(320px, 72vw);
   /* Responsive height */
-  max-width: 400px;
+  max-width: 320px;
   /* Cap the maximum size */
   background: radial-gradient(circle, var(--accent-cyan), transparent 70%);
-  opacity: 0.2;
+  opacity: 0.14;
   pointer-events: none;
   z-index: 0;
-  filter: blur(80px);
+  filter: blur(48px);
   transform: translateX(-50%);
   /* Center it properly */
   transition: opacity 0.3s ease;
@@ -210,10 +210,10 @@ body::before {
   body::before {
     left: 50%;
     /* Center on mobile */
-    width: 250px;
+    width: 220px;
     /* Smaller on mobile */
-    height: 250px;
-    filter: blur(60px);
+    height: 220px;
+    filter: blur(34px);
     /* Less blur on mobile */
   }
 }
@@ -429,7 +429,7 @@ html {
   }
 
   body::before {
-    filter: blur(50px);
+    filter: blur(28px);
   }
 }
 
