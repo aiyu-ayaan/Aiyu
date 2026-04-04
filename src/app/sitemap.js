@@ -3,6 +3,10 @@ import dbConnect from '@/lib/db';
 import BlogModel from '@/models/Blog';
 import { backfillMissingBlogSlugs, getBlogSlug } from '@/lib/blogSlugs';
 
+const IS_PRODUCTION_BUILD = process.env.NEXT_PHASE === 'phase-production-build';
+const ALLOW_DB_DURING_BUILD = process.env.ALLOW_DB_DURING_BUILD === 'true';
+const SKIP_DB_DURING_BUILD = IS_PRODUCTION_BUILD && !ALLOW_DB_DURING_BUILD;
+
 export default async function sitemap() {
   // Support both SITE_URL (user preference) and NEXT_PUBLIC_BASE_URL (existing SEO logic)
   let baseUrl = process.env.SITE_URL || process.env.NEXT_PUBLIC_BASE_URL || '';
@@ -75,6 +79,11 @@ export default async function sitemap() {
       priority: 0.7,
     },
   ];
+
+  if (SKIP_DB_DURING_BUILD) {
+    console.warn('[sitemap] Database reads skipped during production build. Returning static routes only.');
+    return staticRoutes;
+  }
 
   try {
     // Attempt database connection
