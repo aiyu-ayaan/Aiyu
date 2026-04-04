@@ -63,21 +63,26 @@ const getColumnCount = (viewportWidth, totalItems) => {
   return Math.max(1, Math.min(preferred, safeTotal));
 };
 
-const GalleryClient = () => {
-  const [images, setImages] = useState([]);
-  const [loading, setLoading] = useState(true);
+const GalleryClient = ({ initialImages, initialConfig }) => {
+  const hasInitialData = initialImages !== undefined || initialConfig !== undefined;
+  const [images, setImages] = useState(Array.isArray(initialImages) ? initialImages : []);
+  const [loading, setLoading] = useState(!hasInitialData);
   const [selectedImage, setSelectedImage] = useState(null);
   const [modalImageError, setModalImageError] = useState(false);
   const [brokenImageIds, setBrokenImageIds] = useState(new Set());
   const [viewportWidth, setViewportWidth] = useState(1280);
-  const [headerInfo, setHeaderInfo] = useState({
-    title: 'Gallery',
-    subtitle: 'A visual journey through my lens.',
-  });
+  const [headerInfo, setHeaderInfo] = useState(() => ({
+    title: initialConfig?.galleryTitle || 'Gallery',
+    subtitle: initialConfig?.gallerySubtitle || 'A visual journey through my lens.',
+  }));
   const [searchQuery, setSearchQuery] = useState('');
   const [orientationFilter, setOrientationFilter] = useState('all');
 
   useEffect(() => {
+    if (hasInitialData) {
+      return;
+    }
+
     const fetchData = async () => {
       try {
         const [galleryRes, configRes] = await Promise.all([
@@ -105,7 +110,7 @@ const GalleryClient = () => {
     };
 
     fetchData();
-  }, []);
+  }, [hasInitialData]);
 
   const handleEsc = useCallback((event) => {
     if (event.key === 'Escape') setSelectedImage(null);

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import Deployment from '@/models/Deployment';
 import { getSession } from '@/lib/auth';
-import cache, { CACHE_KEYS, CACHE_TTL } from '@/lib/cache';
+import cache, { CACHE_KEYS, CACHE_TTL, createCacheDebugHeaders } from '@/lib/cache';
 import { createPublicCacheHeaders, RESPONSE_CACHE } from '@/lib/httpCache';
 
 const getDisplayOrderValue = (deployment) => {
@@ -22,12 +22,11 @@ const sortDeployments = (deployments = []) => {
 };
 
 export async function GET() {
-    await dbConnect();
-
     try {
-        const deployments = await cache.getOrSet(
+        const { value: deployments, meta } = await cache.getOrSetWithMeta(
             CACHE_KEYS.DEPLOYMENTS,
             async () => {
+                await dbConnect();
                 const allDeployments = await Deployment.find({}).lean();
                 return sortDeployments(allDeployments);
             },
@@ -35,7 +34,10 @@ export async function GET() {
         );
 
         return NextResponse.json(deployments, {
-            headers: createPublicCacheHeaders(RESPONSE_CACHE.PUBLIC_MEDIUM),
+            headers: {
+                ...createPublicCacheHeaders(RESPONSE_CACHE.PUBLIC_MEDIUM),
+                ...createCacheDebugHeaders(meta),
+            },
         });
     } catch {
         return NextResponse.json({ error: 'Failed to fetch deployments' }, { status: 500 });

@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaCalendarDay, FaCodeBranch, FaExternalLinkAlt, FaLayerGroup, FaTimes } from 'react-icons/fa';
+import { FaCalendarDay, FaCodeBranch, FaExternalLinkAlt, FaLayerGroup, FaTimes, FaBook } from 'react-icons/fa';
 import { getPlaceholderGradient, getProjectInitials } from './projectPlaceholder';
 
 const isOptimizableImage = (src) =>
@@ -280,6 +280,26 @@ const ProjectDialog = ({ project, onClose }) => {
                     >
                       <FaCodeBranch />
                       View Code
+                      <FaExternalLinkAlt className="text-[11px]" />
+                    </motion.a>
+                  )}
+                  
+                  {project?.blogLink && (
+                    <motion.a
+                      href={project.blogLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold"
+                      style={{
+                        color: '#ffffff',
+                        background: 'linear-gradient(135deg, var(--accent-purple), var(--accent-pink))',
+                        boxShadow: '0 12px 30px var(--shadow-lg)',
+                      }}
+                      whileHover={{ y: -2, scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <FaBook />
+                      Read Blog
                       <FaExternalLinkAlt className="text-[11px]" />
                     </motion.a>
                   )}

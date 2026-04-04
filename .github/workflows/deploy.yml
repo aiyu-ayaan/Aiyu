@@ -1,29 +1,204 @@
-name: Deploy to Server
+name: Release and Deploy
 
 on:
-  # push:
-  #   branches:
-  #     - master
+  push:
+    branches: [master]
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Tag to deploy manually (for example, v3.2.0)
+        required: true
+        type: string
+
+concurrency:
+  group: release-deploy-${{ github.ref_name }}-${{ github.event_name }}
+  cancel-in-progress: false
 
 jobs:
-  deploy:
+  release:
+    name: Create Release PR or Publish Release
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+
+    steps:
+      - name: Release Please
+        id: release
+        uses: googleapis/release-please-action@v4
+        with:
+          release-type: node
+          target-branch: master
+
+  update-release-notes:
+    name: Append Manual Release Notes
+    needs: [release]
+    if: github.event_name == 'push' && needs.release.outputs.release_created == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Append notes from .github/release-notes.md
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ needs.release.outputs.tag_name }}
+          NOTES_FILE: .github/release-notes.md
+        shell: bash
+        run: |
+          if [[ ! -f "$NOTES_FILE" ]]; then
+            echo "No manual release notes file found at $NOTES_FILE. Skipping."
+            exit 0
+          fi
+
+          if grep -q '<!-- release-notes:skip -->' "$NOTES_FILE"; then
+            echo "Manual release notes are disabled by marker in $NOTES_FILE. Skipping."
+            exit 0
+          fi
+
+          if [[ ! -s "$NOTES_FILE" ]]; then
+            echo "Manual release notes file is empty. Skipping."
+            exit 0
+          fi
+
+          current_notes="$(gh release view "$RELEASE_TAG" --json body --jq '.body // ""')"
+          printf "%s\n" "$current_notes" > current_notes.md
+
+          if grep -q '^## Additional Release Notes$' current_notes.md; then
+            awk '/^## Additional Release Notes$/ {exit} {print}' current_notes.md > base_notes.md
+          else
+            cp current_notes.md base_notes.md
+          fi
+
+          {
+            cat base_notes.md
+            echo
+            echo "## Additional Release Notes"
+            cat "$NOTES_FILE"
+          } > combined_notes.md
+
+          gh release edit "$RELEASE_TAG" --notes-file combined_notes.md
+
+  push-to-docker-hub:
+    name: Push Docker Image to Docker Hub
+    needs: [release, update-release-notes]
+    if: github.event_name == 'push' && needs.release.outputs.release_created == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+      attestations: write
+      id-token: write
+
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: aiyuayaan/aiyu
+          tags: |
+            type=raw,value=${{ needs.release.outputs.tag_name }}
+            type=raw,value=latest
+
+      - name: Build and push Docker image
+        id: push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Generate artifact attestation
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-name: index.docker.io/aiyuayaan/aiyu
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
+
+  deploy:
+    name: Deploy Latest Release
+    needs: [release, push-to-docker-hub]
+    if: github.event_name == 'push' && needs.release.outputs.release_created == 'true'
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_TAG: ${{ needs.release.outputs.tag_name }}
+
     steps:
       - name: Deploy via SSH
-        uses: appleboy/ssh-action@master
+        uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           password: ${{ secrets.SSH_PASSWORD }}
+          envs: RELEASE_TAG
           script: |
-            ls -la 
-            cd docker/Aiyu/
-            git pull origin master
-            
-            ls -la 
-            docker compose build --memory=512m
-            docker compose up -d
-            docker system prune -a --volumes -f
-            
+            set -e
+
+            echo "Starting deployment..."
+            echo "Deploying release tag: $RELEASE_TAG"
+
+            cd docker/Aiyu/ || { echo "Failed to navigate to docker/Aiyu/"; exit 1; }
+
+            if grep -q '^APP_IMAGE_TAG=' .env; then
+              sed -i "s/^APP_IMAGE_TAG=.*/APP_IMAGE_TAG=$RELEASE_TAG/" .env
+            else
+              echo "APP_IMAGE_TAG=$RELEASE_TAG" >> .env
+            fi
+
+            docker compose pull app || { echo "Failed to pull tagged image"; exit 1; }
+            docker compose up -d || { echo "Failed to start containers"; exit 1; }
+
+            echo "Deployment completed successfully."
+
+  manual-deploy:
+    name: Deploy Existing Tag (Manual)
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_TAG: ${{ inputs.release_tag }}
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          envs: RELEASE_TAG
+          script: |
+            set -e
+
+            echo "Starting manual deployment..."
+            echo "Deploying release tag: $RELEASE_TAG"
+
+            cd docker/Aiyu/ || { echo "Failed to navigate to docker/Aiyu/"; exit 1; }
+
+            if grep -q '^APP_IMAGE_TAG=' .env; then
+              sed -i "s/^APP_IMAGE_TAG=.*/APP_IMAGE_TAG=$RELEASE_TAG/" .env
+            else
+              echo "APP_IMAGE_TAG=$RELEASE_TAG" >> .env
+            fi
+
+            docker compose pull app || { echo "Failed to pull tagged image"; exit 1; }
+            docker compose up -d || { echo "Failed to start containers"; exit 1; }
+
+            echo "Manual deployment completed successfully."
  

@@ -1,48 +1,57 @@
-name: Build, Release, and Deploy
+name: PR Build Check
 
 on:
   pull_request:
-    types: [opened, edited, synchronize, reopened]
-  push:
-    branches: [master]
+    types: [opened, edited, synchronize, reopened, ready_for_review]
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: pr-build-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
-  validate-pr-title:
-    name: Validate PR Title (Conventional Commits)
-    if: github.event_name == 'pull_request' && github.actor != 'release-please[bot]' && !startsWith(github.head_ref, 'release-please--')
+  pr-build:
+    name: PR Build and Lint
     runs-on: ubuntu-latest
+
     steps:
-      - name: Validate PR title
+      - name: Decide whether to run full checks
+        id: gate
+        shell: bash
+        run: |
+          if [[ "${{ github.event.pull_request.draft }}" == "true" ]]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "reason=draft PR" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ github.actor }}" == "release-please[bot]" || "${{ github.actor }}" == "github-actions[bot]" || "${{ github.head_ref }}" == release-please--* ]]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "reason=release automation PR" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+            echo "reason=full checks required" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Validate PR title (Conventional Commits)
+        if: steps.gate.outputs.skip != 'true'
         uses: amannn/action-semantic-pull-request@v5
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  build:
-    if: github.event_name == 'pull_request' && github.actor != 'release-please[bot]' && !startsWith(github.head_ref, 'release-please--')
-    runs-on: ubuntu-latest
-    
-    strategy:
-      matrix:
-        node-version: [20.x]
-    
-    steps:
       - name: Checkout code
+        if: steps.gate.outputs.skip != 'true'
         uses: actions/checkout@v4
-      
-      - name: Setup Node.js ${{ matrix.node-version }}
+
+      - name: Setup Node.js 20.x
+        if: steps.gate.outputs.skip != 'true'
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
-          cache: 'npm'
-      
+          node-version: 20.x
+          cache: npm
+
       - name: Install dependencies
+        if: steps.gate.outputs.skip != 'true'
         run: npm install --legacy-peer-deps
-      
-      - name: Create dummy .env file
+
+      - name: Create CI environment file
+        if: steps.gate.outputs.skip != 'true'
         run: |
           cat > .env.local << 'EOF'
           MONGODB_URI=mongodb://dummy:dummy@dummy:27017/dummy
@@ -53,139 +62,22 @@ jobs:
           JWT_SECRET=dummy-jwt-secret-for-ci-build
           GITHUB_TOKEN=dummy-github-token
           EOF
-      
+
       - name: Run ESLint
+        if: steps.gate.outputs.skip != 'true'
         run: npm run lint
-      
+
       - name: Build project
+        if: steps.gate.outputs.skip != 'true'
         run: npm run build
-      
-      - name: Build success summary
-        if: success()
+
+      - name: Skipped PR checks (intentional)
+        if: steps.gate.outputs.skip == 'true'
         run: |
-          echo "✅ Build and lint checks passed!"
-          echo "The project is ready for merge."
-      
-      - name: Build failure summary
-        if: failure()
+          echo "Skipping full checks because this is a ${{ steps.gate.outputs.reason }}."
+          echo "This PR status is marked successful so branch protection can pass."
+
+      - name: Full checks passed
+        if: steps.gate.outputs.skip != 'true'
         run: |
-          echo "❌ Build or lint checks failed!"
-          echo "Please review the logs above and fix any issues."
-          exit 1
-
-  release:
-    name: Create Tag and GitHub Release
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-    permissions:
-      contents: write
-      pull-requests: write
-    outputs:
-      release_created: ${{ steps.release.outputs.release_created }}
-      tag_name: ${{ steps.release.outputs.tag_name }}
-
-    steps:
-      - name: Release Please
-        id: release
-        uses: googleapis/release-please-action@v4
-        with:
-          release-type: node
-          target-branch: master
-
-  push-to-docker-hub:
-    name: Push Docker image to Docker Hub
-    needs: [release]
-    runs-on: ubuntu-latest
-    if: needs.release.outputs.release_created == 'true'
-    permissions:
-      packages: write
-      contents: read
-      attestations: write
-      id-token: write
-
-    steps:
-      - name: Check out the repo
-        uses: actions/checkout@v4
-
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: Extract metadata (tags, labels) for Docker
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: aiyuayaan/aiyu
-          tags: |
-            type=raw,value=${{ needs.release.outputs.tag_name }}
-            type=raw,value=latest
-
-      - name: Build and push Docker image
-        id: push
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./Dockerfile
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-
-      - name: Generate artifact attestation
-        uses: actions/attest-build-provenance@v2
-        with:
-          subject-name: index.docker.io/aiyuayaan/aiyu
-          subject-digest: ${{ steps.push.outputs.digest }}
-          push-to-registry: true
-
-  deploy:
-    name: Deploy to Server
-    needs: [release, push-to-docker-hub]
-    runs-on: ubuntu-latest
-    if: needs.release.outputs.release_created == 'true'
-
-    steps:
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          password: ${{ secrets.SSH_PASSWORD }}
-          envs: RELEASE_TAG
-          script: |
-            set -e
-            
-            echo "Starting deployment..."
-            echo "Deploying release tag: $RELEASE_TAG"
-            
-            echo "Navigating to project directory..."
-            cd docker/Aiyu/ || { echo "Failed to navigate to docker/Aiyu/"; exit 1; }
-
-            echo "Writing release tag to .env..."
-            if grep -q '^APP_IMAGE_TAG=' .env; then
-              sed -i "s/^APP_IMAGE_TAG=.*/APP_IMAGE_TAG=$RELEASE_TAG/" .env
-            else
-              echo "APP_IMAGE_TAG=$RELEASE_TAG" >> .env
-            fi
-            
-            echo "Pulling tagged Docker image..."
-            docker compose pull app || { echo "Failed to pull tagged image"; exit 1; }
-            
-            echo "Restarting containers..."
-            docker compose up -d || { echo "Failed to start containers"; exit 1; }
-            
-            echo "✅ Deployment completed successfully!"
-        env:
-          RELEASE_TAG: ${{ needs.release.outputs.tag_name }}
-
-  create-release:
-    name: Release Summary
-    needs: [release, push-to-docker-hub]
-    runs-on: ubuntu-latest
-    if: needs.release.outputs.release_created == 'true'
-    
-    steps:
-      - name: Release created
-        run: |
-          echo "Release created successfully for ${{ needs.release.outputs.tag_name }}"
+          echo "Build and lint checks passed."

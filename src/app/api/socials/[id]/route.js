@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import Social from '@/models/Social';
 import { getSession } from '@/lib/auth';
-import cache, { CACHE_KEYS, CACHE_TTL } from '@/lib/cache';
+import cache, { CACHE_KEYS, CACHE_TTL, createCacheDebugHeaders } from '@/lib/cache';
 import { createPublicCacheHeaders, RESPONSE_CACHE } from '@/lib/httpCache';
 
 export async function PUT(request, { params }) {
@@ -52,12 +52,14 @@ export async function DELETE(request, { params }) {
 }
 
 export async function GET(request, { params }) {
-    await dbConnect();
     try {
         const { id } = await params;
-        const social = await cache.getOrSet(
+        const { value: social, meta } = await cache.getOrSetWithMeta(
             `db:socials:item:${id}`,
-            () => Social.findById(id).lean(),
+            async () => {
+                await dbConnect();
+                return Social.findById(id).lean();
+            },
             CACHE_TTL.LONG
         );
 
@@ -66,7 +68,10 @@ export async function GET(request, { params }) {
         }
 
         return NextResponse.json(social, {
-            headers: createPublicCacheHeaders(RESPONSE_CACHE.PUBLIC_LONG),
+            headers: {
+                ...createPublicCacheHeaders(RESPONSE_CACHE.PUBLIC_LONG),
+                ...createCacheDebugHeaders(meta),
+            },
         });
     } catch (error) {
         return NextResponse.json({ error: 'Failed to fetch social link' }, { status: 500 });
