@@ -1,4 +1,41 @@
+import { existsSync } from 'node:fs';
 import Redis from 'ioredis';
+
+const DEFAULT_DOCKER_REDIS_URL = 'redis://redis:6379/0';
+
+function isRunningInDocker() {
+    return process.env.DOCKER_ENV === 'true' || existsSync('/.dockerenv');
+}
+
+function resolveRedisUrl() {
+    const configuredUrl = process.env.REDIS_URL?.trim() || null;
+    if (!configuredUrl) {
+        return null;
+    }
+
+    try {
+        const parsedUrl = new URL(configuredUrl);
+        const dockerRedisUrl = process.env.DOCKER_REDIS_URL?.trim() || DEFAULT_DOCKER_REDIS_URL;
+        const isLocalhostTarget =
+            parsedUrl.hostname === 'localhost' ||
+            parsedUrl.hostname === '127.0.0.1' ||
+            parsedUrl.hostname === '::1';
+
+        if (isRunningInDocker() && isLocalhostTarget) {
+            if (!global.__redisState?.didWarnAboutDockerFallback) {
+                console.warn(
+                    `[cache] REDIS_URL=${configuredUrl} points to localhost inside a container. Using ${dockerRedisUrl} instead.`
+                );
+                global.__redisState.didWarnAboutDockerFallback = true;
+            }
+            return dockerRedisUrl;
+        }
+    } catch (error) {
+        console.warn(`[cache] Invalid REDIS_URL "${configuredUrl}": ${error?.message || 'Unknown error'}`);
+    }
+
+    return configuredUrl;
+}
 
 function createRedisClient(redisUrl) {
     const client = new Redis(redisUrl, {
@@ -20,11 +57,12 @@ if (!global.__redisState) {
     global.__redisState = {
         client: null,
         url: null,
+        didWarnAboutDockerFallback: false,
     };
 }
 
 export function getRedisClient() {
-    const redisUrl = process.env.REDIS_URL?.trim() || null;
+    const redisUrl = resolveRedisUrl();
 
     if (!redisUrl) {
         return null;
@@ -52,5 +90,5 @@ export function getRedisClient() {
 }
 
 export function isRedisEnabled() {
-    return Boolean(process.env.REDIS_URL?.trim());
+    return Boolean(resolveRedisUrl());
 }

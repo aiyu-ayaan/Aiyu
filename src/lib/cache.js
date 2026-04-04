@@ -20,6 +20,13 @@ class MemoryCache {
         this.defaultTTL = SAFE_DEFAULT_REDIS_TTL_SECONDS * 1000;
     }
 
+    setMemoryValue(key, value, ttl = this.defaultTTL) {
+        this.cache.set(key, {
+            value,
+            expiry: Date.now() + ttl,
+        });
+    }
+
     /**
      * Get a cached value from memory (L1).
      * @param {string} key
@@ -44,10 +51,7 @@ class MemoryCache {
      * @param {number} [ttl]
      */
     set(key, value, ttl = this.defaultTTL) {
-        this.cache.set(key, {
-            value,
-            expiry: Date.now() + ttl,
-        });
+        this.setMemoryValue(key, value, ttl);
 
         const redis = getRedisClient();
         if (redis) {
@@ -156,7 +160,8 @@ class MemoryCache {
                 }
 
                 const value = await fn();
-                this.set(key, value, ttl);
+                this.setMemoryValue(key, value, ttl);
+                await this.setRedisValue(key, value, ttl);
                 return {
                     value,
                     meta: {
