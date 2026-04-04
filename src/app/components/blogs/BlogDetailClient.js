@@ -130,12 +130,12 @@ export default function BlogDetailClient({ blog }) {
       }}
     >
       <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-[420px] opacity-80"
+        className="pointer-events-none absolute left-1/2 top-[-140px] h-[560px] w-[min(1180px,140vw)] -translate-x-1/2 opacity-60"
         style={{
           backgroundImage: `
-            radial-gradient(circle at 14% 14%, color-mix(in srgb, var(--accent-cyan) 16%, transparent), transparent 26%),
-            radial-gradient(circle at 86% 22%, color-mix(in srgb, var(--accent-purple) 14%, transparent), transparent 24%),
-            linear-gradient(180deg, color-mix(in srgb, var(--bg-surface) 18%, transparent), transparent 74%)
+            radial-gradient(ellipse at 20% 32%, color-mix(in srgb, var(--accent-cyan) 16%, transparent), transparent 28%),
+            radial-gradient(ellipse at 80% 24%, color-mix(in srgb, var(--accent-purple) 14%, transparent), transparent 26%),
+            radial-gradient(ellipse at 50% 18%, color-mix(in srgb, var(--bg-surface) 24%, transparent), transparent 58%)
           `,
         }}
       />
