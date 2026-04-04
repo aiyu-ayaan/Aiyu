@@ -20,6 +20,7 @@ import BlogModel from '@/models/Blog';
 import ConfigModel from '@/models/Config';
 import HeaderModel from '@/models/Header';
 import SocialModel from '@/models/Social';
+import GalleryModel from '@/models/Gallery';
 import { backfillMissingBlogSlugs, resolveBlogByIdentifier } from '@/lib/blogSlugs';
 
 const CACHE_KEY_CONFIG_PUBLIC = 'db:config:public';
@@ -76,6 +77,8 @@ const CONFIG_PUBLIC_SELECT = [
 const HOME_ABOUT_SELECT = ['name', 'skills', 'professionalSummary'].join(' ');
 const HOME_PROJECTS_SELECT = ['name', 'techStack', 'year', 'status', 'projectType', 'description', 'codeLink', 'image'].join(' ');
 const HOME_BLOGS_SELECT = ['title', 'slug', 'content', 'image', 'date', 'createdAt'].join(' ');
+const BLOG_LIST_SELECT = ['title', 'slug', 'content', 'image', 'date', 'createdAt', 'updatedAt', 'published', 'tags'].join(' ');
+const GALLERY_LIST_SELECT = ['src', 'thumbnail', 'description', 'width', 'height', 'isPinned', 'order', 'createdAt'].join(' ');
 
 // Helper to safely serialize Mongoose docs to plain objects
 function serialize(data) {
@@ -287,8 +290,25 @@ export async function getPublishedBlogs() {
 
     const blogs = await cache.getOrSet(
         CACHE_KEYS.BLOGS_PUBLISHED,
-        () => BlogModel.find({ published: { $ne: false } }).sort({ createdAt: -1 }).lean(),
+        () => BlogModel.find({ published: { $ne: false } }).sort({ createdAt: -1 }).select(BLOG_LIST_SELECT).lean(),
         CACHE_TTL.MEDIUM
     );
-    return blogs ? JSON.parse(JSON.stringify(blogs)) : [];
+    return blogs ? toBlogPreview(blogs, 500) : [];
+}
+
+/**
+ * Fetch all gallery items.
+ */
+export async function getGalleryData() {
+    if (!hasCacheHit(CACHE_KEYS.GALLERY)) {
+        await dbConnect();
+    }
+
+    const galleryData = await cache.getOrSet(
+        CACHE_KEYS.GALLERY,
+        () => GalleryModel.find({}).sort({ isPinned: -1, order: 1, createdAt: -1 }).select(GALLERY_LIST_SELECT).lean(),
+        CACHE_TTL.MEDIUM
+    );
+
+    return galleryData ? JSON.parse(JSON.stringify(galleryData)) : [];
 }

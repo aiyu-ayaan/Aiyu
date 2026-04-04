@@ -1,5 +1,5 @@
 import GalleryClient from './GalleryClient';
-import { getConfigData } from '@/lib/dataFetchers';
+import { getConfigData, getGalleryData } from '@/lib/dataFetchers';
 
 export async function generateMetadata() {
     try {
@@ -39,6 +39,7 @@ export async function generateMetadata() {
     }
 }
 
-export default function GalleryPage() {
-    return <GalleryClient />;
+export default async function GalleryPage() {
+    const [images, config] = await Promise.all([getGalleryData(), getConfigData()]);
+    return <GalleryClient initialImages={images} initialConfig={config} />;
 }
