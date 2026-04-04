@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import Project from '@/models/Project';
 import { getSession } from '@/lib/auth';
-import cache, { CACHE_KEYS, CACHE_TTL } from '@/lib/cache';
+import cache, { CACHE_KEYS, CACHE_TTL, createCacheDebugHeaders } from '@/lib/cache';
 import { createPublicCacheHeaders, RESPONSE_CACHE } from '@/lib/httpCache';
 
 export async function PUT(request, { params }) {
@@ -52,12 +52,14 @@ export async function DELETE(request, { params }) {
 }
 
 export async function GET(request, { params }) {
-    await dbConnect();
     try {
         const { id } = await params;
-        const project = await cache.getOrSet(
+        const { value: project, meta } = await cache.getOrSetWithMeta(
             `db:projects:item:${id}`,
-            () => Project.findById(id).lean(),
+            async () => {
+                await dbConnect();
+                return Project.findById(id).lean();
+            },
             CACHE_TTL.MEDIUM
         );
 
@@ -66,7 +68,10 @@ export async function GET(request, { params }) {
         }
 
         return NextResponse.json(project, {
-            headers: createPublicCacheHeaders(RESPONSE_CACHE.PUBLIC_MEDIUM),
+            headers: {
+                ...createPublicCacheHeaders(RESPONSE_CACHE.PUBLIC_MEDIUM),
+                ...createCacheDebugHeaders(meta),
+            },
         });
     } catch (error) {
         return NextResponse.json({ error: 'Failed to fetch project' }, { status: 500 });

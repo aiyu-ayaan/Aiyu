@@ -10,11 +10,19 @@ export const stripMarkdown = (markdown) => {
     .replace(/`{3,}[\s\S]*?`{3,}/g, '')
     .replace(/`(.+?)`/g, '$1')
     .replace(/^\s*>\s+/gm, '')
-    .replace(/^\s*[\*\-\+]\s+/gm, '')
+    .replace(/^\s*[-+*]\s+/gm, '')
     .replace(/^\s*\d+\.\s+/gm, '')
     .replace(/\n{2,}/g, '\n')
     .trim();
 };
+
+export const generateSlug = (value = '') =>
+  String(value)
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-');
 
 export const getReadTime = (content = '') => {
   const words = stripMarkdown(content).split(/\s+/).filter(Boolean).length;

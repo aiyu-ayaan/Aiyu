@@ -70,13 +70,13 @@ export default function DatabaseManager() {
             setIsLoading(true);
             setMessage({ type: 'info', text: 'OVERWRITING_SYSTEM_DATA...' });
 
-            // Send file as FormData (supports both .zip and .json)
-            const formData = new FormData();
-            formData.append('file', importFile);
-
             const response = await fetch('/api/admin/import', {
                 method: 'POST',
-                body: formData,
+                headers: {
+                    'Content-Type': importFile.type || 'application/octet-stream',
+                    'x-backup-filename': importFile.name,
+                },
+                body: importFile,
             });
 
             let result = null;

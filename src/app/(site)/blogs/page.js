@@ -1,5 +1,5 @@
 import BlogList from '../../components/blogs/BlogList';
-import { getConfigData } from '@/lib/dataFetchers';
+import { getConfigData, getPublishedBlogs } from '@/lib/dataFetchers';
 
 export async function generateMetadata() {
     const config = await getConfigData();
@@ -31,6 +31,7 @@ export async function generateMetadata() {
     };
 }
 
-export default function BlogsPage() {
-    return <BlogList />;
+export default async function BlogsPage() {
+    const [blogs, config] = await Promise.all([getPublishedBlogs(), getConfigData()]);
+    return <BlogList initialBlogs={blogs} initialConfig={config} />;
 }

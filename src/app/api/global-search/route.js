@@ -3,7 +3,7 @@ import dbConnect from '@/lib/db';
 import Blog from '@/models/Blog';
 import Project from '@/models/Project';
 import Deployment from '@/models/Deployment';
-import cache, { CACHE_TTL } from '@/lib/cache';
+import cache, { CACHE_TTL, createCacheDebugHeaders } from '@/lib/cache';
 import { createPublicCacheHeaders, RESPONSE_CACHE } from '@/lib/httpCache';
 
 function escapeRegex(value) {
@@ -13,6 +13,14 @@ function escapeRegex(value) {
 function getSearchCacheKey(query) {
     return `db:search:${String(query).trim().toLowerCase()}`;
 }
+
+const SEARCH_LIMITS = {
+    BLOGS: 12,
+    PROJECTS: 12,
+    DEPLOYMENTS: 10,
+    ABOUT: 1,
+    HOME: 1,
+};
 
 export async function GET(request) {
     try {
@@ -26,12 +34,12 @@ export async function GET(request) {
             );
         }
 
-        await dbConnect();
-
-        const results = await cache.getOrSet(
+        const { value: results, meta } = await cache.getOrSetWithMeta(
             getSearchCacheKey(query),
             async () => {
+                await dbConnect();
                 const regex = new RegExp(escapeRegex(query), 'i');
+                const nowIso = new Date().toISOString();
 
                 const [blogs, projects, deployments, homeData, aboutData] = await Promise.all([
                     Blog.find({
@@ -40,8 +48,8 @@ export async function GET(request) {
                             { content: regex },
                             { tags: regex }
                         ],
-                        published: true
-                    }).select('title content date _id').lean(),
+                        published: { $ne: false }
+                    }).sort({ createdAt: -1 }).limit(SEARCH_LIMITS.BLOGS).select('title content date slug _id').lean(),
 
                     Project.find({
                         $or: [
@@ -49,7 +57,7 @@ export async function GET(request) {
                             { description: regex },
                             { techStack: regex }
                         ]
-                    }).select('name description year _id').lean(),
+                    }).sort({ displayOrder: 1, year: -1 }).limit(SEARCH_LIMITS.PROJECTS).select('name description year _id').lean(),
 
                     Deployment.find({
                         $or: [
@@ -60,7 +68,7 @@ export async function GET(request) {
                             { appType: regex },
                             { environment: regex },
                         ]
-                    }).select('name description hostingProvider environment _id').lean(),
+                    }).sort({ displayOrder: 1, updatedAt: -1 }).limit(SEARCH_LIMITS.DEPLOYMENTS).select('name description hostingProvider environment _id').lean(),
 
                     // Search Home (usually singleton, but using find in case of multiple or just 1)
                     import('@/models/Home').then(mod => mod.default.find({
@@ -69,7 +77,7 @@ export async function GET(request) {
                             { homeRoles: regex },
                             { codeSnippets: regex }
                         ]
-                    }).lean()),
+                    }).limit(SEARCH_LIMITS.HOME).lean()),
 
                     // Search About (usually singleton)
                     import('@/models/About').then(mod => mod.default.find({
@@ -80,14 +88,14 @@ export async function GET(request) {
                             { "experiences.role": regex },
                             { "skills.name": regex }
                         ]
-                    }).lean())
+                    }).limit(SEARCH_LIMITS.ABOUT).lean())
                 ]);
 
                 const formattedBlogs = blogs.map(blog => ({
                     type: 'blog',
                     title: blog.title,
                     description: blog.content ? blog.content.substring(0, 100) + '...' : '',
-                    path: `/blogs/${blog._id}`,
+                    path: `/blogs/${blog.slug || blog._id}`,
                     date: blog.date
                 }));
 
@@ -105,7 +113,7 @@ export async function GET(request) {
                     title: deployment.name,
                     description: `${deployment.hostingProvider || 'Hosted'} ${deployment.environment ? `• ${deployment.environment}` : ''}`.trim(),
                     path: '/apps',
-                    date: new Date().toISOString()
+                    date: nowIso
                 }));
 
                 const formattedHome = (homeData || []).map(h => ({
@@ -113,7 +121,7 @@ export async function GET(request) {
                     title: 'Home',
                     description: `Home content: ${h.name} - ${h.homeRoles?.[0] || ''}...`,
                     path: '/',
-                    date: new Date().toISOString()
+                    date: nowIso
                 }));
 
                 const formattedAbout = (aboutData || []).flatMap(a => {
@@ -128,29 +136,33 @@ export async function GET(request) {
                             title: 'About - Summary',
                             description: a.professionalSummary ? a.professionalSummary.substring(0, 100) + '...' : `About ${a.name}`,
                             path: '/about-me#summary',
-                            date: new Date().toISOString()
+                            date: nowIso
                         });
                     }
 
-                    const matchedExperience = a.experiences.some(exp => isMatch(exp.company) || isMatch(exp.role));
+                    const matchedExperience = Array.isArray(a.experiences)
+                        ? a.experiences.some((exp) => isMatch(exp?.company) || isMatch(exp?.role))
+                        : false;
                     if (matchedExperience) {
                         matches.push({
                             type: 'page',
                             title: 'About - Experience',
                             description: 'Professional experience and roles.',
                             path: '/about-me#experience',
-                            date: new Date().toISOString()
+                            date: nowIso
                         });
                     }
 
-                    const matchedSkills = a.skills.some(skill => isMatch(skill.name));
+                    const matchedSkills = Array.isArray(a.skills)
+                        ? a.skills.some((skill) => isMatch(skill?.name))
+                        : false;
                     if (matchedSkills) {
                         matches.push({
                             type: 'page',
                             title: 'About - Skills',
                             description: 'Technical skills and proficiencies.',
                             path: '/about-me#skills',
-                            date: new Date().toISOString()
+                            date: nowIso
                         });
                     }
 
@@ -161,7 +173,7 @@ export async function GET(request) {
                             title: 'About',
                             description: a.professionalSummary ? a.professionalSummary.substring(0, 100) + '...' : `About ${a.name}`,
                             path: '/about-me',
-                            date: new Date().toISOString()
+                            date: nowIso
                         });
                     }
 
@@ -178,7 +190,12 @@ export async function GET(request) {
 
         return NextResponse.json(
             { results },
-            { headers: createPublicCacheHeaders(RESPONSE_CACHE.PUBLIC_SHORT) }
+            {
+                headers: {
+                    ...createPublicCacheHeaders(RESPONSE_CACHE.PUBLIC_SHORT),
+                    ...createCacheDebugHeaders(meta),
+                },
+            }
         );
     } catch (error) {
         console.error('Search API Error:', error);

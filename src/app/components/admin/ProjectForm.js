@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2, Save, Terminal, Code, Layers, Calendar, Link as LinkIcon, Image as ImageIcon, FileText, CheckCircle, Activity, Sparkles, Wand2, Upload, X } from 'lucide-react';
 import Toast from './Toast';
+import BlogLinkInput from './BlogLinkInput';
 
 const getStatusState = (status) => {
     const safeStatus = String(status || '').trim().toLowerCase();
@@ -40,6 +41,7 @@ const ProjectForm = ({ initialData, isEdit = false }) => {
         projectType: '',
         description: '',
         codeLink: '',
+        blogLink: '',
         image: '',
     });
     const [loading, setLoading] = useState(false);
@@ -319,7 +321,7 @@ const ProjectForm = ({ initialData, isEdit = false }) => {
                     </div>
 
                     {/* Technical Specs Module */}
-                    <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 relative overflow-hidden group">
+                    <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 relative group">
                         <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
 
                         <h2 className="text-sm font-mono text-purple-400 uppercase tracking-widest mb-8 flex items-center gap-4 relative z-10">
@@ -392,6 +394,7 @@ const ProjectForm = ({ initialData, isEdit = false }) => {
                                     </div>
                                 </div>
                             </div>
+                            <BlogLinkInput value={formData.blogLink} onChange={handleChange} />
                         </div>
                     </div>
                 </div>

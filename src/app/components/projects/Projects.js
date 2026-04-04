@@ -278,7 +278,7 @@ const Projects = ({ data }) => {
 
           <>
             <h1
-              className="mb-3 bg-linear-to-r bg-clip-text text-4xl font-bold text-transparent sm:text-5xl lg:text-6xl"
+              className="mb-1 pb-2 leading-tight bg-linear-to-r bg-clip-text text-4xl font-bold text-transparent sm:text-5xl lg:text-6xl"
               style={{
                 backgroundImage:
                   'linear-gradient(to right, var(--accent-cyan), var(--accent-purple), var(--accent-orange-bright))',
