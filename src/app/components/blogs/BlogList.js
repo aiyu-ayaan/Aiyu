@@ -202,43 +202,36 @@ const BlogList = ({ initialBlogs, initialConfig }) => {
         </section>
 
         <section
-          className="mt-8 rounded-3xl border overflow-hidden"
+          className="mt-6 rounded-2xl border p-4 sm:p-5"
           style={{
             background:
-              'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 96%, transparent), color-mix(in srgb, var(--bg-secondary) 96%, transparent))',
+              'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 94%, transparent), color-mix(in srgb, var(--bg-secondary) 94%, transparent))',
             borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
-            boxShadow: '0 20px 50px var(--shadow-sm)',
           }}
         >
-          <div className="p-6 sm:p-8">
-            <div className="relative max-w-2xl mx-auto">
-              <div className="absolute -inset-1 bg-linear-to-r from-cyan-500 to-purple-600 rounded-2xl blur opacity-20 group-focus-within:opacity-40 transition duration-1000 group-focus-within:duration-200"></div>
-              <div className="relative group">
-                <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-lg transition-colors group-focus-within:text-cyan-400" style={{ color: 'var(--text-tertiary)' }} />
-                <input
-                  id="blog-search"
-                  type="text"
-                  value={searchQuery}
-                  onChange={(event) => setSearchQuery(event.target.value)}
-                  placeholder="Query our knowledge base (titles, tags, content)..."
-                  className="w-full rounded-xl border py-4 pl-12 pr-4 text-base focus:outline-none transition-all shadow-inner"
-                  style={{
-                    backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 90%, transparent)',
-                    borderColor: 'color-mix(in srgb, var(--border-secondary) 80%, transparent)',
-                    color: 'var(--text-primary)',
-                  }}
-                />
-              </div>
+          <div className="mb-4">
+            <label htmlFor="blog-search" className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+              Search Blogs
+            </label>
+            <div className="relative">
+              <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-sm" style={{ color: 'var(--text-tertiary)' }} />
+              <input
+                id="blog-search"
+                type="text"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Search by title, tag, content"
+                className="w-full rounded-lg border py-2.5 pl-9 pr-3 text-sm focus:outline-none"
+                style={{
+                  backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 80%, transparent)',
+                  borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
+                  color: 'var(--text-primary)',
+                }}
+              />
             </div>
           </div>
 
-          <div 
-            className="px-6 py-4 border-t flex flex-wrap items-center justify-center gap-2"
-            style={{ 
-              borderColor: 'color-mix(in srgb, var(--border-secondary) 50%, transparent)',
-              backgroundColor: 'color-mix(in srgb, var(--bg-surface) 50%, transparent)' 
-            }}
-          >
+          <div className="mb-3 flex flex-wrap items-center gap-2">
             {allTags.map((tag) => {
               const isActive = selectedTag === tag;
               return (

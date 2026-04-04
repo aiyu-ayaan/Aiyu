@@ -374,24 +374,21 @@ const Projects = ({ data }) => {
             <label htmlFor="projectSearch" className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
               Search Projects
             </label>
-            <div className="relative max-w-2xl">
-              <div className="absolute -inset-1 bg-linear-to-r from-cyan-500 to-purple-600 rounded-2xl blur opacity-20 group-focus-within:opacity-40 transition duration-1000 group-focus-within:duration-200"></div>
-              <div className="relative group">
-                <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-lg transition-colors group-focus-within:text-cyan-400" style={{ color: 'var(--text-tertiary)' }} />
-                <input
-                  id="projectSearch"
-                  type="text"
-                  value={searchQuery}
-                  onChange={(event) => setSearchQuery(event.target.value)}
-                  placeholder="Query portfolio (names, scopes, tech stacks, or descriptions)..."
-                  className="w-full rounded-xl border py-4 pl-12 pr-4 text-base focus:outline-none transition-all shadow-inner"
-                  style={{
-                    backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 90%, transparent)',
-                    borderColor: 'color-mix(in srgb, var(--border-secondary) 80%, transparent)',
-                    color: 'var(--text-primary)',
-                  }}
-                />
-              </div>
+            <div className="relative">
+              <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-sm" style={{ color: 'var(--text-tertiary)' }} />
+              <input
+                id="projectSearch"
+                type="text"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Search by name, stack, type, or description"
+                className="w-full rounded-lg border py-2.5 pl-9 pr-3 text-sm focus:outline-none"
+                style={{
+                  backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 80%, transparent)',
+                  borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
+                  color: 'var(--text-primary)',
+                }}
+              />
             </div>
           </div>
 
