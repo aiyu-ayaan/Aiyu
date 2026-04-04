@@ -19,6 +19,7 @@ import {
     Wrench,
 } from 'lucide-react';
 import Toast from './Toast';
+import BlogLinkInput from './BlogLinkInput';
 
 const getStatusState = (status) => {
     const safeStatus = String(status || '').trim().toLowerCase();
@@ -64,6 +65,7 @@ export default function DeploymentForm({ initialData, isEdit = false }) {
         hostingProvider: '',
         description: '',
         hostedUrl: '',
+        blogLink: '',
         techStack: '',
         image: '',
     });
@@ -226,6 +228,7 @@ export default function DeploymentForm({ initialData, isEdit = false }) {
                 .map((item) => item.trim())
                 .filter(Boolean),
             hostedUrl: formData.hostedUrl.trim(),
+            blogLink: formData.blogLink ? formData.blogLink.trim() : '',
             image: formData.image.trim(),
         };
 
@@ -355,7 +358,7 @@ export default function DeploymentForm({ initialData, isEdit = false }) {
                         </div>
                     </div>
 
-                    <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 relative overflow-hidden group">
+                    <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 relative group">
                         <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
                         <h2 className="text-sm font-mono text-purple-400 uppercase tracking-widest mb-8 flex items-center gap-4 relative z-10">
                             App Runtime
@@ -438,6 +441,8 @@ export default function DeploymentForm({ initialData, isEdit = false }) {
                                     />
                                 </div>
                             </div>
+                            
+                            <BlogLinkInput value={formData.blogLink} onChange={handleChange} />
                         </div>
                     </div>
                 </div>

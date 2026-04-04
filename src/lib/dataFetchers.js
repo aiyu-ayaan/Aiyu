@@ -75,7 +75,7 @@ const CONFIG_PUBLIC_SELECT = [
 ].join(' ');
 
 const HOME_ABOUT_SELECT = ['name', 'skills', 'professionalSummary'].join(' ');
-const HOME_PROJECTS_SELECT = ['name', 'techStack', 'year', 'status', 'projectType', 'description', 'codeLink', 'image'].join(' ');
+const HOME_PROJECTS_SELECT = ['name', 'techStack', 'year', 'status', 'projectType', 'description', 'codeLink', 'blogLink', 'image'].join(' ');
 const HOME_BLOGS_SELECT = ['title', 'slug', 'content', 'image', 'date', 'createdAt'].join(' ');
 const BLOG_LIST_SELECT = ['title', 'slug', 'content', 'image', 'date', 'createdAt', 'updatedAt', 'published', 'tags'].join(' ');
 const GALLERY_LIST_SELECT = ['src', 'thumbnail', 'description', 'width', 'height', 'isPinned', 'order', 'createdAt'].join(' ');

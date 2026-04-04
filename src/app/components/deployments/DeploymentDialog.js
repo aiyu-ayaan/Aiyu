@@ -223,6 +223,23 @@ export default function DeploymentDialog({ deployment, onClose }) {
                                                 Private or internal endpoint
                                             </span>
                                         )}
+                                        {deployment?.blogLink && (
+                                            <div className="mt-3 pt-3 border-t" style={{ borderColor: 'color-mix(in srgb, var(--border-secondary) 50%, transparent)' }}>
+                                                <div className="mb-2 flex items-center gap-2 text-xs uppercase tracking-[0.18em]" style={{ color: 'var(--text-tertiary)' }}>
+                                                    <FaGlobe />
+                                                    Blog Article
+                                                </div>
+                                                <Link
+                                                    href={deployment.blogLink}
+                                                    target="_blank"
+                                                    className="inline-flex items-center gap-2 break-all text-sm font-medium"
+                                                    style={{ color: 'var(--accent-purple)' }}
+                                                >
+                                                    <span>View Related Post</span>
+                                                    <FaArrowUpRightFromSquare className="shrink-0" />
+                                                </Link>
+                                            </div>
+                                        )}
                                     </div>
 
                                     <div
