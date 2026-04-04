@@ -4,49 +4,59 @@ import { getSession } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import { isPredefinedTheme, getTheme } from "@/lib/themePresets";
 import Theme from "@/models/Theme";
-import cache from "@/lib/cache";
+import cache, { CACHE_TTL } from "@/lib/cache";
+import { createPublicCacheHeaders, RESPONSE_CACHE } from "@/lib/httpCache";
+
+const CACHE_KEY_ACTIVE_THEME = 'db:themes:active';
 
 // GET /api/themes/active - Get the currently active theme
 export async function GET() {
     try {
-        await dbConnect();
+        const activeThemePayload = await cache.getOrSet(
+            CACHE_KEY_ACTIVE_THEME,
+            async () => {
+                await dbConnect();
 
-        // Get config
-        let config = await Config.findOne({});
+                let config = await Config.findOne({}).lean();
 
-        if (!config) {
-            // Create default config if none exists
-            config = await Config.create({
-                activeTheme: 'vs-code-dark',
-                activeThemeVariant: 'dark',
-                allowThemeSwitching: true
-            });
-        }
+                if (!config) {
+                    const createdConfig = await Config.create({
+                        activeTheme: 'vs-code-dark',
+                        activeThemeVariant: 'dark',
+                        allowThemeSwitching: true,
+                    });
+                    config = createdConfig.toObject();
+                }
 
-        const activeThemeSlug = config.activeTheme || 'vs-code-dark';
-        const activeVariant = config.activeThemeVariant || 'dark';
+                const activeThemeSlug = config.activeTheme || 'vs-code-dark';
+                const activeVariant = config.activeThemeVariant || 'dark';
 
-        // Get the theme data
-        let themeData;
-        if (isPredefinedTheme(activeThemeSlug)) {
-            themeData = getTheme(activeThemeSlug);
-        } else {
-            themeData = await Theme.findOne({ slug: activeThemeSlug });
-        }
+                let themeData;
+                if (isPredefinedTheme(activeThemeSlug)) {
+                    themeData = getTheme(activeThemeSlug);
+                } else {
+                    themeData = await Theme.findOne({ slug: activeThemeSlug }).lean();
+                }
 
-        if (!themeData) {
-            // Fallback to default theme if active theme not found
-            themeData = getTheme('vs-code-dark');
-        }
+                if (!themeData) {
+                    themeData = getTheme('vs-code-dark');
+                }
+
+                return {
+                    theme: themeData,
+                    activeVariant,
+                    allowThemeSwitching: config.allowThemeSwitching,
+                    perPageThemes: config.perPageThemes || { enabled: false, pages: {} },
+                };
+            },
+            CACHE_TTL.SHORT
+        );
 
         return NextResponse.json({
             success: true,
-            data: {
-                theme: themeData,
-                activeVariant,
-                allowThemeSwitching: config.allowThemeSwitching,
-                perPageThemes: config.perPageThemes || { enabled: false, pages: {} }
-            }
+            data: activeThemePayload,
+        }, {
+            headers: createPublicCacheHeaders(RESPONSE_CACHE.PUBLIC_SHORT),
         });
     } catch (error) {
         console.error("Error fetching active theme:", error);
@@ -60,7 +70,6 @@ export async function GET() {
 // PATCH /api/themes/active - Set the active theme
 export async function PATCH(request) {
     try {
-        await dbConnect();
         const session = await getSession();
 
         if (!session) {
@@ -70,6 +79,7 @@ export async function PATCH(request) {
             );
         }
 
+        await dbConnect();
         const body = await request.json();
         const { themeSlug, variant, perPageThemes } = body;
 
@@ -86,7 +96,7 @@ export async function PATCH(request) {
             if (isPredefinedTheme(themeSlug)) {
                 themeExists = true;
             } else {
-                const customTheme = await Theme.findOne({ slug: themeSlug });
+                const customTheme = await Theme.findOne({ slug: themeSlug }).select('_id').lean();
                 themeExists = !!customTheme;
             }
 
@@ -128,6 +138,7 @@ export async function PATCH(request) {
 
         await config.save();
         cache.invalidatePrefix('db:config');
+        cache.invalidatePrefix('db:themes');
 
         return NextResponse.json({
             success: true,

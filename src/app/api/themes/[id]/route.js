@@ -5,24 +5,36 @@ import { getSession } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { isPredefinedTheme, getTheme } from "@/lib/themePresets";
+import cache, { CACHE_TTL } from "@/lib/cache";
+import { createPublicCacheHeaders, RESPONSE_CACHE } from "@/lib/httpCache";
+
+const CACHE_KEY_THEME_DETAIL_PREFIX = 'db:theme:detail:';
 
 // GET /api/themes/[id] - Get specific theme
-export async function GET(request, { params }) {
+export async function GET(_request, { params }) {
     try {
-        await dbConnect();
         const { id } = await params;
+        const cacheKey = `${CACHE_KEY_THEME_DETAIL_PREFIX}${id}`;
 
         // Check if it's a predefined theme
         if (isPredefinedTheme(id)) {
             const theme = getTheme(id);
-            return NextResponse.json({ success: true, data: theme });
+            return NextResponse.json({ success: true, data: theme }, {
+                headers: createPublicCacheHeaders(RESPONSE_CACHE.PUBLIC_MEDIUM),
+            });
         }
 
-        // Otherwise, look in database
-        const query = mongoose.Types.ObjectId.isValid(id)
-            ? { $or: [{ slug: id }, { _id: id }] }
-            : { slug: id };
-        const theme = await Theme.findOne(query);
+        const theme = await cache.getOrSet(
+            cacheKey,
+            async () => {
+                await dbConnect();
+                const query = mongoose.Types.ObjectId.isValid(id)
+                    ? { $or: [{ slug: id }, { _id: id }] }
+                    : { slug: id };
+                return Theme.findOne(query).lean();
+            },
+            CACHE_TTL.MEDIUM
+        );
 
         if (!theme) {
             return NextResponse.json(
@@ -31,7 +43,9 @@ export async function GET(request, { params }) {
             );
         }
 
-        return NextResponse.json({ success: true, data: theme });
+        return NextResponse.json({ success: true, data: theme }, {
+            headers: createPublicCacheHeaders(RESPONSE_CACHE.PUBLIC_MEDIUM),
+        });
     } catch (error) {
         console.error("Error fetching theme:", error);
         return NextResponse.json(
@@ -44,7 +58,6 @@ export async function GET(request, { params }) {
 // PUT /api/themes/[id] - Update custom theme
 export async function PUT(request, { params }) {
     try {
-        await dbConnect();
         const session = await getSession();
 
         if (!session) {
@@ -54,6 +67,7 @@ export async function PUT(request, { params }) {
             );
         }
 
+        await dbConnect();
         const { id } = await params;
 
         // Cannot update predefined themes
@@ -86,6 +100,8 @@ export async function PUT(request, { params }) {
         if (variants) theme.variants = variants;
 
         await theme.save();
+        cache.invalidatePrefix(CACHE_KEY_THEME_DETAIL_PREFIX);
+        cache.invalidatePrefix('db:themes');
 
         return NextResponse.json({ success: true, data: theme });
     } catch (error) {
@@ -98,9 +114,8 @@ export async function PUT(request, { params }) {
 }
 
 // DELETE /api/themes/[id] - Delete custom theme
-export async function DELETE(request, { params }) {
+export async function DELETE(_request, { params }) {
     try {
-        await dbConnect();
         const session = await getSession();
 
         if (!session) {
@@ -110,6 +125,7 @@ export async function DELETE(request, { params }) {
             );
         }
 
+        await dbConnect();
         const { id } = await params;
 
         // Cannot delete predefined themes
@@ -121,7 +137,7 @@ export async function DELETE(request, { params }) {
         }
 
         // Check if this is the active theme
-        const config = await Config.findOne({});
+        const config = await Config.findOne({}).select('activeTheme').lean();
         if (config && config.activeTheme === id) {
             return NextResponse.json(
                 { success: false, error: "Cannot delete the active theme. Please activate another theme first." },
@@ -141,6 +157,9 @@ export async function DELETE(request, { params }) {
                 { status: 404 }
             );
         }
+
+        cache.invalidatePrefix(CACHE_KEY_THEME_DETAIL_PREFIX);
+        cache.invalidatePrefix('db:themes');
 
         return NextResponse.json({
             success: true,

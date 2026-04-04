@@ -2,7 +2,10 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import Config from '@/models/Config';
 import { getSession } from '@/lib/auth';
-import cache, { CACHE_KEYS } from '@/lib/cache';
+import cache, { CACHE_KEYS, CACHE_TTL } from '@/lib/cache';
+import { createPublicCacheHeaders, RESPONSE_CACHE } from '@/lib/httpCache';
+
+const CACHE_KEY_CONFIG_PUBLIC_API = 'db:config:public:api';
 
 const PUBLIC_CONFIG_SELECT = [
     'siteTitle',
@@ -60,31 +63,36 @@ function sanitizePublicConfig(config) {
 }
 
 export async function GET() {
-    await dbConnect();
     const session = await getSession();
 
     try {
-        let config = null;
-
         if (session) {
-            config = await Config.findOne().lean();
-        } else {
-            config = await Config.findOne().select(PUBLIC_CONFIG_SELECT).lean();
+            await dbConnect();
+            let config = await Config.findOne().lean();
+            if (!config) {
+                config = await Config.create({});
+            }
+            return NextResponse.json(config);
         }
+
+        const config = await cache.getOrSet(
+            CACHE_KEY_CONFIG_PUBLIC_API,
+            async () => {
+                await dbConnect();
+                return Config.findOne().select(PUBLIC_CONFIG_SELECT).lean();
+            },
+            CACHE_TTL.MEDIUM
+        );
 
         if (!config) {
-            if (session) {
-                config = await Config.create({});
-            } else {
-                return NextResponse.json({});
-            }
+            return NextResponse.json({}, {
+                headers: createPublicCacheHeaders(RESPONSE_CACHE.PUBLIC_SHORT),
+            });
         }
 
-        if (!session) {
-            return NextResponse.json(sanitizePublicConfig(config));
-        }
-
-        return NextResponse.json(config);
+        return NextResponse.json(sanitizePublicConfig(config), {
+            headers: createPublicCacheHeaders(RESPONSE_CACHE.PUBLIC_MEDIUM),
+        });
     } catch {
         return NextResponse.json({ error: 'Failed to fetch config' }, { status: 500 });
     }
