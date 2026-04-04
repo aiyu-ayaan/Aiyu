@@ -4,7 +4,7 @@ import { getSession } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import { isPredefinedTheme, getTheme } from "@/lib/themePresets";
 import Theme from "@/models/Theme";
-import cache, { CACHE_TTL } from "@/lib/cache";
+import cache, { CACHE_TTL, createCacheDebugHeaders } from "@/lib/cache";
 import { createPublicCacheHeaders, RESPONSE_CACHE } from "@/lib/httpCache";
 
 const CACHE_KEY_ACTIVE_THEME = 'db:themes:active';
@@ -12,7 +12,7 @@ const CACHE_KEY_ACTIVE_THEME = 'db:themes:active';
 // GET /api/themes/active - Get the currently active theme
 export async function GET() {
     try {
-        const activeThemePayload = await cache.getOrSet(
+        const { value: activeThemePayload, meta } = await cache.getOrSetWithMeta(
             CACHE_KEY_ACTIVE_THEME,
             async () => {
                 await dbConnect();
@@ -56,7 +56,10 @@ export async function GET() {
             success: true,
             data: activeThemePayload,
         }, {
-            headers: createPublicCacheHeaders(RESPONSE_CACHE.PUBLIC_SHORT),
+            headers: {
+                ...createPublicCacheHeaders(RESPONSE_CACHE.PUBLIC_SHORT),
+                ...createCacheDebugHeaders(meta),
+            },
         });
     } catch (error) {
         console.error("Error fetching active theme:", error);

@@ -3,22 +3,26 @@ import dbConnect from '@/lib/db';
 import Gallery from '@/models/Gallery';
 import { withAuth } from '@/middleware/auth';
 import { deleteThumbnail } from '@/utils/imageProcessing';
-import cache, { CACHE_KEYS, CACHE_TTL } from '@/lib/cache';
+import cache, { CACHE_KEYS, CACHE_TTL, createCacheDebugHeaders } from '@/lib/cache';
 import { createPublicCacheHeaders, RESPONSE_CACHE } from '@/lib/httpCache';
 
 // GET: Fetch all gallery items (Public)
 export async function GET() {
-    await dbConnect();
-
     try {
-        const images = await cache.getOrSet(
+        const { value: images, meta } = await cache.getOrSetWithMeta(
             CACHE_KEYS.GALLERY,
-            () => Gallery.find({}).sort({ isPinned: -1, order: 1, createdAt: -1 }).lean(),
+            async () => {
+                await dbConnect();
+                return Gallery.find({}).sort({ isPinned: -1, order: 1, createdAt: -1 }).lean();
+            },
             CACHE_TTL.MEDIUM
         );
 
         return NextResponse.json({ success: true, data: images }, {
-            headers: createPublicCacheHeaders(RESPONSE_CACHE.PUBLIC_MEDIUM),
+            headers: {
+                ...createPublicCacheHeaders(RESPONSE_CACHE.PUBLIC_MEDIUM),
+                ...createCacheDebugHeaders(meta),
+            },
         });
     } catch (error) {
         return NextResponse.json({ success: false, error: error.message }, { status: 400 });

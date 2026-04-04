@@ -5,7 +5,7 @@
  * L2: Redis cache (shared across Node.js processes/containers)
  */
 
-import { getRedisClient } from '@/lib/redis';
+import { getRedisClient, isRedisEnabled } from '@/lib/redis';
 
 const REDIS_KEY_REGISTRY = 'db:cache:keys';
 const DEFAULT_REDIS_TTL_SECONDS = Number.parseInt(process.env.REDIS_DEFAULT_TTL_SECONDS || '60', 10);
@@ -18,7 +18,6 @@ class MemoryCache {
         this.cache = new Map();
         this.pending = new Map();
         this.defaultTTL = SAFE_DEFAULT_REDIS_TTL_SECONDS * 1000;
-        this.redis = getRedisClient();
     }
 
     /**
@@ -50,7 +49,8 @@ class MemoryCache {
             expiry: Date.now() + ttl,
         });
 
-        if (this.redis) {
+        const redis = getRedisClient();
+        if (redis) {
             void this.setRedisValue(key, value, ttl);
         }
     }
@@ -63,7 +63,8 @@ class MemoryCache {
         this.cache.delete(key);
         this.pending.delete(key);
 
-        if (this.redis) {
+        const redis = getRedisClient();
+        if (redis) {
             void this.invalidateRedisKey(key);
         }
     }
@@ -85,7 +86,8 @@ class MemoryCache {
             }
         }
 
-        if (this.redis) {
+        const redis = getRedisClient();
+        if (redis) {
             void this.invalidateRedisPrefix(prefix);
         }
     }
@@ -97,7 +99,8 @@ class MemoryCache {
         this.cache.clear();
         this.pending.clear();
 
-        if (this.redis) {
+        const redis = getRedisClient();
+        if (redis) {
             void this.invalidateRedisAll();
         }
     }
@@ -109,15 +112,29 @@ class MemoryCache {
      * @param {number} [ttl]
      * @returns {Promise<any>}
      */
-    async getOrSet(key, fn, ttl = this.defaultTTL) {
+    async getOrSetWithMeta(key, fn, ttl = this.defaultTTL) {
         const memoryValue = this.get(key);
         if (memoryValue !== null) {
-            return memoryValue;
+            return {
+                value: memoryValue,
+                meta: {
+                    key,
+                    source: 'memory',
+                    redisEnabled: isRedisEnabled(),
+                },
+            };
         }
 
         const pending = this.pending.get(key);
         if (pending) {
-            return pending;
+            const result = await pending;
+            return {
+                ...result,
+                meta: {
+                    ...result.meta,
+                    source: 'pending',
+                },
+            };
         }
 
         const inflight = (async () => {
@@ -128,12 +145,29 @@ class MemoryCache {
                         value: redisValue,
                         expiry: Date.now() + ttl,
                     });
-                    return redisValue;
+                    return {
+                        value: redisValue,
+                        meta: {
+                            key,
+                            source: 'redis',
+                            redisEnabled: true,
+                        },
+                    };
                 }
 
                 const value = await fn();
                 this.set(key, value, ttl);
-                return value;
+                return {
+                    value,
+                    meta: {
+                        key,
+                        source: 'miss',
+                        redisEnabled: isRedisEnabled(),
+                    },
+                };
+            } catch (error) {
+                console.error(`[cache] getOrSetWithMeta failed for "${key}"`, error);
+                throw error;
             } finally {
                 this.pending.delete(key);
             }
@@ -143,11 +177,17 @@ class MemoryCache {
         return inflight;
     }
 
+    async getOrSet(key, fn, ttl = this.defaultTTL) {
+        const result = await this.getOrSetWithMeta(key, fn, ttl);
+        return result.value;
+    }
+
     async getRedisValue(key) {
-        if (!this.redis) return null;
+        const redis = getRedisClient();
+        if (!redis) return null;
 
         try {
-            const cached = await this.redis.get(key);
+            const cached = await redis.get(key);
             if (!cached) return null;
             return JSON.parse(cached);
         } catch (error) {
@@ -157,13 +197,14 @@ class MemoryCache {
     }
 
     async setRedisValue(key, value, ttl) {
-        if (!this.redis) return;
+        const redis = getRedisClient();
+        if (!redis) return;
 
         try {
             const ttlSeconds = Math.max(1, Math.ceil(ttl / 1000));
             const payload = JSON.stringify(value);
 
-            await this.redis
+            await redis
                 .multi()
                 .set(key, payload, 'EX', ttlSeconds)
                 .sadd(REDIS_KEY_REGISTRY, key)
@@ -174,10 +215,11 @@ class MemoryCache {
     }
 
     async invalidateRedisKey(key) {
-        if (!this.redis) return;
+        const redis = getRedisClient();
+        if (!redis) return;
 
         try {
-            await this.redis
+            await redis
                 .multi()
                 .del(key)
                 .srem(REDIS_KEY_REGISTRY, key)
@@ -188,17 +230,18 @@ class MemoryCache {
     }
 
     async invalidateRedisPrefix(prefix) {
-        if (!this.redis) return;
+        const redis = getRedisClient();
+        if (!redis) return;
 
         try {
-            const allKeys = await this.redis.smembers(REDIS_KEY_REGISTRY);
+            const allKeys = await redis.smembers(REDIS_KEY_REGISTRY);
             const keysToDelete = allKeys.filter((key) => key.startsWith(prefix));
 
             if (keysToDelete.length === 0) {
                 return;
             }
 
-            await this.redis
+            await redis
                 .multi()
                 .del(...keysToDelete)
                 .srem(REDIS_KEY_REGISTRY, ...keysToDelete)
@@ -209,11 +252,12 @@ class MemoryCache {
     }
 
     async invalidateRedisAll() {
-        if (!this.redis) return;
+        const redis = getRedisClient();
+        if (!redis) return;
 
         try {
-            const allKeys = await this.redis.smembers(REDIS_KEY_REGISTRY);
-            const pipeline = this.redis.multi();
+            const allKeys = await redis.smembers(REDIS_KEY_REGISTRY);
+            const pipeline = redis.multi();
 
             if (allKeys.length > 0) {
                 pipeline.del(...allKeys);
@@ -229,12 +273,25 @@ class MemoryCache {
 
 let cacheInstance;
 
-if (!global.__memoryCache) {
+const hasCompatibleCacheInstance =
+    global.__memoryCache &&
+    typeof global.__memoryCache.getOrSet === 'function' &&
+    typeof global.__memoryCache.getOrSetWithMeta === 'function';
+
+if (!hasCompatibleCacheInstance) {
     global.__memoryCache = new MemoryCache();
 }
 cacheInstance = global.__memoryCache;
 
 export default cacheInstance;
+
+export function createCacheDebugHeaders(meta = {}) {
+    return {
+        'X-App-Cache': meta?.source || 'none',
+        'X-App-Cache-Key': meta?.key || '',
+        'X-App-Redis-Enabled': String(Boolean(meta?.redisEnabled)),
+    };
+}
 
 export const CACHE_KEYS = {
     HOME: 'db:home',

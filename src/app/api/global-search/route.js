@@ -3,7 +3,7 @@ import dbConnect from '@/lib/db';
 import Blog from '@/models/Blog';
 import Project from '@/models/Project';
 import Deployment from '@/models/Deployment';
-import cache, { CACHE_TTL } from '@/lib/cache';
+import cache, { CACHE_TTL, createCacheDebugHeaders } from '@/lib/cache';
 import { createPublicCacheHeaders, RESPONSE_CACHE } from '@/lib/httpCache';
 
 function escapeRegex(value) {
@@ -34,11 +34,10 @@ export async function GET(request) {
             );
         }
 
-        await dbConnect();
-
-        const results = await cache.getOrSet(
+        const { value: results, meta } = await cache.getOrSetWithMeta(
             getSearchCacheKey(query),
             async () => {
+                await dbConnect();
                 const regex = new RegExp(escapeRegex(query), 'i');
                 const nowIso = new Date().toISOString();
 
@@ -191,7 +190,12 @@ export async function GET(request) {
 
         return NextResponse.json(
             { results },
-            { headers: createPublicCacheHeaders(RESPONSE_CACHE.PUBLIC_SHORT) }
+            {
+                headers: {
+                    ...createPublicCacheHeaders(RESPONSE_CACHE.PUBLIC_SHORT),
+                    ...createCacheDebugHeaders(meta),
+                },
+            }
         );
     } catch (error) {
         console.error('Search API Error:', error);

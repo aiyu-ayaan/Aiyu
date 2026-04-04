@@ -5,7 +5,7 @@ import { getSession } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { isPredefinedTheme, getTheme } from "@/lib/themePresets";
-import cache, { CACHE_TTL } from "@/lib/cache";
+import cache, { CACHE_TTL, createCacheDebugHeaders } from "@/lib/cache";
 import { createPublicCacheHeaders, RESPONSE_CACHE } from "@/lib/httpCache";
 
 const CACHE_KEY_THEME_DETAIL_PREFIX = 'db:theme:detail:';
@@ -24,7 +24,7 @@ export async function GET(_request, { params }) {
             });
         }
 
-        const theme = await cache.getOrSet(
+        const { value: theme, meta } = await cache.getOrSetWithMeta(
             cacheKey,
             async () => {
                 await dbConnect();
@@ -44,7 +44,10 @@ export async function GET(_request, { params }) {
         }
 
         return NextResponse.json({ success: true, data: theme }, {
-            headers: createPublicCacheHeaders(RESPONSE_CACHE.PUBLIC_MEDIUM),
+            headers: {
+                ...createPublicCacheHeaders(RESPONSE_CACHE.PUBLIC_MEDIUM),
+                ...createCacheDebugHeaders(meta),
+            },
         });
     } catch (error) {
         console.error("Error fetching theme:", error);

@@ -3,7 +3,7 @@ import dbConnect from "@/lib/db";
 import Blog from "@/models/Blog";
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import cache, { CACHE_KEYS, CACHE_TTL } from '@/lib/cache';
+import cache, { CACHE_KEYS, CACHE_TTL, createCacheDebugHeaders } from '@/lib/cache';
 import { createPublicCacheHeaders, RESPONSE_CACHE } from '@/lib/httpCache';
 import { backfillMissingBlogSlugs, createUniqueBlogSlug } from '@/lib/blogSlugs';
 
@@ -18,12 +18,12 @@ function toPublicBlogList(blogs, maxLength = 500) {
 }
 
 export async function GET(request) {
-    await dbConnect();
     const session = await getSession();
     const { searchParams } = new URL(request.url);
     const showAll = searchParams.get('all');
 
     try {
+        await dbConnect();
         await backfillMissingBlogSlugs(Blog);
 
         let query = {};
@@ -39,15 +39,20 @@ export async function GET(request) {
             return NextResponse.json({ success: true, data: blogs });
         }
 
-        const blogs = await cache.getOrSet(
+        const { value: blogs, meta } = await cache.getOrSetWithMeta(
             CACHE_KEYS.BLOGS_PUBLISHED,
-            () => Blog.find(query).sort({ createdAt: -1 }).select(BLOG_LIST_SELECT).lean(),
+            async () => Blog.find(query).sort({ createdAt: -1 }).select(BLOG_LIST_SELECT).lean(),
             CACHE_TTL.MEDIUM
         );
 
         return NextResponse.json(
             { success: true, data: toPublicBlogList(blogs) },
-            { headers: createPublicCacheHeaders(RESPONSE_CACHE.PUBLIC_MEDIUM) }
+            {
+                headers: {
+                    ...createPublicCacheHeaders(RESPONSE_CACHE.PUBLIC_MEDIUM),
+                    ...createCacheDebugHeaders(meta),
+                },
+            }
         );
     } catch (error) {
         return NextResponse.json({ success: false, error: error.message }, { status: 400 });

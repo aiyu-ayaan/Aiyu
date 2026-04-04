@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import Config from '@/models/Config';
 import { getSession } from '@/lib/auth';
-import cache, { CACHE_KEYS, CACHE_TTL } from '@/lib/cache';
+import cache, { CACHE_KEYS, CACHE_TTL, createCacheDebugHeaders } from '@/lib/cache';
 import { createPublicCacheHeaders, RESPONSE_CACHE } from '@/lib/httpCache';
 
 const CACHE_KEY_CONFIG_PUBLIC_API = 'db:config:public:api';
@@ -75,7 +75,7 @@ export async function GET() {
             return NextResponse.json(config);
         }
 
-        const config = await cache.getOrSet(
+        const { value: config, meta } = await cache.getOrSetWithMeta(
             CACHE_KEY_CONFIG_PUBLIC_API,
             async () => {
                 await dbConnect();
@@ -91,7 +91,10 @@ export async function GET() {
         }
 
         return NextResponse.json(sanitizePublicConfig(config), {
-            headers: createPublicCacheHeaders(RESPONSE_CACHE.PUBLIC_MEDIUM),
+            headers: {
+                ...createPublicCacheHeaders(RESPONSE_CACHE.PUBLIC_MEDIUM),
+                ...createCacheDebugHeaders(meta),
+            },
         });
     } catch {
         return NextResponse.json({ error: 'Failed to fetch config' }, { status: 500 });

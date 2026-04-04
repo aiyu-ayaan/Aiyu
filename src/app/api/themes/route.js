@@ -3,7 +3,7 @@ import Theme from "@/models/Theme";
 import { getSession } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import { themePresets, isPredefinedTheme } from "@/lib/themePresets";
-import cache, { CACHE_TTL } from "@/lib/cache";
+import cache, { CACHE_TTL, createCacheDebugHeaders } from "@/lib/cache";
 import { createPublicCacheHeaders, RESPONSE_CACHE } from "@/lib/httpCache";
 
 const CACHE_KEY_THEMES_LIST = 'db:themes:list';
@@ -11,7 +11,7 @@ const CACHE_KEY_THEMES_LIST = 'db:themes:list';
 // GET /api/themes - Fetch all themes (predefined + custom)
 export async function GET() {
     try {
-        const customThemes = await cache.getOrSet(
+        const { value: customThemes, meta } = await cache.getOrSetWithMeta(
             CACHE_KEY_THEMES_LIST,
             async () => {
                 await dbConnect();
@@ -35,7 +35,10 @@ export async function GET() {
                 total: allThemes.length
             }
         }, {
-            headers: createPublicCacheHeaders(RESPONSE_CACHE.PUBLIC_MEDIUM),
+            headers: {
+                ...createPublicCacheHeaders(RESPONSE_CACHE.PUBLIC_MEDIUM),
+                ...createCacheDebugHeaders(meta),
+            },
         });
     } catch (error) {
         console.error("Error fetching themes:", error);
