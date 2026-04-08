@@ -1,4 +1,4 @@
-# Portfolio Website
+# Aiyu - The Ultimate Developer Portfolio Template (Next.js 15, Tailwind CSS, MongoDB)
 
 [![Status](https://badge.aiyu.co.in/badge/stable)](https://github.com/aiyu-ayaan/Aiyu)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
