@@ -27,8 +27,32 @@ jobs:
       tag_name: ${{ steps.release.outputs.tag_name }}
 
     steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Determine if release should run
+        id: decide
+        run: |
+          set -euo pipefail
+          # fetch enough history to compare with remote master
+          git fetch --no-tags --depth=50 origin master || true
+          # collect commit messages in the push range
+          msgs=$(git --no-pager log --format=%B origin/master..HEAD || true)
+          echo "Commit messages:\n$msgs"
+
+          # Conditions to trigger release:
+          # - explicit breaking marker 'BREAKING CHANGE'
+          # - type tokens with '!' (e.g. feat!: or fix!:)
+          # - double '!!' marker for forced major (feat!!:)
+          if echo "$msgs" | grep -qE 'BREAKING CHANGE' || echo "$msgs" | grep -qE '(^|[[:space:]])(feat|fix)!' || echo "$msgs" | grep -qE '(feat|fix)!!'; then
+            echo "should_release=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_release=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Release Please
         id: release
+        if: steps.decide.outputs.should_release == 'true'
         uses: googleapis/release-please-action@v4
         with:
           release-type: node

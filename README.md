@@ -1,4 +1,22 @@
+### Release Triggering (project default)
+
+To avoid automatic releases from ordinary `feat`/`fix` commits, this repository treats plain `feat:` and `fix:` as non-releasing work. Use the following markers when you intend to create a release:
+
+Examples:
+
+```
+feat!: add new CLI option (triggers minor release)
+fix!: correct cache invalidation (triggers patch release)
+feat!!: redesign API surface (forces major release)
+
+feat: add experimental helper (no release)
+fix: small logging tweak (no release)
+```
+
+When creating PRs, include the `!` markers in commit messages or the phrase `BREAKING CHANGE` in the body to indicate release intent.
+
 # Portfolio Website
+
 [![Status](https://badge.aiyu.co.in/badge/stable)](https://github.com/aiyu-ayaan/Aiyu)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Next.js](https://img.shields.io/badge/Next.js-15.0-black?logo=next.js)](https://nextjs.org/)
