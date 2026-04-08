@@ -12,6 +12,8 @@ const nextConfig = {
   experimental: {
     optimizeCss: true,
     optimizePackageImports: ['framer-motion', 'lucide-react', 'react-icons', 'simple-icons'],
+    // Import backups can include many images and exceed the 10MB proxy clone default.
+    proxyClientMaxBodySize: '999mb',
   },
 
   // Image configuration - enable optimization with sharp
