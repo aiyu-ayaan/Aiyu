@@ -1,5 +1,26 @@
 # Changelog
 
+## [4.0.0](https://github.com/aiyu-ayaan/Aiyu/compare/v3.4.1...v4.0.0) (2026-04-08)
+
+
+### ⚠ BREAKING CHANGES
+
+* Patch Release 🔥
+* Patch Release 🔥
+
+### Features
+
+* Enhance sitemap generation with dynamic routes for projects and deployments, add slug handling for entities ([74947f3](https://github.com/aiyu-ayaan/Aiyu/commit/74947f31051ef476d2007875c98e0ed59aa6d589))
+* Optimize blog page performance by addressing critical bottlenecks, including scroll event handling, link extraction, and caching mechanisms ([fd57c48](https://github.com/aiyu-ayaan/Aiyu/commit/fd57c48c2b44a77fdcb45ffbca89579a87732775))
+
+
+### Bug Fixes
+
+* Add spacing for better readability in README ([02996f9](https://github.com/aiyu-ayaan/Aiyu/commit/02996f9e63ee4c86e7d71f720237778b55e7f8ef))
+* Patch Release 🔥 ([4a48b8a](https://github.com/aiyu-ayaan/Aiyu/commit/4a48b8a3ec9f3e39b2f99850bb789edaf45691c0))
+* Patch Release 🔥 ([610286e](https://github.com/aiyu-ayaan/Aiyu/commit/610286e4b9217334d22c913dbc2377abd924d91c))
+* Revamp CI/CD workflow for release and deployment process ([7ceb898](https://github.com/aiyu-ayaan/Aiyu/commit/7ceb898f3d7bf20fc7ed7653004abeaa60106dbe))
+
 ## [3.4.1](https://github.com/aiyu-ayaan/Aiyu/compare/v3.4.0...v3.4.1) (2026-04-04)
 
 
