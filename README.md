@@ -1023,24 +1023,6 @@ If you find this project helpful, consider:
 - 💡 **Contribute** features or fixes (see [Contributing Guide](https://github.com/aiyu-ayaan/Aiyu/wiki/Contributing-Guide))
 - 📝 **Improve documentation** in the Wiki
 
-### Release Triggering (project default)
-
-To avoid automatic releases from ordinary `feat`/`fix` commits, this repository treats plain `feat:` and `fix:` as non-releasing work. Use the following markers when you intend to create a release:
-
-Examples:
-
-```
-feat!: add new CLI option (triggers minor release)
-fix!: correct cache invalidation (triggers patch release)
-feat!!: redesign API surface (forces major release)
-
-feat: add experimental helper (no release)
-fix: small logging tweak (no release)
-```
-
-When creating PRs, include the `!` markers in commit messages or the phrase `BREAKING CHANGE` in the body to indicate release intent.
-
-
 ## 📄 License
 
 This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
