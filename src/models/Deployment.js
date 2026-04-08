@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 const DeploymentSchema = new mongoose.Schema(
     {
         name: { type: String, required: true, trim: true },
+        slug: { type: String, trim: true, default: '' },
         techStack: { type: [String], required: true, default: [] },
         status: { type: String, required: true, trim: true, default: 'Live' },
         appType: { type: String, required: true, trim: true },
@@ -20,5 +21,6 @@ const DeploymentSchema = new mongoose.Schema(
 );
 
 DeploymentSchema.index({ displayOrder: 1, updatedAt: -1 });
+DeploymentSchema.index({ slug: 1 });
 
 export default mongoose.models.Deployment || mongoose.model('Deployment', DeploymentSchema);
