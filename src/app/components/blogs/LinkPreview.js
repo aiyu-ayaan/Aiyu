@@ -1,8 +1,9 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import { useTheme } from '../../context/ThemeContext';
+import { fetchOGPreview } from './linkPreviewCache';
 
-const LinkPreview = ({ url }) => {
+const LinkPreview = memo(({ url }) => {
     const { theme } = useTheme();
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -11,16 +12,14 @@ const LinkPreview = ({ url }) => {
     useEffect(() => {
         if (!url) return;
 
-        const fetchData = async () => {
+        setLoading(true);
+        setError(false);
+
+        const loadData = async () => {
             try {
-                const res = await fetch(`/api/og-preview?url=${encodeURIComponent(url)}`);
-                if (res.ok) {
-                    const result = await res.json();
-                    if (result.title || result.description || result.image) {
-                        setData(result);
-                    } else {
-                        setError(true);
-                    }
+                const result = await fetchOGPreview(url);
+                if (result) {
+                    setData(result);
                 } else {
                     setError(true);
                 }
@@ -31,7 +30,7 @@ const LinkPreview = ({ url }) => {
             }
         };
 
-        fetchData();
+        loadData();
     }, [url]);
 
     if (error || (!loading && !data)) {
@@ -103,6 +102,8 @@ const LinkPreview = ({ url }) => {
             </div>
         </a>
     );
-};
+});
+
+LinkPreview.displayName = 'LinkPreview';
 
 export default LinkPreview;

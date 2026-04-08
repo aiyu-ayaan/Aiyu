@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, memo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
@@ -16,8 +16,10 @@ import {
   getBlogInitials,
   getBlogPlaceholderGradient,
   getReadTime,
+  extractLinksFromContent,
 } from './blogUtils';
 import RouteBetaBadge from '../shared/RouteBetaBadge';
+import '../../styles/blog-detail.css';
 
 const SyntaxHighlighter = dynamic(
   () => import('react-syntax-highlighter').then((module) => module.Prism),
@@ -27,39 +29,15 @@ const SyntaxHighlighter = dynamic(
 const isOptimizableImage = (src) =>
   typeof src === 'string' && (src.startsWith('/') || src.startsWith('https://'));
 
-export default function BlogDetailClient({ blog }) {
+export default memo(function BlogDetailClient({ blog }) {
   const [selectedImage, setSelectedImage] = useState(null);
-  const [extractedLinks, setExtractedLinks] = useState([]);
   const [showShareToast, setShowShareToast] = useState(false);
   const [imageError, setImageError] = useState(false);
 
-  useEffect(() => {
-    if (!blog?.content) {
-      setExtractedLinks([]);
-      return;
-    }
-
-    const urls = new Set();
-
-    const mdLinkRegex = /\[.*?\]\((https?:\/\/[^\)]+)\)/g;
-    let match;
-    while ((match = mdLinkRegex.exec(blog.content)) !== null) {
-      if (match.index > 0 && blog.content[match.index - 1] === '!') {
-        continue;
-      }
-      urls.add(match[1]);
-    }
-
-    const rawLinkRegex = /(?<!\()(https?:\/\/[^\s\)>"\]]+)/g;
-    while ((match = rawLinkRegex.exec(blog.content)) !== null) {
-      urls.add(match[1]);
-    }
-
-    const imageExtensions = /\.(jpg|jpeg|png|gif|webp|svg)$/i;
-    const cleanUrls = Array.from(urls).filter((url) => !imageExtensions.test(url));
-
-    setExtractedLinks(cleanUrls);
-  }, [blog]);
+  // Use useMemo to prevent re-extracting links on every render
+  const extractedLinks = useMemo(() => {
+    return extractLinksFromContent(blog?.content);
+  }, [blog?.content]);
 
   useEffect(() => {
     setImageError(false);
@@ -123,22 +101,9 @@ export default function BlogDetailClient({ blog }) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.7, ease: 'easeOut' }}
-      className="relative min-h-screen overflow-hidden p-4 lg:p-8"
-      style={{
-        backgroundColor: 'transparent',
-        color: 'var(--text-primary)',
-      }}
+      className="blog-detail-container p-4 lg:p-8"
     >
-      <div
-        className="pointer-events-none absolute left-1/2 top-[-140px] h-[560px] w-[min(1180px,140vw)] -translate-x-1/2 opacity-60"
-        style={{
-          backgroundImage: `
-            radial-gradient(ellipse at 20% 32%, color-mix(in srgb, var(--accent-cyan) 16%, transparent), transparent 28%),
-            radial-gradient(ellipse at 80% 24%, color-mix(in srgb, var(--accent-purple) 14%, transparent), transparent 26%),
-            radial-gradient(ellipse at 50% 18%, color-mix(in srgb, var(--bg-surface) 24%, transparent), transparent 58%)
-          `,
-        }}
-      />
+      <div className="blog-detail-backdrop" />
 
       <div className="relative mx-auto max-w-6xl">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
@@ -444,4 +409,4 @@ export default function BlogDetailClient({ blog }) {
       )}
     </motion.div>
   );
-}
+});

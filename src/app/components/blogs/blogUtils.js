@@ -68,3 +68,35 @@ export const formatBlogDate = (dateValue) => {
     day: 'numeric',
   });
 };
+
+// Memoized regexes for better performance
+const MD_LINK_REGEX = /\[.*?\]\((https?:\/\/[^\)]+)\)/g;
+const RAW_LINK_REGEX = /(?<!\()(https?:\/\/[^\s\)>"\]]+)/g;
+const IMAGE_EXTENSIONS = /\.(jpg|jpeg|png|gif|webp|svg)$/i;
+
+export const extractLinksFromContent = (content) => {
+  if (!content || typeof content !== 'string') {
+    return [];
+  }
+
+  const urls = new Set();
+
+  // Extract markdown links
+  let match;
+  MD_LINK_REGEX.lastIndex = 0;
+  while ((match = MD_LINK_REGEX.exec(content)) !== null) {
+    if (match.index > 0 && content[match.index - 1] === '!') {
+      continue;
+    }
+    urls.add(match[1]);
+  }
+
+  // Extract raw links
+  RAW_LINK_REGEX.lastIndex = 0;
+  while ((match = RAW_LINK_REGEX.exec(content)) !== null) {
+    urls.add(match[1]);
+  }
+
+  // Filter out image URLs
+  return Array.from(urls).filter((url) => !IMAGE_EXTENSIONS.test(url));
+};

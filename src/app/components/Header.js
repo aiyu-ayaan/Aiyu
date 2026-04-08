@@ -2,13 +2,15 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, memo } from 'react';
 import clsx from 'clsx';
-import { motion, useScroll } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { ArrowUpRight, Menu, Search, X } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import { useTheme } from '../context/ThemeContext';
 import TerminalPath from './admin/TerminalPath';
+import useDevicePerformance from '../hooks/useDevicePerformance';
+import '../styles/header.css';
 
 const SCROLL_DOWN_THRESHOLD = 72;
 const SCROLL_UP_THRESHOLD = 24;
@@ -50,7 +52,7 @@ const isRouteMatch = (pathname, href) => {
   return current === route || current.startsWith(`${route}/`);
 };
 
-export default function Header({ data, logoText, socialData, config }) {
+export default memo(function Header({ data, logoText, socialData, config }) {
   const { navLinks, contactLink } = data || { navLinks: [], contactLink: {} };
   const visibleNavLinks = navLinks.filter((link) => link.visible !== false);
   const displayLogo = logoText || "< aiyu />";
@@ -58,17 +60,23 @@ export default function Header({ data, logoText, socialData, config }) {
   const pathname = usePathname();
   const isContentHeavyRoute = pathname?.startsWith('/blogs/');
   const { theme } = useTheme();
-  const { scrollYProgress } = useScroll();
+  const { prefersReducedMotion } = useDevicePerformance();
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [scrollProgress, setScrollProgress] = useState(0);
   const overflowRestoreRef = useRef({ body: null, html: null });
 
   useEffect(() => {
     let ticking = false;
+    let lastY = 0;
 
     const updateScrollState = () => {
       const y = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const progress = docHeight > 0 ? y / docHeight : 0;
+
+      setScrollProgress(progress);
       setScrolled((prev) => (prev ? y > SCROLL_UP_THRESHOLD : y > SCROLL_DOWN_THRESHOLD));
       ticking = false;
     };
@@ -117,33 +125,24 @@ export default function Header({ data, logoText, socialData, config }) {
 
   return (
     <>
-      <motion.div
-        className="fixed left-0 right-0 top-0 z-[60] h-1 origin-left"
-        style={{
-          scaleX: scrollYProgress,
-          background: 'linear-gradient(to right, var(--accent-cyan), var(--accent-purple), var(--accent-pink))',
-        }}
-      />
+      {!prefersReducedMotion && (
+        <motion.div
+          className="fixed left-0 right-0 top-0 z-[60] h-1 origin-left"
+          style={{
+            scaleX: scrollProgress,
+            background: 'linear-gradient(to right, var(--accent-cyan), var(--accent-purple), var(--accent-pink))',
+            willChange: 'transform',
+          }}
+        />
+      )}
 
       <header className="sticky top-0 z-50 px-3 pb-0 pt-3 sm:px-4 lg:px-6">
-        <motion.div
-          className="mx-auto w-full max-w-7xl rounded-2xl border transition-all duration-300"
-          style={{
-            background: scrolled
-              ? isContentHeavyRoute
-                ? 'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 96%, transparent), color-mix(in srgb, var(--bg-secondary) 97%, transparent))'
-                : 'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 90%, transparent), color-mix(in srgb, var(--bg-secondary) 92%, transparent))'
-              : isContentHeavyRoute
-                ? 'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 88%, transparent), color-mix(in srgb, var(--bg-secondary) 90%, transparent))'
-                : 'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 70%, transparent), color-mix(in srgb, var(--bg-secondary) 70%, transparent))',
-            borderColor: scrolled
-              ? 'color-mix(in srgb, var(--border-secondary) 75%, transparent)'
-              : 'color-mix(in srgb, var(--border-secondary) 40%, transparent)',
-            backdropFilter: isContentHeavyRoute ? 'blur(8px)' : 'blur(18px)',
-            boxShadow: scrolled
-              ? '0 14px 36px color-mix(in srgb, var(--shadow-md) 85%, transparent)'
-              : '0 8px 22px color-mix(in srgb, var(--shadow-sm) 60%, transparent)',
-          }}
+        <div
+          className={clsx(
+            "mx-auto w-full max-w-7xl rounded-2xl border transition-all duration-300",
+            scrolled ? "header-scrolled" : "header-normal",
+            isContentHeavyRoute && "heavy-route"
+          )}
         >
           <nav
             className={clsx(
@@ -316,7 +315,7 @@ export default function Header({ data, logoText, socialData, config }) {
               <TerminalPath socialData={socialData} config={config} />
             </div>
           </div>
-        </motion.div>
+        </div>
       </header>
 
       <motion.aside
@@ -431,4 +430,4 @@ export default function Header({ data, logoText, socialData, config }) {
       </motion.aside>
     </>
   );
-}
+});

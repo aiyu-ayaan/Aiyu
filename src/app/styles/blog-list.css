@@ -1,0 +1,49 @@
+/* BlogList Optimizations */
+
+.blog-list-gradient-left {
+  pointer-events: none;
+  position: absolute;
+  left: -96px;
+  top: 40px;
+  height: 288px;
+  width: 288px;
+  border-radius: 9999px;
+  filter: blur(96px);
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--accent-cyan) 30%, transparent),
+    transparent 70%
+  );
+  will-change: none;
+  backface-visibility: hidden;
+}
+
+.blog-list-gradient-right {
+  pointer-events: none;
+  position: absolute;
+  right: -80px;
+  top: 25%;
+  height: 256px;
+  width: 256px;
+  border-radius: 9999px;
+  filter: blur(96px);
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--accent-purple) 25%, transparent),
+    transparent 70%
+  );
+  will-change: none;
+  backface-visibility: hidden;
+}
+
+.blog-list-section {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--bg-surface) 93%, transparent),
+    color-mix(in srgb, var(--bg-secondary) 93%, transparent)
+  );
+  border-color: color-mix(in srgb, var(--border-secondary) 75%, transparent);
+  box-shadow: 0 16px 36px var(--shadow-sm);
+  border-radius: 1.5rem;
+  border: 1px solid;
+}
