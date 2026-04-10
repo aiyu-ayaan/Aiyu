@@ -1,117 +1,288 @@
 services:
-  # MongoDB Database Service
-  mongodb:
+  mongo1:
     image: mongo:7
-    container_name: aiyu-mongodb
     restart: unless-stopped
-    # Removed wiredTigerCacheSizeGB limit
-    command: [ "mongod" ]
+    hostname: mongo1
+    entrypoint:
+      - sh
+      - -lc
+      - |
+        KEYFILE=/data/configdb/keyfile
+        if [ ! -f "$$KEYFILE" ]; then
+          mkdir -p /data/configdb
+          printf '%s' "$$MONGO_REPLICA_SET_KEY" > "$$KEYFILE"
+          chmod 600 "$$KEYFILE"
+        fi
+        exec docker-entrypoint.sh mongod --bind_ip_all --replSet rs0 --keyFile "$$KEYFILE" --auth
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
-    # Port mapping commented out for security - app can access via internal network
-    # Uncomment if external MongoDB access is needed:
-    # ports:
-    #   - "27017:27017"
+      MONGO_REPLICA_SET_KEY: ${MONGO_REPLICA_SET_KEY}
     volumes:
-      - mongodb_data:/data/db
-      - mongodb_config:/data/configdb
+      - mongo1_data:/data/db
+      - mongo1_config:/data/configdb
     networks:
       - aiyu-network
     healthcheck:
-      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')", "--quiet" ]
+      test:
+        - CMD-SHELL
+        - >
+          mongosh --host 127.0.0.1 --port 27017
+          -u "$${MONGO_INITDB_ROOT_USERNAME}" -p "$${MONGO_INITDB_ROOT_PASSWORD}"
+          --authenticationDatabase admin --quiet --eval "db.adminCommand('ping').ok"
       interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 10s
+      retries: 10
+      start_period: 30s
 
-  # Redis Cache Service (shared API cache)
-  redis:
-    image: redis:7-alpine
-    container_name: aiyu-redis
+  mongo2:
+    image: mongo:7
     restart: unless-stopped
-    command: [ "redis-server", "--save", "", "--appendonly", "no", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru" ]
+    hostname: mongo2
+    entrypoint:
+      - sh
+      - -lc
+      - |
+        KEYFILE=/data/configdb/keyfile
+        if [ ! -f "$$KEYFILE" ]; then
+          mkdir -p /data/configdb
+          printf '%s' "$$MONGO_REPLICA_SET_KEY" > "$$KEYFILE"
+          chmod 600 "$$KEYFILE"
+        fi
+        exec docker-entrypoint.sh mongod --bind_ip_all --replSet rs0 --keyFile "$$KEYFILE" --auth
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      MONGO_REPLICA_SET_KEY: ${MONGO_REPLICA_SET_KEY}
+    volumes:
+      - mongo2_data:/data/db
+      - mongo2_config:/data/configdb
     networks:
       - aiyu-network
     healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
+      test:
+        - CMD-SHELL
+        - >
+          mongosh --host 127.0.0.1 --port 27017
+          -u "$${MONGO_INITDB_ROOT_USERNAME}" -p "$${MONGO_INITDB_ROOT_PASSWORD}"
+          --authenticationDatabase admin --quiet --eval "db.adminCommand('ping').ok"
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  mongo3:
+    image: mongo:7
+    restart: unless-stopped
+    hostname: mongo3
+    entrypoint:
+      - sh
+      - -lc
+      - |
+        KEYFILE=/data/configdb/keyfile
+        if [ ! -f "$$KEYFILE" ]; then
+          mkdir -p /data/configdb
+          printf '%s' "$$MONGO_REPLICA_SET_KEY" > "$$KEYFILE"
+          chmod 600 "$$KEYFILE"
+        fi
+        exec docker-entrypoint.sh mongod --bind_ip_all --replSet rs0 --keyFile "$$KEYFILE" --auth
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      MONGO_REPLICA_SET_KEY: ${MONGO_REPLICA_SET_KEY}
+    volumes:
+      - mongo3_data:/data/db
+      - mongo3_config:/data/configdb
+    networks:
+      - aiyu-network
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >
+          mongosh --host 127.0.0.1 --port 27017
+          -u "$${MONGO_INITDB_ROOT_USERNAME}" -p "$${MONGO_INITDB_ROOT_PASSWORD}"
+          --authenticationDatabase admin --quiet --eval "db.adminCommand('ping').ok"
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  mongo-init:
+    image: mongo:7
+    restart: "no"
+    depends_on:
+      mongo1:
+        condition: service_healthy
+      mongo2:
+        condition: service_healthy
+      mongo3:
+        condition: service_healthy
+    environment:
+      MONGO_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
+      MONGO_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+    command:
+      - sh
+      - -lc
+      - |
+        cat <<'EOF' >/tmp/init-rs.js
+        const admin = process.env.MONGO_ROOT_USERNAME;
+        const password = process.env.MONGO_ROOT_PASSWORD;
+        const uri = 'mongodb://' + admin + ':' + password + '@mongo1:27017/admin?authSource=admin';
+        const maxAttempts = 120;
+        let conn;
+        let adminDb;
+        const cfg = {
+          _id: 'rs0',
+          members: [
+            { _id: 0, host: 'mongo1:27017', priority: 2 },
+            { _id: 1, host: 'mongo2:27017', priority: 1 },
+            { _id: 2, host: 'mongo3:27017', priority: 1 }
+          ]
+        };
+
+        for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+          try {
+            conn = new Mongo(uri);
+            adminDb = conn.getDB('admin');
+
+            const hello = adminDb.runCommand({ hello: 1 });
+            if (hello.ok === 1 && hello.isWritablePrimary) {
+              const status = adminDb.runCommand({ replSetGetStatus: 1 });
+              if (status.ok === 1) {
+                print('Replica set already healthy.');
+                quit(0);
+              }
+            }
+
+            try {
+              const initiateResult = adminDb.runCommand({ replSetInitiate: cfg });
+              printjson(initiateResult);
+            } catch (initErr) {
+              if (!String(initErr).includes('already initialized')) {
+                throw initErr;
+              }
+            }
+
+            const postHello = adminDb.runCommand({ hello: 1 });
+            if (postHello.ok === 1 && postHello.isWritablePrimary) {
+              print('Replica set initialized and primary elected.');
+              quit(0);
+            }
+          } catch (error) {
+            print('mongo-init attempt ' + attempt + '/' + maxAttempts + ': ' + String(error));
+          }
+          sleep(2000);
+        }
+
+        print('mongo-init timed out waiting for replica set readiness');
+        quit(1);
+        EOF
+        mongosh --nodb /tmp/init-rs.js
+    networks:
+      - aiyu-network
+
+  redis-primary:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command:
+      - redis-server
+      - --appendonly
+      - yes
+      - --save
+      - ""
+      - --maxmemory
+      - 256mb
+      - --maxmemory-policy
+      - allkeys-lru
+      - --replica-read-only
+      - no
+    volumes:
+      - redis_primary_data:/data
+    networks:
+      - aiyu-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
 
-  # Next.js Application Service
+  redis-replica:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command:
+      - redis-server
+      - --appendonly
+      - yes
+      - --save
+      - ""
+      - --replicaof
+      - redis-primary
+      - "6379"
+    depends_on:
+      redis-primary:
+        condition: service_healthy
+    volumes:
+      - redis_replica_data:/data
+    networks:
+      - aiyu-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
   app:
     image: aiyuayaan/aiyu:${APP_IMAGE_TAG:-latest}
-    container_name: aiyu-app
     restart: unless-stopped
-    # Port exposed only to internal network (Nginx handles external traffic)
     expose:
       - "3000"
     environment:
-      # MongoDB connection
-      MONGODB_URI: ${MONGODB_URI}
-      # N8N webhook
+      MONGODB_URI: ${MONGODB_URI:-mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongo1:27017,mongo2:27017,mongo3:27017/aiyu?replicaSet=rs0&authSource=admin}
       NEXT_PUBLIC_N8N_WEBHOOK_URL: ${NEXT_PUBLIC_N8N_WEBHOOK_URL}
-      # Base URL for SEO/OG tags
       NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL}
       SITE_URL: ${SITE_URL}
       NEXT_PUBLIC_AUTHOR_NAME: ${NEXT_PUBLIC_AUTHOR_NAME}
-      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      REDIS_URL: ${REDIS_URL:-redis://redis-primary:6379/0}
       REDIS_DEFAULT_TTL_SECONDS: ${REDIS_DEFAULT_TTL_SECONDS:-30}
-      # Admin credentials
       ADMIN_USERNAME: ${ADMIN_USERNAME}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
       BLOG_API_KEY: ${BLOG_API_KEY}
-
-      # Node environment
       NODE_ENV: production
-      NODE_OPTIONS: --max-old-space-size=512
+      NODE_OPTIONS: ${NODE_OPTIONS:---max-old-space-size=512}
     volumes:
-      # Persistent uploads directory (named volume for proper permissions)
       - uploads_data:/app/public/uploads
-      # Writable Next.js cache directory (volume for read-only filesystem)
       - nextjs_cache:/app/.next/cache
     tmpfs:
-      # CRITICAL SECURITY: Mount /tmp with noexec
       - /tmp:noexec,nosuid,nodev,mode=1777
-      # Additional tmpfs mounts
       - /var/tmp:noexec,nosuid,nodev,mode=1777
-      # /run
       - /run:noexec,nosuid,nodev,mode=755
-    # CRITICAL SECURITY: Drop all capabilities and enable security restrictions
     cap_drop:
       - ALL
     cap_add:
-      - NET_BIND_SERVICE # Only allow binding to network ports
-      - NET_RAW # Allow outbound network requests
+      - NET_BIND_SERVICE
+      - NET_RAW
     security_opt:
-      - no-new-privileges:true # Prevent privilege escalation
-    # Read-only root filesystem (except for writable volumes)
+      - no-new-privileges:true
     read_only: true
-    # Resource limits removed
-    # Resource limits removed
-    # Health check to detect abnormal behavior
-    # Uses curl (installed in Dockerfile) with fallback chain
     healthcheck:
-      test: [ "CMD", "sh", "/app/healthcheck.sh" ]
+      test: ["CMD", "sh", "/app/healthcheck.sh"]
       interval: 15s
       timeout: 10s
       retries: 12
       start_period: 150s
     depends_on:
-      mongodb:
-        condition: service_healthy
-      redis:
+      mongo-init:
+        condition: service_completed_successfully
+      redis-primary:
         condition: service_healthy
     networks:
       - aiyu-network
 
-  # Nginx Reverse Proxy (gzip, caching, rate limiting)
   nginx:
     image: nginx:alpine
-    container_name: aiyu-nginx
     restart: unless-stopped
     ports:
       - "${APP_PORT:-3000}:80"
@@ -125,20 +296,29 @@ services:
         condition: service_started
     networks:
       - aiyu-network
-      # Resource limits removed
-      # Resource limits removed
     healthcheck:
-      test: [ "CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:80/nginx-health || exit 1" ]
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:80/nginx-health || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 5
       start_period: 20s
 
-# Named volumes for data persistence
 volumes:
-  mongodb_data:
+  mongo1_data:
     driver: local
-  mongodb_config:
+  mongo1_config:
+    driver: local
+  mongo2_data:
+    driver: local
+  mongo2_config:
+    driver: local
+  mongo3_data:
+    driver: local
+  mongo3_config:
+    driver: local
+  redis_primary_data:
+    driver: local
+  redis_replica_data:
     driver: local
   nextjs_cache:
     driver: local
@@ -147,7 +327,6 @@ volumes:
   nginx_cache:
     driver: local
 
-# Network for inter-service communication
 networks:
   aiyu-network:
     driver: bridge
