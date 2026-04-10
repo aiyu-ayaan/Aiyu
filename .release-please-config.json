@@ -70,8 +70,7 @@
         {
             "type": "refactor",
             "release": false
-        }
-        ,
+        },
         {
             "type": "major",
             "release": "major"
