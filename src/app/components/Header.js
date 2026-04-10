@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState, memo } from 'react';
 import clsx from 'clsx';
-import { motion } from 'framer-motion';
+import { motion, useScroll, useSpring, useTransform } from 'framer-motion';
 import { ArrowUpRight, Menu, Search, X } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import { useTheme } from '../context/ThemeContext';
@@ -58,26 +58,30 @@ export default memo(function Header({ data, logoText, socialData, config }) {
   const displayLogo = logoText || "< aiyu />";
 
   const pathname = usePathname();
-  const isContentHeavyRoute = pathname?.startsWith('/blogs/');
+  const isContentHeavyRoute = pathname?.startsWith('/blogs');
   const { theme } = useTheme();
   const { prefersReducedMotion } = useDevicePerformance();
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [scrollProgress, setScrollProgress] = useState(0);
   const overflowRestoreRef = useRef({ body: null, html: null });
+  const { scrollYProgress } = useScroll();
+  const progressScaleX = useSpring(scrollYProgress, {
+    stiffness: 160,
+    damping: 28,
+    restDelta: 0.001,
+  });
+  const progressOpacity = useTransform(progressScaleX, [0, 0.01], [0, 1]);
 
   useEffect(() => {
     let ticking = false;
-    let lastY = 0;
 
     const updateScrollState = () => {
       const y = window.scrollY;
-      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-      const progress = docHeight > 0 ? y / docHeight : 0;
-
-      setScrollProgress(progress);
-      setScrolled((prev) => (prev ? y > SCROLL_UP_THRESHOLD : y > SCROLL_DOWN_THRESHOLD));
+      setScrolled((prev) => {
+        const next = prev ? y > SCROLL_UP_THRESHOLD : y > SCROLL_DOWN_THRESHOLD;
+        return prev === next ? prev : next;
+      });
       ticking = false;
     };
 
@@ -125,11 +129,12 @@ export default memo(function Header({ data, logoText, socialData, config }) {
 
   return (
     <>
-      {!prefersReducedMotion && (
+      {!prefersReducedMotion && !isContentHeavyRoute && (
         <motion.div
           className="fixed left-0 right-0 top-0 z-[60] h-1 origin-left"
           style={{
-            scaleX: scrollProgress,
+            scaleX: progressScaleX,
+            opacity: progressOpacity,
             background: 'linear-gradient(to right, var(--accent-cyan), var(--accent-purple), var(--accent-pink))',
             willChange: 'transform',
           }}

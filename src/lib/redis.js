@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs';
 import Redis from 'ioredis';
 
-const DEFAULT_DOCKER_REDIS_URL = 'redis://redis:6379/0';
+const DEFAULT_DOCKER_REDIS_URL = 'redis://redis-primary:6379/0';
 
 function isRunningInDocker() {
     return process.env.DOCKER_ENV === 'true' || existsSync('/.dockerenv');

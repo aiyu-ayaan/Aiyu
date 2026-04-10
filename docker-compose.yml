@@ -305,8 +305,10 @@ services:
 
 volumes:
   mongo1_data:
+    name: mongodb_data
     driver: local
   mongo1_config:
+    name: mongodb_config
     driver: local
   mongo2_data:
     driver: local
