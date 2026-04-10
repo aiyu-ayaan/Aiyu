@@ -1,0 +1,80 @@
+{
+    "release-type": "node",
+    "packages": {
+        ".": {
+            "changelog-sections": [
+                {
+                    "type": "!feat",
+                    "section": "Features",
+                    "hidden": false
+                },
+                {
+                    "type": "!fix",
+                    "section": "Bug Fixes",
+                    "hidden": false
+                },
+                {
+                    "type": "feat",
+                    "section": "Miscellaneous",
+                    "hidden": true
+                },
+                {
+                    "type": "fix",
+                    "section": "Miscellaneous",
+                    "hidden": true
+                },
+                {
+                    "type": "docs",
+                    "section": "Documentation",
+                    "hidden": false
+                },
+                {
+                    "type": "chore",
+                    "section": "Miscellaneous",
+                    "hidden": true
+                },
+                {
+                    "type": "refactor",
+                    "section": "Miscellaneous",
+                    "hidden": true
+                }
+            ],
+            "version-bump-behavior": "standard"
+        }
+    },
+    "commit-types": [
+        {
+            "type": "!feat",
+            "release": "minor"
+        },
+        {
+            "type": "!fix",
+            "release": "patch"
+        },
+        {
+            "type": "feat",
+            "release": false
+        },
+        {
+            "type": "fix",
+            "release": false
+        },
+        {
+            "type": "docs",
+            "release": "patch"
+        },
+        {
+            "type": "chore",
+            "release": false
+        },
+        {
+            "type": "refactor",
+            "release": false
+        }
+        ,
+        {
+            "type": "major",
+            "release": "major"
+        }
+    ]
+}

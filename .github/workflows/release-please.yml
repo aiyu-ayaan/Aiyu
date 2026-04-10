@@ -1,0 +1,55 @@
+name: Release (release-please)
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      matches: ${{ steps.check.outputs.matches }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - id: check
+        name: Check commits for release types
+        run: |
+          set -e
+          git fetch --no-tags --prune --unshallow || true
+          BEFORE=${{ github.event.before }}
+          AFTER=${{ github.sha }}
+          RANGE="$BEFORE..$AFTER"
+          echo "Checking range: $RANGE"
+          commits=$(git rev-list "$RANGE" || true)
+          matches=false
+          if [ -n "$commits" ]; then
+            for c in $commits; do
+              msg=$(git log -1 --pretty=%B $c)
+              # Strict match: commit message must start with one of the types
+              # Examples: "!feat: ...", "fix(scope): ...", "docs: ..."
+              if echo "$msg" | grep -E '^(?:!feat|!fix|feat|fix|docs|chore|refactor|major|!major)(?:\([^)]*\))?:' >/dev/null; then
+                matches=true
+                break
+              fi
+            done
+          fi
+          echo "matches=$matches" >> $GITHUB_OUTPUT
+
+  release:
+    needs: check
+    if: needs.check.outputs.matches == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create release PR or publish GitHub release
+        id: release
+        uses: google-github-actions/release-please-action@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          release-type: node
+          target-branch: master
+          config-file: .release-please-config.json
