@@ -56,7 +56,7 @@ export default async function SiteLayout({ children }) {
     }
 
     return (
-        <div className="relative overflow-hidden">
+        <div className="relative">
             <div aria-hidden="true" className="absolute inset-0 pointer-events-none z-0">
                 <div
                     className="absolute inset-0"
