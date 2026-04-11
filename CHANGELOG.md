@@ -1,5 +1,16 @@
 # Changelog
 
+## [6.0.0](https://github.com/aiyu-ayaan/Aiyu/compare/v5.0.0...v6.0.0) (2026-04-11)
+
+
+### ⚠ BREAKING CHANGES
+
+* Correct commit type syntax in release-please configuration
+
+### Bug Fixes
+
+* Correct commit type syntax in release-please configuration ([b98df05](https://github.com/aiyu-ayaan/Aiyu/commit/b98df051a9b0bf77d1fe2ccee51c328cf1430619))
+
 ## [5.0.0](https://github.com/aiyu-ayaan/Aiyu/compare/v4.0.0...v5.0.0) (2026-04-10)
 
 
