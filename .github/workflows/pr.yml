@@ -1,0 +1,58 @@
+name: PR Build
+
+on:
+  pull_request:
+    branches:
+      - master
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-build-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-lint:
+    name: Build and Lint
+    runs-on: ubuntu-latest
+    env:
+      IS_RELEASE_BOT_PR: ${{ (github.event.pull_request.user.login == 'github-actions[bot]' || github.event.pull_request.user.login == 'release-please[bot]') && startsWith(github.head_ref, 'release-please--') }}
+    steps:
+      - name: Skip checks for release bot PR
+        if: ${{ env.IS_RELEASE_BOT_PR == 'true' }}
+        run: |
+          echo "Release bot PR detected."
+          echo "Skipping lint/build checks while still returning a successful required status."
+
+      - name: Checkout repository
+        if: ${{ env.IS_RELEASE_BOT_PR != 'true' }}
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        if: ${{ env.IS_RELEASE_BOT_PR != 'true' }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        if: ${{ env.IS_RELEASE_BOT_PR != 'true' }}
+        run: npm ci
+
+      - name: Run lint
+        if: ${{ env.IS_RELEASE_BOT_PR != 'true' }}
+        run: npm run lint
+
+      - name: Run tests (if present)
+        if: ${{ env.IS_RELEASE_BOT_PR != 'true' }}
+        run: npm run test --if-present
+
+      - name: Run build
+        if: ${{ env.IS_RELEASE_BOT_PR != 'true' }}
+        run: npm run build
