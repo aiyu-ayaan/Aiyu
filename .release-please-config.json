@@ -4,24 +4,19 @@
         ".": {
             "changelog-sections": [
                 {
-                    "type": "feat!",
-                    "section": "Features",
-                    "hidden": false
-                },
-                {
-                    "type": "fix!",
-                    "section": "Bug Fixes",
+                    "type": "major",
+                    "section": "Breaking Changes",
                     "hidden": false
                 },
                 {
                     "type": "feat",
-                    "section": "Miscellaneous",
-                    "hidden": true
+                    "section": "Features",
+                    "hidden": false
                 },
                 {
                     "type": "fix",
-                    "section": "Miscellaneous",
-                    "hidden": true
+                    "section": "Bug Fixes",
+                    "hidden": false
                 },
                 {
                     "type": "docs",
@@ -44,20 +39,16 @@
     },
     "commit-types": [
         {
-            "type": "feat!",
-            "release": "minor"
-        },
-        {
-            "type": "fix!",
-            "release": "patch"
+            "type": "major",
+            "release": "major"
         },
         {
             "type": "feat",
-            "release": false
+            "release": "minor"
         },
         {
             "type": "fix",
-            "release": false
+            "release": "patch"
         },
         {
             "type": "docs",
@@ -72,8 +63,8 @@
             "release": false
         },
         {
-            "type": "major",
-            "release": "major"
+            "type": "deps",
+            "release": "patch"
         }
     ]
 }

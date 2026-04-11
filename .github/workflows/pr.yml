@@ -34,6 +34,29 @@ jobs:
         if: ${{ env.IS_RELEASE_BOT_PR != 'true' }}
         uses: actions/checkout@v4
 
+      - name: Validate release commit syntax
+        if: ${{ env.IS_RELEASE_BOT_PR != 'true' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git fetch --no-tags --depth=200 origin master
+          commit_subjects="$(git log --format=%s origin/master..HEAD || true)"
+
+          if [ -z "$commit_subjects" ]; then
+            echo "No commit subjects found to validate."
+            exit 0
+          fi
+
+          invalid_commits="$(echo "$commit_subjects" | grep -E '^(?:!(?:feat|fix)(?:\([^)]*\))?:|(?:feat|fix)(?:\([^)]*\))?!:)' || true)"
+
+          if [ -n "$invalid_commits" ]; then
+            echo "Invalid release commit syntax detected:"
+            echo "$invalid_commits"
+            echo "::error::Use fix: for patch releases, feat: for minor releases, and major: for major releases. Do not use !fix:, !feat:, or fix!:/feat!:"
+            exit 1
+          fi
+
       - name: Setup Node.js
         if: ${{ env.IS_RELEASE_BOT_PR != 'true' }}
         uses: actions/setup-node@v4

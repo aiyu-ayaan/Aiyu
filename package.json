@@ -1,6 +1,6 @@
 {
-  "name": "portfolio",
-  "version": "6.0.0",
+  "name": "aiyu",
+  "version": "3.4.1",
   "private": true,
   "scripts": {
     "dev": "next dev --webpack",
