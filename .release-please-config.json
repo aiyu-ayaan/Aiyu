@@ -4,12 +4,12 @@
         ".": {
             "changelog-sections": [
                 {
-                    "type": "!feat",
+                    "type": "feat!",
                     "section": "Features",
                     "hidden": false
                 },
                 {
-                    "type": "!fix",
+                    "type": "fix!",
                     "section": "Bug Fixes",
                     "hidden": false
                 },
@@ -44,11 +44,11 @@
     },
     "commit-types": [
         {
-            "type": "!feat",
+            "type": "feat!",
             "release": "minor"
         },
         {
-            "type": "!fix",
+            "type": "fix!",
             "release": "patch"
         },
         {
