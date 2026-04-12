@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo, memo } from 'react';
+import React, { useEffect, useState, useMemo, memo, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
@@ -23,7 +23,7 @@ import '../../styles/blog-detail.css';
 
 const SyntaxHighlighter = dynamic(
   () => import('react-syntax-highlighter').then((module) => module.Prism),
-  { ssr: false }
+  { ssr: false, loading: () => <div style={{ minHeight: '200px' }} /> }
 );
 
 const isOptimizableImage = (src) =>
@@ -39,11 +39,20 @@ export default memo(function BlogDetailClient({ blog }) {
     return extractLinksFromContent(blog?.content);
   }, [blog?.content]);
 
+  // Memoize tag array
+  const tags = useMemo(() => {
+    return Array.isArray(blog?.tags) ? blog.tags : [];
+  }, [blog?.tags]);
+
+  // Memoize image checks
+  const hasImage = useMemo(() => Boolean(blog?.image && String(blog.image).trim() !== ''), [blog?.image]);
+  const showPlaceholder = !hasImage || imageError;
+
   useEffect(() => {
     setImageError(false);
   }, [blog?.image]);
 
-  const handleShare = async () => {
+  const handleShare = useCallback(async () => {
     if (typeof window === 'undefined') return;
 
     const url = new URL(window.location.href);
@@ -58,7 +67,19 @@ export default memo(function BlogDetailClient({ blog }) {
     } catch (error) {
       console.error('Failed to copy blog URL', error);
     }
-  };
+  }, []);
+
+  const handleImageSelect = useCallback((image) => {
+    setSelectedImage(image);
+  }, []);
+
+  const handleImageClose = useCallback(() => {
+    setSelectedImage(null);
+  }, []);
+
+  const handleImageError = useCallback(() => {
+    setImageError(true);
+  }, []);
 
   if (!blog) {
     return (
@@ -86,17 +107,13 @@ export default memo(function BlogDetailClient({ blog }) {
             }}
           >
             <FaArrowLeft className="h-3.5 w-3.5" /> Back to Blogs
-          </Link>
-        </div>
-      </div>
-    );
-  }
+           </Link>
+         </div>
+       </div>
+     );
+   }
 
-  const tags = Array.isArray(blog?.tags) ? blog.tags : [];
-  const hasImage = Boolean(blog?.image && String(blog.image).trim() !== '');
-  const showPlaceholder = !hasImage || imageError;
-
-  return (
+   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -197,16 +214,21 @@ export default memo(function BlogDetailClient({ blog }) {
           }}
         >
           {!showPlaceholder ? (
-            <button type="button" onClick={() => setSelectedImage(blog.image)} className="block w-full cursor-zoom-in">
+            <button type="button" onClick={() => handleImageSelect(blog.image)} className="block w-full cursor-zoom-in">
               {isOptimizableImage(blog.image) ? (
                 <Image
                   src={blog.image}
                   alt={blog.title}
                   width={1600}
                   height={900}
-                  sizes="(max-width: 1024px) 100vw, 1200px"
+                  sizes="(max-width: 768px) 100vw, (max-width: 1024px) 90vw, 1200px"
                   className="max-h-[620px] w-full object-cover"
-                  onError={() => setImageError(true)}
+                  priority={false}
+                  loading="lazy"
+                  decoding="async"
+                  onError={handleImageError}
+                  placeholder="blur"
+                  blurDataURL="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1600 900'%3E%3Crect fill='%23222' width='1600' height='900'/%3E%3C/svg%3E"
                 />
               ) : (
                 <img
@@ -215,7 +237,7 @@ export default memo(function BlogDetailClient({ blog }) {
                   className="max-h-[620px] w-full object-cover"
                   loading="lazy"
                   decoding="async"
-                  onError={() => setImageError(true)}
+                  onError={handleImageError}
                 />
               )}
             </button>
@@ -327,29 +349,29 @@ export default memo(function BlogDetailClient({ blog }) {
               {blog.content}
             </ReactMarkdown>
           </div>
-        </article>
+         </article>
 
-        {extractedLinks.length > 0 && (
-          <section className="mt-8 rounded-2xl border p-5 sm:p-6"
-            style={{
-              borderColor: 'color-mix(in srgb, var(--border-secondary) 74%, transparent)',
-              background:
-                'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 94%, transparent), color-mix(in srgb, var(--bg-secondary) 94%, transparent))',
-              contentVisibility: 'auto',
-              containIntrinsicSize: '1px 540px',
-            }}
-          >
-            <h2 className="mb-5 text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
-              Resources & Links
-            </h2>
-            <div className="grid grid-cols-1 gap-4">
-              {extractedLinks.map((link) => (
-                <LinkPreview key={link} url={link} />
-              ))}
-            </div>
-          </section>
-        )}
-      </div>
+         {extractedLinks.length > 0 && (
+           <section className="mt-8 rounded-2xl border p-5 sm:p-6"
+             style={{
+               borderColor: 'color-mix(in srgb, var(--border-secondary) 74%, transparent)',
+               background:
+                 'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 94%, transparent), color-mix(in srgb, var(--bg-secondary) 94%, transparent))',
+               contentVisibility: 'auto',
+               containIntrinsicSize: '1px 540px',
+             }}
+           >
+             <h2 className="mb-5 text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+               Resources & Links
+             </h2>
+             <div className="grid grid-cols-1 gap-4">
+               {extractedLinks.map((link) => (
+                 <LinkPreview key={link} url={link} />
+               ))}
+             </div>
+           </section>
+         )}
+       </div>
 
       {showShareToast && (
         <motion.div
@@ -371,18 +393,22 @@ export default memo(function BlogDetailClient({ blog }) {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          onClick={() => setSelectedImage(null)}
+          exit={{ opacity: 0 }}
+          onClick={handleImageClose}
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+          style={{ backdropFilter: 'blur(4px)' }}
         >
           <motion.div
             initial={{ scale: 0.92, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.92, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 32 }}
             className="relative max-h-[90vh] max-w-[90vw]"
             onClick={(event) => event.stopPropagation()}
           >
             <button
               type="button"
-              onClick={() => setSelectedImage(null)}
+              onClick={handleImageClose}
               className="absolute -top-11 right-0 rounded-full border px-3 py-1 text-sm font-semibold"
               style={{
                 borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
@@ -400,9 +426,18 @@ export default memo(function BlogDetailClient({ blog }) {
                 height={1200}
                 sizes="90vw"
                 className="max-h-[90vh] max-w-full rounded-lg object-contain"
+                priority={true}
+                loading="eager"
+                decoding="sync"
               />
             ) : (
-              <img src={selectedImage} alt="Blog full view" className="max-h-[90vh] max-w-full rounded-lg object-contain" />
+              <img 
+                src={selectedImage} 
+                alt="Blog full view" 
+                className="max-h-[90vh] max-w-full rounded-lg object-contain"
+                loading="eager"
+                decoding="sync"
+              />
             )}
           </motion.div>
         </motion.div>

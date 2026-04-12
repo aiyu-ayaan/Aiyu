@@ -1,5 +1,10 @@
 /* Blog Detail Client Optimizations */
 
+/* Smooth scroll behavior */
+html {
+  scroll-behavior: smooth;
+}
+
 .blog-detail-backdrop {
   pointer-events: none;
   position: absolute;
@@ -27,6 +32,7 @@
     );
   will-change: transform;
   backface-visibility: hidden;
+  contain: layout style paint;
 }
 
 .blog-detail-container {
@@ -69,6 +75,7 @@
   align-items: center;
   justify-content: center;
   position: relative;
+  contain: layout style paint;
 }
 
 /* Image gallery modal */
@@ -94,4 +101,105 @@
   z-index: 10;
   max-width: 90vw;
   max-height: 90vh;
+  will-change: transform;
+  backface-visibility: hidden;
+  contain: layout style paint;
 }
+
+/* Performance optimizations for content sections */
+article {
+  contain: content;
+}
+
+article section {
+  contain: layout style paint;
+}
+
+/* Optimize list rendering in markdown */
+article ul,
+article ol {
+  contain: layout style;
+}
+
+article li {
+  contain: layout style paint;
+}
+
+/* Optimize code blocks */
+article pre {
+  will-change: auto;
+  contain: layout style paint;
+}
+
+/* Image optimization */
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+/* Skeleton loading animation */
+@keyframes skeleton-loading {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.animate-pulse {
+  animation: skeleton-loading 2s infinite;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.05) 25%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0.05) 75%
+  );
+  background-size: 1000px 100%;
+  background-repeat: repeat-x;
+}
+
+/* Link preview card performance */
+.link-preview-card {
+  contain: layout style paint;
+  will-change: transform;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+/* Reduce motion for animations */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .animate-pulse {
+    animation: none;
+  }
+}
+
+/* Optimize for mobile devices */
+@media (max-width: 768px) {
+  .blog-detail-container {
+    overflow-x: hidden;
+  }
+
+  article {
+    font-size: 0.95rem;
+  }
+
+  article h1,
+  article h2,
+  article h3 {
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+  }
+}
+
