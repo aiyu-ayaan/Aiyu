@@ -7,35 +7,11 @@ import { FaArrowRight, FaBoxes, FaCheckCircle, FaTools } from 'react-icons/fa';
 import ProjectCard from '../projects/ProjectCard';
 import ProjectDialog from '../projects/ProjectDialog';
 
-// Helper function to extract year value from project year string
-const extractSortYear = (yearValue) => {
-  const matches = String(yearValue || '').match(/\d{4}/g);
-  if (!matches || matches.length === 0) return 0;
-  const finalYear = Number.parseInt(matches[matches.length - 1], 10);
-  return Number.isNaN(finalYear) ? 0 : finalYear;
-};
-
-// Helper function to get displayOrder value for sorting
-const getDisplayOrderValue = (project) => {
-  const parsedOrder = Number.parseInt(project?.displayOrder, 10);
-  return Number.isNaN(parsedOrder) ? Number.MAX_SAFE_INTEGER : parsedOrder;
-};
-
-// Sorting function that respects displayOrder first, then year
-const sortProjects = (firstProject, secondProject) => {
-  const orderDifference = getDisplayOrderValue(firstProject) - getDisplayOrderValue(secondProject);
-  if (orderDifference !== 0) return orderDifference;
-  return extractSortYear(secondProject?.year) - extractSortYear(firstProject?.year);
-};
-
 const HomeProjects = ({ data }) => {
   const [selectedProject, setSelectedProject] = useState(null);
   const projects = Array.isArray(data) ? data : [];
 
-  const latestProjects = useMemo(() => {
-    const sorted = [...projects].sort(sortProjects);
-    return sorted.slice(0, 3);
-  }, [projects]);
+  const latestProjects = useMemo(() => projects.slice(0, 3), [projects]);
   const doneProjects = useMemo(
     () => projects.filter((project) => String(project?.status || '').toLowerCase() === 'done').length,
     [projects]
