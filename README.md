@@ -9,6 +9,7 @@
 [![Documentation](https://img.shields.io/badge/Wiki-Documentation-blue?logo=github)](https://github.com/aiyu-ayaan/Aiyu/wiki)
 
 [![LOC](https://badge.aiyu.co.in/repo-batch?owner=aiyu-ayaan&repo=aiyu&fields=loc)](https://github.com/aiyu-ayaan/Aiyu)
+[![wakatime](https://wakatime.com/badge/github/aiyu-ayaan/Aiyu.svg)](https://wakatime.com/badge/github/aiyu-ayaan/Aiyu)
 
 ![home](./docs/images/home.png)
 
