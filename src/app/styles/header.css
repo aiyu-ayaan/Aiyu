@@ -7,8 +7,8 @@
     color-mix(in srgb, var(--bg-secondary) 97%, transparent)
   );
   border-color: color-mix(in srgb, var(--border-secondary) 75%, transparent);
-  backdrop-filter: blur(8px);
-  box-shadow: 0 14px 36px color-mix(in srgb, var(--shadow-md) 85%, transparent);
+  backdrop-filter: blur(4px);
+  box-shadow: 0 8px 16px color-mix(in srgb, var(--shadow-sm) 40%, transparent);
 }
 
 .header-scrolled.heavy-route {
@@ -18,7 +18,7 @@
     color-mix(in srgb, var(--bg-secondary) 99%, transparent)
   );
   backdrop-filter: none;
-  box-shadow: 0 10px 22px color-mix(in srgb, var(--shadow-sm) 65%, transparent);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--shadow-sm) 35%, transparent);
 }
 
 .header-normal {
@@ -28,8 +28,8 @@
     color-mix(in srgb, var(--bg-secondary) 70%, transparent)
   );
   border-color: color-mix(in srgb, var(--border-secondary) 40%, transparent);
-  backdrop-filter: blur(18px);
-  box-shadow: 0 8px 22px color-mix(in srgb, var(--shadow-sm) 60%, transparent);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--shadow-sm) 30%, transparent);
 }
 
 .header-normal.heavy-route {
@@ -39,18 +39,17 @@
     color-mix(in srgb, var(--bg-secondary) 97%, transparent)
   );
   backdrop-filter: none;
-  box-shadow: 0 8px 18px color-mix(in srgb, var(--shadow-sm) 60%, transparent);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--shadow-sm) 25%, transparent);
 }
 
 /* Performance hints */
 .header-scrolled,
 .header-normal {
-  will-change: background-color, border-color, box-shadow, backdrop-filter;
+  will-change: transform;
   transition:
-    background-color 300ms cubic-bezier(0.4, 0, 0.2, 1),
-    border-color 300ms cubic-bezier(0.4, 0, 0.2, 1),
-    box-shadow 300ms cubic-bezier(0.4, 0, 0.2, 1),
-    backdrop-filter 300ms cubic-bezier(0.4, 0, 0.2, 1);
+    background-color 250ms cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 250ms cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 250ms cubic-bezier(0.4, 0, 0.2, 1);
   transform: translateZ(0);
   backface-visibility: hidden;
   contain: paint;
@@ -91,4 +90,5 @@
     color-mix(in srgb, var(--accent-purple) 15%, transparent) 90%,
     transparent 100%
   );
+  will-change: auto;
 }

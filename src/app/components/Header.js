@@ -67,9 +67,9 @@ export default memo(function Header({ data, logoText, socialData, config }) {
   const overflowRestoreRef = useRef({ body: null, html: null });
   const { scrollYProgress } = useScroll();
   const progressScaleX = useSpring(scrollYProgress, {
-    stiffness: 160,
-    damping: 28,
-    restDelta: 0.001,
+    stiffness: 100,
+    damping: 20,
+    restDelta: 0.01,
   });
   const progressOpacity = useTransform(progressScaleX, [0, 0.01], [0, 1]);
 
@@ -172,11 +172,15 @@ export default memo(function Header({ data, logoText, socialData, config }) {
                />
              </motion.div>
            )}
-          <nav
-            className={clsx(
-              "relative flex items-center gap-3 transition-[padding,min-height] duration-300",
-              scrolled ? "min-h-[60px] px-3 py-2 sm:px-4" : "min-h-[72px] px-3 py-3 sm:px-4"
-            )}
+           <nav
+             className={clsx(
+               "relative flex items-center gap-3 transition-[padding,min-height] duration-250",
+               scrolled ? "min-h-[60px] px-3 py-2 sm:px-4" : "min-h-[72px] px-3 py-3 sm:px-4"
+             )}
+             style={{
+               willChange: scrolled ? 'auto' : 'auto',
+               backfaceVisibility: 'hidden',
+             }}
           >
             <Link href="/" className="min-w-0 flex-shrink-0">
               <motion.div
@@ -324,15 +328,19 @@ export default memo(function Header({ data, logoText, socialData, config }) {
             </div>
           </nav>
 
-          <div
-            className={clsx(
-              "transition-[max-height,opacity,padding] duration-300",
-              scrolled
-                ? "pointer-events-none max-h-0 overflow-hidden px-0 opacity-0"
-                : "max-h-24 overflow-visible px-2 pb-2 opacity-100 sm:px-3"
-            )}
-            aria-hidden={scrolled}
-          >
+           <div
+             className={clsx(
+               "transition-[max-height,opacity,padding] duration-250 overflow-hidden",
+               scrolled
+                 ? "pointer-events-none max-h-0 opacity-0 px-0"
+                 : "max-h-24 opacity-100 px-2 pb-2 sm:px-3"
+             )}
+             aria-hidden={scrolled}
+             style={{
+               willChange: scrolled ? 'auto' : 'auto',
+               backfaceVisibility: 'hidden',
+             }}
+           >
             <div
               className="rounded-xl border"
               style={{
