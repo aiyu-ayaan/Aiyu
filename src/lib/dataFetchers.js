@@ -49,6 +49,26 @@ const sortDeployments = (deployments = []) => {
     });
 };
 
+const extractProjectDisplayOrder = (project) => {
+    const parsedOrder = Number.parseInt(project?.displayOrder, 10);
+    return Number.isNaN(parsedOrder) ? Number.MAX_SAFE_INTEGER : parsedOrder;
+};
+
+const extractProjectYear = (yearValue) => {
+    const matches = String(yearValue || '').match(/\d{4}/g);
+    if (!matches || matches.length === 0) return 0;
+    const finalYear = Number.parseInt(matches[matches.length - 1], 10);
+    return Number.isNaN(finalYear) ? 0 : finalYear;
+};
+
+const sortProjects = (projects = []) => {
+    return [...projects].sort((a, b) => {
+        const orderDifference = extractProjectDisplayOrder(a) - extractProjectDisplayOrder(b);
+        if (orderDifference !== 0) return orderDifference;
+        return extractProjectYear(b?.year) - extractProjectYear(a?.year);
+    });
+};
+
 const CONFIG_PUBLIC_SELECT = [
     'siteTitle',
     'siteDescription',
@@ -79,7 +99,7 @@ const CONFIG_PUBLIC_SELECT = [
 ].join(' ');
 
 const HOME_ABOUT_SELECT = ['name', 'skills', 'professionalSummary'].join(' ');
-const HOME_PROJECTS_SELECT = ['name', 'techStack', 'year', 'status', 'projectType', 'description', 'codeLink', 'blogLink', 'image'].join(' ');
+const HOME_PROJECTS_SELECT = ['name', 'techStack', 'year', 'status', 'projectType', 'description', 'codeLink', 'blogLink', 'image', 'displayOrder'].join(' ');
 const HOME_BLOGS_SELECT = ['title', 'slug', 'content', 'image', 'date', 'createdAt'].join(' ');
 const BLOG_LIST_SELECT = ['title', 'slug', 'content', 'image', 'date', 'createdAt', 'updatedAt', 'published', 'tags'].join(' ');
 const GALLERY_LIST_SELECT = ['src', 'thumbnail', 'description', 'width', 'height', 'isPinned', 'order', 'createdAt'].join(' ');
@@ -249,7 +269,9 @@ export async function getHomePageData() {
                 CACHE_KEY_PROJECTS_HOME,
                 async () => {
                     await ensureDb();
-                    return ProjectModel.find().sort({ year: -1 }).limit(2).select(HOME_PROJECTS_SELECT).lean();
+                    const projects = await ProjectModel.find().select(HOME_PROJECTS_SELECT).lean();
+                    const sortedProjects = sortProjects(projects);
+                    return sortedProjects.slice(0, 3);
                 },
                 CACHE_TTL.LONG
             ),
@@ -355,7 +377,8 @@ export async function getProjectsData() {
             CACHE_KEYS.PROJECTS,
             async () => {
                 await ensureDb();
-                return ProjectModel.find().sort({ year: -1 }).lean();
+                const projects = await ProjectModel.find().lean();
+                return sortProjects(projects);
             },
             CACHE_TTL.LONG
         );

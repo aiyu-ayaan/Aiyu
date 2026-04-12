@@ -4,13 +4,7 @@ import React, { useMemo } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { FaArrowRight, FaCalendarAlt, FaPenNib } from 'react-icons/fa';
-import { generateSlug } from '../blogs/blogUtils';
-
-const estimateReadTime = (content = '') => {
-  const words = String(content).trim().split(/\s+/).filter(Boolean).length;
-  const minutes = Math.max(1, Math.round(words / 200));
-  return `${minutes} min read`;
-};
+import { generateSlug, getReadTime } from '../blogs/blogUtils';
 
 const HomeBlogs = ({ blogs }) => {
   const sortedBlogs = useMemo(() => {
@@ -109,7 +103,7 @@ const HomeBlogs = ({ blogs }) => {
                     }}
                   >
                     <FaPenNib className="h-3 w-3" />
-                    {estimateReadTime(blog?.content)}
+                    {getReadTime(blog?.content)}
                   </span>
                 </div>
 
