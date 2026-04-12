@@ -129,26 +129,26 @@ export default memo(function Header({ data, logoText, socialData, config }) {
 
   return (
     <>
-      {!prefersReducedMotion && !isContentHeavyRoute && (
-        <motion.div
-          className="fixed left-0 right-0 top-0 z-[60] h-1 origin-left"
-          style={{
-            scaleX: progressScaleX,
-            opacity: progressOpacity,
-            background: 'linear-gradient(to right, var(--accent-cyan), var(--accent-purple), var(--accent-pink))',
-            willChange: 'transform',
-          }}
-        />
-      )}
-
       <header className="sticky top-0 z-50 px-3 pb-0 pt-3 sm:px-4 lg:px-6">
         <div
           className={clsx(
-            "mx-auto w-full max-w-7xl rounded-2xl border transition-all duration-300",
+            "mx-auto w-full max-w-7xl rounded-2xl border transition-all duration-300 relative overflow-hidden",
             scrolled ? "header-scrolled" : "header-normal",
             isContentHeavyRoute && "heavy-route"
           )}
         >
+           {/* Progress bar as bottom border of header */}
+           {!prefersReducedMotion && !isContentHeavyRoute && (
+             <motion.div
+               className="absolute bottom-0 left-0 h-1 w-full origin-left"
+               style={{
+                 scaleX: progressScaleX,
+                 opacity: progressOpacity,
+                 background: 'linear-gradient(to right, var(--accent-cyan), var(--accent-purple), var(--accent-pink))',
+                 willChange: 'transform',
+               }}
+             />
+           )}
           <nav
             className={clsx(
               "relative flex items-center gap-3 transition-[padding,min-height] duration-300",
