@@ -137,17 +137,40 @@ export default memo(function Header({ data, logoText, socialData, config }) {
             isContentHeavyRoute && "heavy-route"
           )}
         >
-           {/* Progress bar as bottom border of header */}
-           {!prefersReducedMotion && !isContentHeavyRoute && (
+           {/* Water-fill progress bar following theme - left to right with continuous wavy edge */}
+           {!prefersReducedMotion && (
              <motion.div
-               className="absolute bottom-0 left-0 h-1 w-full origin-left"
+               className="absolute inset-0 pointer-events-none rounded-2xl overflow-hidden"
                style={{
                  scaleX: progressScaleX,
                  opacity: progressOpacity,
-                 background: 'linear-gradient(to right, var(--accent-cyan), var(--accent-purple), var(--accent-pink))',
-                 willChange: 'transform',
+                 transformOrigin: 'left',
+                 willChange: 'transform, opacity',
+                 pointerEvents: 'none',
+                 zIndex: 1,
                }}
-             />
+             >
+               {/* Base water fill */}
+               <div
+                 style={{
+                   position: 'absolute',
+                   inset: 0,
+                   background: `linear-gradient(to right, 
+                     color-mix(in srgb, var(--accent-cyan) 15%, transparent) 0%,
+                     color-mix(in srgb, var(--accent-purple) 12%, transparent) 50%,
+                     transparent 100%)`,
+                 }}
+               />
+               
+               {/* Wavy edge animation */}
+               <div
+                 className="water-wave-edge"
+                 style={{
+                   position: 'absolute',
+                   inset: 0,
+                 }}
+               />
+             </motion.div>
            )}
           <nav
             className={clsx(

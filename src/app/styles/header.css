@@ -55,3 +55,40 @@
   backface-visibility: hidden;
   contain: paint;
 }
+
+/* Smooth continuous wave animation on the right edge */
+@keyframes continuousWave {
+  0% {
+    mask-position: 0% 0;
+  }
+  100% {
+    mask-position: -100% 0;
+  }
+}
+
+.water-wave-edge {
+  animation: continuousWave 2s linear infinite;
+  -webkit-mask-image: radial-gradient(
+    circle at center,
+    transparent 0%,
+    transparent 40%,
+    color-mix(in srgb, var(--accent-cyan) 30%, transparent) 55%,
+    color-mix(in srgb, var(--accent-purple) 20%, transparent) 70%,
+    transparent 85%
+  );
+  mask-image: radial-gradient(
+    circle at center,
+    transparent 0%,
+    transparent 40%,
+    color-mix(in srgb, var(--accent-cyan) 30%, transparent) 55%,
+    color-mix(in srgb, var(--accent-purple) 20%, transparent) 70%,
+    transparent 85%
+  );
+  background: linear-gradient(90deg,
+    transparent 0%,
+    transparent 70%,
+    color-mix(in srgb, var(--accent-cyan) 25%, transparent) 80%,
+    color-mix(in srgb, var(--accent-purple) 15%, transparent) 90%,
+    transparent 100%
+  );
+}
