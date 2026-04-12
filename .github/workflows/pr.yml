@@ -1,19 +1,11 @@
-name: Build & Deploy
+name: PR Build & Lint Check
 
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-  push:
-    branches: [master]
-  workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Deployment environment'
-        required: false
-        default: 'production'
 
 jobs:
-  build:
+  build-and-lint:
     runs-on: ubuntu-latest
     
     strategy:
@@ -47,7 +39,6 @@ jobs:
       
       - name: Run ESLint
         run: npm run lint
-        continue-on-error: true
       
       - name: Build project
         run: npm run build
@@ -56,7 +47,7 @@ jobs:
         if: success()
         run: |
           echo "✅ Build and lint checks passed!"
-          echo "The project is ready for merge."
+          echo "The PR is ready for merge."
       
       - name: Build failure summary
         if: failure()
@@ -64,174 +55,3 @@ jobs:
           echo "❌ Build or lint checks failed!"
           echo "Please review the logs above and fix any issues."
           exit 1
-
-  push-to-docker-hub:
-    name: Push Docker image to Docker Hub
-    needs: build
-    runs-on: ubuntu-latest
-    if: |
-      (github.ref == 'refs/heads/master' && github.event_name == 'push' && 
-       (contains(github.event.head_commit.message, 'Release:') || contains(github.event.head_commit.message, 'Release v'))) ||
-      github.event_name == 'workflow_dispatch'
-    permissions:
-      packages: write
-      contents: read
-      attestations: write
-      id-token: write
-
-    steps:
-      - name: Check out the repo
-        uses: actions/checkout@v4
-
-      - name: Extract version from commit message
-        id: extract-version
-        run: |
-          if [[ "${{ github.event.head_commit.message }}" =~ Release\ (v[0-9]+\.[0-9]+\.[0-9]+) ]]; then
-            VERSION="${BASH_REMATCH[1]}"
-            echo "version=$VERSION" >> $GITHUB_OUTPUT
-            echo "Found version: $VERSION"
-          elif [[ "${{ github.event.head_commit.message }}" =~ Release:\ (v[0-9]+\.[0-9]+\.[0-9]+) ]]; then
-            VERSION="${BASH_REMATCH[1]}"
-            echo "version=$VERSION" >> $GITHUB_OUTPUT
-            echo "Found version: $VERSION"
-          else
-            # Fallback to latest git tag
-            VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
-            echo "version=$VERSION" >> $GITHUB_OUTPUT
-            echo "No version in commit message, using git tag: $VERSION"
-          fi
-
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: Extract metadata (tags, labels) for Docker
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: aiyuayaan/aiyu
-          tags: |
-            type=raw,value=${{ steps.extract-version.outputs.version }}
-            type=raw,value=latest
-
-      - name: Build and push Docker image
-        id: push
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./Dockerfile
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-
-      - name: Generate artifact attestation
-        uses: actions/attest-build-provenance@v2
-        with:
-          subject-name: index.docker.io/aiyuayaan/aiyu
-          subject-digest: ${{ steps.push.outputs.digest }}
-          push-to-registry: true
-
-  deploy:
-    name: Deploy to Server
-    needs: push-to-docker-hub
-    runs-on: ubuntu-latest
-    if: |
-      (github.ref == 'refs/heads/master' && github.event_name == 'push' && 
-       (contains(github.event.head_commit.message, 'Release:') || contains(github.event.head_commit.message, 'Release v'))) ||
-      github.event_name == 'workflow_dispatch'
-    outputs:
-      version: ${{ steps.extract-version.outputs.version }}
-
-    steps:
-      - name: Extract version from commit message
-        id: extract-version
-        run: |
-          if [[ "${{ github.event.head_commit.message }}" =~ Release\ (v[0-9]+\.[0-9]+\.[0-9]+) ]]; then
-            VERSION="${BASH_REMATCH[1]}"
-            echo "version=$VERSION" >> $GITHUB_OUTPUT
-            echo "Found version: $VERSION"
-          elif [[ "${{ github.event.head_commit.message }}" =~ Release:\ (v[0-9]+\.[0-9]+\.[0-9]+) ]]; then
-            VERSION="${BASH_REMATCH[1]}"
-            echo "version=$VERSION" >> $GITHUB_OUTPUT
-            echo "Found version: $VERSION"
-          else
-            # Fallback to latest git tag
-            VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
-            echo "version=$VERSION" >> $GITHUB_OUTPUT
-            echo "No version in commit message, using git tag: $VERSION"
-          fi
-
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          password: ${{ secrets.SSH_PASSWORD }}
-          script: |
-            set -e
-            
-            echo "Starting deployment..."
-            
-            echo "Navigating to project directory..."
-            cd docker/Aiyu/ || { echo "Failed to navigate to docker/Aiyu/"; exit 1; }
-            
-            echo "Pulling latest Docker image..."
-            docker compose pull || { echo "Failed to pull latest image"; exit 1; }
-            
-            echo "Restarting containers..."
-            docker compose up -d || { echo "Failed to start containers"; exit 1; }
-            
-            echo "✅ Deployment completed successfully!"
-
-  create-release:
-    name: Create GitHub Release
-    needs: push-to-docker-hub
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master' && github.event_name == 'push' && (contains(github.event.head_commit.message, 'Release:') || contains(github.event.head_commit.message, 'Release v'))
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
-      - name: Extract version from commit message
-        id: extract-version
-        run: |
-          if [[ "${{ github.event.head_commit.message }}" =~ Release\ (v[0-9]+\.[0-9]+\.[0-9]+) ]]; then
-            VERSION="${BASH_REMATCH[1]}"
-            echo "version=$VERSION" >> $GITHUB_OUTPUT
-            echo "Found version: $VERSION"
-          elif [[ "${{ github.event.head_commit.message }}" =~ Release:\ (v[0-9]+\.[0-9]+\.[0-9]+) ]]; then
-            VERSION="${BASH_REMATCH[1]}"
-            echo "version=$VERSION" >> $GITHUB_OUTPUT
-            echo "Found version: $VERSION"
-          else
-            # Fallback to latest git tag
-            VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
-            echo "version=$VERSION" >> $GITHUB_OUTPUT
-            echo "No version in commit message, using git tag: $VERSION"
-          fi
-      
-      - name: Create Release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.USER_TOKEN }}
-        with:
-          tag_name: ${{ steps.extract-version.outputs.version }}
-          release_name: Release ${{ steps.extract-version.outputs.version }}
-          body: |
-            ## Release ${{ steps.extract-version.outputs.version }}
-            
-            **Commit Message:**
-            ```
-            ${{ github.event.head_commit.message }}
-            ```
-            
-            **Commit SHA:** ${{ github.event.head_commit.id }}
-            
-            **Author:** ${{ github.event.head_commit.author.name }}
-            
-            This release was automatically created by GitHub Actions.
-          draft: false
-          prerelease: false

@@ -1,37 +1,23 @@
 {
     "release-type": "node",
+    "changelog-path": "CHANGELOG.md",
+    "version-file": "package.json",
     "packages": {
         ".": {
+            "changelog-path": "CHANGELOG.md",
+            "version-file": "package.json",
             "changelog-sections": [
                 {
-                    "type": "major",
-                    "section": "Breaking Changes",
-                    "hidden": false
-                },
-                {
                     "type": "feat",
+                    "scope": null,
                     "section": "Features",
                     "hidden": false
                 },
                 {
                     "type": "fix",
+                    "scope": null,
                     "section": "Bug Fixes",
                     "hidden": false
-                },
-                {
-                    "type": "docs",
-                    "section": "Documentation",
-                    "hidden": false
-                },
-                {
-                    "type": "chore",
-                    "section": "Miscellaneous",
-                    "hidden": true
-                },
-                {
-                    "type": "refactor",
-                    "section": "Miscellaneous",
-                    "hidden": true
                 }
             ],
             "version-bump-behavior": "standard"
@@ -39,31 +25,13 @@
     },
     "commit-types": [
         {
-            "type": "major",
-            "release": "major"
-        },
-        {
             "type": "feat",
+            "breaking": true,
             "release": "minor"
         },
         {
             "type": "fix",
-            "release": "patch"
-        },
-        {
-            "type": "docs",
-            "release": "patch"
-        },
-        {
-            "type": "chore",
-            "release": false
-        },
-        {
-            "type": "refactor",
-            "release": false
-        },
-        {
-            "type": "deps",
+            "breaking": true,
             "release": "patch"
         }
     ]
