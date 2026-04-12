@@ -32,20 +32,40 @@ jobs:
           import json
           import os
           import re
+          import subprocess
 
           commit_message = os.environ.get("HEAD_COMMIT_MESSAGE", "").strip()
 
           with open("package.json", "r", encoding="utf-8") as f:
               current_version = json.load(f)["version"].strip()
 
-          match = re.match(r"^\s*(feat!|fix!|major!|mojor!)\s*:\s*", commit_message, flags=re.IGNORECASE)
+          changed_files_output = subprocess.check_output(
+              ["git", "show", "--name-only", "--pretty=", "HEAD"],
+              text=True,
+          )
+          changed_files = {
+              line.strip()
+              for line in changed_files_output.splitlines()
+              if line.strip()
+          }
+
+          trigger_match = re.match(r"^\s*(feat!|fix!|major!|mojor!)\s*:\s*", commit_message, flags=re.IGNORECASE)
+          release_merge_match = re.match(
+              r"^\s*chore(?:\([^)]+\))?:\s*release\s+v?(\d+\.\d+\.\d+)",
+              commit_message,
+              flags=re.IGNORECASE,
+          )
+          release_merge_by_files = (
+              ".release-please-manifest.json" in changed_files
+              or ("package.json" in changed_files and "CHANGELOG.md" in changed_files)
+          )
 
           should_release = "false"
           release_as = ""
           commit_kind = ""
 
-          if match:
-              commit_kind = match.group(1).lower()
+          if trigger_match:
+              commit_kind = trigger_match.group(1).lower()
               major, minor, patch = [int(part) for part in current_version.split(".")[:3]]
 
               if commit_kind == "feat!":
@@ -60,6 +80,14 @@ jobs:
 
               should_release = "true"
               release_as = f"{major}.{minor}.{patch}"
+          elif release_merge_match or release_merge_by_files:
+              should_release = "true"
+              commit_kind = "release-merge"
+              release_as = (
+                  release_merge_match.group(1)
+                  if release_merge_match
+                  else current_version
+              )
 
           output_file = os.environ["GITHUB_OUTPUT"]
           with open(output_file, "a", encoding="utf-8") as f:
@@ -73,11 +101,12 @@ jobs:
         run: |
           echo "Skipping release for this commit message."
           echo "Allowed prefixes: feat!:, fix!:, major!:, mojor!:"
+          echo "Publish trigger: chore(master): release X.Y.Z"
 
   release-please:
     runs-on: ubuntu-latest
     needs: determine-release
-    if: needs.determine-release.outputs.should_release == 'true'
+    if: needs.determine-release.outputs.should_release == 'true' && needs.determine-release.outputs.commit_kind != 'release-merge'
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
       version: ${{ steps.release.outputs.version }}
@@ -99,9 +128,9 @@ jobs:
 
   push-to-docker-hub:
     name: Push Docker image to Docker Hub
-    needs: release-please
+    needs: determine-release
     runs-on: ubuntu-latest
-    if: needs.release-please.outputs.release_created == 'true'
+    if: needs.determine-release.outputs.commit_kind == 'release-merge'
     permissions:
       packages: write
       contents: read
@@ -115,11 +144,7 @@ jobs:
       - name: Get version
         id: get-version
         run: |
-          if [ "${{ needs.release-please.outputs.release_created }}" == "true" ]; then
-            VERSION="v${{ needs.release-please.outputs.version }}"
-          else
-            VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
-          fi
+          VERSION="v${{ needs.determine-release.outputs.release_as }}"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Docker image will be tagged with: $VERSION"
 
@@ -157,9 +182,9 @@ jobs:
 
   deploy:
     name: Deploy to Server
-    needs: [release-please, push-to-docker-hub]
+    needs: [determine-release, push-to-docker-hub]
     runs-on: ubuntu-latest
-    if: needs.release-please.outputs.release_created == 'true'
+    if: needs.determine-release.outputs.commit_kind == 'release-merge'
     outputs:
       version: ${{ steps.get-version.outputs.version }}
 
@@ -170,11 +195,7 @@ jobs:
       - name: Get version
         id: get-version
         run: |
-          if [ "${{ needs.release-please.outputs.release_created }}" == "true" ]; then
-            VERSION="v${{ needs.release-please.outputs.version }}"
-          else
-            VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
-          fi
+          VERSION="v${{ needs.determine-release.outputs.release_as }}"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Deploying version: $VERSION"
 
@@ -202,9 +223,9 @@ jobs:
 
   create-release:
     name: Create GitHub Release
-    needs: [release-please, push-to-docker-hub]
+    needs: [determine-release, push-to-docker-hub]
     runs-on: ubuntu-latest
-    if: needs.release-please.outputs.release_created == 'true'
+    if: needs.determine-release.outputs.commit_kind == 'release-merge'
     
     steps:
       - name: Checkout code
@@ -213,7 +234,7 @@ jobs:
       - name: Get version
         id: get-version
         run: |
-          VERSION="v${{ needs.release-please.outputs.version }}"
+          VERSION="v${{ needs.determine-release.outputs.release_as }}"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Creating release: $VERSION"
       
