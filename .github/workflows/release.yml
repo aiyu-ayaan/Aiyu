@@ -42,7 +42,7 @@ jobs:
     name: Push Docker image to Docker Hub
     needs: release-please
     runs-on: ubuntu-latest
-    if: needs.release-please.outputs.release_created == 'true' || github.event_name == 'workflow_dispatch'
+    if: needs.release-please.outputs.release_created == 'true'
     permissions:
       packages: write
       contents: read
@@ -100,7 +100,7 @@ jobs:
     name: Deploy to Server
     needs: [release-please, push-to-docker-hub]
     runs-on: ubuntu-latest
-    if: needs.release-please.outputs.release_created == 'true' || github.event_name == 'workflow_dispatch'
+    if: needs.release-please.outputs.release_created == 'true'
     outputs:
       version: ${{ steps.get-version.outputs.version }}
 

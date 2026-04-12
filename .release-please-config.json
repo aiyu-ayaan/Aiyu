@@ -1,4 +1,5 @@
 {
+    "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
     "release-type": "node",
     "changelog-path": "CHANGELOG.md",
     "version-file": "package.json",
@@ -9,13 +10,11 @@
             "changelog-sections": [
                 {
                     "type": "feat",
-                    "scope": null,
                     "section": "Features",
                     "hidden": false
                 },
                 {
                     "type": "fix",
-                    "scope": null,
                     "section": "Bug Fixes",
                     "hidden": false
                 }
@@ -23,16 +22,30 @@
             "version-bump-behavior": "standard"
         }
     },
-    "commit-types": [
+    "plugins": [
         {
-            "type": "feat",
-            "breaking": true,
-            "release": "minor"
-        },
-        {
-            "type": "fix",
-            "breaking": true,
-            "release": "patch"
+            "type": "commit-analyzer",
+            "config": {
+                "releaseRules": [
+                    {
+                        "breaking": true,
+                        "release": "major"
+                    },
+                    {
+                        "type": "feat",
+                        "breaking": true,
+                        "release": "minor"
+                    },
+                    {
+                        "type": "fix",
+                        "breaking": true,
+                        "release": "patch"
+                    }
+                ],
+                "parserOpts": {
+                    "noteKeywords": ["BREAKING CHANGE", "BREAKING-CHANGE"]
+                }
+            }
         }
     ]
 }
