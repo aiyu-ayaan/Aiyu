@@ -323,21 +323,21 @@ export default memo(function Header({ data, logoText, socialData, config }) {
         </div>
       </header>
 
-      <motion.aside
-        className="fixed inset-0 z-[110] md:hidden"
-        style={{
-          backgroundColor: theme === 'dark' ? 'rgba(8, 10, 14, 0.9)' : 'rgba(248, 250, 252, 0.9)',
-          backdropFilter: 'blur(20px)',
-          pointerEvents: isMenuOpen ? 'auto' : 'none',
-        }}
-        initial={{ opacity: 0, y: '-4%' }}
-        animate={{
-          opacity: isMenuOpen ? 1 : 0,
-          y: isMenuOpen ? '0%' : '-4%',
-        }}
-        transition={{ duration: 0.22, ease: 'easeOut' }}
-      >
-        <div className="mx-auto mt-4 flex h-[calc(100dvh-2rem)] w-[92%] max-w-xl flex-col rounded-2xl border p-4" style={{ borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)', backgroundColor: 'color-mix(in srgb, var(--bg-surface) 88%, transparent)' }}>
+       <motion.aside
+         className="fixed inset-0 z-[110] md:hidden overflow-y-auto"
+         style={{
+           backgroundColor: theme === 'dark' ? 'rgba(8, 10, 14, 0.9)' : 'rgba(248, 250, 252, 0.9)',
+           backdropFilter: 'blur(20px)',
+           pointerEvents: isMenuOpen ? 'auto' : 'none',
+         }}
+         initial={{ opacity: 0, y: '-4%' }}
+         animate={{
+           opacity: isMenuOpen ? 1 : 0,
+           y: isMenuOpen ? '0%' : '-4%',
+         }}
+         transition={{ duration: 0.22, ease: 'easeOut' }}
+       >
+         <div className="mx-auto mt-4 flex min-h-[calc(100dvh-2rem)] w-[92%] max-w-xl flex-col rounded-2xl border p-4" style={{ borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)', backgroundColor: 'color-mix(in srgb, var(--bg-surface) 88%, transparent)' }}>
           <div className="mb-4 flex items-center justify-between">
             <span
               className="text-lg font-bold"
