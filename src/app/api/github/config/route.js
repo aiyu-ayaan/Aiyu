@@ -188,7 +188,7 @@ async function updateConfig(request) {
             // Update token in Config
             const encryptedToken = body.githubToken ? encrypt(body.githubToken) : '';
             await Config.findOneAndUpdate({}, { encryptedGithubToken: encryptedToken }, { upsert: true });
-            cache.invalidatePrefix('db:config');
+            // Cache invalidation removed - always fetches fresh data
         }
 
         await config.save();

@@ -103,8 +103,7 @@ export async function PUT(request, { params }) {
         if (variants) theme.variants = variants;
 
         await theme.save();
-        cache.invalidatePrefix(CACHE_KEY_THEME_DETAIL_PREFIX);
-        cache.invalidatePrefix('db:themes');
+        // Cache invalidation removed - always fetches fresh data
 
         return NextResponse.json({ success: true, data: theme });
     } catch (error) {
@@ -161,8 +160,7 @@ export async function DELETE(_request, { params }) {
             );
         }
 
-        cache.invalidatePrefix(CACHE_KEY_THEME_DETAIL_PREFIX);
-        cache.invalidatePrefix('db:themes');
+        // Cache invalidation removed - always fetches fresh data
 
         return NextResponse.json({
             success: true,

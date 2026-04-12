@@ -1,6 +1,10 @@
 import Deployments from '../../components/deployments/Deployments';
 import { getConfigData, getDeploymentsData } from '@/lib/dataFetchers';
 
+// Always fetch fresh data - no caching
+export const revalidate = 0;
+export const dynamic = 'force-dynamic';
+
 export async function generateMetadata() {
     const config = await getConfigData();
     const baseName = config?.siteTitle || config?.logoText || 'Portfolio';

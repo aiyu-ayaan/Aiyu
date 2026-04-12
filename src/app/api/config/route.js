@@ -125,8 +125,7 @@ async function updateConfig(request) {
             upsert: true,
             runValidators: true,
         });
-        cache.invalidate(CACHE_KEYS.CONFIG);
-        cache.invalidatePrefix('db:config');
+        // Cache invalidation removed - always fetches fresh data
         return NextResponse.json(config);
     } catch (error) {
         console.error('Config update error:', error);

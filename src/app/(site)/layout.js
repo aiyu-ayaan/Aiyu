@@ -5,8 +5,9 @@ import { getLayoutData } from "@/lib/dataFetchers";
 import { promises as fs } from 'fs';
 import path from 'path';
 
-// Revalidate public pages with ISR behavior to avoid per-request SSR work.
-export const revalidate = 60;
+// Always fetch fresh data - no caching
+export const revalidate = 0;
+export const dynamic = 'force-dynamic';
 
 export default async function SiteLayout({ children }) {
     const { headerData: serializedHeaderData, socialData: serializedSocialData, configData: serializedConfigData, aboutData: serializedAboutData } = await getLayoutData();

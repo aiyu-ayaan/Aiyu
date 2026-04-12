@@ -43,7 +43,7 @@ export async function PUT(request, { params }) {
         });
 
         console.log('PUT /api/blogs/[id] - Updated Blog:', blog);
-        cache.invalidatePrefix('db:blog');
+        // Cache invalidation removed - always fetches fresh data
         return NextResponse.json({ success: true, data: blog });
     } catch (error) {
         return NextResponse.json({ success: false, error: error.message }, { status: 400 });
@@ -58,7 +58,7 @@ export async function DELETE(request, { params }) {
         if (!blog) {
             return NextResponse.json({ success: false, error: "Blog not found" }, { status: 404 });
         }
-        cache.invalidatePrefix('db:blog');
+        // Cache invalidation removed - always fetches fresh data
         return NextResponse.json({ success: true, data: {} });
     } catch (error) {
         return NextResponse.json({ success: false, error: error.message }, { status: 400 });

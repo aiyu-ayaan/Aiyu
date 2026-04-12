@@ -22,8 +22,7 @@ export async function PUT(request, { params }) {
         if (!social) {
             return NextResponse.json({ error: 'Social link not found' }, { status: 404 });
         }
-        cache.invalidate(CACHE_KEYS.SOCIALS);
-        cache.invalidatePrefix('db:socials');
+        // Cache invalidation removed - always fetches fresh data
         return NextResponse.json(social);
     } catch (error) {
         return NextResponse.json({ error: 'Failed to update social link' }, { status: 500 });
@@ -43,8 +42,7 @@ export async function DELETE(request, { params }) {
         if (!social) {
             return NextResponse.json({ error: 'Social link not found' }, { status: 404 });
         }
-        cache.invalidate(CACHE_KEYS.SOCIALS);
-        cache.invalidatePrefix('db:socials');
+        // Cache invalidation removed - always fetches fresh data
         return NextResponse.json({ message: 'Social link deleted successfully' });
     } catch (error) {
         return NextResponse.json({ error: 'Failed to delete social link' }, { status: 500 });

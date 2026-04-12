@@ -41,8 +41,7 @@ export async function PUT(request) {
             upsert: true,
             runValidators: true,
         });
-        cache.invalidate(CACHE_KEYS.ABOUT);
-        cache.invalidatePrefix('db:about');
+        // Cache invalidation removed - always fetches fresh data
         return NextResponse.json(about);
     } catch (error) {
         return NextResponse.json({ error: 'Failed to update about data' }, { status: 500 });

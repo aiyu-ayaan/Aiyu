@@ -41,8 +41,7 @@ export async function PUT(request) {
             upsert: true,
             runValidators: true,
         });
-        cache.invalidate(CACHE_KEYS.HEADER);
-        cache.invalidatePrefix('db:header');
+        // Cache invalidation removed - always fetches fresh data
         return NextResponse.json(header);
     } catch (error) {
         return NextResponse.json({ error: 'Failed to update header data' }, { status: 500 });

@@ -68,9 +68,7 @@ export async function POST(request) {
         }
 
         const deployment = await Deployment.create(payload);
-        cache.invalidate(CACHE_KEYS.DEPLOYMENTS);
-        cache.invalidatePrefix('db:deployments');
-
+        // Cache invalidation removed - always fetches fresh data
         return NextResponse.json(deployment, { status: 201 });
     } catch {
         return NextResponse.json({ error: 'Failed to create deployment' }, { status: 500 });

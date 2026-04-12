@@ -41,7 +41,7 @@ export async function PUT(request) {
             upsert: true, // Create if doesn't exist
             runValidators: true,
         });
-        cache.invalidate(CACHE_KEYS.HOME);
+        // Cache invalidation removed - always fetches fresh data
         return NextResponse.json(home);
     } catch (error) {
         return NextResponse.json({ error: 'Failed to update home data' }, { status: 500 });

@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { FaDownload, FaUpload, FaDatabase, FaExclamationTriangle, FaCheckCircle, FaServer } from 'react-icons/fa';
+import { FaDownload, FaUpload, FaDatabase, FaExclamationTriangle, FaCheckCircle, FaServer, FaTrash } from 'react-icons/fa';
 
 export default function DatabaseManager() {
     const [isLoading, setIsLoading] = useState(false);
@@ -106,6 +106,33 @@ export default function DatabaseManager() {
         }
     };
 
+    const handlePurgeCache = async () => {
+        if (!window.confirm('WARNING: THIS WILL PURGE ALL REDIS CACHES. CONFIRM PROTOCOL?')) {
+            return;
+        }
+
+        try {
+            setIsLoading(true);
+            setMessage({ type: 'info', text: 'PURGING_CACHE_SYSTEM...' });
+
+            const response = await fetch('/api/admin/purge-cache', {
+                method: 'POST',
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result?.error || 'PURGE_FAILED');
+            }
+
+            setMessage({ type: 'success', text: 'CACHE_PURGED_SUCCESSFULLY' });
+        } catch (error) {
+            setMessage({ type: 'error', text: error.message });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     return (
         <div className="p-8 max-w-7xl mx-auto min-h-screen">
             <div className="mb-8">
@@ -138,7 +165,7 @@ export default function DatabaseManager() {
                 </motion.div>
             )}
 
-            <div className="grid md:grid-cols-2 gap-8">
+            <div className="grid md:grid-cols-3 gap-8">
                 {/* Export Section */}
                 <motion.div
                     initial={{ opacity: 0, x: -20 }}
@@ -226,6 +253,48 @@ export default function DatabaseManager() {
                                 {isLoading ? 'OVERWRITING...' : 'EXECUTE_RESTORE'}
                             </button>
                         </form>
+                    </div>
+                </motion.div>
+
+                {/* Purge Cache Section */}
+                <motion.div
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="bg-slate-900/50 backdrop-blur-xl p-8 rounded-2xl border border-white/10 relative overflow-hidden group"
+                >
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-red-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
+
+                    <div className="relative z-10">
+                        <div className="flex items-center gap-3 mb-6">
+                            <FaTrash className="text-red-500/70" size={20} />
+                            <h2 className="text-sm font-mono text-red-500/70 uppercase tracking-widest">Cache Purge</h2>
+                        </div>
+
+                        <div className="bg-red-500/5 border border-red-500/10 p-4 rounded-lg mb-6 flex gap-3 items-start">
+                            <FaExclamationTriangle className="text-red-500 mt-0.5 shrink-0" size={14} />
+                            <p className="text-red-400/80 text-xs leading-relaxed font-mono">
+                                CRITICAL WARNING: Purge sequence will clear all Redis caches and in-memory cache entries. Website will refresh data on next request.
+                            </p>
+                        </div>
+
+                        <p className="text-slate-400 mb-8 text-sm leading-relaxed">
+                            Flush all cached data from Redis and in-memory storage. Use this when caches are stale or causing issues. Admin panel data will always be fresh regardless of cache state.
+                        </p>
+
+                        <button
+                            onClick={handlePurgeCache}
+                            disabled={isLoading}
+                            className="w-full bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 hover:border-red-500/40 text-red-400 font-bold py-4 px-4 rounded-xl transition-all flex items-center justify-center gap-3 uppercase tracking-wider text-sm disabled:opacity-50 disabled:cursor-not-allowed group/btn"
+                        >
+                            {isLoading ? (
+                                <span className="animate-pulse">FLUSHING...</span>
+                            ) : (
+                                <>
+                                    <FaTrash className="group-hover/btn:scale-110 transition-transform" />
+                                    PURGE_ALL_CACHES
+                                </>
+                            )}
+                        </button>
                     </div>
                 </motion.div>
             </div>

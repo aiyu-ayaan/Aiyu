@@ -1,6 +1,10 @@
 import { getConfigData } from '@/lib/dataFetchers';
 import ContactPageClient from './ContactPageClient';
 
+// Always fetch fresh data - no caching
+export const revalidate = 0;
+export const dynamic = 'force-dynamic';
+
 export async function generateMetadata() {
     const config = await getConfigData();
     const baseName = config?.siteTitle || config?.logoText || 'Portfolio';

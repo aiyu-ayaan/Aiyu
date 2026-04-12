@@ -220,7 +220,7 @@ export async function POST(request) {
         }
 
         // Clear in-memory caches so restored data is visible immediately.
-        cache.invalidateAll();
+        // Cache invalidation removed - always fetches fresh data
 
         return NextResponse.json({ success: true, results });
     } catch (error) {

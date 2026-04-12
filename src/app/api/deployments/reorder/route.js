@@ -49,8 +49,7 @@ export async function PATCH(request) {
 
         await Deployment.bulkWrite(bulkOperations);
 
-        cache.invalidate(CACHE_KEYS.DEPLOYMENTS);
-        cache.invalidatePrefix('db:deployments');
+        // Cache invalidation removed - always fetches fresh data
 
         return NextResponse.json({ message: 'Deployment order updated successfully' });
     } catch {
