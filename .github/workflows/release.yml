@@ -50,6 +50,15 @@ jobs:
           }
 
           trigger_match = re.match(r"^\s*(feat!|fix!|major!|mojor!)\s*:\s*", commit_message, flags=re.IGNORECASE)
+          release_merge_match = re.match(
+              r"^\s*chore(?:\([^)]+\))?:\s*release\s+v?(\d+\.\d+\.\d+)",
+              commit_message,
+              flags=re.IGNORECASE,
+          )
+          release_merge_by_files = (
+              ".release-please-manifest.json" in changed_files
+              or ("package.json" in changed_files and "CHANGELOG.md" in changed_files)
+          )
 
           should_release = "false"
           release_as = ""
@@ -71,6 +80,14 @@ jobs:
 
               should_release = "true"
               release_as = f"{major}.{minor}.{patch}"
+          elif release_merge_match or release_merge_by_files:
+              should_release = "true"
+              commit_kind = "release-merge"
+              release_as = (
+                  release_merge_match.group(1)
+                  if release_merge_match
+                  else current_version
+              )
 
           output_file = os.environ["GITHUB_OUTPUT"]
           with open(output_file, "a", encoding="utf-8") as f:
@@ -84,6 +101,7 @@ jobs:
         run: |
           echo "Skipping release for this commit message."
           echo "Allowed prefixes: feat!:, fix!:, major!:, mojor!:"
+          echo "Release PR merge trigger: chore(master): release X.Y.Z"
 
   release-please:
     runs-on: ubuntu-latest
@@ -107,6 +125,7 @@ jobs:
           release-type: node
           target-branch: master
           release-as: ${{ needs.determine-release.outputs.release_as }}
+          skip-github-release: true
 
   push-to-docker-hub:
     name: Push Docker image to Docker Hub
