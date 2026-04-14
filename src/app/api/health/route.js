@@ -7,10 +7,30 @@ import { NextResponse } from 'next/server';
 import mongoose from 'mongoose';
 import dbConnect from '@/lib/db';
 
-export async function GET() {
+export async function GET(request) {
     const startedAt = Date.now();
+    const { searchParams } = new URL(request.url);
+    const deep = searchParams.get('deep') === '1';
 
     try {
+        if (!deep) {
+            return NextResponse.json({
+                status: 'healthy',
+                mode: 'shallow',
+                timestamp: new Date().toISOString(),
+                uptime: process.uptime(),
+                responseTimeMs: Date.now() - startedAt,
+                checks: {
+                    database: 'skipped',
+                },
+            }, {
+                status: 200,
+                headers: {
+                    'Cache-Control': 'no-store, max-age=0',
+                },
+            });
+        }
+
         await dbConnect();
 
         const isMongoReady = mongoose.connection.readyState === 1 && Boolean(mongoose.connection.db);
@@ -23,6 +43,7 @@ export async function GET() {
 
         return NextResponse.json({
             status: healthy ? 'healthy' : 'degraded',
+            mode: 'deep',
             timestamp: new Date().toISOString(),
             uptime: process.uptime(),
             responseTimeMs: Date.now() - startedAt,
@@ -38,6 +59,7 @@ export async function GET() {
     } catch (error) {
         return NextResponse.json({
             status: 'unhealthy',
+            mode: deep ? 'deep' : 'shallow',
             timestamp: new Date().toISOString(),
             uptime: process.uptime(),
             responseTimeMs: Date.now() - startedAt,
@@ -46,7 +68,7 @@ export async function GET() {
             },
             error: 'Health check failed',
         }, {
-            status: 503,
+            status: deep ? 503 : 200,
             headers: {
                 'Cache-Control': 'no-store, max-age=0',
             },
