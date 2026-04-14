@@ -30,10 +30,12 @@ yarn-error.log*
 # Note: .env files are excluded from Docker build context for security
 # Environment variables are passed to the build via docker-compose.yml build args
 .env
+.env.*
 .env*.local
 .env.development.local
 .env.test.local
 .env.production.local
+!.env.example
 
 # Vercel
 .vercel
