@@ -1,9 +1,7 @@
 import GitHubStatsLoader from '@/app/components/github/GitHubStatsLoader';
 import { getConfigData } from '@/lib/dataFetchers';
 
-// Always fetch fresh data - no caching
-export const revalidate = 0;
-export const dynamic = 'force-dynamic';
+export const revalidate = 300;
 
 export async function generateMetadata() {
     const config = await getConfigData();

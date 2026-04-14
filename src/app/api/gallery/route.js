@@ -36,7 +36,7 @@ async function createGalleryItem(req) {
     try {
         const body = await req.json();
         const galleryItem = await Gallery.create(body);
-        // Cache invalidation removed - always fetches fresh data
+        await cache.invalidateAsync(CACHE_KEYS.GALLERY);
         return NextResponse.json({ success: true, data: galleryItem }, { status: 201 });
     } catch (error) {
         return NextResponse.json({ success: false, error: error.message }, { status: 400 });
@@ -61,7 +61,7 @@ async function deleteGalleryItem(req) {
             return NextResponse.json({ success: false, error: 'Item not found' }, { status: 404 });
         }
 
-        // Cache invalidation removed - always fetches fresh data
+        await cache.invalidateAsync(CACHE_KEYS.GALLERY);
 
         // Delete associated thumbnail file (non-blocking)
         if (deletedItem.thumbnail) {
@@ -92,7 +92,7 @@ async function updateGalleryItem(req) {
                 }
             }));
             await Gallery.bulkWrite(bulkOps);
-            // Cache invalidation removed - always fetches fresh data
+            await cache.invalidateAsync(CACHE_KEYS.GALLERY);
             return NextResponse.json({ success: true, message: 'Ordering updated successfully' });
         }
 
@@ -107,7 +107,7 @@ async function updateGalleryItem(req) {
                 return NextResponse.json({ success: false, error: 'Item not found' }, { status: 404 });
             }
 
-            // Cache invalidation removed - always fetches fresh data
+            await cache.invalidateAsync(CACHE_KEYS.GALLERY);
             return NextResponse.json({ success: true, data: updatedItem });
         }
 

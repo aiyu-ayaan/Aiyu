@@ -5,9 +5,28 @@ import { getLayoutData } from "@/lib/dataFetchers";
 import { promises as fs } from 'fs';
 import path from 'path';
 
-// Always fetch fresh data - no caching
-export const revalidate = 0;
-export const dynamic = 'force-dynamic';
+export const revalidate = 300;
+
+let packageVersionPromise;
+
+async function getPackageVersion() {
+    if (packageVersionPromise) {
+        return packageVersionPromise;
+    }
+
+    packageVersionPromise = (async () => {
+        try {
+            const packageJsonPath = path.join(process.cwd(), 'package.json');
+            const packageJsonRaw = await fs.readFile(packageJsonPath, 'utf8');
+            const packageJson = JSON.parse(packageJsonRaw);
+            return packageJson?.version ? String(packageJson.version) : null;
+        } catch {
+            return null;
+        }
+    })();
+
+    return packageVersionPromise;
+}
 
 export default async function SiteLayout({ children }) {
     const { headerData: serializedHeaderData, socialData: serializedSocialData, configData: serializedConfigData, aboutData: serializedAboutData } = await getLayoutData();
@@ -15,17 +34,7 @@ export default async function SiteLayout({ children }) {
 
     const logoText = serializedConfigData?.logoText || '< aiyu />';
 
-    let packageVersion = null;
-    try {
-        const packageJsonPath = path.join(process.cwd(), 'package.json');
-        const packageJsonRaw = await fs.readFile(packageJsonPath, 'utf8');
-        const packageJson = JSON.parse(packageJsonRaw);
-        if (packageJson?.version) {
-            packageVersion = String(packageJson.version);
-        }
-    } catch {
-        packageVersion = null;
-    }
+    const packageVersion = await getPackageVersion();
 
     // Handle Resume Link Logic
     if (serializedHeaderData && serializedHeaderData.navLinks) {

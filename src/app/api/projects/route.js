@@ -71,7 +71,7 @@ export async function POST(request) {
         }
 
         const project = await Project.create(payload);
-        // Cache invalidation removed - always fetches fresh data
+        await cache.invalidatePrefixAsync('db:projects');
         return NextResponse.json(project, { status: 201 });
     } catch (error) {
         return NextResponse.json({ error: 'Failed to create project' }, { status: 500 });

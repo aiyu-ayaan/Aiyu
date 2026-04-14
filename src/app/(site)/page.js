@@ -6,9 +6,7 @@ import ViewportLazySection from "../components/shared/ViewportLazySection";
 import { getHomePageData, getConfigData } from "@/lib/dataFetchers";
 import { generateWebsiteSchema, generatePersonSchema, generateOrganizationSchema } from "@/app/schema";
 
-// Always fetch fresh data - no caching
-export const revalidate = 0;
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
 export async function generateMetadata() {
   const config = await getConfigData();

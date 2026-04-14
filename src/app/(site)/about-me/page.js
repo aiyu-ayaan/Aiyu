@@ -1,9 +1,7 @@
 import About from "../../components/about/About";
 import { getConfigData, getAboutData } from "@/lib/dataFetchers";
 
-// Always fetch fresh data - no caching
-export const revalidate = 0;
-export const dynamic = 'force-dynamic';
+export const revalidate = 300;
 
 export async function generateMetadata() {
   const config = await getConfigData();

@@ -125,7 +125,8 @@ async function updateConfig(request) {
             upsert: true,
             runValidators: true,
         });
-        // Cache invalidation removed - always fetches fresh data
+        await cache.invalidatePrefixAsync('db:config');
+        await cache.invalidatePrefixAsync('db:themes');
         return NextResponse.json(config);
     } catch (error) {
         console.error('Config update error:', error);

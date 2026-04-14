@@ -50,7 +50,7 @@ export async function PATCH(request) {
 
         await Project.bulkWrite(bulkOperations);
 
-        // Cache invalidation removed - always fetches fresh data
+        await cache.invalidatePrefixAsync('db:projects');
 
         return NextResponse.json({ message: 'Project order updated successfully' });
     } catch (error) {

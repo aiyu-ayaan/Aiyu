@@ -41,6 +41,8 @@ GitHubSchema.pre('save', function () {
     this.updatedAt = Date.now();
 });
 
+GitHubSchema.index({ updatedAt: -1 });
+
 // Force model recompilation to ensure schema changes (like sections) are picked up
 if (mongoose.models.GitHub) {
     delete mongoose.models.GitHub;

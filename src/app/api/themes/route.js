@@ -105,7 +105,8 @@ export async function POST(request) {
             variants
         });
 
-        // Cache invalidation removed - always fetches fresh data
+        await cache.invalidatePrefixAsync('db:themes');
+        await cache.invalidatePrefixAsync('db:config');
 
         return NextResponse.json(
             { success: true, data: theme },

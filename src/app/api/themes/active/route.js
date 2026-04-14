@@ -140,7 +140,8 @@ export async function PATCH(request) {
         }
 
         await config.save();
-        // Cache invalidation removed - always fetches fresh data
+        await cache.invalidatePrefixAsync('db:themes');
+        await cache.invalidatePrefixAsync('db:config');
 
         return NextResponse.json({
             success: true,

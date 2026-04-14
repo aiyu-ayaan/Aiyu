@@ -103,7 +103,9 @@ export async function PUT(request, { params }) {
         if (variants) theme.variants = variants;
 
         await theme.save();
-        // Cache invalidation removed - always fetches fresh data
+        await cache.invalidatePrefixAsync('db:themes');
+        await cache.invalidatePrefixAsync(CACHE_KEY_THEME_DETAIL_PREFIX);
+        await cache.invalidatePrefixAsync('db:config');
 
         return NextResponse.json({ success: true, data: theme });
     } catch (error) {
@@ -160,7 +162,9 @@ export async function DELETE(_request, { params }) {
             );
         }
 
-        // Cache invalidation removed - always fetches fresh data
+        await cache.invalidatePrefixAsync('db:themes');
+        await cache.invalidatePrefixAsync(CACHE_KEY_THEME_DETAIL_PREFIX);
+        await cache.invalidatePrefixAsync('db:config');
 
         return NextResponse.json({
             success: true,

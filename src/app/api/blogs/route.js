@@ -107,7 +107,8 @@ export async function POST(request) {
 
         const blog = await Blog.create(blogData);
         console.log('POST /api/blogs - Created:', blog);
-        // Cache invalidation removed - always fetches fresh data
+        await cache.invalidatePrefixAsync('db:blogs');
+        await cache.invalidatePrefixAsync('db:blog');
         return NextResponse.json({ success: true, data: blog }, { status: 201 });
     } catch (error) {
         return NextResponse.json({ success: false, error: error.message }, { status: 400 });

@@ -7,6 +7,8 @@ const SocialSchema = new mongoose.Schema({
     isHidden: { type: Boolean, default: false }, // Control visibility
 });
 
+SocialSchema.index({ isHidden: 1 });
+
 // Force model recompilation if it exists, to pick up schema changes in dev
 if (mongoose.models.Social) {
     delete mongoose.models.Social;

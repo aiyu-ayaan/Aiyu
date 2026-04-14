@@ -37,7 +37,7 @@ export async function POST(request) {
     try {
         const body = await request.json();
         const social = await Social.create(body);
-        // Cache invalidation removed - always fetches fresh data
+        await cache.invalidatePrefixAsync('db:socials');
         return NextResponse.json(social, { status: 201 });
     } catch (error) {
         return NextResponse.json({ error: 'Failed to create social link' }, { status: 500 });
