@@ -45,7 +45,7 @@ export async function generateMetadata({ params }) {
 
 export default async function BlogDetailPage({ params }) {
     const { id: identifier } = await params;
-    const blog = await getBlogById(identifier);
+    const [blog, config] = await Promise.all([getBlogById(identifier), getConfigData()]);
 
-    return <BlogDetailClient blog={blog} />;
+    return <BlogDetailClient blog={blog} config={config} />;
 }

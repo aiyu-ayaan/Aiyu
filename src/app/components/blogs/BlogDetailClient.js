@@ -29,7 +29,41 @@ const SyntaxHighlighter = dynamic(
 const isOptimizableImage = (src) =>
   typeof src === 'string' && (src.startsWith('/') || src.startsWith('https://'));
 
-export default memo(function BlogDetailClient({ blog }) {
+function slugifyHeading(value = '') {
+  return String(value)
+    .toLowerCase()
+    .trim()
+    .replace(/[^\p{L}\p{N}\s-]/gu, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .slice(0, 80);
+}
+
+function extractToc(markdown = '') {
+  if (typeof markdown !== 'string' || markdown.trim().length === 0) return [];
+  const lines = markdown.split('\n');
+  const headings = [];
+
+  for (const line of lines) {
+    const match = /^(#{2,3})\s+(.+?)\s*$/.exec(line);
+    if (!match) continue;
+    const level = match[1].length;
+    const text = match[2].replace(/#+\s*$/, '').trim();
+    if (!text) continue;
+    headings.push({ level, text });
+  }
+
+  const seen = new Map();
+  return headings.map((h) => {
+    const base = slugifyHeading(h.text) || 'section';
+    const count = (seen.get(base) || 0) + 1;
+    seen.set(base, count);
+    const id = count === 1 ? base : `${base}-${count}`;
+    return { ...h, id };
+  });
+}
+
+export default memo(function BlogDetailClient({ blog, config }) {
   const [selectedImage, setSelectedImage] = useState(null);
   const [showShareToast, setShowShareToast] = useState(false);
   const [imageError, setImageError] = useState(false);
@@ -43,6 +77,13 @@ export default memo(function BlogDetailClient({ blog }) {
   const tags = useMemo(() => {
     return Array.isArray(blog?.tags) ? blog.tags : [];
   }, [blog?.tags]);
+
+  const toc = useMemo(() => extractToc(blog?.content), [blog?.content]);
+  const hasToc = toc.length >= 2;
+
+  const authorName = useMemo(() => {
+    return config?.authorName || config?.author || config?.name || 'Author';
+  }, [config]);
 
   // Memoize image checks
   const hasImage = useMemo(() => Boolean(blog?.image && String(blog.image).trim() !== ''), [blog?.image]);
@@ -183,8 +224,24 @@ export default memo(function BlogDetailClient({ blog }) {
           </h1>
 
           <div className="mb-4 flex flex-wrap items-center gap-4 text-sm" style={{ color: 'var(--text-secondary)' }}>
-            <span className="inline-flex items-center gap-2"><FaCalendarAlt /> {formatBlogDate(blog.date || blog.createdAt)}</span>
-            <span className="inline-flex items-center gap-2"><FaClock /> {getReadTime(blog.content)}</span>
+            <span className="inline-flex items-center gap-2">
+              <FaCalendarAlt /> {formatBlogDate(blog.date || blog.createdAt)}
+            </span>
+            <span className="inline-flex items-center gap-2">
+              <FaClock /> {getReadTime(blog.content)}
+            </span>
+            <span className="inline-flex items-center gap-2">
+              <span
+                className="inline-flex h-7 items-center rounded-full border px-3 text-xs font-semibold"
+                style={{
+                  borderColor: 'color-mix(in srgb, var(--border-secondary) 74%, transparent)',
+                  backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 82%, transparent)',
+                  color: 'var(--text-secondary)',
+                }}
+              >
+                {authorName}
+              </span>
+            </span>
           </div>
 
           {tags.length > 0 && (
@@ -206,14 +263,14 @@ export default memo(function BlogDetailClient({ blog }) {
           )}
         </header>
 
-        <section
-          className="mb-6 overflow-hidden rounded-2xl border"
-          style={{
-            borderColor: 'color-mix(in srgb, var(--border-secondary) 74%, transparent)',
-            backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 82%, transparent)',
-          }}
-        >
-          {!showPlaceholder ? (
+        {!showPlaceholder && (
+          <section
+            className="mb-6 overflow-hidden rounded-2xl border"
+            style={{
+              borderColor: 'color-mix(in srgb, var(--border-secondary) 74%, transparent)',
+              backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 82%, transparent)',
+            }}
+          >
             <button type="button" onClick={() => handleImageSelect(blog.image)} className="block w-full cursor-zoom-in">
               {isOptimizableImage(blog.image) ? (
                 <Image
@@ -241,12 +298,23 @@ export default memo(function BlogDetailClient({ blog }) {
                 />
               )}
             </button>
-          ) : (
+          </section>
+        )}
+
+        {showPlaceholder && (
+          <section
+            className="mb-6 overflow-hidden rounded-2xl border"
+            style={{
+              borderColor: 'color-mix(in srgb, var(--border-secondary) 74%, transparent)',
+              backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 82%, transparent)',
+            }}
+          >
             <div
               className="relative flex min-h-[260px] items-center justify-center overflow-hidden"
               style={{ backgroundImage: getBlogPlaceholderGradient(blog.title) }}
             >
-              <div className="absolute inset-0"
+              <div
+                className="absolute inset-0"
                 style={{
                   backgroundImage:
                     'linear-gradient(color-mix(in srgb, var(--border-secondary) 24%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, var(--border-secondary) 24%, transparent) 1px, transparent 1px)',
@@ -254,7 +322,8 @@ export default memo(function BlogDetailClient({ blog }) {
                   opacity: 0.35,
                 }}
               />
-              <div className="relative z-10 rounded-xl border px-5 py-2 text-2xl font-bold"
+              <div
+                className="relative z-10 rounded-xl border px-5 py-2 text-2xl font-bold"
                 style={{
                   borderColor: 'color-mix(in srgb, var(--border-secondary) 74%, transparent)',
                   color: 'var(--text-bright)',
@@ -264,92 +333,146 @@ export default memo(function BlogDetailClient({ blog }) {
                 {getBlogInitials(blog.title)}
               </div>
             </div>
-          )}
-        </section>
+          </section>
+        )}
 
-        <article
-          className="rounded-2xl border p-5 sm:p-8"
-          style={{
-            background:
-              'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 95%, transparent), color-mix(in srgb, var(--bg-secondary) 95%, transparent))',
-            borderColor: 'color-mix(in srgb, var(--border-secondary) 74%, transparent)',
-            contentVisibility: 'auto',
-            containIntrinsicSize: '1px 1400px',
-          }}
-        >
-          <div
-            className="prose prose-lg max-w-none prose-invert"
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
+          <article
+            className="rounded-2xl border p-5 sm:p-8"
             style={{
-              color: 'var(--text-secondary)',
-              '--tw-prose-headings': 'var(--text-primary)',
-              '--tw-prose-links': 'var(--accent-cyan)',
-              '--tw-prose-bold': 'var(--text-primary)',
-              '--tw-prose-quotes': 'var(--text-secondary)',
-              '--tw-prose-code': 'var(--accent-cyan)',
-              '--tw-prose-pre-bg': 'color-mix(in srgb, var(--bg-elevated) 90%, transparent)',
-              '--tw-prose-pre-code': 'var(--text-secondary)',
+              background:
+                'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 95%, transparent), color-mix(in srgb, var(--bg-secondary) 95%, transparent))',
+              borderColor: 'color-mix(in srgb, var(--border-secondary) 74%, transparent)',
+              contentVisibility: 'auto',
+              containIntrinsicSize: '1px 1400px',
             }}
           >
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              components={{
-                a: ({ className, href, children, ...props }) => (
-                  <a
-                    href={href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`${className || ''} hover:underline`}
-                    style={{ color: 'var(--accent-cyan)' }}
-                    {...props}
-                  >
-                    {children}
-                  </a>
-                ),
-                code({ inline, className, children, ...props }) {
-                  const match = /language-(\w+)/.exec(className || '');
-                  return !inline && match ? (
-                    <div className="my-6 overflow-hidden rounded-lg border" style={{ borderColor: 'color-mix(in srgb, var(--border-secondary) 70%, transparent)' }}>
-                      <div
-                        className="px-4 py-1 text-xs uppercase tracking-wide"
-                        style={{
-                          backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 90%, transparent)',
-                          color: 'var(--text-tertiary)',
-                          borderBottom: '1px solid color-mix(in srgb, var(--border-secondary) 70%, transparent)',
-                        }}
-                      >
-                        {match[1]}
-                      </div>
-                      <SyntaxHighlighter
-                        style={vscDarkPlus}
-                        language={match[1]}
-                        PreTag="div"
-                        customStyle={{ margin: 0, borderRadius: 0 }}
-                        {...props}
-                      >
-                        {String(children).replace(/\n$/, '')}
-                      </SyntaxHighlighter>
-                    </div>
-                  ) : (
-                    <code
-                      className={className}
-                      style={{
-                        backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 85%, transparent)',
-                        padding: '0.16em 0.45em',
-                        borderRadius: '4px',
-                      }}
+            <div
+              className="prose prose-lg max-w-none prose-invert"
+              style={{
+                color: 'var(--text-secondary)',
+                '--tw-prose-headings': 'var(--text-primary)',
+                '--tw-prose-links': 'var(--accent-cyan)',
+                '--tw-prose-bold': 'var(--text-primary)',
+                '--tw-prose-quotes': 'var(--text-secondary)',
+                '--tw-prose-code': 'var(--accent-cyan)',
+                '--tw-prose-pre-bg': 'color-mix(in srgb, var(--bg-elevated) 90%, transparent)',
+                '--tw-prose-pre-code': 'var(--text-secondary)',
+              }}
+            >
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  a: ({ className, href, children, ...props }) => (
+                    <a
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`${className || ''} hover:underline`}
+                      style={{ color: 'var(--accent-cyan)' }}
                       {...props}
                     >
                       {children}
-                    </code>
-                  );
-                },
-                pre: ({ children }) => <>{children}</>,
-              }}
-            >
-              {blog.content}
-            </ReactMarkdown>
-          </div>
-         </article>
+                    </a>
+                  ),
+                  h2: ({ children, ...props }) => {
+                    const text = Array.isArray(children) ? children.join('') : String(children || '');
+                    const id = toc.find((entry) => entry.text === text)?.id || slugifyHeading(text);
+                    return (
+                      <h2 id={id} {...props}>
+                        {children}
+                      </h2>
+                    );
+                  },
+                  h3: ({ children, ...props }) => {
+                    const text = Array.isArray(children) ? children.join('') : String(children || '');
+                    const id = toc.find((entry) => entry.text === text)?.id || slugifyHeading(text);
+                    return (
+                      <h3 id={id} {...props}>
+                        {children}
+                      </h3>
+                    );
+                  },
+                  code({ inline, className, children, ...props }) {
+                    const match = /language-(\w+)/.exec(className || '');
+                    return !inline && match ? (
+                      <div className="my-6 overflow-hidden rounded-lg border" style={{ borderColor: 'color-mix(in srgb, var(--border-secondary) 70%, transparent)' }}>
+                        <div
+                          className="flex items-center justify-between gap-3 px-4 py-1 text-xs uppercase tracking-wide"
+                          style={{
+                            backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 90%, transparent)',
+                            color: 'var(--text-tertiary)',
+                            borderBottom: '1px solid color-mix(in srgb, var(--border-secondary) 70%, transparent)',
+                          }}
+                        >
+                          <span>{match[1]}</span>
+                        </div>
+                        <SyntaxHighlighter
+                          style={vscDarkPlus}
+                          language={match[1]}
+                          PreTag="div"
+                          customStyle={{ margin: 0, borderRadius: 0 }}
+                          {...props}
+                        >
+                          {String(children).replace(/\n$/, '')}
+                        </SyntaxHighlighter>
+                      </div>
+                    ) : (
+                      <code
+                        className={className}
+                        style={{
+                          backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 85%, transparent)',
+                          padding: '0.16em 0.45em',
+                          borderRadius: '4px',
+                        }}
+                        {...props}
+                      >
+                        {children}
+                      </code>
+                    );
+                  },
+                  pre: ({ children }) => <>{children}</>,
+                }}
+              >
+                {blog.content}
+              </ReactMarkdown>
+            </div>
+          </article>
+
+          {hasToc ? (
+            <aside className="hidden lg:block">
+              <div
+                className="sticky top-24 rounded-2xl border p-5"
+                style={{
+                  borderColor: 'color-mix(in srgb, var(--border-secondary) 74%, transparent)',
+                  background:
+                    'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 94%, transparent), color-mix(in srgb, var(--bg-secondary) 94%, transparent))',
+                }}
+              >
+                <p className="mb-3 text-xs font-bold uppercase tracking-[0.18em]" style={{ color: 'var(--text-tertiary)' }}>
+                  On this page
+                </p>
+                <nav className="space-y-2">
+                  {toc.map((item) => (
+                    <a
+                      key={item.id}
+                      href={`#${item.id}`}
+                      className="block rounded-lg border px-3 py-2 text-sm transition-colors hover:underline"
+                      style={{
+                        borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)',
+                        color: 'var(--text-secondary)',
+                        backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 82%, transparent)',
+                        marginLeft: item.level === 3 ? 12 : 0,
+                      }}
+                    >
+                      {item.text}
+                    </a>
+                  ))}
+                </nav>
+              </div>
+            </aside>
+          ) : null}
+        </div>
 
          {extractedLinks.length > 0 && (
            <section className="mt-8 rounded-2xl border p-5 sm:p-6"
