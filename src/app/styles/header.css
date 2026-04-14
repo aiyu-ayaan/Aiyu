@@ -42,6 +42,14 @@
   box-shadow: 0 2px 8px color-mix(in srgb, var(--shadow-sm) 25%, transparent);
 }
 
+/* Extra tuning for content-heavy routes (e.g. blog detail pages) */
+.heavy-route .water-wave-edge {
+  animation: none;
+  -webkit-mask-image: none;
+  mask-image: none;
+  background: none;
+}
+
 /* Performance hints */
 .header-scrolled,
 .header-normal {
