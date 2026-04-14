@@ -282,7 +282,9 @@ export default memo(function BlogDetailClient({ blog, config }) {
                   className="max-h-[620px] w-full object-cover"
                   priority={false}
                   loading="lazy"
+                  fetchPriority="low"
                   decoding="async"
+                  quality={75}
                   onError={handleImageError}
                   placeholder="blur"
                   blurDataURL="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1600 900'%3E%3Crect fill='%23222' width='1600' height='900'/%3E%3C/svg%3E"
@@ -363,6 +365,49 @@ export default memo(function BlogDetailClient({ blog, config }) {
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
                 components={{
+                  img: ({ src, alt, title, ...props }) => {
+                    const resolvedSrc = typeof src === 'string' ? src : '';
+                    const resolvedAlt = alt || title || 'Blog image';
+
+                    if (!resolvedSrc) return null;
+
+                    return (
+                      <span
+                        className="my-6 block overflow-hidden rounded-xl border"
+                        style={{
+                          borderColor: 'color-mix(in srgb, var(--border-secondary) 70%, transparent)',
+                          backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 82%, transparent)',
+                        }}
+                      >
+                        {isOptimizableImage(resolvedSrc) ? (
+                          <Image
+                            src={resolvedSrc}
+                            alt={resolvedAlt}
+                            width={1200}
+                            height={675}
+                            sizes="(max-width: 768px) 100vw, 900px"
+                            className="h-auto w-full object-contain"
+                            loading="lazy"
+                            fetchPriority="low"
+                            decoding="async"
+                            quality={75}
+                            placeholder="blur"
+                            blurDataURL="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 675'%3E%3Crect fill='%23222' width='1200' height='675'/%3E%3C/svg%3E"
+                          />
+                        ) : (
+                          // Fallback when Next can't optimize (e.g. unsupported src)
+                          <img
+                            src={resolvedSrc}
+                            alt={resolvedAlt}
+                            className="h-auto w-full object-contain"
+                            loading="lazy"
+                            decoding="async"
+                            {...props}
+                          />
+                        )}
+                      </span>
+                    );
+                  },
                   a: ({ className, href, children, ...props }) => (
                     <a
                       href={href}
