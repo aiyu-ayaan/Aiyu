@@ -196,7 +196,502 @@ Access the admin panel at `/admin` to manage everything without touching code:
 - **Scripts**: Automated security checks, Docker management, emergency cleanup
 - **Documentation**: Comprehensive guides for setup, deployment, and usage
 
-## 🚀 Quick Start (Docker) - Recommended
+## 🏗️ System Architecture
+
+This project uses a layered architecture designed for high availability, security, and scalability.
+
+### Quick Architecture Overview
+
+```
+User Browser → NGINX Reverse Proxy → Next.js App → MongoDB Replica Set
+                (Production only)      (React 19)   (mongo1, mongo2, mongo3)
+                                      (API Routes)
+                                      (Security)
+```
+
+### Key Components
+
+- **Frontend**: React 19 with Next.js 15 for server-side rendering and static generation
+- **Backend**: Next.js API Routes with Mongoose ODM for MongoDB operations
+- **Database**: MongoDB 7 replica set for high availability and automatic failover
+- **Reverse Proxy**: NGINX for production deployments with SSL/TLS, caching, and load balancing
+- **Security**: Multi-layer security including Docker hardening, JWT auth, rate limiting
+
+---
+
+### 📊 Full System Architecture Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                         User/Browser                                 │
+│                    (Public & Admin Access)                           │
+└────────────────┬────────────────────────────────────────────────────┘
+                 │ HTTP/HTTPS
+                 ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                        NGINX Reverse Proxy                           │
+│    (Production Only - Port 80/443, Gzip, Static Cache, SSL)          │
+│                   Routes & Load Balancing                            │
+└────────────────┬────────────────────────────────────────────────────┘
+                 │ Internal Network (docker network: aiyu-network)
+                 ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│              Next.js Application (Port 3000)                         │
+│ ┌─────────────────────────────────────────────────────────────────┐ │
+│ │  Frontend (React 19)                                            │ │
+│ │  - Public Pages (Home, About, Projects, Blogs, Gallery)         │ │
+│ │  - Admin Panel (/admin)                                         │ │
+│ │  - Theme System (21+ presets + custom themes)                   │ │
+│ │  - Markdown Rendering with Syntax Highlighting                 │ │
+│ │  - Real-time UI Updates (Framer Motion)                         │ │
+│ └─────────────────────────────────────────────────────────────────┘ │
+│ ┌─────────────────────────────────────────────────────────────────┐ │
+│ │  Backend (Next.js API Routes)                                   │ │
+│ │  - Authentication (JWT)                                         │ │
+│ │  - Content Management (CRUD operations)                         │ │
+│ │  - Image Processing (Sharp - HEIC, JPEG, PNG, WebP)             │ │
+│ │  - Rate Limiting & Security Middleware                          │ │
+│ │  - Webhook Integration (n8n, Notion, etc.)                      │ │
+│ │  - Database Operations (Mongoose ODM)                           │ │
+│ │  - AI Features (Google Gemini Integration)                      │ │
+│ └─────────────────────────────────────────────────────────────────┘ │
+│ ┌─────────────────────────────────────────────────────────────────┐ │
+│ │  Security Features                                              │ │
+│ │  ✓ Non-root user execution (nextjs user)                        │ │
+│ │  ✓ Read-only filesystem (tmpfs for writable dirs)               │ │
+│ │  ✓ /tmp with noexec (crypto miner prevention)                   │ │
+│ │  ✓ Capability dropping (ALL dropped, NET_BIND_SERVICE only)     │ │
+│ │  ✓ CPU/Memory limits (1 core / 512MB max)                       │ │
+│ │  ✓ No privilege escalation allowed                              │ │
+│ └─────────────────────────────────────────────────────────────────┘ │
+└────────────────┬──────────────────┬──────────────────┬───────────────┘
+                 │                  │                  │
+                 ▼                  ▼                  ▼
+    ┌──────────────────────┐  ┌──────────────────┐  ┌──────────────────┐
+    │  MongoDB Cluster     │  │  Persistent Data │  │  External APIs   │
+    │  (Replica Set)       │  │  (Named Volumes) │  │  - Google Gemini │
+    │                      │  │                  │  │  - n8n Webhooks  │
+    │  Primary: mongo1     │  │  - uploads_data  │  │  - GitHub API    │
+    │  Secondary: mongo2   │  │  - mongodb_data  │  │                  │
+    │  Secondary: mongo3   │  │  - nginx_cache   │  │                  │
+    │                      │  │  - nextjs_cache  │  │                  │
+    │  Replica Set: rs0    │  │                  │  │                  │
+    │  Port: 27017         │  └──────────────────┘  └──────────────────┘
+    │  Auth: Enabled       │
+    │  Persistence: Yes    │
+    │  Network: aiyu-net   │
+    └──────────────────────┘
+```
+
+---
+
+### 🚀 Production Deployment Architecture
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                     User/Browser                                 │
+│              (Port 80/443 via domain name)                       │
+└────────────────────┬─────────────────────────────────────────────┘
+                     │ HTTP/HTTPS
+                     ▼
+        ┌────────────────────────────┐
+        │   NGINX Reverse Proxy      │
+        │  ┌──────────────────────┐  │
+        │  │ - SSL/TLS Handler    │  │
+        │  │ - Static File Serve  │  │
+        │  │ - Gzip Compression   │  │
+        │  │ - Response Cache     │  │
+        │  │ - Health Check       │  │
+        │  └──────────────────────┘  │
+        │  Port: 80/443 → 3000       │
+        │  Image: nginx:alpine       │
+        │  Volume: nginx_cache       │
+        └────────────────┬───────────┘
+                         │ Port 3000 (Internal Network)
+                         ▼
+        ┌────────────────────────────┐
+        │  Next.js Application       │
+        │  ┌──────────────────────┐  │
+        │  │ Image from DockerHub │  │
+        │  │ aiyuayaan/aiyu:tag   │  │
+        │  │ - React 19 Frontend  │  │
+        │  │ - Next.js API Routes │  │
+        │  │ - Security Hardened  │  │
+        │  │ - Resource Limited   │  │
+        │  └──────────────────────┘  │
+        │  Port: 3000                │
+        │  Volumes:                  │
+        │  - uploads_data            │
+        │  - nextjs_cache            │
+        │  Health: 150s start        │
+        └────────────┬───────────────┘
+                     │ Port 27017 (Internal Network)
+                     │
+    ┌────────────────┼────────────────┐
+    │                │                │
+    ▼                ▼                ▼
+  mongo1           mongo2           mongo3
+  (Primary)        (Secondary)      (Secondary)
+  27017            27017            27017
+  
+  ┌─────────────────────────────────────┐
+  │   MongoDB Replica Set (rs0)         │
+  │   - Persistent Storage              │
+  │   - High Availability               │
+  │   - Automatic Failover              │
+  │   - Data Replication                │
+  │   - Authentication Enabled          │
+  │                                     │
+  │   Volumes:                          │
+  │   - mongo1_data, mongo1_config      │
+  │   - mongo2_data, mongo2_config      │
+  │   - mongo3_data, mongo3_config      │
+  │                                     │
+  │   Health Check: 10s interval        │
+  │   Start Period: 30s per node        │
+  └─────────────────────────────────────┘
+```
+
+**Key Production Features:**
+- ✅ Pre-built Docker image (fast deployment)
+- ✅ 3-node MongoDB replica set (high availability)
+- ✅ NGINX reverse proxy (SSL/TLS, caching)
+- ✅ Persistent named volumes
+- ✅ Health checks on all services
+- ✅ Zero-downtime deployments
+- ✅ Suitable for production VPS/cloud
+
+---
+
+### 💻 Local Development Architecture
+
+```
+┌──────────────────────────────────────────────────────────┐
+│            Developer's Local Machine                     │
+└──────────────┬───────────────────────────────────────────┘
+               │ localhost:3000
+               ▼
+        ┌──────────────────┐
+        │  Next.js App     │
+        │  ┌────────────┐  │
+        │  │ Local Build│  │
+        │  │ from       │  │
+        │  │ Dockerfile │  │
+        │  └────────────┘  │
+        │  Port: 3000      │
+        │  (NO NGINX)      │
+        │  Volumes:        │
+        │  - uploads_data  │
+        │  - nextjs_cache  │
+        │  Health: 40s     │
+        └────────┬─────────┘
+                 │ Port 27017 (Internal Network)
+                 ▼
+        ┌──────────────────┐
+        │  MongoDB         │
+        │  (Single Node)   │
+        │  ┌────────────┐  │
+        │  │ image:     │  │
+        │  │ mongo:7    │  │
+        │  └────────────┘  │
+        │  Port: 27017     │
+        │  Auth: Enabled   │
+        │  Volumes:        │
+        │  - mongodb_data  │
+        │  - mongodb_config│
+        │  Health: 10s     │
+        └──────────────────┘
+```
+
+**Key Local Development Features:**
+- ✅ Built from local source (instant updates)
+- ✅ No NGINX (direct access on port 3000)
+- ✅ Single MongoDB (faster startup)
+- ✅ Faster iteration cycle
+- ✅ Same security configurations
+- ✅ Perfect for testing Docker changes
+
+---
+
+### 🔄 Request Flow Diagram
+
+```
+1. USER REQUEST
+   └─→ HTTP/HTTPS Request
+       └─→ Browser sends to domain or localhost:3000
+
+2. PRODUCTION FLOW (docker-compose.yml)
+   
+   Request
+     │
+     ▼
+   NGINX (Port 80/443)
+     │ (Checks cache, may serve static file)
+     │
+     ├─→ Cache HIT? → Return cached response → Browser
+     │
+     ├─→ Static File? → Serve from /public → Browser
+     │
+     └─→ Dynamic Request? → Forward to App
+         │
+         ▼
+       Next.js App (Port 3000)
+         │
+         ├─→ Check Route Type
+         │   ├─→ Static Page? → Serve from cache
+         │   ├─→ API Route? → Process & Query DB
+         │   └─→ Dynamic Page? → Render with data
+         │
+         ├─→ Security Checks (Rate limit, JWT, Validation)
+         │
+         ├─→ Business Logic Processing
+         │
+         └─→ Database Operations
+             │
+             ▼
+           MongoDB Primary (mongo1)
+             │
+             ├─→ Authentication check
+             ├─→ Execute query/command
+             ├─→ Replicate to mongo2, mongo3
+             └─→ Return result
+         
+         Response returned to Next.js App
+         │
+         ▼
+       App prepares response
+         │
+         ▼
+       Response to NGINX (with headers)
+         │
+         ▼
+       NGINX applies compression & caching
+         │
+         ▼
+       Browser receives response
+         │
+         ▼
+       Render page / Handle API response
+
+3. LOCAL DEVELOPMENT FLOW (docker-compose-local.yml)
+   
+   Request
+     │
+     ▼
+   Next.js App (Port 3000) - DIRECT
+     │ (No NGINX intermediary)
+     │
+     ├─→ Same processing as above
+     │
+     ▼
+   MongoDB Single Node (Port 27017)
+     │
+     └─→ Execute query → Return result
+     
+   Response directly to Browser
+```
+
+---
+
+### 📊 Data Persistence & Volumes
+
+```
+Named Volumes (Docker-Managed, Persistent):
+
+Production (docker-compose.yml):
+┌────────────────────────────────────┐
+│  MongoDB Replica Set Data          │
+├────────────────────────────────────┤
+│ mongo1_data       → /data/db       │
+│ mongo1_config     → /data/configdb │
+│ mongo2_data       → /data/db       │
+│ mongo2_config     → /data/configdb │
+│ mongo3_data       → /data/db       │
+│ mongo3_config     → /data/configdb │
+├────────────────────────────────────┤
+│  Application Data                  │
+├────────────────────────────────────┤
+│ uploads_data      → /app/public/   │
+│ nextjs_cache      → /app/.next/    │
+│ nginx_cache       → /var/cache/    │
+└────────────────────────────────────┘
+
+Local Development (docker-compose-local.yml):
+┌────────────────────────────────────┐
+│  MongoDB Data                      │
+├────────────────────────────────────┤
+│ mongodb_data      → /data/db       │
+│ mongodb_config    → /data/configdb │
+├────────────────────────────────────┤
+│  Application Data                  │
+├────────────────────────────────────┤
+│ uploads_data      → /app/public/   │
+│ nextjs_cache      → /app/.next/    │
+└────────────────────────────────────┘
+
+tmpfs Mounts (In-Memory, Non-Persistent):
+┌────────────────────────────────────┐
+│  Security-Hardened Temp Storage    │
+├────────────────────────────────────┤
+│ /tmp       (100-500MB)             │
+│ ├─ noexec (prevent script exec)    │
+│ ├─ nosuid (no setuid)              │
+│ └─ nodev (no block devices)        │
+│                                    │
+│ /var/tmp   (50MB)                  │
+│ └─ same flags as /tmp              │
+│                                    │
+│ /run       (10MB)                  │
+│ └─ PID files only (mode 755)       │
+└────────────────────────────────────┘
+```
+
+---
+
+### 🔐 Security Layers
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                 NETWORK LAYER                           │
+├─────────────────────────────────────────────────────────┤
+│ • Internal Docker network (aiyu-network)               │
+│ • Single NGINX entry point (production)                │
+│ • VPS firewall (ports 22, 80, 443 only)                │
+│ • No direct MongoDB internet exposure                  │
+└─────────────────────────────────────────────────────────┘
+                         ↓
+┌─────────────────────────────────────────────────────────┐
+│                CONTAINER LAYER                          │
+├─────────────────────────────────────────────────────────┤
+│ • Non-root user execution (nextjs, UID 1000)           │
+│ • Capability dropping (ALL → NET_BIND_SERVICE only)    │
+│ • Read-only root filesystem                            │
+│ • /tmp noexec (crypto miner prevention) ⚡             │
+│ • Resource limits (1 CPU, 512MB RAM)                   │
+│ • No privilege escalation (no-new-privileges)          │
+└─────────────────────────────────────────────────────────┘
+                         ↓
+┌─────────────────────────────────────────────────────────┐
+│              APPLICATION LAYER                          │
+├─────────────────────────────────────────────────────────┤
+│ • JWT-based authentication                             │
+│ • Rate limiting (brute force protection)               │
+│ • Input validation & sanitization                      │
+│ • CORS & security headers                              │
+│ • Environment variable protection                      │
+│ • Middleware authentication checks                     │
+└─────────────────────────────────────────────────────────┘
+                         ↓
+┌─────────────────────────────────────────────────────────┐
+│              DATABASE LAYER                             │
+├─────────────────────────────────────────────────────────┤
+│ • MongoDB authentication (username/password)           │
+│ • Replica set key authentication                       │
+│ • Network isolation (internal only)                    │
+│ • Data encryption in transit (SSL/TLS)                 │
+│ • Persistent backup volumes                           │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+### 🔄 Service Startup Order
+
+```
+Production (docker-compose.yml) - Startup Sequence:
+
+Step 1: MongoDB Nodes Initialize (Parallel)
+├─ mongo1:27017 starts
+│  └─ Health check: 30s startup period
+├─ mongo2:27017 starts
+│  └─ Health check: 30s startup period
+└─ mongo3:27017 starts
+   └─ Health check: 30s startup period
+
+Step 2: Replica Set Initialization (After all nodes healthy)
+└─ mongo-init container
+   ├─ Waits for all 3 nodes healthy
+   ├─ Initializes replica set "rs0"
+   ├─ Elects primary (mongo1 priority: 2)
+   └─ Sets secondaries (mongo2, mongo3 priority: 1)
+
+Step 3: Application Startup (After mongo-init success)
+├─ app container
+├─ Loads environment variables
+├─ Connects to MongoDB replica set
+│  └─ URI: mongo1:27017,mongo2:27017,mongo3:27017/aiyu?replicaSet=rs0
+├─ Starts Next.js server
+├─ Health check: 150s startup period
+└─ Ready for requests
+
+Step 4: Reverse Proxy (After app started)
+├─ nginx container
+├─ Loads nginx.conf
+├─ Configures proxy_pass to app:3000
+├─ Health check: 20s startup period
+└─ Ready to accept traffic
+
+Total Startup Time: ~3-5 minutes (mostly waiting for replica set init)
+
+
+Local Development (docker-compose-local.yml) - Startup Sequence:
+
+Step 1: MongoDB Single Node
+├─ mongodb container starts
+└─ Health check: 10s startup period
+
+Step 2: Build App Image (From local Dockerfile)
+├─ docker compose detects changes
+├─ Builds new image
+├─ Installs dependencies
+└─ Runs npm run build
+
+Step 3: Start App (After mongodb healthy)
+├─ app container
+├─ Loads environment variables
+├─ Connects to MongoDB:27017
+├─ Starts Next.js server
+├─ Health check: 40s startup period
+└─ Ready for requests
+
+Total Startup Time: ~2-3 minutes (faster, no replica set)
+```
+
+---
+
+### 📈 Deployment Architectures
+
+#### Production Architecture (docker-compose.yml)
+- Pre-built Docker images from Docker Hub
+- 3-node MongoDB replica set for high availability
+- NGINX reverse proxy for SSL/TLS termination and caching
+- Zero-downtime deployments
+- Ideal for cloud platforms and production environments
+
+#### Local Development (docker-compose-local.yml)
+- Local source code builds
+- Single MongoDB instance for faster iteration
+- Direct app access on port 3000 (no NGINX)
+- Faster startup for development
+- All security hardening enabled
+
+### Complete Architecture Diagrams
+
+For detailed system architecture, request lifecycle, security layers, and data flow diagrams, see:
+
+📋 **[Complete Architecture Documentation](docs/ARCHITECTURE_DIAGRAM.md)**
+
+This includes:
+- System architecture overview
+- Production vs local deployment diagrams
+- Complete data flow and request lifecycle
+- Service dependencies and startup order
+- Volume and data persistence strategy
+- Security layers and hardening
+- Development vs production differences
+- Scaling considerations
+
+
 
 The fastest and most secure way to run this application is using Docker. Everything is pre-configured!
 
@@ -244,14 +739,11 @@ node -e "console.log('BLOG_API_KEY=' + require('crypto').randomBytes(32).toStrin
 **Edit `.env` file and update these CRITICAL variables**:
 
 ```env
-# MongoDB Configuration
-MONGODB_URI=mongodb://admin:YOUR_GENERATED_PASSWORD@mongodb:27017/aiyu?authSource=admin
+# MongoDB Configuration (for Docker Compose with replica set)
+MONGODB_URI=mongodb://admin:YOUR_GENERATED_PASSWORD@mongo1:27017,mongo2:27017,mongo3:27017/aiyu?replicaSet=rs0&authSource=admin
 MONGO_ROOT_USERNAME=admin
 MONGO_ROOT_PASSWORD=YOUR_GENERATED_PASSWORD  # Must match password in MONGODB_URI!
-
-# Redis Cache (recommended)
-REDIS_URL=redis://redis:6379/0
-REDIS_DEFAULT_TTL_SECONDS=30
+MONGO_REPLICA_SET_KEY=YOUR_GENERATED_REPLICA_KEY  # Generate with crypto.randomBytes(48)
 
 # Admin Credentials
 ADMIN_USERNAME=admin
@@ -371,10 +863,27 @@ No `git pull`, no rebuilding — the CI/CD pipeline builds and pushes the image 
 
 ### 🐳 Docker Compose Files
 
-This repo now ships with **two compose files**:
+This repo now ships with **two compose files** for different deployment scenarios:
 
 - `docker-compose.yml` for **production-style runs** (prebuilt app image + Nginx reverse proxy)
 - `docker-compose-local.yml` for **local image builds** (build from current source, app exposed directly)
+
+#### Quick Comparison Table
+
+| Feature | Production (`docker-compose.yml`) | Local Dev (`docker-compose-local.yml`) |
+|---------|-----------------------------------|---------------------------------------|
+| **App Source** | Pre-built Docker Hub image | Built from local source |
+| **Image** | `aiyuayaan/aiyu:${APP_IMAGE_TAG:-latest}` | Built locally from Dockerfile |
+| **MongoDB Setup** | 3-node replica set (mongo1, 2, 3) | Single MongoDB instance |
+| **Network Entry Point** | NGINX reverse proxy (port 80/443) | Direct app (port 3000) |
+| **NGINX Reverse Proxy** | ✅ Yes (SSL/TLS, caching) | ❌ No |
+| **Health Check Duration** | 150s startup period | 40s startup period |
+| **Startup Speed** | Slower (replica set init) | Faster (single DB) |
+| **Cache Support** | nginx_cache volume | None |
+| **Best For** | Production/VPS/Cloud | Local development/testing |
+| **Build Time** | Fast (image pulled) | Slower (image built locally) |
+
+---
 
 #### `docker-compose.yml` (Production-Style)
 
@@ -385,12 +894,12 @@ docker compose -f docker-compose.yml pull
 docker compose -f docker-compose.yml up -d
 ```
 
-Key services and new additions:
+Key services:
 
-- `mongodb` (`mongo:7`) with healthcheck and persistent `mongodb_data`/`mongodb_config` volumes
-- `redis` (`redis:7-alpine`) added for shared API cache (`REDIS_URL`, `REDIS_DEFAULT_TTL_SECONDS`)
+- `mongodb` (`mongo:7`) - 3-node replica set (`mongo1`, `mongo2`, `mongo3`) with healthcheck and persistent volumes for high availability
+- `mongo-init` - Initializes the replica set on first startup
 - `app` now uses Docker Hub image tag `aiyuayaan/aiyu:${APP_IMAGE_TAG:-latest}`
-- `app` includes `SITE_URL`, Redis env vars, and depends on both MongoDB and Redis health
+- `app` includes environment variables for MongoDB replica set URI and depends on `mongo-init` completion
 - `nginx` reverse proxy in front of app for gzip, static asset caching, and route-level proxy behavior
 - `nginx_cache` volume added for proxy cache persistence
 
@@ -403,15 +912,15 @@ docker compose -f docker-compose-local.yml build --no-cache
 docker compose -f docker-compose-local.yml up -d
 ```
 
-Key differences from production-style compose:
+Key features:
 
 - `app` is built from local `Dockerfile` with build args:
   - `NEXT_PUBLIC_N8N_WEBHOOK_URL`
   - `NEXT_PUBLIC_BASE_URL`
   - `NEXT_PUBLIC_AUTHOR_NAME`
 - `app` binds directly to host port `${APP_PORT:-3000}:3000` (no Nginx service)
-- `redis` is still included and wired the same way for cache behavior parity
-- local profile keeps explicit CPU/RAM `deploy.resources` limits for app service
+- `mongodb` is a single-node instance for local development (not a replica set)
+- Local profile keeps explicit CPU/RAM `deploy.resources` limits for app service
 
 #### Compose Comparison
 
@@ -419,7 +928,7 @@ Key differences from production-style compose:
 |---|---|---|
 | App source | Pull image `aiyuayaan/aiyu:${APP_IMAGE_TAG:-latest}` | Build from local source |
 | Public entrypoint | `nginx` on `${APP_PORT:-3000}:80` | `app` on `${APP_PORT:-3000}:3000` |
-| Redis cache | Yes | Yes |
+| MongoDB setup | 3-node replica set (`mongo1`, `mongo2`, `mongo3`) | Single MongoDB instance |
 | Nginx proxy/cache | Yes (`nginx_cache` volume) | No |
 | App health start window | Longer (`start_period: 150s`) | Shorter (`start_period: 40s`) |
 
@@ -427,10 +936,74 @@ Key differences from production-style compose:
 
 | Service | Image | Role |
 |---|---|---|
-| `mongodb` | `mongo:7` | Persistent database (internal network) |
-| `redis` | `redis:7-alpine` | Shared cache for API/database responses |
+| `mongo1`, `mongo2`, `mongo3` | `mongo:7` | MongoDB replica set for persistent database (high availability) |
+| `mongo-init` | `mongo:7` | Initializes MongoDB replica set (runs once on startup) |
 | `app` | `aiyuayaan/aiyu:${APP_IMAGE_TAG:-latest}` or local build | Next.js standalone app |
 | `nginx` | `nginx:alpine` | Reverse proxy + static/cache layer (`docker-compose.yml` only) |
+
+#### Service Architecture Diagram
+
+**Production (docker-compose.yml):**
+```
+┌─────────────────────────────────────────┐
+│        User/Browser (Port 3000)         │
+└──────────────┬──────────────────────────┘
+               │
+               ▼
+        ┌──────────────┐
+        │ NGINX Proxy  │
+        │ (Port 80)    │
+        └──────┬───────┘
+               │
+               ▼
+        ┌──────────────┐
+        │  Next.js App │ ←─────────────────┐
+        │ (Port 3000)  │                   │
+        └──────┬───────┘                   │
+               │                    ┌──────┴──────┐
+               ├───────────────────→│ Named Vol:  │
+               │                    │ uploads_data│
+               │                    │ nextjs_cache│
+               │                    └─────────────┘
+               ▼
+    ┌──────────────────────┐
+    │  MongoDB Replica Set │
+    │   (3 nodes: rs0)     │
+    │                      │
+    │ mongo1 (Primary)     │
+    │ mongo2 (Secondary)   │
+    │ mongo3 (Secondary)   │
+    │                      │
+    │ Port: 27017          │
+    │ Persistence: Yes     │
+    └──────────────────────┘
+```
+
+**Local Development (docker-compose-local.yml):**
+```
+┌─────────────────────────────────────────┐
+│        Developer (Port 3000)            │
+└──────────────┬──────────────────────────┘
+               │
+               ├──────────────────────┐
+               │                      │
+               ▼                      ▼
+        ┌──────────────┐     ┌──────────────────┐
+        │ Next.js App  │     │  Named Volumes   │
+        │(Local Build) │────→│ uploads_data     │
+        │ (Port 3000)  │     │ nextjs_cache     │
+        └──────┬───────┘     │ mongodb_data     │
+               │             │ mongodb_config   │
+               │             └──────────────────┘
+               ▼
+        ┌─────────────────┐
+        │  MongoDB        │
+        │ (Single Node)   │
+        │                 │
+        │ Port: 27017     │
+        │ Persistence: Yes│
+        └─────────────────┘
+```
 
 ## 💻 Manual Installation (Development)
 
@@ -771,6 +1344,15 @@ Additional detailed guides available in the `docs/` directory:
   - Project and gallery APIs
   - Rate limiting and security
   - Example requests with cURL and JavaScript
+
+- **[Architecture & System Design](docs/ARCHITECTURE_DIAGRAM.md)** - Complete system architecture documentation
+  - System architecture overview with ASCII diagrams
+  - Production vs local deployment architectures
+  - Data flow and request lifecycle
+  - Service dependencies and startup order
+  - Security layers and hardening details
+  - Volume and data persistence
+  - Scaling considerations
 
 #### Deployment & Operations
 
