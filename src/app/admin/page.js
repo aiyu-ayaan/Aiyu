@@ -6,7 +6,7 @@ import {
     FaHouse, FaUser, FaBriefcase, FaPenNib, FaImages,
     FaHeading, FaShareNodes, FaEnvelope,
 
-    FaPalette, FaGithub, FaSliders, FaDatabase, FaRightFromBracket, FaArrowRight, FaTerminal, FaRobot, FaServer
+    FaPalette, FaGithub, FaSliders, FaDatabase, FaRightFromBracket, FaArrowRight, FaTerminal, FaRobot, FaServer, FaHardDrive
 } from "react-icons/fa6";
 
 export default function AdminDashboard() {
@@ -42,6 +42,7 @@ export default function AdminDashboard() {
             { label: 'Config', description: 'Site Settings', icon: <FaSliders />, color: 'from-slate-500/10 to-slate-500/5', textColor: 'text-slate-400', path: '/admin/config' },
             { label: 'Terminal', description: 'CLI Appearance', icon: <FaTerminal />, color: 'from-amber-500/10 to-amber-500/5', textColor: 'text-amber-400', path: '/admin/terminal' },
             { label: 'Database', description: 'Backups & JSON', icon: <FaDatabase />, color: 'from-yellow-500/10 to-yellow-500/5', textColor: 'text-yellow-400', path: '/admin/database' },
+            { label: 'Resources', description: 'Storage & Cleanup', icon: <FaHardDrive />, color: 'from-cyan-500/10 to-cyan-500/5', textColor: 'text-cyan-400', path: '/admin/resources' },
             { label: 'AI Core', description: 'Neural Settings', icon: <FaRobot />, color: 'from-cyan-500/10 to-cyan-500/5', textColor: 'text-cyan-400', path: '/admin/ai' },
         ]
     };
