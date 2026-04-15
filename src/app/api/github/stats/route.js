@@ -6,6 +6,184 @@ import { decrypt } from '@/lib/encryption';
 import cache, { CACHE_TTL, createCacheDebugHeaders } from '@/lib/cache';
 import { createPublicCacheHeaders, RESPONSE_CACHE } from '@/lib/httpCache';
 
+const GITHUB_API_HEADERS = {
+    'Accept': 'application/vnd.github.v3+json',
+    'User-Agent': 'Portfolio-App'
+};
+
+const GITHUB_CONTRIBUTIONS_QUERY = `
+    query($userName:String!) {
+        user(login: $userName) {
+            contributionsCollection {
+                contributionCalendar {
+                    totalContributions
+                    weeks {
+                        contributionDays {
+                            contributionCount
+                            date
+                        }
+                    }
+                }
+            }
+        }
+    }
+`;
+
+function createGitHubHeaders(token) {
+    if (!token) {
+        return { ...GITHUB_API_HEADERS };
+    }
+
+    return {
+        ...GITHUB_API_HEADERS,
+        'Authorization': `token ${token}`
+    };
+}
+
+async function fetchGitHub(url, headers, options = {}) {
+    const response = await fetch(url, { ...options, headers });
+
+    if (response.status === 401 && headers.Authorization) {
+        console.warn('[WARN] GITHUB_TOKEN is invalid. Retrying without token...');
+        const fallbackHeaders = { ...headers };
+        delete fallbackHeaders.Authorization;
+
+        return fetch(url, { ...options, headers: fallbackHeaders });
+    }
+
+    return response;
+}
+
+async function fetchGitHubJson(url, headers, options = {}) {
+    const response = await fetchGitHub(url, headers, options);
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        const error = new Error(`GitHub request failed (${response.status})`);
+        error.status = response.status;
+        error.body = errorText;
+        throw error;
+    }
+
+    return response.json();
+}
+
+function buildContributionSeriesFromEvents(events) {
+    const contributionMap = {};
+    const today = new Date();
+    const oneYearAgo = new Date(today.getFullYear() - 1, today.getMonth(), today.getDate());
+
+    for (let d = new Date(oneYearAgo); d <= today; d.setDate(d.getDate() + 1)) {
+        const dateStr = d.toISOString().split('T')[0];
+        contributionMap[dateStr] = 0;
+    }
+
+    events.forEach(event => {
+        const eventDate = new Date(event.created_at).toISOString().split('T')[0];
+        if (contributionMap[eventDate] !== undefined) {
+            contributionMap[eventDate]++;
+        }
+    });
+
+    const contributions = Object.entries(contributionMap)
+        .map(([date, count]) => ({ date, count }))
+        .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    return {
+        contributions,
+        totalContributions: contributions.reduce((sum, contribution) => sum + contribution.count, 0)
+    };
+}
+
+function buildActivityDistribution(events) {
+    const distributionCounts = {
+        commits: 0,
+        issues: 0,
+        pullRequests: 0,
+        codeReview: 0
+    };
+
+    events.forEach(event => {
+        if (event.type === 'PushEvent') {
+            distributionCounts.commits += event.payload.commits?.length || 1;
+        } else if (event.type === 'IssuesEvent' || event.type === 'IssueCommentEvent') {
+            distributionCounts.issues += 1;
+        } else if (event.type === 'PullRequestEvent') {
+            distributionCounts.pullRequests += 1;
+        } else if (event.type === 'PullRequestReviewEvent' || event.type === 'PullRequestReviewCommentEvent') {
+            distributionCounts.codeReview += 1;
+        }
+    });
+
+    const totalDist = Object.values(distributionCounts).reduce((a, b) => a + b, 0);
+    if (totalDist === 0) {
+        return { commits: 0, issues: 0, pullRequests: 0, codeReview: 0 };
+    }
+
+    return {
+        commits: Math.round((distributionCounts.commits / totalDist) * 100),
+        issues: Math.round((distributionCounts.issues / totalDist) * 100),
+        pullRequests: Math.round((distributionCounts.pullRequests / totalDist) * 100),
+        codeReview: Math.round((distributionCounts.codeReview / totalDist) * 100)
+    };
+}
+
+function buildRecentActivity(events, hiddenRepos) {
+    return events
+        .filter(event => {
+            const repoName = event.repo.name.split('/').pop();
+            return !hiddenRepos.includes(repoName);
+        })
+        .slice(0, 10)
+        .map(event => ({
+            type: event.type,
+            repo: event.repo.name,
+            created_at: event.created_at,
+            payload: {
+                action: event.payload.action,
+                ref: event.payload.ref,
+                commits: event.payload.commits?.length || 0
+            }
+        }));
+}
+
+async function fetchContributions(username, headers, fallbackEvents) {
+    try {
+        const graphqlRes = await fetch('https://api.github.com/graphql', {
+            method: 'POST',
+            headers: {
+                ...headers,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                query: GITHUB_CONTRIBUTIONS_QUERY,
+                variables: { userName: username }
+            })
+        });
+
+        if (graphqlRes.ok) {
+            const graphqlData = await graphqlRes.json();
+            const calendar = graphqlData.data?.user?.contributionsCollection?.contributionCalendar;
+
+            if (calendar) {
+                return {
+                    contributions: calendar.weeks
+                        .flatMap(week => week.contributionDays)
+                        .map(day => ({
+                            date: day.date,
+                            count: day.contributionCount
+                        })),
+                    totalContributions: calendar.totalContributions
+                };
+            }
+        }
+    } catch (error) {
+        console.error('[WARN] GraphQL fetch failed, falling back to events API:', error);
+    }
+
+    return buildContributionSeriesFromEvents(fallbackEvents);
+}
+
 export async function GET() {
     const startedAt = Date.now();
     try {
@@ -28,68 +206,41 @@ export async function GET() {
         const { value: data, meta } = await cache.getOrSetWithMeta(
             cacheKey,
             async () => {
-                // Prepare headers
-                const headers = {
-                    'Accept': 'application/vnd.github.v3+json',
-                    'User-Agent': 'Portfolio-App'
-                };
-
-                // Check for encrypted token in Config
                 const configDoc = await Config.findOne().select('+encryptedGithubToken').lean();
                 const dbToken = configDoc?.encryptedGithubToken ? decrypt(configDoc.encryptedGithubToken) : null;
                 const envToken = process.env.GITHUB_TOKEN ? process.env.GITHUB_TOKEN.trim() : null;
-
                 const token = dbToken || envToken;
+                const headers = createGitHubHeaders(token);
 
-                if (token) {
-                    headers['Authorization'] = `token ${token}`;
-                }
+                let userData;
+                try {
+                    userData = await fetchGitHubJson(`https://api.github.com/users/${username}`, headers);
+                } catch (error) {
+                    console.error(`[GitHub API Error] Status: ${error.status ?? 'unknown'}, Body: ${error.body ?? 'n/a'}`);
 
-                // Fetch user data
-                let userRes = await fetch(`https://api.github.com/users/${username}`, { headers });
-
-                // Retry without token if 401 (Bad Credentials)
-                if (userRes.status === 401 && headers['Authorization']) {
-                    console.warn('[WARN] GITHUB_TOKEN is invalid. Retrying without token...');
-                    delete headers['Authorization'];
-                    userRes = await fetch(`https://api.github.com/users/${username}`, { headers });
-                }
-
-                if (!userRes.ok) {
-                    const errorText = await userRes.text();
-                    console.error(`[GitHub API Error] Status: ${userRes.status} ${userRes.statusText}, Body: ${errorText}`);
-
-                    if (userRes.status === 403) {
-                        if (userRes.headers.get('x-ratelimit-remaining') === '0') {
+                    if (error.status === 403) {
+                        if (error.body?.includes('API rate limit exceeded')) {
                             throw new Error('GitHub API rate limit exceeded. Please add a valid GITHUB_TOKEN.');
                         }
                         throw new Error('GitHub API access forbidden.');
                     }
-                    if (userRes.status === 404) {
+                    if (error.status === 404) {
                         throw new Error(`GitHub user '${username}' not found.`);
                     }
 
-                    throw new Error(`Failed to fetch user data (${userRes.status})`);
+                    throw new Error(`Failed to fetch user data (${error.status ?? 'unknown'})`);
                 }
-                const userData = await userRes.json();
 
-                // Fetch repos
                 let repos = [];
                 let fetchedWithPrivate = false;
 
                 if (config.includePrivate && token) {
                     try {
-                        const identityRes = await fetch('https://api.github.com/user', { headers });
-                        if (identityRes.ok) {
-                            const identity = await identityRes.json();
+                        const identity = await fetchGitHubJson('https://api.github.com/user', headers);
 
-                            if (identity.login.toLowerCase() === username.toLowerCase()) {
-                                const privateRes = await fetch(`https://api.github.com/user/repos?sort=updated&per_page=100&type=all`, { headers });
-                                if (privateRes.ok) {
-                                    repos = await privateRes.json();
-                                    fetchedWithPrivate = true;
-                                }
-                            }
+                        if (identity.login.toLowerCase() === username.toLowerCase()) {
+                            repos = await fetchGitHubJson('https://api.github.com/user/repos?sort=updated&per_page=100&type=all', headers);
+                            fetchedWithPrivate = true;
                         }
                     } catch (e) {
                         console.error('[WARN] Failed to verify token identity for private repos:', e);
@@ -97,18 +248,11 @@ export async function GET() {
                 }
 
                 if (!fetchedWithPrivate) {
-                    let reposRes = await fetch(`https://api.github.com/users/${username}/repos?sort=updated&per_page=100&type=public`, { headers });
-
-                    if (reposRes.status === 401 && headers['Authorization']) {
-                        const noTokenHeaders = { ...headers };
-                        delete noTokenHeaders['Authorization'];
-                        reposRes = await fetch(`https://api.github.com/users/${username}/repos?sort=updated&per_page=100&type=public`, { headers: noTokenHeaders });
-                    }
-
-                    if (!reposRes.ok) {
+                    try {
+                        repos = await fetchGitHubJson(`https://api.github.com/users/${username}/repos?sort=updated&per_page=100&type=public`, headers);
+                    } catch {
                         throw new Error('Failed to fetch repositories');
                     }
-                    repos = await reposRes.json();
                 }
 
                 const hiddenRepos = config.hiddenRepos || [];
@@ -117,115 +261,18 @@ export async function GET() {
                     return !hiddenRepos.includes(repo.name);
                 });
 
-                // Contributions via GraphQL (fallback to events)
-                const graphqlQuery = `
-                    query($userName:String!) {
-                        user(login: $userName) {
-                            contributionsCollection {
-                                contributionCalendar {
-                                    totalContributions
-                                    weeks {
-                                        contributionDays {
-                                            contributionCount
-                                            date
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                `;
-
-                let contributions = [];
-                let totalContributions = 0;
-
+                let events = [];
                 try {
-                    const graphqlRes = await fetch('https://api.github.com/graphql', {
-                        method: 'POST',
-                        headers: {
-                            ...headers,
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            query: graphqlQuery,
-                            variables: { userName: username }
-                        })
-                    });
-
-                    if (graphqlRes.ok) {
-                        const graphqlData = await graphqlRes.json();
-                        const calendar = graphqlData.data?.user?.contributionsCollection?.contributionCalendar;
-
-                        if (calendar) {
-                            totalContributions = calendar.totalContributions;
-                            contributions = calendar.weeks
-                                .flatMap(week => week.contributionDays)
-                                .map(day => ({
-                                    date: day.date,
-                                    count: day.contributionCount
-                                }));
-                        }
-                    }
+                    events = await fetchGitHubJson(`https://api.github.com/users/${username}/events/public?per_page=100`, headers);
                 } catch (error) {
-                    console.error('[WARN] GraphQL fetch failed, falling back to events API:', error);
+                    console.error('[WARN] Failed to fetch GitHub public events:', error);
                 }
 
-                if (contributions.length === 0) {
-                    const eventsRes = await fetch(`https://api.github.com/users/${username}/events/public?per_page=90`, { headers });
-                    const events = eventsRes.ok ? await eventsRes.json() : [];
-
-                    const contributionMap = {};
-                    const today = new Date();
-                    const oneYearAgo = new Date(today.getFullYear() - 1, today.getMonth(), today.getDate());
-
-                    for (let d = new Date(oneYearAgo); d <= today; d.setDate(d.getDate() + 1)) {
-                        const dateStr = d.toISOString().split('T')[0];
-                        contributionMap[dateStr] = 0;
-                    }
-
-                    events.forEach(event => {
-                        const eventDate = new Date(event.created_at).toISOString().split('T')[0];
-                        if (contributionMap[eventDate] !== undefined) {
-                            contributionMap[eventDate]++;
-                        }
-                    });
-
-                    contributions = Object.entries(contributionMap)
-                        .map(([date, count]) => ({ date, count }))
-                        .sort((a, b) => new Date(a.date) - new Date(b.date));
-
-                    totalContributions = contributions.reduce((sum, c) => sum + c.count, 0);
-                }
-
-                const eventsRes = await fetch(`https://api.github.com/users/${username}/events/public?per_page=100`, { headers });
-                const events = eventsRes.ok ? await eventsRes.json() : [];
-
-                const distributionCounts = {
-                    commits: 0,
-                    issues: 0,
-                    pullRequests: 0,
-                    codeReview: 0
-                };
-
-                events.forEach(event => {
-                    if (event.type === 'PushEvent') {
-                        distributionCounts.commits += event.payload.commits?.length || 1;
-                    } else if (event.type === 'IssuesEvent' || event.type === 'IssueCommentEvent') {
-                        distributionCounts.issues += 1;
-                    } else if (event.type === 'PullRequestEvent') {
-                        distributionCounts.pullRequests += 1;
-                    } else if (event.type === 'PullRequestReviewEvent' || event.type === 'PullRequestReviewCommentEvent') {
-                        distributionCounts.codeReview += 1;
-                    }
-                });
-
-                const totalDist = Object.values(distributionCounts).reduce((a, b) => a + b, 0);
-                const activityDistribution = totalDist > 0 ? {
-                    commits: Math.round((distributionCounts.commits / totalDist) * 100),
-                    issues: Math.round((distributionCounts.issues / totalDist) * 100),
-                    pullRequests: Math.round((distributionCounts.pullRequests / totalDist) * 100),
-                    codeReview: Math.round((distributionCounts.codeReview / totalDist) * 100)
-                } : { commits: 0, issues: 0, pullRequests: 0, codeReview: 0 };
+                const {
+                    contributions,
+                    totalContributions
+                } = await fetchContributions(username, headers, events);
+                const activityDistribution = buildActivityDistribution(events);
 
                 const totalStars = filteredRepos.reduce((sum, repo) => sum + (repo.stargazers_count || 0), 0);
                 const totalForks = filteredRepos.reduce((sum, repo) => sum + (repo.forks_count || 0), 0);
@@ -294,22 +341,7 @@ export async function GET() {
                     }
                 }
 
-                const recentActivity = events
-                    .filter(event => {
-                        const repoName = event.repo.name.split('/').pop();
-                        return !hiddenRepos.includes(repoName);
-                    })
-                    .slice(0, 10)
-                    .map(event => ({
-                        type: event.type,
-                        repo: event.repo.name,
-                        created_at: event.created_at,
-                        payload: {
-                            action: event.payload.action,
-                            ref: event.payload.ref,
-                            commits: event.payload.commits?.length || 0
-                        }
-                    }));
+                const recentActivity = buildRecentActivity(events, hiddenRepos);
 
                 return {
                     profile: {
