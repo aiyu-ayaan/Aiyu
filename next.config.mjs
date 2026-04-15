@@ -59,6 +59,9 @@ const nextConfig = {
   // Compression and caching
   compress: true,
   poweredByHeader: false,
+  httpAgentOptions: {
+    keepAlive: true,
+  },
 
   // Headers for performance
   async headers() {
@@ -77,15 +80,42 @@ const nextConfig = {
       ],
     });
 
-    headers.push({
-      source: '/:path((about-me|apps|blogs|contact-us|gallery|github|live-deployments|projects|work-in-progress).*)',
-      headers: [
-        {
-          key: 'Cache-Control',
-          value: publicHtmlCacheValue,
-        },
-      ],
-    });
+    // Add Cache-Control for public HTML route prefixes using Next's
+    // wildcard (`:path*`) style instead of a regex with capturing groups
+    // which Next disallows in `source`.
+    const publicHtmlPrefixes = [
+      'about-me',
+      'apps',
+      'blogs',
+      'contact-us',
+      'gallery',
+      'github',
+      'live-deployments',
+      'projects',
+      'work-in-progress',
+    ];
+
+    for (const p of publicHtmlPrefixes) {
+      headers.push({
+        source: `/${p}/:path*`,
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: publicHtmlCacheValue,
+          },
+        ],
+      });
+      // Also cover the exact prefix root (e.g. '/blogs')
+      headers.push({
+        source: `/${p}`,
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: publicHtmlCacheValue,
+          },
+        ],
+      });
+    }
 
     headers.push({
       source: '/images/(.*)',

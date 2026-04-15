@@ -6,6 +6,7 @@ import { decrypt } from '@/lib/encryption';
 import cache, { CACHE_TTL, createCacheDebugHeaders } from '@/lib/cache';
 import { createPublicCacheHeaders, RESPONSE_CACHE } from '@/lib/httpCache';
 import { createTrafficHeaders, getClientIdentifier, reserveRequestSlot } from '@/lib/trafficControl';
+import { fetchWithTimeout, getCircuitBreakerSnapshot, runWithCircuitBreaker } from '@/lib/upstreamControl';
 
 const GITHUB_API_HEADERS = {
     'Accept': 'application/vnd.github.v3+json',
@@ -42,14 +43,41 @@ function createGitHubHeaders(token) {
 }
 
 async function fetchGitHub(url, headers, options = {}) {
-    const response = await fetch(url, { ...options, headers });
+    const {
+        timeoutMs = GITHUB_UPSTREAM_TIMEOUT_MS,
+        breakerName = GITHUB_UPSTREAM_BREAKER_NAME,
+        trace = null,
+        traceLabel = 'github',
+        ...fetchOptions
+    } = options;
+
+    const startedAt = Date.now();
+    const executeRequest = async (requestHeaders) => fetchWithTimeout(
+        url,
+        { ...fetchOptions, headers: requestHeaders },
+        timeoutMs
+    );
+
+    let response = await runWithCircuitBreaker(
+        breakerName,
+        () => executeRequest(headers),
+        GITHUB_UPSTREAM_BREAKER_OPTIONS
+    );
+
+    if (trace) {
+        trace[traceLabel] = Date.now() - startedAt;
+    }
 
     if (response.status === 401 && headers.Authorization) {
         console.warn('[WARN] GITHUB_TOKEN is invalid. Retrying without token...');
         const fallbackHeaders = { ...headers };
         delete fallbackHeaders.Authorization;
 
-        return fetch(url, { ...options, headers: fallbackHeaders });
+        response = await runWithCircuitBreaker(
+            breakerName,
+            () => executeRequest(fallbackHeaders),
+            GITHUB_UPSTREAM_BREAKER_OPTIONS
+        );
     }
 
     return response;
@@ -63,15 +91,20 @@ async function fetchGitHubJson(url, headers, options = {}) {
         const error = new Error(`GitHub request failed (${response.status})`);
         error.status = response.status;
         error.body = errorText;
+        error.retryable = response.status === 429 || response.status >= 500;
         throw error;
     }
 
     return response.json();
 }
 
-async function fetchUserData(username, headers) {
+async function fetchUserData(username, headers, trace) {
     try {
-        return await fetchGitHubJson(`https://api.github.com/users/${username}`, headers);
+        return await fetchGitHubJson(
+            `https://api.github.com/users/${username}`,
+            headers,
+            { trace, traceLabel: 'github-user' }
+        );
     } catch (error) {
         console.error(`[GitHub API Error] Status: ${error.status ?? 'unknown'}, Body: ${error.body ?? 'n/a'}`);
 
@@ -89,13 +122,21 @@ async function fetchUserData(username, headers) {
     }
 }
 
-async function fetchRepositories(username, includePrivate, headers, token) {
+async function fetchRepositories(username, includePrivate, headers, token, trace) {
     if (includePrivate && token) {
         try {
-            const identity = await fetchGitHubJson('https://api.github.com/user', headers);
+            const identity = await fetchGitHubJson(
+                'https://api.github.com/user',
+                headers,
+                { trace, traceLabel: 'github-identity' }
+            );
 
             if (identity.login.toLowerCase() === username.toLowerCase()) {
-                return await fetchGitHubJson('https://api.github.com/user/repos?sort=updated&per_page=100&type=all', headers);
+                return await fetchGitHubJson(
+                    'https://api.github.com/user/repos?sort=updated&per_page=100&type=all',
+                    headers,
+                    { trace, traceLabel: 'github-repos-private' }
+                );
             }
         } catch (error) {
             console.error('[WARN] Failed to verify token identity for private repos:', error);
@@ -103,15 +144,23 @@ async function fetchRepositories(username, includePrivate, headers, token) {
     }
 
     try {
-        return await fetchGitHubJson(`https://api.github.com/users/${username}/repos?sort=updated&per_page=100&type=public`, headers);
+        return await fetchGitHubJson(
+            `https://api.github.com/users/${username}/repos?sort=updated&per_page=100&type=public`,
+            headers,
+            { trace, traceLabel: 'github-repos-public' }
+        );
     } catch {
         throw new Error('Failed to fetch repositories');
     }
 }
 
-async function fetchPublicEvents(username, headers) {
+async function fetchPublicEvents(username, headers, trace) {
     try {
-        return await fetchGitHubJson(`https://api.github.com/users/${username}/events/public?per_page=100`, headers);
+        return await fetchGitHubJson(
+            `https://api.github.com/users/${username}/events/public?per_page=100`,
+            headers,
+            { trace, traceLabel: 'github-events' }
+        );
     } catch (error) {
         console.error('[WARN] Failed to fetch GitHub public events:', error);
         return [];
@@ -197,19 +246,32 @@ function buildRecentActivity(events, hiddenRepos) {
         }));
 }
 
-async function fetchContributions(username, headers, fallbackEventsPromise) {
+async function fetchContributions(username, headers, fallbackEventsPromise, trace) {
     try {
-        const graphqlRes = await fetch('https://api.github.com/graphql', {
-            method: 'POST',
-            headers: {
-                ...headers,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                query: GITHUB_CONTRIBUTIONS_QUERY,
-                variables: { userName: username }
-            })
-        });
+        const startedAt = Date.now();
+        const graphqlRes = await runWithCircuitBreaker(
+            GITHUB_UPSTREAM_BREAKER_NAME,
+            () => fetchWithTimeout(
+                'https://api.github.com/graphql',
+                {
+                    method: 'POST',
+                    headers: {
+                        ...headers,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        query: GITHUB_CONTRIBUTIONS_QUERY,
+                        variables: { userName: username }
+                    })
+                },
+                GITHUB_UPSTREAM_TIMEOUT_MS
+            ),
+            GITHUB_UPSTREAM_BREAKER_OPTIONS
+        );
+
+        if (trace) {
+            trace['github-graphql'] = Date.now() - startedAt;
+        }
 
         if (graphqlRes.ok) {
             const graphqlData = await graphqlRes.json();
@@ -238,37 +300,25 @@ async function fetchContributions(username, headers, fallbackEventsPromise) {
 const GITHUB_STATS_ROUTE_WINDOW_MS = Number.parseInt(process.env.GITHUB_STATS_WINDOW_MS || '60000', 10);
 const GITHUB_STATS_ROUTE_MAX_REQUESTS = Number.parseInt(process.env.GITHUB_STATS_RATE_LIMIT || '240', 10);
 const GITHUB_STATS_ROUTE_MAX_CONCURRENT = Number.parseInt(process.env.GITHUB_STATS_MAX_CONCURRENT || '100', 10);
+const GITHUB_STATS_CACHE_TTL = Number.parseInt(process.env.GITHUB_STATS_CACHE_TTL_MS || '60000', 10);
+const GITHUB_STATS_STALE_TTL = Number.parseInt(process.env.GITHUB_STATS_STALE_TTL_MS || String(CACHE_TTL.VERY_LONG), 10);
+const GITHUB_UPSTREAM_TIMEOUT_MS = Number.parseInt(process.env.GITHUB_UPSTREAM_TIMEOUT_MS || '2500', 10);
+const GITHUB_UPSTREAM_BREAKER_NAME = 'github-upstream';
+const GITHUB_UPSTREAM_BREAKER_OPTIONS = {
+    failureThreshold: Number.parseInt(process.env.GITHUB_UPSTREAM_BREAKER_THRESHOLD || '5', 10),
+    resetTimeoutMs: Number.parseInt(process.env.GITHUB_UPSTREAM_BREAKER_RESET_MS || '30000', 10),
+};
+
+function createServerTimingHeader(trace = {}) {
+    return Object.entries(trace)
+        .filter(([, duration]) => Number.isFinite(duration))
+        .map(([label, duration]) => `${label};dur=${duration}`)
+        .join(', ');
+}
 
 export async function GET(request) {
     const startedAt = Date.now();
-    const trafficReservation = reserveRequestSlot(
-        'public:github-stats',
-        getClientIdentifier(request),
-        {
-            maxRequests: GITHUB_STATS_ROUTE_MAX_REQUESTS,
-            windowMs: GITHUB_STATS_ROUTE_WINDOW_MS,
-            maxConcurrent: GITHUB_STATS_ROUTE_MAX_CONCURRENT,
-        }
-    );
-
-    if (!trafficReservation.ok) {
-        return NextResponse.json(
-            {
-                success: false,
-                error: trafficReservation.status === 429
-                    ? 'Rate limit exceeded for GitHub stats. Please retry shortly.'
-                    : 'GitHub stats is temporarily overloaded. Please retry shortly.',
-            },
-            {
-                status: trafficReservation.status,
-                headers: {
-                    ...createTrafficHeaders(trafficReservation, { windowMs: GITHUB_STATS_ROUTE_WINDOW_MS }),
-                    'Cache-Control': RESPONSE_CACHE.NO_STORE,
-                    'x-response-time-ms': String(Date.now() - startedAt),
-                },
-            }
-        );
-    }
+    let trafficReservation = null;
 
     try {
         await dbConnect();
@@ -286,20 +336,86 @@ export async function GET(request) {
         const username = config.username;
 
         const cacheKey = `github:stats:${username}:${config.includePrivate ? 'priv' : 'pub'}`;
+        const staleCacheKey = `${cacheKey}:stale`;
+        const cachedData = cache.get(cacheKey);
 
-        const { value: data, meta } = await cache.getOrSetWithMeta(
-            cacheKey,
-            async () => {
+        if (cachedData) {
+            return NextResponse.json(
+                { success: true, data: cachedData },
+                {
+                    headers: {
+                        ...createPublicCacheHeaders(RESPONSE_CACHE.PUBLIC_MEDIUM),
+                        ...createCacheDebugHeaders({ key: cacheKey, source: 'memory-precheck' }),
+                        'x-github-cache-mode': 'hot',
+                        'x-response-time-ms': String(Date.now() - startedAt),
+                    },
+                }
+            );
+        }
+
+        trafficReservation = reserveRequestSlot(
+            'public:github-stats',
+            getClientIdentifier(request),
+            {
+                maxRequests: GITHUB_STATS_ROUTE_MAX_REQUESTS,
+                windowMs: GITHUB_STATS_ROUTE_WINDOW_MS,
+                maxConcurrent: GITHUB_STATS_ROUTE_MAX_CONCURRENT,
+            }
+        );
+
+        if (!trafficReservation.ok) {
+            const staleData = cache.get(staleCacheKey);
+            if (staleData) {
+                return NextResponse.json(
+                    { success: true, data: staleData },
+                    {
+                        headers: {
+                            ...createPublicCacheHeaders(RESPONSE_CACHE.PUBLIC_SHORT),
+                            ...createCacheDebugHeaders({ key: staleCacheKey, source: 'stale-overload' }),
+                            ...createTrafficHeaders(trafficReservation, { windowMs: GITHUB_STATS_ROUTE_WINDOW_MS }),
+                            'x-github-cache-mode': 'stale-overload',
+                            'x-response-time-ms': String(Date.now() - startedAt),
+                        },
+                    }
+                );
+            }
+
+            return NextResponse.json(
+                {
+                    success: false,
+                    error: trafficReservation.status === 429
+                        ? 'Rate limit exceeded for GitHub stats. Please retry shortly.'
+                        : 'GitHub stats is temporarily overloaded. Please retry shortly.',
+                },
+                {
+                    status: trafficReservation.status,
+                    headers: {
+                        ...createTrafficHeaders(trafficReservation, { windowMs: GITHUB_STATS_ROUTE_WINDOW_MS }),
+                        'Cache-Control': RESPONSE_CACHE.NO_STORE,
+                        'x-response-time-ms': String(Date.now() - startedAt),
+                    },
+                }
+            );
+        }
+
+        let data;
+        let meta;
+        const requestTrace = {};
+
+        try {
+            const result = await cache.getOrSetWithMeta(
+                cacheKey,
+                async () => {
                 const configDoc = await Config.findOne().select('+encryptedGithubToken').lean();
                 const dbToken = configDoc?.encryptedGithubToken ? decrypt(configDoc.encryptedGithubToken) : null;
                 const envToken = process.env.GITHUB_TOKEN ? process.env.GITHUB_TOKEN.trim() : null;
                 const token = dbToken || envToken;
                 const headers = createGitHubHeaders(token);
 
-                const eventsPromise = fetchPublicEvents(username, headers);
-                const contributionsPromise = fetchContributions(username, headers, eventsPromise);
-                const userPromise = fetchUserData(username, headers);
-                const reposPromise = fetchRepositories(username, config.includePrivate, headers, token);
+                const eventsPromise = fetchPublicEvents(username, headers, requestTrace);
+                const contributionsPromise = fetchContributions(username, headers, eventsPromise, requestTrace);
+                const userPromise = fetchUserData(username, headers, requestTrace);
+                const reposPromise = fetchRepositories(username, config.includePrivate, headers, token, requestTrace);
 
                 const [
                     events,
@@ -389,7 +505,7 @@ export async function GET(request) {
 
                 const recentActivity = buildRecentActivity(events, hiddenRepos);
 
-                return {
+                const payload = {
                     profile: {
                         username: userData.login,
                         name: userData.name,
@@ -434,9 +550,24 @@ export async function GET(request) {
                     },
                     activityDistribution
                 };
+                cache.set(staleCacheKey, payload, GITHUB_STATS_STALE_TTL);
+                return payload;
             },
-            CACHE_TTL.VERY_LONG
-        );
+                GITHUB_STATS_CACHE_TTL
+            );
+            data = result.value;
+            meta = result.meta;
+        } catch (error) {
+            const staleData = cache.get(staleCacheKey);
+            if (!staleData) {
+                throw error;
+            }
+
+            data = staleData;
+            meta = { key: staleCacheKey, source: 'stale-error' };
+        }
+
+        const breakerState = getCircuitBreakerSnapshot(GITHUB_UPSTREAM_BREAKER_NAME);
 
         return NextResponse.json(
             { success: true, data },
@@ -444,8 +575,13 @@ export async function GET(request) {
                 headers: {
                     ...createPublicCacheHeaders(RESPONSE_CACHE.PUBLIC_MEDIUM),
                     ...createCacheDebugHeaders(meta),
-                    'x-rate-limit-remaining': String(trafficReservation.remaining),
-                    'x-route-active-requests': String(trafficReservation.activeRequests),
+                    ...(trafficReservation ? {
+                        'x-rate-limit-remaining': String(trafficReservation.remaining),
+                        'x-route-active-requests': String(trafficReservation.activeRequests),
+                    } : {}),
+                    'x-github-cache-mode': meta?.source || 'unknown',
+                    'x-github-breaker-state': breakerState.state,
+                    'Server-Timing': createServerTimingHeader(requestTrace),
                     'x-response-time-ms': String(Date.now() - startedAt),
                 },
             }
@@ -459,7 +595,7 @@ export async function GET(request) {
         }, {
             status: 500,
             headers: {
-                ...createTrafficHeaders(trafficReservation, { windowMs: GITHUB_STATS_ROUTE_WINDOW_MS }),
+                ...(trafficReservation ? createTrafficHeaders(trafficReservation, { windowMs: GITHUB_STATS_ROUTE_WINDOW_MS }) : {}),
                 'x-response-time-ms': String(Date.now() - startedAt),
             },
         });
