@@ -181,57 +181,9 @@ services:
     networks:
       - aiyu-network
 
-  redis-primary:
-    image: redis:7-alpine
-    restart: unless-stopped
-    command:
-      - redis-server
-      - --appendonly
-      - yes
-      - --save
-      - ""
-      - --maxmemory
-      - 256mb
-      - --maxmemory-policy
-      - allkeys-lru
-      - --replica-read-only
-      - no
-    volumes:
-      - redis_primary_data:/data
-    networks:
-      - aiyu-network
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
 
-  redis-replica:
-    image: redis:7-alpine
-    restart: unless-stopped
-    command:
-      - redis-server
-      - --appendonly
-      - yes
-      - --save
-      - ""
-      - --replicaof
-      - redis-primary
-      - "6379"
-    depends_on:
-      redis-primary:
-        condition: service_healthy
-    volumes:
-      - redis_replica_data:/data
-    networks:
-      - aiyu-network
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
+
+
 
   app:
     image: aiyuayaan/aiyu:${APP_IMAGE_TAG:-latest}
@@ -244,8 +196,8 @@ services:
       NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL}
       SITE_URL: ${SITE_URL}
       NEXT_PUBLIC_AUTHOR_NAME: ${NEXT_PUBLIC_AUTHOR_NAME}
-      REDIS_URL: ${REDIS_URL:-redis://redis-primary:6379/0}
-      REDIS_DEFAULT_TTL_SECONDS: ${REDIS_DEFAULT_TTL_SECONDS:-30}
+
+
       ADMIN_USERNAME: ${ADMIN_USERNAME}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
@@ -276,8 +228,6 @@ services:
     depends_on:
       mongo-init:
         condition: service_completed_successfully
-      redis-primary:
-        condition: service_healthy
     networks:
       - aiyu-network
 
@@ -317,10 +267,6 @@ volumes:
   mongo3_data:
     driver: local
   mongo3_config:
-    driver: local
-  redis_primary_data:
-    driver: local
-  redis_replica_data:
     driver: local
   nextjs_cache:
     driver: local
