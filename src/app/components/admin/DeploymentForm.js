@@ -421,7 +421,7 @@ export default function DeploymentForm({ initialData, isEdit = false }) {
                                         value={formData.techStack}
                                         onChange={handleChange}
                                         className="w-full bg-slate-950/50 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-slate-200 focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/50 outline-none transition-all placeholder:text-slate-600 font-mono"
-                                        placeholder="Next.js, Node.js, MongoDB, Redis"
+                                        placeholder="Next.js, Node.js, MongoDB, PostgreSQL"
                                         required
                                     />
                                 </div>

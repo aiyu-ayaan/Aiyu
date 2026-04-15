@@ -35,7 +35,6 @@
     "formdata-node": "^6.0.3",
     "framer-motion": "^12.35.0",
     "heic-convert": "^2.1.0",
-    "ioredis": "^5.10.1",
     "jose": "^6.2.2",
     "js-cookie": "^3.0.5",
     "lodash-es": "^4.18.1",

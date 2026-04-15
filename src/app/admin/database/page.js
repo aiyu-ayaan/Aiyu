@@ -107,7 +107,7 @@ export default function DatabaseManager() {
     };
 
     const handlePurgeCache = async () => {
-        if (!window.confirm('WARNING: THIS WILL PURGE ALL REDIS CACHES. CONFIRM PROTOCOL?')) {
+        if (!window.confirm('WARNING: THIS WILL PURGE ALL IN-MEMORY CACHES. CONFIRM PROTOCOL?')) {
             return;
         }
 
@@ -273,12 +273,12 @@ export default function DatabaseManager() {
                         <div className="bg-red-500/5 border border-red-500/10 p-4 rounded-lg mb-6 flex gap-3 items-start">
                             <FaExclamationTriangle className="text-red-500 mt-0.5 shrink-0" size={14} />
                             <p className="text-red-400/80 text-xs leading-relaxed font-mono">
-                                CRITICAL WARNING: Purge sequence will clear all Redis caches and in-memory cache entries. Website will refresh data on next request.
+                                CRITICAL WARNING: Purge sequence will clear all in-memory cache entries. Website will refresh data on next request.
                             </p>
                         </div>
 
                         <p className="text-slate-400 mb-8 text-sm leading-relaxed">
-                            Flush all cached data from Redis and in-memory storage. Use this when caches are stale or causing issues. Admin panel data will always be fresh regardless of cache state.
+                            Flush all cached data from in-memory storage. Use this when caches are stale or causing issues. Admin panel data will always be fresh regardless of cache state.
                         </p>
 
                         <button

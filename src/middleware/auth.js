@@ -79,7 +79,7 @@ export function withAuth(handler) {
 
 /**
  * Rate limiting helper (simple in-memory implementation)
- * For production, use Redis or a proper rate limiting service
+ * For production, use a shared rate limiting service
  */
 const rateLimitMap = new Map();
 

@@ -1,5 +1,5 @@
 /**
- * Cache system with in-memory TTL cache + optional Redis.
+ * Cache system with in-memory TTL cache only.
  *
  * Goals:
  * - Reduce DB/external API load under traffic (k6)
@@ -7,10 +7,7 @@
  * - Support invalidation on admin mutations
  */
 
-import { getRedisClient, isRedisEnabled } from '@/lib/redis';
-
 const DEFAULT_MAX_ENTRIES = Number.parseInt(process.env.APP_CACHE_MAX_ENTRIES || '500', 10);
-const CACHE_NAMESPACE = (process.env.APP_CACHE_NAMESPACE || 'aiyu').trim();
 
 function nowMs() {
     return Date.now();
@@ -20,18 +17,6 @@ function isUsableTtl(ttlMs) {
     return Number.isFinite(ttlMs) && ttlMs > 0;
 }
 
-function toRedisKey(key) {
-    return `${CACHE_NAMESPACE}:${key}`;
-}
-
-function safeJsonParse(value) {
-    if (!value) return null;
-    try {
-        return JSON.parse(value);
-    } catch {
-        return null;
-    }
-}
 
 class TtlMemoryCache {
     constructor({ maxEntries = DEFAULT_MAX_ENTRIES } = {}) {
@@ -102,73 +87,13 @@ class TtlMemoryCache {
         this.pending.clear();
     }
 
-    async _redisGet(key) {
-        const client = getRedisClient();
-        if (!client) return { hit: false, value: null };
-
-        const raw = await client.get(toRedisKey(key));
-        const parsed = safeJsonParse(raw);
-        if (!parsed) return { hit: false, value: null };
-
-        if (Number.isFinite(parsed.expiresAt) && parsed.expiresAt <= nowMs()) {
-            // Best-effort cleanup
-            client.del(toRedisKey(key)).catch(() => {});
-            return { hit: false, value: null };
-        }
-        return { hit: true, value: parsed.value };
-    }
-
-    async _redisSet(key, value, ttlMs) {
-        const client = getRedisClient();
-        if (!client) return;
-
-        const expiresAt = isUsableTtl(ttlMs) ? nowMs() + ttlMs : Infinity;
-        const payload = JSON.stringify({ value, expiresAt });
-        const redisKey = toRedisKey(key);
-
-        if (isUsableTtl(ttlMs)) {
-            // PX expects ms
-            await client.set(redisKey, payload, 'PX', Math.max(1, ttlMs));
-            return;
-        }
-
-        await client.set(redisKey, payload);
-    }
-
-    async _redisDel(key) {
-        const client = getRedisClient();
-        if (!client) return;
-        await client.del(toRedisKey(key));
-    }
-
-    async _redisDelByPrefix(prefix) {
-        const client = getRedisClient();
-        if (!client) return;
-
-        // Admin-only usage; best-effort SCAN to avoid blocking Redis.
-        const match = toRedisKey(`${prefix}*`);
-        let cursor = '0';
-        do {
-            // COUNT is a hint
-            // eslint-disable-next-line no-await-in-loop
-            const [nextCursor, keys] = await client.scan(cursor, 'MATCH', match, 'COUNT', 250);
-            cursor = nextCursor;
-            if (Array.isArray(keys) && keys.length > 0) {
-                // eslint-disable-next-line no-await-in-loop
-                await client.del(...keys);
-            }
-        } while (cursor !== '0');
-    }
-
     async getOrSetWithMeta(key, fn, ttlMs) {
-        const redisEnabled = isRedisEnabled();
-
         // 1) Memory hit
         const memoryValue = this.get(key);
         if (memoryValue !== null && memoryValue !== undefined) {
             return {
                 value: memoryValue,
-                meta: { key, source: 'memory', redisEnabled },
+                meta: { key, source: 'memory' },
             };
         }
 
@@ -184,28 +109,15 @@ class TtlMemoryCache {
 
         const inflight = (async () => {
             try {
-                // 3) Redis hit (if enabled)
-                if (redisEnabled) {
-                    const redisResult = await this._redisGet(key);
-                    if (redisResult.hit) {
-                        // Keep a short-lived memory copy for hot keys
-                        this.set(key, redisResult.value, Math.min(isUsableTtl(ttlMs) ? ttlMs : 60_000, 60_000));
-                        return {
-                            value: redisResult.value,
-                            meta: { key, source: 'redis', redisEnabled },
-                        };
-                    }
-                }
-
-                // 4) Miss -> compute
+                // Miss -> compute
                 const value = await fn();
                 this.set(key, value, ttlMs);
-                if (redisEnabled) {
-                    await this._redisSet(key, value, ttlMs);
-                }
                 return {
                     value,
-                    meta: { key, source: 'miss', redisEnabled },
+                    meta: {
+                        key,
+                        source: 'miss',
+                    },
                 };
             } catch (error) {
                 console.error(`[cache] getOrSetWithMeta failed for "${key}"`, error);
@@ -226,23 +138,14 @@ class TtlMemoryCache {
 
     async invalidateAsync(key) {
         this.invalidate(key);
-        if (isRedisEnabled()) {
-            await this._redisDel(key);
-        }
     }
 
     async invalidatePrefixAsync(prefix) {
         this.invalidatePrefix(prefix);
-        if (isRedisEnabled()) {
-            await this._redisDelByPrefix(prefix);
-        }
     }
 
     async invalidateAllAsync() {
         this.invalidateAll();
-        if (isRedisEnabled()) {
-            await this._redisDelByPrefix('');
-        }
     }
 }
 
@@ -264,7 +167,6 @@ export function createCacheDebugHeaders(meta = {}) {
     return {
         'X-App-Cache': meta?.source || 'none',
         'X-App-Cache-Key': meta?.key || '',
-        'X-App-Redis-Enabled': String(Boolean(meta?.redisEnabled)),
     };
 }
 

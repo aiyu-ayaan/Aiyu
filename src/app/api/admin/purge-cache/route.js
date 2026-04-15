@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
 import cache from '@/lib/cache';
-import { getRedisClient } from '@/lib/redis';
 
-export async function POST(request) {
+export async function POST(_request) {
     try {
         const session = await getSession();
         if (!session) {
@@ -13,20 +12,9 @@ export async function POST(request) {
         // Clear in-memory cache
         cache.invalidateAll();
 
-        // Clear Redis cache if available
-        const redis = getRedisClient();
-        if (redis) {
-            try {
-                await redis.flushdb();
-            } catch (error) {
-                console.warn('[Cache Purge] Redis flush failed:', error.message);
-            }
-        }
-
         return NextResponse.json({
             success: true,
             message: 'Cache purged successfully',
-            redisAvailable: !!redis,
         });
     } catch (error) {
         console.error('[Cache Purge] Error:', error);
