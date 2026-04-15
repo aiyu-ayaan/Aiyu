@@ -5,6 +5,7 @@ import Config from '@/models/Config';
 import { decrypt } from '@/lib/encryption';
 import cache, { CACHE_TTL, createCacheDebugHeaders } from '@/lib/cache';
 import { createPublicCacheHeaders, RESPONSE_CACHE } from '@/lib/httpCache';
+import { createTrafficHeaders, getClientIdentifier, reserveRequestSlot } from '@/lib/trafficControl';
 
 const GITHUB_API_HEADERS = {
     'Accept': 'application/vnd.github.v3+json',
@@ -234,8 +235,41 @@ async function fetchContributions(username, headers, fallbackEventsPromise) {
     return buildContributionSeriesFromEvents(fallbackEvents);
 }
 
-export async function GET() {
+const GITHUB_STATS_ROUTE_WINDOW_MS = Number.parseInt(process.env.GITHUB_STATS_WINDOW_MS || '60000', 10);
+const GITHUB_STATS_ROUTE_MAX_REQUESTS = Number.parseInt(process.env.GITHUB_STATS_RATE_LIMIT || '240', 10);
+const GITHUB_STATS_ROUTE_MAX_CONCURRENT = Number.parseInt(process.env.GITHUB_STATS_MAX_CONCURRENT || '100', 10);
+
+export async function GET(request) {
     const startedAt = Date.now();
+    const trafficReservation = reserveRequestSlot(
+        'public:github-stats',
+        getClientIdentifier(request),
+        {
+            maxRequests: GITHUB_STATS_ROUTE_MAX_REQUESTS,
+            windowMs: GITHUB_STATS_ROUTE_WINDOW_MS,
+            maxConcurrent: GITHUB_STATS_ROUTE_MAX_CONCURRENT,
+        }
+    );
+
+    if (!trafficReservation.ok) {
+        return NextResponse.json(
+            {
+                success: false,
+                error: trafficReservation.status === 429
+                    ? 'Rate limit exceeded for GitHub stats. Please retry shortly.'
+                    : 'GitHub stats is temporarily overloaded. Please retry shortly.',
+            },
+            {
+                status: trafficReservation.status,
+                headers: {
+                    ...createTrafficHeaders(trafficReservation, { windowMs: GITHUB_STATS_ROUTE_WINDOW_MS }),
+                    'Cache-Control': RESPONSE_CACHE.NO_STORE,
+                    'x-response-time-ms': String(Date.now() - startedAt),
+                },
+            }
+        );
+    }
+
     try {
         await dbConnect();
 
@@ -410,6 +444,8 @@ export async function GET() {
                 headers: {
                     ...createPublicCacheHeaders(RESPONSE_CACHE.PUBLIC_MEDIUM),
                     ...createCacheDebugHeaders(meta),
+                    'x-rate-limit-remaining': String(trafficReservation.remaining),
+                    'x-route-active-requests': String(trafficReservation.activeRequests),
                     'x-response-time-ms': String(Date.now() - startedAt),
                 },
             }
@@ -423,9 +459,12 @@ export async function GET() {
         }, {
             status: 500,
             headers: {
+                ...createTrafficHeaders(trafficReservation, { windowMs: GITHUB_STATS_ROUTE_WINDOW_MS }),
                 'x-response-time-ms': String(Date.now() - startedAt),
             },
         });
+    } finally {
+        trafficReservation.release?.();
     }
 }
 
