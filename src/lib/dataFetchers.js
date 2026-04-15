@@ -22,6 +22,8 @@ import HeaderModel from '@/models/Header';
 import SocialModel from '@/models/Social';
 import GalleryModel from '@/models/Gallery';
 import { resolveBlogByIdentifier } from '@/lib/blogSlugs';
+import { getBlogSlug } from '@/lib/blogSlugs';
+import { getDeploymentSlug, getProjectSlug } from '@/lib/contentSlugs';
 
 const IS_PRODUCTION_BUILD = process.env.NEXT_PHASE === 'phase-production-build';
 const ALLOW_DB_DURING_BUILD = process.env.ALLOW_DB_DURING_BUILD === 'true';
@@ -32,6 +34,9 @@ const CACHE_KEY_CONFIG_LAYOUT = 'db:config:layout';
 const CACHE_KEY_ABOUT_LAYOUT = 'db:about:layout';
 const CACHE_KEY_ABOUT_HOME = 'db:about:home';
 const CACHE_KEY_PROJECTS_HOME = 'db:projects:home';
+const CACHE_KEY_BLOG_SLUGS = 'db:blogs:slugs';
+const CACHE_KEY_PROJECT_SLUGS = 'db:projects:slugs';
+const CACHE_KEY_DEPLOYMENT_SLUGS = 'db:deployments:slugs';
 
 const extractDeploymentOrder = (deployment) => {
     const parsedOrder = Number.parseInt(deployment?.displayOrder, 10);
@@ -470,6 +475,96 @@ export async function getPublishedBlogs() {
         return blogs ? toBlogPreview(blogs, 500) : [];
     } catch (error) {
         warnFetcherFallback('getPublishedBlogs', error);
+        return [];
+    }
+}
+
+export async function getPublishedBlogSlugs() {
+    if (SKIP_DB_DURING_BUILD) {
+        warnFetcherFallback('getPublishedBlogSlugs');
+        return [];
+    }
+
+    const ensureDb = createDbEnsurer();
+
+    try {
+        const blogs = await cache.getOrSet(
+            CACHE_KEY_BLOG_SLUGS,
+            async () => {
+                await ensureDb();
+                return BlogModel.find({ published: { $ne: false } })
+                    .sort({ createdAt: -1 })
+                    .select('_id slug title')
+                    .lean();
+            },
+            CACHE_TTL.MEDIUM
+        );
+
+        return Array.isArray(blogs)
+            ? blogs.map((blog) => getBlogSlug(blog)).filter(Boolean)
+            : [];
+    } catch (error) {
+        warnFetcherFallback('getPublishedBlogSlugs', error);
+        return [];
+    }
+}
+
+export async function getProjectSlugs() {
+    if (SKIP_DB_DURING_BUILD) {
+        warnFetcherFallback('getProjectSlugs');
+        return [];
+    }
+
+    const ensureDb = createDbEnsurer();
+
+    try {
+        const projects = await cache.getOrSet(
+            CACHE_KEY_PROJECT_SLUGS,
+            async () => {
+                await ensureDb();
+                return ProjectModel.find({})
+                    .sort({ displayOrder: 1, updatedAt: -1, createdAt: -1 })
+                    .select('_id slug name')
+                    .lean();
+            },
+            CACHE_TTL.LONG
+        );
+
+        return Array.isArray(projects)
+            ? projects.map((project) => getProjectSlug(project)).filter(Boolean)
+            : [];
+    } catch (error) {
+        warnFetcherFallback('getProjectSlugs', error);
+        return [];
+    }
+}
+
+export async function getDeploymentSlugs() {
+    if (SKIP_DB_DURING_BUILD) {
+        warnFetcherFallback('getDeploymentSlugs');
+        return [];
+    }
+
+    const ensureDb = createDbEnsurer();
+
+    try {
+        const deployments = await cache.getOrSet(
+            CACHE_KEY_DEPLOYMENT_SLUGS,
+            async () => {
+                await ensureDb();
+                return DeploymentModel.find({})
+                    .sort({ displayOrder: 1, updatedAt: -1, createdAt: -1 })
+                    .select('_id slug name')
+                    .lean();
+            },
+            CACHE_TTL.LONG
+        );
+
+        return Array.isArray(deployments)
+            ? deployments.map((deployment) => getDeploymentSlug(deployment)).filter(Boolean)
+            : [];
+    } catch (error) {
+        warnFetcherFallback('getDeploymentSlugs', error);
         return [];
     }
 }

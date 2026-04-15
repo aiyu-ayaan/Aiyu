@@ -3,10 +3,15 @@ import { notFound, redirect } from 'next/navigation';
 import { cache } from 'react';
 import dbConnect from '@/lib/db';
 import DeploymentModel from '@/models/Deployment';
-import { getConfigData } from '@/lib/dataFetchers';
+import { getConfigData, getDeploymentSlugs } from '@/lib/dataFetchers';
 import { getDeploymentSlug, resolveDeploymentByIdentifier } from '@/lib/contentSlugs';
 
 export const revalidate = 300;
+
+export async function generateStaticParams() {
+    const slugs = await getDeploymentSlugs();
+    return slugs.map((id) => ({ id }));
+}
 
 function getBaseUrl() {
     const baseUrl = process.env.SITE_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';

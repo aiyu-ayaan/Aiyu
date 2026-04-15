@@ -1,9 +1,14 @@
 import BlogDetailClient from '../../../components/blogs/BlogDetailClient';
 import { cache } from 'react';
-import { getBlogById, getConfigData } from '@/lib/dataFetchers';
+import { getBlogById, getConfigData, getPublishedBlogSlugs } from '@/lib/dataFetchers';
 
 export const revalidate = 300;
 const getBlogByIdentifier = cache(async (identifier) => getBlogById(identifier));
+
+export async function generateStaticParams() {
+    const slugs = await getPublishedBlogSlugs();
+    return slugs.map((id) => ({ id }));
+}
 
 export async function generateMetadata({ params }) {
     const { id: identifier } = await params;
