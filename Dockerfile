@@ -1,70 +1,68 @@
 # Stage 1: Dependencies
-FROM node:20-alpine AS deps
-# Keep libc6-compat for native module compatibility on Alpine.
-# Keep libc6-compat for native module compatibility on Alpine.
-RUN apk add --no-cache libc6-compat
+# Use Debian (glibc) instead of Alpine (musl) for more reliable native builds on Windows/WSL.
+FROM node:20-bookworm-slim AS deps
 WORKDIR /app
 
-# Copy manifests for deterministic installs.
-COPY package.json package-lock.json ./
+# Install compiler toolchain for native modules (e.g. sharp/canvas-related transitive deps).
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends python3 make g++ \
+    && rm -rf /var/lib/apt/lists/*
+
 # Copy manifests for deterministic installs.
 COPY package.json package-lock.json ./
 
-# Install dependencies from lockfile using legacy peer resolution to match CI and local installs.
-RUN npm ci --include=dev --legacy-peer-deps --no-audit --no-fund
+# Harden npm fetch behavior for flaky network/proxy conditions.
+RUN npm config set fetch-retries 5 \
+    && npm config set fetch-retry-factor 2 \
+    && npm config set fetch-retry-mintimeout 20000 \
+    && npm config set fetch-retry-maxtimeout 120000 \
+    && npm ci --include=dev --legacy-peer-deps --no-audit --no-fund --prefer-offline
 
 # Stage 2: Builder
-FROM node:20-alpine AS builder
+FROM node:20-bookworm-slim AS builder
 WORKDIR /app
 
 # Copy dependencies from deps stage
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Set build-time environment variables
-# Next.js requires MONGODB_URI during build because db module is imported at top level
-# However, it doesn't actually connect during build - it just needs a valid string
-# We use a dummy value here to prevent credentials from being baked into image layers
-# The real MONGODB_URI will be provided at runtime via docker-compose environment
+# Build-time args
 ARG NEXT_PUBLIC_N8N_WEBHOOK_URL
 ARG NEXT_PUBLIC_AUTHOR_NAME
 ARG NEXT_PUBLIC_BASE_URL
 ARG SITE_URL
 
-# Set environment variables for build process
-# Use dummy MongoDB URI during build (no actual connection is made)
-ENV MONGODB_URI=mongodb://dummy:dummy@dummy:27017/dummy
-ENV NEXT_PUBLIC_N8N_WEBHOOK_URL=${NEXT_PUBLIC_N8N_WEBHOOK_URL}
-ENV NEXT_PUBLIC_AUTHOR_NAME=${NEXT_PUBLIC_AUTHOR_NAME}
-ENV NEXT_PUBLIC_BASE_URL=${NEXT_PUBLIC_BASE_URL}
-ENV SITE_URL=${SITE_URL}
-
-# Set dummy values for build-time checks (not used, only runtime matters)
-# These prevent build errors but won't be in the final image or accessible at runtime
-ENV ADMIN_USERNAME=dummy
-ENV ADMIN_PASSWORD=dummy
-ENV JWT_SECRET=dummy
-ENV NEXT_TELEMETRY_DISABLED=1
-
-
-# Build the application
-RUN npm run build
+# Build with ephemeral env values (prevents secret-name warnings from ENV instructions).
+RUN MONGODB_URI="mongodb://dummy:dummy@dummy:27017/dummy" \
+    NEXT_PUBLIC_N8N_WEBHOOK_URL="${NEXT_PUBLIC_N8N_WEBHOOK_URL}" \
+    NEXT_PUBLIC_AUTHOR_NAME="${NEXT_PUBLIC_AUTHOR_NAME}" \
+    NEXT_PUBLIC_BASE_URL="${NEXT_PUBLIC_BASE_URL}" \
+    SITE_URL="${SITE_URL}" \
+    ADMIN_USERNAME="dummy" \
+    ADMIN_PASSWORD="dummy" \
+    JWT_SECRET="dummy" \
+    NEXT_TELEMETRY_DISABLED=1 \
+    npm run build -- --webpack
 
 # Stage 3: Runner
-FROM node:20-alpine AS runner
+FROM node:20-bookworm-slim AS runner
 WORKDIR /app
 
-# Set to production environment
+# Runtime environment
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PM2_HOME=/tmp/.pm2
 
 # Create a non-root user
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+RUN groupadd --system --gid 1001 nodejs \
+    && useradd --system --uid 1001 --gid nodejs --create-home nextjs
 
 # Install PM2 runtime for multi-core clustering
-RUN npm install -g pm2 --no-update-notifier --no-fund
+RUN npm config set fetch-retries 5 \
+    && npm config set fetch-retry-factor 2 \
+    && npm config set fetch-retry-mintimeout 20000 \
+    && npm config set fetch-retry-maxtimeout 120000 \
+    && npm install -g pm2 --no-update-notifier --no-fund
 
 # Copy necessary files from builder
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
@@ -75,8 +73,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/ecosystem.config.js ./ecosystem.c
 # Copy healthcheck script
 COPY --chown=nextjs:nodejs scripts/healthcheck.sh /app/healthcheck.sh
 
-# Create necessary writable directories for read-only filesystem
-# These will be mounted as volumes or tmpfs in docker-compose
+# Create writable directories needed when running with read-only root fs.
 RUN mkdir -p /app/public/uploads \
     && mkdir -p /app/.next/cache \
     && chmod +x /app/healthcheck.sh \
@@ -88,7 +85,7 @@ USER nextjs
 # Expose the port the app runs on
 EXPOSE 3000
 
-# Set environment variable for port
+# Runtime network settings
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
