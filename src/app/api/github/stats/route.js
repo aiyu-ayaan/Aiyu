@@ -68,6 +68,55 @@ async function fetchGitHubJson(url, headers, options = {}) {
     return response.json();
 }
 
+async function fetchUserData(username, headers) {
+    try {
+        return await fetchGitHubJson(`https://api.github.com/users/${username}`, headers);
+    } catch (error) {
+        console.error(`[GitHub API Error] Status: ${error.status ?? 'unknown'}, Body: ${error.body ?? 'n/a'}`);
+
+        if (error.status === 403) {
+            if (error.body?.includes('API rate limit exceeded')) {
+                throw new Error('GitHub API rate limit exceeded. Please add a valid GITHUB_TOKEN.');
+            }
+            throw new Error('GitHub API access forbidden.');
+        }
+        if (error.status === 404) {
+            throw new Error(`GitHub user '${username}' not found.`);
+        }
+
+        throw new Error(`Failed to fetch user data (${error.status ?? 'unknown'})`);
+    }
+}
+
+async function fetchRepositories(username, includePrivate, headers, token) {
+    if (includePrivate && token) {
+        try {
+            const identity = await fetchGitHubJson('https://api.github.com/user', headers);
+
+            if (identity.login.toLowerCase() === username.toLowerCase()) {
+                return await fetchGitHubJson('https://api.github.com/user/repos?sort=updated&per_page=100&type=all', headers);
+            }
+        } catch (error) {
+            console.error('[WARN] Failed to verify token identity for private repos:', error);
+        }
+    }
+
+    try {
+        return await fetchGitHubJson(`https://api.github.com/users/${username}/repos?sort=updated&per_page=100&type=public`, headers);
+    } catch {
+        throw new Error('Failed to fetch repositories');
+    }
+}
+
+async function fetchPublicEvents(username, headers) {
+    try {
+        return await fetchGitHubJson(`https://api.github.com/users/${username}/events/public?per_page=100`, headers);
+    } catch (error) {
+        console.error('[WARN] Failed to fetch GitHub public events:', error);
+        return [];
+    }
+}
+
 function buildContributionSeriesFromEvents(events) {
     const contributionMap = {};
     const today = new Date();
@@ -147,7 +196,7 @@ function buildRecentActivity(events, hiddenRepos) {
         }));
 }
 
-async function fetchContributions(username, headers, fallbackEvents) {
+async function fetchContributions(username, headers, fallbackEventsPromise) {
     try {
         const graphqlRes = await fetch('https://api.github.com/graphql', {
             method: 'POST',
@@ -181,6 +230,7 @@ async function fetchContributions(username, headers, fallbackEvents) {
         console.error('[WARN] GraphQL fetch failed, falling back to events API:', error);
     }
 
+    const fallbackEvents = await fallbackEventsPromise;
     return buildContributionSeriesFromEvents(fallbackEvents);
 }
 
@@ -212,66 +262,28 @@ export async function GET() {
                 const token = dbToken || envToken;
                 const headers = createGitHubHeaders(token);
 
-                let userData;
-                try {
-                    userData = await fetchGitHubJson(`https://api.github.com/users/${username}`, headers);
-                } catch (error) {
-                    console.error(`[GitHub API Error] Status: ${error.status ?? 'unknown'}, Body: ${error.body ?? 'n/a'}`);
+                const eventsPromise = fetchPublicEvents(username, headers);
+                const contributionsPromise = fetchContributions(username, headers, eventsPromise);
+                const userPromise = fetchUserData(username, headers);
+                const reposPromise = fetchRepositories(username, config.includePrivate, headers, token);
 
-                    if (error.status === 403) {
-                        if (error.body?.includes('API rate limit exceeded')) {
-                            throw new Error('GitHub API rate limit exceeded. Please add a valid GITHUB_TOKEN.');
-                        }
-                        throw new Error('GitHub API access forbidden.');
-                    }
-                    if (error.status === 404) {
-                        throw new Error(`GitHub user '${username}' not found.`);
-                    }
-
-                    throw new Error(`Failed to fetch user data (${error.status ?? 'unknown'})`);
-                }
-
-                let repos = [];
-                let fetchedWithPrivate = false;
-
-                if (config.includePrivate && token) {
-                    try {
-                        const identity = await fetchGitHubJson('https://api.github.com/user', headers);
-
-                        if (identity.login.toLowerCase() === username.toLowerCase()) {
-                            repos = await fetchGitHubJson('https://api.github.com/user/repos?sort=updated&per_page=100&type=all', headers);
-                            fetchedWithPrivate = true;
-                        }
-                    } catch (e) {
-                        console.error('[WARN] Failed to verify token identity for private repos:', e);
-                    }
-                }
-
-                if (!fetchedWithPrivate) {
-                    try {
-                        repos = await fetchGitHubJson(`https://api.github.com/users/${username}/repos?sort=updated&per_page=100&type=public`, headers);
-                    } catch {
-                        throw new Error('Failed to fetch repositories');
-                    }
-                }
+                const [
+                    events,
+                    { contributions, totalContributions },
+                    userData,
+                    repos
+                ] = await Promise.all([
+                    eventsPromise,
+                    contributionsPromise,
+                    userPromise,
+                    reposPromise
+                ]);
 
                 const hiddenRepos = config.hiddenRepos || [];
                 const filteredRepos = repos.filter(repo => {
                     if (!config.includePrivate && repo.private) return false;
                     return !hiddenRepos.includes(repo.name);
                 });
-
-                let events = [];
-                try {
-                    events = await fetchGitHubJson(`https://api.github.com/users/${username}/events/public?per_page=100`, headers);
-                } catch (error) {
-                    console.error('[WARN] Failed to fetch GitHub public events:', error);
-                }
-
-                const {
-                    contributions,
-                    totalContributions
-                } = await fetchContributions(username, headers, events);
                 const activityDistribution = buildActivityDistribution(events);
 
                 const totalStars = filteredRepos.reduce((sum, repo) => sum + (repo.stargazers_count || 0), 0);
