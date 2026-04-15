@@ -600,7 +600,7 @@ export async function GET(request) {
             },
         });
     } finally {
-        trafficReservation.release?.();
+        trafficReservation?.release?.();
     }
 }
 
