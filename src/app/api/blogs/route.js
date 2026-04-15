@@ -19,9 +19,10 @@ function toPublicBlogList(blogs, maxLength = 500) {
 
 export async function GET(request) {
     const startedAt = Date.now();
-    const session = await getSession();
     const { searchParams } = new URL(request.url);
     const showAll = searchParams.get('all');
+    const shouldCheckSession = showAll === 'true';
+    const session = shouldCheckSession ? await getSession() : null;
 
     try {
         await dbConnect();

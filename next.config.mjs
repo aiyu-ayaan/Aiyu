@@ -9,9 +9,15 @@ const cdnHostname = cdnUrl ? (() => {
   }
 })() : '';
 
+// Disable Next "standalone" output on Windows : NFT manifest generation
+// can fail on Windows paths (spaces/backslashes). Use standalone on
+// non-Windows hosts (e.g., Docker images/CI) but avoid it for local
+// Windows builds to prevent missing `middleware.js.nft.json` errors.
+const standaloneOutput = process.platform === 'win32' ? undefined : 'standalone';
+
 const nextConfig = {
   // output: 'export' // Disabled to allow dynamic API routes
-  output: 'standalone', // Enable standalone output for Docker
+  output: standaloneOutput,
   allowedDevOrigins: ['192.168.31.54'],
   assetPrefix: isProduction && cdnUrl ? cdnUrl : undefined,
 
@@ -57,6 +63,29 @@ const nextConfig = {
   // Headers for performance
   async headers() {
     const headers = [];
+    const publicHtmlCacheValue = isProduction
+      ? 'public, max-age=0, s-maxage=300, stale-while-revalidate=900'
+      : 'no-store';
+
+    headers.push({
+      source: '/',
+      headers: [
+        {
+          key: 'Cache-Control',
+          value: publicHtmlCacheValue,
+        },
+      ],
+    });
+
+    headers.push({
+      source: '/:path((about-me|apps|blogs|contact-us|gallery|github|live-deployments|projects|work-in-progress).*)',
+      headers: [
+        {
+          key: 'Cache-Control',
+          value: publicHtmlCacheValue,
+        },
+      ],
+    });
 
     headers.push({
       source: '/images/(.*)',

@@ -1,24 +1,13 @@
 import { NextResponse } from 'next/server';
 
-export function middleware(request) {
-    const requestHeaders = new Headers(request.headers);
-    return NextResponse.next({
-        request: {
-            headers: requestHeaders,
-        },
-    });
+export function middleware() {
+    return NextResponse.next();
 }
 
-// Apply middleware to all routes except static assets
+// Keep middleware off static assets and low-value file requests so spikes reach
+// the origin with less per-request overhead.
 export const config = {
     matcher: [
-        /*
-         * Match all request paths except for the ones starting with:
-         * - _next/static (static files)
-         * - _next/image (image optimization files)
-         * - favicon.ico (favicon file)
-         * - public folder
-         */
-        '/((?!_next/static|_next/image|favicon.ico|public).*)',
+        '/((?!api|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|manifest.json|images|uploads|public|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico|css|js|map|txt|xml)$).*)',
     ],
 };
