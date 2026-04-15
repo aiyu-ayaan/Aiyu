@@ -1,6 +1,13 @@
 /** @type {import('next').NextConfig} */
 const isProduction = process.env.NODE_ENV === 'production';
 const cdnUrl = (process.env.NEXT_PUBLIC_CDN_URL || '').replace(/\/+$/, '');
+const cdnHostname = cdnUrl ? (() => {
+  try {
+    return new URL(cdnUrl).hostname;
+  } catch {
+    return '';
+  }
+})() : '';
 
 const nextConfig = {
   // output: 'export' // Disabled to allow dynamic API routes
@@ -26,8 +33,16 @@ const nextConfig = {
       },
       {
         protocol: 'https',
-        hostname: '**', // Allow all HTTPS domains for flexibility
-      }
+        hostname: 'avatars.githubusercontent.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'raw.githubusercontent.com',
+      },
+      ...(cdnHostname ? [{
+        protocol: 'https',
+        hostname: cdnHostname,
+      }] : []),
     ],
     formats: ['image/webp', 'image/avif'],
     minimumCacheTTL: 60 * 60 * 24 * 7, // 7 days

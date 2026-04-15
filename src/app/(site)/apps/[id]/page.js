@@ -1,5 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
 import { notFound, redirect } from 'next/navigation';
+import { cache } from 'react';
 import dbConnect from '@/lib/db';
 import DeploymentModel from '@/models/Deployment';
 import { getConfigData } from '@/lib/dataFetchers';
@@ -25,10 +26,10 @@ function isExternalHttpUrl(value) {
     }
 }
 
-async function getDeploymentByIdentifier(identifier) {
+const getDeploymentByIdentifier = cache(async (identifier) => {
     await dbConnect();
     return resolveDeploymentByIdentifier(DeploymentModel, identifier);
-}
+});
 
 export async function generateMetadata({ params }) {
     const { id: identifier } = await params;

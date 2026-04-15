@@ -13,10 +13,7 @@ export default function GitHubStatsLoader() {
 
         const fetchStats = async () => {
             try {
-                const res = await fetch('/api/github/stats', {
-                    cache: 'no-store',
-                    signal: controller.signal,
-                });
+                const res = await fetch('/api/github/stats', { signal: controller.signal });
 
                 const result = await res.json();
                 if (!res.ok) {

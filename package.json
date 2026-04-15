@@ -3,10 +3,11 @@
   "version": "3.5.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --webpack",
-    "build": "next build --webpack",
+    "dev": "next dev",
+    "build": "next build",
     "start": "next start",
     "lint": "eslint .",
+    "perf:k6:public": "k6 run scripts/k6/public-routes.js",
     "security-check": "node scripts/security-check.mjs",
     "docker:build": "docker-compose build --no-cache",
     "docker:up": "docker-compose up -d",

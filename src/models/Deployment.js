@@ -21,6 +21,7 @@ const DeploymentSchema = new mongoose.Schema(
 );
 
 DeploymentSchema.index({ displayOrder: 1, updatedAt: -1 });
+DeploymentSchema.index({ createdAt: -1 });
 DeploymentSchema.index({ slug: 1 });
 
 export default mongoose.models.Deployment || mongoose.model('Deployment', DeploymentSchema);

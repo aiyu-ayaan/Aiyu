@@ -7,6 +7,7 @@ import cache, { CACHE_TTL, createCacheDebugHeaders } from '@/lib/cache';
 import { createPublicCacheHeaders, RESPONSE_CACHE } from '@/lib/httpCache';
 
 export async function GET() {
+    const startedAt = Date.now();
     try {
         await dbConnect();
 
@@ -365,6 +366,7 @@ export async function GET() {
                 headers: {
                     ...createPublicCacheHeaders(RESPONSE_CACHE.PUBLIC_MEDIUM),
                     ...createCacheDebugHeaders(meta),
+                    'x-response-time-ms': String(Date.now() - startedAt),
                 },
             }
         );
@@ -374,7 +376,12 @@ export async function GET() {
         return NextResponse.json({
             success: false,
             error: error.message || 'Failed to fetch GitHub stats'
-        }, { status: 500 });
+        }, {
+            status: 500,
+            headers: {
+                'x-response-time-ms': String(Date.now() - startedAt),
+            },
+        });
     }
 }
 

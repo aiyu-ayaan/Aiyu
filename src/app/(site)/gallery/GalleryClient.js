@@ -458,8 +458,8 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
                                 fill
                                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                                 className="object-cover transition-transform duration-500 group-hover:scale-105"
-                                loading={globalIndex < 6 ? 'eager' : 'lazy'}
-                                priority={globalIndex < 3}
+                                loading={globalIndex < 3 ? 'eager' : 'lazy'}
+                                priority={globalIndex < 2}
                                 placeholder="blur"
                                 blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
                                 onError={() => markImageBroken(imageKey)}
@@ -589,7 +589,7 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
                     fill
                     className="object-contain"
                     sizes="90vw"
-                    quality={100}
+                    quality={82}
                     onError={() => setModalImageError(true)}
                   />
                 ) : (

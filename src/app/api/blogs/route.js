@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import cache, { CACHE_KEYS, CACHE_TTL, createCacheDebugHeaders } from '@/lib/cache';
 import { createPublicCacheHeaders, RESPONSE_CACHE } from '@/lib/httpCache';
-import { backfillMissingBlogSlugs, createUniqueBlogSlug } from '@/lib/blogSlugs';
+import { createUniqueBlogSlug } from '@/lib/blogSlugs';
 
 const BLOG_LIST_SELECT = ['title', 'slug', 'content', 'image', 'date', 'createdAt', 'updatedAt', 'published', 'tags'].join(' ');
 
@@ -18,13 +18,13 @@ function toPublicBlogList(blogs, maxLength = 500) {
 }
 
 export async function GET(request) {
+    const startedAt = Date.now();
     const session = await getSession();
     const { searchParams } = new URL(request.url);
     const showAll = searchParams.get('all');
 
     try {
         await dbConnect();
-        await backfillMissingBlogSlugs(Blog);
 
         let query = {};
         // Only show drafts if 'all' param is requested AND user is admin
@@ -36,7 +36,14 @@ export async function GET(request) {
 
         if (session && showAll === 'true') {
             const blogs = await Blog.find(query).sort({ createdAt: -1 }).lean();
-            return NextResponse.json({ success: true, data: blogs });
+            return NextResponse.json(
+                { success: true, data: blogs },
+                {
+                    headers: {
+                        'x-response-time-ms': String(Date.now() - startedAt),
+                    },
+                }
+            );
         }
 
         const { value: blogs, meta } = await cache.getOrSetWithMeta(
@@ -51,11 +58,20 @@ export async function GET(request) {
                 headers: {
                     ...createPublicCacheHeaders(RESPONSE_CACHE.PUBLIC_MEDIUM),
                     ...createCacheDebugHeaders(meta),
+                    'x-response-time-ms': String(Date.now() - startedAt),
                 },
             }
         );
     } catch (error) {
-        return NextResponse.json({ success: false, error: error.message }, { status: 400 });
+        return NextResponse.json(
+            { success: false, error: error.message },
+            {
+                status: 400,
+                headers: {
+                    'x-response-time-ms': String(Date.now() - startedAt),
+                },
+            }
+        );
     }
 }
 

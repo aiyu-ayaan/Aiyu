@@ -22,6 +22,7 @@ const ProjectSchema = new mongoose.Schema(
 // Add index for sorted queries
 ProjectSchema.index({ displayOrder: 1, year: -1 });
 ProjectSchema.index({ updatedAt: -1 });
+ProjectSchema.index({ createdAt: -1 });
 ProjectSchema.index({ slug: 1 });
 
 export default mongoose.models.Project || mongoose.model('Project', ProjectSchema);

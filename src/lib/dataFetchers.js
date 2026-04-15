@@ -21,7 +21,7 @@ import ConfigModel from '@/models/Config';
 import HeaderModel from '@/models/Header';
 import SocialModel from '@/models/Social';
 import GalleryModel from '@/models/Gallery';
-import { backfillMissingBlogSlugs, resolveBlogByIdentifier } from '@/lib/blogSlugs';
+import { resolveBlogByIdentifier } from '@/lib/blogSlugs';
 
 const IS_PRODUCTION_BUILD = process.env.NEXT_PHASE === 'phase-production-build';
 const ALLOW_DB_DURING_BUILD = process.env.ALLOW_DB_DURING_BUILD === 'true';
@@ -103,6 +103,8 @@ const HOME_PROJECTS_SELECT = ['name', 'techStack', 'year', 'status', 'projectTyp
 const HOME_BLOGS_SELECT = ['title', 'slug', 'content', 'image', 'date', 'createdAt'].join(' ');
 const BLOG_LIST_SELECT = ['title', 'slug', 'content', 'image', 'date', 'createdAt', 'updatedAt', 'published', 'tags'].join(' ');
 const GALLERY_LIST_SELECT = ['src', 'thumbnail', 'description', 'width', 'height', 'isPinned', 'order', 'createdAt'].join(' ');
+const PROJECT_LIST_SELECT = ['name', 'slug', 'techStack', 'year', 'status', 'projectType', 'description', 'codeLink', 'blogLink', 'image', 'displayOrder', 'updatedAt', 'createdAt'].join(' ');
+const DEPLOYMENT_LIST_SELECT = ['name', 'slug', 'techStack', 'status', 'appType', 'environment', 'hostingProvider', 'description', 'hostedUrl', 'blogLink', 'image', 'displayOrder', 'updatedAt', 'createdAt'].join(' ');
 const DEFAULT_SITE_DESCRIPTION = 'Professional portfolio showcasing projects, blogs, and expertise.';
 const FALLBACK_CONFIG = {
     siteTitle: 'Portfolio',
@@ -277,7 +279,6 @@ export async function getHomePageData() {
             ),
             cache.getOrSet(CACHE_KEYS.BLOGS_RECENT, async () => {
                 await ensureDb();
-                await backfillMissingBlogSlugs(BlogModel);
                 return BlogModel.find({ published: { $ne: false } }).sort({ createdAt: -1 }).limit(3).select(HOME_BLOGS_SELECT).lean();
             },
                 CACHE_TTL.MEDIUM
@@ -377,7 +378,7 @@ export async function getProjectsData() {
             CACHE_KEYS.PROJECTS,
             async () => {
                 await ensureDb();
-                const projects = await ProjectModel.find().lean();
+                    const projects = await ProjectModel.find().select(PROJECT_LIST_SELECT).lean();
                 return sortProjects(projects);
             },
             CACHE_TTL.LONG
@@ -405,7 +406,7 @@ export async function getDeploymentsData() {
             CACHE_KEYS.DEPLOYMENTS,
             async () => {
                 await ensureDb();
-                const deployments = await DeploymentModel.find().lean();
+                    const deployments = await DeploymentModel.find().select(DEPLOYMENT_LIST_SELECT).lean();
                 return sortDeployments(deployments);
             },
             CACHE_TTL.LONG
@@ -462,7 +463,6 @@ export async function getPublishedBlogs() {
             CACHE_KEYS.BLOGS_PUBLISHED,
             async () => {
                 await ensureDb();
-                await backfillMissingBlogSlugs(BlogModel);
                 return BlogModel.find({ published: { $ne: false } }).sort({ createdAt: -1 }).select(BLOG_LIST_SELECT).lean();
             },
             CACHE_TTL.MEDIUM

@@ -3,10 +3,8 @@ import dbConnect from '@/lib/db';
 import BlogModel from '@/models/Blog';
 import ProjectModel from '@/models/Project';
 import DeploymentModel from '@/models/Deployment';
-import { backfillMissingBlogSlugs, getBlogSlug } from '@/lib/blogSlugs';
+import { getBlogSlug } from '@/lib/blogSlugs';
 import {
-  backfillMissingDeploymentSlugs,
-  backfillMissingProjectSlugs,
   getDeploymentSlug,
   getProjectSlug,
 } from '@/lib/contentSlugs';
@@ -15,8 +13,7 @@ const IS_PRODUCTION_BUILD = process.env.NEXT_PHASE === 'phase-production-build';
 const ALLOW_DB_DURING_BUILD = process.env.ALLOW_DB_DURING_BUILD === 'true';
 const SKIP_DB_DURING_BUILD = IS_PRODUCTION_BUILD && !ALLOW_DB_DURING_BUILD;
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+export const revalidate = 3600;
 
 function toDateOrNull(value) {
   if (!value) return null;
@@ -154,11 +151,6 @@ export default async function sitemap() {
   try {
     // Attempt database connection
     await dbConnect();
-    await Promise.all([
-      backfillMissingBlogSlugs(BlogModel),
-      backfillMissingProjectSlugs(ProjectModel),
-      backfillMissingDeploymentSlugs(DeploymentModel),
-    ]);
 
     const [blogs, projects, deployments] = await Promise.all([
       BlogModel.find({ published: { $ne: false } }, { title: 1, slug: 1, updatedAt: 1 }).lean(),
