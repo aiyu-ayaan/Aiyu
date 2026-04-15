@@ -79,12 +79,24 @@ function ConfirmDialog({ dialog, onClose, onConfirm, busy }) {
                 <div className="mb-6 max-h-48 overflow-y-auto rounded-2xl border border-white/10 bg-slate-950/40 p-3">
                     <div className="space-y-2 text-xs font-mono text-slate-300">
                         {dialog.filenames.slice(0, 12).map((filename) => (
-                            <div key={filename} className="truncate">
-                                {filename}
+                            <div key={filename} className="flex items-center gap-3 truncate">
+                                {filename.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                                    <img src={`/uploads/${filename}`} alt="" className="h-6 w-6 rounded object-cover" />
+                                ) : (
+                                    <div className="h-6 w-6 rounded bg-white/5" />
+                                )}
+                                <a 
+                                    href={`/uploads/${filename}`} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer" 
+                                    className="hover:text-cyan-400 hover:underline"
+                                >
+                                    {filename}
+                                </a>
                             </div>
                         ))}
                         {dialog.filenames.length > 12 && (
-                            <div className="text-slate-500">
+                            <div className="text-slate-500 pl-9">
                                 + {dialog.filenames.length - 12} more files
                             </div>
                         )}
@@ -198,15 +210,13 @@ function SectionTable({ sections }) {
     );
 }
 
-export default function StorageManager({ mode = 'overview' }) {
+export default function StorageManager() {
     const [audit, setAudit] = useState(null);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [message, setMessage] = useState(null);
     const [dialog, setDialog] = useState(null);
     const [deleteBusy, setDeleteBusy] = useState(false);
-
-    const isCleanupMode = mode === 'cleanup';
 
     const unreferencedUploads = useMemo(
         () => audit?.unreferencedUploads || [],
@@ -323,12 +333,10 @@ export default function StorageManager({ mode = 'overview' }) {
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight text-white">
-                        {isCleanupMode ? 'Unreferenced Upload Cleanup' : 'Storage Audit'}
+                        Storage Audit & Cleanup
                     </h1>
                     <p className="mt-2 max-w-2xl text-sm text-slate-400">
-                        {isCleanupMode
-                            ? 'Review uploads that are not referenced by current content, then delete them one by one or in bulk.'
-                            : 'Inspect how much space the app uses across content collections and uploaded files, then jump into cleanup for unused uploads.'}
+                        Inspect how much space the app uses across content collections, and review or delete unused uploads in bulk.
                     </p>
                 </div>
 
@@ -342,24 +350,6 @@ export default function StorageManager({ mode = 'overview' }) {
                         <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
                         Refresh Audit
                     </button>
-
-                    {isCleanupMode ? (
-                        <Link
-                            href="/admin/resources"
-                            className="inline-flex items-center gap-2 rounded-xl bg-cyan-500/10 px-4 py-2 text-sm text-cyan-300 transition hover:bg-cyan-500/20"
-                        >
-                            <ArrowLeft size={16} />
-                            Back To Audit
-                        </Link>
-                    ) : (
-                        <Link
-                            href="/admin/resources/unreferenced"
-                            className="inline-flex items-center gap-2 rounded-xl bg-pink-500/10 px-4 py-2 text-sm text-pink-300 transition hover:bg-pink-500/20"
-                        >
-                            Review Unreferenced Files
-                            <ArrowRight size={16} />
-                        </Link>
-                    )}
                 </div>
             </div>
 
@@ -394,16 +384,14 @@ export default function StorageManager({ mode = 'overview' }) {
                 <div className="flex flex-col gap-4 border-b border-white/10 px-6 py-5 md:flex-row md:items-center md:justify-between">
                     <div>
                         <h2 className="text-lg font-bold text-white">
-                            {isCleanupMode ? 'Unreferenced Uploads' : 'Largest Unreferenced Uploads'}
+                            Unreferenced Uploads
                         </h2>
                         <p className="mt-1 text-sm text-slate-400">
-                            {isCleanupMode
-                                ? 'These files are currently not referenced anywhere in the app data.'
-                                : 'A preview of the largest unused files currently sitting in `public/uploads`.'}
+                            These files are currently not referenced anywhere in the app data.
                         </p>
                     </div>
 
-                    {isCleanupMode && unreferencedUploads.length > 0 && (
+                    {unreferencedUploads.length > 0 && (
                         <button
                             type="button"
                             onClick={() => openDeleteDialog(unreferencedUploads)}
@@ -436,25 +424,39 @@ export default function StorageManager({ mode = 'overview' }) {
                                 </tr>
                             </thead>
                             <tbody>
-                                {(isCleanupMode ? unreferencedUploads : unreferencedUploads.slice(0, 8)).map((upload) => (
+                                {unreferencedUploads.map((upload) => (
                                     <tr key={upload.filename} className="border-t border-white/5 text-slate-300">
-                                        <td className="px-6 py-4 font-mono text-xs text-white">{upload.filename}</td>
+                                        <td className="px-6 py-4 font-mono text-xs text-white">
+                                            <div className="flex items-center gap-3">
+                                                {upload.filename.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                                                    <img src={`/uploads/${upload.filename}`} alt="preview" className="h-8 w-8 rounded object-cover" />
+                                                ) : (
+                                                    <div className="flex h-8 w-8 items-center justify-center rounded bg-white/5">
+                                                        <ImageIcon size={14} className="text-slate-500" />
+                                                    </div>
+                                                )}
+                                                <a 
+                                                    href={`/uploads/${upload.filename}`} 
+                                                    target="_blank" 
+                                                    rel="noopener noreferrer"
+                                                    className="hover:text-cyan-400 hover:underline"
+                                                >
+                                                    {upload.filename}
+                                                </a>
+                                            </div>
+                                        </td>
                                         <td className="px-6 py-4">{formatBytes(upload.sizeBytes)}</td>
                                         <td className="px-6 py-4">{upload.isThumbnail ? 'Thumbnail' : 'Original'}</td>
                                         <td className="px-6 py-4">{new Date(upload.lastModified).toLocaleString()}</td>
                                         <td className="px-6 py-4">
-                                            {isCleanupMode ? (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => openDeleteDialog([upload])}
-                                                    className="inline-flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs font-semibold text-red-300 transition hover:bg-red-500/20"
-                                                >
-                                                    <Trash2 size={14} />
-                                                    Delete
-                                                </button>
-                                            ) : (
-                                                <span className="text-xs text-slate-500">Review on cleanup page</span>
-                                            )}
+                                            <button
+                                                type="button"
+                                                onClick={() => openDeleteDialog([upload])}
+                                                className="inline-flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs font-semibold text-red-300 transition hover:bg-red-500/20"
+                                            >
+                                                <Trash2 size={14} />
+                                                Delete
+                                            </button>
                                         </td>
                                     </tr>
                                 ))}
@@ -464,21 +466,7 @@ export default function StorageManager({ mode = 'overview' }) {
                 )}
             </div>
 
-            {!isCleanupMode && unreferencedUploads.length > 0 && (
-                <div className="rounded-3xl border border-pink-500/20 bg-pink-500/5 p-6">
-                    <h2 className="text-lg font-bold text-white">Cleanup Action</h2>
-                    <p className="mt-2 text-sm text-slate-300">
-                        You can currently reclaim <span className="font-semibold text-pink-300">{formatBytes(summary.totalUnreferencedUploadBytes)}</span> by deleting {summary.unreferencedUploadCount} unreferenced uploads.
-                    </p>
-                    <Link
-                        href="/admin/resources/unreferenced"
-                        className="mt-4 inline-flex items-center gap-2 rounded-xl bg-pink-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-pink-400"
-                    >
-                        Open Cleanup Page
-                        <ArrowRight size={16} />
-                    </Link>
-                </div>
-            )}
+
 
             <ConfirmDialog
                 dialog={dialog}

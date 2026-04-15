@@ -22,7 +22,7 @@ export default function AdminResourcesPage() {
                 </div>
             </div>
 
-            <StorageManager mode="overview" />
+            <StorageManager />
         </div>
     );
 }
