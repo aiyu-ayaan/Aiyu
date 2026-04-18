@@ -140,14 +140,10 @@ export default memo(function BlogDetailClient({ blog, config }) {
           </p>
           <Link
             href="/blogs"
-            className="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold"
-            style={{
-              borderColor: 'var(--accent-cyan)',
-              color: 'var(--accent-cyan)',
-              backgroundColor: 'color-mix(in srgb, var(--accent-cyan) 10%, transparent)',
-            }}
+            className="inline-flex items-center hover:underline gap-2 text-sm font-semibold"
+            style={{ color: 'var(--accent-cyan)' }}
           >
-            <FaArrowLeft className="h-3.5 w-3.5" /> Back to Blogs
+            &larr; Back to Blogs
            </Link>
          </div>
        </div>
@@ -167,40 +163,24 @@ export default memo(function BlogDetailClient({ blog, config }) {
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <Link
             href="/blogs"
-            className="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold"
-            style={{
-              borderColor: 'color-mix(in srgb, var(--border-secondary) 76%, transparent)',
-              color: 'var(--text-secondary)',
-              backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 80%, transparent)',
-            }}
+            className="inline-flex items-center hover:underline gap-2 text-sm font-semibold"
+            style={{ color: 'var(--text-secondary)' }}
           >
-            <FaArrowLeft className="h-3.5 w-3.5" /> Back to Blogs
+            &larr; Back to Blogs
           </Link>
 
           <button
             type="button"
             onClick={handleShare}
-            className="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold"
-            style={{
-              borderColor: 'var(--accent-cyan)',
-              color: 'var(--accent-cyan)',
-              backgroundColor: 'color-mix(in srgb, var(--accent-cyan) 10%, transparent)',
-            }}
+            className="inline-flex items-center gap-2 text-sm font-semibold hover:underline"
+            style={{ color: 'var(--accent-cyan)' }}
           >
             {showShareToast ? <IoCheckmark className="h-4 w-4" /> : <FaShareAlt className="h-4 w-4" />}
             {showShareToast ? 'Copied' : 'Share'}
           </button>
         </div>
 
-        <header
-          className="mb-6 rounded-3xl border p-6 sm:p-8"
-          style={{
-            background:
-              'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 93%, transparent), color-mix(in srgb, var(--bg-secondary) 93%, transparent))',
-            borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
-            boxShadow: '0 16px 36px var(--shadow-sm)',
-          }}
-        >
+        <header className="mb-10 text-center border-b pb-8" style={{ borderColor: 'var(--border-primary)' }}>
           <div className="mb-3 flex flex-wrap items-center gap-2">
             <p
               className="inline-flex rounded-full border px-3 py-1 text-xs uppercase tracking-[0.2em]"
@@ -214,34 +194,16 @@ export default memo(function BlogDetailClient({ blog, config }) {
             <RouteBetaBadge />
           </div>
 
-          <h1
-            className="mb-4 bg-gradient-to-r bg-clip-text text-3xl font-bold text-transparent sm:text-4xl lg:text-5xl"
-            style={{
-              backgroundImage: 'linear-gradient(to right, var(--accent-cyan), var(--accent-purple), var(--accent-pink))',
-            }}
-          >
+          <h1 className="mb-4 text-4xl sm:text-5xl font-normal tracking-tight" style={{ color: 'var(--text-primary)' }}>
             {blog.title}
           </h1>
 
-          <div className="mb-4 flex flex-wrap items-center gap-4 text-sm" style={{ color: 'var(--text-secondary)' }}>
-            <span className="inline-flex items-center gap-2">
-              <FaCalendarAlt /> {formatBlogDate(blog.date || blog.createdAt)}
-            </span>
-            <span className="inline-flex items-center gap-2">
-              <FaClock /> {getReadTime(blog.content)}
-            </span>
-            <span className="inline-flex items-center gap-2">
-              <span
-                className="inline-flex h-7 items-center rounded-full border px-3 text-xs font-semibold"
-                style={{
-                  borderColor: 'color-mix(in srgb, var(--border-secondary) 74%, transparent)',
-                  backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 82%, transparent)',
-                  color: 'var(--text-secondary)',
-                }}
-              >
-                {authorName}
-              </span>
-            </span>
+          <div className="mb-4 flex flex-wrap items-center justify-center gap-4 text-sm font-medium" style={{ color: 'var(--text-tertiary)' }}>
+            <span>{formatBlogDate(blog.date || blog.createdAt)}</span>
+            <span>&bull;</span>
+            <span>{getReadTime(blog.content)}</span>
+            <span>&bull;</span>
+            <span>{authorName}</span>
           </div>
 
           {tags.length > 0 && (
@@ -304,13 +266,7 @@ export default memo(function BlogDetailClient({ blog, config }) {
         )}
 
         {showPlaceholder && (
-          <section
-            className="mb-6 overflow-hidden rounded-2xl border"
-            style={{
-              borderColor: 'color-mix(in srgb, var(--border-secondary) 74%, transparent)',
-              backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 82%, transparent)',
-            }}
-          >
+          <section className="mb-10 w-full flex justify-center">
             <div
               className="relative flex min-h-[260px] items-center justify-center overflow-hidden"
               style={{ backgroundImage: getBlogPlaceholderGradient(blog.title) }}
@@ -339,29 +295,8 @@ export default memo(function BlogDetailClient({ blog, config }) {
         )}
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
-          <article
-            className="rounded-2xl border p-5 sm:p-8"
-            style={{
-              background:
-                'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 95%, transparent), color-mix(in srgb, var(--bg-secondary) 95%, transparent))',
-              borderColor: 'color-mix(in srgb, var(--border-secondary) 74%, transparent)',
-              contentVisibility: 'auto',
-              containIntrinsicSize: '1px 1400px',
-            }}
-          >
-            <div
-              className="prose prose-lg max-w-none prose-invert"
-              style={{
-                color: 'var(--text-secondary)',
-                '--tw-prose-headings': 'var(--text-primary)',
-                '--tw-prose-links': 'var(--accent-cyan)',
-                '--tw-prose-bold': 'var(--text-primary)',
-                '--tw-prose-quotes': 'var(--text-secondary)',
-                '--tw-prose-code': 'var(--accent-cyan)',
-                '--tw-prose-pre-bg': 'color-mix(in srgb, var(--bg-elevated) 90%, transparent)',
-                '--tw-prose-pre-code': 'var(--text-secondary)',
-              }}
-            >
+          <article className="lg:pr-8">
+            <div className="prose prose-lg max-w-none prose-neutral">
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
                 components={{
@@ -486,15 +421,8 @@ export default memo(function BlogDetailClient({ blog, config }) {
 
           {hasToc ? (
             <aside className="hidden lg:block">
-              <div
-                className="sticky top-24 rounded-2xl border p-5"
-                style={{
-                  borderColor: 'color-mix(in srgb, var(--border-secondary) 74%, transparent)',
-                  background:
-                    'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 94%, transparent), color-mix(in srgb, var(--bg-secondary) 94%, transparent))',
-                }}
-              >
-                <p className="mb-3 text-xs font-bold uppercase tracking-[0.18em]" style={{ color: 'var(--text-tertiary)' }}>
+              <div className="sticky top-24 pt-4">
+                <p className="mb-3 text-sm font-bold uppercase tracking-wider" style={{ color: 'var(--text-tertiary)' }}>
                   On this page
                 </p>
                 <nav className="space-y-2">
@@ -502,11 +430,9 @@ export default memo(function BlogDetailClient({ blog, config }) {
                     <a
                       key={item.id}
                       href={`#${item.id}`}
-                      className="block rounded-lg border px-3 py-2 text-sm transition-colors hover:underline"
+                      className="block py-1.5 text-sm transition-colors hover:underline"
                       style={{
-                        borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)',
                         color: 'var(--text-secondary)',
-                        backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 82%, transparent)',
                         marginLeft: item.level === 3 ? 12 : 0,
                       }}
                     >

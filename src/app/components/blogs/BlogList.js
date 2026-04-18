@@ -1,11 +1,8 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
-import { FaNewspaper, FaSearch, FaTags } from 'react-icons/fa';
-import BlogCard from './BlogCard';
-import { formatBlogDate } from './blogUtils';
 import { BlogListPageSkeleton } from '../shared/skeletons/PublicPageSkeletons';
+import BlogCard from './BlogCard';
 
 const getBlogPublishTimestamp = (blog) => {
   const primaryDate = blog?.date ? new Date(blog.date) : null;
@@ -88,73 +85,37 @@ export default function BlogList({ initialBlogs, initialConfig }) {
       .sort((a, b) => getBlogPublishTimestamp(b) - getBlogPublishTimestamp(a));
   }, [blogs, searchQuery, selectedTag]);
 
-  const latestDate = useMemo(() => {
-    if (blogs.length === 0) return 'N/A';
-    const latestBlog = [...blogs].sort((a, b) => getBlogPublishTimestamp(b) - getBlogPublishTimestamp(a))[0];
-    return formatBlogDate(latestBlog?.date || latestBlog?.createdAt);
-  }, [blogs]);
-
   if (loading) {
     return <BlogListPageSkeleton />;
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35 }}
-      className="px-4 py-6 sm:px-6 sm:py-8"
-    >
-      <div className="mx-auto max-w-6xl">
-        <section className="rounded-2xl border p-5 sm:p-7" style={{ borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)', backgroundColor: 'color-mix(in srgb, var(--bg-surface) 95%, transparent)' }}>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: 'var(--text-tertiary)' }}>
-            Blog
-          </p>
-          <h1 className="mt-2 text-3xl font-bold sm:text-4xl" style={{ color: 'var(--text-primary)' }}>
-            {config?.blogsTitle || 'Latest Posts'}
+    <div className="px-4 py-8 sm:px-6 lg:px-8 bg-transparent transition-colors duration-200">
+      <div className="mx-auto max-w-4xl">
+        <header className="mb-10 text-center border-b pb-8" style={{ borderColor: 'var(--border-primary)' }}>
+          <h1 className="text-4xl sm:text-5xl font-normal tracking-tight mb-3" style={{ color: 'var(--text-primary)' }}>
+            {config?.blogsTitle || 'The Blogger'}
           </h1>
-          <p className="mt-2 max-w-2xl text-sm sm:text-base" style={{ color: 'var(--text-secondary)' }}>
-            {config?.blogsSubtitle || 'Articles, notes, and tutorials.'}
+          <p className="text-base sm:text-lg max-w-2xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
+            {config?.blogsSubtitle || 'Insights, stories and updates.'}
           </p>
+        </header>
 
-          <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
-            {[
-              { label: 'Posts', value: blogs.length, icon: FaNewspaper },
-              { label: 'Tags', value: Math.max(0, allTags.length - 1), icon: FaTags },
-              { label: 'Latest', value: latestDate, icon: FaNewspaper },
-            ].map((item) => {
-              const Icon = item.icon;
-              return (
-                <div key={item.label} className="rounded-lg border px-4 py-3" style={{ borderColor: 'color-mix(in srgb, var(--border-secondary) 70%, transparent)', backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 80%, transparent)' }}>
-                  <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{item.label}</p>
-                  <div className="mt-1 flex items-center gap-2">
-                    <Icon size={12} style={{ color: 'var(--text-secondary)' }} />
-                    <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{item.value}</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
-        <section className="mt-4 rounded-2xl border p-4" style={{ borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)', backgroundColor: 'color-mix(in srgb, var(--bg-surface) 95%, transparent)' }}>
-          <div className="relative">
-            <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-xs" style={{ color: 'var(--text-tertiary)' }} />
+        <div className="mb-12 flex flex-col md:flex-row gap-6 justify-between items-start md:items-center">
             <input
               type="text"
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Search blog posts"
-              className="w-full rounded-lg border py-2.5 pl-9 pr-3 text-sm outline-none"
+              placeholder="Search posts..."
+              className="w-full md:w-64 rounded-md border py-2 px-3 text-sm outline-none transition-colors"
               style={{
-                backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 80%, transparent)',
-                borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)',
+                backgroundColor: 'var(--bg-elevated)',
+                borderColor: 'var(--border-secondary)',
                 color: 'var(--text-primary)',
               }}
             />
-          </div>
 
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2">
             {allTags.map((tag) => {
               const active = selectedTag === tag;
               return (
@@ -162,11 +123,9 @@ export default function BlogList({ initialBlogs, initialConfig }) {
                   key={tag}
                   type="button"
                   onClick={() => setSelectedTag(tag)}
-                  className="rounded-full border px-3 py-1.5 text-xs font-medium"
+                  className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wider transition-colors ${active ? 'underline' : ''}`}
                   style={{
-                    borderColor: active ? 'color-mix(in srgb, var(--accent-cyan) 58%, var(--border-secondary))' : 'color-mix(in srgb, var(--border-secondary) 74%, transparent)',
-                    color: active ? 'var(--accent-cyan)' : 'var(--text-secondary)',
-                    backgroundColor: active ? 'color-mix(in srgb, var(--accent-cyan) 10%, transparent)' : 'color-mix(in srgb, var(--bg-elevated) 75%, transparent)',
+                    color: active ? 'var(--accent-cyan)' : 'var(--text-tertiary)',
                   }}
                 >
                   {tag}
@@ -174,23 +133,24 @@ export default function BlogList({ initialBlogs, initialConfig }) {
               );
             })}
           </div>
-        </section>
+        </div>
 
-        <section className="mt-6">
+        <main>
           {filteredBlogs.length > 0 ? (
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+            <div className="flex flex-col gap-0">
               {filteredBlogs.map((blog) => (
                 <BlogCard key={blog?._id || blog?.slug} blog={blog} />
               ))}
             </div>
           ) : (
-            <div className="rounded-2xl border p-10 text-center" style={{ borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)', backgroundColor: 'color-mix(in srgb, var(--bg-surface) 95%, transparent)' }}>
-              <h3 className="text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>No posts found</h3>
-              <p className="mt-2 text-sm" style={{ color: 'var(--text-secondary)' }}>Try another search term or tag.</p>
+            <div className="py-20 text-center">
+              <h3 className="text-2xl font-normal mb-2" style={{ color: 'var(--text-primary)' }}>No posts found</h3>
+              <p className="text-base" style={{ color: 'var(--text-secondary)' }}>Try another search term or tag.</p>
             </div>
           )}
-        </section>
+        </main>
       </div>
-    </motion.div>
+    </div>
   );
 }
+

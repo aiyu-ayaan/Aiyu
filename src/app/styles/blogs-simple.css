@@ -1,55 +1,56 @@
 .blogs-theme {
-  --bg-primary: #f8f9fa;
+  --bg-primary: #ffffff;
   --bg-secondary: #ffffff;
-  --bg-tertiary: #f3f4f6;
+  --bg-tertiary: #f9f9f9;
   --bg-surface: #ffffff;
-  --bg-elevated: #f5f6f8;
-  --bg-hover: #eef2f7;
+  --bg-elevated: #ffffff;
+  --bg-hover: #f1f3f4;
 
-  --text-primary: #111827;
-  --text-secondary: #374151;
-  --text-tertiary: #6b7280;
-  --text-muted: #9ca3af;
-  --text-bright: #030712;
+  --text-primary: #222222;
+  --text-secondary: #555555;
+  --text-tertiary: #777777;
+  --text-muted: #999999;
+  --text-bright: #000000;
 
-  --accent-cyan: #2563eb;
-  --accent-cyan-bright: #1d4ed8;
-  --accent-purple: #4f46e5;
-  --accent-pink: #db2777;
-  --accent-orange: #d97706;
+  --accent-cyan: #1a0dab; /* Classic google link blue */
+  --accent-cyan-bright: #1558d6;
+  --accent-purple: #1a0dab;
+  --accent-pink: #d93025;
+  --accent-orange: #f29900;
 
-  --border-primary: #e5e7eb;
-  --border-secondary: #d1d5db;
-  --border-accent: #93c5fd;
-  --border-cyan: #2563eb;
+  --border-primary: #e0e0e0;
+  --border-secondary: #eeeeee;
+  --border-accent: #1a0dab;
+  --border-cyan: #1a0dab;
 
   background: var(--bg-primary);
+  color: var(--text-primary);
 }
 
 [data-theme="dark"] .blogs-theme {
-  --bg-primary: #0f172a;
-  --bg-secondary: #111827;
-  --bg-tertiary: #1f2937;
-  --bg-surface: #111827;
-  --bg-elevated: #1f2937;
-  --bg-hover: #273449;
+  --bg-primary: #121212;
+  --bg-secondary: #1e1e1e;
+  --bg-tertiary: #2a2a2a;
+  --bg-surface: #1e1e1e;
+  --bg-elevated: #2d2d2d;
+  --bg-hover: #333333;
 
-  --text-primary: #f9fafb;
-  --text-secondary: #d1d5db;
-  --text-tertiary: #9ca3af;
-  --text-muted: #6b7280;
+  --text-primary: #e8eaed;
+  --text-secondary: #9aa0a6;
+  --text-tertiary: #80868b;
+  --text-muted: #5f6368;
   --text-bright: #ffffff;
 
-  --accent-cyan: #60a5fa;
-  --accent-cyan-bright: #93c5fd;
-  --accent-purple: #818cf8;
-  --accent-pink: #f472b6;
-  --accent-orange: #f59e0b;
+  --accent-cyan: #8ab4f8; /* Dark mode optimized google link blue */
+  --accent-cyan-bright: #a8c7fa;
+  --accent-purple: #8ab4f8;
+  --accent-pink: #f28b82;
+  --accent-orange: #fdd663;
 
-  --border-primary: #374151;
-  --border-secondary: #4b5563;
-  --border-accent: #60a5fa;
-  --border-cyan: #60a5fa;
+  --border-primary: #3c4043;
+  --border-secondary: #202124;
+  --border-accent: #8ab4f8;
+  --border-cyan: #8ab4f8;
 }
 
 body:has(.blogs-theme)::before {
