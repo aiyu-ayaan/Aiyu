@@ -118,9 +118,20 @@ export default memo(function BlogDetailClient({ blog, config }) {
     setSelectedImage(null);
   }, []);
 
-  const handleImageError = useCallback(() => {
+  const handleImageError = useCallback(async () => {
     setImageError(true);
-  }, []);
+    if (blog?._id) {
+      try {
+        await fetch(`/api/blogs/${blog._id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image: null })
+        });
+      } catch (error) {
+        console.error('Failed to auto-cleanup broken image:', error);
+      }
+    }
+  }, [blog?._id]);
 
   if (!blog) {
     return (

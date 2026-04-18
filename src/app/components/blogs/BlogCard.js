@@ -56,7 +56,20 @@ const BlogCard = ({ blog }) => {
                   style={{ borderColor: 'var(--border-secondary)' }}
                   loading="lazy"
                   decoding="async"
-                  onError={() => setFailedImageSrc(blog?.image || '')}
+                  onError={async () => {
+                    setFailedImageSrc(blog?.image || '');
+                    if (blog?._id) {
+                      try {
+                        await fetch(`/api/blogs/${blog._id}`, {
+                          method: 'PUT',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ image: null })
+                        });
+                      } catch (error) {
+                        console.error('Failed to auto-cleanup broken image:', error);
+                      }
+                    }
+                  }}
                 />
              </Link>
           </div>
