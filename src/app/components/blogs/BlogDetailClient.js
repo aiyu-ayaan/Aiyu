@@ -275,7 +275,7 @@ export default memo(function BlogDetailClient({ blog, config }) {
               {isOptimizableImage(blog.image) ? (
                 <Image
                   src={blog.image}
-                  alt={blog.title}
+                  alt={blog?.imageAlt || blog.title}
                   width={1600}
                   height={900}
                   sizes="(max-width: 768px) 100vw, (max-width: 1024px) 90vw, 1200px"
@@ -292,7 +292,7 @@ export default memo(function BlogDetailClient({ blog, config }) {
               ) : (
                 <img
                   src={blog.image}
-                  alt={blog.title}
+                  alt={blog?.imageAlt || blog.title}
                   className="max-h-[620px] w-full object-cover"
                   loading="lazy"
                   decoding="async"

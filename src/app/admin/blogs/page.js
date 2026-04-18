@@ -75,12 +75,17 @@ export default function AdminBlogsPage() {
                         <h1 className="text-3xl md:text-4xl font-bold text-white mb-2 tracking-tight">Transmission Logs</h1>
                         <p className="text-slate-400">Manage blog posts, articles, and public transmissions.</p>
                     </div>
-                    <Link href="/admin/blogs/new" className="group relative px-6 py-3 rounded-lg overflow-hidden bg-cyan-500/10 border border-cyan-500/20 hover:border-cyan-500/50 transition-all hover:shadow-[0_0_20px_rgba(34,211,238,0.2)]">
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-500/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700" />
-                        <span className="relative text-cyan-400 font-bold tracking-wide flex items-center gap-2">
-                            <span className="text-lg">+</span> COMPOSE_TRANSMISSION
-                        </span>
-                    </Link>
+                    <div className="flex flex-wrap items-center gap-3">
+                        <Link href="/admin/blogs/api" className="px-4 py-3 rounded-lg overflow-hidden bg-purple-500/10 border border-purple-500/20 hover:border-purple-500/50 transition-all text-purple-300 font-bold tracking-wide text-xs uppercase">
+                            API Reference
+                        </Link>
+                        <Link href="/admin/blogs/new" className="group relative px-6 py-3 rounded-lg overflow-hidden bg-cyan-500/10 border border-cyan-500/20 hover:border-cyan-500/50 transition-all hover:shadow-[0_0_20px_rgba(34,211,238,0.2)]">
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-500/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700" />
+                            <span className="relative text-cyan-400 font-bold tracking-wide flex items-center gap-2">
+                                <span className="text-lg">+</span> COMPOSE_TRANSMISSION
+                            </span>
+                        </Link>
+                    </div>
                 </div>
             </div>
 

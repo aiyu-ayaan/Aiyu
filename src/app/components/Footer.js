@@ -2,12 +2,15 @@
 "use client";
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { FaArrowUp, FaGithub, FaPalette, FaTerminal } from 'react-icons/fa';
 import { getIconByName } from '../../lib/icons';
 import { useTheme } from '../context/ThemeContext';
 
 export default function Footer({ socialData, name, config, packageVersion }) {
+    const pathname = usePathname();
+    const isBlogsRoute = pathname?.startsWith('/blogs');
     const { activeThemeData, mounted } = useTheme();
     const socials = socialData?.map(s => ({
         ...s,
@@ -31,7 +34,7 @@ export default function Footer({ socialData, name, config, packageVersion }) {
     return (
         <footer
             id="site-footer"
-            className="relative w-full px-4 pb-8 pt-12 sm:px-6"
+            className={`relative w-full px-4 pb-8 pt-12 sm:px-6 ${isBlogsRoute ? 'hidden' : ''}`}
             style={{ color: 'var(--text-primary)' }}
         >
             <div

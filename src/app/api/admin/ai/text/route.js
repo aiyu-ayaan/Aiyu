@@ -39,6 +39,9 @@ async function generateText(request) {
         } else if (mode === 'proofread') {
             finalSystemInstruction += "\nYou are an expert editor. Improve the following text for clarity, grammar, and engagement. Retain the original meaning and Markdown formatting if present. ONLY return the improved text, no comments.";
             finalPrompt = `Proofread and improve this content:\n\n${prompt}`;
+        } else if (mode === 'suggest_excerpt') {
+            finalSystemInstruction += "\nYou are an expert editor. Write a concise and compelling blog excerpt for cards, SEO previews, and social snippets. Keep it plain text only, no markdown, no quotes, no labels. Prefer 140-180 characters.";
+            finalPrompt = `Write an excerpt for this blog post.\nTitle: "${context?.title || ''}"\nContent snippet: "${prompt.substring(0, 1200)}"`;
         } else if (mode === 'suggest_tags') {
             finalSystemInstruction += "\nYou are an expert SEO and content strategist. Suggest 3-5 relevant, short, tech-focused tags for this blog post. ONLY return the tags as a comma-separated list, nothing else.";
             finalPrompt = `Suggest tags for a blog post with title: "${context?.title}" and content snippet: "${prompt.substring(0, 500)}"`;

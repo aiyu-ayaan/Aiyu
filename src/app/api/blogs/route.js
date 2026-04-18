@@ -1,13 +1,67 @@
 
 import dbConnect from "@/lib/db";
 import Blog from "@/models/Blog";
+import Config from "@/models/Config";
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import cache, { CACHE_KEYS, CACHE_TTL, createCacheDebugHeaders } from '@/lib/cache';
 import { createPublicCacheHeaders, RESPONSE_CACHE } from '@/lib/httpCache';
 import { createUniqueBlogSlug } from '@/lib/blogSlugs';
+import crypto from 'crypto';
 
-const BLOG_LIST_SELECT = ['title', 'slug', 'content', 'image', 'date', 'createdAt', 'updatedAt', 'published', 'tags'].join(' ');
+const BLOG_LIST_SELECT = ['title', 'slug', 'content', 'excerpt', 'image', 'imageAlt', 'date', 'createdAt', 'updatedAt', 'published', 'tags', 'seoTitle', 'seoDescription', 'canonicalUrl', 'keywords', 'socialTitle', 'socialDescription', 'socialImage', 'socialImageAlt', 'noIndex'].join(' ');
+
+function normalizeStringList(value) {
+    if (Array.isArray(value)) {
+        return value.map((entry) => String(entry || '').trim()).filter(Boolean);
+    }
+
+    if (typeof value === 'string') {
+        return value.split(',').map((entry) => entry.trim()).filter(Boolean);
+    }
+
+    return [];
+}
+
+function normalizeBlogPayload(body = {}) {
+    return {
+        ...body,
+        title: String(body.title || '').trim(),
+        content: String(body.content || ''),
+        excerpt: String(body.excerpt || '').trim(),
+        seoTitle: String(body.seoTitle || '').trim(),
+        seoDescription: String(body.seoDescription || '').trim(),
+        canonicalUrl: String(body.canonicalUrl || '').trim(),
+        socialTitle: String(body.socialTitle || '').trim(),
+        socialDescription: String(body.socialDescription || '').trim(),
+        socialImage: String(body.socialImage || '').trim(),
+        socialImageAlt: String(body.socialImageAlt || '').trim(),
+        imageAlt: String(body.imageAlt || '').trim(),
+        tags: normalizeStringList(body.tags),
+        keywords: normalizeStringList(body.keywords),
+        noIndex: body.noIndex === true,
+        published: body.published === true,
+    };
+}
+
+async function validateBearerBlogToken(request) {
+    const authHeader = request.headers.get('authorization') || '';
+    const [scheme, rawToken] = authHeader.split(' ');
+    if (!scheme || !rawToken || scheme.toLowerCase() !== 'bearer') {
+        return false;
+    }
+
+    const providedHash = crypto.createHash('sha256').update(rawToken.trim()).digest('hex');
+    const config = await Config.findOne().select('+blogApiTokenHash').lean();
+    const storedHash = String(config?.blogApiTokenHash || '');
+    if (!storedHash) return false;
+
+    const storedBuffer = Buffer.from(storedHash, 'hex');
+    const providedBuffer = Buffer.from(providedHash, 'hex');
+    if (storedBuffer.length !== providedBuffer.length) return false;
+
+    return crypto.timingSafeEqual(storedBuffer, providedBuffer);
+}
 
 function toPublicBlogList(blogs, maxLength = 500) {
     if (!Array.isArray(blogs)) return [];
@@ -87,17 +141,19 @@ export async function POST(request) {
     const validApiKey = process.env.BLOG_API_KEY || process.env.JWT_SECRET;
 
     const isApiKeyValid = apiKey && validApiKey && apiKey === validApiKey;
+    const isBearerTokenValid = await validateBearerBlogToken(request);
 
     // 2. Check for Session (Admin Panel)
     const session = await getSession();
     const isSessionValid = !!session;
 
-    if (!isApiKeyValid && !isSessionValid) {
+    if (!isApiKeyValid && !isSessionValid && !isBearerTokenValid) {
         return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
     try {
-        const body = await request.json();
+        const rawBody = await request.json();
+        const body = normalizeBlogPayload(rawBody);
         console.log('POST /api/blogs - Body:', body);
 
         // Default date to now if not provided

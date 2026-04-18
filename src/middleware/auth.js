@@ -3,12 +3,7 @@
  * Verifies JWT tokens for admin-only endpoints
  */
 
-import { jwtVerify } from 'jose';
-import { cookies } from 'next/headers';
-
-const JWT_SECRET = new TextEncoder().encode(
-    process.env.JWT_SECRET || 'your-secret-key'
-);
+import { getSession } from '@/lib/auth';
 
 /**
  * Verifies if the request has a valid authentication token
@@ -16,12 +11,10 @@ const JWT_SECRET = new TextEncoder().encode(
  * @param {Request} request - Next.js request object
  * @returns {Promise<{ authenticated: boolean, user: object | null, error: string | null }>}
  */
-export async function verifyAuth(request) {
+export async function verifyAuth(_request) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get('session');
-
-        if (!token) {
+        const session = await getSession();
+        if (!session) {
             return {
                 authenticated: false,
                 user: null,
@@ -29,14 +22,12 @@ export async function verifyAuth(request) {
             };
         }
 
-        const { payload } = await jwtVerify(token.value, JWT_SECRET);
-
         return {
             authenticated: true,
-            user: payload,
+            user: session,
             error: null
         };
-    } catch (error) {
+    } catch {
         return {
             authenticated: false,
             user: null,
@@ -108,7 +99,6 @@ export function checkRateLimit(identifier, maxRequests = 10, windowMs = 60000) {
 
     // Cleanup old entries periodically
     if (rateLimitMap.size > 1000) {
-        const cutoff = now - windowMs;
         for (const [key, times] of rateLimitMap.entries()) {
             const recent = times.filter(t => now - t < windowMs);
             if (recent.length === 0) {

@@ -16,7 +16,7 @@ import {
 const BlogCard = ({ blog, featured = false }) => {
   const [failedImageSrc, setFailedImageSrc] = useState('');
 
-  const cleanExcerpt = stripMarkdown(blog?.content || '');
+  const cleanExcerpt = blog?.excerpt?.trim() || stripMarkdown(blog?.content || '');
   const excerpt = cleanExcerpt.length > (featured ? 240 : 140)
     ? `${cleanExcerpt.slice(0, featured ? 240 : 140)}...`
     : cleanExcerpt;
@@ -33,19 +33,18 @@ const BlogCard = ({ blog, featured = false }) => {
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ y: -4 }}
       transition={{ duration: 0.35 }}
-      className="group relative overflow-hidden rounded-2xl border"
+      className="group relative overflow-hidden rounded-xl border"
       style={{
         borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
-        background:
-          'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 95%, transparent), color-mix(in srgb, var(--bg-secondary) 95%, transparent))',
-        boxShadow: '0 14px 28px var(--shadow-sm)',
+        background: 'color-mix(in srgb, var(--bg-surface) 95%, transparent)',
+        boxShadow: '0 8px 18px var(--shadow-sm)',
       }}
     >
       <div className="relative h-48 overflow-hidden border-b" style={{ borderColor: 'color-mix(in srgb, var(--border-secondary) 70%, transparent)' }}>
         {!showPlaceholder ? (
-          <img
-            src={blog.image}
-            alt={blog?.title || 'Blog'}
+            <img
+              src={blog.image}
+            alt={blog?.imageAlt || blog?.title || 'Blog'}
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
             loading="lazy"
             decoding="async"
@@ -77,7 +76,7 @@ const BlogCard = ({ blog, featured = false }) => {
         )}
       </div>
 
-      <div className="p-5 sm:p-6">
+      <div className="p-5">
         <div className="mb-3 flex items-center justify-between gap-2 text-xs sm:text-sm" style={{ color: 'var(--text-tertiary)' }}>
           <span>{formatBlogDate(blog?.date || blog?.createdAt)}</span>
           <span className="inline-flex items-center gap-1">
@@ -86,7 +85,7 @@ const BlogCard = ({ blog, featured = false }) => {
           </span>
         </div>
 
-        <h3 className="mb-3 text-xl font-bold leading-snug" style={{ color: 'var(--text-primary)' }}>
+        <h3 className="mb-2 text-xl font-bold leading-snug" style={{ color: 'var(--text-primary)' }}>
           {blog?.title}
         </h3>
 

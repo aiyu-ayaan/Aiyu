@@ -62,6 +62,9 @@ const ConfigSchema = new mongoose.Schema({
     encryptedGeminiApiKey: { type: String, select: false },
     encryptedGroqApiKey: { type: String, select: false },
     encryptedOpenRouterApiKey: { type: String, select: false },
+    blogApiTokenHash: { type: String, default: '', select: false },
+    blogApiTokenLast4: { type: String, default: '' },
+    blogApiTokenCreatedAt: { type: Date, default: null },
 
     // AI Configuration
     ai: {

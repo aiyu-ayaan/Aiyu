@@ -20,6 +20,64 @@ const BlogSchema = new mongoose.Schema({
         type: String,
         required: false,
     },
+    imageAlt: {
+        type: String,
+        default: '',
+        trim: true,
+    },
+    excerpt: {
+        type: String,
+        default: '',
+        trim: true,
+        maxlength: [320, 'Excerpt cannot be more than 320 characters'],
+    },
+    seoTitle: {
+        type: String,
+        default: '',
+        trim: true,
+        maxlength: [120, 'SEO title cannot be more than 120 characters'],
+    },
+    seoDescription: {
+        type: String,
+        default: '',
+        trim: true,
+        maxlength: [320, 'SEO description cannot be more than 320 characters'],
+    },
+    canonicalUrl: {
+        type: String,
+        default: '',
+        trim: true,
+    },
+    keywords: {
+        type: [String],
+        default: [],
+    },
+    socialTitle: {
+        type: String,
+        default: '',
+        trim: true,
+        maxlength: [120, 'Social title cannot be more than 120 characters'],
+    },
+    socialDescription: {
+        type: String,
+        default: '',
+        trim: true,
+        maxlength: [320, 'Social description cannot be more than 320 characters'],
+    },
+    socialImage: {
+        type: String,
+        default: '',
+        trim: true,
+    },
+    socialImageAlt: {
+        type: String,
+        default: '',
+        trim: true,
+    },
+    noIndex: {
+        type: Boolean,
+        default: false,
+    },
     tags: {
         type: [String],
         required: false,

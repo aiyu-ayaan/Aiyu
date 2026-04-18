@@ -5,6 +5,42 @@ import { NextResponse } from "next/server";
 import cache from '@/lib/cache';
 import { createUniqueBlogSlug, resolveBlogByIdentifier } from '@/lib/blogSlugs';
 
+function normalizeStringList(value) {
+    if (Array.isArray(value)) {
+        return value.map((entry) => String(entry || '').trim()).filter(Boolean);
+    }
+
+    if (typeof value === 'string') {
+        return value.split(',').map((entry) => entry.trim()).filter(Boolean);
+    }
+
+    return [];
+}
+
+function normalizeBlogPayload(body = {}) {
+    const hasNoIndex = Object.prototype.hasOwnProperty.call(body, 'noIndex');
+    const hasPublished = Object.prototype.hasOwnProperty.call(body, 'published');
+
+    return {
+        ...body,
+        title: typeof body.title === 'string' ? body.title.trim() : body.title,
+        content: typeof body.content === 'string' ? body.content : body.content,
+        excerpt: typeof body.excerpt === 'string' ? body.excerpt.trim() : body.excerpt,
+        seoTitle: typeof body.seoTitle === 'string' ? body.seoTitle.trim() : body.seoTitle,
+        seoDescription: typeof body.seoDescription === 'string' ? body.seoDescription.trim() : body.seoDescription,
+        canonicalUrl: typeof body.canonicalUrl === 'string' ? body.canonicalUrl.trim() : body.canonicalUrl,
+        socialTitle: typeof body.socialTitle === 'string' ? body.socialTitle.trim() : body.socialTitle,
+        socialDescription: typeof body.socialDescription === 'string' ? body.socialDescription.trim() : body.socialDescription,
+        socialImage: typeof body.socialImage === 'string' ? body.socialImage.trim() : body.socialImage,
+        socialImageAlt: typeof body.socialImageAlt === 'string' ? body.socialImageAlt.trim() : body.socialImageAlt,
+        imageAlt: typeof body.imageAlt === 'string' ? body.imageAlt.trim() : body.imageAlt,
+        tags: body.tags !== undefined ? normalizeStringList(body.tags) : body.tags,
+        keywords: body.keywords !== undefined ? normalizeStringList(body.keywords) : body.keywords,
+        noIndex: hasNoIndex ? body.noIndex === true : body.noIndex,
+        published: hasPublished ? body.published === true : body.published,
+    };
+}
+
 export async function GET(request, { params }) {
     await dbConnect();
     const { id } = await params;
@@ -23,7 +59,8 @@ export async function PUT(request, { params }) {
     await dbConnect();
     const { id } = await params;
     try {
-        const body = await request.json();
+        const rawBody = await request.json();
+        const body = normalizeBlogPayload(rawBody);
         console.log('PUT /api/blogs/[id] - Body:', body);
 
         const existingBlog = await Blog.findById(id).select('_id title slug').lean();

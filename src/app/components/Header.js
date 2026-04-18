@@ -58,6 +58,7 @@ export default memo(function Header({ data, logoText, socialData, config }) {
   const displayLogo = logoText || "< aiyu />";
 
   const pathname = usePathname();
+  const isBlogsRoute = pathname?.startsWith('/blogs');
   const isContentHeavyRoute = pathname?.startsWith('/blogs');
   const { theme } = useTheme();
   const { prefersReducedMotion } = useDevicePerformance();
@@ -129,7 +130,7 @@ export default memo(function Header({ data, logoText, socialData, config }) {
 
   return (
     <>
-      <header className="sticky top-0 z-50 px-3 pb-0 pt-3 sm:px-4 lg:px-6">
+      <header className={clsx("sticky top-0 z-50 px-3 pb-0 pt-3 sm:px-4 lg:px-6", isBlogsRoute && "hidden")}>
         <div
           className={clsx(
             "mx-auto w-full max-w-7xl rounded-2xl border transition-all duration-300 relative overflow-hidden",
@@ -363,8 +364,8 @@ export default memo(function Header({ data, logoText, socialData, config }) {
          }}
          initial={{ opacity: 0, y: '-4%' }}
          animate={{
-           opacity: isMenuOpen ? 1 : 0,
-           y: isMenuOpen ? '0%' : '-4%',
+           opacity: isBlogsRoute ? 0 : (isMenuOpen ? 1 : 0),
+           y: isBlogsRoute ? '-4%' : (isMenuOpen ? '0%' : '-4%'),
          }}
          transition={{ duration: 0.22, ease: 'easeOut' }}
        >
