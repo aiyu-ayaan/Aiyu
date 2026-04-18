@@ -61,3 +61,12 @@ body:has(.blogs-theme)::before {
 .blogs-theme .blog-detail-backdrop {
   background: transparent !important;
 }
+
+@keyframes blogs-theme-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
