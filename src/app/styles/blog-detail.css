@@ -39,7 +39,6 @@ html {
   background-color: transparent;
   color: var(--text-primary);
   min-height: 100vh;
-  overflow: hidden;
   position: relative;
 }
 
@@ -156,9 +155,6 @@ html {
 }
 
 /* Performance optimizations for content sections */
-article {
-  contain: content;
-}
 
 article section {
   contain: layout style paint;

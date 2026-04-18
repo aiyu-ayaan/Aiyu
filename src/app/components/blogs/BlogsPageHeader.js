@@ -11,13 +11,15 @@ export default function BlogsPageHeader() {
         <header className="sticky top-0 z-40 border-b" style={{ borderColor: 'var(--border-secondary)', backgroundColor: 'var(--bg-secondary)' }}>
             <div className="mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-4 sm:px-6">
                 <div className="flex items-center gap-4">
-                    <Link
-                        href="/"
-                        className="text-sm font-medium hover:underline"
-                        style={{ color: 'var(--accent-cyan)' }}
-                    >
-                        &larr; Back to site
-                    </Link>
+                    {isBlogListPage && (
+                        <Link
+                            href="/"
+                            className="text-sm font-medium hover:underline"
+                            style={{ color: 'var(--accent-cyan)' }}
+                        >
+                            &larr; Back to site
+                        </Link>
+                    )}
                 </div>
 
                 <div className="flex items-center gap-4">

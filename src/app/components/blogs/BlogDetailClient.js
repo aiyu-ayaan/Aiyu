@@ -162,12 +162,7 @@ export default memo(function BlogDetailClient({ blog, config }) {
    }
 
    return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.7, ease: 'easeOut' }}
-      className="blog-detail-container p-4 lg:p-8"
-    >
+    <div className="blog-detail-container p-4 lg:p-8">
       <div className="blog-detail-backdrop" />
 
       <div className="relative mx-auto max-w-6xl">
@@ -243,24 +238,6 @@ export default memo(function BlogDetailClient({ blog, config }) {
             }}
           >
             <button type="button" onClick={() => handleImageSelect(blog.image)} className="block w-full cursor-zoom-in">
-              {isOptimizableImage(blog.image) ? (
-                <Image
-                  src={blog.image}
-                  alt={blog?.imageAlt || blog.title}
-                  width={1600}
-                  height={900}
-                  sizes="(max-width: 768px) 100vw, (max-width: 1024px) 90vw, 1200px"
-                  className="max-h-[620px] w-full object-cover"
-                  priority={false}
-                  loading="lazy"
-                  fetchPriority="low"
-                  decoding="async"
-                  quality={75}
-                  onError={handleImageError}
-                  placeholder="blur"
-                  blurDataURL="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1600 900'%3E%3Crect fill='%23222' width='1600' height='900'/%3E%3C/svg%3E"
-                />
-              ) : (
                 <img
                   src={blog.image}
                   alt={blog?.imageAlt || blog.title}
@@ -269,14 +246,13 @@ export default memo(function BlogDetailClient({ blog, config }) {
                   decoding="async"
                   onError={handleImageError}
                 />
-              )}
             </button>
           </section>
         )}
 
 
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px] items-start">
           <article className="lg:pr-8">
             <div 
               className="prose prose-lg max-w-none"
@@ -308,23 +284,6 @@ export default memo(function BlogDetailClient({ blog, config }) {
                           backgroundColor: 'var(--bg-elevated)',
                         }}
                       >
-                        {isOptimizableImage(resolvedSrc) ? (
-                          <Image
-                            src={resolvedSrc}
-                            alt={resolvedAlt}
-                            width={1200}
-                            height={675}
-                            sizes="(max-width: 768px) 100vw, 900px"
-                            className="h-auto w-full object-contain"
-                            loading="lazy"
-                            fetchPriority="low"
-                            decoding="async"
-                            quality={75}
-                            placeholder="blur"
-                            blurDataURL="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 675'%3E%3Crect fill='%23222' width='1200' height='675'/%3E%3C/svg%3E"
-                          />
-                        ) : (
-                          // Fallback when Next can't optimize (e.g. unsupported src)
                           <img
                             src={resolvedSrc}
                             alt={resolvedAlt}
@@ -333,7 +292,6 @@ export default memo(function BlogDetailClient({ blog, config }) {
                             decoding="async"
                             {...props}
                           />
-                        )}
                       </span>
                     );
                   },
@@ -504,19 +462,6 @@ export default memo(function BlogDetailClient({ blog, config }) {
             >
               Close
             </button>
-            {isOptimizableImage(selectedImage) ? (
-              <Image
-                src={selectedImage}
-                alt="Blog full view"
-                width={1800}
-                height={1200}
-                sizes="90vw"
-                className="max-h-[90vh] max-w-full rounded-lg object-contain"
-                priority={true}
-                loading="eager"
-                decoding="sync"
-              />
-            ) : (
               <img 
                 src={selectedImage} 
                 alt="Blog full view" 
@@ -524,10 +469,9 @@ export default memo(function BlogDetailClient({ blog, config }) {
                 loading="eager"
                 decoding="sync"
               />
-            )}
           </motion.div>
         </motion.div>
       )}
-    </motion.div>
+    </div>
   );
 });
