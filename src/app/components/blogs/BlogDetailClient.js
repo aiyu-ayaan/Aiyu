@@ -213,8 +213,6 @@ export default memo(function BlogDetailClient({ blog, config }) {
             <span>{formatBlogDate(blog.date || blog.createdAt)}</span>
             <span>&bull;</span>
             <span>{getReadTime(blog.content)}</span>
-            <span>&bull;</span>
-            <span>{authorName}</span>
           </div>
 
           {tags.length > 0 && (
@@ -276,23 +274,7 @@ export default memo(function BlogDetailClient({ blog, config }) {
           </section>
         )}
 
-        {showPlaceholder && (
-          <section className="mb-10 w-full flex justify-center">
-            <div
-              className="relative flex min-h-[260px] w-full max-w-3xl items-center justify-center overflow-hidden border rounded-2xl"
-              style={{ borderColor: 'var(--border-secondary)', backgroundColor: 'var(--bg-elevated)' }}
-            >
-              <div
-                className="relative z-10 rounded-xl px-5 py-2 text-2xl font-bold"
-                style={{
-                  color: 'var(--text-tertiary)',
-                }}
-              >
-                {getBlogInitials(blog.title)}
-              </div>
-            </div>
-          </section>
-        )}
+
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
           <article className="lg:pr-8">
@@ -432,8 +414,8 @@ export default memo(function BlogDetailClient({ blog, config }) {
           </article>
 
           {hasToc ? (
-            <aside className="hidden lg:block">
-              <div className="sticky top-24 pt-4">
+            <aside className="hidden lg:block sticky top-24 self-start max-h-[calc(100vh-8rem)] overflow-y-auto scrollbar-hide">
+              <div className="pt-4 pb-12 pr-4">
                 <p className="mb-3 text-sm font-bold uppercase tracking-wider" style={{ color: 'var(--text-tertiary)' }}>
                   On this page
                 </p>
