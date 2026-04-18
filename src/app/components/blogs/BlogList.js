@@ -101,37 +101,39 @@ export default function BlogList({ initialBlogs, initialConfig }) {
           </p>
         </header>
 
-        <div className="mb-12 flex flex-col md:flex-row gap-6 justify-between items-start md:items-center">
+        <div className="mb-12 flex flex-col sm:flex-row gap-3">
+          <div className="flex-1 w-full">
             <input
               type="text"
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
               placeholder="Search posts..."
-              className="w-full md:w-64 rounded-md border py-2 px-3 text-sm outline-none transition-colors"
+              className="w-full rounded-md border py-2.5 px-4 text-sm outline-none transition-colors"
               style={{
                 backgroundColor: 'var(--bg-elevated)',
                 borderColor: 'var(--border-secondary)',
                 color: 'var(--text-primary)',
               }}
             />
-
-          <div className="flex flex-wrap gap-2">
-            {allTags.map((tag) => {
-              const active = selectedTag === tag;
-              return (
-                <button
-                  key={tag}
-                  type="button"
-                  onClick={() => setSelectedTag(tag)}
-                  className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wider transition-colors ${active ? 'underline' : ''}`}
-                  style={{
-                    color: active ? 'var(--accent-cyan)' : 'var(--text-tertiary)',
-                  }}
-                >
+          </div>
+          <div className="w-full sm:w-auto">
+            <select
+              value={selectedTag}
+              onChange={(event) => setSelectedTag(event.target.value)}
+              className="w-full sm:w-48 rounded-md border py-2.5 px-3 text-sm font-medium outline-none transition-colors appearance-none cursor-pointer"
+              style={{
+                backgroundColor: 'var(--bg-elevated)',
+                borderColor: 'var(--border-secondary)',
+                color: 'var(--text-primary)',
+              }}
+            >
+              <option value="All">All Categories</option>
+              {allTags.filter(tag => tag !== 'All').map((tag) => (
+                <option key={tag} value={tag}>
                   {tag}
-                </button>
-              );
-            })}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 

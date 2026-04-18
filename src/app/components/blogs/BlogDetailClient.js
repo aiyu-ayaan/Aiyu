@@ -268,24 +268,13 @@ export default memo(function BlogDetailClient({ blog, config }) {
         {showPlaceholder && (
           <section className="mb-10 w-full flex justify-center">
             <div
-              className="relative flex min-h-[260px] items-center justify-center overflow-hidden"
-              style={{ backgroundImage: getBlogPlaceholderGradient(blog.title) }}
+              className="relative flex min-h-[260px] w-full max-w-3xl items-center justify-center overflow-hidden border rounded-2xl"
+              style={{ borderColor: 'var(--border-secondary)', backgroundColor: 'var(--bg-elevated)' }}
             >
               <div
-                className="absolute inset-0"
+                className="relative z-10 rounded-xl px-5 py-2 text-2xl font-bold"
                 style={{
-                  backgroundImage:
-                    'linear-gradient(color-mix(in srgb, var(--border-secondary) 24%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, var(--border-secondary) 24%, transparent) 1px, transparent 1px)',
-                  backgroundSize: '24px 24px',
-                  opacity: 0.35,
-                }}
-              />
-              <div
-                className="relative z-10 rounded-xl border px-5 py-2 text-2xl font-bold"
-                style={{
-                  borderColor: 'color-mix(in srgb, var(--border-secondary) 74%, transparent)',
-                  color: 'var(--text-bright)',
-                  backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 72%, transparent)',
+                  color: 'var(--text-tertiary)',
                 }}
               >
                 {getBlogInitials(blog.title)}
@@ -296,7 +285,19 @@ export default memo(function BlogDetailClient({ blog, config }) {
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
           <article className="lg:pr-8">
-            <div className="prose prose-lg max-w-none prose-neutral">
+            <div 
+              className="prose prose-lg max-w-none"
+              style={{
+                '--tw-prose-body': 'var(--text-secondary)',
+                '--tw-prose-headings': 'var(--text-primary)',
+                '--tw-prose-links': 'var(--accent-cyan)',
+                '--tw-prose-bold': 'var(--text-primary)',
+                '--tw-prose-quotes': 'var(--text-secondary)',
+                '--tw-prose-code': 'var(--accent-cyan)',
+                '--tw-prose-pre-bg': 'var(--bg-elevated)',
+                '--tw-prose-pre-code': 'var(--text-primary)',
+              }}
+            >
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
                 components={{
@@ -310,8 +311,8 @@ export default memo(function BlogDetailClient({ blog, config }) {
                       <span
                         className="my-6 block overflow-hidden rounded-xl border"
                         style={{
-                          borderColor: 'color-mix(in srgb, var(--border-secondary) 70%, transparent)',
-                          backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 82%, transparent)',
+                          borderColor: 'var(--border-secondary)',
+                          backgroundColor: 'var(--bg-elevated)',
                         }}
                       >
                         {isOptimizableImage(resolvedSrc) ? (
@@ -376,13 +377,13 @@ export default memo(function BlogDetailClient({ blog, config }) {
                   code({ inline, className, children, ...props }) {
                     const match = /language-(\w+)/.exec(className || '');
                     return !inline && match ? (
-                      <div className="my-6 overflow-hidden rounded-lg border" style={{ borderColor: 'color-mix(in srgb, var(--border-secondary) 70%, transparent)' }}>
+                      <div className="my-6 overflow-hidden rounded-lg border" style={{ borderColor: 'var(--border-secondary)' }}>
                         <div
                           className="flex items-center justify-between gap-3 px-4 py-1 text-xs uppercase tracking-wide"
                           style={{
-                            backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 90%, transparent)',
+                            backgroundColor: 'var(--bg-elevated)',
                             color: 'var(--text-tertiary)',
-                            borderBottom: '1px solid color-mix(in srgb, var(--border-secondary) 70%, transparent)',
+                            borderBottom: '1px solid var(--border-secondary)',
                           }}
                         >
                           <span>{match[1]}</span>
@@ -448,9 +449,7 @@ export default memo(function BlogDetailClient({ blog, config }) {
          {extractedLinks.length > 0 && (
            <section className="mt-8 rounded-2xl border p-5 sm:p-6"
              style={{
-               borderColor: 'color-mix(in srgb, var(--border-secondary) 74%, transparent)',
-               background:
-                 'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 94%, transparent), color-mix(in srgb, var(--bg-secondary) 94%, transparent))',
+               borderColor: 'var(--border-secondary)',
                contentVisibility: 'auto',
                containIntrinsicSize: '1px 540px',
              }}
