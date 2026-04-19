@@ -65,13 +65,10 @@ jobs:
 
           if release_type == "feat":
               minor += 1
-              patch = 0
           elif release_type == "fix":
               patch += 1
           else:
               major += 1
-              minor = 0
-              patch = 0
 
           release_as = f"{major}.{minor}.{patch}"
           version = f"v{release_as}"
@@ -93,9 +90,9 @@ jobs:
     needs: determine-release
     runs-on: ubuntu-latest
     outputs:
-      release_created: ${{ steps.release.outputs.release_created }}
-      prs_created: ${{ steps.release.outputs.prs_created }}
-      pr: ${{ steps.release.outputs.pr }}
+      pull_request_number: ${{ steps.cpr.outputs.pull-request-number }}
+      pull_request_url: ${{ steps.cpr.outputs.pull-request-url }}
+      pull_request_operation: ${{ steps.cpr.outputs.pull-request-operation }}
 
     steps:
       - name: Check out the repo
@@ -103,24 +100,105 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Update release version files
+        env:
+          NEXT_VERSION: ${{ needs.determine-release.outputs.release_as }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from datetime import date
+          from pathlib import Path
+
+          next_version = os.environ["NEXT_VERSION"].strip()
+          repository = os.environ.get("GITHUB_REPOSITORY", "aiyu-ayaan/Aiyu").strip()
+
+          package_path = Path("package.json")
+          package_lock_path = Path("package-lock.json")
+          manifest_path = Path(".release-please-manifest.json")
+          changelog_path = Path("CHANGELOG.md")
+
+          def write_json(path: Path, data: dict) -> None:
+              path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+
+          package_data = json.loads(package_path.read_text(encoding="utf-8"))
+          current_version = package_data.get("version", "").strip()
+          if not current_version:
+              raise SystemExit("package.json version is missing.")
+
+          package_data["version"] = next_version
+          write_json(package_path, package_data)
+
+          lock_data = json.loads(package_lock_path.read_text(encoding="utf-8"))
+          lock_data["version"] = next_version
+          if isinstance(lock_data.get("packages"), dict) and isinstance(lock_data["packages"].get(""), dict):
+              lock_data["packages"][""]["version"] = next_version
+          write_json(package_lock_path, lock_data)
+
+          manifest_data = json.loads(manifest_path.read_text(encoding="utf-8"))
+          manifest_data["."] = next_version
+          write_json(manifest_path, manifest_data)
+
+          changelog_text = changelog_path.read_text(encoding="utf-8")
+          compare_url = f"https://github.com/{repository}/compare/v{current_version}...v{next_version}"
+          heading = f"## [{next_version}]({compare_url}) ({date.today().isoformat()})"
+          if heading not in changelog_text:
+              entry = (
+                  f"{heading}\n\n"
+                  "### Notes\n\n"
+                  f"- Release {next_version}\n\n"
+              )
+              marker = "# Changelog\n\n"
+              if marker in changelog_text:
+                  changelog_text = changelog_text.replace(marker, marker + entry, 1)
+              else:
+                  changelog_text = "# Changelog\n\n" + entry + changelog_text
+              changelog_path.write_text(changelog_text, encoding="utf-8")
+
+          print(f"Current version: {current_version}")
+          print(f"Next version: {next_version}")
+          PY
+
       - name: Create or update release PR
-        id: release
-        uses: googleapis/release-please-action@v4
+        id: cpr
+        uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          release-type: node
-          target-branch: master
-          release-as: ${{ needs.determine-release.outputs.release_as }}
-          skip-github-release: true
+          commit-message: 'chore(master): release v${{ needs.determine-release.outputs.release_as }}'
+          title: 'chore(master): release v${{ needs.determine-release.outputs.release_as }}'
+          body: |
+            This automated release PR updates the version based on selected release type.
+
+            - Release type: ${{ needs.determine-release.outputs.release_type }}
+            - Target version: v${{ needs.determine-release.outputs.release_as }}
+            - Updated files:
+              - package.json
+              - package-lock.json
+              - .release-please-manifest.json
+              - CHANGELOG.md
+
+            Deployment runs automatically after this PR is merged into master.
+          branch: chore/release-v${{ needs.determine-release.outputs.release_as }}
+          base: master
+          labels: release
+          delete-branch: true
+
+      - name: Ensure release PR was created or updated
+        if: steps.cpr.outputs.pull-request-number == ''
+        run: |
+          echo "No release PR was created or updated."
+          echo "Check if target version already exists or branch protection blocks PR creation."
+          exit 1
 
       - name: Release PR summary
         run: |
           echo "Requested release type: ${{ needs.determine-release.outputs.release_type }}"
           echo "Target version: ${{ needs.determine-release.outputs.version }}"
-          echo "release_created=${{ steps.release.outputs.release_created }}"
-          echo "pr=${{ steps.release.outputs.pr }}"
-          echo "prs_created=${{ steps.release.outputs.prs_created }}"
-          echo "Release PR includes version file updates (package.json, package-lock.json, CHANGELOG.md, and .release-please-manifest.json)."
+          echo "pull_request_number=${{ steps.cpr.outputs.pull-request-number }}"
+          echo "pull_request_url=${{ steps.cpr.outputs.pull-request-url }}"
+          echo "pull_request_operation=${{ steps.cpr.outputs.pull-request-operation }}"
+          echo "Release PR includes version updates in package.json, package-lock.json, CHANGELOG.md, and .release-please-manifest.json."
 
   detect-release-merge:
     name: Detect Merged Release Commit
@@ -166,8 +244,8 @@ jobs:
 
           release_files_match = (
               ".release-please-manifest.json" in changed_files
-              and "CHANGELOG.md" in changed_files
               and "package.json" in changed_files
+              and "package-lock.json" in changed_files
           )
 
           should_deploy = "true" if (release_merge_match or release_files_match) else "false"
