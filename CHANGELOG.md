@@ -1,5 +1,11 @@
 # Changelog
 
+## [3.6.1](https://github.com/aiyu-ayaan/Aiyu/compare/v3.5.1...v3.6.1) (2026-04-19)
+
+### Notes
+
+- Release 3.6.1
+
 ## [3.5.1](https://github.com/aiyu-ayaan/Aiyu/compare/v3.5.0...v3.5.1) (2026-04-14)
 
 
