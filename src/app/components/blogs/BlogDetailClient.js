@@ -67,6 +67,7 @@ export default memo(function BlogDetailClient({ blog, config }) {
   const [selectedImage, setSelectedImage] = useState(null);
   const [showShareToast, setShowShareToast] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [activeId, setActiveId] = useState('');
 
   // Use useMemo to prevent re-extracting links on every render
   const extractedLinks = useMemo(() => {
@@ -92,6 +93,35 @@ export default memo(function BlogDetailClient({ blog, config }) {
   useEffect(() => {
     setImageError(false);
   }, [blog?.image]);
+
+  useEffect(() => {
+    if (!hasToc || toc.length === 0) return;
+
+    const handleScroll = () => {
+      const headingElements = toc.map(item => document.getElementById(item.id)).filter(Boolean);
+      if (headingElements.length === 0) return;
+
+      let currentActiveId = headingElements[0].id;
+      for (const el of headingElements) {
+        const bounds = el.getBoundingClientRect();
+        if (bounds.top <= 200) {
+          currentActiveId = el.id;
+        } else {
+          break;
+        }
+      }
+      setActiveId(currentActiveId);
+    };
+
+    // Delay initial check slightly to ensure ReactMarkdown has painted the elements
+    const timeoutId = setTimeout(handleScroll, 150);
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [toc, hasToc]); // Note: excluding activeId to prevent re-binding observer
 
   const handleShare = useCallback(async () => {
     if (typeof window === 'undefined') return;
@@ -408,19 +438,24 @@ export default memo(function BlogDetailClient({ blog, config }) {
                   On this page
                 </p>
                 <nav className="space-y-2">
-                  {toc.map((item) => (
-                    <a
-                      key={item.id}
-                      href={`#${item.id}`}
-                      className="block py-1.5 text-sm transition-colors hover:underline"
-                      style={{
-                        color: 'var(--text-secondary)',
-                        marginLeft: item.level === 3 ? 12 : 0,
-                      }}
-                    >
-                      {item.text}
-                    </a>
-                  ))}
+                  {toc.map((item) => {
+                    const isActive = activeId === item.id;
+                    return (
+                      <a
+                        key={item.id}
+                        href={`#${item.id}`}
+                        className={`block py-1.5 text-sm transition-colors ${isActive ? 'font-semibold' : 'hover:underline'}`}
+                        style={{
+                          color: isActive ? 'var(--accent-cyan)' : 'var(--text-secondary)',
+                          marginLeft: item.level === 3 ? 12 : 0,
+                          paddingLeft: isActive ? '8px' : '0',
+                          borderLeft: isActive ? '2px solid var(--accent-cyan)' : '0px solid transparent',
+                        }}
+                      >
+                        {item.text}
+                      </a>
+                    );
+                  })}
                 </nav>
               </div>
             </aside>
