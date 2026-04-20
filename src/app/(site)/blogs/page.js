@@ -1,7 +1,6 @@
 import BlogList from '../../components/blogs/BlogList';
 import { getConfigData, getPublishedBlogs } from '@/lib/dataFetchers';
-
-export const revalidate = 300;
+export const revalidate = 0;
 
 export async function generateMetadata() {
     const config = await getConfigData();

@@ -24,6 +24,7 @@ import GalleryModel from '@/models/Gallery';
 import { resolveBlogByIdentifier } from '@/lib/blogSlugs';
 import { getBlogSlug } from '@/lib/blogSlugs';
 import { getDeploymentSlug, getProjectSlug } from '@/lib/contentSlugs';
+import { getReadTime } from '@/app/components/blogs/blogUtils';
 
 const IS_PRODUCTION_BUILD = process.env.NEXT_PHASE === 'phase-production-build';
 const ALLOW_DB_DURING_BUILD = process.env.ALLOW_DB_DURING_BUILD === 'true';
@@ -186,10 +187,14 @@ function toBlogPreview(blogs, maxLength = 320) {
     const plainBlogs = serialize(blogs);
     if (!Array.isArray(plainBlogs)) return [];
 
-    return plainBlogs.map((blog) => ({
-        ...blog,
-        content: typeof blog?.content === 'string' ? blog.content.slice(0, maxLength) : '',
-    }));
+    return plainBlogs.map((blog) => {
+        const readTime = typeof blog?.content === 'string' ? getReadTime(blog.content) : '1 min read';
+        return {
+            ...blog,
+            readTime,
+            content: typeof blog?.content === 'string' ? blog.content.slice(0, maxLength) : '',
+        };
+    });
 }
 
 /**

@@ -103,7 +103,7 @@ const HomeBlogs = ({ blogs }) => {
                     }}
                   >
                     <FaPenNib className="h-3 w-3" />
-                    {getReadTime(blog?.content)}
+                    {blog?.readTime || getReadTime(blog?.content)}
                   </span>
                 </div>
 
