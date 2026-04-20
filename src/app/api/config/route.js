@@ -28,6 +28,8 @@ const PUBLIC_CONFIG_SELECT = [
     'terminal',
     'blogsTitle',
     'blogsSubtitle',
+    'isBlogAutomated',
+    'blogAutomationMessage',
     'projectsTitle',
     'projectsSubtitle',
     'galleryTitle',

@@ -96,6 +96,8 @@ const CONFIG_PUBLIC_SELECT = [
     'terminal',
     'blogsTitle',
     'blogsSubtitle',
+    'isBlogAutomated',
+    'blogAutomationMessage',
     'projectsTitle',
     'projectsSubtitle',
     'galleryTitle',

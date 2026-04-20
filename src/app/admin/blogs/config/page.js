@@ -12,7 +12,9 @@ export default function BlogConfigPage() {
     const [toast, setToast] = useState(null);
     const [config, setConfig] = useState({
         blogsTitle: 'Latest Insights',
-        blogsSubtitle: 'Thoughts, tutorials, and updates on web development and technology.'
+        blogsSubtitle: 'Thoughts, tutorials, and updates on web development and technology.',
+        isBlogAutomated: false,
+        blogAutomationMessage: 'Automated via API'
     });
 
     const showToast = (message, success = true) => {
@@ -28,7 +30,9 @@ export default function BlogConfigPage() {
                 if (data) {
                     setConfig({
                         blogsTitle: data.blogsTitle || '',
-                        blogsSubtitle: data.blogsSubtitle || ''
+                        blogsSubtitle: data.blogsSubtitle || '',
+                        isBlogAutomated: !!data.isBlogAutomated,
+                        blogAutomationMessage: data.blogAutomationMessage || ''
                     });
                 }
             } catch (error) {
@@ -102,6 +106,35 @@ export default function BlogConfigPage() {
                                 className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-cyan-500 transition-colors resize-none"
                             />
                         </div>
+
+                        <div className="flex items-center gap-4 border-t border-slate-700/50 pt-6">
+                            <label className="flex items-center gap-3 cursor-pointer">
+                                <div className="relative">
+                                    <input
+                                        type="checkbox"
+                                        className="sr-only"
+                                        checked={config.isBlogAutomated}
+                                        onChange={(e) => setConfig({ ...config, isBlogAutomated: e.target.checked })}
+                                    />
+                                    <div className={`block w-10 h-6 rounded-full transition-colors ${config.isBlogAutomated ? 'bg-cyan-500' : 'bg-slate-700'}`}></div>
+                                    <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${config.isBlogAutomated ? 'translate-x-4' : ''}`}></div>
+                                </div>
+                                <span className="text-sm font-medium text-slate-300">Indicate Blog Automation</span>
+                            </label>
+                        </div>
+                        
+                        {config.isBlogAutomated && (
+                            <div>
+                                <label className="block text-sm font-medium text-slate-300 mb-2">Automation Hover Message</label>
+                                <textarea
+                                    value={config.blogAutomationMessage}
+                                    onChange={(e) => setConfig({ ...config, blogAutomationMessage: e.target.value })}
+                                    placeholder="Explain how posts are automated..."
+                                    rows="2"
+                                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-cyan-500 transition-colors resize-none"
+                                />
+                            </div>
+                        )}
 
                         <div className="pt-2">
                             <button

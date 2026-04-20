@@ -20,6 +20,8 @@ const ConfigSchema = new mongoose.Schema({
     projectsSubtitle: { type: String, default: 'A collection of my work' },
     blogsTitle: { type: String, default: 'Latest Insights' },
     blogsSubtitle: { type: String, default: 'Thoughts, tutorials, and updates on web development and technology.' },
+    isBlogAutomated: { type: Boolean, default: false },
+    blogAutomationMessage: { type: String, default: 'Automated via API' },
     galleryTitle: { type: String, default: 'Gallery' },
     gallerySubtitle: { type: String, default: 'A visual journey through my lens.' },
     googleAnalyticsId: { type: String, default: '' },
