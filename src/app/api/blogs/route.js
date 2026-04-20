@@ -175,7 +175,8 @@ export async function POST(request) {
         const blogData = {
             ...body,
             slug: await createUniqueBlogSlug(Blog, body.title),
-            published: body.published !== undefined ? body.published : false
+            published: body.published !== undefined ? body.published : false,
+            isAutomated: !isSessionValid
         };
 
         const blog = await Blog.create(blogData);

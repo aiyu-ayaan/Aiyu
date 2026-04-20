@@ -90,6 +90,10 @@ const BlogSchema = new mongoose.Schema({
         type: Boolean,
         default: false,
     },
+    isAutomated: {
+        type: Boolean,
+        default: false,
+    },
 }, { timestamps: true });
 
 // Add indexes for frequently sorted/filtered queries

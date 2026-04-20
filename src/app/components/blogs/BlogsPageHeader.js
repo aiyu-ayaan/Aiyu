@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FaRobot, FaCogs } from 'react-icons/fa';
+import { FaBolt } from 'react-icons/fa';
 
 export default function BlogsPageHeader({ config }) {
     const pathname = usePathname();
@@ -37,7 +37,7 @@ export default function BlogsPageHeader({ config }) {
                     
                     {config?.isBlogAutomated && (
                         <div className="relative flex flex-col items-center justify-center cursor-help group">
-                            <FaRobot className="w-4 h-4 transition-all duration-300 group-hover:scale-110" style={{ color: 'var(--accent-cyan)' }} />
+                            <FaBolt className="w-3.5 h-3.5 transition-all duration-300 group-hover:scale-110" style={{ color: 'var(--accent-cyan)' }} />
                             
                             <div className="absolute top-8 left-1/2 -translate-x-1/2 lg:right-auto lg:left-1/2 lg:-translate-x-1/2 w-64 p-3 rounded-lg border text-xs opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 shadow-xl"
                                 style={{
@@ -54,7 +54,7 @@ export default function BlogsPageHeader({ config }) {
                                 />
                                 <div className="relative z-10 flex flex-col gap-1.5">
                                     <div className="flex items-center gap-2 font-bold mb-1" style={{ color: 'var(--accent-cyan)' }}>
-                                        <FaCogs className="w-4 h-4" />
+                                        <FaBolt className="w-3.5 h-3.5" />
                                         <span>Automated Transmissions</span>
                                     </div>
                                     <div className="flex flex-col gap-1.5 leading-relaxed">

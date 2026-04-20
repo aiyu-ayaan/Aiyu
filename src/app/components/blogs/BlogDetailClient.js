@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import dynamic from 'next/dynamic';
-import { FaArrowLeft, FaCalendarAlt, FaClock, FaShareAlt, FaTag } from 'react-icons/fa';
+import { FaArrowLeft, FaCalendarAlt, FaClock, FaShareAlt, FaTag, FaBolt } from 'react-icons/fa';
 import { IoCheckmark } from 'react-icons/io5';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import LinkPreview from './LinkPreview';
@@ -368,6 +368,36 @@ export default memo(function BlogDetailClient({ blog, config }) {
               >
                 {blog.content}
               </ReactMarkdown>
+
+              {blog?.isAutomated && (
+                <div 
+                  className="mt-12 flex flex-col sm:flex-row items-start sm:items-center gap-4 p-5 rounded-2xl border relative overflow-hidden"
+                  style={{
+                    borderColor: 'color-mix(in srgb, var(--accent-cyan) 20%, var(--border-secondary))',
+                    backgroundColor: 'color-mix(in srgb, var(--accent-cyan) 3%, transparent)',
+                  }}
+                >
+                  <div className="absolute left-0 top-0 bottom-0 w-1"
+                       style={{ backgroundColor: 'var(--accent-cyan)' }} />
+                  
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+                    style={{
+                      backgroundColor: 'color-mix(in srgb, var(--accent-cyan) 15%, transparent)',
+                      color: 'var(--accent-cyan)'
+                    }}
+                  >
+                    <FaBolt className="w-4 h-4 ml-[1px]" />
+                  </div>
+                  <div>
+                      <p className="text-sm font-bold mb-1 tracking-wide uppercase" style={{ color: 'var(--accent-cyan)' }}>
+                        Automated Transmission
+                      </p>
+                      <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                        This entry was synthesized and populated dynamically using native API integrations.
+                      </p>
+                  </div>
+                </div>
+              )}
             </div>
           </article>
 
