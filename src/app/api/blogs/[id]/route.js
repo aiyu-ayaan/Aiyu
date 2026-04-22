@@ -4,6 +4,25 @@ import Blog from "@/models/Blog";
 import { NextResponse } from "next/server";
 import cache from '@/lib/cache';
 import { createUniqueBlogSlug, resolveBlogByIdentifier } from '@/lib/blogSlugs';
+import { revalidatePath } from 'next/cache';
+
+function normalizeCanonicalUrl(value) {
+    const raw = typeof value === 'string' ? value.trim() : '';
+    if (!raw) return '';
+
+    const baseUrl = process.env.SITE_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+
+    try {
+        const parsed = new URL(raw, baseUrl);
+        const base = new URL(baseUrl);
+        if ((parsed.protocol !== 'http:' && parsed.protocol !== 'https:') || parsed.origin !== base.origin) {
+            return '';
+        }
+        return parsed.toString();
+    } catch {
+        return '';
+    }
+}
 
 function normalizeStringList(value) {
     if (Array.isArray(value)) {
@@ -28,7 +47,7 @@ function normalizeBlogPayload(body = {}) {
         excerpt: typeof body.excerpt === 'string' ? body.excerpt.trim() : body.excerpt,
         seoTitle: typeof body.seoTitle === 'string' ? body.seoTitle.trim() : body.seoTitle,
         seoDescription: typeof body.seoDescription === 'string' ? body.seoDescription.trim() : body.seoDescription,
-        canonicalUrl: typeof body.canonicalUrl === 'string' ? body.canonicalUrl.trim() : body.canonicalUrl,
+        canonicalUrl: body.canonicalUrl !== undefined ? normalizeCanonicalUrl(body.canonicalUrl) : body.canonicalUrl,
         socialTitle: typeof body.socialTitle === 'string' ? body.socialTitle.trim() : body.socialTitle,
         socialDescription: typeof body.socialDescription === 'string' ? body.socialDescription.trim() : body.socialDescription,
         socialImage: typeof body.socialImage === 'string' ? body.socialImage.trim() : body.socialImage,
@@ -43,6 +62,15 @@ function normalizeBlogPayload(body = {}) {
 
 function isDuplicateTitleError(error) {
     return error?.code === 11000 && (error?.keyPattern?.title || error?.keyValue?.title);
+}
+
+function revalidateBlogPublicPaths(slug = '') {
+    revalidatePath('/');
+    revalidatePath('/blogs');
+    revalidatePath('/sitemap.xml');
+    if (slug) {
+        revalidatePath(`/blogs/${slug}`);
+    }
 }
 
 export async function GET(request, { params }) {
@@ -98,6 +126,8 @@ export async function PUT(request, { params }) {
         console.log('PUT /api/blogs/[id] - Updated Blog:', blog);
         await cache.invalidatePrefixAsync('db:blogs');
         await cache.invalidatePrefixAsync('db:blog');
+        revalidateBlogPublicPaths(existingBlog?.slug);
+        revalidateBlogPublicPaths(blog?.slug);
         return NextResponse.json({ success: true, data: blog });
     } catch (error) {
         if (isDuplicateTitleError(error)) {
@@ -120,6 +150,7 @@ export async function DELETE(request, { params }) {
         }
         await cache.invalidatePrefixAsync('db:blogs');
         await cache.invalidatePrefixAsync('db:blog');
+        revalidateBlogPublicPaths(blog?.slug);
         return NextResponse.json({ success: true, data: {} });
     } catch (error) {
         return NextResponse.json({ success: false, error: error.message }, { status: 400 });

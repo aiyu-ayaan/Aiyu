@@ -67,6 +67,7 @@ function createStaticRoutes(baseUrl, options = {}) {
   const now = new Date();
   const projectsLastModified = options.projectsLastModified || now;
   const appsLastModified = options.appsLastModified || now;
+  const blogsLastModified = options.blogsLastModified || now;
 
   return [
     {
@@ -95,7 +96,7 @@ function createStaticRoutes(baseUrl, options = {}) {
     },
     {
       url: `${baseUrl}/blogs`,
-      lastModified: now,
+      lastModified: blogsLastModified,
       changeFrequency: 'weekly',
       priority: 0.8,
     },
@@ -153,12 +154,13 @@ export default async function sitemap() {
     await dbConnect();
 
     const [blogs, projects, deployments] = await Promise.all([
-      BlogModel.find({ published: { $ne: false } }, { title: 1, slug: 1, updatedAt: 1 }).lean(),
+      BlogModel.find({ published: { $ne: false }, noIndex: { $ne: true } }, { title: 1, slug: 1, updatedAt: 1, createdAt: 1 }).lean(),
       ProjectModel.find({}, { _id: 1, name: 1, slug: 1, updatedAt: 1, createdAt: 1 }).lean(),
       DeploymentModel.find({}, { _id: 1, name: 1, slug: 1, updatedAt: 1, createdAt: 1 }).lean(),
     ]);
 
     const staticRoutesWithRealtimeCollections = createStaticRoutes(baseUrl, {
+      blogsLastModified: getLatestLastModified(blogs) || new Date(),
       projectsLastModified: getLatestLastModified(projects) || new Date(),
       appsLastModified: getLatestLastModified(deployments) || new Date(),
     });

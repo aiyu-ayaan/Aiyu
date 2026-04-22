@@ -20,12 +20,20 @@ export async function generateMetadata() {
 
   const baseName = config?.siteTitle || config?.logoText || 'Portfolio';
   const icon = config?.hasCustomFavicon ? '/api/favicon' : '/favicon.ico';
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://me.aiyu.co.in';
+  const baseUrl = process.env.SITE_URL || process.env.NEXT_PUBLIC_BASE_URL || 'https://me.aiyu.co.in';
   const siteDescription = config?.siteDescription || 'Professional portfolio showcasing projects, blogs, and expertise.';
   const ogImage = (typeof config?.ogImage === 'string' ? config.ogImage : typeof config?.ogImage?.value === 'string' && config.ogImage.value.length > 0 ? config.ogImage.value : null) || `${baseUrl}/og-image.png`;
   const authorName = config?.authorName || 'Developer';
+  const metadataBase = (() => {
+    try {
+      return new URL(baseUrl);
+    } catch {
+      return new URL('http://localhost:3000');
+    }
+  })();
 
   return {
+    metadataBase,
     title: baseName,
     description: siteDescription,
     keywords: ['portfolio', 'developer', 'projects', 'blogs', 'web development', config?.profession || 'full stack'].join(', '),

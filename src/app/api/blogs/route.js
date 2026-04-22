@@ -8,10 +8,29 @@ import cache, { CACHE_KEYS, CACHE_TTL, createCacheDebugHeaders } from '@/lib/cac
 import { createPublicCacheHeaders, RESPONSE_CACHE } from '@/lib/httpCache';
 import { createUniqueBlogSlug } from '@/lib/blogSlugs';
 import crypto from 'crypto';
+import { revalidatePath } from 'next/cache';
 
 const BLOG_LIST_SELECT = ['title', 'slug', 'content', 'excerpt', 'image', 'imageAlt', 'date', 'createdAt', 'updatedAt', 'published', 'tags', 'seoTitle', 'seoDescription', 'canonicalUrl', 'keywords', 'socialTitle', 'socialDescription', 'socialImage', 'socialImageAlt', 'noIndex'].join(' ');
 const DEFAULT_BLOG_PAGE_SIZE = 6;
 const MAX_BLOG_PAGE_SIZE = 24;
+
+function normalizeCanonicalUrl(value) {
+    const raw = typeof value === 'string' ? value.trim() : '';
+    if (!raw) return '';
+
+    const baseUrl = process.env.SITE_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+
+    try {
+        const parsed = new URL(raw, baseUrl);
+        const base = new URL(baseUrl);
+        if ((parsed.protocol !== 'http:' && parsed.protocol !== 'https:') || parsed.origin !== base.origin) {
+            return '';
+        }
+        return parsed.toString();
+    } catch {
+        return '';
+    }
+}
 
 function normalizeStringList(value) {
     if (Array.isArray(value)) {
@@ -33,7 +52,7 @@ function normalizeBlogPayload(body = {}) {
         excerpt: String(body.excerpt || '').trim(),
         seoTitle: String(body.seoTitle || '').trim(),
         seoDescription: String(body.seoDescription || '').trim(),
-        canonicalUrl: String(body.canonicalUrl || '').trim(),
+        canonicalUrl: normalizeCanonicalUrl(body.canonicalUrl),
         socialTitle: String(body.socialTitle || '').trim(),
         socialDescription: String(body.socialDescription || '').trim(),
         socialImage: String(body.socialImage || '').trim(),
@@ -92,6 +111,15 @@ function parsePagination(searchParams) {
     const limit = Number.isNaN(parsedLimit) ? DEFAULT_BLOG_PAGE_SIZE : Math.max(1, Math.min(MAX_BLOG_PAGE_SIZE, parsedLimit));
 
     return { hasPagination: true, page, limit };
+}
+
+function revalidateBlogPublicPaths(slug = '') {
+    revalidatePath('/');
+    revalidatePath('/blogs');
+    revalidatePath('/sitemap.xml');
+    if (slug) {
+        revalidatePath(`/blogs/${slug}`);
+    }
 }
 
 export async function GET(request) {
@@ -262,6 +290,7 @@ export async function POST(request) {
         console.log('POST /api/blogs - Created:', blog);
         await cache.invalidatePrefixAsync('db:blogs');
         await cache.invalidatePrefixAsync('db:blog');
+        revalidateBlogPublicPaths(blog?.slug);
         return NextResponse.json({ success: true, data: blog }, { status: 201 });
     } catch (error) {
         if (isDuplicateTitleError(error)) {

@@ -459,6 +459,9 @@ export async function getBlogById(id) {
             },
             CACHE_TTL.MEDIUM
         );
+        if (!blog || blog.published === false) {
+            return null;
+        }
         return serialize(blog);
     } catch (error) {
         warnFetcherFallback('getBlogById', error);
