@@ -364,7 +364,7 @@ jobs:
             docker compose pull || { echo "Failed to pull latest image"; exit 1; }
 
             echo "Restarting containers..."
-            sudo docker compose up -d --force-recreate --scale app=3 || { echo "Failed to start containers"; exit 1; }
+            sudo docker compose up -d || { echo "Failed to start containers"; exit 1; }
 
             echo "Deployment completed successfully!"
 
