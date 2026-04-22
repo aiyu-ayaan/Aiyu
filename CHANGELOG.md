@@ -1,5 +1,11 @@
 # Changelog
 
+## [3.7.3](https://github.com/aiyu-ayaan/Aiyu/compare/v3.7.2...v3.7.3) (2026-04-22)
+
+### Notes
+
+- Release 3.7.3
+
 ## [3.7.2](https://github.com/aiyu-ayaan/Aiyu/compare/v3.6.2...v3.7.2) (2026-04-22)
 
 ### Notes
