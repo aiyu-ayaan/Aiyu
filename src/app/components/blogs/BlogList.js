@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BlogListPageSkeleton } from '../shared/skeletons/PublicPageSkeletons';
 import BlogCard from './BlogCard';
+
+const DEFAULT_BLOG_PAGE_SIZE = 6;
 
 const getBlogPublishTimestamp = (blog) => {
   const primaryDate = blog?.date ? new Date(blog.date) : null;
@@ -18,26 +20,79 @@ const getBlogPublishTimestamp = (blog) => {
   return 0;
 };
 
-export default function BlogList({ initialBlogs, initialConfig }) {
+export default function BlogList({ initialBlogs, initialConfig, initialPagination }) {
   const hasInitialData = initialBlogs !== undefined || initialConfig !== undefined;
+  const initialPageSize = Number.parseInt(initialPagination?.limit, 10);
+  const resolvedPageSize = Number.isNaN(initialPageSize) ? DEFAULT_BLOG_PAGE_SIZE : initialPageSize;
+
   const [blogs, setBlogs] = useState(Array.isArray(initialBlogs) ? initialBlogs : []);
   const [loading, setLoading] = useState(!hasInitialData);
   const [config, setConfig] = useState(initialConfig ?? null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTag, setSelectedTag] = useState('All');
+  const [currentPage, setCurrentPage] = useState(Number.isFinite(initialPagination?.page) ? initialPagination.page : (Array.isArray(initialBlogs) && initialBlogs.length > 0 ? 1 : 0));
+  const [hasMore, setHasMore] = useState(Boolean(initialPagination?.hasMore));
+  const [loadingMore, setLoadingMore] = useState(false);
+  const loadMoreRef = useRef(null);
+
+  const mergeBlogs = useCallback((existingBlogs, incomingBlogs) => {
+    const mergedMap = new Map();
+
+    [...existingBlogs, ...incomingBlogs].forEach((blog) => {
+      const id = blog?._id || blog?.slug || `${blog?.title || 'blog'}-${blog?.date || ''}`;
+      if (id) mergedMap.set(id, blog);
+    });
+
+    return Array.from(mergedMap.values());
+  }, []);
+
+  const loadNextPage = useCallback(async () => {
+    if (loading || loadingMore || !hasMore) return;
+
+    setLoadingMore(true);
+    const nextPage = currentPage + 1;
+
+    try {
+      const response = await fetch(`/api/blogs?page=${nextPage}&limit=${resolvedPageSize}`);
+      const payload = await response.json();
+
+      if (!payload?.success) {
+        return;
+      }
+
+      const nextBlogs = Array.isArray(payload?.data) ? payload.data : [];
+      const nextPagination = payload?.pagination || {};
+
+      setBlogs((previousBlogs) => mergeBlogs(previousBlogs, nextBlogs));
+      setCurrentPage(Number.isFinite(nextPagination.page) ? nextPagination.page : nextPage);
+      setHasMore(Boolean(nextPagination.hasMore));
+    } catch (error) {
+      console.error('Failed to load more blogs:', error);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [currentPage, hasMore, loading, loadingMore, mergeBlogs, resolvedPageSize]);
 
   useEffect(() => {
-    if (hasInitialData) return;
+    if (hasInitialData) {
+      setHasMore(Boolean(initialPagination?.hasMore));
+      return;
+    }
 
     let isMounted = true;
 
     const fetchBlogs = async () => {
       try {
-        const [blogsRes, configRes] = await Promise.all([fetch('/api/blogs'), fetch('/api/config')]);
+        const [blogsRes, configRes] = await Promise.all([
+          fetch(`/api/blogs?page=1&limit=${resolvedPageSize}`),
+          fetch('/api/config'),
+        ]);
 
         const blogsPayload = await blogsRes.json();
         if (isMounted && blogsPayload?.success) {
           setBlogs(Array.isArray(blogsPayload.data) ? blogsPayload.data : []);
+          setCurrentPage(Number.isFinite(blogsPayload?.pagination?.page) ? blogsPayload.pagination.page : 1);
+          setHasMore(Boolean(blogsPayload?.pagination?.hasMore));
         }
 
         if (isMounted && configRes.ok) {
@@ -55,7 +110,28 @@ export default function BlogList({ initialBlogs, initialConfig }) {
     return () => {
       isMounted = false;
     };
-  }, [hasInitialData]);
+  }, [hasInitialData, initialPagination?.hasMore, resolvedPageSize]);
+
+  useEffect(() => {
+    if (!hasMore || loading || loadingMore || !loadMoreRef.current) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          loadNextPage();
+        }
+      },
+      {
+        rootMargin: '400px 0px',
+      }
+    );
+
+    observer.observe(loadMoreRef.current);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [hasMore, loading, loadingMore, loadNextPage]);
 
   const allTags = useMemo(() => {
     const tagSet = new Set();
@@ -139,11 +215,21 @@ export default function BlogList({ initialBlogs, initialConfig }) {
 
         <main>
           {filteredBlogs.length > 0 ? (
-            <div className="flex flex-col gap-0">
-              {filteredBlogs.map((blog) => (
-                <BlogCard key={blog?._id || blog?.slug} blog={blog} />
-              ))}
-            </div>
+            <>
+              <div className="flex flex-col gap-0">
+                {filteredBlogs.map((blog) => (
+                  <BlogCard key={blog?._id || blog?.slug} blog={blog} />
+                ))}
+              </div>
+
+              {hasMore && <div ref={loadMoreRef} className="h-1" />}
+
+              {loadingMore && (
+                <p className="pt-6 text-center text-sm" style={{ color: 'var(--text-secondary)' }}>
+                  Loading more posts...
+                </p>
+              )}
+            </>
           ) : (
             <div className="py-20 text-center">
               <h3 className="text-2xl font-normal mb-2" style={{ color: 'var(--text-primary)' }}>No posts found</h3>
