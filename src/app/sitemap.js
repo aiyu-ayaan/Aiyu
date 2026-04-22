@@ -14,6 +14,7 @@ const ALLOW_DB_DURING_BUILD = process.env.ALLOW_DB_DURING_BUILD === 'true';
 const SKIP_DB_DURING_BUILD = IS_PRODUCTION_BUILD && !ALLOW_DB_DURING_BUILD;
 
 export const revalidate = 3600;
+export const dynamic = 'force-dynamic';
 
 function toDateOrNull(value) {
   if (!value) return null;

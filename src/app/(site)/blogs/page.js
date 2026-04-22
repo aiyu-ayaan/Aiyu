@@ -1,5 +1,5 @@
 import BlogList from '../../components/blogs/BlogList';
-import { DEFAULT_BLOG_PAGE_SIZE, getConfigData, getPublishedBlogsPage } from '@/lib/dataFetchers';
+import { getConfigData, getPublishedBlogs } from '@/lib/dataFetchers';
 export const revalidate = 0;
 
 function getBaseUrl() {
@@ -49,16 +49,22 @@ export async function generateMetadata() {
 }
 
 export default async function BlogsPage() {
-    const [blogsPage, config] = await Promise.all([
-        getPublishedBlogsPage({ page: 1, limit: DEFAULT_BLOG_PAGE_SIZE }),
+    const [blogs, config] = await Promise.all([
+        getPublishedBlogs(),
         getConfigData(),
     ]);
 
     return (
         <BlogList
-            initialBlogs={blogsPage.blogs}
+            initialBlogs={blogs}
             initialConfig={config}
-            initialPagination={blogsPage.pagination}
+            initialPagination={{
+                page: 1,
+                limit: Array.isArray(blogs) ? blogs.length : 0,
+                total: Array.isArray(blogs) ? blogs.length : 0,
+                totalPages: Array.isArray(blogs) && blogs.length > 0 ? 1 : 0,
+                hasMore: false,
+            }}
         />
     );
 }
