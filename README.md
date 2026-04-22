@@ -153,6 +153,44 @@ Access the admin panel at `/admin` to manage everything without touching code:
 
 ![Admin Panel](public/screenshots/admin.png)
 
+### Automated Public Page Screenshots (Non-Admin)
+
+Use **Playwright** to automatically capture screenshots for every static page in `src/app/(site)` (admin routes are excluded by design).
+
+| Item | Value |
+|------|-------|
+| Library | `playwright` (Chromium) |
+| Discovery scope | `src/app/(site)` pages only |
+| Excluded automatically | `src/app/admin/**` and dynamic routes like `[id]` |
+| Output folder | `public/screenshots/auto/` |
+
+| Command | Purpose |
+|---------|---------|
+| `npm run screenshots:install` | Installs Chromium browser for Playwright |
+| `npm run screenshots:public` | Starts dev server and captures all public non-admin static routes |
+
+Optional environment variables:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `SCREENSHOT_BASE_URL` | `http://127.0.0.1:3000` | Base URL used for capture |
+| `SCREENSHOT_START_SERVER` | `true` | Set to `false` to reuse an already running app |
+| `SCREENSHOT_PORT` | `3000` | Port passed to `npm run dev` when script starts the server |
+| `PUBLIC_SCREENSHOT_EXTRA_ROUTES` | empty | Comma-separated additional routes to include (for example `/blogs/my-post,/projects/demo`) |
+
+Example:
+
+```bash
+# One-time browser install
+npm run screenshots:install
+
+# Capture all detected public static pages
+npm run screenshots:public
+
+# Capture using an already running deployment URL
+SCREENSHOT_START_SERVER=false SCREENSHOT_BASE_URL=https://your-domain.com npm run screenshots:public
+```
+
 ## 🛠️ Tech Stack
 
 ### Frontend
