@@ -102,14 +102,23 @@ async function waitForServer(url, timeoutMs) {
 }
 
 function startDevServer() {
-  const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-  const child = spawn(npmCommand, ['run', 'dev'], {
+  const command = process.platform === 'win32' ? 'cmd.exe' : 'npm';
+  const args = process.platform === 'win32'
+    ? ['/d', '/s', '/c', 'npm run dev']
+    : ['run', 'dev'];
+
+  const child = spawn(command, args, {
     cwd: ROOT,
     stdio: ['ignore', 'pipe', 'pipe'],
+    windowsHide: true,
     env: {
       ...process.env,
       PORT: SCREENSHOT_PORT,
     },
+  });
+
+  child.on('error', (error) => {
+    console.error('[dev] Failed to start dev server:', error.message);
   });
 
   child.stdout.on('data', (chunk) => {
@@ -163,7 +172,11 @@ async function capturePublicScreenshots() {
     console.log('Done. Screenshots saved in public/screenshots/auto');
   } finally {
     if (devServer && !devServer.killed) {
-      devServer.kill('SIGTERM');
+      if (process.platform === 'win32') {
+        devServer.kill();
+      } else {
+        devServer.kill('SIGTERM');
+      }
     }
   }
 }
