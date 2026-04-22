@@ -101,6 +101,7 @@ BlogSchema.index({ published: 1, createdAt: -1 });
 BlogSchema.index({ createdAt: -1 });
 BlogSchema.index({ slug: 1 });
 BlogSchema.index({ updatedAt: -1 });
+BlogSchema.index({ title: 1 }, { unique: true, collation: { locale: 'en', strength: 2 } });
 
 // Fix for Next.js HMR: delete the model if it exists to ensure new schema fields are picked up
 if (mongoose.models.Blog) {

@@ -41,6 +41,10 @@ function normalizeBlogPayload(body = {}) {
     };
 }
 
+function isDuplicateTitleError(error) {
+    return error?.code === 11000 && (error?.keyPattern?.title || error?.keyValue?.title);
+}
+
 export async function GET(request, { params }) {
     await dbConnect();
     const { id } = await params;
@@ -69,6 +73,18 @@ export async function PUT(request, { params }) {
         }
 
         const nextTitle = typeof body?.title === 'string' && body.title.trim() ? body.title : existingBlog.title;
+        const duplicateTitle = await Blog.findOne({ _id: { $ne: id }, title: nextTitle })
+            .collation({ locale: 'en', strength: 2 })
+            .select('_id')
+            .lean();
+
+        if (duplicateTitle) {
+            return NextResponse.json(
+                { success: false, error: 'A blog with this title already exists.' },
+                { status: 409 }
+            );
+        }
+
         const nextSlug = body?.title || !existingBlog.slug
             ? await createUniqueBlogSlug(Blog, nextTitle, existingBlog._id, existingBlog._id)
             : existingBlog.slug;
@@ -84,6 +100,12 @@ export async function PUT(request, { params }) {
         await cache.invalidatePrefixAsync('db:blog');
         return NextResponse.json({ success: true, data: blog });
     } catch (error) {
+        if (isDuplicateTitleError(error)) {
+            return NextResponse.json(
+                { success: false, error: 'A blog with this title already exists.' },
+                { status: 409 }
+            );
+        }
         return NextResponse.json({ success: false, error: error.message }, { status: 400 });
     }
 }

@@ -73,6 +73,10 @@ function toPublicBlogList(blogs, maxLength = 500) {
     }));
 }
 
+function isDuplicateTitleError(error) {
+    return error?.code === 11000 && (error?.keyPattern?.title || error?.keyValue?.title);
+}
+
 function parsePagination(searchParams) {
     const rawPage = searchParams.get('page');
     const rawLimit = searchParams.get('limit');
@@ -234,6 +238,18 @@ export async function POST(request) {
             return NextResponse.json({ success: false, error: 'Title and content are required' }, { status: 400 });
         }
 
+        const existingTitle = await Blog.findOne({ title: body.title })
+            .collation({ locale: 'en', strength: 2 })
+            .select('_id')
+            .lean();
+
+        if (existingTitle) {
+            return NextResponse.json(
+                { success: false, error: 'A blog with this title already exists.' },
+                { status: 409 }
+            );
+        }
+
         // Use provided published status or default to false (Draft)
         const blogData = {
             ...body,
@@ -248,6 +264,12 @@ export async function POST(request) {
         await cache.invalidatePrefixAsync('db:blog');
         return NextResponse.json({ success: true, data: blog }, { status: 201 });
     } catch (error) {
+        if (isDuplicateTitleError(error)) {
+            return NextResponse.json(
+                { success: false, error: 'A blog with this title already exists.' },
+                { status: 409 }
+            );
+        }
         return NextResponse.json({ success: false, error: error.message }, { status: 400 });
     }
 }
