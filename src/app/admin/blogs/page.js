@@ -79,7 +79,7 @@ export default function AdminBlogsPage() {
                         <Link href="/admin/blogs/config" className="px-4 py-3 rounded-lg overflow-hidden bg-blue-500/10 border border-blue-500/20 hover:border-blue-500/50 transition-all text-blue-300 font-bold tracking-wide text-xs uppercase">
                             Blog Settings
                         </Link>
-                        <Link href="/admin/blogs/api" className="px-4 py-3 rounded-lg overflow-hidden bg-purple-500/10 border border-purple-500/20 hover:border-purple-500/50 transition-all text-purple-300 font-bold tracking-wide text-xs uppercase">
+                        <Link href="/admin/api-reference" className="px-4 py-3 rounded-lg overflow-hidden bg-purple-500/10 border border-purple-500/20 hover:border-purple-500/50 transition-all text-purple-300 font-bold tracking-wide text-xs uppercase">
                             API Reference
                         </Link>
                         <Link href="/admin/blogs/new" className="group relative px-6 py-3 rounded-lg overflow-hidden bg-cyan-500/10 border border-cyan-500/20 hover:border-cyan-500/50 transition-all hover:shadow-[0_0_20px_rgba(34,211,238,0.2)]">
