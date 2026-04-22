@@ -11,6 +11,7 @@ const BASE_URL = process.env.SCREENSHOT_BASE_URL || 'http://127.0.0.1:3000';
 const START_SERVER = process.env.SCREENSHOT_START_SERVER !== 'false';
 const SCREENSHOT_PORT = process.env.SCREENSHOT_PORT || '3000';
 const WAIT_TIMEOUT_MS = 120000;
+const QUICK_REUSE_CHECK_MS = 6000;
 const POST_NAV_WAIT_MS = Number.parseInt(process.env.SCREENSHOT_WAIT_MS || '2200', 10);
 const AUTO_SCROLL = process.env.SCREENSHOT_AUTO_SCROLL !== 'false';
 const VIEWPORT_WIDTH = Number.parseInt(process.env.SCREENSHOT_VIEWPORT_WIDTH || '1920', 10);
@@ -219,6 +220,32 @@ function startDevServer() {
   return child;
 }
 
+async function waitForServerOrExit(url, timeoutMs, childProcess) {
+  const startedAt = Date.now();
+
+  while (Date.now() - startedAt < timeoutMs) {
+    if (childProcess && childProcess.exitCode !== null) {
+      throw new Error(
+        `Dev server exited before becoming ready (exit code ${childProcess.exitCode}). ` +
+        `If your app is already running, use SCREENSHOT_START_SERVER=false.`
+      );
+    }
+
+    try {
+      const response = await fetch(url, { method: 'GET' });
+      if (response.ok || response.status < 500) {
+        return;
+      }
+    } catch {
+      // Keep waiting
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 1200));
+  }
+
+  throw new Error(`Server did not become ready within ${Math.floor(timeoutMs / 1000)} seconds.`);
+}
+
 async function clickBeforeCapture(page) {
   if (PRE_CLICK_DELAY_MS > 0) {
     await page.waitForTimeout(PRE_CLICK_DELAY_MS);
@@ -241,12 +268,48 @@ async function capturePublicScreenshots() {
   }
 
   let devServer = null;
+  let isShuttingDown = false;
+
+  const shutdown = () => {
+    if (isShuttingDown) return;
+    isShuttingDown = true;
+
+    if (devServer && !devServer.killed && devServer.exitCode === null) {
+      if (process.platform === 'win32') {
+        devServer.kill();
+      } else {
+        devServer.kill('SIGTERM');
+      }
+    }
+  };
+
+  process.once('SIGINT', () => {
+    console.log('\nInterrupted. Shutting down screenshot runner...');
+    shutdown();
+    process.exit(130);
+  });
+
+  process.once('SIGTERM', () => {
+    shutdown();
+    process.exit(143);
+  });
 
   try {
     if (START_SERVER) {
-      console.log('Starting Next.js dev server...');
-      devServer = startDevServer();
-      await waitForServer(BASE_URL, WAIT_TIMEOUT_MS);
+      let reusedRunningServer = false;
+
+      try {
+        await waitForServer(BASE_URL, QUICK_REUSE_CHECK_MS);
+        reusedRunningServer = true;
+        console.log(`Using already running server at ${BASE_URL}`);
+      } catch {
+        console.log('Starting Next.js dev server...');
+      }
+
+      if (!reusedRunningServer) {
+        devServer = startDevServer();
+        await waitForServerOrExit(BASE_URL, WAIT_TIMEOUT_MS, devServer);
+      }
     } else {
       console.log('Using existing server at', BASE_URL);
       await waitForServer(BASE_URL, WAIT_TIMEOUT_MS);
@@ -277,13 +340,7 @@ async function capturePublicScreenshots() {
     await browser.close();
     console.log('Done. Screenshots saved in public/screenshots/auto');
   } finally {
-    if (devServer && !devServer.killed) {
-      if (process.platform === 'win32') {
-        devServer.kill();
-      } else {
-        devServer.kill('SIGTERM');
-      }
-    }
+    shutdown();
   }
 }
 
