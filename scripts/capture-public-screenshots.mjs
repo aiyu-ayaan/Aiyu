@@ -11,6 +11,12 @@ const BASE_URL = process.env.SCREENSHOT_BASE_URL || 'http://127.0.0.1:3000';
 const START_SERVER = process.env.SCREENSHOT_START_SERVER !== 'false';
 const SCREENSHOT_PORT = process.env.SCREENSHOT_PORT || '3000';
 const WAIT_TIMEOUT_MS = 120000;
+const POST_NAV_WAIT_MS = Number.parseInt(process.env.SCREENSHOT_WAIT_MS || '2200', 10);
+const AUTO_SCROLL = process.env.SCREENSHOT_AUTO_SCROLL !== 'false';
+const ONLY_ROUTES = (process.env.SCREENSHOT_ONLY_ROUTES || '')
+  .split(',')
+  .map((route) => route.trim())
+  .filter(Boolean);
 
 function isDynamicSegment(segment) {
   return segment.includes('[') && segment.includes(']');
@@ -101,6 +107,80 @@ async function waitForServer(url, timeoutMs) {
   throw new Error(`Server did not become ready within ${Math.floor(timeoutMs / 1000)} seconds.`);
 }
 
+async function waitForPageToRender(page) {
+  await page.waitForLoadState('domcontentloaded');
+  await page.waitForLoadState('networkidle').catch(() => {
+    // Some pages may keep background requests alive; continue.
+  });
+
+  await page.evaluate(async () => {
+    if (document.fonts && document.fonts.ready) {
+      await document.fonts.ready;
+    }
+  });
+
+  await page.waitForFunction(() => {
+    const main = document.querySelector('main');
+    if (main) {
+      const textLength = (main.textContent || '').trim().length;
+      const height = main.getBoundingClientRect().height;
+      return textLength > 50 || height > 180;
+    }
+    return (document.body?.textContent || '').trim().length > 50;
+  }, { timeout: 45000 }).catch(() => {
+    // If this times out, we still continue and take a best-effort screenshot.
+  });
+
+  await page.waitForTimeout(POST_NAV_WAIT_MS);
+}
+
+async function autoScrollForLazyContent(page) {
+  await page.evaluate(async () => {
+    const step = Math.max(220, Math.floor(window.innerHeight * 0.7));
+    await new Promise((resolve) => {
+      let lastPosition = -1;
+      let stableTicks = 0;
+      const timer = setInterval(() => {
+        window.scrollBy(0, step);
+        const currentPosition = window.scrollY;
+        const atBottom = window.innerHeight + window.scrollY >= document.body.scrollHeight - 5;
+
+        if (atBottom || currentPosition === lastPosition) {
+          stableTicks += 1;
+        } else {
+          stableTicks = 0;
+        }
+
+        lastPosition = currentPosition;
+
+        if (stableTicks >= 2) {
+          clearInterval(timer);
+          resolve();
+        }
+      }, 220);
+    });
+  });
+
+  await page.waitForTimeout(900);
+  await page.evaluate(() => window.scrollTo({ top: 0, left: 0, behavior: 'instant' }));
+  await page.waitForTimeout(600);
+}
+
+async function waitForImages(page) {
+  await page.evaluate(async () => {
+    const images = Array.from(document.images || []);
+    await Promise.all(
+      images.map((img) => {
+        if (img.complete) return Promise.resolve();
+        return new Promise((resolve) => {
+          img.addEventListener('load', resolve, { once: true });
+          img.addEventListener('error', resolve, { once: true });
+        });
+      })
+    );
+  });
+}
+
 function startDevServer() {
   const command = process.platform === 'win32' ? 'cmd.exe' : 'npm';
   const args = process.platform === 'win32'
@@ -136,7 +216,11 @@ async function capturePublicScreenshots() {
   await fs.mkdir(OUTPUT_DIR, { recursive: true });
 
   const routes = await discoverPublicRoutes();
-  if (routes.length === 0) {
+  const filteredRoutes = ONLY_ROUTES.length
+    ? routes.filter((route) => ONLY_ROUTES.includes(route))
+    : routes;
+
+  if (filteredRoutes.length === 0) {
     throw new Error('No public routes found under src/app/(site).');
   }
 
@@ -153,18 +237,23 @@ async function capturePublicScreenshots() {
     }
 
     const browser = await chromium.launch({ headless: true });
-    const page = await browser.newPage({ viewport: { width: 1720, height: 980 } });
+    const page = await browser.newPage({ viewport: { width: 1600, height: 1000 } });
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
 
-    console.log(`Capturing ${routes.length} route(s)...`);
+    console.log(`Capturing ${filteredRoutes.length} route(s)...`);
 
-    for (const route of routes) {
+    for (const route of filteredRoutes) {
       const url = new URL(route, BASE_URL).toString();
       const fileName = routeToFileName(route);
       const screenshotPath = path.join(OUTPUT_DIR, fileName);
 
       console.log(`- ${route} -> ${path.relative(ROOT, screenshotPath)}`);
-      await page.goto(url, { waitUntil: 'networkidle', timeout: 90000 });
-      await page.waitForTimeout(1000);
+      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 90000 });
+      await waitForPageToRender(page);
+      if (AUTO_SCROLL) {
+        await autoScrollForLazyContent(page);
+      }
+      await waitForImages(page);
       await page.screenshot({ path: screenshotPath, fullPage: true });
     }
 

@@ -177,6 +177,9 @@ Optional environment variables:
 | `SCREENSHOT_START_SERVER` | `true` | Set to `false` to reuse an already running app |
 | `SCREENSHOT_PORT` | `3000` | Port passed to `npm run dev` when script starts the server |
 | `PUBLIC_SCREENSHOT_EXTRA_ROUTES` | empty | Comma-separated additional routes to include (for example `/blogs/my-post,/projects/demo`) |
+| `SCREENSHOT_ONLY_ROUTES` | empty | Capture only selected routes (for example `/,/about-me,/projects`) |
+| `SCREENSHOT_WAIT_MS` | `2200` | Extra wait after navigation before capture |
+| `SCREENSHOT_AUTO_SCROLL` | `true` | Set to `false` to disable lazy-content pre-scroll |
 
 Example:
 
@@ -189,6 +192,9 @@ npm run screenshots:public
 
 # Capture using an already running deployment URL
 SCREENSHOT_START_SERVER=false SCREENSHOT_BASE_URL=https://your-domain.com npm run screenshots:public
+
+# Debug one route only
+SCREENSHOT_ONLY_ROUTES=/about-me npm run screenshots:public
 ```
 
 ## 🛠️ Tech Stack
