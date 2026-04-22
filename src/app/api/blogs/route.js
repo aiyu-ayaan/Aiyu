@@ -10,6 +10,8 @@ import { createUniqueBlogSlug } from '@/lib/blogSlugs';
 import crypto from 'crypto';
 
 const BLOG_LIST_SELECT = ['title', 'slug', 'content', 'excerpt', 'image', 'imageAlt', 'date', 'createdAt', 'updatedAt', 'published', 'tags', 'seoTitle', 'seoDescription', 'canonicalUrl', 'keywords', 'socialTitle', 'socialDescription', 'socialImage', 'socialImageAlt', 'noIndex'].join(' ');
+const DEFAULT_BLOG_PAGE_SIZE = 6;
+const MAX_BLOG_PAGE_SIZE = 24;
 
 function normalizeStringList(value) {
     if (Array.isArray(value)) {
@@ -71,10 +73,28 @@ function toPublicBlogList(blogs, maxLength = 500) {
     }));
 }
 
+function parsePagination(searchParams) {
+    const rawPage = searchParams.get('page');
+    const rawLimit = searchParams.get('limit');
+    const hasPagination = rawPage !== null || rawLimit !== null;
+
+    if (!hasPagination) {
+        return { hasPagination: false, page: 1, limit: DEFAULT_BLOG_PAGE_SIZE };
+    }
+
+    const parsedPage = Number.parseInt(rawPage || '1', 10);
+    const parsedLimit = Number.parseInt(rawLimit || String(DEFAULT_BLOG_PAGE_SIZE), 10);
+    const page = Number.isNaN(parsedPage) ? 1 : Math.max(1, parsedPage);
+    const limit = Number.isNaN(parsedLimit) ? DEFAULT_BLOG_PAGE_SIZE : Math.max(1, Math.min(MAX_BLOG_PAGE_SIZE, parsedLimit));
+
+    return { hasPagination: true, page, limit };
+}
+
 export async function GET(request) {
     const startedAt = Date.now();
     const { searchParams } = new URL(request.url);
     const showAll = searchParams.get('all');
+    const { hasPagination, page, limit } = parsePagination(searchParams);
     const shouldCheckSession = showAll === 'true';
     const session = shouldCheckSession ? await getSession() : null;
 
@@ -95,6 +115,49 @@ export async function GET(request) {
                 { success: true, data: blogs },
                 {
                     headers: {
+                        'x-response-time-ms': String(Date.now() - startedAt),
+                    },
+                }
+            );
+        }
+
+        if (hasPagination) {
+            const skip = (page - 1) * limit;
+            const blogsCacheKey = `${CACHE_KEYS.BLOGS_PUBLISHED}:page:${page}:limit:${limit}`;
+            const totalCacheKey = `${CACHE_KEYS.BLOGS_PUBLISHED}:count`;
+
+            const [{ value: blogs, meta }, total] = await Promise.all([
+                cache.getOrSetWithMeta(
+                    blogsCacheKey,
+                    async () => Blog.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit).select(BLOG_LIST_SELECT).lean(),
+                    CACHE_TTL.MEDIUM
+                ),
+                cache.getOrSet(
+                    totalCacheKey,
+                    async () => Blog.countDocuments(query),
+                    CACHE_TTL.MEDIUM
+                ),
+            ]);
+
+            const normalizedTotal = Number.isFinite(total) ? total : 0;
+            const totalPages = normalizedTotal > 0 ? Math.ceil(normalizedTotal / limit) : 0;
+
+            return NextResponse.json(
+                {
+                    success: true,
+                    data: toPublicBlogList(blogs),
+                    pagination: {
+                        page,
+                        limit,
+                        total: normalizedTotal,
+                        totalPages,
+                        hasMore: page < totalPages,
+                    },
+                },
+                {
+                    headers: {
+                        ...createPublicCacheHeaders(RESPONSE_CACHE.PUBLIC_MEDIUM),
+                        ...createCacheDebugHeaders(meta),
                         'x-response-time-ms': String(Date.now() - startedAt),
                     },
                 }

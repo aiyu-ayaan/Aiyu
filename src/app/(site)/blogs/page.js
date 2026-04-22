@@ -1,5 +1,5 @@
 import BlogList from '../../components/blogs/BlogList';
-import { getConfigData, getPublishedBlogs } from '@/lib/dataFetchers';
+import { DEFAULT_BLOG_PAGE_SIZE, getConfigData, getPublishedBlogsPage } from '@/lib/dataFetchers';
 export const revalidate = 0;
 
 export async function generateMetadata() {
@@ -33,6 +33,16 @@ export async function generateMetadata() {
 }
 
 export default async function BlogsPage() {
-    const [blogs, config] = await Promise.all([getPublishedBlogs(), getConfigData()]);
-    return <BlogList initialBlogs={blogs} initialConfig={config} />;
+    const [blogsPage, config] = await Promise.all([
+        getPublishedBlogsPage({ page: 1, limit: DEFAULT_BLOG_PAGE_SIZE }),
+        getConfigData(),
+    ]);
+
+    return (
+        <BlogList
+            initialBlogs={blogsPage.blogs}
+            initialConfig={config}
+            initialPagination={blogsPage.pagination}
+        />
+    );
 }

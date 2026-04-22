@@ -114,6 +114,7 @@ const GALLERY_LIST_SELECT = ['src', 'thumbnail', 'description', 'width', 'height
 const PROJECT_LIST_SELECT = ['name', 'slug', 'techStack', 'year', 'status', 'projectType', 'description', 'codeLink', 'blogLink', 'image', 'displayOrder', 'updatedAt', 'createdAt'].join(' ');
 const DEPLOYMENT_LIST_SELECT = ['name', 'slug', 'techStack', 'status', 'appType', 'environment', 'hostingProvider', 'description', 'hostedUrl', 'blogLink', 'image', 'displayOrder', 'updatedAt', 'createdAt'].join(' ');
 const DEFAULT_SITE_DESCRIPTION = 'Professional portfolio showcasing projects, blogs, and expertise.';
+export const DEFAULT_BLOG_PAGE_SIZE = 6;
 const FALLBACK_CONFIG = {
     siteTitle: 'Portfolio',
     siteDescription: DEFAULT_SITE_DESCRIPTION,
@@ -197,6 +198,12 @@ function toBlogPreview(blogs, maxLength = 320) {
             content: typeof blog?.content === 'string' ? blog.content.slice(0, maxLength) : '',
         };
     });
+}
+
+function normalizePaginationValue(value, fallback, { min = 1, max = 50 } = {}) {
+    const parsed = Number.parseInt(value, 10);
+    if (Number.isNaN(parsed)) return fallback;
+    return Math.min(max, Math.max(min, parsed));
 }
 
 /**
@@ -483,6 +490,82 @@ export async function getPublishedBlogs() {
     } catch (error) {
         warnFetcherFallback('getPublishedBlogs', error);
         return [];
+    }
+}
+
+export async function getPublishedBlogsPage(options = {}) {
+    if (SKIP_DB_DURING_BUILD) {
+        warnFetcherFallback('getPublishedBlogsPage');
+        return {
+            blogs: [],
+            pagination: {
+                page: 1,
+                limit: DEFAULT_BLOG_PAGE_SIZE,
+                total: 0,
+                totalPages: 0,
+                hasMore: false,
+            },
+        };
+    }
+
+    const page = normalizePaginationValue(options?.page, 1, { min: 1, max: 1000 });
+    const limit = normalizePaginationValue(options?.limit, DEFAULT_BLOG_PAGE_SIZE, { min: 1, max: 24 });
+    const skip = (page - 1) * limit;
+    const ensureDb = createDbEnsurer();
+    const query = { published: { $ne: false } };
+    const pageCacheKey = `${CACHE_KEYS.BLOGS_PUBLISHED}:page:${page}:limit:${limit}`;
+    const countCacheKey = `${CACHE_KEYS.BLOGS_PUBLISHED}:count`;
+
+    try {
+        const [blogs, total] = await Promise.all([
+            cache.getOrSet(
+                pageCacheKey,
+                async () => {
+                    await ensureDb();
+                    return BlogModel.find(query)
+                        .sort({ createdAt: -1 })
+                        .skip(skip)
+                        .limit(limit)
+                        .select(BLOG_LIST_SELECT)
+                        .lean();
+                },
+                CACHE_TTL.MEDIUM
+            ),
+            cache.getOrSet(
+                countCacheKey,
+                async () => {
+                    await ensureDb();
+                    return BlogModel.countDocuments(query);
+                },
+                CACHE_TTL.MEDIUM
+            ),
+        ]);
+
+        const normalizedTotal = Number.isFinite(total) ? total : 0;
+        const totalPages = normalizedTotal > 0 ? Math.ceil(normalizedTotal / limit) : 0;
+
+        return {
+            blogs: toBlogPreview(blogs, 500),
+            pagination: {
+                page,
+                limit,
+                total: normalizedTotal,
+                totalPages,
+                hasMore: page < totalPages,
+            },
+        };
+    } catch (error) {
+        warnFetcherFallback('getPublishedBlogsPage', error);
+        return {
+            blogs: [],
+            pagination: {
+                page,
+                limit,
+                total: 0,
+                totalPages: 0,
+                hasMore: false,
+            },
+        };
     }
 }
 
