@@ -21,6 +21,7 @@ const FULL_PAGE = process.env.SCREENSHOT_FULL_PAGE === 'true';
 const PRE_CLICK_DELAY_MS = Number.parseInt(process.env.SCREENSHOT_PRE_CLICK_DELAY_MS || '1400', 10);
 const CLICK_X = Number.parseInt(process.env.SCREENSHOT_CLICK_X || String(Math.floor(VIEWPORT_WIDTH / 2)), 10);
 const CLICK_Y = Number.parseInt(process.env.SCREENSHOT_CLICK_Y || String(Math.floor(VIEWPORT_HEIGHT / 2)), 10);
+const CONTENT_SELECTOR = process.env.SCREENSHOT_CONTENT_SELECTOR || '';
 const ONLY_ROUTES = (process.env.SCREENSHOT_ONLY_ROUTES || '')
   .split(',')
   .map((route) => route.trim())
@@ -255,6 +256,56 @@ async function clickBeforeCapture(page) {
   await page.waitForTimeout(350);
 }
 
+async function focusFirstContentBlock(page, route) {
+  const selectorCandidates = [];
+
+  if (CONTENT_SELECTOR) {
+    selectorCandidates.push(CONTENT_SELECTOR);
+  }
+
+  if (route === '/') {
+    selectorCandidates.push('#home-snapshot');
+  }
+
+  selectorCandidates.push(
+    'main h1',
+    'main h2',
+    'main section',
+    'main article',
+    '[data-testid="page-content"]'
+  );
+
+  for (const selector of selectorCandidates) {
+    try {
+      await page.waitForSelector(selector, { state: 'attached', timeout: 7000 });
+
+      const didFocus = await page.evaluate((targetSelector) => {
+        const elements = Array.from(document.querySelectorAll(targetSelector));
+        const target = elements.find((el) => {
+          if (!el) return false;
+          if (el.closest('header') || el.closest('nav')) return false;
+          const style = window.getComputedStyle(el);
+          if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return false;
+          const rect = el.getBoundingClientRect();
+          return rect.width > 0 && rect.height > 0;
+        });
+
+        if (!target) return false;
+
+        target.scrollIntoView({ block: 'center', inline: 'nearest' });
+        return true;
+      }, selector);
+
+      if (didFocus) {
+        await page.waitForTimeout(550);
+        return;
+      }
+    } catch {
+      // Try the next selector.
+    }
+  }
+}
+
 async function capturePublicScreenshots() {
   await fs.mkdir(OUTPUT_DIR, { recursive: true });
 
@@ -333,6 +384,7 @@ async function capturePublicScreenshots() {
         await autoScrollForLazyContent(page);
       }
       await waitForImages(page);
+      await focusFirstContentBlock(page, route);
       await clickBeforeCapture(page);
       await page.screenshot({ path: screenshotPath, fullPage: FULL_PAGE });
     }

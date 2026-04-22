@@ -187,6 +187,7 @@ Optional environment variables:
 | `SCREENSHOT_CLICK_X` | viewport center | X position to click before capture |
 | `SCREENSHOT_CLICK_Y` | viewport center | Y position to click before capture |
 | `SCREENSHOT_FULL_PAGE` | `false` | Set `true` for full-page image instead of viewport capture |
+| `SCREENSHOT_CONTENT_SELECTOR` | auto | CSS selector to focus a specific content block before capture |
 
 Example:
 
@@ -205,6 +206,9 @@ SCREENSHOT_ONLY_ROUTES=/about-me npm run screenshots:public
 
 # 1920x1080 dark mode viewport screenshot with delayed click
 SCREENSHOT_VIEWPORT_WIDTH=1920 SCREENSHOT_VIEWPORT_HEIGHT=1080 SCREENSHOT_COLOR_SCHEME=dark npm run screenshots:public
+
+# Force focus to a specific section before capture
+SCREENSHOT_CONTENT_SELECTOR="#home-snapshot" npm run screenshots:public
 ```
 
 ## 🛠️ Tech Stack
