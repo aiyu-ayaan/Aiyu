@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
+    "screenshots:install": "playwright install chromium",
+    "screenshots:public": "node scripts/capture-public-screenshots.mjs",
     "perf:k6:public": "k6 run scripts/k6/public-routes.js",
     "security-check": "node scripts/security-check.mjs",
     "docker:build": "docker-compose build --no-cache",
@@ -61,6 +63,7 @@
     "@tailwindcss/postcss": "^4",
     "eslint": "^9.39.4",
     "eslint-config-next": "16.2.1",
+    "playwright": "^1.59.1",
     "tailwindcss": "^4"
   }
 }
