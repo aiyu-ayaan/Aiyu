@@ -180,6 +180,13 @@ Optional environment variables:
 | `SCREENSHOT_ONLY_ROUTES` | empty | Capture only selected routes (for example `/,/about-me,/projects`) |
 | `SCREENSHOT_WAIT_MS` | `2200` | Extra wait after navigation before capture |
 | `SCREENSHOT_AUTO_SCROLL` | `true` | Set to `false` to disable lazy-content pre-scroll |
+| `SCREENSHOT_VIEWPORT_WIDTH` | `1920` | Browser viewport width |
+| `SCREENSHOT_VIEWPORT_HEIGHT` | `1080` | Browser viewport height |
+| `SCREENSHOT_COLOR_SCHEME` | `dark` | Use `dark` or `light` theme emulation |
+| `SCREENSHOT_PRE_CLICK_DELAY_MS` | `1400` | Delay before click-and-capture |
+| `SCREENSHOT_CLICK_X` | viewport center | X position to click before capture |
+| `SCREENSHOT_CLICK_Y` | viewport center | Y position to click before capture |
+| `SCREENSHOT_FULL_PAGE` | `false` | Set `true` for full-page image instead of viewport capture |
 
 Example:
 
@@ -195,6 +202,9 @@ SCREENSHOT_START_SERVER=false SCREENSHOT_BASE_URL=https://your-domain.com npm ru
 
 # Debug one route only
 SCREENSHOT_ONLY_ROUTES=/about-me npm run screenshots:public
+
+# 1920x1080 dark mode viewport screenshot with delayed click
+SCREENSHOT_VIEWPORT_WIDTH=1920 SCREENSHOT_VIEWPORT_HEIGHT=1080 SCREENSHOT_COLOR_SCHEME=dark npm run screenshots:public
 ```
 
 ## 🛠️ Tech Stack

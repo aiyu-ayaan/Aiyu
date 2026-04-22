@@ -13,6 +13,13 @@ const SCREENSHOT_PORT = process.env.SCREENSHOT_PORT || '3000';
 const WAIT_TIMEOUT_MS = 120000;
 const POST_NAV_WAIT_MS = Number.parseInt(process.env.SCREENSHOT_WAIT_MS || '2200', 10);
 const AUTO_SCROLL = process.env.SCREENSHOT_AUTO_SCROLL !== 'false';
+const VIEWPORT_WIDTH = Number.parseInt(process.env.SCREENSHOT_VIEWPORT_WIDTH || '1920', 10);
+const VIEWPORT_HEIGHT = Number.parseInt(process.env.SCREENSHOT_VIEWPORT_HEIGHT || '1080', 10);
+const COLOR_SCHEME = process.env.SCREENSHOT_COLOR_SCHEME || 'dark';
+const FULL_PAGE = process.env.SCREENSHOT_FULL_PAGE === 'true';
+const PRE_CLICK_DELAY_MS = Number.parseInt(process.env.SCREENSHOT_PRE_CLICK_DELAY_MS || '1400', 10);
+const CLICK_X = Number.parseInt(process.env.SCREENSHOT_CLICK_X || String(Math.floor(VIEWPORT_WIDTH / 2)), 10);
+const CLICK_Y = Number.parseInt(process.env.SCREENSHOT_CLICK_Y || String(Math.floor(VIEWPORT_HEIGHT / 2)), 10);
 const ONLY_ROUTES = (process.env.SCREENSHOT_ONLY_ROUTES || '')
   .split(',')
   .map((route) => route.trim())
@@ -212,6 +219,15 @@ function startDevServer() {
   return child;
 }
 
+async function clickBeforeCapture(page) {
+  if (PRE_CLICK_DELAY_MS > 0) {
+    await page.waitForTimeout(PRE_CLICK_DELAY_MS);
+  }
+
+  await page.mouse.click(CLICK_X, CLICK_Y);
+  await page.waitForTimeout(350);
+}
+
 async function capturePublicScreenshots() {
   await fs.mkdir(OUTPUT_DIR, { recursive: true });
 
@@ -237,8 +253,8 @@ async function capturePublicScreenshots() {
     }
 
     const browser = await chromium.launch({ headless: true });
-    const page = await browser.newPage({ viewport: { width: 1600, height: 1000 } });
-    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    const page = await browser.newPage({ viewport: { width: VIEWPORT_WIDTH, height: VIEWPORT_HEIGHT } });
+    await page.emulateMedia({ reducedMotion: 'no-preference', colorScheme: COLOR_SCHEME === 'light' ? 'light' : 'dark' });
 
     console.log(`Capturing ${filteredRoutes.length} route(s)...`);
 
@@ -254,7 +270,8 @@ async function capturePublicScreenshots() {
         await autoScrollForLazyContent(page);
       }
       await waitForImages(page);
-      await page.screenshot({ path: screenshotPath, fullPage: true });
+      await clickBeforeCapture(page);
+      await page.screenshot({ path: screenshotPath, fullPage: FULL_PAGE });
     }
 
     await browser.close();
