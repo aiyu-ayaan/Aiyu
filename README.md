@@ -153,64 +153,6 @@ Access the admin panel at `/admin` to manage everything without touching code:
 
 ![Admin Panel](public/screenshots/admin.png)
 
-### Automated Public Page Screenshots (Non-Admin)
-
-Use **Playwright** to automatically capture screenshots for every static page in `src/app/(site)` (admin routes are excluded by design).
-
-| Item | Value |
-|------|-------|
-| Library | `playwright` (Chromium) |
-| Discovery scope | `src/app/(site)` pages only |
-| Excluded automatically | `src/app/admin/**` and dynamic routes like `[id]` |
-| Output folder | `public/screenshots/auto/` |
-
-| Command | Purpose |
-|---------|---------|
-| `npm run screenshots:install` | Installs Chromium browser for Playwright |
-| `npm run screenshots:public` | Starts dev server and captures all public non-admin static routes |
-
-Optional environment variables:
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `SCREENSHOT_BASE_URL` | `http://127.0.0.1:3000` | Base URL used for capture |
-| `SCREENSHOT_START_SERVER` | `true` | Set to `false` to reuse an already running app |
-| `SCREENSHOT_PORT` | `3000` | Port passed to `npm run dev` when script starts the server |
-| `PUBLIC_SCREENSHOT_EXTRA_ROUTES` | empty | Comma-separated additional routes to include (for example `/blogs/my-post,/projects/demo`) |
-| `SCREENSHOT_ONLY_ROUTES` | empty | Capture only selected routes (for example `/,/about-me,/projects`) |
-| `SCREENSHOT_WAIT_MS` | `2200` | Extra wait after navigation before capture |
-| `SCREENSHOT_AUTO_SCROLL` | `true` | Set to `false` to disable lazy-content pre-scroll |
-| `SCREENSHOT_VIEWPORT_WIDTH` | `1920` | Browser viewport width |
-| `SCREENSHOT_VIEWPORT_HEIGHT` | `1080` | Browser viewport height |
-| `SCREENSHOT_COLOR_SCHEME` | `dark` | Use `dark` or `light` theme emulation |
-| `SCREENSHOT_PRE_CLICK_DELAY_MS` | `1400` | Delay before click-and-capture |
-| `SCREENSHOT_CLICK_X` | viewport center | X position to click before capture |
-| `SCREENSHOT_CLICK_Y` | viewport center | Y position to click before capture |
-| `SCREENSHOT_FULL_PAGE` | `false` | Set `true` for full-page image instead of viewport capture |
-| `SCREENSHOT_CONTENT_SELECTOR` | auto | CSS selector to focus a specific content block before capture |
-
-Example:
-
-```bash
-# One-time browser install
-npm run screenshots:install
-
-# Capture all detected public static pages
-npm run screenshots:public
-
-# Capture using an already running deployment URL
-SCREENSHOT_START_SERVER=false SCREENSHOT_BASE_URL=https://your-domain.com npm run screenshots:public
-
-# Debug one route only
-SCREENSHOT_ONLY_ROUTES=/about-me npm run screenshots:public
-
-# 1920x1080 dark mode viewport screenshot with delayed click
-SCREENSHOT_VIEWPORT_WIDTH=1920 SCREENSHOT_VIEWPORT_HEIGHT=1080 SCREENSHOT_COLOR_SCHEME=dark npm run screenshots:public
-
-# Force focus to a specific section before capture
-SCREENSHOT_CONTENT_SELECTOR="#home-snapshot" npm run screenshots:public
-```
-
 ## 🛠️ Tech Stack
 
 ### Frontend
