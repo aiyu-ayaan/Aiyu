@@ -1,5 +1,19 @@
 # Changelog
 
+## [3.8.0](https://github.com/aiyu-ayaan/Aiyu/compare/v3.7.3...v3.8.0) (2026-04-23)
+
+### Features
+
+* feat: enhance changelog generation to include categorized commit messages
+* feat: add utility to check for localhost and IP links in extracted URLs
+* feat: enhance layout and styling for blog components to improve responsiveness and user experience
+* feat: implement getSiteUrl utility for consistent base URL handling across the application
+* feat: update admin blog navigation and add API reference page
+
+### Other Changes
+
+* Merge branch 'master' of https://github.com/aiyu-ayaan/Aiyu
+
 ## [3.7.3](https://github.com/aiyu-ayaan/Aiyu/compare/v3.7.2...v3.7.3) (2026-04-22)
 
 ### Notes
