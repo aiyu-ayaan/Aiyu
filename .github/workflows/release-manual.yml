@@ -65,10 +65,13 @@ jobs:
 
           if release_type == "feat":
               minor += 1
+              patch = 0
           elif release_type == "fix":
               patch += 1
           else:
               major += 1
+              minor = 0
+              patch = 0
 
           release_as = f"{major}.{minor}.{patch}"
           version = f"v{release_as}"
@@ -108,6 +111,7 @@ jobs:
           python - <<'PY'
           import json
           import os
+          import subprocess
           from datetime import date
           from pathlib import Path
 
@@ -143,12 +147,63 @@ jobs:
           changelog_text = changelog_path.read_text(encoding="utf-8")
           compare_url = f"https://github.com/{repository}/compare/v{current_version}...v{next_version}"
           heading = f"## [{next_version}]({compare_url}) ({date.today().isoformat()})"
+          
           if heading not in changelog_text:
-              entry = (
-                  f"{heading}\n\n"
-                  "### Notes\n\n"
-                  f"- Release {next_version}\n\n"
-              )
+              # Extract commits between versions
+              commits_output = subprocess.check_output(
+                  ["git", "log", f"v{current_version}..HEAD", "--oneline", "--format=%s"],
+                  text=True,
+              ).strip()
+              
+              features = []
+              bug_fixes = []
+              breaking_changes = []
+              other_commits = []
+              
+              if commits_output:
+                  for commit_msg in commits_output.split('\n'):
+                      if not commit_msg:
+                          continue
+                      
+                      if commit_msg.startswith("feat"):
+                          features.append(commit_msg)
+                      elif commit_msg.startswith("fix"):
+                          bug_fixes.append(commit_msg)
+                      elif "BREAKING" in commit_msg.upper():
+                          breaking_changes.append(commit_msg)
+                      else:
+                          other_commits.append(commit_msg)
+              
+              # Build changelog entry
+              entry = f"{heading}\n\n"
+              
+              if breaking_changes:
+                  entry += "### ⚠ BREAKING CHANGES\n\n"
+                  for commit in breaking_changes:
+                      entry += f"* {commit}\n"
+                  entry += "\n"
+              
+              if features:
+                  entry += "### Features\n\n"
+                  for commit in features:
+                      entry += f"* {commit}\n"
+                  entry += "\n"
+              
+              if bug_fixes:
+                  entry += "### Bug Fixes\n\n"
+                  for commit in bug_fixes:
+                      entry += f"* {commit}\n"
+                  entry += "\n"
+              
+              if other_commits:
+                  entry += "### Other Changes\n\n"
+                  for commit in other_commits:
+                      entry += f"* {commit}\n"
+                  entry += "\n"
+              
+              if not commits_output:
+                  entry += "### Notes\n\n* Release {next_version}\n\n"
+              
               marker = "# Changelog\n\n"
               if marker in changelog_text:
                   changelog_text = changelog_text.replace(marker, marker + entry, 1)
