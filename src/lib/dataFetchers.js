@@ -25,6 +25,7 @@ import { resolveBlogByIdentifier } from '@/lib/blogSlugs';
 import { getBlogSlug } from '@/lib/blogSlugs';
 import { getDeploymentSlug, getProjectSlug } from '@/lib/contentSlugs';
 import { getReadTime } from '@/app/components/blogs/blogUtils';
+import { getSiteUrl } from '@/lib/siteUrl';
 
 const IS_PRODUCTION_BUILD = process.env.NEXT_PHASE === 'phase-production-build';
 const ALLOW_DB_DURING_BUILD = process.env.ALLOW_DB_DURING_BUILD === 'true';
@@ -172,7 +173,7 @@ function sanitizeConfigForPublic(configData) {
     delete config.encryptedGithubToken;
     delete config.encryptedGeminiApiKey;
 
-    const baseUrl = process.env.SITE_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    const baseUrl = getSiteUrl();
     const ogImageValue = typeof config?.ogImage === 'string' ? config.ogImage.trim() : '';
     if (ogImageValue) {
         config.ogImage = new URL(ogImageValue, baseUrl).toString();

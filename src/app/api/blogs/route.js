@@ -9,6 +9,7 @@ import { createPublicCacheHeaders, RESPONSE_CACHE } from '@/lib/httpCache';
 import { createUniqueBlogSlug } from '@/lib/blogSlugs';
 import crypto from 'crypto';
 import { revalidatePath } from 'next/cache';
+import { getSiteUrl } from '@/lib/siteUrl';
 
 const BLOG_LIST_SELECT = ['title', 'slug', 'content', 'excerpt', 'image', 'imageAlt', 'date', 'createdAt', 'updatedAt', 'published', 'tags', 'seoTitle', 'seoDescription', 'canonicalUrl', 'keywords', 'socialTitle', 'socialDescription', 'socialImage', 'socialImageAlt', 'noIndex'].join(' ');
 const DEFAULT_BLOG_PAGE_SIZE = 6;
@@ -18,7 +19,7 @@ function normalizeCanonicalUrl(value) {
     const raw = typeof value === 'string' ? value.trim() : '';
     if (!raw) return '';
 
-    const baseUrl = process.env.SITE_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    const baseUrl = getSiteUrl();
 
     try {
         const parsed = new URL(raw, baseUrl);

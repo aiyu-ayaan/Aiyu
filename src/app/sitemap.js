@@ -1,9 +1,9 @@
-import { headers } from 'next/headers';
 import dbConnect from '@/lib/db';
 import BlogModel from '@/models/Blog';
 import ProjectModel from '@/models/Project';
 import DeploymentModel from '@/models/Deployment';
 import { getBlogSlug } from '@/lib/blogSlugs';
+import { getSiteUrl } from '@/lib/siteUrl';
 import {
   getDeploymentSlug,
   getProjectSlug,
@@ -123,25 +123,7 @@ function createStaticRoutes(baseUrl, options = {}) {
 }
 
 export default async function sitemap() {
-  // Support both SITE_URL (user preference) and NEXT_PUBLIC_BASE_URL (existing SEO logic)
-  let baseUrl = process.env.SITE_URL || process.env.NEXT_PUBLIC_BASE_URL || '';
-
-  // If no env var is set, dynamically detect from request headers
-  if (!baseUrl) {
-    try {
-      const headersList = await headers();
-      const host = headersList.get('host') || 'localhost:3000';
-      const proto = headersList.get('x-forwarded-proto') || 'http';
-      baseUrl = `${proto}://${host}`;
-    } catch {
-      baseUrl = 'http://localhost:3000';
-    }
-  }
-
-  // Remove trailing slash if present to prevent double slashes in routes
-  if (baseUrl.endsWith('/')) {
-    baseUrl = baseUrl.slice(0, -1);
-  }
+  const baseUrl = getSiteUrl();
 
   const staticRoutes = createStaticRoutes(baseUrl);
 

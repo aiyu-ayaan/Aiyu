@@ -3,7 +3,9 @@ import { cache } from 'react';
 import { notFound, redirect } from 'next/navigation';
 import { getBlogById, getConfigData, getPublishedBlogSlugs } from '@/lib/dataFetchers';
 import { generateBlogSchema } from '@/app/schema';
-export const revalidate = 0;
+import { getSiteUrl } from '@/lib/siteUrl';
+
+export const revalidate = 300;
 const getBlogByIdentifier = cache(async (identifier) => getBlogById(identifier));
 
 export async function generateStaticParams() {
@@ -12,8 +14,7 @@ export async function generateStaticParams() {
 }
 
 function getBaseUrl() {
-    const baseUrl = process.env.SITE_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-    return baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+    return getSiteUrl();
 }
 
 function getSafeCanonicalUrl(rawCanonical, baseUrl, fallbackPath) {

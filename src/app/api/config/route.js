@@ -4,6 +4,7 @@ import Config from '@/models/Config';
 import { getSession } from '@/lib/auth';
 import cache, { CACHE_KEYS, CACHE_TTL, createCacheDebugHeaders } from '@/lib/cache';
 import { createPublicCacheHeaders, RESPONSE_CACHE } from '@/lib/httpCache';
+import { getSiteUrl } from '@/lib/siteUrl';
 
 const CACHE_KEY_CONFIG_PUBLIC_API = 'db:config:public:api';
 
@@ -47,7 +48,7 @@ function sanitizePublicConfig(config) {
 
     const safeConfig = JSON.parse(JSON.stringify(config));
     const hasCustomFavicon = Boolean(safeConfig?.favicon?.value || safeConfig?.favicon?.filename || safeConfig?.favicon?.mimeType);
-    const baseUrl = process.env.SITE_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    const baseUrl = getSiteUrl();
 
     if (safeConfig.favicon && typeof safeConfig.favicon === 'object') {
         delete safeConfig.favicon.value;

@@ -5,12 +5,13 @@ import { NextResponse } from "next/server";
 import cache from '@/lib/cache';
 import { createUniqueBlogSlug, resolveBlogByIdentifier } from '@/lib/blogSlugs';
 import { revalidatePath } from 'next/cache';
+import { getSiteUrl } from '@/lib/siteUrl';
 
 function normalizeCanonicalUrl(value) {
     const raw = typeof value === 'string' ? value.trim() : '';
     if (!raw) return '';
 
-    const baseUrl = process.env.SITE_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    const baseUrl = getSiteUrl();
 
     try {
         const parsed = new URL(raw, baseUrl);

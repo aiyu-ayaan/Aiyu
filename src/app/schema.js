@@ -1,3 +1,5 @@
+import { getSiteUrl } from '@/lib/siteUrl';
+
 // Utility function to generate JSON-LD schema for SEO
 
 export function generatePersonSchema(siteData) {
@@ -5,7 +7,7 @@ export function generatePersonSchema(siteData) {
         '@context': 'https://schema.org',
         '@type': 'Person',
         name: siteData?.name || 'Portfolio Owner',
-        url: process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000',
+        url: getSiteUrl(),
         description: siteData?.description || 'Full Stack Developer & Designer',
         image: siteData?.profileImage || '/og-image.png',
         email: siteData?.email || 'contact@example.com',

@@ -1,10 +1,11 @@
 import BlogList from '../../components/blogs/BlogList';
 import { getConfigData, getPublishedBlogs } from '@/lib/dataFetchers';
-export const revalidate = 0;
+import { getSiteUrl } from '@/lib/siteUrl';
+
+export const revalidate = 300;
 
 function getBaseUrl() {
-    const baseUrl = process.env.SITE_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-    return baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+    return getSiteUrl();
 }
 
 export async function generateMetadata() {

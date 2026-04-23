@@ -5,13 +5,14 @@ import HomeLazySections from "../components/landing/HomeLazySections";
 import ViewportLazySection from "../components/shared/ViewportLazySection";
 import { getHomePageData, getConfigData } from "@/lib/dataFetchers";
 import { generateWebsiteSchema, generatePersonSchema, generateOrganizationSchema } from "@/app/schema";
+import { getSiteUrl } from '@/lib/siteUrl';
 export const revalidate = 0;
 
 export async function generateMetadata() {
   const config = await getConfigData();
 
   const baseName = config?.siteTitle || config?.logoText || 'Portfolio';
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+  const baseUrl = getSiteUrl();
   const siteDescription = config?.siteDescription || 'Professional portfolio showcasing projects, blogs, and expertise.';
   const ogImage = (typeof config?.ogImage === 'string' ? config.ogImage : typeof config?.ogImage?.value === 'string' && config.ogImage.value.length > 0 ? config.ogImage.value : null) || `${baseUrl}/og-image.png`;
 
@@ -56,7 +57,7 @@ export default async function Home() {
     configData: serializedConfigData,
   } = await getHomePageData();
 
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+  const baseUrl = getSiteUrl();
 
   const projects = Array.isArray(serializedProjectsData) ? serializedProjectsData : [];
   const blogs = Array.isArray(serializedBlogsData) ? serializedBlogsData : [];

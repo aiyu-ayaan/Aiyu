@@ -1,6 +1,7 @@
+import { getSiteUrl } from '@/lib/siteUrl';
+
 export default function robots() {
-    const baseUrl = process.env.SITE_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-    const normalizedBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+    const baseUrl = getSiteUrl();
 
     return {
         rules: [
@@ -25,6 +26,6 @@ export default function robots() {
                 crawlDelay: 0,
             },
         ],
-        sitemap: `${normalizedBaseUrl}/sitemap.xml`,
+        sitemap: `${baseUrl}/sitemap.xml`,
     };
 }
