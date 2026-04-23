@@ -40,11 +40,14 @@ html {
   color: var(--text-primary);
   min-height: 100vh;
   position: relative;
+  overflow-x: clip;
 }
 
 /* Typography spacing for rendered markdown (prose) */
 .blog-detail-container article .prose {
   line-height: 1.8;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 /* Preserve author-entered line breaks in markdown paragraphs */
@@ -79,6 +82,8 @@ html {
 .blog-detail-container article .prose pre {
   margin-top: 1.2em;
   margin-bottom: 1.2em;
+  overflow-x: auto;
+  max-width: 100%;
 }
 
 .blog-detail-container article .prose blockquote {
@@ -89,6 +94,13 @@ html {
 .blog-detail-container article .prose hr {
   margin-top: 1.6em;
   margin-bottom: 1.6em;
+}
+
+.blog-detail-container article .prose table {
+  display: block;
+  overflow-x: auto;
+  max-width: 100%;
+  width: 100%;
 }
 
 .blog-meta-item {
@@ -247,4 +259,3 @@ img {
     margin-bottom: 0.75rem;
   }
 }
-
