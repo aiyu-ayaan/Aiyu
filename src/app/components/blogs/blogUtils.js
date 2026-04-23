@@ -73,6 +73,34 @@ export const formatBlogDate = (dateValue) => {
 const MD_LINK_REGEX = /\[.*?\]\((https?:\/\/[^\)]+)\)/g;
 const RAW_LINK_REGEX = /(?<!\()(https?:\/\/[^\s\)>"\]]+)/g;
 const IMAGE_EXTENSIONS = /\.(jpg|jpeg|png|gif|webp|svg)$/i;
+const IP_REGEX = /^(\d{1,3}\.){3}\d{1,3}(:\d+)?$/; // IPv4 regex
+const IPV6_REGEX = /^\[?([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}\]?(:\d+)?$/; // IPv6 regex
+
+const isLocalhostOrIpLink = (url) => {
+  try {
+    const urlObj = new URL(url);
+    const hostname = urlObj.hostname || '';
+
+    // Check for localhost
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return true;
+    }
+
+    // Check for IPv4 addresses
+    if (IP_REGEX.test(hostname)) {
+      return true;
+    }
+
+    // Check for IPv6 addresses
+    if (IPV6_REGEX.test(hostname)) {
+      return true;
+    }
+
+    return false;
+  } catch {
+    return false;
+  }
+};
 
 export const extractLinksFromContent = (content) => {
   if (!content || typeof content !== 'string') {
@@ -97,6 +125,8 @@ export const extractLinksFromContent = (content) => {
     urls.add(match[1]);
   }
 
-  // Filter out image URLs
-  return Array.from(urls).filter((url) => !IMAGE_EXTENSIONS.test(url));
+  // Filter out image URLs, localhost, and IP-based links
+  return Array.from(urls).filter(
+    (url) => !IMAGE_EXTENSIONS.test(url) && !isLocalhostOrIpLink(url)
+  );
 };
