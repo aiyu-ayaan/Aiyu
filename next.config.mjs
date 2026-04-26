@@ -77,6 +77,10 @@ const nextConfig = {
           key: 'Cache-Control',
           value: publicHtmlCacheValue,
         },
+        {
+          key: 'Link',
+          value: '</.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json", </.well-known/openapi.json>; rel="service-desc"; type="application/openapi+json", </docs/api>; rel="service-doc"; type="text/markdown", </.well-known/oauth-protected-resource>; rel="describedby"; type="application/json", </.well-known/agent-skills/index.json>; rel="describedby"; type="application/json", </.well-known/mcp/server-card.json>; rel="describedby"; type="application/json"',
+        },
       ],
     });
 
