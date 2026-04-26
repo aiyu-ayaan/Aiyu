@@ -1,5 +1,11 @@
 # Changelog
 
+## [3.8.1](https://github.com/aiyu-ayaan/Aiyu/compare/v3.8.0...v3.8.1) (2026-04-26)
+
+### Features
+
+* feat: update robots.txt to clarify content signal usage and permissions
+
 ## [3.8.0](https://github.com/aiyu-ayaan/Aiyu/compare/v3.7.3...v3.8.0) (2026-04-23)
 
 ### Features
