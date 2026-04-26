@@ -3,6 +3,7 @@ import FuturisticResume from "../components/landing/FuturisticResume";
 import GamePortfolio from "../components/landing/GamePortfolio";
 import HomeLazySections from "../components/landing/HomeLazySections";
 import ViewportLazySection from "../components/shared/ViewportLazySection";
+import WebMCPTools from "../components/agent/WebMCPTools";
 import { getHomePageData, getConfigData } from "@/lib/dataFetchers";
 import { generateWebsiteSchema, generatePersonSchema, generateOrganizationSchema } from "@/app/schema";
 import { getSiteUrl } from '@/lib/siteUrl';
@@ -85,6 +86,7 @@ export default async function Home() {
 
   return (
     <div className="relative overflow-hidden">
+      <WebMCPTools />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
