@@ -1,1 +1,3 @@
-export { GET, dynamic } from '../oauth-authorization-server/route';
+export { GET } from '../oauth-authorization-server/route';
+
+export const dynamic = 'force-dynamic';
