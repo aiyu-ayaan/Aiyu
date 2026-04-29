@@ -15,7 +15,7 @@ import ContactMessage from "@/models/ContactMessage";
 import Theme from "@/models/Theme";
 import archiver from "archiver";
 import { join } from "path";
-import { readFile, access } from "fs/promises";
+import { readFile, access, readdir } from "fs/promises";
 
 export async function GET(request) {
     try {
@@ -75,8 +75,20 @@ export async function GET(request) {
         // Add data.json
         archive.append(JSON.stringify(data, null, 2), { name: 'data.json' });
 
-        // Add gallery image files from public/uploads/
+        // Add image files from public/uploads/
         const uploadsDir = join(process.cwd(), 'public', 'uploads');
+        let uploadEntries = [];
+        try {
+            uploadEntries = await readdir(uploadsDir, { withFileTypes: true });
+        } catch {
+            uploadEntries = [];
+        }
+
+        for (const entry of uploadEntries) {
+            if (!entry.isFile()) continue;
+            imageFiles.add(entry.name);
+        }
+
         for (const filename of imageFiles) {
             const filePath = join(uploadsDir, filename);
             try {
