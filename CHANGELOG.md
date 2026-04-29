@@ -1,5 +1,23 @@
 # Changelog
 
+## [3.8.3](https://github.com/aiyu-ayaan/Aiyu/compare/v3.8.2...v3.8.3) (2026-04-29)
+
+### Features
+
+* feat: add nginx service with healthcheck and volume configurations
+* feat: enhance image file handling in export route by adding directory reading
+* feat: strip H1 content from blog posts and optimize rendering
+* feat(docker): update port configurations for local and production setups
+
+### Bug Fixes
+
+* fix: clean up JSX formatting and improve readability in BlogDetailClient component
+* fix(discovery): expand markdown negotiation for agents
+
+### Other Changes
+
+* Merge branch 'master' of https://github.com/aiyu-ayaan/Aiyu
+
 ## [3.8.2](https://github.com/aiyu-ayaan/Aiyu/compare/v3.8.1...v3.8.2) (2026-04-26)
 
 ### Features
