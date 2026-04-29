@@ -29,6 +29,15 @@ const SyntaxHighlighter = dynamic(
 const isOptimizableImage = (src) =>
   typeof src === 'string' && (src.startsWith('/') || src.startsWith('https://'));
 
+function stripH1Content(markdown = '') {
+  if (typeof markdown !== 'string') return '';
+
+  return markdown
+    .replace(/<h1\b[^>]*>[\s\S]*?<\/h1>/gi, '')
+    .replace(/^#(?!#)\s+.*$/gm, '')
+    .trim();
+}
+
 function slugifyHeading(value = '') {
   return String(value)
     .toLowerCase()
@@ -69,17 +78,19 @@ export default memo(function BlogDetailClient({ blog, config }) {
   const [imageError, setImageError] = useState(false);
   const [activeId, setActiveId] = useState('');
 
+  const sanitizedContent = useMemo(() => stripH1Content(blog?.content), [blog?.content]);
+
   // Use useMemo to prevent re-extracting links on every render
   const extractedLinks = useMemo(() => {
-    return extractLinksFromContent(blog?.content);
-  }, [blog?.content]);
+    return extractLinksFromContent(sanitizedContent);
+  }, [sanitizedContent]);
 
   // Memoize tag array
   const tags = useMemo(() => {
     return Array.isArray(blog?.tags) ? blog.tags : [];
   }, [blog?.tags]);
 
-  const toc = useMemo(() => extractToc(blog?.content), [blog?.content]);
+  const toc = useMemo(() => extractToc(sanitizedContent), [sanitizedContent]);
   const hasToc = toc.length >= 2;
 
   const authorName = useMemo(() => {
@@ -237,7 +248,7 @@ export default memo(function BlogDetailClient({ blog, config }) {
           <div className="mb-4 flex flex-wrap items-center justify-center gap-4 text-sm font-medium" style={{ color: 'var(--text-tertiary)' }}>
             <span>{formatBlogDate(blog.date || blog.createdAt)}</span>
             <span>&bull;</span>
-            <span>{getReadTime(blog.content)}</span>
+            <span>{getReadTime(sanitizedContent)}</span>
           </div>
 
           {tags.length > 0 && (
@@ -396,7 +407,7 @@ export default memo(function BlogDetailClient({ blog, config }) {
                   pre: ({ children }) => <>{children}</>,
                 }}
               >
-                {blog.content}
+                {sanitizedContent}
               </ReactMarkdown>
 
               {blog?.isAutomated && (
