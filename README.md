@@ -764,7 +764,8 @@ SITE_URL=https://yourdomain.com
 NEXT_PUBLIC_N8N_WEBHOOK_URL=https://your-n8n-instance/webhook/contact
 
 # Optional compose controls
-APP_PORT=3000
+APP_PORT=3000          # docker-compose-local.yml direct app port
+NGINX_HTTP_PORT=80     # docker-compose.yml nginx HTTP port
 APP_IMAGE_TAG=latest
 ```
 
@@ -802,13 +803,13 @@ All security checks must pass! This verifies:
 
 ```bash
 # Open browser and visit (or use curl):
-http://localhost:3000/api/seed
+http://localhost/api/seed
 ```
 
 Or using curl:
 
 ```bash
-curl http://localhost:3000/api/seed
+curl http://localhost/api/seed
 ```
 
 **Expected Response**:
@@ -830,14 +831,14 @@ This populates the database with:
 
 #### 6. **Access Your Portfolio**
 
-- **🌐 Main Site**: [http://localhost:3000](http://localhost:3000)
-- **⚙️ Admin Panel**: [http://localhost:3000/admin](http://localhost:3000/admin)
+- **🌐 Main Site**: [http://localhost](http://localhost)
+- **⚙️ Admin Panel**: [http://localhost/admin](http://localhost/admin)
   - Username: `admin` (or your configured username)
   - Password: Your `ADMIN_PASSWORD` from `.env`
 
 ### 🎯 Post-Installation Steps
 
-1. **Seed Database**: Visit `http://localhost:3000/api/seed` (first time only!)
+1. **Seed Database**: Visit `http://localhost/api/seed` (first time only!)
 2. **Login to Admin Panel**: Navigate to `/admin` and login
 3. **Update Home Content**: Edit hero section, tagline, and "Open to Work" status
 4. **Add Your Projects**: Create project entries with descriptions, images, and links
@@ -927,7 +928,7 @@ Key features:
 | Area | `docker-compose.yml` | `docker-compose-local.yml` |
 |---|---|---|
 | App source | Pull image `aiyuayaan/aiyu:${APP_IMAGE_TAG:-latest}` | Build from local source |
-| Public entrypoint | `nginx` on `${APP_PORT:-3000}:80` | `app` on `${APP_PORT:-3000}:3000` |
+| Public entrypoint | `nginx` on `${NGINX_HTTP_PORT:-80}:80` | `app` on `${APP_PORT:-3000}:3000` |
 | MongoDB setup | 3-node replica set (`mongo1`, `mongo2`, `mongo3`) | Single MongoDB instance |
 | Nginx proxy/cache | Yes (`nginx_cache` volume) | No |
 | App health start window | Longer (`start_period: 150s`) | Shorter (`start_period: 40s`) |
@@ -946,7 +947,7 @@ Key features:
 **Production (docker-compose.yml):**
 ```
 ┌─────────────────────────────────────────┐
-│        User/Browser (Port 3000)         │
+│         User/Browser (Port 80)          │
 └──────────────┬──────────────────────────┘
                │
                ▼
