@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.8.2](https://github.com/aiyu-ayaan/Aiyu/compare/v3.8.1...v3.8.2) (2026-04-26)
+
+### Features
+
+* feat(discovery): expose WebMCP homepage tools
+* feat(discovery): add homepage agent link headers
+* feat(discovery): publish agent discovery metadata
+
+### Bug Fixes
+
+* fix(discovery): define oidc route config locally
+
 ## [3.8.1](https://github.com/aiyu-ayaan/Aiyu/compare/v3.8.0...v3.8.1) (2026-04-26)
 
 ### Features
