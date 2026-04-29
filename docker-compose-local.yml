@@ -23,7 +23,6 @@ services:
       retries: 5
       start_period: 10s
 
-
   # Next.js Application Service
   app:
     build:
@@ -102,6 +101,28 @@ services:
     networks:
       - aiyu-network
 
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "${NGINX_HTTP_PORT:-80}:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./public:/srv/public:ro
+      - uploads_data:/srv/uploads:ro
+      - nginx_cache:/var/cache/nginx
+    depends_on:
+      app:
+        condition: service_healthy
+    networks:
+      - aiyu-network
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:80/nginx-health || exit 1" ]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
 # Named volumes for data persistence
 volumes:
   mongodb_data:
@@ -111,6 +132,8 @@ volumes:
   nextjs_cache:
     driver: local
   uploads_data:
+    driver: local
+  nginx_cache:
     driver: local
 
 # Network for inter-service communication
