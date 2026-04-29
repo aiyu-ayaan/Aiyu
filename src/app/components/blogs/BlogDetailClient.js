@@ -196,13 +196,13 @@ export default memo(function BlogDetailClient({ blog, config }) {
             style={{ color: 'var(--accent-cyan)' }}
           >
             &larr; Back to Blogs
-           </Link>
-         </div>
-       </div>
-     );
-   }
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
-   return (
+  return (
     <div className="blog-detail-container p-4 lg:p-8">
       <div className="blog-detail-backdrop" />
 
@@ -279,14 +279,14 @@ export default memo(function BlogDetailClient({ blog, config }) {
             }}
           >
             <button type="button" onClick={() => handleImageSelect(blog.image)} className="block w-full cursor-zoom-in">
-                <img
-                  src={blog.image}
-                  alt={blog?.imageAlt || blog.title}
-                  className="max-h-[620px] w-full object-cover"
-                  loading="lazy"
-                  decoding="async"
-                  onError={handleImageError}
-                />
+              <img
+                src={blog.image}
+                alt={blog?.imageAlt || blog.title}
+                className="max-h-[620px] w-full object-cover"
+                loading="lazy"
+                decoding="async"
+                onError={handleImageError}
+              />
             </button>
           </section>
         )}
@@ -295,7 +295,7 @@ export default memo(function BlogDetailClient({ blog, config }) {
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px] items-start">
           <article className="lg:pr-8">
-            <div 
+            <div
               className="prose prose-lg max-w-none"
               style={{
                 '--tw-prose-body': 'var(--text-secondary)',
@@ -325,14 +325,14 @@ export default memo(function BlogDetailClient({ blog, config }) {
                           backgroundColor: 'var(--bg-elevated)',
                         }}
                       >
-                          <img
-                            src={resolvedSrc}
-                            alt={resolvedAlt}
-                            className="h-auto w-full object-contain"
-                            loading="lazy"
-                            decoding="async"
-                            {...props}
-                          />
+                        <img
+                          src={resolvedSrc}
+                          alt={resolvedAlt}
+                          className="h-auto w-full object-contain"
+                          loading="lazy"
+                          decoding="async"
+                          {...props}
+                        />
                       </span>
                     );
                   },
@@ -411,7 +411,7 @@ export default memo(function BlogDetailClient({ blog, config }) {
               </ReactMarkdown>
 
               {blog?.isAutomated && (
-                <div 
+                <div
                   className="mt-12 flex flex-col sm:flex-row items-start sm:items-center gap-4 p-5 rounded-2xl border relative overflow-hidden"
                   style={{
                     borderColor: 'color-mix(in srgb, var(--accent-cyan) 20%, var(--border-secondary))',
@@ -419,8 +419,8 @@ export default memo(function BlogDetailClient({ blog, config }) {
                   }}
                 >
                   <div className="absolute left-0 top-0 bottom-0 w-1"
-                       style={{ backgroundColor: 'var(--accent-cyan)' }} />
-                  
+                    style={{ backgroundColor: 'var(--accent-cyan)' }} />
+
                   <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
                     style={{
                       backgroundColor: 'color-mix(in srgb, var(--accent-cyan) 15%, transparent)',
@@ -430,12 +430,12 @@ export default memo(function BlogDetailClient({ blog, config }) {
                     <FaBolt className="w-4 h-4 ml-[1px]" />
                   </div>
                   <div>
-                      <p className="text-sm font-bold mb-1 tracking-wide uppercase" style={{ color: 'var(--accent-cyan)' }}>
-                        Automated Transmission
-                      </p>
-                      <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                        This entry was synthesized and populated dynamically using native API integrations.
-                      </p>
+                    <p className="text-sm font-bold mb-1 tracking-wide uppercase" style={{ color: 'var(--accent-cyan)' }}>
+                      Automated Transmission
+                    </p>
+                    <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                      This entry was synthesized and populated dynamically using native API integrations.
+                    </p>
                   </div>
                 </div>
               )}
@@ -473,25 +473,25 @@ export default memo(function BlogDetailClient({ blog, config }) {
           ) : null}
         </div>
 
-         {extractedLinks.length > 0 && (
-           <section className="mt-8 rounded-2xl border p-5 sm:p-6"
-             style={{
-               borderColor: 'var(--border-secondary)',
-               contentVisibility: 'auto',
-               containIntrinsicSize: '1px 540px',
-             }}
-           >
-             <h2 className="mb-5 text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
-               Resources & Links
-             </h2>
-             <div className="grid grid-cols-1 gap-4">
-               {extractedLinks.map((link) => (
-                 <LinkPreview key={link} url={link} />
-               ))}
-             </div>
-           </section>
-         )}
-       </div>
+        {extractedLinks.length > 0 && (
+          <section className="mt-8 rounded-2xl border p-5 sm:p-6"
+            style={{
+              borderColor: 'var(--border-secondary)',
+              contentVisibility: 'auto',
+              containIntrinsicSize: '1px 540px',
+            }}
+          >
+            <h2 className="mb-5 text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+              Resources & Links
+            </h2>
+            <div className="grid grid-cols-1 gap-4">
+              {extractedLinks.map((link) => (
+                <LinkPreview key={link} url={link} />
+              ))}
+            </div>
+          </section>
+        )}
+      </div>
 
       {showShareToast && (
         <motion.div
@@ -538,13 +538,13 @@ export default memo(function BlogDetailClient({ blog, config }) {
             >
               Close
             </button>
-              <img 
-                src={selectedImage} 
-                alt="Blog full view" 
-                className="max-h-[90vh] max-w-full rounded-lg object-contain"
-                loading="eager"
-                decoding="sync"
-              />
+            <img
+              src={selectedImage}
+              alt="Blog full view"
+              className="max-h-[90vh] max-w-full rounded-lg object-contain"
+              loading="eager"
+              decoding="sync"
+            />
           </motion.div>
         </motion.div>
       )}
