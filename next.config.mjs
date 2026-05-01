@@ -96,21 +96,6 @@ const nextConfig = {
         destination: '/apps/:path*',
         permanent: true,
       },
-      {
-        source: '/blogs/:slug/:path*',
-        destination: '/blogs/:slug',
-        permanent: true,
-      },
-      {
-        source: '/projects/:slug/:path*',
-        destination: '/projects/:slug',
-        permanent: true,
-      },
-      {
-        source: '/apps/:slug/:path*',
-        destination: '/apps/:slug',
-        permanent: true,
-      },
     ];
   },
 
