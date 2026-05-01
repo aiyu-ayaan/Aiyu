@@ -1,26 +1,31 @@
 import { toCanonicalSiteUrl } from '@/lib/siteUrl';
 
+const DISALLOWED_PATHS = [
+    '/admin',
+    '/api/admin',
+    '/api/auth/login',
+    '/api/auth/logout',
+    '/api/config',
+    '/*.json$',
+    '/*?*sort=',
+    '/*?*page=',
+    '/blog/',
+    '/deployments/',
+];
+
 export default function robots() {
     return {
         rules: [
             {
                 userAgent: '*',
                 allow: '/',
-                disallow: [
-                    '/admin',
-                    '/api/admin',
-                    '/api/auth/login',
-                    '/api/auth/logout',
-                    '/api/config',
-                    '/*.json$',
-                    '/*?*sort=',
-                    '/*?*page=',
-                ],
+                disallow: DISALLOWED_PATHS,
                 crawlDelay: 1,
             },
             {
                 userAgent: 'Googlebot',
                 allow: '/',
+                disallow: DISALLOWED_PATHS,
                 crawlDelay: 0,
             },
         ],
