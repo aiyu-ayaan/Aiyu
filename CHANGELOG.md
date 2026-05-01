@@ -1,5 +1,22 @@
 # Changelog
 
+## [3.8.4](https://github.com/aiyu-ayaan/Aiyu/compare/v3.8.3...v3.8.4) (2026-05-01)
+
+### Features
+
+* feat: add configuration for codegraph MCP server
+
+### Bug Fixes
+
+* fix(seo): prevent detail route redirect loops
+* fix(seo): align googlebot robots rules
+* fix(seo): canonicalize sitemap and legacy routes
+* fix(seo): normalize canonical public URLs
+
+### Other Changes
+
+* chore: remove CodeGraph configuration and related files
+
 ## [3.8.3](https://github.com/aiyu-ayaan/Aiyu/compare/v3.8.2...v3.8.3) (2026-04-29)
 
 ### Features
