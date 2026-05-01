@@ -64,6 +64,56 @@ const nextConfig = {
   },
 
   // Headers for performance
+  async redirects() {
+    return [
+      {
+        source: '/blog',
+        destination: '/blogs',
+        permanent: true,
+      },
+      {
+        source: '/blog/:path*',
+        destination: '/blogs/:path*',
+        permanent: true,
+      },
+      {
+        source: '/deployments',
+        destination: '/apps',
+        permanent: true,
+      },
+      {
+        source: '/deployments/:path*',
+        destination: '/apps/:path*',
+        permanent: true,
+      },
+      {
+        source: '/live-deployments',
+        destination: '/apps',
+        permanent: true,
+      },
+      {
+        source: '/live-deployments/:path*',
+        destination: '/apps/:path*',
+        permanent: true,
+      },
+      {
+        source: '/blogs/:slug/:path*',
+        destination: '/blogs/:slug',
+        permanent: true,
+      },
+      {
+        source: '/projects/:slug/:path*',
+        destination: '/projects/:slug',
+        permanent: true,
+      },
+      {
+        source: '/apps/:slug/:path*',
+        destination: '/apps/:slug',
+        permanent: true,
+      },
+    ];
+  },
+
   async headers() {
     const headers = [];
     const publicHtmlCacheValue = isProduction

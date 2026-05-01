@@ -3,7 +3,7 @@ import BlogModel from '@/models/Blog';
 import ProjectModel from '@/models/Project';
 import DeploymentModel from '@/models/Deployment';
 import { getBlogSlug } from '@/lib/blogSlugs';
-import { getSiteUrl } from '@/lib/siteUrl';
+import { getSiteUrl, toCanonicalSiteUrl } from '@/lib/siteUrl';
 import {
   getDeploymentSlug,
   getProjectSlug,
@@ -122,10 +122,39 @@ function createStaticRoutes(baseUrl, options = {}) {
   ];
 }
 
+function normalizeSitemapRoutes(routes = []) {
+  const seenUrls = new Set();
+
+  return routes.reduce((entries, route) => {
+    if (!route?.url) {
+      return entries;
+    }
+
+    let canonicalUrl = route.url;
+    try {
+      const parsedUrl = new URL(route.url);
+      canonicalUrl = `${parsedUrl.origin}${parsedUrl.pathname.replace(/\/+$/, '') || ''}`;
+    } catch {
+      canonicalUrl = route.url.replace(/\/+$/, '');
+    }
+
+    if (seenUrls.has(canonicalUrl)) {
+      return entries;
+    }
+
+    seenUrls.add(canonicalUrl);
+    entries.push({
+      ...route,
+      url: canonicalUrl,
+    });
+    return entries;
+  }, []);
+}
+
 export default async function sitemap() {
   const baseUrl = getSiteUrl();
 
-  const staticRoutes = createStaticRoutes(baseUrl);
+  const staticRoutes = normalizeSitemapRoutes(createStaticRoutes(baseUrl));
 
   if (SKIP_DB_DURING_BUILD) {
     console.warn('[sitemap] Database reads skipped during production build. Returning static routes only.');
@@ -149,27 +178,27 @@ export default async function sitemap() {
     });
 
     const blogRoutes = blogs.map((blog) => ({
-      url: `${baseUrl}/blogs/${getBlogSlug(blog)}`,
+      url: toCanonicalSiteUrl(`/blogs/${getBlogSlug(blog)}`),
       lastModified: blog.updatedAt || new Date(),
       changeFrequency: 'monthly',
       priority: 0.7,
     }));
 
     const projectRoutes = projects.map((project) => ({
-      url: `${baseUrl}/projects/${getProjectSlug(project)}`,
+      url: toCanonicalSiteUrl(`/projects/${getProjectSlug(project)}`),
       lastModified: getDocumentLastModified(project) || new Date(),
       changeFrequency: 'monthly',
       priority: 0.75,
     }));
 
     const appRoutes = deployments.map((deployment) => ({
-      url: `${baseUrl}/apps/${getDeploymentSlug(deployment)}`,
+      url: toCanonicalSiteUrl(`/apps/${getDeploymentSlug(deployment)}`),
       lastModified: getDocumentLastModified(deployment) || new Date(),
       changeFrequency: 'weekly',
       priority: 0.74,
     }));
 
-    return [...staticRoutesWithRealtimeCollections, ...blogRoutes, ...projectRoutes, ...appRoutes];
+    return normalizeSitemapRoutes([...staticRoutesWithRealtimeCollections, ...blogRoutes, ...projectRoutes, ...appRoutes]);
   } catch (error) {
     console.error('Error generating sitemap:', error);
     console.warn('Database unavailable during sitemap generation. Returning static routes only.');

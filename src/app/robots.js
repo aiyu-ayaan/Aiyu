@@ -1,8 +1,6 @@
-import { getSiteUrl } from '@/lib/siteUrl';
+import { toCanonicalSiteUrl } from '@/lib/siteUrl';
 
 export default function robots() {
-    const baseUrl = getSiteUrl();
-
     return {
         rules: [
             {
@@ -26,6 +24,6 @@ export default function robots() {
                 crawlDelay: 0,
             },
         ],
-        sitemap: `${baseUrl}/sitemap.xml`,
+        sitemap: toCanonicalSiteUrl('/sitemap.xml'),
     };
 }

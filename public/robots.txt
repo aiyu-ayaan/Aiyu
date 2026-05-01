@@ -69,6 +69,8 @@ Disallow: /api/config
 Disallow: /*.json$
 Disallow: /*?*sort=
 Disallow: /*?*page=
+Disallow: /blog/
+Disallow: /deployments/
 Crawl-delay: 1
 
 # Specific rules for Google
