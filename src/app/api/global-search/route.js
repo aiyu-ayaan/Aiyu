@@ -5,6 +5,8 @@ import Project from '@/models/Project';
 import Deployment from '@/models/Deployment';
 import cache, { CACHE_TTL, createCacheDebugHeaders } from '@/lib/cache';
 import { createPublicCacheHeaders, RESPONSE_CACHE } from '@/lib/httpCache';
+import { getBlogSlug } from '@/lib/blogSlugs';
+import { getDeploymentSlug, getProjectSlug } from '@/lib/contentSlugs';
 
 function escapeRegex(value) {
     return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -57,7 +59,7 @@ export async function GET(request) {
                             { description: regex },
                             { techStack: regex }
                         ]
-                    }).sort({ displayOrder: 1, year: -1 }).limit(SEARCH_LIMITS.PROJECTS).select('name description year _id').lean(),
+                    }).sort({ displayOrder: 1, year: -1 }).limit(SEARCH_LIMITS.PROJECTS).select('name slug description year _id').lean(),
 
                     Deployment.find({
                         $or: [
@@ -68,7 +70,7 @@ export async function GET(request) {
                             { appType: regex },
                             { environment: regex },
                         ]
-                    }).sort({ displayOrder: 1, updatedAt: -1 }).limit(SEARCH_LIMITS.DEPLOYMENTS).select('name description hostingProvider environment _id').lean(),
+                    }).sort({ displayOrder: 1, updatedAt: -1 }).limit(SEARCH_LIMITS.DEPLOYMENTS).select('name slug description hostingProvider environment _id').lean(),
 
                     // Search Home (usually singleton, but using find in case of multiple or just 1)
                     import('@/models/Home').then(mod => mod.default.find({
@@ -95,7 +97,7 @@ export async function GET(request) {
                     type: 'blog',
                     title: blog.title,
                     description: blog.content ? blog.content.substring(0, 100) + '...' : '',
-                    path: `/blogs/${blog.slug || blog._id}`,
+                    path: `/blogs/${getBlogSlug(blog)}`,
                     date: blog.date
                 }));
 
@@ -103,8 +105,7 @@ export async function GET(request) {
                     type: 'project',
                     title: project.name,
                     description: project.description ? project.description.substring(0, 100) + '...' : '',
-                    path: `/projects#project-${project._id}`,
-                    // path: project.codeLink || '/projects', // User wanted deep linking to dashboard/details likely, but since no details page, we scroll to it.
+                    path: `/projects/${getProjectSlug(project)}`,
                     date: project.year // Rough approximation for date sorting
                 }));
 
@@ -112,7 +113,7 @@ export async function GET(request) {
                     type: 'page',
                     title: deployment.name,
                     description: `${deployment.hostingProvider || 'Hosted'} ${deployment.environment ? `• ${deployment.environment}` : ''}`.trim(),
-                    path: '/apps',
+                    path: `/apps/${getDeploymentSlug(deployment)}`,
                     date: nowIso
                 }));
 

@@ -4,7 +4,8 @@ import React, { useMemo } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { FaArrowRight, FaCalendarAlt, FaPenNib } from 'react-icons/fa';
-import { generateSlug, getReadTime } from '../blogs/blogUtils';
+import { getReadTime } from '../blogs/blogUtils';
+import { getBlogPath } from '@/lib/publicPaths';
 
 const HomeBlogs = ({ blogs }) => {
   const sortedBlogs = useMemo(() => {
@@ -71,7 +72,7 @@ const HomeBlogs = ({ blogs }) => {
           {recentBlogs.map((blog, index) => {
             const previewText = String(blog?.content || '').replace(/[#[\]*`_]/g, '').trim();
             const displayText = previewText.length > 160 ? `${previewText.slice(0, 160)}...` : previewText;
-            const blogPath = `/blogs/${blog?.slug || generateSlug(blog?.title) || blog?._id}`;
+            const blogPath = getBlogPath(blog);
 
             return (
               <motion.article

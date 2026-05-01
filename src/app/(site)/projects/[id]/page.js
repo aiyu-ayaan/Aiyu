@@ -5,6 +5,7 @@ import dbConnect from '@/lib/db';
 import ProjectModel from '@/models/Project';
 import { getConfigData, getProjectSlugs } from '@/lib/dataFetchers';
 import { getProjectSlug, resolveProjectByIdentifier } from '@/lib/contentSlugs';
+import { getSiteUrl } from '@/lib/siteUrl';
 
 export const revalidate = 300;
 
@@ -14,8 +15,7 @@ export async function generateStaticParams() {
 }
 
 function getBaseUrl() {
-    const baseUrl = process.env.SITE_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-    return baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+    return getSiteUrl();
 }
 
 function isExternalHttpUrl(value) {

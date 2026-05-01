@@ -4,10 +4,10 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import {
   formatBlogDate,
-  generateSlug,
   getReadTime,
   stripMarkdown,
 } from './blogUtils';
+import { getBlogPath } from '@/lib/publicPaths';
 
 const BlogCard = ({ blog }) => {
   const [failedImageSrc, setFailedImageSrc] = useState('');
@@ -20,7 +20,7 @@ const BlogCard = ({ blog }) => {
   const tags = Array.isArray(blog?.tags) ? blog.tags : [];
   const hasImage = Boolean(blog?.image && String(blog.image).trim() !== '');
   const showPlaceholder = !hasImage || failedImageSrc === blog?.image;
-  const blogPath = `/blogs/${blog?.slug || generateSlug(blog?.title) || blog?._id}`;
+  const blogPath = getBlogPath(blog);
 
   return (
     <article className="border-b pb-8 mb-8" style={{ borderColor: 'var(--border-primary)' }}>
@@ -92,4 +92,3 @@ const BlogCard = ({ blog }) => {
 };
 
 export default BlogCard;
-

@@ -3,7 +3,7 @@ import { cache } from 'react';
 import { notFound, redirect } from 'next/navigation';
 import { getBlogById, getConfigData, getPublishedBlogSlugs } from '@/lib/dataFetchers';
 import { generateBlogSchema } from '@/app/schema';
-import { getSiteUrl } from '@/lib/siteUrl';
+import { getSafeCanonicalUrl, getSiteUrl } from '@/lib/siteUrl';
 
 export const revalidate = 300;
 const getBlogByIdentifier = cache(async (identifier) => getBlogById(identifier));
@@ -15,32 +15,6 @@ export async function generateStaticParams() {
 
 function getBaseUrl() {
     return getSiteUrl();
-}
-
-function getSafeCanonicalUrl(rawCanonical, baseUrl, fallbackPath) {
-    const fallbackUrl = `${baseUrl}${fallbackPath}`;
-    const canonical = typeof rawCanonical === 'string' ? rawCanonical.trim() : '';
-    if (!canonical) {
-        return fallbackUrl;
-    }
-
-    try {
-        const parsedCanonical = new URL(canonical, baseUrl);
-        const parsedBase = new URL(baseUrl);
-        const protocol = parsedCanonical.protocol;
-        if (protocol !== 'http:' && protocol !== 'https:') {
-            return fallbackUrl;
-        }
-
-        // Keep canonical on same origin to avoid accidental canonicalization to other domains.
-        if (parsedCanonical.origin !== parsedBase.origin) {
-            return fallbackUrl;
-        }
-
-        return parsedCanonical.toString();
-    } catch {
-        return fallbackUrl;
-    }
 }
 
 function toIsoString(value) {
@@ -65,7 +39,7 @@ export async function generateMetadata({ params }) {
     const socialTitle = blog?.socialTitle || seoTitle;
     const socialDescription = blog?.socialDescription || description;
     const ogImage = blog?.socialImage || blog?.image || config?.ogImage || `${baseUrl}/og-image.png`;
-    const canonicalUrl = getSafeCanonicalUrl(blog?.canonicalUrl, baseUrl, `/blogs/${canonicalSlug}`);
+    const canonicalUrl = getSafeCanonicalUrl(blog?.canonicalUrl, `/blogs/${canonicalSlug}`);
     const keywords = Array.isArray(blog?.keywords) && blog.keywords.length > 0 ? blog.keywords : blog?.tags;
 
     if (!blog) {
@@ -136,7 +110,7 @@ export default async function BlogDetailPage({ params }) {
     }
 
     const baseUrl = getBaseUrl();
-    const canonicalUrl = getSafeCanonicalUrl(blog?.canonicalUrl, baseUrl, `/blogs/${canonicalSlug}`);
+    const canonicalUrl = getSafeCanonicalUrl(blog?.canonicalUrl, `/blogs/${canonicalSlug}`);
     const fallbackDescription = blog?.content?.substring(0, 160) || 'Blog article';
     const description = blog?.seoDescription || blog?.excerpt || fallbackDescription;
     const blogSchema = generateBlogSchema(
