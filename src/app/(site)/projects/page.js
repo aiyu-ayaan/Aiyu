@@ -1,12 +1,13 @@
 import Projects from '../../components/projects/Projects';
 import { getConfigData, getProjectsData } from "@/lib/dataFetchers";
+import { getSiteUrl } from '@/lib/siteUrl';
 
 export const revalidate = 300;
 
 export async function generateMetadata() {
   const config = await getConfigData();
   const baseName = config?.siteTitle || config?.logoText || 'Portfolio';
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+  const baseUrl = getSiteUrl();
   const description = 'Explore my latest projects and portfolio work.';
   const ogImage = (typeof config?.ogImage === 'string' ? config.ogImage : typeof config?.ogImage?.value === 'string' && config.ogImage.value.length > 0 ? config.ogImage.value : null) || `${baseUrl}/og-image.png`;
 
@@ -14,6 +15,17 @@ export async function generateMetadata() {
     title: `${baseName} | Projects`,
     description,
     keywords: ['projects', 'portfolio', 'development', 'case studies', 'web development', config?.profession || 'full stack'].join(', '),
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        'max-snippet': -1,
+        'max-image-preview': 'large',
+        'max-video-preview': -1,
+      },
+    },
     openGraph: {
       title: `${baseName} | Projects`,
       description,

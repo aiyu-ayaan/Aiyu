@@ -59,6 +59,17 @@ export async function generateMetadata({ params }) {
     return {
         title: `${baseName} | ${deployment.name}`,
         description,
+        robots: {
+            index: true,
+            follow: true,
+            googleBot: {
+                index: true,
+                follow: true,
+                'max-snippet': -1,
+                'max-image-preview': 'large',
+                'max-video-preview': -1,
+            },
+        },
         openGraph: {
             title: deployment.name,
             description,
@@ -91,10 +102,32 @@ export default async function AppDetailsPage({ params }) {
         redirect(`/apps/${canonicalSlug}`);
     }
 
+    const baseUrl = getBaseUrl();
     const stackList = Array.isArray(deployment?.techStack) ? deployment.techStack : [];
 
+    const appSchema = {
+        '@context': 'https://schema.org',
+        '@type': 'SoftwareApplication',
+        name: deployment.name,
+        description: deployment.description || undefined,
+        url: isExternalHttpUrl(deployment?.hostedUrl) ? deployment.hostedUrl : `${baseUrl}/apps/${canonicalSlug}`,
+        applicationCategory: deployment?.appType || 'WebApplication',
+        operatingSystem: 'Web',
+        ...(deployment?.image ? { image: deployment.image } : {}),
+        ...(stackList.length > 0 ? { softwareRequirements: stackList.join(', ') } : {}),
+        mainEntityOfPage: {
+            '@type': 'WebPage',
+            '@id': `${baseUrl}/apps/${canonicalSlug}`,
+        },
+    };
+
     return (
-        <main className="mx-auto w-full max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
+        <>
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(appSchema) }}
+            />
+            <main className="mx-auto w-full max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
             <article className="overflow-hidden rounded-2xl border border-white/10 bg-slate-900/60 shadow-2xl backdrop-blur">
                 {deployment?.image ? (
                     <img
@@ -181,5 +214,6 @@ export default async function AppDetailsPage({ params }) {
                 </div>
             </article>
         </main>
+        </>
     );
 }
