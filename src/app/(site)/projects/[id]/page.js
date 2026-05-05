@@ -59,6 +59,17 @@ export async function generateMetadata({ params }) {
     return {
         title: `${baseName} | ${project.name}`,
         description,
+        robots: {
+            index: true,
+            follow: true,
+            googleBot: {
+                index: true,
+                follow: true,
+                'max-snippet': -1,
+                'max-image-preview': 'large',
+                'max-video-preview': -1,
+            },
+        },
         openGraph: {
             title: project.name,
             description,
@@ -91,10 +102,35 @@ export default async function ProjectDetailsPage({ params }) {
         redirect(`/projects/${canonicalSlug}`);
     }
 
+    const baseUrl = getBaseUrl();
     const stackList = Array.isArray(project?.techStack) ? project.techStack : [];
 
+    const projectSchema = {
+        '@context': 'https://schema.org',
+        '@type': 'SoftwareSourceCode',
+        name: project.name,
+        description: project.description || undefined,
+        url: `${baseUrl}/projects/${canonicalSlug}`,
+        ...(project?.image ? { image: project.image } : {}),
+        ...(stackList.length > 0 ? { programmingLanguage: stackList } : {}),
+        ...(isExternalHttpUrl(project?.codeLink) ? { codeRepository: project.codeLink } : {}),
+        author: {
+            '@type': 'Person',
+            name: process.env.NEXT_PUBLIC_AUTHOR_NAME || 'Portfolio Owner',
+        },
+        mainEntityOfPage: {
+            '@type': 'WebPage',
+            '@id': `${baseUrl}/projects/${canonicalSlug}`,
+        },
+    };
+
     return (
-        <main className="mx-auto w-full max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
+        <>
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(projectSchema) }}
+            />
+            <main className="mx-auto w-full max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
             <article className="overflow-hidden rounded-2xl border border-white/10 bg-slate-900/60 shadow-2xl backdrop-blur">
                 {project?.image ? (
                     <img
@@ -170,5 +206,6 @@ export default async function ProjectDetailsPage({ params }) {
                 </div>
             </article>
         </main>
+        </>
     );
 }
