@@ -223,6 +223,38 @@ export default function Footer({ socialData, name, config, packageVersion }) {
                 </div>
 
                 <div
+                    className="mt-6 flex flex-col gap-2 border-t pt-5 text-sm"
+                    style={{
+                        borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)',
+                    }}
+                >
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: 'var(--text-tertiary)' }}>
+                        Site Navigation
+                    </p>
+                    <div className="flex flex-wrap gap-x-4 gap-y-2">
+                        {[
+                            { name: 'Home', href: '/' },
+                            { name: 'Projects', href: '/projects' },
+                            { name: 'Apps', href: '/apps' },
+                            { name: 'Blogs', href: '/blogs' },
+                            { name: 'Gallery', href: '/gallery' },
+                            { name: 'GitHub', href: '/github' },
+                            { name: 'Contact', href: '/contact-us' },
+                            { name: 'Sitemap', href: '/sitemap' }
+                        ].map(link => (
+                            <Link
+                                key={link.name}
+                                href={link.href}
+                                className="font-medium hover:underline transition-all"
+                                style={{ color: 'var(--text-secondary)' }}
+                            >
+                                {link.name}
+                            </Link>
+                        ))}
+                    </div>
+                </div>
+
+                <div
                     className="mt-6 flex flex-col gap-2 border-t pt-4 text-xs sm:flex-row sm:items-center sm:justify-between"
                     style={{
                         borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)',
