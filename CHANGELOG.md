@@ -1,5 +1,19 @@
 # Changelog
 
+## [3.9.0](https://github.com/aiyu-ayaan/Aiyu/compare/v3.8.4...v3.9.0) (2026-05-05)
+
+### Features
+
+* feat: add manual release workflow to automate version bumping, changelog generation, and PR creation
+* feat: implement site-wide HTML sitemap and add dynamic footer component
+* feat: create BlogDetailClient component for markdown rendering and ad integration
+* feat: implement Google AdSense configuration management system with secure storage and admin UI
+* feat: implement Google AdSense integration with admin dashboard configuration and dynamic frontend ad rendering
+
+### Bug Fixes
+
+* fix(seo): fix canonical URLs, add robots metadata and JSON-LD structured data (#184)
+
 ## [3.8.4](https://github.com/aiyu-ayaan/Aiyu/compare/v3.8.3...v3.8.4) (2026-05-01)
 
 ### Features
