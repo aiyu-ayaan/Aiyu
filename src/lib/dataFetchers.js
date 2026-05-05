@@ -21,6 +21,8 @@ import ConfigModel from '@/models/Config';
 import HeaderModel from '@/models/Header';
 import SocialModel from '@/models/Social';
 import GalleryModel from '@/models/Gallery';
+import AdsModel from '@/models/Ads';
+import { decrypt } from '@/lib/encryption';
 import { resolveBlogByIdentifier } from '@/lib/blogSlugs';
 import { getBlogSlug } from '@/lib/blogSlugs';
 import { getDeploymentSlug, getProjectSlug } from '@/lib/contentSlugs';
@@ -688,5 +690,42 @@ export async function getGalleryData() {
     } catch (error) {
         warnFetcherFallback('getGalleryData', error);
         return [];
+    }
+}
+
+/**
+ * Fetch AdSense configuration.
+ */
+export async function getAdsData() {
+    if (SKIP_DB_DURING_BUILD) {
+        warnFetcherFallback('getAdsData');
+        return null;
+    }
+
+    const ensureDb = createDbEnsurer();
+
+    try {
+        const adsData = await cache.getOrSet(
+            'db:ads',
+            async () => {
+                await ensureDb();
+                return AdsModel.findOne().select('+encryptedClientId +encryptedSlotId').lean();
+            },
+            CACHE_TTL.LONG
+        );
+
+        if (!adsData || !adsData.adsenseEnabled) {
+            return null;
+        }
+
+        return {
+            adsenseEnabled: adsData.adsenseEnabled,
+            clientId: decrypt(adsData.encryptedClientId) || '',
+            slotId: decrypt(adsData.encryptedSlotId) || '',
+            adCount: adsData.adCount || 1
+        };
+    } catch (error) {
+        warnFetcherFallback('getAdsData', error);
+        return null;
     }
 }

@@ -1,7 +1,7 @@
 import BlogDetailClient from '../../../components/blogs/BlogDetailClient';
 import { cache } from 'react';
 import { notFound, redirect } from 'next/navigation';
-import { getBlogById, getConfigData, getPublishedBlogSlugs } from '@/lib/dataFetchers';
+import { getBlogById, getConfigData, getPublishedBlogSlugs, getAdsData } from '@/lib/dataFetchers';
 import { generateBlogSchema } from '@/app/schema';
 import { getSafeCanonicalUrl, getSiteUrl } from '@/lib/siteUrl';
 
@@ -98,7 +98,11 @@ export async function generateMetadata({ params }) {
 
 export default async function BlogDetailPage({ params }) {
     const { id: identifier } = await params;
-    const [blog, config] = await Promise.all([getBlogByIdentifier(identifier), getConfigData()]);
+    const [blog, config, adsConfig] = await Promise.all([
+        getBlogByIdentifier(identifier), 
+        getConfigData(),
+        getAdsData()
+    ]);
 
     if (!blog) {
         notFound();
@@ -138,7 +142,7 @@ export default async function BlogDetailPage({ params }) {
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(blogSchema) }}
             />
-            <BlogDetailClient blog={blog} config={config} />
+            <BlogDetailClient blog={blog} config={config} adsConfig={adsConfig} />
         </>
     );
 }

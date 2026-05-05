@@ -13,16 +13,17 @@ export async function generateMetadata() {
   const config = await getConfigData();
 
   const baseName = config?.siteTitle || config?.logoText || 'Portfolio';
+  const siteTitle = `${baseName} | ${config?.profession || 'Software Engineer'} Portfolio`;
   const baseUrl = getSiteUrl();
   const siteDescription = config?.siteDescription || 'Professional portfolio showcasing projects, blogs, and expertise.';
   const ogImage = (typeof config?.ogImage === 'string' ? config.ogImage : typeof config?.ogImage?.value === 'string' && config.ogImage.value.length > 0 ? config.ogImage.value : null) || `${baseUrl}/og-image.png`;
 
   return {
-    title: baseName,
+    title: siteTitle,
     description: siteDescription,
     keywords: ['portfolio', 'developer', 'projects', 'blogs', 'web development', config?.profession || 'full stack', 'freelance'].join(', '),
     openGraph: {
-      title: baseName,
+      title: siteTitle,
       description: siteDescription,
       url: baseUrl,
       type: 'website',
@@ -35,11 +36,11 @@ export async function generateMetadata() {
         },
       ],
       locale: 'en_US',
-      siteName: baseName,
+      siteName: siteTitle,
     },
     twitter: {
       card: 'summary_large_image',
-      title: baseName,
+      title: siteTitle,
       description: siteDescription,
       images: [ogImage],
     },

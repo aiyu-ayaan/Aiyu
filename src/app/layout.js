@@ -20,6 +20,7 @@ export async function generateMetadata() {
   const config = await getConfigData();
 
   const baseName = config?.siteTitle || config?.logoText || 'Portfolio';
+  const siteTitle = `${baseName} | ${config?.profession || 'Software Engineer'} Portfolio`;
   const icon = config?.hasCustomFavicon ? '/api/favicon' : '/favicon.ico';
   const baseUrl = getSiteUrl();
   const siteDescription = config?.siteDescription || 'Professional portfolio showcasing projects, blogs, and expertise.';
@@ -35,7 +36,7 @@ export async function generateMetadata() {
 
   return {
     metadataBase,
-    title: baseName,
+    title: siteTitle,
     description: siteDescription,
     keywords: ['portfolio', 'developer', 'projects', 'blogs', 'web development', config?.profession || 'full stack'].join(', '),
     icons: {
@@ -44,7 +45,7 @@ export async function generateMetadata() {
       apple: new URL(icon, baseUrl).toString(),
     },
     openGraph: {
-      title: baseName,
+      title: siteTitle,
       description: siteDescription,
       url: baseUrl,
       type: 'website',
@@ -57,11 +58,11 @@ export async function generateMetadata() {
         },
       ],
       locale: 'en_US',
-      siteName: baseName,
+      siteName: siteTitle,
     },
     twitter: {
       card: 'summary_large_image',
-      title: baseName,
+      title: siteTitle,
       description: siteDescription,
       images: [ogImage],
     },

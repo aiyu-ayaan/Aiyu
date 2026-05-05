@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useMemo, memo, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import Script from 'next/script';
 import { motion } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -72,7 +73,36 @@ function extractToc(markdown = '') {
   });
 }
 
-export default memo(function BlogDetailClient({ blog, config }) {
+const AdUnit = memo(({ adsConfig, positionKey }) => {
+  if (!adsConfig?.adsenseEnabled || !adsConfig.clientId) return null;
+
+  return (
+    <div className="my-6 w-full flex justify-center overflow-hidden border border-white/10 rounded-xl bg-slate-900/20 p-2 relative min-h-[120px]">
+      {process.env.NODE_ENV === 'development' && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-800/80 text-slate-400 font-mono text-xs z-10 border border-dashed border-green-500/50 rounded-lg m-2 backdrop-blur-sm">
+          <span className="text-green-400 font-bold mb-1">Google AdSense Enabled</span>
+          <span>Client: {adsConfig.clientId}</span>
+          <span>Slot: {adsConfig.slotId}</span>
+          <span className="mt-2 text-[10px] text-slate-500">Position: {positionKey} (Dev Placeholder)</span>
+        </div>
+      )}
+      <ins
+        className="adsbygoogle"
+        style={{ display: "block", width: "100%" }}
+        data-ad-client={adsConfig.clientId}
+        data-ad-slot={adsConfig.slotId}
+        data-ad-format="auto"
+        data-full-width-responsive="true"
+        {...(process.env.NODE_ENV === 'development' ? { 'data-adtest': 'on' } : {})}
+      ></ins>
+      <Script id={`adsense-init-${positionKey}`} strategy="afterInteractive">
+        {`(adsbygoogle = window.adsbygoogle || []).push({});`}
+      </Script>
+    </div>
+  );
+});
+
+export default memo(function BlogDetailClient({ blog, config, adsConfig }) {
   const [selectedImage, setSelectedImage] = useState(null);
   const [showShareToast, setShowShareToast] = useState(false);
   const [imageError, setImageError] = useState(false);
@@ -204,6 +234,14 @@ export default memo(function BlogDetailClient({ blog, config }) {
 
   return (
     <div className="blog-detail-container p-4 lg:p-8">
+      {adsConfig?.adsenseEnabled && adsConfig.clientId && (
+        <Script
+          async
+          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsConfig.clientId}`}
+          crossOrigin="anonymous"
+          strategy="afterInteractive"
+        />
+      )}
       <div className="blog-detail-backdrop" />
 
       <div className="relative mx-auto max-w-6xl">
@@ -270,6 +308,8 @@ export default memo(function BlogDetailClient({ blog, config }) {
           )}
         </header>
 
+        {adsConfig?.adCount >= 1 && <AdUnit adsConfig={adsConfig} positionKey="top" />}
+
         {!showPlaceholder && (
           <section
             className="mb-6 overflow-hidden rounded-2xl border"
@@ -290,6 +330,8 @@ export default memo(function BlogDetailClient({ blog, config }) {
             </button>
           </section>
         )}
+
+        {adsConfig?.adCount >= 4 && <AdUnit adsConfig={adsConfig} positionKey="middle" />}
 
 
 
@@ -440,6 +482,7 @@ export default memo(function BlogDetailClient({ blog, config }) {
                 </div>
               )}
             </div>
+            {adsConfig?.adCount >= 2 && <AdUnit adsConfig={adsConfig} positionKey="bottom" />}
           </article>
 
           {hasToc ? (
@@ -468,6 +511,11 @@ export default memo(function BlogDetailClient({ blog, config }) {
                     );
                   })}
                 </nav>
+                {adsConfig?.adCount >= 3 && (
+                  <div className="mt-8">
+                    <AdUnit adsConfig={adsConfig} positionKey="sidebar" />
+                  </div>
+                )}
               </div>
             </aside>
           ) : null}
@@ -491,6 +539,8 @@ export default memo(function BlogDetailClient({ blog, config }) {
             </div>
           </section>
         )}
+        
+        {adsConfig?.adCount >= 5 && <AdUnit adsConfig={adsConfig} positionKey="footer" />}
       </div>
 
       {showShareToast && (

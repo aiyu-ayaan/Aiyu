@@ -5,8 +5,7 @@ import Link from 'next/link';
 import {
     FaHouse, FaUser, FaBriefcase, FaPenNib, FaImages,
     FaHeading, FaShareNodes, FaEnvelope,
-
-    FaPalette, FaGithub, FaSliders, FaDatabase, FaRightFromBracket, FaArrowRight, FaTerminal, FaRobot, FaServer, FaHardDrive, FaCode
+    FaPalette, FaGithub, FaSliders, FaDatabase, FaRightFromBracket, FaArrowRight, FaTerminal, FaRobot, FaServer, FaHardDrive, FaCode, FaGoogle
 } from "react-icons/fa6";
 
 export default function AdminDashboard() {
@@ -40,6 +39,7 @@ export default function AdminDashboard() {
             { label: 'GitHub', description: 'Repo Stats', icon: <FaGithub />, color: 'from-gray-500/10 to-gray-500/5', textColor: 'text-gray-400', path: '/admin/github' },
 
             { label: 'Config', description: 'Site Settings', icon: <FaSliders />, color: 'from-slate-500/10 to-slate-500/5', textColor: 'text-slate-400', path: '/admin/config' },
+            { label: 'Ads', description: 'Google AdSense', icon: <FaGoogle />, color: 'from-green-500/10 to-green-500/5', textColor: 'text-green-400', path: '/admin/ads' },
             { label: 'Terminal', description: 'CLI Appearance', icon: <FaTerminal />, color: 'from-amber-500/10 to-amber-500/5', textColor: 'text-amber-400', path: '/admin/terminal' },
             { label: 'Database', description: 'Backups & JSON', icon: <FaDatabase />, color: 'from-yellow-500/10 to-yellow-500/5', textColor: 'text-yellow-400', path: '/admin/database' },
             { label: 'Resources', description: 'Storage & Cleanup', icon: <FaHardDrive />, color: 'from-cyan-500/10 to-cyan-500/5', textColor: 'text-cyan-400', path: '/admin/resources' },
