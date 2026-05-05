@@ -13,17 +13,36 @@ export async function GET() {
 
     try {
         await dbConnect();
-        let adsConfig = await Ads.findOne().select('+encryptedClientId +encryptedSlotId').lean();
+        let adsConfig = await Ads.findOne().select(
+            '+encryptedClientId ' +
+            '+placements.top.encryptedSlotId ' +
+            '+placements.middle.encryptedSlotId ' +
+            '+placements.bottom.encryptedSlotId ' +
+            '+placements.sidebar.encryptedSlotId ' +
+            '+placements.footer.encryptedSlotId'
+        ).lean();
         
         if (!adsConfig) {
             adsConfig = await Ads.create({});
         }
 
+        const placements = {};
+        const placementKeys = ['top', 'middle', 'bottom', 'sidebar', 'footer'];
+        
+        placementKeys.forEach(key => {
+            const placement = adsConfig.placements?.[key] || {};
+            placements[key] = {
+                enabled: placement.enabled || false,
+                slotId: decrypt(placement.encryptedSlotId) || '',
+                adType: placement.adType || 'display',
+                adLayoutKey: placement.adLayoutKey || ''
+            };
+        });
+
         const data = {
             adsenseEnabled: adsConfig.adsenseEnabled || false,
             clientId: decrypt(adsConfig.encryptedClientId) || '',
-            slotId: decrypt(adsConfig.encryptedSlotId) || '',
-            adCount: adsConfig.adCount || 1
+            placements
         };
 
         return NextResponse.json(data);
@@ -47,15 +66,27 @@ export async function PUT(request) {
             adsenseEnabled: Boolean(body.adsenseEnabled),
         };
 
-        if (body.adCount !== undefined) {
-            updateData.adCount = Number(body.adCount);
-        }
-
         if (body.clientId !== undefined) {
             updateData.encryptedClientId = encrypt(body.clientId);
         }
-        if (body.slotId !== undefined) {
-            updateData.encryptedSlotId = encrypt(body.slotId);
+
+        if (body.placements) {
+            updateData.placements = {};
+            const placementKeys = ['top', 'middle', 'bottom', 'sidebar', 'footer'];
+            
+            placementKeys.forEach(key => {
+                const p = body.placements[key];
+                if (p) {
+                    updateData.placements[key] = {
+                        enabled: Boolean(p.enabled),
+                        adType: p.adType || 'display',
+                        adLayoutKey: p.adLayoutKey || ''
+                    };
+                    if (p.slotId !== undefined) {
+                        updateData.placements[key].encryptedSlotId = encrypt(p.slotId);
+                    }
+                }
+            });
         }
 
         const updatedAds = await Ads.findOneAndUpdate(

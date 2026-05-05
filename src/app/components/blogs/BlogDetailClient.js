@@ -74,7 +74,8 @@ function extractToc(markdown = '') {
 }
 
 const AdUnit = memo(({ adsConfig, positionKey }) => {
-  if (!adsConfig?.adsenseEnabled || !adsConfig.clientId) return null;
+  const placement = adsConfig?.placements?.[positionKey];
+  if (!adsConfig?.adsenseEnabled || !adsConfig.clientId || !placement?.enabled || !placement?.slotId) return null;
 
   return (
     <div className="my-6 w-full flex justify-center overflow-hidden border border-white/10 rounded-xl bg-slate-900/20 p-2 relative min-h-[120px]">
@@ -82,17 +83,24 @@ const AdUnit = memo(({ adsConfig, positionKey }) => {
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-800/80 text-slate-400 font-mono text-xs z-10 border border-dashed border-green-500/50 rounded-lg m-2 backdrop-blur-sm">
           <span className="text-green-400 font-bold mb-1">Google AdSense Enabled</span>
           <span>Client: {adsConfig.clientId}</span>
-          <span>Slot: {adsConfig.slotId}</span>
-          <span className="mt-2 text-[10px] text-slate-500">Position: {positionKey} (Dev Placeholder)</span>
+          <span>Slot: {placement.slotId}</span>
+          <span className="mt-2 text-[10px] text-slate-500">Position: {positionKey} ({placement.adType})</span>
         </div>
       )}
       <ins
         className="adsbygoogle"
         style={{ display: "block", width: "100%" }}
         data-ad-client={adsConfig.clientId}
-        data-ad-slot={adsConfig.slotId}
-        data-ad-format="auto"
-        data-full-width-responsive="true"
+        data-ad-slot={placement.slotId}
+        data-ad-format={
+            placement.adType === 'display' ? 'auto' :
+            placement.adType === 'in-article' ? 'fluid' :
+            placement.adType === 'in-feed' ? 'fluid' :
+            placement.adType === 'multiplex' ? 'autorelaxed' : 'auto'
+        }
+        {...(placement.adType === 'in-article' ? { 'data-ad-layout': 'in-article' } : {})}
+        {...(placement.adType === 'in-feed' ? { 'data-ad-layout-key': placement.adLayoutKey } : {})}
+        {...(placement.adType === 'display' ? { 'data-full-width-responsive': 'true' } : {})}
         {...(process.env.NODE_ENV === 'development' ? { 'data-adtest': 'on' } : {})}
       ></ins>
       <Script id={`adsense-init-${positionKey}`} strategy="afterInteractive">
@@ -265,7 +273,9 @@ export default memo(function BlogDetailClient({ blog, config, adsConfig }) {
           </button>
         </div>
 
-        <header className="mb-10 text-center border-b pb-8" style={{ borderColor: 'var(--border-primary)' }}>
+        {<AdUnit adsConfig={adsConfig} positionKey="top" />}
+
+        <header className="mb-10 mt-6 text-center border-b pb-8" style={{ borderColor: 'var(--border-primary)' }}>
           <div className="mb-3 flex flex-wrap items-center gap-2">
             <p
               className="inline-flex rounded-full border px-3 py-1 text-xs uppercase tracking-[0.2em]"
@@ -308,8 +318,6 @@ export default memo(function BlogDetailClient({ blog, config, adsConfig }) {
           )}
         </header>
 
-        {adsConfig?.adCount >= 1 && <AdUnit adsConfig={adsConfig} positionKey="top" />}
-
         {!showPlaceholder && (
           <section
             className="mb-6 overflow-hidden rounded-2xl border"
@@ -331,14 +339,12 @@ export default memo(function BlogDetailClient({ blog, config, adsConfig }) {
           </section>
         )}
 
-        {adsConfig?.adCount >= 4 && <AdUnit adsConfig={adsConfig} positionKey="middle" />}
-
-
-
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px] items-start">
           <article className="lg:pr-8">
+            {<AdUnit adsConfig={adsConfig} positionKey="middle" />}
+            
             <div
-              className="prose prose-lg max-w-none"
+              className="prose prose-lg max-w-none mt-6"
               style={{
                 '--tw-prose-body': 'var(--text-secondary)',
                 '--tw-prose-headings': 'var(--text-primary)',
@@ -482,7 +488,7 @@ export default memo(function BlogDetailClient({ blog, config, adsConfig }) {
                 </div>
               )}
             </div>
-            {adsConfig?.adCount >= 2 && <AdUnit adsConfig={adsConfig} positionKey="bottom" />}
+            {<AdUnit adsConfig={adsConfig} positionKey="bottom" />}
           </article>
 
           {hasToc ? (
@@ -511,11 +517,9 @@ export default memo(function BlogDetailClient({ blog, config, adsConfig }) {
                     );
                   })}
                 </nav>
-                {adsConfig?.adCount >= 3 && (
-                  <div className="mt-8">
+                {<div className="mt-8">
                     <AdUnit adsConfig={adsConfig} positionKey="sidebar" />
-                  </div>
-                )}
+                  </div>}
               </div>
             </aside>
           ) : null}
@@ -540,7 +544,7 @@ export default memo(function BlogDetailClient({ blog, config, adsConfig }) {
           </section>
         )}
         
-        {adsConfig?.adCount >= 5 && <AdUnit adsConfig={adsConfig} positionKey="footer" />}
+        {<AdUnit adsConfig={adsConfig} positionKey="footer" />}
       </div>
 
       {showShareToast && (

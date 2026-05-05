@@ -709,7 +709,14 @@ export async function getAdsData() {
             'db:ads',
             async () => {
                 await ensureDb();
-                return AdsModel.findOne().select('+encryptedClientId +encryptedSlotId').lean();
+                return AdsModel.findOne().select(
+                    '+encryptedClientId ' +
+                    '+placements.top.encryptedSlotId ' +
+                    '+placements.middle.encryptedSlotId ' +
+                    '+placements.bottom.encryptedSlotId ' +
+                    '+placements.sidebar.encryptedSlotId ' +
+                    '+placements.footer.encryptedSlotId'
+                ).lean();
             },
             CACHE_TTL.LONG
         );
@@ -718,11 +725,23 @@ export async function getAdsData() {
             return null;
         }
 
+        const placements = {};
+        const placementKeys = ['top', 'middle', 'bottom', 'sidebar', 'footer'];
+        
+        placementKeys.forEach(key => {
+            const placement = adsData.placements?.[key] || {};
+            placements[key] = {
+                enabled: placement.enabled || false,
+                slotId: decrypt(placement.encryptedSlotId) || '',
+                adType: placement.adType || 'display',
+                adLayoutKey: placement.adLayoutKey || ''
+            };
+        });
+
         return {
             adsenseEnabled: adsData.adsenseEnabled,
             clientId: decrypt(adsData.encryptedClientId) || '',
-            slotId: decrypt(adsData.encryptedSlotId) || '',
-            adCount: adsData.adCount || 1
+            placements
         };
     } catch (error) {
         warnFetcherFallback('getAdsData', error);
