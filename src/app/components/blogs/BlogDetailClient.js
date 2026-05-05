@@ -212,6 +212,10 @@ export default memo(function BlogDetailClient({ blog, config, adsConfig }) {
     }
   }, [blog?._id]);
 
+  // We use a ref to track paragraph count during the synchronous ReactMarkdown render pass
+  const pCountRef = React.useRef(0);
+  pCountRef.current = 0; // Reset before every render of the markdown
+
   if (!blog) {
     return (
       <div className="min-h-screen p-4 lg:p-8">
@@ -341,8 +345,6 @@ export default memo(function BlogDetailClient({ blog, config, adsConfig }) {
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px] items-start">
           <article className="lg:pr-8">
-            {<AdUnit adsConfig={adsConfig} positionKey="middle" />}
-            
             <div
               className="prose prose-lg max-w-none mt-6"
               style={{
@@ -450,6 +452,21 @@ export default memo(function BlogDetailClient({ blog, config, adsConfig }) {
                       >
                         {children}
                       </code>
+                    );
+                  },
+                  p: ({ children, ...props }) => {
+                    pCountRef.current += 1;
+                    const showMiddleAd = pCountRef.current === 2 && adsConfig?.placements?.middle?.enabled;
+                    
+                    return (
+                      <>
+                        <p {...props}>{children}</p>
+                        {showMiddleAd && (
+                          <div className="not-prose my-8">
+                            <AdUnit adsConfig={adsConfig} positionKey="middle" />
+                          </div>
+                        )}
+                      </>
                     );
                   },
                   pre: ({ children }) => <>{children}</>,
