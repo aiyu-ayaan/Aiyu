@@ -441,23 +441,18 @@ jobs:
           echo "Creating release: $VERSION"
 
       - name: Create Release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.get-version.outputs.version }}
-          release_name: Release ${{ steps.get-version.outputs.version }}
+          name: Release ${{ steps.get-version.outputs.version }}
+          generate_release_notes: true
           body: |
-            ## Release ${{ steps.get-version.outputs.version }}
-
-            **Version:** ${{ steps.get-version.outputs.version }}
-
-            **Docker Image:** aiyuayaan/aiyu:${{ steps.get-version.outputs.version }}
-
-            This release was created after the release PR was merged.
+            **Docker Image:** `aiyuayaan/aiyu:${{ steps.get-version.outputs.version }}`
 
             ### Deployment Status
-            - Docker image pushed
-            - Server deployed
+            - ✅ Docker image pushed to Docker Hub
+            - ✅ Server successfully deployed
+
+            ---
           draft: false
           prerelease: false
