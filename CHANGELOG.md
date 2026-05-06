@@ -1,5 +1,24 @@
 # Changelog
 
+## [3.9.1](https://github.com/aiyu-ayaan/Aiyu/compare/v3.9.0...v3.9.1) (2026-05-06)
+
+### Features
+
+* feat: update MongoDB service configurations and optimize caching strategies across the application
+* feat: optimize Docker configuration by reducing memory limits and removing PM2 dependency
+
+### Bug Fixes
+
+* fix(github): enrich push activity counts
+* fix(github): show push commit counts
+* fix(seo): reduce stale crawl targets
+* fix(seo): enforce canonical host signals
+
+### Other Changes
+
+* perf(site): warm public data cache on startup
+* Merge branch 'master' of https://github.com/aiyu-ayaan/Aiyu
+
 ## [3.9.0](https://github.com/aiyu-ayaan/Aiyu/compare/v3.8.4...v3.9.0) (2026-05-05)
 
 ### Features
