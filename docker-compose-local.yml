@@ -55,7 +55,7 @@ services:
 
       # Node environment
       NODE_ENV: production
-      NODE_OPTIONS: --max-old-space-size=512
+      NODE_OPTIONS: ${NODE_OPTIONS:---max-old-space-size=256}
     volumes:
       # Persistent uploads directory (named volume for proper permissions)
       - uploads_data:/app/public/uploads
@@ -77,15 +77,18 @@ services:
       - no-new-privileges:true # Prevent privilege escalation
     # Read-only root filesystem (except for writable volumes)
     read_only: true
+    mem_limit: ${APP_MEMORY_LIMIT:-384m}
+    mem_reservation: ${APP_MEMORY_RESERVATION:-192m}
+    cpus: ${APP_CPUS:-1.0}
     # Resource limits to prevent CPU abuse from crypto miners
     deploy:
       resources:
         limits:
           cpus: '1.0' # Max 1 CPU core
-          memory: 512M # Max 512MB RAM
+          memory: 384M # Max 384MB RAM
         reservations:
           cpus: '0.25' # Reserve 0.25 CPU
-          memory: 256M # Reserve 256MB RAM
+          memory: 192M # Reserve 192MB RAM
     # Health check to detect abnormal behavior
     # Uses curl (installed in Dockerfile) with fallback chain
     healthcheck:

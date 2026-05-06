@@ -51,24 +51,15 @@ WORKDIR /app
 # Runtime environment
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV PM2_HOME=/tmp/.pm2
 
 # Create a non-root user
 RUN groupadd --system --gid 1001 nodejs \
     && useradd --system --uid 1001 --gid nodejs --create-home nextjs
 
-# Install PM2 runtime for multi-core clustering
-RUN npm config set fetch-retries 5 \
-    && npm config set fetch-retry-factor 2 \
-    && npm config set fetch-retry-mintimeout 20000 \
-    && npm config set fetch-retry-maxtimeout 120000 \
-    && npm install -g pm2 --no-update-notifier --no-fund
-
 # Copy necessary files from builder
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-COPY --from=builder --chown=nextjs:nodejs /app/ecosystem.config.js ./ecosystem.config.js
 
 # Copy healthcheck script
 COPY --chown=nextjs:nodejs scripts/healthcheck.sh /app/healthcheck.sh
@@ -89,5 +80,6 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# Start the application
-CMD ["pm2-runtime", "start", "ecosystem.config.js"]
+# Start one Next.js server process. This is much lighter than PM2 clustering
+# and is the best default for small VPS/Docker Desktop deployments.
+CMD ["node", "server.js"]
