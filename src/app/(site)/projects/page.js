@@ -45,6 +45,10 @@ export async function generateMetadata() {
   };
 }
 export default async function ProjectsPage() {
-  const serializedProjectsData = await getProjectsData();
-  return <Projects data={serializedProjectsData} />;
+  const [serializedProjectsData, config] = await Promise.all([
+    getProjectsData(),
+    getConfigData(),
+  ]);
+
+  return <Projects data={serializedProjectsData} initialConfig={config} />;
 }

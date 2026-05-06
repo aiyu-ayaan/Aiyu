@@ -82,11 +82,11 @@ const sortYearsDesc = (a, b) => {
   return parsedB - parsedA;
 };
 
-const Projects = ({ data }) => {
+const Projects = ({ data, initialConfig = null }) => {
   const projects = Array.isArray(data) ? data : [];
 
-  const [config, setConfig] = useState(null);
-  const [configLoading, setConfigLoading] = useState(true);
+  const [config, setConfig] = useState(initialConfig);
+  const [configLoading, setConfigLoading] = useState(!initialConfig);
   const [selectedProject, setSelectedProject] = useState(null);
   const [selectedTechStack, setSelectedTechStack] = useState('All');
   const [selectedProjectType, setSelectedProjectType] = useState('All');
@@ -95,6 +95,10 @@ const Projects = ({ data }) => {
   const [viewMode, setViewMode] = useState('grid');
 
   useEffect(() => {
+    if (initialConfig) {
+      return;
+    }
+
     let isMounted = true;
 
     fetch('/api/config')
@@ -113,7 +117,7 @@ const Projects = ({ data }) => {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [initialConfig]);
 
   const roles = [
     config?.projectsSubtitle || 'A curated collection of products and experiments',
