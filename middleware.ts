@@ -32,7 +32,6 @@ const markdownPages = {
                 'Apps: /apps',
                 'Gallery: /gallery',
                 'GitHub stats: /github',
-                'Live deployments: /live-deployments',
                 'Contact: /contact-us',
             ]],
         ],
@@ -66,11 +65,6 @@ const markdownPages = {
         title: 'Aiyu GitHub',
         description: 'GitHub profile and repository statistics.',
         sections: [['Related APIs', ['GitHub stats API: /api/github/stats']]],
-    },
-    '/live-deployments': {
-        title: 'Aiyu Live Deployments',
-        description: 'Live deployment status and hosted project entries.',
-        sections: [['Related APIs', ['Deployments API: /api/deployments']]],
     },
     '/projects': {
         title: 'Aiyu Projects',

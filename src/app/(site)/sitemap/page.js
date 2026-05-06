@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getBlogSlugs, getPublishedBlogSlugs, getProjectsData, getDeploymentsData, getConfigData } from "@/lib/dataFetchers";
+import { getPublishedBlogSlugs, getProjectsData, getDeploymentsData, getConfigData } from "@/lib/dataFetchers";
 import { getSiteUrl } from "@/lib/siteUrl";
 
 export const revalidate = 3600;
@@ -11,7 +11,7 @@ export async function generateMetadata() {
         title: `${baseName} | HTML Sitemap`,
         description: `Complete HTML Sitemap of ${baseName} covering all projects, blogs, apps, and pages.`,
         robots: {
-            index: true,
+            index: false,
             follow: true,
         },
         alternates: {

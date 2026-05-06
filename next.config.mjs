@@ -77,6 +77,36 @@ const nextConfig = {
         permanent: true,
       },
       {
+        source: '/about',
+        destination: '/about-me',
+        permanent: true,
+      },
+      {
+        source: '/contact',
+        destination: '/contact-us',
+        permanent: true,
+      },
+      {
+        source: '/app',
+        destination: '/apps',
+        permanent: true,
+      },
+      {
+        source: '/app/:path*',
+        destination: '/apps/:path*',
+        permanent: true,
+      },
+      {
+        source: '/project',
+        destination: '/projects',
+        permanent: true,
+      },
+      {
+        source: '/project/:path*',
+        destination: '/projects/:path*',
+        permanent: true,
+      },
+      {
         source: '/deployments',
         destination: '/apps',
         permanent: true,
@@ -129,7 +159,6 @@ const nextConfig = {
       'contact-us',
       'gallery',
       'github',
-      'live-deployments',
       'projects',
       'work-in-progress',
     ];
