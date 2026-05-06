@@ -1,17 +1,13 @@
 import BlogDetailClient from '../../../components/blogs/BlogDetailClient';
 import { cache } from 'react';
 import { notFound, redirect } from 'next/navigation';
-import { getBlogById, getConfigData, getPublishedBlogSlugs, getAdsData } from '@/lib/dataFetchers';
+import { getBlogById, getConfigData, getAdsData } from '@/lib/dataFetchers';
 import { generateBlogSchema } from '@/app/schema';
 import { getSafeCanonicalUrl, getSiteUrl } from '@/lib/siteUrl';
 
-export const revalidate = 300;
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 const getBlogByIdentifier = cache(async (identifier) => getBlogById(identifier));
-
-export async function generateStaticParams() {
-    const slugs = await getPublishedBlogSlugs();
-    return slugs.map((id) => ({ id }));
-}
 
 function getBaseUrl() {
     return getSiteUrl();

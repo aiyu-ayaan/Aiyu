@@ -102,7 +102,7 @@ const nextConfig = {
   async headers() {
     const headers = [];
     const publicHtmlCacheValue = isProduction
-      ? 'public, max-age=0, s-maxage=300, stale-while-revalidate=900'
+      ? 'public, max-age=0, s-maxage=0, must-revalidate'
       : 'no-store';
 
     headers.push({

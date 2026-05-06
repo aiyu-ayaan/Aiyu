@@ -2,7 +2,7 @@ import Deployments from '../../components/deployments/Deployments';
 import { getConfigData, getDeploymentsData } from '@/lib/dataFetchers';
 import { getSiteUrl } from '@/lib/siteUrl';
 
-export const revalidate = 300;
+export const revalidate = 0;
 
 export async function generateMetadata() {
     const config = await getConfigData();

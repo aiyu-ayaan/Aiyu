@@ -3,16 +3,12 @@ import { notFound, redirect } from 'next/navigation';
 import { cache } from 'react';
 import dbConnect from '@/lib/db';
 import ProjectModel from '@/models/Project';
-import { getConfigData, getProjectSlugs } from '@/lib/dataFetchers';
+import { getConfigData } from '@/lib/dataFetchers';
 import { getProjectSlug, resolveProjectByIdentifier } from '@/lib/contentSlugs';
 import { getSiteUrl } from '@/lib/siteUrl';
 
-export const revalidate = 300;
-
-export async function generateStaticParams() {
-    const slugs = await getProjectSlugs();
-    return slugs.map((id) => ({ id }));
-}
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 function getBaseUrl() {
     return getSiteUrl();

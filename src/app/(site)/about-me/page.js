@@ -1,7 +1,7 @@
 import About from "../../components/about/About";
 import { getConfigData, getAboutData } from "@/lib/dataFetchers";
 
-export const revalidate = 300;
+export const revalidate = 0;
 
 export async function generateMetadata() {
   const config = await getConfigData();

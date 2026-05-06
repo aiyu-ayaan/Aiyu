@@ -16,9 +16,12 @@ services:
       - mongodb_config:/data/configdb
     networks:
       - aiyu-network
+    mem_limit: ${MONGO_MEMORY_LIMIT:-512m}
+    mem_reservation: ${MONGO_MEMORY_RESERVATION:-256m}
+    cpus: ${MONGO_CPUS:-0.5}
     healthcheck:
       test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')", "--quiet" ]
-      interval: 10s
+      interval: 60s
       timeout: 5s
       retries: 5
       start_period: 10s

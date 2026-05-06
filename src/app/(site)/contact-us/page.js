@@ -2,7 +2,7 @@ import { getConfigData } from '@/lib/dataFetchers';
 import ContactPageClient from './ContactPageClient';
 import { getSiteUrl } from '@/lib/siteUrl';
 
-export const revalidate = 300;
+export const revalidate = 0;
 
 export async function generateMetadata() {
     const config = await getConfigData();

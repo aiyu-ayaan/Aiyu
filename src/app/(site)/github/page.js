@@ -2,7 +2,7 @@ import GitHubStatsLoader from '@/app/components/github/GitHubStatsLoader';
 import { getConfigData } from '@/lib/dataFetchers';
 import { getSiteUrl } from '@/lib/siteUrl';
 
-export const revalidate = 300;
+export const revalidate = 0;
 
 export async function generateMetadata() {
     const config = await getConfigData();

@@ -3,16 +3,12 @@ import { notFound, redirect } from 'next/navigation';
 import { cache } from 'react';
 import dbConnect from '@/lib/db';
 import DeploymentModel from '@/models/Deployment';
-import { getConfigData, getDeploymentSlugs } from '@/lib/dataFetchers';
+import { getConfigData } from '@/lib/dataFetchers';
 import { getDeploymentSlug, resolveDeploymentByIdentifier } from '@/lib/contentSlugs';
 import { getSiteUrl } from '@/lib/siteUrl';
 
-export const revalidate = 300;
-
-export async function generateStaticParams() {
-    const slugs = await getDeploymentSlugs();
-    return slugs.map((id) => ({ id }));
-}
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 function getBaseUrl() {
     return getSiteUrl();

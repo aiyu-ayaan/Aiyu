@@ -2,7 +2,7 @@ import BlogList from '../../components/blogs/BlogList';
 import { getConfigData, getPublishedBlogs } from '@/lib/dataFetchers';
 import { getSiteUrl } from '@/lib/siteUrl';
 
-export const revalidate = 300;
+export const revalidate = 0;
 
 function getBaseUrl() {
     return getSiteUrl();

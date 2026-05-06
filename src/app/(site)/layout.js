@@ -5,7 +5,8 @@ import { getLayoutData } from "@/lib/dataFetchers";
 import { promises as fs } from 'fs';
 import path from 'path';
 
-export const revalidate = 300;
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 let packageVersionPromise;
 
