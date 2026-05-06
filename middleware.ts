@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
 
+const CANONICAL_HOST_REDIRECT_DISABLED = process.env.CANONICAL_HOST_REDIRECT === 'false';
+const canonicalSiteUrl = process.env.SITE_URL || process.env.NEXT_PUBLIC_BASE_URL || '';
+
 const agentDiscoveryLinkHeader = [
     '</.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json"',
     '</.well-known/openapi.json>; rel="service-desc"; type="application/openapi+json"',
@@ -85,6 +88,40 @@ const publicMarkdownPrefixes = Object.keys(markdownPages)
     .filter((pathname) => pathname !== '/')
     .sort((a, b) => b.length - a.length);
 
+function getCanonicalUrl() {
+    if (!canonicalSiteUrl) return null;
+
+    try {
+        const parsedUrl = new URL(canonicalSiteUrl);
+        if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+            return null;
+        }
+        return parsedUrl;
+    } catch {
+        return null;
+    }
+}
+
+function isLocalhost(hostname) {
+    return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
+}
+
+function getCanonicalHostRedirect(request) {
+    if (CANONICAL_HOST_REDIRECT_DISABLED) return null;
+    if (request.method !== 'GET' && request.method !== 'HEAD') return null;
+
+    const canonicalUrl = getCanonicalUrl();
+    if (!canonicalUrl) return null;
+
+    const currentUrl = request.nextUrl;
+    if (isLocalhost(currentUrl.hostname) || currentUrl.hostname === canonicalUrl.hostname) {
+        return null;
+    }
+
+    const redirectUrl = new URL(currentUrl.pathname + currentUrl.search, canonicalUrl.origin);
+    return NextResponse.redirect(redirectUrl, 308);
+}
+
 function renderMarkdownPage(page, pathname) {
     const sections = page.sections
         .map(([heading, items]) => `## ${heading}\n\n${items.map((item) => `- ${item}`).join('\n')}`)
@@ -125,6 +162,11 @@ function markdownTokenEstimate(markdown) {
 
 export function middleware(request) {
     const pathname = request.nextUrl.pathname;
+
+    const canonicalRedirect = getCanonicalHostRedirect(request);
+    if (canonicalRedirect) {
+        return canonicalRedirect;
+    }
 
     const markdown = getMarkdownPage(pathname);
 
