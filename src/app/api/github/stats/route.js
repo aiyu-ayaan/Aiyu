@@ -200,9 +200,35 @@ function getPushCommitCount(payload = {}) {
     }
 
     const numericCommitCount = Number(payload.commits ?? payload.size ?? payload.distinct_size);
-    return Number.isFinite(numericCommitCount) && numericCommitCount > 0
+    return Number.isFinite(numericCommitCount) && numericCommitCount >= 0
         ? numericCommitCount
-        : 0;
+        : null;
+}
+
+async function fetchPushCommitCount(repoName, payload = {}, headers, trace, index) {
+    const knownCommitCount = getPushCommitCount(payload);
+    if (knownCommitCount !== null) {
+        return knownCommitCount;
+    }
+
+    const before = typeof payload.before === 'string' ? payload.before.trim() : '';
+    const head = typeof payload.head === 'string' ? payload.head.trim() : '';
+    if (!repoName || !before || !head || before === head) {
+        return null;
+    }
+
+    try {
+        const comparison = await fetchGitHubJson(
+            `https://api.github.com/repos/${repoName}/compare/${before}...${head}`,
+            headers,
+            { trace, traceLabel: `github-compare-${index}` }
+        );
+        const totalCommits = Number(comparison?.total_commits);
+        return Number.isFinite(totalCommits) && totalCommits >= 0 ? totalCommits : null;
+    } catch (error) {
+        console.error(`[WARN] Failed to compare push range for ${repoName}:`, error);
+        return null;
+    }
 }
 
 function buildActivityDistribution(events) {
@@ -238,24 +264,32 @@ function buildActivityDistribution(events) {
     };
 }
 
-function buildRecentActivity(events, hiddenRepos) {
-    return events
+async function buildRecentActivity(events, hiddenRepos, headers, trace) {
+    const visibleEvents = events
         .filter(event => {
             const repoName = event.repo.name.split('/').pop();
             return !hiddenRepos.includes(repoName);
         })
-        .slice(0, 10)
-        .map(event => ({
+        .slice(0, 10);
+
+    return Promise.all(visibleEvents.map(async (event, index) => {
+        const commitCount = event.type === 'PushEvent'
+            ? await fetchPushCommitCount(event.repo.name, event.payload, headers, trace, index)
+            : null;
+
+        return {
             type: event.type,
             repo: event.repo.name,
             created_at: event.created_at,
             payload: {
                 action: event.payload.action,
                 ref: event.payload.ref,
-                commits: getPushCommitCount(event.payload),
+                commits: commitCount,
+                commitsKnown: commitCount !== null,
                 distinctCommits: Number(event.payload.distinct_size) || 0,
             }
-        }));
+        };
+    }));
 }
 
 async function fetchContributions(username, headers, fallbackEventsPromise, trace) {
@@ -515,7 +549,7 @@ export async function GET(request) {
                     }
                 }
 
-                const recentActivity = buildRecentActivity(events, hiddenRepos);
+                const recentActivity = await buildRecentActivity(events, hiddenRepos, headers, requestTrace);
 
                 const payload = {
                     profile: {

@@ -80,8 +80,14 @@ const getActivityLabel = (activity) => {
     case 'PushEvent': {
       const commitCount = Array.isArray(activity.payload?.commits)
         ? activity.payload.commits.length
-        : Number(activity.payload?.commits ?? activity.payload?.size ?? activity.payload?.distinctCommits ?? 0);
-      const safeCommitCount = Number.isFinite(commitCount) && commitCount > 0 ? commitCount : 0;
+        : Number(activity.payload?.commits ?? activity.payload?.size ?? activity.payload?.distinctCommits);
+      const hasCommitCount = activity.payload?.commitsKnown !== false
+        && Number.isFinite(commitCount)
+        && commitCount >= 0;
+      if (!hasCommitCount) {
+        return 'Pushed commits';
+      }
+      const safeCommitCount = Math.max(0, commitCount);
       return `Pushed ${safeCommitCount} commit${safeCommitCount === 1 ? '' : 's'}`;
     }
     case 'PullRequestEvent':
