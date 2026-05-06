@@ -194,6 +194,17 @@ function buildContributionSeriesFromEvents(events) {
     };
 }
 
+function getPushCommitCount(payload = {}) {
+    if (Array.isArray(payload.commits)) {
+        return payload.commits.length;
+    }
+
+    const numericCommitCount = Number(payload.commits ?? payload.size ?? payload.distinct_size);
+    return Number.isFinite(numericCommitCount) && numericCommitCount > 0
+        ? numericCommitCount
+        : 0;
+}
+
 function buildActivityDistribution(events) {
     const distributionCounts = {
         commits: 0,
@@ -204,7 +215,7 @@ function buildActivityDistribution(events) {
 
     events.forEach(event => {
         if (event.type === 'PushEvent') {
-            distributionCounts.commits += event.payload.commits?.length || 1;
+            distributionCounts.commits += getPushCommitCount(event.payload) || 1;
         } else if (event.type === 'IssuesEvent' || event.type === 'IssueCommentEvent') {
             distributionCounts.issues += 1;
         } else if (event.type === 'PullRequestEvent') {
@@ -241,7 +252,8 @@ function buildRecentActivity(events, hiddenRepos) {
             payload: {
                 action: event.payload.action,
                 ref: event.payload.ref,
-                commits: event.payload.commits?.length || 0
+                commits: getPushCommitCount(event.payload),
+                distinctCommits: Number(event.payload.distinct_size) || 0,
             }
         }));
 }

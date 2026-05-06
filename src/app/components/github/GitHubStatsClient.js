@@ -77,8 +77,13 @@ const getActivityLabel = (activity) => {
   if (!activity) return 'Recent activity';
 
   switch (activity.type) {
-    case 'PushEvent':
-      return `Pushed ${activity.payload?.commits || 0} commit${activity.payload?.commits === 1 ? '' : 's'}`;
+    case 'PushEvent': {
+      const commitCount = Array.isArray(activity.payload?.commits)
+        ? activity.payload.commits.length
+        : Number(activity.payload?.commits ?? activity.payload?.size ?? activity.payload?.distinctCommits ?? 0);
+      const safeCommitCount = Number.isFinite(commitCount) && commitCount > 0 ? commitCount : 0;
+      return `Pushed ${safeCommitCount} commit${safeCommitCount === 1 ? '' : 's'}`;
+    }
     case 'PullRequestEvent':
       return `${activity.payload?.action || 'updated'} a pull request`;
     case 'CreateEvent':
