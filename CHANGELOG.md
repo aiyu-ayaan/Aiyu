@@ -1,5 +1,29 @@
 # Changelog
 
+## [3.9.2](https://github.com/aiyu-ayaan/Aiyu/compare/v3.9.1...v3.9.2) (2026-05-14)
+
+### Features
+
+* feat(gallery): enhance image viewer with panning and zooming capabilities
+* feat(gallery): enhance image viewer with navigation and zoom functionality
+
+### Bug Fixes
+
+* fix(home): calculate project stats from full data
+* fix(home): include experience entries in snapshot
+* fix(blog): optimize layout and typography for better readability
+
+### Other Changes
+
+* chore: update ESLint configuration and dependencies
+* Merge branch 'master' of https://github.com/aiyu-ayaan/Aiyu
+* chore(deps-dev): bump eslint-config-next from 16.2.1 to 16.2.4 (#181)
+* chore(deps): bump lucide-react from 0.575.0 to 1.14.0 (#180)
+* chore(deps): bump @google/genai from 1.50.1 to 1.52.0 (#182)
+* chore(deps-dev): bump eslint from 9.39.4 to 10.3.0 (#183)
+* chore(deps): bump next from 16.2.4 to 16.2.6 (#187)
+* build(deps): bump react-dom from 19.2.4 to 19.2.5 (#165)
+
 ## [3.9.1](https://github.com/aiyu-ayaan/Aiyu/compare/v3.9.0...v3.9.1) (2026-05-06)
 
 ### Features
