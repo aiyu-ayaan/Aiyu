@@ -7,13 +7,21 @@ import { FaArrowRight, FaBoxes, FaCheckCircle, FaTools } from 'react-icons/fa';
 import ProjectCard from '../projects/ProjectCard';
 import ProjectDialog from '../projects/ProjectDialog';
 
+const normalizeStatus = (status) => {
+  const safeStatus = String(status || '').trim().toLowerCase();
+  if (safeStatus === 'done' || safeStatus === 'completed') return 'Done';
+  if (safeStatus === 'deferred' || safeStatus === 'deffered' || safeStatus === 'on hold') return 'Deferred';
+  if (safeStatus === 'working' || safeStatus === 'in progress') return 'Working';
+  return safeStatus;
+};
+
 const HomeProjects = ({ data }) => {
   const [selectedProject, setSelectedProject] = useState(null);
   const projects = Array.isArray(data) ? data : [];
 
   const latestProjects = useMemo(() => projects.slice(0, 3), [projects]);
   const doneProjects = useMemo(
-    () => projects.filter((project) => String(project?.status || '').toLowerCase() === 'done').length,
+    () => projects.filter((project) => normalizeStatus(project?.status) === 'Done').length,
     [projects]
   );
   const uniqueStacks = useMemo(() => {

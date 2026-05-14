@@ -36,7 +36,7 @@ const CACHE_KEY_CONFIG_PUBLIC = 'db:config:public';
 const CACHE_KEY_CONFIG_LAYOUT = 'db:config:layout';
 const CACHE_KEY_ABOUT_LAYOUT = 'db:about:layout';
 const CACHE_KEY_ABOUT_HOME = 'db:about:home:v2';
-const CACHE_KEY_PROJECTS_HOME = 'db:projects:home';
+const CACHE_KEY_PROJECTS_HOME = 'db:projects:home:v2';
 const CACHE_KEY_BLOG_SLUGS = 'db:blogs:slugs';
 const CACHE_KEY_PROJECT_SLUGS = 'db:projects:slugs';
 const CACHE_KEY_DEPLOYMENT_SLUGS = 'db:deployments:slugs';
@@ -295,8 +295,7 @@ export async function getHomePageData() {
                 async () => {
                     await ensureDb();
                     const projects = await ProjectModel.find().select(HOME_PROJECTS_SELECT).lean();
-                    const sortedProjects = sortProjects(projects);
-                    return sortedProjects.slice(0, 3);
+                    return sortProjects(projects);
                 },
                 CACHE_TTL.LONG
             ),
