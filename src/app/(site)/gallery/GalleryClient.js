@@ -1,7 +1,20 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { CalendarDays, Download, Loader2, Search } from 'lucide-react';
+import {
+  ArrowLeft,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  Info,
+  Minus,
+  Plus,
+  RotateCcw,
+  Search,
+  SlidersHorizontal,
+  X,
+} from 'lucide-react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GalleryPageSkeleton } from '../../components/shared/skeletons/PublicPageSkeletons';
@@ -69,6 +82,8 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
   const [loading, setLoading] = useState(!hasInitialData);
   const [selectedImage, setSelectedImage] = useState(null);
   const [modalImageError, setModalImageError] = useState(false);
+  const [viewerZoom, setViewerZoom] = useState(1);
+  const [showViewerInfo, setShowViewerInfo] = useState(true);
   const [brokenImageIds, setBrokenImageIds] = useState(new Set());
   const [viewportWidth, setViewportWidth] = useState(1280);
   const [headerInfo, setHeaderInfo] = useState(() => ({
@@ -111,15 +126,6 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
 
     fetchData();
   }, [hasInitialData]);
-
-  const handleEsc = useCallback((event) => {
-    if (event.key === 'Escape') setSelectedImage(null);
-  }, []);
-
-  useEffect(() => {
-    window.addEventListener('keydown', handleEsc);
-    return () => window.removeEventListener('keydown', handleEsc);
-  }, [handleEsc]);
 
   useEffect(() => {
     const updateViewportWidth = () => setViewportWidth(window.innerWidth);
@@ -170,6 +176,48 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
     orientationFilter !== 'all' ? `Orientation: ${orientationFilter}` : null,
     searchQuery.trim() ? `Search: ${searchQuery.trim()}` : null,
   ].filter(Boolean);
+
+  const selectedImageIndex = useMemo(() => {
+    if (!selectedImage) return -1;
+    const selectedKey = selectedImage?._id || selectedImage?.src;
+    return filteredImages.findIndex((image) => (image?._id || image?.src) === selectedKey);
+  }, [filteredImages, selectedImage]);
+
+  const navigateViewer = useCallback((direction) => {
+    if (!selectedImage || filteredImages.length <= 1) return;
+    const currentIndex = selectedImageIndex >= 0 ? selectedImageIndex : 0;
+    const nextIndex = (currentIndex + direction + filteredImages.length) % filteredImages.length;
+    setModalImageError(false);
+    setViewerZoom(1);
+    setSelectedImage(filteredImages[nextIndex]);
+  }, [filteredImages, selectedImage, selectedImageIndex]);
+
+  const updateViewerZoom = useCallback((nextZoom) => {
+    setViewerZoom(Math.min(4, Math.max(1, nextZoom)));
+  }, []);
+
+  useEffect(() => {
+    const handleViewerKeydown = (event) => {
+      if (!selectedImage) return;
+
+      if (event.key === 'Escape') {
+        setSelectedImage(null);
+      } else if (event.key === 'ArrowLeft') {
+        navigateViewer(-1);
+      } else if (event.key === 'ArrowRight') {
+        navigateViewer(1);
+      } else if (event.key === '+' || event.key === '=') {
+        updateViewerZoom(viewerZoom + 0.25);
+      } else if (event.key === '-' || event.key === '_') {
+        updateViewerZoom(viewerZoom - 0.25);
+      } else if (event.key === '0') {
+        setViewerZoom(1);
+      }
+    };
+
+    window.addEventListener('keydown', handleViewerKeydown);
+    return () => window.removeEventListener('keydown', handleViewerKeydown);
+  }, [navigateViewer, selectedImage, updateViewerZoom, viewerZoom]);
 
   const columnCount = useMemo(
     () => getColumnCount(viewportWidth, filteredImages.length),
@@ -250,6 +298,8 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
 
   const openLightbox = (image) => {
     setModalImageError(false);
+    setViewerZoom(1);
+    setShowViewerInfo(true);
     setSelectedImage(image);
   };
 
@@ -498,13 +548,13 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
                               {orientation}
                             </div>
 
-                            <div className="absolute inset-0 bg-linear-to-t from-black/85 via-black/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-                            <div className="pointer-events-none absolute inset-x-0 bottom-0 translate-y-5 p-4 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
-                              <p className="mb-3 line-clamp-2 text-left text-sm font-medium text-white">
+                            <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/35 to-transparent opacity-100 transition-opacity duration-300 sm:opacity-0 sm:group-hover:opacity-100" />
+                            <div className="pointer-events-none absolute inset-x-0 bottom-0 p-3 opacity-100 transition-all duration-300 sm:translate-y-4 sm:opacity-0 sm:group-hover:translate-y-0 sm:group-hover:opacity-100">
+                              <p className={`mb-3 text-left text-sm font-semibold leading-snug text-white drop-shadow ${orientation === 'landscape' ? 'line-clamp-3' : 'line-clamp-2'}`}>
                                 {image?.description || 'Untitled visual'}
                               </p>
-                              <div className="flex items-center justify-between gap-2 text-xs text-white/80">
-                                <span>{formatDate(image?.createdAt)}</span>
+                              <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-white/85">
+                                <span className="min-w-0">{formatDate(image?.createdAt)}</span>
                                 {image?.src && (
                                   <span
                                     role="button"
@@ -515,7 +565,7 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
                                         handleDownload(event, image);
                                       }
                                     }}
-                                    className="pointer-events-auto inline-flex items-center gap-1 rounded-full border border-white/25 bg-black/30 px-3 py-1 font-semibold hover:bg-white/20"
+                                    className="pointer-events-auto inline-flex shrink-0 items-center gap-1 rounded-full border border-white/25 bg-black/45 px-3 py-1 font-semibold hover:bg-white/20"
                                   >
                                     <Download size={12} /> Download
                                   </span>
@@ -555,90 +605,216 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm"
-            onClick={() => setSelectedImage(null)}
+            className="fixed inset-0 z-50 flex flex-col bg-black text-white"
           >
-            <motion.button
-              className="absolute right-4 top-4 z-50 rounded-full border p-2 transition-colors"
-              style={{
-                borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
-                color: 'var(--text-secondary)',
-                backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 80%, transparent)',
-              }}
-              onClick={() => setSelectedImage(null)}
-              whileHover={{ scale: 1.08 }}
-              whileTap={{ scale: 0.92 }}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
-            </motion.button>
-
-            <motion.div
-              className="relative flex w-full max-w-5xl flex-col items-center justify-center rounded-lg bg-transparent p-2"
-              onClick={(event) => event.stopPropagation()}
-            >
-              <div className="relative h-[75vh] w-full overflow-hidden rounded-xl border"
-                style={{
-                  borderColor: 'color-mix(in srgb, var(--border-secondary) 74%, transparent)',
-                  backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 85%, transparent)',
-                }}
+            <div className="relative z-20 flex h-16 shrink-0 items-center justify-between gap-3 border-b border-white/10 bg-black/95 px-3 sm:px-5">
+              <button
+                type="button"
+                onClick={() => setSelectedImage(null)}
+                className="flex h-10 w-10 items-center justify-center rounded-full text-white transition-colors hover:bg-white/10"
+                aria-label="Back to gallery"
+                title="Back to gallery"
               >
-                {selectedImage?.src && !modalImageError ? (
-                  <Image
-                    src={selectedImage.src}
-                    alt={selectedImage.description || 'Gallery view'}
-                    fill
-                    className="object-contain"
-                    sizes="90vw"
-                    quality={82}
-                    onError={() => setModalImageError(true)}
-                  />
-                ) : (
-                  <div className="relative flex h-full w-full items-center justify-center overflow-hidden" style={{ backgroundImage: getPlaceholderGradient(selectedImage?.description || selectedImage?._id) }}>
-                    <div
-                      className="absolute inset-0"
-                      style={{
-                        backgroundImage:
-                          'linear-gradient(color-mix(in srgb, var(--border-secondary) 24%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, var(--border-secondary) 24%, transparent) 1px, transparent 1px)',
-                        backgroundSize: '24px 24px',
-                        opacity: 0.35,
-                      }}
-                    />
-                    <div
-                      className="relative z-10 rounded-xl border px-5 py-2 text-xl font-bold"
-                      style={{
-                        borderColor: 'color-mix(in srgb, var(--border-secondary) 74%, transparent)',
-                        color: 'var(--text-bright)',
-                        backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 72%, transparent)',
-                      }}
-                    >
-                      {getImageInitials(selectedImage?.description)}
-                    </div>
-                  </div>
-                )}
+                <ArrowLeft size={24} />
+              </button>
+
+              <div className="min-w-0 flex-1 px-2">
+                <p className="truncate text-sm font-semibold">{selectedImage?.description || 'Untitled visual'}</p>
+                <p className="truncate text-xs text-white/55">
+                  {selectedImageIndex >= 0 ? `${selectedImageIndex + 1} of ${filteredImages.length}` : 'Gallery photo'}
+                </p>
               </div>
 
-              <div className="mt-4 flex w-full flex-col items-center gap-3 px-2 text-center">
-                <p className="max-w-2xl text-base font-medium" style={{ color: 'var(--text-primary)' }}>
-                  {selectedImage?.description || 'Untitled visual'}
-                </p>
-                <div className="flex flex-wrap items-center justify-center gap-3 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                  <span className="inline-flex items-center gap-1.5"><CalendarDays size={14} /> {formatDate(selectedImage?.createdAt)}</span>
-                  {selectedImage?.src && (
+              <div className="flex items-center gap-1 sm:gap-2">
+                <button
+                  type="button"
+                  onClick={() => updateViewerZoom(viewerZoom - 0.25)}
+                  disabled={viewerZoom <= 1}
+                  className="hidden h-10 w-10 items-center justify-center rounded-full text-white transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:text-white/30 sm:flex"
+                  aria-label="Zoom out"
+                  title="Zoom out"
+                >
+                  <Minus size={20} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => updateViewerZoom(viewerZoom + 0.25)}
+                  disabled={viewerZoom >= 4}
+                  className="hidden h-10 w-10 items-center justify-center rounded-full text-white transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:text-white/30 sm:flex"
+                  aria-label="Zoom in"
+                  title="Zoom in"
+                >
+                  <Plus size={20} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewerZoom(1)}
+                  className="hidden h-10 w-10 items-center justify-center rounded-full text-white transition-colors hover:bg-white/10 sm:flex"
+                  aria-label="Reset zoom"
+                  title={`Reset zoom (${Math.round(viewerZoom * 100)}%)`}
+                >
+                  <RotateCcw size={19} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowViewerInfo((prev) => !prev)}
+                  className={`flex h-10 w-10 items-center justify-center rounded-full text-white transition-colors hover:bg-white/10 ${showViewerInfo ? 'bg-white/10' : ''}`}
+                  aria-label="Toggle photo info"
+                  title="Info"
+                >
+                  <Info size={20} />
+                </button>
+                {selectedImage?.src && (
+                  <button
+                    type="button"
+                    onClick={(event) => handleDownload(event, selectedImage)}
+                    className="flex h-10 w-10 items-center justify-center rounded-full text-white transition-colors hover:bg-white/10"
+                    aria-label="Download full size"
+                    title="Download full size"
+                  >
+                    <Download size={20} />
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setSelectedImage(null)}
+                  className="flex h-10 w-10 items-center justify-center rounded-full text-white transition-colors hover:bg-white/10"
+                  aria-label="Close"
+                  title="Close"
+                >
+                  <X size={22} />
+                </button>
+              </div>
+            </div>
+
+            <div className="relative flex min-h-0 flex-1">
+              <div className="relative min-w-0 flex-1 overflow-hidden bg-black">
+                {filteredImages.length > 1 && (
+                  <>
                     <button
-                      onClick={(event) => handleDownload(event, selectedImage)}
-                      className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold"
-                      style={{
-                        borderColor: 'var(--accent-cyan)',
-                        color: 'var(--accent-cyan)',
-                        backgroundColor: 'color-mix(in srgb, var(--accent-cyan) 10%, transparent)',
-                      }}
+                      type="button"
+                      onClick={() => navigateViewer(-1)}
+                      className="absolute left-3 top-1/2 z-20 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-white shadow-lg transition-colors hover:bg-white/15 md:flex"
+                      aria-label="Previous image"
+                      title="Previous image"
                     >
-                      <Download size={16} /> Download Full Size
+                      <ChevronLeft size={30} />
                     </button>
-                  )}
+                    <button
+                      type="button"
+                      onClick={() => navigateViewer(1)}
+                      className="absolute right-3 top-1/2 z-20 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-white shadow-lg transition-colors hover:bg-white/15 md:flex"
+                      aria-label="Next image"
+                      title="Next image"
+                    >
+                      <ChevronRight size={30} />
+                    </button>
+                  </>
+                )}
+
+                <div
+                  className="flex h-full w-full items-center justify-center overflow-auto px-0 py-4 sm:px-8"
+                  onDoubleClick={() => updateViewerZoom(viewerZoom > 1 ? 1 : 2)}
+                >
+                  <motion.div
+                    key={selectedImage?._id || selectedImage?.src}
+                    initial={{ opacity: 0.2 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.2 }}
+                    className="relative h-full w-full origin-center transition-transform duration-200"
+                    style={{ transform: `scale(${viewerZoom})` }}
+                  >
+                    {selectedImage?.src && !modalImageError ? (
+                      <Image
+                        src={selectedImage.src}
+                        alt={selectedImage.description || 'Gallery view'}
+                        fill
+                        className="object-contain"
+                        sizes={showViewerInfo ? '(max-width: 1024px) 100vw, 76vw' : '100vw'}
+                        quality={90}
+                        priority
+                        onError={() => setModalImageError(true)}
+                      />
+                    ) : (
+                      <div className="relative flex h-full w-full items-center justify-center overflow-hidden" style={{ backgroundImage: getPlaceholderGradient(selectedImage?.description || selectedImage?._id) }}>
+                        <div
+                          className="absolute inset-0"
+                          style={{
+                            backgroundImage:
+                              'linear-gradient(color-mix(in srgb, var(--border-secondary) 24%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, var(--border-secondary) 24%, transparent) 1px, transparent 1px)',
+                            backgroundSize: '24px 24px',
+                            opacity: 0.35,
+                          }}
+                        />
+                        <div className="relative z-10 rounded-xl border border-white/20 bg-black/50 px-5 py-2 text-xl font-bold text-white">
+                          {getImageInitials(selectedImage?.description)}
+                        </div>
+                      </div>
+                    )}
+                  </motion.div>
+                </div>
+
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-linear-to-t from-black/85 via-black/45 to-transparent px-4 py-4 lg:hidden">
+                  <p className="line-clamp-2 text-sm font-semibold text-white">{selectedImage?.description || 'Untitled visual'}</p>
+                  <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-white/75">
+                    <span className="inline-flex items-center gap-1.5"><CalendarDays size={13} /> {formatDate(selectedImage?.createdAt)}</span>
+                    <span>{Math.round(viewerZoom * 100)}%</span>
+                  </div>
                 </div>
               </div>
-            </motion.div>
+
+              <AnimatePresence>
+                {showViewerInfo && (
+                  <motion.aside
+                    initial={{ opacity: 0, x: 28 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 28 }}
+                    transition={{ duration: 0.2 }}
+                    className="hidden w-[360px] shrink-0 border-l border-white/10 bg-zinc-950 p-5 text-white lg:block"
+                  >
+                    <div className="mb-5 flex items-center justify-between">
+                      <h2 className="text-base font-semibold">Info</h2>
+                      <SlidersHorizontal size={18} className="text-white/55" />
+                    </div>
+
+                    <div className="space-y-5">
+                      <section>
+                        <p className="mb-2 text-xs uppercase tracking-[0.2em] text-white/45">Caption</p>
+                        <p className="text-sm leading-relaxed text-white/85">{selectedImage?.description || 'Untitled visual'}</p>
+                      </section>
+
+                      <section>
+                        <p className="mb-2 text-xs uppercase tracking-[0.2em] text-white/45">Date</p>
+                        <p className="inline-flex items-center gap-2 text-sm text-white/85">
+                          <CalendarDays size={15} /> {formatDate(selectedImage?.createdAt)}
+                        </p>
+                      </section>
+
+                      <section>
+                        <p className="mb-2 text-xs uppercase tracking-[0.2em] text-white/45">Image</p>
+                        <div className="space-y-1 text-sm text-white/75">
+                          <p>{getOrientation(selectedImage)}</p>
+                          {selectedImage?.width && selectedImage?.height && (
+                            <p>{selectedImage.width} x {selectedImage.height}</p>
+                          )}
+                          <p>Zoom {Math.round(viewerZoom * 100)}%</p>
+                        </div>
+                      </section>
+
+                      {selectedImage?.src && (
+                        <button
+                          type="button"
+                          onClick={(event) => handleDownload(event, selectedImage)}
+                          className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-white/15"
+                        >
+                          <Download size={17} /> Download Full Size
+                        </button>
+                      )}
+                    </div>
+                  </motion.aside>
+                )}
+              </AnimatePresence>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
