@@ -46,15 +46,22 @@ html {
 /* Typography spacing for rendered markdown (prose) */
 .blog-detail-container article .prose {
   line-height: 1.8;
+  min-width: 0;
+  max-width: 100%;
   overflow-wrap: anywhere;
   word-break: break-word;
 }
 
-/* Preserve author-entered line breaks in markdown paragraphs */
+/* Let markdown paragraphs wrap inside the article column. */
 .blog-detail-container article .prose p {
-  white-space: pre-wrap;
+  max-width: 100%;
+  white-space: normal;
   margin-top: 0;
   margin-bottom: 1.15em;
+}
+
+.blog-detail-container article .prose > * {
+  max-width: 100%;
 }
 
 .blog-detail-container article .prose h2 {

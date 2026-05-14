@@ -110,6 +110,8 @@ const AdUnit = memo(({ adsConfig, positionKey }) => {
   );
 });
 
+AdUnit.displayName = 'AdUnit';
+
 export default memo(function BlogDetailClient({ blog, config, adsConfig }) {
   const [selectedImage, setSelectedImage] = useState(null);
   const [showShareToast, setShowShareToast] = useState(false);
@@ -343,10 +345,10 @@ export default memo(function BlogDetailClient({ blog, config, adsConfig }) {
           </section>
         )}
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px] items-start">
-          <article className="lg:pr-8">
+        <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px] items-start">
+          <article className="min-w-0 max-w-full lg:pr-8">
             <div
-              className="prose prose-lg max-w-none mt-6"
+              className="prose prose-lg max-w-none min-w-0 max-w-full mt-6"
               style={{
                 '--tw-prose-body': 'var(--text-secondary)',
                 '--tw-prose-headings': 'var(--text-primary)',
@@ -509,7 +511,7 @@ export default memo(function BlogDetailClient({ blog, config, adsConfig }) {
           </article>
 
           {hasToc ? (
-            <aside className="hidden lg:block sticky top-24 self-start max-h-[calc(100vh-8rem)] overflow-y-auto scrollbar-hide">
+            <aside className="hidden min-w-0 lg:block sticky top-24 self-start max-h-[calc(100vh-8rem)] overflow-y-auto scrollbar-hide">
               <div className="pt-4 pb-12 pr-4">
                 <p className="mb-3 text-sm font-bold uppercase tracking-wider" style={{ color: 'var(--text-tertiary)' }}>
                   On this page
