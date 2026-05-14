@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
 import { notFound, redirect } from 'next/navigation';
 import { cache } from 'react';
 import dbConnect from '@/lib/db';

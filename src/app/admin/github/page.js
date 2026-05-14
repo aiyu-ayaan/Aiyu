@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, Github, CheckCircle, XCircle, ArrowLeft, BarChart2, Book, Code, Globe, User, EyeOff, Lock, Unlock, Search, GitCommit, Activity } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, ArrowLeft, BarChart2, Book, Code, Globe, User, EyeOff, Lock, Unlock, Search, GitCommit, Activity } from 'lucide-react';
 import Link from 'next/link';
 
 export default function GitHubConfigPage() {

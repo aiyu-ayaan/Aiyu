@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import Image from 'next/image';
+import { FaGithub } from 'react-icons/fa';
 import {
   Activity,
   BarChart2,
@@ -11,7 +12,6 @@ import {
   Flame,
   GitCommit,
   GitFork,
-  Github,
   GitPullRequest,
   Lock,
   MapPin,
@@ -218,7 +218,7 @@ export default function GitHubStatsClient({ data }) {
             borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
           }}
         >
-          <Github className="mx-auto mb-4 h-12 w-12" style={{ color: 'var(--text-tertiary)' }} />
+          <FaGithub className="mx-auto mb-4 h-12 w-12" style={{ color: 'var(--text-tertiary)' }} />
           <h2 className="mb-2 text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
             GitHub Stats Not Available
           </h2>

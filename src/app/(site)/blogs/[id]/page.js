@@ -1,7 +1,8 @@
 import BlogDetailClient from '../../../components/blogs/BlogDetailClient';
 import { cache } from 'react';
 import { notFound, redirect } from 'next/navigation';
-import { getBlogById, getConfigData, getAdsData } from '@/lib/dataFetchers';
+import { getBlogById, getConfigData } from '@/lib/dataFetchers';
+import { getAdsData } from '@/lib/adsDataFetcher';
 import { generateBlogSchema } from '@/app/schema';
 import { getSafeCanonicalUrl, getSiteUrl } from '@/lib/siteUrl';
 

@@ -275,7 +275,7 @@ const AdsForm = () => {
                         )}
                         
                         <div className="bg-slate-950 p-4 rounded-xl border border-white/5 font-mono text-[10px] text-slate-500">
-                            <span className="text-green-500/50 block mb-2">// Generated Attributes Preview</span>
+                            <span className="text-green-500/50 block mb-2">{'// Generated Attributes Preview'}</span>
                             data-ad-client="{formData.clientId || 'ca-pub-...'}"<br/>
                             data-ad-slot="{activePlacement.slotId || '...'}"<br/>
                             {activePlacement.adType === 'display' && <>data-ad-format="auto"<br/>data-full-width-responsive="true"</>}
