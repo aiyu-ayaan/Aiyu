@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   ArrowLeft,
   CalendarDays,
@@ -13,7 +13,6 @@ import {
   RotateCcw,
   Search,
   SlidersHorizontal,
-  X,
 } from 'lucide-react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -83,7 +82,12 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [modalImageError, setModalImageError] = useState(false);
   const [viewerZoom, setViewerZoom] = useState(1);
-  const [showViewerInfo, setShowViewerInfo] = useState(true);
+  const [viewerOffset, setViewerOffset] = useState({ x: 0, y: 0 });
+  const [showViewerInfo, setShowViewerInfo] = useState(false);
+  const [isSpacePanning, setIsSpacePanning] = useState(false);
+  const [isDraggingImage, setIsDraggingImage] = useState(false);
+  const dragStartRef = useRef(null);
+  const canPanViewer = viewerZoom >= 1.5;
   const [brokenImageIds, setBrokenImageIds] = useState(new Set());
   const [viewportWidth, setViewportWidth] = useState(1280);
   const [headerInfo, setHeaderInfo] = useState(() => ({
@@ -189,11 +193,52 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
     const nextIndex = (currentIndex + direction + filteredImages.length) % filteredImages.length;
     setModalImageError(false);
     setViewerZoom(1);
+    setViewerOffset({ x: 0, y: 0 });
     setSelectedImage(filteredImages[nextIndex]);
   }, [filteredImages, selectedImage, selectedImageIndex]);
 
   const updateViewerZoom = useCallback((nextZoom) => {
-    setViewerZoom(Math.min(4, Math.max(1, nextZoom)));
+    const normalizedZoom = Math.min(4, Math.max(1, nextZoom));
+    setViewerZoom(normalizedZoom);
+    if (normalizedZoom === 1) {
+      setViewerOffset({ x: 0, y: 0 });
+    }
+  }, []);
+
+  const handleViewerWheel = useCallback((event) => {
+    if (!selectedImage) return;
+    event.preventDefault();
+    const direction = event.deltaY > 0 ? -1 : 1;
+    updateViewerZoom(viewerZoom + direction * 0.15);
+  }, [selectedImage, updateViewerZoom, viewerZoom]);
+
+  const handleViewerPointerDown = useCallback((event) => {
+    if (!isSpacePanning || !canPanViewer) return;
+    event.preventDefault();
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    setIsDraggingImage(true);
+    dragStartRef.current = {
+      pointerX: event.clientX,
+      pointerY: event.clientY,
+      offsetX: viewerOffset.x,
+      offsetY: viewerOffset.y,
+    };
+  }, [canPanViewer, isSpacePanning, viewerOffset.x, viewerOffset.y]);
+
+  const handleViewerPointerMove = useCallback((event) => {
+    if (!isDraggingImage || !dragStartRef.current) return;
+    const deltaX = event.clientX - dragStartRef.current.pointerX;
+    const deltaY = event.clientY - dragStartRef.current.pointerY;
+    setViewerOffset({
+      x: dragStartRef.current.offsetX + deltaX,
+      y: dragStartRef.current.offsetY + deltaY,
+    });
+  }, [isDraggingImage]);
+
+  const stopViewerDrag = useCallback((event) => {
+    event?.currentTarget?.releasePointerCapture?.(event.pointerId);
+    setIsDraggingImage(false);
+    dragStartRef.current = null;
   }, []);
 
   useEffect(() => {
@@ -202,6 +247,12 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
 
       if (event.key === 'Escape') {
         setSelectedImage(null);
+      } else if (event.code === 'Space' && !event.repeat) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (canPanViewer) {
+          setIsSpacePanning(true);
+        }
       } else if (event.key === 'ArrowLeft') {
         navigateViewer(-1);
       } else if (event.key === 'ArrowRight') {
@@ -211,13 +262,27 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
       } else if (event.key === '-' || event.key === '_') {
         updateViewerZoom(viewerZoom - 0.25);
       } else if (event.key === '0') {
-        setViewerZoom(1);
+        updateViewerZoom(1);
       }
     };
 
-    window.addEventListener('keydown', handleViewerKeydown);
-    return () => window.removeEventListener('keydown', handleViewerKeydown);
-  }, [navigateViewer, selectedImage, updateViewerZoom, viewerZoom]);
+    const handleViewerKeyup = (event) => {
+      if (event.code === 'Space') {
+        event.preventDefault();
+        event.stopPropagation();
+        setIsSpacePanning(false);
+        setIsDraggingImage(false);
+        dragStartRef.current = null;
+      }
+    };
+
+    window.addEventListener('keydown', handleViewerKeydown, true);
+    window.addEventListener('keyup', handleViewerKeyup, true);
+    return () => {
+      window.removeEventListener('keydown', handleViewerKeydown, true);
+      window.removeEventListener('keyup', handleViewerKeyup, true);
+    };
+  }, [canPanViewer, navigateViewer, selectedImage, updateViewerZoom, viewerZoom]);
 
   const columnCount = useMemo(
     () => getColumnCount(viewportWidth, filteredImages.length),
@@ -299,7 +364,10 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
   const openLightbox = (image) => {
     setModalImageError(false);
     setViewerZoom(1);
-    setShowViewerInfo(true);
+    setViewerOffset({ x: 0, y: 0 });
+    setShowViewerInfo(false);
+    setIsSpacePanning(false);
+    setIsDraggingImage(false);
     setSelectedImage(image);
   };
 
@@ -648,7 +716,7 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setViewerZoom(1)}
+                  onClick={() => updateViewerZoom(1)}
                   className="hidden h-10 w-10 items-center justify-center rounded-full text-white transition-colors hover:bg-white/10 sm:flex"
                   aria-label="Reset zoom"
                   title={`Reset zoom (${Math.round(viewerZoom * 100)}%)`}
@@ -664,7 +732,7 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
                 >
                   <Info size={20} />
                 </button>
-                {selectedImage?.src && (
+                {selectedImage?.src && !showViewerInfo && (
                   <button
                     type="button"
                     onClick={(event) => handleDownload(event, selectedImage)}
@@ -675,15 +743,6 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
                     <Download size={20} />
                   </button>
                 )}
-                <button
-                  type="button"
-                  onClick={() => setSelectedImage(null)}
-                  className="flex h-10 w-10 items-center justify-center rounded-full text-white transition-colors hover:bg-white/10"
-                  aria-label="Close"
-                  title="Close"
-                >
-                  <X size={22} />
-                </button>
               </div>
             </div>
 
@@ -713,16 +772,26 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
                 )}
 
                 <div
-                  className="flex h-full w-full items-center justify-center overflow-auto px-0 py-4 sm:px-8"
+                  className="flex h-full w-full items-center justify-center overflow-hidden px-0 py-4 sm:px-8"
+                  onWheel={handleViewerWheel}
                   onDoubleClick={() => updateViewerZoom(viewerZoom > 1 ? 1 : 2)}
+                  onPointerDown={handleViewerPointerDown}
+                  onPointerMove={handleViewerPointerMove}
+                  onPointerUp={stopViewerDrag}
+                  onPointerCancel={stopViewerDrag}
+                  onPointerLeave={stopViewerDrag}
+                  style={{
+                    cursor: canPanViewer && isSpacePanning ? (isDraggingImage ? 'grabbing' : 'grab') : 'zoom-in',
+                    touchAction: canPanViewer && isSpacePanning ? 'none' : 'pan-y',
+                  }}
                 >
                   <motion.div
                     key={selectedImage?._id || selectedImage?.src}
                     initial={{ opacity: 0.2 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.2 }}
-                    className="relative h-full w-full origin-center transition-transform duration-200"
-                    style={{ transform: `scale(${viewerZoom})` }}
+                    className="pointer-events-none relative h-full w-full origin-center transition-transform duration-200"
+                    style={{ transform: `translate3d(${viewerOffset.x}px, ${viewerOffset.y}px, 0) scale(${viewerZoom})` }}
                   >
                     {selectedImage?.src && !modalImageError ? (
                       <Image
