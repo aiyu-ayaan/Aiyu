@@ -35,7 +35,7 @@ const SKIP_DB_DURING_BUILD = IS_PRODUCTION_BUILD && !ALLOW_DB_DURING_BUILD;
 const CACHE_KEY_CONFIG_PUBLIC = 'db:config:public';
 const CACHE_KEY_CONFIG_LAYOUT = 'db:config:layout';
 const CACHE_KEY_ABOUT_LAYOUT = 'db:about:layout';
-const CACHE_KEY_ABOUT_HOME = 'db:about:home';
+const CACHE_KEY_ABOUT_HOME = 'db:about:home:v2';
 const CACHE_KEY_PROJECTS_HOME = 'db:projects:home';
 const CACHE_KEY_BLOG_SLUGS = 'db:blogs:slugs';
 const CACHE_KEY_PROJECT_SLUGS = 'db:projects:slugs';
@@ -108,7 +108,7 @@ const CONFIG_PUBLIC_SELECT = [
     'favicon.mimeType',
 ].join(' ');
 
-const HOME_ABOUT_SELECT = ['name', 'skills', 'professionalSummary'].join(' ');
+const HOME_ABOUT_SELECT = ['name', 'skills', 'experiences', 'professionalSummary'].join(' ');
 const HOME_PROJECTS_SELECT = ['name', 'techStack', 'year', 'status', 'projectType', 'description', 'codeLink', 'blogLink', 'image', 'displayOrder'].join(' ');
 const HOME_BLOGS_SELECT = ['title', 'slug', 'content', 'excerpt', 'image', 'imageAlt', 'date', 'createdAt'].join(' ');
 const BLOG_LIST_SELECT = ['title', 'slug', 'content', 'excerpt', 'image', 'imageAlt', 'date', 'createdAt', 'updatedAt', 'published', 'tags', 'seoTitle', 'seoDescription', 'canonicalUrl', 'keywords', 'socialTitle', 'socialDescription', 'socialImage', 'socialImageAlt', 'noIndex', 'isAutomated'].join(' ');
