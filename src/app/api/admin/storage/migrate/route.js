@@ -167,6 +167,15 @@ async function handleMigration(request) {
             details
         });
 
+    } catch (error) {
+        console.error('[ERROR] Storage migration failed:', error);
+        return NextResponse.json(
+            { success: false, error: 'Migration failed. Please review system logs.' },
+            { status: 500 }
+        );
+    }
+}
+
 function getDocLabel(modelName, doc) {
     return doc.title || doc.name || doc.label || doc.platform || doc.username || doc.subject || doc.email || doc._id?.toString() || 'Unnamed Document';
 }
