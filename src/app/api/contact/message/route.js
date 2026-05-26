@@ -43,9 +43,9 @@ export async function POST(request) {
             console.error('❌ Failed to trigger contact form notifications:', notifErr.message);
         }
 
-        // 2. Check for n8n Webhook and forward if exists
+        // 2. Check for n8n Webhook and forward if exists and enabled
         const config = await Config.findOne().lean();
-        if (config?.n8nWebhookUrl) {
+        if (config?.n8nWebhookEnabled && config?.n8nWebhookUrl) {
             try {
                 const payload = {
                     sender: name,

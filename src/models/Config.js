@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 const ConfigSchema = new mongoose.Schema({
     n8nWebhookUrl: { type: String, required: false, default: '' },
     n8nWebhookAuthKey: { type: String, required: false, default: '' },
+    n8nWebhookEnabled: { type: Boolean, required: false, default: true },
     resume: {
         type: { type: String, enum: ['url', 'file'], default: 'url' },
         value: { type: String, default: '' },
