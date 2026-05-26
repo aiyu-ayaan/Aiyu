@@ -1,4 +1,4 @@
-import { notFound, redirect } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import { cache } from 'react';
 import dbConnect from '@/lib/db';
 import DeploymentModel from '@/models/Deployment';
@@ -94,7 +94,7 @@ export default async function AppDetailsPage({ params }) {
 
     const canonicalSlug = getDeploymentSlug(deployment);
     if (identifier !== canonicalSlug) {
-        redirect(`/apps/${canonicalSlug}`);
+        permanentRedirect(`/apps/${canonicalSlug}`);
     }
 
     const baseUrl = getBaseUrl();

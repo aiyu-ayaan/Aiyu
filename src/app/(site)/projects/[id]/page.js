@@ -1,4 +1,4 @@
-import { notFound, redirect } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import { cache } from 'react';
 import dbConnect from '@/lib/db';
 import ProjectModel from '@/models/Project';
@@ -94,7 +94,7 @@ export default async function ProjectDetailsPage({ params }) {
 
     const canonicalSlug = getProjectSlug(project);
     if (identifier !== canonicalSlug) {
-        redirect(`/projects/${canonicalSlug}`);
+        permanentRedirect(`/projects/${canonicalSlug}`);
     }
 
     const baseUrl = getBaseUrl();
