@@ -217,6 +217,8 @@ export default function StorageManager() {
     const [message, setMessage] = useState(null);
     const [dialog, setDialog] = useState(null);
     const [deleteBusy, setDeleteBusy] = useState(false);
+    const [migrating, setMigrating] = useState(false);
+    const [migrationResult, setMigrationResult] = useState(null);
 
     const unreferencedUploads = useMemo(
         () => audit?.unreferencedUploads || [],
@@ -308,6 +310,40 @@ export default function StorageManager() {
         }
     }
 
+    async function handleMigrate() {
+        if (!confirm('Are you sure you want to initiate the WebP migration sequence? This will optimize all non-webp uploaded images and update their references in the database.')) {
+            return;
+        }
+
+        setMigrating(true);
+        setMessage(null);
+        setMigrationResult(null);
+
+        try {
+            const response = await fetch('/api/admin/storage/migrate', {
+                method: 'POST'
+            });
+            const result = await response.json();
+
+            if (!response.ok || !result.success) {
+                throw new Error(result.error || 'Failed to complete migration.');
+            }
+
+            setMigrationResult(result);
+            setMessage({
+                type: 'success',
+                text: `Successfully migrated ${result.migratedCount} legacy image${result.migratedCount === 1 ? '' : 's'} to WebP format, reclaiming ${formatBytes(result.reclaimedBytes)}.`
+            });
+
+            // Reload the audit data
+            await loadAudit(false);
+        } catch (error) {
+            setMessage({ type: 'error', text: error.message });
+        } finally {
+            setMigrating(false);
+        }
+    }
+
     if (loading) {
         return (
             <div className="flex min-h-[40vh] items-center justify-center">
@@ -358,24 +394,77 @@ export default function StorageManager() {
             <div className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
                 <SectionTable sections={audit?.sections || []} />
 
-                <div className="rounded-3xl border border-white/10 bg-slate-900/50 p-6 backdrop-blur-xl">
-                    <h2 className="text-lg font-bold text-white">Upload Health</h2>
-                    <div className="mt-4 space-y-4">
-                        <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
-                            <div className="text-xs uppercase tracking-widest text-slate-500">Referenced Uploads</div>
-                            <div className="mt-2 text-2xl font-bold text-emerald-300">{formatBytes(summary.totalReferencedUploadBytes)}</div>
-                            <div className="mt-1 text-sm text-slate-400">{summary.referencedUploadCount} files actively used by content</div>
+                <div className="space-y-6">
+                    <div className="rounded-3xl border border-white/10 bg-slate-900/50 p-6 backdrop-blur-xl">
+                        <h2 className="text-lg font-bold text-white">Upload Health</h2>
+                        <div className="mt-4 space-y-4">
+                            <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+                                <div className="text-xs uppercase tracking-widest text-slate-500">Referenced Uploads</div>
+                                <div className="mt-2 text-2xl font-bold text-emerald-300">{formatBytes(summary.totalReferencedUploadBytes)}</div>
+                                <div className="mt-1 text-sm text-slate-400">{summary.referencedUploadCount} files actively used by content</div>
+                            </div>
+                            <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+                                <div className="text-xs uppercase tracking-widest text-slate-500">Thumbnail Storage</div>
+                                <div className="mt-2 text-2xl font-bold text-amber-300">{formatBytes(summary.totalThumbnailBytes)}</div>
+                                <div className="mt-1 text-sm text-slate-400">Generated thumbnails inside `public/uploads`</div>
+                            </div>
+                            <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+                                <div className="text-xs uppercase tracking-widest text-slate-500">Cleanup Opportunity</div>
+                                <div className="mt-2 text-2xl font-bold text-red-300">{formatBytes(summary.totalUnreferencedUploadBytes)}</div>
+                                <div className="mt-1 text-sm text-slate-400">{summary.unreferencedUploadCount} files can be safely reviewed for deletion</div>
+                            </div>
                         </div>
-                        <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
-                            <div className="text-xs uppercase tracking-widest text-slate-500">Thumbnail Storage</div>
-                            <div className="mt-2 text-2xl font-bold text-amber-300">{formatBytes(summary.totalThumbnailBytes)}</div>
-                            <div className="mt-1 text-sm text-slate-400">Generated thumbnails inside `public/uploads`</div>
+                    </div>
+
+                    <div className="rounded-3xl border border-white/10 bg-slate-900/50 p-6 backdrop-blur-xl">
+                        <div className="flex items-center gap-3">
+                            <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/10 p-2 text-cyan-400">
+                                <RefreshCw size={18} className={migrating ? 'animate-spin' : ''} />
+                            </div>
+                            <h2 className="text-lg font-bold text-white">WebP Migration Protocol</h2>
                         </div>
-                        <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
-                            <div className="text-xs uppercase tracking-widest text-slate-500">Cleanup Opportunity</div>
-                            <div className="mt-2 text-2xl font-bold text-red-300">{formatBytes(summary.totalUnreferencedUploadBytes)}</div>
-                            <div className="mt-1 text-sm text-slate-400">{summary.unreferencedUploadCount} files can be safely reviewed for deletion</div>
+                        <p className="mt-3 text-sm text-slate-400 leading-relaxed">
+                            Safely convert legacy images (PNG, JPG, HEIC, HEIF, GIF) to optimized WebP format. Converts originals and thumbnails, updates all database references (including nested structures, configs, and markdown content), and cleans up old files.
+                        </p>
+                        
+                        <div className="mt-5">
+                            <button
+                                type="button"
+                                onClick={handleMigrate}
+                                disabled={migrating}
+                                className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-cyan-500 disabled:opacity-50"
+                            >
+                                {migrating ? 'Processing Migration...' : 'Initiate Migration Sequence'}
+                            </button>
                         </div>
+
+                        {migrationResult && (
+                            <div className="mt-6 space-y-4 border-t border-white/5 pt-4">
+                                <div className="flex items-center justify-between text-xs text-slate-400">
+                                    <span>Images Migrated:</span>
+                                    <span className="font-mono text-cyan-300 font-bold">{migrationResult.migratedCount}</span>
+                                </div>
+                                <div className="flex items-center justify-between text-xs text-slate-400">
+                                    <span>Space Reclaimed:</span>
+                                    <span className="font-mono text-emerald-300 font-bold">{formatBytes(migrationResult.reclaimedBytes)}</span>
+                                </div>
+
+                                {migrationResult.details && migrationResult.details.length > 0 && (
+                                    <div className="max-h-40 overflow-y-auto rounded-xl border border-white/5 bg-slate-950/40 p-2.5 text-[11px] font-mono text-slate-300 space-y-1.5 custom-scrollbar">
+                                        {migrationResult.details.map((detail, idx) => (
+                                            <div key={idx} className="flex justify-between border-b border-white/5 pb-1 last:border-0 last:pb-0">
+                                                <div className="truncate max-w-[180px]" title={detail.original}>
+                                                    {detail.success ? '✓' : '✗'} {detail.original}
+                                                </div>
+                                                <div className="text-slate-500 shrink-0">
+                                                    {detail.success ? `${detail.referencesUpdated} refs` : detail.error}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
