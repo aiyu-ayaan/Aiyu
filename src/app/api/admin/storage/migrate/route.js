@@ -167,15 +167,92 @@ async function handleMigration(request) {
             details
         });
 
+function getDocLabel(modelName, doc) {
+    return doc.title || doc.name || doc.label || doc.platform || doc.username || doc.subject || doc.email || doc._id?.toString() || 'Unnamed Document';
+}
+
+async function handlePreview(request) {
+    await dbConnect();
+
+    try {
+        let filenames = [];
+        try {
+            filenames = await readdir(UPLOADS_DIRECTORY);
+        } catch (err) {
+            if (err.code === 'ENOENT') {
+                return NextResponse.json({
+                    success: true,
+                    candidates: [],
+                    totalCandidates: 0,
+                    totalReferences: 0
+                });
+            }
+            throw err;
+        }
+
+        const migrateCandidates = filenames.filter(name => {
+            const ext = name.split('.').pop()?.toLowerCase();
+            const isImage = ['jpg', 'jpeg', 'png', 'heic', 'heif', 'gif'].includes(ext);
+            const isWebp = ext === 'webp';
+            return isImage && !isWebp && name !== '.gitkeep';
+        });
+
+        const candidates = [];
+        let totalReferences = 0;
+
+        for (const filename of migrateCandidates) {
+            const filePath = join(UPLOADS_DIRECTORY, filename);
+            let sizeBytes = 0;
+            try {
+                const { stat } = await import('fs/promises');
+                const fileStats = await stat(filePath);
+                sizeBytes = fileStats.size;
+            } catch (e) {
+                // Ignore
+            }
+
+            const references = [];
+            for (const Model of MODELS) {
+                const docs = await Model.find({});
+                for (const doc of docs) {
+                    const plainDoc = doc.toObject();
+                    const jsonStr = JSON.stringify(plainDoc);
+
+                    if (jsonStr.includes(filename)) {
+                        references.push({
+                            model: Model.modelName || 'Unknown',
+                            id: doc._id.toString(),
+                            label: getDocLabel(Model.modelName, plainDoc)
+                        });
+                        totalReferences++;
+                    }
+                }
+            }
+
+            candidates.push({
+                filename,
+                sizeBytes,
+                references
+            });
+        }
+
+        return NextResponse.json({
+            success: true,
+            candidates,
+            totalCandidates: candidates.length,
+            totalReferences
+        });
+
     } catch (error) {
-        console.error('[ERROR] Storage migration failed:', error);
+        console.error('[ERROR] Storage migration preview failed:', error);
         return NextResponse.json(
-            { success: false, error: 'Migration failed. Please review system logs.' },
+            { success: false, error: 'Preview failed. Please review system logs.' },
             { status: 500 }
         );
     }
 }
 
+export const GET = withAuth(handlePreview);
 export const POST = withAuth(handleMigration);
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
