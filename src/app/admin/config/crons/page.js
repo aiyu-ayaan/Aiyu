@@ -20,7 +20,8 @@ import {
     ToggleLeft,
     ToggleRight,
     Globe,
-    Terminal
+    Terminal,
+    ShieldAlert
 } from 'lucide-react';
 
 function cronToHuman(cronExpression) {
