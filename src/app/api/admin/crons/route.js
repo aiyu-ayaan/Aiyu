@@ -42,7 +42,7 @@ async function createCron(request) {
     await dbConnect();
     try {
         const body = await request.json();
-        const { name, schedule, webhookUrl, webhookMethod = 'POST' } = body;
+        const { name, schedule, webhookUrl, webhookMethod = 'POST', notificationEnabled, notificationOn } = body;
 
         if (!name || !schedule || !webhookUrl) {
             return NextResponse.json({ success: false, error: 'Name, schedule (cron expression), and Webhook URL are required.' }, { status: 400 });
@@ -64,7 +64,9 @@ async function createCron(request) {
             action: 'webhook',
             webhookUrl,
             webhookMethod,
-            nextRun
+            nextRun,
+            notificationEnabled: notificationEnabled || false,
+            notificationOn: notificationOn || 'always'
         });
 
         return NextResponse.json({ success: true, data: newCron }, { status: 201 });

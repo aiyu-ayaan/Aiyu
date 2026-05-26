@@ -103,6 +103,11 @@ export default function CronJobsPage() {
     const [formWebhookMethod, setFormWebhookMethod] = useState('POST');
     const [formSubmitting, setFormSubmitting] = useState(false);
 
+    // Notification Link States
+    const [notificationConfigured, setNotificationConfigured] = useState(false);
+    const [formNotificationEnabled, setFormNotificationEnabled] = useState(false);
+    const [formNotificationOn, setFormNotificationOn] = useState('always');
+
     // Visual Cron Builder States
     const [builderTab, setBuilderTab] = useState('simple'); // 'simple' | 'advanced'
     const [freqType, setFreqType] = useState('daily'); // 'minutes' | 'hourly' | 'daily' | 'weekly' | 'monthly'
@@ -236,8 +241,27 @@ export default function CronJobsPage() {
         }
     };
 
+    const fetchNotificationStatus = async () => {
+        try {
+            const res = await fetch('/api/admin/notifications');
+            const data = await res.json();
+            if (data.success && data.data) {
+                const config = data.data;
+                const isLinked = config.enabled && (
+                    (config.ntfy?.enabled && config.ntfy?.topic) ||
+                    (config.telegram?.enabled && config.telegram?.botToken && config.telegram?.chatId) ||
+                    (config.discord?.enabled && config.discord?.webhookUrl)
+                );
+                setNotificationConfigured(isLinked);
+            }
+        } catch (err) {
+            console.error('Failed to retrieve notification status:', err);
+        }
+    };
+
     useEffect(() => {
         fetchJobs(true);
+        fetchNotificationStatus();
     }, []);
 
     const handleToggle = async (job) => {
@@ -316,6 +340,10 @@ export default function CronJobsPage() {
         setFreqValHour('0');
         setFreqValMinute('0');
 
+        // Initialize notification states
+        setFormNotificationEnabled(false);
+        setFormNotificationOn('always');
+
         setShowFormModal(true);
     };
 
@@ -341,6 +369,10 @@ export default function CronJobsPage() {
             setBuilderTab('advanced');
         }
 
+        // Initialize notification states
+        setFormNotificationEnabled(job.notificationEnabled || false);
+        setFormNotificationOn(job.notificationOn || 'always');
+
         setShowFormModal(true);
     };
 
@@ -352,7 +384,9 @@ export default function CronJobsPage() {
             name: formName,
             schedule: formSchedule,
             webhookUrl: formWebhookUrl,
-            webhookMethod: formWebhookMethod
+            webhookMethod: formWebhookMethod,
+            notificationEnabled: formNotificationEnabled,
+            notificationOn: formNotificationOn
         };
 
         const url = editingJob ? `/api/admin/crons/${editingJob._id}` : '/api/admin/crons';
@@ -1062,6 +1096,67 @@ export default function CronJobsPage() {
                                     </div>
                                 </div>
                             )}
+
+                            {/* Notification Integrations Link Section */}
+                            <div className="space-y-4 border-t border-white/5 pt-4">
+                                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-1.5">Dispatch Notifications</label>
+                                
+                                {notificationConfigured ? (
+                                    <div className="bg-slate-950/20 border border-white/5 rounded-2xl p-4 space-y-4">
+                                        <div className="flex justify-between items-center">
+                                            <div className="space-y-0.5">
+                                                <div className="text-xs font-bold text-white">Enable Task Notifications</div>
+                                                <div className="text-[10px] text-slate-400">Send alerts to configured Discord, Telegram, or ntfy topics.</div>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => setFormNotificationEnabled(!formNotificationEnabled)}
+                                                className="text-slate-400 hover:text-white transition shrink-0"
+                                            >
+                                                {formNotificationEnabled ? (
+                                                    <ToggleRight className="w-9 h-9 text-emerald-400" />
+                                                ) : (
+                                                    <ToggleLeft className="w-9 h-9 text-slate-600" />
+                                                )}
+                                            </button>
+                                        </div>
+
+                                        {formNotificationEnabled && (
+                                            <div className="space-y-2 border-t border-white/5 pt-3">
+                                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Alert Trigger Event</label>
+                                                <select
+                                                    value={formNotificationOn}
+                                                    onChange={(e) => setFormNotificationOn(e.target.value)}
+                                                    className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-slate-200 focus:border-cyan-500 outline-none transition"
+                                                >
+                                                    <option value="always">Always (Notify on Success or Failure)</option>
+                                                    <option value="success">On Success Only</option>
+                                                    <option value="failure">On Failure Only</option>
+                                                </select>
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="rounded-2xl border border-white/5 bg-slate-950/30 p-4">
+                                        <div className="flex items-start gap-3">
+                                            <ShieldAlert size={16} className="text-amber-400 shrink-0 mt-0.5" />
+                                            <div className="space-y-1">
+                                                <h4 className="text-xs font-bold text-amber-400">Gateway Not Configured</h4>
+                                                <p className="text-[10px] text-slate-400 leading-relaxed">
+                                                    Telegram, Discord, and ntfy push integrations are currently disabled. Configure your gateway to enable live task alerts.
+                                                </p>
+                                                <Link
+                                                    href="/admin/config/notification"
+                                                    target="_blank"
+                                                    className="inline-flex items-center gap-1 text-[10px] text-cyan-400 hover:text-cyan-300 font-semibold mt-1"
+                                                >
+                                                    Configure Notification Channels →
+                                                </Link>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
 
                             {/* Actions */}
                             <div className="flex justify-end gap-3 border-t border-white/5 pt-4 mt-6">
