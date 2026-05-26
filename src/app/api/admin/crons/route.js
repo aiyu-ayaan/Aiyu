@@ -2,7 +2,12 @@ import { NextResponse } from 'next/server';
 import { withAuth } from '@/middleware/auth';
 import dbConnect from '@/lib/db';
 import Cron from '@/models/Cron';
-import { getNextCronRun } from '@/utils/cronRunner';
+import { getNextCronRun, initCronRunner } from '@/utils/cronRunner';
+
+// Initialize background Task Scheduler singleton exactly once when this isolated admin API loads
+if (typeof window === 'undefined') {
+    initCronRunner().catch(err => console.error('[CRON SERVICE ERROR] Failed to initialize runner:', err));
+}
 
 // GET: Retrieve all cron jobs (Admin only)
 async function getCrons(request) {
