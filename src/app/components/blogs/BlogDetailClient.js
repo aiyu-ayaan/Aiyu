@@ -248,14 +248,6 @@ export default memo(function BlogDetailClient({ blog, config, adsConfig }) {
 
   return (
     <div className="blog-detail-container p-4 lg:p-8">
-      {adsConfig?.adsenseEnabled && adsConfig.clientId && (
-        <Script
-          async
-          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsConfig.clientId}`}
-          crossOrigin="anonymous"
-          strategy="afterInteractive"
-        />
-      )}
       <div className="blog-detail-backdrop" />
 
       <div className="relative mx-auto max-w-6xl">

@@ -5,6 +5,7 @@ import "./styles/custom-timeline.css";
 import { ThemeProvider } from "./context/ThemeContext";
 import { getConfigData } from "@/lib/dataFetchers";
 import { getSiteUrl } from "@/lib/siteUrl";
+import { getAdsData } from "@/lib/adsDataFetcher";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -92,6 +93,8 @@ import LiveCommitStream from "./components/shared/LiveCommitStream";
 
 export default async function RootLayout({ children }) {
   const config = await getConfigData();
+  const adsConfig = await getAdsData();
+  const adsenseClientId = typeof adsConfig?.clientId === 'string' ? adsConfig.clientId.trim() : '';
   const gaId = config?.googleAnalyticsId || process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
   return (
@@ -102,6 +105,13 @@ export default async function RootLayout({ children }) {
       style={{ backgroundColor: '#0d1117' }}
     >
       <head>
+        {adsConfig?.adsenseEnabled && adsenseClientId && (
+          <script
+            async
+            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClientId}`}
+            crossOrigin="anonymous"
+          />
+        )}
         <script
           dangerouslySetInnerHTML={{
             __html: `

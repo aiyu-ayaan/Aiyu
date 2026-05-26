@@ -143,6 +143,12 @@ const AdsForm = () => {
     };
 
     const activePlacement = formData.placements[activeSlot];
+    const scriptPreviewClientId = formData.clientId.trim() || 'ca-pub-XXXXXXXXXXXXXXXX';
+    const adsenseScriptPreview = `<script
+  async
+  src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${scriptPreviewClientId}"
+  crossorigin="anonymous"
+></script>`;
 
     return (
         <form onSubmit={handleSubmit} className="space-y-8">
@@ -174,6 +180,43 @@ const AdsForm = () => {
                             className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-green-500/50 focus:ring-1 outline-none font-mono"
                         />
                     </div>
+                </div>
+                <div className="mt-6 rounded-xl border border-green-500/20 bg-slate-950/70 overflow-hidden">
+                    <div className="flex flex-col gap-4 p-5 lg:flex-row lg:items-start lg:justify-between">
+                        <div className="max-w-2xl">
+                            <div className="mb-3 flex flex-wrap items-center gap-2">
+                                <span className={`h-2.5 w-2.5 rounded-full ${formData.adsenseEnabled ? 'bg-green-400 shadow-[0_0_14px_rgba(74,222,128,0.75)]' : 'bg-slate-600'}`} />
+                                <h3 className="text-white font-bold tracking-tight">Script Preview & Verification</h3>
+                                <span className={`rounded-full border px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider ${formData.adsenseEnabled ? 'border-green-500/30 text-green-300 bg-green-500/10' : 'border-slate-700 text-slate-500 bg-slate-900'}`}>
+                                    {formData.adsenseEnabled ? 'Head Injection On' : 'Head Injection Off'}
+                                </span>
+                            </div>
+                            <p className="text-sm leading-6 text-slate-300">
+                                Enabling Google AdSense globally injects the ownership verification and auto-ads script into the HTML head on every public page using the saved Master Client ID.
+                            </p>
+                            <p className="mt-2 text-sm leading-6 text-slate-400">
+                                Turning it off removes the script tag and stops site-wide AdSense loading after the configuration is saved.
+                            </p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3 text-xs font-mono text-slate-400 sm:min-w-[260px]">
+                            <div className="rounded-lg border border-white/5 bg-slate-900/80 p-3">
+                                <span className="block text-slate-500 uppercase tracking-wider">Scope</span>
+                                <span className="mt-1 block text-green-300">Site head</span>
+                            </div>
+                            <div className="rounded-lg border border-white/5 bg-slate-900/80 p-3">
+                                <span className="block text-slate-500 uppercase tracking-wider">Mode</span>
+                                <span className="mt-1 block text-green-300">Auto ads</span>
+                            </div>
+                        </div>
+                    </div>
+                    <pre className="m-0 overflow-x-auto border-t border-white/5 bg-black/40 p-5 text-xs leading-6 text-green-200">
+                        <code>{adsenseScriptPreview}</code>
+                    </pre>
+                    {!formData.clientId.trim() && (
+                        <div className="border-t border-amber-500/20 bg-amber-500/10 px-5 py-3 text-xs text-amber-200">
+                            Add a Master Client ID to replace the placeholder before enabling verification on the live site.
+                        </div>
+                    )}
                 </div>
             </div>
 
