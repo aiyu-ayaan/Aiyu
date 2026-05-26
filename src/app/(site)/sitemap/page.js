@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getPublishedBlogSlugs, getProjectsData, getDeploymentsData, getConfigData } from "@/lib/dataFetchers";
 import { getSiteUrl } from "@/lib/siteUrl";
+import { getProjectSlug, getDeploymentSlug } from "@/lib/contentSlugs";
 
 export const revalidate = 3600;
 
@@ -65,26 +66,32 @@ export default async function SitemapPage() {
                 <section>
                     <h2 className="mb-4 text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Apps & Deployments</h2>
                     <ul className="space-y-2">
-                        {apps?.map(app => (
-                            <li key={app.slug}>
-                                <Link href={`/apps/${app.slug}`} className="hover:underline" style={{ color: 'var(--text-secondary)' }}>
-                                    {app.name}
-                                </Link>
-                            </li>
-                        ))}
+                        {apps?.map(app => {
+                            const slug = getDeploymentSlug(app);
+                            return (
+                                <li key={slug}>
+                                    <Link href={`/apps/${slug}`} className="hover:underline" style={{ color: 'var(--text-secondary)' }}>
+                                        {app.name}
+                                    </Link>
+                                </li>
+                            );
+                        })}
                     </ul>
                 </section>
 
                 <section>
                     <h2 className="mb-4 text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Projects</h2>
                     <ul className="space-y-2">
-                        {projects?.map(project => (
-                            <li key={project.slug}>
-                                <Link href={`/projects/${project.slug}`} className="hover:underline" style={{ color: 'var(--text-secondary)' }}>
-                                    {project.name}
-                                </Link>
-                            </li>
-                        ))}
+                        {projects?.map(project => {
+                            const slug = getProjectSlug(project);
+                            return (
+                                <li key={slug}>
+                                    <Link href={`/projects/${slug}`} className="hover:underline" style={{ color: 'var(--text-secondary)' }}>
+                                        {project.name}
+                                    </Link>
+                                </li>
+                            );
+                        })}
                     </ul>
                 </section>
 
