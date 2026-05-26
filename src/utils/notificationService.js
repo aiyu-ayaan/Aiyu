@@ -1,6 +1,21 @@
 import dbConnect from '@/lib/db';
 import NotificationConfig from '@/models/NotificationConfig';
 
+// Safely encodes HTTP headers containing unicode characters using MIME Base64 (RFC 2047) to avoid WHATWG fetch ByteString TypeErrors
+function encodeMimeHeader(str) {
+    if (!str) return '';
+    let isAscii = true;
+    for (let i = 0; i < str.length; i++) {
+        if (str.charCodeAt(i) > 127) {
+            isAscii = false;
+            break;
+        }
+    }
+    if (isAscii) return str;
+    const base64 = Buffer.from(str, 'utf-8').toString('base64');
+    return `=?utf-8?B?${base64}?=`;
+}
+
 /**
  * Sends a notification across all enabled channels (ntfy, telegram, discord)
  * @param {Object} payload
@@ -29,7 +44,7 @@ export async function sendNotification({ title, message, priority = '3', tags = 
             
             const url = `${server.replace(/\/$/, '')}/${topic}`;
             const headers = {
-                'Title': title,
+                'Title': encodeMimeHeader(title),
                 'Priority': priority,
                 'Tags': tags
             };

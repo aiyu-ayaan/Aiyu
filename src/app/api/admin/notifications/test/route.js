@@ -1,6 +1,21 @@
 import { NextResponse } from 'next/server';
 import { withAuth } from '@/middleware/auth';
 
+// Safely encodes HTTP headers containing unicode characters using MIME Base64 (RFC 2047) to avoid WHATWG fetch ByteString TypeErrors
+function encodeMimeHeader(str) {
+    if (!str) return '';
+    let isAscii = true;
+    for (let i = 0; i < str.length; i++) {
+        if (str.charCodeAt(i) > 127) {
+            isAscii = false;
+            break;
+        }
+    }
+    if (isAscii) return str;
+    const base64 = Buffer.from(str, 'utf-8').toString('base64');
+    return `=?utf-8?B?${base64}?=`;
+}
+
 // POST: Dispatch a direct live test notification without saving to DB first!
 async function testNotification(request) {
     try {
@@ -17,7 +32,7 @@ async function testNotification(request) {
             const server = ntfy.serverUrl || 'https://ntfy.sh';
             const url = `${server.replace(/\/$/, '')}/${ntfy.topic}`;
             const headers = {
-                'Title': title,
+                'Title': encodeMimeHeader(title),
                 'Priority': '4',
                 'Tags': 'bell,tada,partying_face'
             };
