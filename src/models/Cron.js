@@ -1,0 +1,56 @@
+import mongoose from 'mongoose';
+
+const CronSchema = new mongoose.Schema({
+    name: {
+        type: String,
+        required: true,
+        trim: true
+    },
+    type: {
+        type: String,
+        enum: ['system', 'user'],
+        required: true,
+        default: 'user'
+    },
+    schedule: {
+        type: String,
+        required: true,
+        default: '0 0 * * *'
+    },
+    enabled: {
+        type: Boolean,
+        required: true,
+        default: true
+    },
+    action: {
+        type: String,
+        required: true,
+        enum: ['clean_unreferenced', 'migrate_webp', 'webhook']
+    },
+    webhookUrl: {
+        type: String,
+        trim: true,
+        required: function() { return this.action === 'webhook'; }
+    },
+    webhookMethod: {
+        type: String,
+        enum: ['GET', 'POST'],
+        default: 'POST',
+        required: function() { return this.action === 'webhook'; }
+    },
+    lastRun: {
+        type: Date
+    },
+    lastRunStatus: {
+        type: String,
+        enum: ['success', 'failure']
+    },
+    lastRunLog: {
+        type: String
+    },
+    nextRun: {
+        type: Date
+    }
+}, { timestamps: true });
+
+export default mongoose.models.Cron || mongoose.model('Cron', CronSchema);
