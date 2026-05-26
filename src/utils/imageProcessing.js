@@ -213,16 +213,14 @@ export async function processUploadedImage(buffer) {
 
         const metadata = await image.metadata();
 
-        // Check if conversion is needed (HEIC/HEIF or very large images)
-        // Note: metadata.format will be 'jpeg' if we converted via heic-convert
-        const isHeicOriginal = metadata.format === 'heic' || metadata.format === 'heif' || isHeic(buffer);
         const isHuge = metadata.width > 2500 || metadata.height > 2500;
+        const isWebp = metadata.format === 'webp';
 
-        if (!isHeicOriginal && !isHuge) {
-            // Return original if no processing needed
+        if (isWebp && !isHuge) {
+            // Return original if already webp and no resizing needed
             return {
                 buffer,
-                format: metadata.format,
+                format: 'webp',
                 width: metadata.width,
                 height: metadata.height
             };
