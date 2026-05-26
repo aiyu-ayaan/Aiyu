@@ -36,6 +36,15 @@ async function dbConnect() {
 
   try {
     cached.conn = await cached.promise;
+    
+    // Dynamically initialize the background cron service exactly once on server-side
+    if (typeof window === 'undefined' && !global.cronIntervalStarted) {
+      import('@/utils/cronRunner').then(({ initCronRunner }) => {
+        initCronRunner().catch(err => console.error('[CRON RUNNER ERROR] Failed to start service:', err));
+      }).catch(err => {
+        console.error('[CRON RUNNER ERROR] Failed to load module:', err);
+      });
+    }
   } catch (e) {
     cached.promise = null;
     throw e;
