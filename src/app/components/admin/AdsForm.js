@@ -12,6 +12,21 @@ const AD_TYPES = [
     { value: 'multiplex', label: 'Multiplex Ad' }
 ];
 
+const ADSENSE_CLIENT_PLACEHOLDER = 'ca-pub-XXXXXXXXXXXXXXXX';
+
+const buildAdsenseScript = (clientId) => `<script
+  async
+  src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${clientId.trim() || ADSENSE_CLIENT_PLACEHOLDER}"
+  crossorigin="anonymous"
+></script>`;
+
+const extractClientIdFromScript = (scriptValue) => {
+    const clientMatch = scriptValue.match(/[?&]client=(ca-pub-[A-Za-z0-9_-]+)/);
+    if (clientMatch?.[1]) return clientMatch[1];
+
+    return scriptValue.match(/\bca-pub-[A-Za-z0-9_-]+\b/)?.[0] || '';
+};
+
 const AdsForm = () => {
     const router = useRouter();
     const [formData, setFormData] = useState({
@@ -30,6 +45,7 @@ const AdsForm = () => {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
     const [notification, setNotification] = useState(null);
+    const [scriptDraft, setScriptDraft] = useState(buildAdsenseScript(''));
 
     useEffect(() => {
         fetchData();
@@ -41,9 +57,10 @@ const AdsForm = () => {
             if (res.ok) {
                 const data = await res.json();
                 if (data) {
+                    const nextClientId = data.clientId || '';
                     setFormData({
                         adsenseEnabled: data.adsenseEnabled || false,
-                        clientId: data.clientId || '',
+                        clientId: nextClientId,
                         placements: {
                             top: data.placements?.top || { enabled: false, slotId: '', adType: 'display', adLayoutKey: '' },
                             middle: data.placements?.middle || { enabled: false, slotId: '', adType: 'display', adLayoutKey: '' },
@@ -52,6 +69,7 @@ const AdsForm = () => {
                             footer: data.placements?.footer || { enabled: false, slotId: '', adType: 'display', adLayoutKey: '' }
                         }
                     });
+                    setScriptDraft(buildAdsenseScript(nextClientId));
                 }
             }
         } catch (err) {
@@ -63,10 +81,33 @@ const AdsForm = () => {
 
     const handleGlobalChange = (e) => {
         const { name, value, type, checked } = e.target;
+        const nextValue = type === 'checkbox' ? checked : value;
         setFormData((prev) => ({
             ...prev,
-            [name]: type === 'checkbox' ? checked : value
+            [name]: nextValue
         }));
+
+        if (name === 'clientId') {
+            setScriptDraft(buildAdsenseScript(value));
+        }
+    };
+
+    const handleScriptDraftChange = (e) => {
+        const nextScript = e.target.value;
+        const nextClientId = extractClientIdFromScript(nextScript);
+
+        setScriptDraft(nextScript);
+
+        if (nextClientId) {
+            setFormData((prev) => ({
+                ...prev,
+                clientId: nextClientId
+            }));
+        }
+    };
+
+    const resetScriptDraft = () => {
+        setScriptDraft(buildAdsenseScript(formData.clientId));
     };
 
     const handlePlacementChange = (e, key) => {
@@ -143,12 +184,8 @@ const AdsForm = () => {
     };
 
     const activePlacement = formData.placements[activeSlot];
-    const scriptPreviewClientId = formData.clientId.trim() || 'ca-pub-XXXXXXXXXXXXXXXX';
-    const adsenseScriptPreview = `<script
-  async
-  src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${scriptPreviewClientId}"
-  crossorigin="anonymous"
-></script>`;
+    const scriptDraftClientId = extractClientIdFromScript(scriptDraft);
+    const isScriptDraftSynced = scriptDraftClientId && scriptDraftClientId === formData.clientId.trim();
 
     return (
         <form onSubmit={handleSubmit} className="space-y-8">
@@ -209,9 +246,36 @@ const AdsForm = () => {
                             </div>
                         </div>
                     </div>
-                    <pre className="m-0 overflow-x-auto border-t border-white/5 bg-black/40 p-5 text-xs leading-6 text-green-200">
-                        <code>{adsenseScriptPreview}</code>
-                    </pre>
+                    <div className="border-t border-white/5 bg-black/40 p-5">
+                        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                            <label htmlFor="adsenseScriptDraft" className="text-xs font-mono uppercase tracking-wider text-slate-400">
+                                Editable Script
+                            </label>
+                            <div className="flex items-center gap-3">
+                                <span className={`text-[10px] font-mono uppercase tracking-wider ${isScriptDraftSynced ? 'text-green-300' : 'text-amber-300'}`}>
+                                    {isScriptDraftSynced ? 'Synced to Client ID' : 'Waiting for ca-pub ID'}
+                                </span>
+                                <button
+                                    type="button"
+                                    onClick={resetScriptDraft}
+                                    className="rounded-md border border-white/10 bg-slate-900 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-300 transition hover:border-green-500/40 hover:text-green-300"
+                                >
+                                    Reset
+                                </button>
+                            </div>
+                        </div>
+                        <textarea
+                            id="adsenseScriptDraft"
+                            value={scriptDraft}
+                            onChange={handleScriptDraftChange}
+                            spellCheck="false"
+                            rows={6}
+                            className="min-h-[150px] w-full resize-y rounded-lg border border-green-500/20 bg-slate-950 p-4 font-mono text-xs leading-6 text-green-200 outline-none transition focus:border-green-400/60 focus:ring-1 focus:ring-green-500/40"
+                        />
+                        <p className="mt-3 text-xs leading-5 text-slate-400">
+                            Paste or edit the Google AdSense script here. When a <span className="font-mono text-green-300">ca-pub-</span> client ID is detected, it updates the Master Client ID field above.
+                        </p>
+                    </div>
                     {!formData.clientId.trim() && (
                         <div className="border-t border-amber-500/20 bg-amber-500/10 px-5 py-3 text-xs text-amber-200">
                             Add a Master Client ID to replace the placeholder before enabling verification on the live site.
