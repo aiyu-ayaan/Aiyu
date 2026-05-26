@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import ContactMessage from '@/models/ContactMessage';
 import Config from '@/models/Config';
+import NotificationConfig from '@/models/NotificationConfig';
+import { sendNotification } from '@/utils/notificationService';
 
 export async function POST(request) {
     try {
@@ -22,6 +24,24 @@ export async function POST(request) {
             email,
             message,
         });
+
+        // 1.5. Dispatch Notification Integrations if enabled
+        try {
+            const notifConfig = await NotificationConfig.findOne({});
+            if (notifConfig && notifConfig.enabled && notifConfig.notifyOnContactMessage) {
+                const title = `📧 New Contact Message: ${name}`;
+                const text = `From: ${name} <${email}>\n\nMessage:\n${message}`;
+                await sendNotification({
+                    title,
+                    message: text,
+                    priority: '4', // High priority
+                    tags: 'email,envelope,incoming_envelope'
+                });
+                console.log('✅ Contact form notification dispatched successfully.');
+            }
+        } catch (notifErr) {
+            console.error('❌ Failed to trigger contact form notifications:', notifErr.message);
+        }
 
         // 2. Check for n8n Webhook and forward if exists
         const config = await Config.findOne().lean();

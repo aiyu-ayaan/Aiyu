@@ -1,6 +1,7 @@
 import dbConnect from '@/lib/db';
 import Cron from '@/models/Cron';
 import { executeUnreferencedCleanup, executeWebPMigration } from '@/lib/storageAudit';
+import { sendNotification } from './notificationService';
 
 function parseCronField(field, min, max) {
     if (field === '*') return Array.from({ length: max - min + 1 }, (_, i) => min + i);
@@ -212,6 +213,27 @@ export async function executeCronJob(job) {
             nextRun
         });
         console.log(`[CRON SERVICE] Finished job: ${job.name} (${status})`);
+
+        // Send Notification if linked & enabled
+        if (job.notificationEnabled) {
+            const shouldNotify = 
+                job.notificationOn === 'always' ||
+                (job.notificationOn === 'success' && status === 'success') ||
+                (job.notificationOn === 'failure' && status === 'failure');
+                
+            if (shouldNotify) {
+                const emoji = status === 'success' ? '✅' : '❌';
+                const tag = status === 'success' ? 'white_check_mark,success' : 'x,failure';
+                sendNotification({
+                    title: `${emoji} Cron Job ${status.toUpperCase()}: ${job.name}`,
+                    message: `Task: ${job.name}\nStatus: ${status.toUpperCase()}\n\nLogs:\n${logOutput.slice(0, 1000)}`,
+                    priority: status === 'success' ? '3' : '4',
+                    tags: tag
+                }).catch(notifyErr => {
+                    console.error('[CRON SERVICE] Failed to dispatch cron notification:', notifyErr);
+                });
+            }
+        }
     } catch (updateErr) {
         console.error('[CRON SERVICE] Failed to update job run logs:', updateErr);
     }
