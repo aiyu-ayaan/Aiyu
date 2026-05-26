@@ -1,5 +1,48 @@
 # Changelog
 
+## [3.10.0](https://github.com/aiyu-ayaan/Aiyu/compare/v3.9.2...v3.10.0) (2026-05-26)
+
+### Features
+
+* feat(ads): make adsense script preview editable
+* feat(ads): inject adsense script from admin settings
+* feat(contact): implement redesigned contact settings dashboard with side-by-side push and webhook routing cards
+* feat(contact): add n8nWebhookEnabled property to config model and update contact API to support dual routing
+* feat(notification): implement visual cron job linking and fallback configure alert
+* feat(notification): implement visual notification integration dashboard UI
+* feat(notification): implement direct validation test route
+* feat(notification): register Notification menu option in admin dashboard
+* feat(notification): implement notification dispatch service and config REST API
+* feat(notification): create NotificationConfig database schema and extend Cron schema
+* feat(cron): implement visual cron builder and real-time human-readable translations
+* feat(cron): implement high-fidelity task scheduler administration dashboard UI
+* feat(cron): register Cron Jobs task scheduler module on admin homepage dashboard
+* feat(cron): implement CRUD and manual run API endpoints for task scheduling
+* feat(cron): initialize cron background scheduler inside database connection trigger
+* feat(cron): implement lightweight cron engine and background runner
+* feat(cron): refactor and share core clean/migrate logic into storageAudit utility
+* feat(cron): create Cron database schema definition
+* feat(storage): build detailed pre-migration preview audit dialog showing affected files and db records
+* feat(storage): implement get method for pre-migration dry-run/preview audit
+* feat(storage): implement webp migration protocol card in storage manager ui
+* feat(storage): add api route for webp image migration and database replacement
+* feat(upload): always convert uploaded images to webp format
+
+### Bug Fixes
+
+* fix(notification): safely encode headers using character code loops to comply with strict ESLint regex rules
+* fix(cron): import ShieldAlert from lucide-react in crons configuration page
+* fix(cron): decouple cron runner from database layer to resolve static compiling edge tracing
+* fix(storage): resolve syntax error inside handleMigration catch block
+* fix(seo): use 308 permanent redirect for project and app dynamic route normalization
+* fix(seo): use 308 permanent redirect for blog dynamic route normalization
+* fix(seo): update HTML sitemap to resolve projects and apps slugs dynamically
+
+### Other Changes
+
+* refactor(ads): replace script editor with header status
+* Merge branch 'master' of https://github.com/aiyu-ayaan/Aiyu
+
 ## [3.9.2](https://github.com/aiyu-ayaan/Aiyu/compare/v3.9.1...v3.9.2) (2026-05-14)
 
 ### Features
