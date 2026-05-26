@@ -94,7 +94,8 @@ export async function initCronRunner() {
                 type: 'system',
                 schedule: '0 2 * * *', // Daily at 2:00 AM
                 enabled: true,
-                action: 'clean_unreferenced'
+                action: 'clean_unreferenced',
+                nextRun: getNextCronRun('0 2 * * *', new Date())
             });
             console.log('[CRON SERVICE] Seeded: Unreferenced Uploads Cleanup');
         }
@@ -106,12 +107,29 @@ export async function initCronRunner() {
                 type: 'system',
                 schedule: '0 3 * * *', // Daily at 3:00 AM
                 enabled: true,
-                action: 'migrate_webp'
+                action: 'migrate_webp',
+                nextRun: getNextCronRun('0 3 * * *', new Date())
             });
             console.log('[CRON SERVICE] Seeded: WebP Image Migration');
         }
+
+        // Self-heal and recalculate missing or outdated nextRun timestamps
+        const now = new Date();
+        const jobsToHeal = await Cron.find({
+            enabled: true,
+            $or: [
+                { nextRun: null },
+                { nextRun: { $exists: false } },
+                { nextRun: { $lt: now } }
+            ]
+        });
+        for (const job of jobsToHeal) {
+            job.nextRun = getNextCronRun(job.schedule, now);
+            await job.save();
+            console.log(`[CRON SERVICE] Self-healed nextRun for task: ${job.name} -> ${job.nextRun}`);
+        }
     } catch (err) {
-        console.error('[CRON SERVICE] Failed to seed system jobs:', err);
+        console.error('[CRON SERVICE] Failed to seed or self-heal system jobs:', err);
     }
 
     // Run due cron jobs check immediately on start, then every 60s

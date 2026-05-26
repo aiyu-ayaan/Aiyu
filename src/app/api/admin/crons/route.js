@@ -13,6 +13,22 @@ if (typeof window === 'undefined') {
 async function getCrons(request) {
     await dbConnect();
     try {
+        // Self-heal and recalculate missing or outdated nextRun timestamps
+        const now = new Date();
+        const jobsToHeal = await Cron.find({
+            enabled: true,
+            $or: [
+                { nextRun: null },
+                { nextRun: { $exists: false } },
+                { nextRun: { $lt: now } }
+            ]
+        });
+        
+        for (const job of jobsToHeal) {
+            job.nextRun = getNextCronRun(job.schedule, now);
+            await job.save();
+        }
+
         const crons = await Cron.find({}).sort({ type: 1, name: 1 });
         return NextResponse.json({ success: true, data: crons });
     } catch (error) {

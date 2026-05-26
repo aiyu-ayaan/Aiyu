@@ -23,6 +23,71 @@ import {
     Terminal
 } from 'lucide-react';
 
+function cronToHuman(cronExpression) {
+    if (!cronExpression) return '';
+    const fields = cronExpression.trim().split(/\s+/);
+    if (fields.length !== 5) return 'Invalid Cron Expression';
+
+    const [min, hour, dom, month, dow] = fields;
+
+    const formatTime = (h, m) => {
+        const hh = parseInt(h, 10);
+        const mm = parseInt(m, 10);
+        const ampm = hh >= 12 ? 'PM' : 'AM';
+        const displayHour = hh % 12 === 0 ? 12 : hh % 12;
+        const displayMin = mm.toString().padStart(2, '0');
+        return `${displayHour}:${displayMin} ${ampm}`;
+    };
+
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+    if (min.startsWith('*/') && hour === '*' && dom === '*' && month === '*' && dow === '*') {
+        const step = min.split('/')[1];
+        return `Every ${step} minutes`;
+    }
+
+    if (min === '*' && hour === '*' && dom === '*' && month === '*' && dow === '*') {
+        return 'Every minute';
+    }
+
+    if (hour === '*' && dom === '*' && month === '*' && dow === '*') {
+        if (min === '0') return 'Every hour on the hour';
+        return `Every hour at minute ${min}`;
+    }
+
+    if (dom === '*' && month === '*' && dow === '*') {
+        if (!isNaN(hour) && !isNaN(min)) {
+            return `Daily at ${formatTime(hour, min)}`;
+        }
+    }
+
+    if (dom === '*' && month === '*') {
+        if (!isNaN(dow) && !isNaN(hour) && !isNaN(min)) {
+            const dayNum = parseInt(dow, 10);
+            const day = dayNames[dayNum] || 'Sunday';
+            return `Weekly on ${day} at ${formatTime(hour, min)}`;
+        }
+    }
+
+    if (month === '*' && dow === '*') {
+        if (!isNaN(dom) && !isNaN(hour) && !isNaN(min)) {
+            const domNum = parseInt(dom, 10);
+            const suffix = (d) => {
+                if (d > 3 && d < 21) return 'th';
+                switch (d % 10) {
+                    case 1:  return 'st';
+                    case 2:  return 'nd';
+                    case 3:  return 'rd';
+                    default: return 'th';
+                }
+            };
+            return `Monthly on the ${domNum}${suffix(domNum)} at ${formatTime(hour, min)}`;
+        }
+    }
+
+    return `Custom Pattern (Min: ${min}, Hour: ${hour}, Day of Month: ${dom}, Month: ${month}, Day of Week: ${dow})`;
+}
+
 export default function CronJobsPage() {
     const [jobs, setJobs] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -37,6 +102,108 @@ export default function CronJobsPage() {
     const [formWebhookUrl, setFormWebhookUrl] = useState('');
     const [formWebhookMethod, setFormWebhookMethod] = useState('POST');
     const [formSubmitting, setFormSubmitting] = useState(false);
+
+    // Visual Cron Builder States
+    const [builderTab, setBuilderTab] = useState('simple'); // 'simple' | 'advanced'
+    const [freqType, setFreqType] = useState('daily'); // 'minutes' | 'hourly' | 'daily' | 'weekly' | 'monthly'
+    const [freqValMinutes, setFreqValMinutes] = useState('15');
+    const [freqValHour, setFreqValHour] = useState('2');
+    const [freqValMinute, setFreqValMinute] = useState('0');
+    const [freqValDow, setFreqValDow] = useState('0');
+    const [freqValDom, setFreqValDom] = useState('1');
+
+    const compileCronFromSimple = (type, valMin, hour, minute, dow, dom) => {
+        switch (type) {
+            case 'minutes':
+                return `*/${valMin} * * * *`;
+            case 'hourly':
+                return `${minute} * * * *`;
+            case 'daily':
+                return `${minute} ${hour} * * *`;
+            case 'weekly':
+                return `${minute} ${hour} * * ${dow}`;
+            case 'monthly':
+                return `${minute} ${hour} ${dom} * *`;
+            default:
+                return '0 0 * * *';
+        }
+    };
+
+    const parseCronToSimple = (cronStr) => {
+        if (!cronStr) return { type: 'daily', minutes: '15', hour: '2', minute: '0', dow: '0', dom: '1', matchesSimple: true };
+        const fields = cronStr.trim().split(/\s+/);
+        if (fields.length !== 5) {
+            return { type: 'daily', minutes: '15', hour: '2', minute: '0', dow: '0', dom: '1', matchesSimple: false };
+        }
+
+        const [min, hour, dom, month, dow] = fields;
+
+        // 1. Every X minutes
+        if (min.startsWith('*/') && hour === '*' && dom === '*' && month === '*' && dow === '*') {
+            const step = min.split('/')[1];
+            return { type: 'minutes', minutes: step, hour: '2', minute: '0', dow: '0', dom: '1', matchesSimple: true };
+        }
+
+        // 2. Hourly
+        if (hour === '*' && dom === '*' && month === '*' && dow === '*') {
+            return { type: 'hourly', minutes: '15', hour: '2', minute: min, dow: '0', dom: '1', matchesSimple: true };
+        }
+
+        // 3. Daily
+        if (dom === '*' && month === '*' && dow === '*') {
+            if (!isNaN(hour) && !isNaN(min)) {
+                return { type: 'daily', minutes: '15', hour, minute: min, dow: '0', dom: '1', matchesSimple: true };
+            }
+        }
+
+        // 4. Weekly
+        if (dom === '*' && month === '*') {
+            if (!isNaN(dow) && !isNaN(hour) && !isNaN(min)) {
+                return { type: 'weekly', minutes: '15', hour, minute: min, dow, dom: '1', matchesSimple: true };
+            }
+        }
+
+        // 5. Monthly
+        if (month === '*' && dow === '*') {
+            if (!isNaN(dom) && !isNaN(hour) && !isNaN(min)) {
+                return { type: 'monthly', minutes: '15', hour, minute: min, dow: '0', dom, matchesSimple: true };
+            }
+        }
+
+        return { type: 'daily', minutes: '15', hour: '2', minute: '0', dow: '0', dom: '1', matchesSimple: false };
+    };
+
+    const handleSimpleChange = (field, value) => {
+        let nextType = freqType;
+        let nextMinutes = freqValMinutes;
+        let nextHour = freqValHour;
+        let nextMinute = freqValMinute;
+        let nextDow = freqValDow;
+        let nextDom = freqValDom;
+
+        if (field === 'type') {
+            nextType = value;
+            setFreqType(value);
+        } else if (field === 'minutes') {
+            nextMinutes = value;
+            setFreqValMinutes(value);
+        } else if (field === 'hour') {
+            nextHour = value;
+            setFreqValHour(value);
+        } else if (field === 'minute') {
+            nextMinute = value;
+            setFreqValMinute(value);
+        } else if (field === 'dow') {
+            nextDow = value;
+            setFreqValDow(value);
+        } else if (field === 'dom') {
+            nextDom = value;
+            setFreqValDom(value);
+        }
+
+        const compiled = compileCronFromSimple(nextType, nextMinutes, nextHour, nextMinute, nextDow, nextDom);
+        setFormSchedule(compiled);
+    };
 
     // Logs Modal State
     const [selectedJobForLogs, setSelectedJobForLogs] = useState(null);
@@ -142,6 +309,13 @@ export default function CronJobsPage() {
         setFormSchedule('0 0 * * *');
         setFormWebhookUrl('https://');
         setFormWebhookMethod('POST');
+
+        // Initialize builder states
+        setBuilderTab('simple');
+        setFreqType('daily');
+        setFreqValHour('0');
+        setFreqValMinute('0');
+
         setShowFormModal(true);
     };
 
@@ -151,6 +325,22 @@ export default function CronJobsPage() {
         setFormSchedule(job.schedule);
         setFormWebhookUrl(job.webhookUrl || 'https://');
         setFormWebhookMethod(job.webhookMethod || 'POST');
+
+        // Parse current schedule to set builder states
+        const parsed = parseCronToSimple(job.schedule);
+        setFreqType(parsed.type);
+        setFreqValMinutes(parsed.minutes);
+        setFreqValHour(parsed.hour);
+        setFreqValMinute(parsed.minute);
+        setFreqValDow(parsed.dow);
+        setFreqValDom(parsed.dom);
+
+        if (parsed.matchesSimple) {
+            setBuilderTab('simple');
+        } else {
+            setBuilderTab('advanced');
+        }
+
         setShowFormModal(true);
     };
 
@@ -315,11 +505,13 @@ export default function CronJobsPage() {
                                                 : 'Scans public uploads directory for legacy files (.png, .jpg), optimizes them to WebP, replaces all references, and purges originals.'}
                                         </p>
 
-                                        {/* Status Meta */}
                                         <div className="mt-5 grid grid-cols-2 gap-4 border-t border-white/5 pt-4 text-xs font-mono">
                                             <div>
                                                 <span className="text-slate-500 block">Cron Interval</span>
-                                                <span className="text-slate-300">{job.schedule}</span>
+                                                <div className="flex flex-col">
+                                                    <span className="text-slate-300 font-bold">{job.schedule}</span>
+                                                    <span className="text-[10px] text-cyan-400 font-sans mt-0.5 font-semibold leading-tight">{cronToHuman(job.schedule)}</span>
+                                                </div>
                                             </div>
                                             <div>
                                                 <span className="text-slate-500 block">Next Run</span>
@@ -458,11 +650,13 @@ export default function CronJobsPage() {
                                                 </div>
                                             </div>
 
-                                            {/* Status Meta */}
                                             <div className="mt-5 grid grid-cols-2 gap-4 border-t border-white/5 pt-4 text-xs font-mono">
                                                 <div>
                                                     <span className="text-slate-500 block">Cron Interval</span>
-                                                    <span className="text-slate-300">{job.schedule}</span>
+                                                    <div className="flex flex-col">
+                                                        <span className="text-slate-300 font-bold">{job.schedule}</span>
+                                                        <span className="text-[10px] text-pink-400 font-sans mt-0.5 font-semibold leading-tight">{cronToHuman(job.schedule)}</span>
+                                                    </div>
                                                 </div>
                                                 <div>
                                                     <span className="text-slate-500 block">Next Run</span>
@@ -589,23 +783,255 @@ export default function CronJobsPage() {
                             )}
 
                             {/* Schedule expression */}
-                            <div>
-                                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-1.5">Cron Expression (5 Fields)</label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={formSchedule}
-                                    onChange={(e) => setFormSchedule(e.target.value)}
-                                    className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:border-cyan-500 font-mono outline-none transition"
-                                    placeholder="* * * * *"
-                                />
-                                {/* Helpers */}
-                                <div className="mt-2 p-3 bg-slate-950/40 rounded-xl border border-white/5 text-[11px] text-slate-500 font-mono space-y-1">
-                                    <div className="text-slate-400 font-bold uppercase tracking-wider mb-1">Common Presets:</div>
-                                    <div>• Every 5 minutes: <button type="button" onClick={() => setFormSchedule('*/5 * * * *')} className="text-cyan-400 hover:underline">*/5 * * * *</button></div>
-                                    <div>• Every hour: <button type="button" onClick={() => setFormSchedule('0 * * * *')} className="text-cyan-400 hover:underline">0 * * * *</button></div>
-                                    <div>• Daily at midnight: <button type="button" onClick={() => setFormSchedule('0 0 * * *')} className="text-cyan-400 hover:underline">0 0 * * *</button></div>
-                                    <div>• Weekly on Sunday: <button type="button" onClick={() => setFormSchedule('0 0 * * 0')} className="text-cyan-400 hover:underline">0 0 * * 0</button></div>
+                            <div className="space-y-4">
+                                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-1.5">Task Schedule Configuration</label>
+                                
+                                {/* Builder Tabs */}
+                                <div className="flex rounded-xl bg-slate-950 p-1 border border-white/5">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setBuilderTab('simple');
+                                            const compiled = compileCronFromSimple(freqType, freqValMinutes, freqValHour, freqValMinute, freqValDow, freqValDom);
+                                            setFormSchedule(compiled);
+                                        }}
+                                        className={`flex-1 text-center py-2 rounded-lg text-xs font-semibold font-mono tracking-wider transition-all duration-200 ${builderTab === 'simple' ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 shadow-md font-bold' : 'text-slate-400 hover:text-white'}`}
+                                    >
+                                        Simple Builder
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setBuilderTab('advanced')}
+                                        className={`flex-1 text-center py-2 rounded-lg text-xs font-semibold font-mono tracking-wider transition-all duration-200 ${builderTab === 'advanced' ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 shadow-md font-bold' : 'text-slate-400 hover:text-white'}`}
+                                    >
+                                        Advanced (Cron)
+                                    </button>
+                                </div>
+
+                                {/* Simple Builder Mode */}
+                                {builderTab === 'simple' && (
+                                    <div className="space-y-4 bg-slate-950/20 border border-white/5 rounded-2xl p-4">
+                                        <div>
+                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">Execute Frequency</label>
+                                            <select
+                                                value={freqType}
+                                                onChange={(e) => handleSimpleChange('type', e.target.value)}
+                                                className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:border-cyan-500 outline-none transition"
+                                            >
+                                                <option value="minutes">Every X Minutes</option>
+                                                <option value="hourly">Hourly (Once an Hour)</option>
+                                                <option value="daily">Daily (Once a Day)</option>
+                                                <option value="weekly">Weekly (Once a Week)</option>
+                                                <option value="monthly">Monthly (Once a Month)</option>
+                                            </select>
+                                        </div>
+
+                                        {/* Frequency details based on freqType */}
+                                        {freqType === 'minutes' && (
+                                            <div>
+                                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">Minutes Interval</label>
+                                                <select
+                                                    value={freqValMinutes}
+                                                    onChange={(e) => handleSimpleChange('minutes', e.target.value)}
+                                                    className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:border-cyan-500 outline-none transition"
+                                                >
+                                                    <option value="1">Every 1 Minute</option>
+                                                    <option value="5">Every 5 Minutes</option>
+                                                    <option value="10">Every 10 Minutes</option>
+                                                    <option value="15">Every 15 Minutes</option>
+                                                    <option value="30">Every 30 Minutes</option>
+                                                    <option value="45">Every 45 Minutes</option>
+                                                </select>
+                                            </div>
+                                        )}
+
+                                        {freqType === 'hourly' && (
+                                            <div>
+                                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">At Minute of the Hour</label>
+                                                <select
+                                                    value={freqValMinute}
+                                                    onChange={(e) => handleSimpleChange('minute', e.target.value)}
+                                                    className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:border-cyan-500 outline-none transition font-mono"
+                                                >
+                                                    {Array.from({ length: 60 }, (_, i) => (
+                                                        <option key={i} value={i}>Minute {i.toString().padStart(2, '0')}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        )}
+
+                                        {freqType === 'daily' && (
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">Hour (24h)</label>
+                                                    <select
+                                                        value={freqValHour}
+                                                        onChange={(e) => handleSimpleChange('hour', e.target.value)}
+                                                        className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:border-cyan-500 outline-none transition font-mono"
+                                                    >
+                                                        {Array.from({ length: 24 }, (_, i) => {
+                                                            const ampm = i >= 12 ? 'PM' : 'AM';
+                                                            const displayHour = i % 12 === 0 ? 12 : i % 12;
+                                                            return (
+                                                                <option key={i} value={i}>{i.toString().padStart(2, '0')} : 00 ({displayHour} {ampm})</option>
+                                                            );
+                                                        })}
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">Minute</label>
+                                                    <select
+                                                        value={freqValMinute}
+                                                        onChange={(e) => handleSimpleChange('minute', e.target.value)}
+                                                        className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:border-cyan-500 outline-none transition font-mono"
+                                                    >
+                                                        {Array.from({ length: 60 }, (_, i) => (
+                                                            <option key={i} value={i}>{i.toString().padStart(2, '0')}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {freqType === 'weekly' && (
+                                            <div className="space-y-4">
+                                                <div>
+                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">Day of Week</label>
+                                                    <select
+                                                        value={freqValDow}
+                                                        onChange={(e) => handleSimpleChange('dow', e.target.value)}
+                                                        className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:border-cyan-500 outline-none transition"
+                                                    >
+                                                        <option value="0">Sunday</option>
+                                                        <option value="1">Monday</option>
+                                                        <option value="2">Tuesday</option>
+                                                        <option value="3">Wednesday</option>
+                                                        <option value="4">Thursday</option>
+                                                        <option value="5">Friday</option>
+                                                        <option value="6">Saturday</option>
+                                                    </select>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">Hour (24h)</label>
+                                                        <select
+                                                            value={freqValHour}
+                                                            onChange={(e) => handleSimpleChange('hour', e.target.value)}
+                                                            className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:border-cyan-500 outline-none transition font-mono"
+                                                        >
+                                                            {Array.from({ length: 24 }, (_, i) => {
+                                                                const ampm = i >= 12 ? 'PM' : 'AM';
+                                                                const displayHour = i % 12 === 0 ? 12 : i % 12;
+                                                                return (
+                                                                    <option key={i} value={i}>{i.toString().padStart(2, '0')} : 00 ({displayHour} {ampm})</option>
+                                                                );
+                                                            })}
+                                                        </select>
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">Minute</label>
+                                                        <select
+                                                            value={freqValMinute}
+                                                            onChange={(e) => handleSimpleChange('minute', e.target.value)}
+                                                            className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:border-cyan-500 outline-none transition font-mono"
+                                                        >
+                                                            {Array.from({ length: 60 }, (_, i) => (
+                                                                <option key={i} value={i}>{i.toString().padStart(2, '0')}</option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {freqType === 'monthly' && (
+                                            <div className="space-y-4">
+                                                <div>
+                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">Day of Month</label>
+                                                    <select
+                                                        value={freqValDom}
+                                                        onChange={(e) => handleSimpleChange('dom', e.target.value)}
+                                                        className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:border-cyan-500 outline-none transition font-mono"
+                                                    >
+                                                        {Array.from({ length: 31 }, (_, i) => (
+                                                            <option key={i + 1} value={i + 1}>Day {i + 1}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">Hour (24h)</label>
+                                                        <select
+                                                            value={freqValHour}
+                                                            onChange={(e) => handleSimpleChange('hour', e.target.value)}
+                                                            className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:border-cyan-500 outline-none transition font-mono"
+                                                        >
+                                                            {Array.from({ length: 24 }, (_, i) => {
+                                                                const ampm = i >= 12 ? 'PM' : 'AM';
+                                                                const displayHour = i % 12 === 0 ? 12 : i % 12;
+                                                                return (
+                                                                    <option key={i} value={i}>{i.toString().padStart(2, '0')} : 00 ({displayHour} {ampm})</option>
+                                                                );
+                                                            })}
+                                                        </select>
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">Minute</label>
+                                                        <select
+                                                            value={freqValMinute}
+                                                            onChange={(e) => handleSimpleChange('minute', e.target.value)}
+                                                            className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:border-cyan-500 outline-none transition font-mono"
+                                                        >
+                                                            {Array.from({ length: 60 }, (_, i) => (
+                                                                <option key={i} value={i}>{i.toString().padStart(2, '0')}</option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Advanced Cron Mode */}
+                                {builderTab === 'advanced' && (
+                                    <div className="space-y-4 bg-slate-950/20 border border-white/5 rounded-2xl p-4">
+                                        <div>
+                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">Cron Expression (5 Fields)</label>
+                                            <input
+                                                type="text"
+                                                required
+                                                value={formSchedule}
+                                                onChange={(e) => setFormSchedule(e.target.value)}
+                                                className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:border-cyan-500 font-mono outline-none transition"
+                                                placeholder="* * * * *"
+                                            />
+                                        </div>
+                                        {/* Presets */}
+                                        <div className="p-3 bg-slate-950/40 rounded-xl border border-white/5 text-[11px] text-slate-500 font-mono space-y-1">
+                                            <div className="text-slate-400 font-bold uppercase tracking-wider mb-1">Common Presets:</div>
+                                            <div className="grid grid-cols-2 gap-2 mt-1">
+                                                <button type="button" onClick={() => setFormSchedule('*/5 * * * *')} className="px-2.5 py-1 bg-white/5 hover:bg-cyan-500/10 border border-white/5 hover:border-cyan-500/20 text-cyan-400 hover:text-cyan-300 rounded text-left transition truncate">• Every 5 min</button>
+                                                <button type="button" onClick={() => setFormSchedule('0 * * * *')} className="px-2.5 py-1 bg-white/5 hover:bg-cyan-500/10 border border-white/5 hover:border-cyan-500/20 text-cyan-400 hover:text-cyan-300 rounded text-left transition truncate">• Every hour</button>
+                                                <button type="button" onClick={() => setFormSchedule('0 0 * * *')} className="px-2.5 py-1 bg-white/5 hover:bg-cyan-500/10 border border-white/5 hover:border-cyan-500/20 text-cyan-400 hover:text-cyan-300 rounded text-left transition truncate">• Daily at midnight</button>
+                                                <button type="button" onClick={() => setFormSchedule('0 0 * * 0')} className="px-2.5 py-1 bg-white/5 hover:bg-cyan-500/10 border border-white/5 hover:border-cyan-500/20 text-cyan-400 hover:text-cyan-300 rounded text-left transition truncate">• Weekly on Sunday</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Realtime Human Explanation Banner */}
+                                <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-start gap-3 transition-all duration-300">
+                                    <Clock size={16} className="text-emerald-400 shrink-0 mt-0.5" />
+                                    <div>
+                                        <div className="text-[10px] font-mono uppercase tracking-widest text-emerald-400 font-bold mb-0.5">Execution Summary</div>
+                                        <div className="text-sm font-semibold text-white leading-relaxed">
+                                            {cronToHuman(formSchedule)}
+                                        </div>
+                                        <div className="text-[10px] font-mono text-slate-500 mt-1">
+                                            Compiled Expression: <span className="text-cyan-400 font-bold">{formSchedule}</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
