@@ -1,6 +1,6 @@
 import BlogDetailClient from '../../../components/blogs/BlogDetailClient';
 import { cache } from 'react';
-import { notFound, redirect } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import { getBlogById, getConfigData } from '@/lib/dataFetchers';
 import { getAdsData } from '@/lib/adsDataFetcher';
 import { generateBlogSchema } from '@/app/schema';
@@ -107,7 +107,7 @@ export default async function BlogDetailPage({ params }) {
 
     const canonicalSlug = blog?.slug || identifier;
     if (identifier !== canonicalSlug) {
-        redirect(`/blogs/${canonicalSlug}`);
+        permanentRedirect(`/blogs/${canonicalSlug}`);
     }
 
     const baseUrl = getBaseUrl();
