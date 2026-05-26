@@ -133,25 +133,17 @@ Access the admin panel at `/admin` to manage everything without touching code:
 
 ## Screenshots
 
-### Home Page
+| Page | Desktop Light Mode (1920x1080) | Desktop Dark Mode (1920x1080) | Mobile Light Mode (430x932) | Mobile Dark Mode (430x932) |
+|---|---|---|---|---|
+| **Home Page** | [![Desktop Light](public/screenshots/desktop-light-home.png)](public/screenshots/desktop-light-home.png) | [![Desktop Dark](public/screenshots/desktop-dark-home.png)](public/screenshots/desktop-dark-home.png) | [![Mobile Light](public/screenshots/mobile-light-home.png)](public/screenshots/mobile-light-home.png) | [![Mobile Dark](public/screenshots/mobile-dark-home.png)](public/screenshots/mobile-dark-home.png) |
+| **About Me** | [![Desktop Light](public/screenshots/desktop-light-about.png)](public/screenshots/desktop-light-about.png) | [![Desktop Dark](public/screenshots/desktop-dark-about.png)](public/screenshots/desktop-dark-about.png) | [![Mobile Light](public/screenshots/mobile-light-about.png)](public/screenshots/mobile-light-about.png) | [![Mobile Dark](public/screenshots/mobile-dark-about.png)](public/screenshots/mobile-dark-about.png) |
+| **Projects Showcase** | [![Desktop Light](public/screenshots/desktop-light-projects.png)](public/screenshots/desktop-light-projects.png) | [![Desktop Dark](public/screenshots/desktop-dark-projects.png)](public/screenshots/desktop-dark-projects.png) | [![Mobile Light](public/screenshots/mobile-light-projects.png)](public/screenshots/mobile-light-projects.png) | [![Mobile Dark](public/screenshots/mobile-dark-projects.png)](public/screenshots/mobile-dark-projects.png) |
+| **Live Deployments / Apps** | [![Desktop Light](public/screenshots/desktop-light-apps.png)](public/screenshots/desktop-light-apps.png) | [![Desktop Dark](public/screenshots/desktop-dark-apps.png)](public/screenshots/desktop-dark-apps.png) | [![Mobile Light](public/screenshots/mobile-light-apps.png)](public/screenshots/mobile-light-apps.png) | [![Mobile Dark](public/screenshots/mobile-dark-apps.png)](public/screenshots/mobile-dark-apps.png) |
+| **Blogs Page** | [![Desktop Light](public/screenshots/desktop-light-blogs.png)](public/screenshots/desktop-light-blogs.png) | [![Desktop Dark](public/screenshots/desktop-dark-blogs.png)](public/screenshots/desktop-dark-blogs.png) | [![Mobile Light](public/screenshots/mobile-light-blogs.png)](public/screenshots/mobile-light-blogs.png) | [![Mobile Dark](public/screenshots/mobile-dark-blogs.png)](public/screenshots/mobile-dark-blogs.png) |
+| **Gallery (Certificates)** | [![Desktop Light](public/screenshots/desktop-light-gallery.png)](public/screenshots/desktop-light-gallery.png) | [![Desktop Dark](public/screenshots/desktop-dark-gallery.png)](public/screenshots/desktop-dark-gallery.png) | [![Mobile Light](public/screenshots/mobile-light-gallery.png)](public/screenshots/mobile-light-gallery.png) | [![Mobile Dark](public/screenshots/mobile-dark-gallery.png)](public/screenshots/mobile-dark-gallery.png) |
+| **GitHub Activity** | [![Desktop Light](public/screenshots/desktop-light-github.png)](public/screenshots/desktop-light-github.png) | [![Desktop Dark](public/screenshots/desktop-dark-github.png)](public/screenshots/desktop-dark-github.png) | [![Mobile Light](public/screenshots/mobile-light-github.png)](public/screenshots/mobile-light-github.png) | [![Mobile Dark](public/screenshots/mobile-dark-github.png)](public/screenshots/mobile-dark-github.png) |
+| **Contact Us** | [![Desktop Light](public/screenshots/desktop-light-contact.png)](public/screenshots/desktop-light-contact.png) | [![Desktop Dark](public/screenshots/desktop-dark-contact.png)](public/screenshots/desktop-dark-contact.png) | [![Mobile Light](public/screenshots/mobile-light-contact.png)](public/screenshots/mobile-light-contact.png) | [![Mobile Dark](public/screenshots/mobile-dark-contact.png)](public/screenshots/mobile-dark-contact.png) |
 
-![Home Page](public/screenshots/home.png)
-
-### About Me
-
-![About Me](public/screenshots/about.png)
-
-### Projects
-
-![Projects](public/screenshots/projects.png)
-
-### Contact Us
-
-![Contact Us](public/screenshots/contact.png)
-
-### Admin Panel (Homepage)
-
-![Admin Panel](public/screenshots/admin.png)
 
 ## 🛠️ Tech Stack
 
@@ -1102,6 +1094,10 @@ npm run dev              # Start development server with Turbopack
 npm run build            # Build production bundle
 npm run start            # Start production server
 npm run lint             # Run ESLint
+
+# Screenshots Capture & Playwright Automation
+npm run screenshots:install  # Install Playwright browser dependencies (Chromium)
+npm run screenshots:capture  # Seed DB, start Next.js dev server, capture all screenshots, generate README table, and clean up
 
 # Docker Operations (default: docker-compose.yml)
 npm run docker:build     # Build images using docker-compose.yml

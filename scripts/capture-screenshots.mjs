@@ -107,7 +107,7 @@ async function main() {
       // ==========================================
       console.log(`  -> Desktop Light Mode (1920x1080)`);
       await page.setViewportSize({ width: 1920, height: 1080 });
-      await page.goto(url, { waitUntil: 'networkidle' });
+      await page.goto(url, { waitUntil: 'load' });
 
       // Inject localStorage and document theme settings
       await page.evaluate(() => {
@@ -117,7 +117,7 @@ async function main() {
         document.documentElement.setAttribute('data-theme', 'light');
       });
       // Reload page to ensure theme logic hydrates cleanly
-      await page.reload({ waitUntil: 'networkidle' });
+      await page.reload({ waitUntil: 'load' });
       await page.waitForTimeout(2000); // Allow entry animations (framer-motion) to settle
 
       const desktopLightPath = `public/screenshots/desktop-light-${route.name}.png`;
@@ -134,7 +134,7 @@ async function main() {
       // ==========================================
       console.log(`  -> Desktop Dark Mode (1920x1080)`);
       await page.setViewportSize({ width: 1920, height: 1080 });
-      await page.goto(url, { waitUntil: 'networkidle' });
+      await page.goto(url, { waitUntil: 'load' });
 
       // Inject localStorage and document theme settings
       await page.evaluate(() => {
@@ -144,7 +144,7 @@ async function main() {
         document.documentElement.setAttribute('data-theme', 'dark');
       });
       // Reload page to ensure theme logic hydrates cleanly
-      await page.reload({ waitUntil: 'networkidle' });
+      await page.reload({ waitUntil: 'load' });
       await page.waitForTimeout(2000); // Allow entry animations (framer-motion) to settle
 
       const desktopDarkPath = `public/screenshots/desktop-dark-${route.name}.png`;
