@@ -126,6 +126,126 @@ function ConfirmDialog({ dialog, onClose, onConfirm, busy }) {
     );
 }
 
+function MigrationPreviewDialog({ open, onClose, onConfirm, data, busy }) {
+    if (!open || !data) {
+        return null;
+    }
+
+    const { candidates = [], totalCandidates = 0, totalReferences = 0 } = data;
+    const totalBytes = candidates.reduce((sum, c) => sum + (c.sizeBytes || 0), 0);
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
+            <div className="w-full max-w-2xl rounded-3xl border border-white/10 bg-slate-900/95 p-6 shadow-2xl flex flex-col max-h-[85vh]">
+                
+                {/* Header */}
+                <div className="mb-4 flex items-start gap-3 text-left">
+                    <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/10 p-3 text-cyan-355 shrink-0 flex items-center justify-center">
+                        <RefreshCw className="animate-spin w-6 h-6 text-cyan-400" />
+                    </div>
+                    <div>
+                        <h3 className="text-xl font-bold text-white">Pre-Migration Audit</h3>
+                        <p className="mt-1 text-sm text-slate-400">
+                            Review legacy images and affected database records before initiating the WebP optimization pipeline.
+                        </p>
+                    </div>
+                </div>
+
+                {/* Summary bar */}
+                <div className="mb-4 grid grid-cols-3 gap-3 rounded-2xl border border-white/10 bg-slate-950/60 p-4 text-center">
+                    <div>
+                        <div className="text-[10px] uppercase tracking-widest text-slate-500 font-mono font-bold">Legacy Images</div>
+                        <div className="mt-1 font-mono text-lg font-bold text-cyan-300">{totalCandidates}</div>
+                    </div>
+                    <div>
+                        <div className="text-[10px] uppercase tracking-widest text-slate-500 font-mono font-bold">Current Footprint</div>
+                        <div className="mt-1 font-mono text-lg font-bold text-pink-300">{formatBytes(totalBytes)}</div>
+                    </div>
+                    <div>
+                        <div className="text-[10px] uppercase tracking-widest text-slate-500 font-mono font-bold">DB References</div>
+                        <div className="mt-1 font-mono text-lg font-bold text-emerald-300">{totalReferences}</div>
+                    </div>
+                </div>
+
+                {/* Content List */}
+                <div className="flex-1 overflow-y-auto min-h-0 rounded-2xl border border-white/10 bg-slate-950/40 p-4 space-y-4 custom-scrollbar mb-6 text-left">
+                    {candidates.length === 0 ? (
+                        <div className="text-center py-8 text-slate-500 text-sm">
+                            No legacy images require optimization. All assets are fully optimized to WebP!
+                        </div>
+                    ) : (
+                        candidates.map((candidate) => (
+                            <div key={candidate.filename} className="border-b border-white/5 pb-3 last:border-0 last:pb-0 text-left">
+                                <div className="flex items-center gap-3">
+                                    {candidate.filename.match(/\.(jpg|jpeg|png|gif)$/i) ? (
+                                        <img src={`/uploads/${candidate.filename}`} alt="" className="h-8 w-8 rounded object-cover border border-white/10 shrink-0" />
+                                    ) : (
+                                        <div className="h-8 w-8 rounded bg-white/5 border border-white/10 flex items-center justify-center text-slate-500 font-mono text-[9px] shrink-0">
+                                            IMG
+                                        </div>
+                                    )}
+                                    <div className="truncate flex-1">
+                                        <div className="text-xs font-mono font-bold text-white truncate" title={candidate.filename}>
+                                            {candidate.filename}
+                                        </div>
+                                        <div className="text-[10px] text-slate-500 mt-0.5">
+                                            Size: {formatBytes(candidate.sizeBytes)} • {candidate.filename.includes('-thumb.') ? 'Thumbnail' : 'Original Image'}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* References Sub-list */}
+                                <div className="mt-2 pl-11 space-y-1">
+                                    <div className="text-[10px] uppercase tracking-wider text-slate-600 font-semibold font-mono mb-1">
+                                        Affected References:
+                                    </div>
+                                    {candidate.references.length === 0 ? (
+                                        <div className="text-[11px] text-slate-500 italic pl-2">
+                                            Not referenced in content (Safe disk-only conversion)
+                                        </div>
+                                    ) : (
+                                        candidate.references.map((ref, idx) => (
+                                            <div key={idx} className="flex items-center gap-2 text-[11px] text-slate-300 font-mono mt-0.5">
+                                                <span className="text-cyan-400/80 bg-cyan-950/40 border border-cyan-800/30 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase">
+                                                    {ref.model}
+                                                </span>
+                                                <span className="truncate text-slate-400 hover:text-white" title={ref.label}>
+                                                    {ref.label}
+                                                </span>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+
+                {/* Footer Buttons */}
+                <div className="flex justify-end gap-3 shrink-0">
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        disabled={busy}
+                        className="rounded-xl border border-white/10 px-4 py-2 text-sm text-slate-300 transition hover:border-white/20 hover:text-white disabled:opacity-50"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="button"
+                        onClick={onConfirm}
+                        disabled={busy || candidates.length === 0}
+                        className="rounded-xl bg-cyan-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-cyan-500 disabled:opacity-50"
+                    >
+                        {busy ? 'Processing Migration...' : 'Commence WebP Migration'}
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    );
+}
+
 function SummaryCards({ summary }) {
     const cards = [
         {
@@ -219,6 +339,9 @@ export default function StorageManager() {
     const [deleteBusy, setDeleteBusy] = useState(false);
     const [migrating, setMigrating] = useState(false);
     const [migrationResult, setMigrationResult] = useState(null);
+    const [previewData, setPreviewData] = useState(null);
+    const [showPreviewModal, setShowPreviewModal] = useState(false);
+    const [fetchingPreview, setFetchingPreview] = useState(false);
 
     const unreferencedUploads = useMemo(
         () => audit?.unreferencedUploads || [],
@@ -310,11 +433,26 @@ export default function StorageManager() {
         }
     }
 
-    async function handleMigrate() {
-        if (!confirm('Are you sure you want to initiate the WebP migration sequence? This will optimize all non-webp uploaded images and update their references in the database.')) {
-            return;
+    async function loadPreview() {
+        setFetchingPreview(true);
+        setMessage(null);
+        try {
+            const response = await fetch('/api/admin/storage/migrate');
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+                throw new Error(result.error || 'Failed to load migration preview.');
+            }
+            setPreviewData(result);
+            setShowPreviewModal(true);
+        } catch (error) {
+            setMessage({ type: 'error', text: error.message });
+        } finally {
+            setFetchingPreview(false);
         }
+    }
 
+    async function executeMigration() {
+        setShowPreviewModal(false);
         setMigrating(true);
         setMessage(null);
         setMigrationResult(null);
@@ -430,11 +568,11 @@ export default function StorageManager() {
                         <div className="mt-5">
                             <button
                                 type="button"
-                                onClick={handleMigrate}
-                                disabled={migrating}
+                                onClick={loadPreview}
+                                disabled={fetchingPreview || migrating}
                                 className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-cyan-500 disabled:opacity-50"
                             >
-                                {migrating ? 'Processing Migration...' : 'Initiate Migration Sequence'}
+                                {fetchingPreview ? 'Auditing Legacy Files...' : migrating ? 'Processing Migration...' : 'Initiate Migration Sequence'}
                             </button>
                         </div>
 
@@ -562,6 +700,14 @@ export default function StorageManager() {
                 onClose={() => !deleteBusy && setDialog(null)}
                 onConfirm={confirmDelete}
                 busy={deleteBusy}
+            />
+
+            <MigrationPreviewDialog
+                open={showPreviewModal}
+                onClose={() => setShowPreviewModal(false)}
+                onConfirm={executeMigration}
+                data={previewData}
+                busy={migrating}
             />
         </div>
     );
