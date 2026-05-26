@@ -50,6 +50,15 @@ const CronSchema = new mongoose.Schema({
     },
     nextRun: {
         type: Date
+    },
+    notificationEnabled: {
+        type: Boolean,
+        default: false
+    },
+    notificationOn: {
+        type: String,
+        enum: ['always', 'success', 'failure'],
+        default: 'always'
     }
 }, { timestamps: true });
 
