@@ -221,19 +221,19 @@ export default function CronLogsPage() {
                                                     <tr>
                                                         <td colSpan={7} className="bg-slate-950/70 px-4 py-4">
                                                             <div className="rounded-2xl border border-white/10 bg-slate-950 overflow-hidden">
-                                                                <div className="flex items-center justify-between gap-3 border-b border-white/5 px-4 py-3">
-                                                                    <div>
+                                                                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/5 px-4 py-3">
+                                                                    <div className="flex min-w-0 items-center gap-3">
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => setExpandedLogId(null)}
+                                                                            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-cyan-500/20 bg-cyan-500/10 px-3 py-1.5 text-xs font-bold text-cyan-300 transition hover:border-cyan-500/40 hover:bg-cyan-500/15"
+                                                                        >
+                                                                            Collapse
+                                                                            <ChevronDown size={13} className="rotate-180" />
+                                                                        </button>
                                                                         <div className="text-[10px] font-bold uppercase tracking-widest text-cyan-400">Full Execution Log</div>
-                                                                        <div className="font-mono text-[10px] text-slate-500">{formatDate(log.ranAt)}</div>
                                                                     </div>
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => setExpandedLogId(null)}
-                                                                        className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-1.5 text-xs font-bold text-slate-300 transition hover:border-cyan-500/30 hover:text-cyan-300"
-                                                                    >
-                                                                        Collapse
-                                                                        <ChevronDown size={13} className="rotate-180" />
-                                                                    </button>
+                                                                    <div className="font-mono text-[10px] text-slate-500">{formatDate(log.ranAt)}</div>
                                                                 </div>
                                                                 <pre className="max-h-[520px] overflow-auto whitespace-pre-wrap p-4 font-mono text-xs leading-relaxed text-cyan-300 custom-scrollbar">
                                                                     {log.log || 'No log output recorded.'}
