@@ -103,8 +103,11 @@ export default function CronJobsPage() {
     const [formWebhookUrl, setFormWebhookUrl] = useState('');
     const [formWebhookMethod, setFormWebhookMethod] = useState('POST');
     const [formWebhookHeaders, setFormWebhookHeaders] = useState([]); // Array of { key, value }
+    const [formWebhookHeadersType, setFormWebhookHeadersType] = useState('fixed'); // 'fixed' | 'expression'
+    const [headersPreviewOutput, setHeadersPreviewOutput] = useState('');
     const [formWebhookBody, setFormWebhookBody] = useState('');
     const [formWebhookBodyType, setFormWebhookBodyType] = useState('expression'); // 'fixed' | 'expression'
+    const [formWebhookEnv, setFormWebhookEnv] = useState([]); // Array of { key, value }
     const [previewOutput, setPreviewOutput] = useState('');
     const [previewLoading, setPreviewLoading] = useState(false);
     const [formSubmitting, setFormSubmitting] = useState(false);
@@ -340,6 +343,9 @@ export default function CronJobsPage() {
         setFormWebhookUrl('https://');
         setFormWebhookMethod('POST');
         setFormWebhookHeaders([]);
+        setFormWebhookHeadersType('fixed');
+        setFormWebhookEnv([]);
+        setHeadersPreviewOutput('');
         setFormWebhookBody('');
         setFormWebhookBodyType('expression');
         setPreviewOutput('');
@@ -364,6 +370,9 @@ export default function CronJobsPage() {
         setFormWebhookUrl(job.webhookUrl || 'https://');
         setFormWebhookMethod(job.webhookMethod || 'POST');
         setFormWebhookHeaders(job.webhookHeaders || []);
+        setFormWebhookHeadersType(job.webhookHeadersType || 'fixed');
+        setFormWebhookEnv(job.webhookEnv || []);
+        setHeadersPreviewOutput('');
         setFormWebhookBody(job.webhookBody || '');
         setFormWebhookBodyType(job.webhookBodyType || 'expression');
         setPreviewOutput('');
@@ -400,8 +409,10 @@ export default function CronJobsPage() {
             webhookUrl: formWebhookUrl,
             webhookMethod: formWebhookMethod,
             webhookHeaders: formWebhookHeaders.filter(h => h.key && h.key.trim()),
+            webhookHeadersType: formWebhookHeadersType,
             webhookBody: formWebhookBody,
             webhookBodyType: formWebhookBodyType,
+            webhookEnv: formWebhookEnv.filter(e => e.key && e.key.trim()),
             notificationEnabled: formNotificationEnabled,
             notificationOn: formNotificationOn
         };
@@ -479,6 +490,73 @@ export default function CronJobsPage() {
             }
         } catch (err) {
             setPreviewOutput('Failed to evaluate dynamic preview.');
+        } finally {
+            setPreviewLoading(false);
+        }
+    };
+
+    // Debounced automatic template compiler for custom headers preview
+    useEffect(() => {
+        if (!showFormModal || formWebhookHeadersType !== 'expression' || formWebhookHeaders.length === 0) {
+            setHeadersPreviewOutput('');
+            return;
+        }
+
+        const delayDebounceFn = setTimeout(async () => {
+            setPreviewLoading(true);
+            try {
+                const headersObj = {};
+                formWebhookHeaders.forEach(h => {
+                    if (h.key && h.key.trim()) {
+                        headersObj[h.key.trim()] = h.value || '';
+                    }
+                });
+
+                const res = await fetch('/api/admin/crons/preview', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ template: headersObj })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    setHeadersPreviewOutput(data.data);
+                } else {
+                    setHeadersPreviewOutput(`Evaluation Error: ${data.error}`);
+                }
+            } catch (err) {
+                setHeadersPreviewOutput('Failed to evaluate dynamic preview.');
+            } finally {
+                setPreviewLoading(false);
+            }
+        }, 600); // 600ms debounce
+
+        return () => clearTimeout(delayDebounceFn);
+    }, [formWebhookHeaders, formWebhookHeadersType, showFormModal]);
+
+    const triggerHeadersPreviewUpdate = async () => {
+        if (formWebhookHeaders.length === 0) return;
+        setPreviewLoading(true);
+        try {
+            const headersObj = {};
+            formWebhookHeaders.forEach(h => {
+                if (h.key && h.key.trim()) {
+                    headersObj[h.key.trim()] = h.value || '';
+                }
+            });
+
+            const res = await fetch('/api/admin/crons/preview', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ template: headersObj })
+            });
+            const data = await res.json();
+            if (data.success) {
+                setHeadersPreviewOutput(data.data);
+            } else {
+                setHeadersPreviewOutput(`Evaluation Error: ${data.error}`);
+            }
+        } catch (err) {
+            setHeadersPreviewOutput('Failed to evaluate dynamic preview.');
         } finally {
             setPreviewLoading(false);
         }
@@ -760,6 +838,14 @@ export default function CronJobsPage() {
                                                         </span>
                                                     </div>
                                                 )}
+                                                {job.webhookEnv && job.webhookEnv.length > 0 && (
+                                                    <div className="flex items-start gap-2 pt-1 border-t border-white/5 mt-1 overflow-hidden">
+                                                        <span className="text-slate-500 shrink-0">Env Secrets:</span>
+                                                        <span className="text-pink-400 truncate flex-1 text-left block font-semibold" title={job.webhookEnv.map(e => e.key).join('\n')}>
+                                                            {job.webhookEnv.map(e => e.key).join(', ')}
+                                                        </span>
+                                                    </div>
+                                                )}
                                                 {job.webhookBody && (
                                                     <div className="flex items-start gap-2 pt-1 border-t border-white/5 mt-1 overflow-hidden">
                                                         <span className="text-slate-500 shrink-0">Payload:</span>
@@ -888,6 +974,13 @@ export default function CronJobsPage() {
                                 <li><span className="text-cyan-400">$time</span> - Current ISO-8601 Timestamp</li>
                                 <li><span className="text-cyan-400">$timestamp</span> - Same as $time</li>
                                 <li><span className="text-cyan-400">$date</span> - Locale-specific current date</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-slate-200 text-sm mb-1.5 uppercase tracking-wide">🔒 Secure Env Variables</h3>
+                            <p className="mb-1">Access custom environment secrets defined in the task configuration. Secrets are stored securely with AES-256 encryption.</p>
+                            <ul className="list-disc pl-4 space-y-1.5 font-mono text-[11px]">
+                                <li><span className="text-cyan-400">$env.KEY_NAME</span> - Decrypted secret value at runtime</li>
                             </ul>
                         </div>
                     </div>
@@ -1247,13 +1340,34 @@ export default function CronJobsPage() {
                                     <div className="space-y-3 pt-2">
                                         <div className="flex items-center justify-between">
                                             <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block">Custom HTTP Headers</label>
-                                            <button
-                                                type="button"
-                                                onClick={() => setFormWebhookHeaders([...formWebhookHeaders, { key: '', value: '' }])}
-                                                className="inline-flex items-center gap-1 text-[11px] font-bold text-cyan-400 hover:text-cyan-300 transition-colors"
-                                            >
-                                                <Plus size={12} /> Add Header
-                                            </button>
+                                            
+                                            <div className="flex items-center gap-3">
+                                                {/* Tabs Selector: Fixed vs Expression */}
+                                                <div className="flex rounded-lg bg-slate-950 p-0.5 border border-white/5 shrink-0 select-none">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setFormWebhookHeadersType('fixed')}
+                                                        className={`px-3 py-1 rounded-md text-[10px] font-mono tracking-wider transition-all ${formWebhookHeadersType === 'fixed' ? 'bg-white/10 text-white font-bold border border-white/10 shadow-sm' : 'text-slate-500 hover:text-slate-350'}`}
+                                                    >
+                                                        Fixed
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setFormWebhookHeadersType('expression')}
+                                                        className={`px-3 py-1 rounded-md text-[10px] font-mono tracking-wider transition-all ${formWebhookHeadersType === 'expression' ? 'bg-cyan-500/10 text-cyan-400 font-bold border border-cyan-500/20 shadow-sm' : 'text-slate-500 hover:text-slate-355'}`}
+                                                    >
+                                                        Expression
+                                                    </button>
+                                                </div>
+
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setFormWebhookHeaders([...formWebhookHeaders, { key: '', value: '' }])}
+                                                    className="inline-flex items-center gap-1 text-[11px] font-bold text-cyan-400 hover:text-cyan-300 transition-colors"
+                                                >
+                                                    <Plus size={12} /> Add Header
+                                                </button>
+                                            </div>
                                         </div>
                                         
                                         {formWebhookHeaders.length === 0 ? (
@@ -1273,7 +1387,7 @@ export default function CronJobsPage() {
                                                                 newHeaders[index].key = e.target.value;
                                                                 setFormWebhookHeaders(newHeaders);
                                                             }}
-                                                            className="flex-1 bg-slate-950 border border-white/10 rounded-xl px-3 py-2 text-xs text-slate-200 focus:border-cyan-500 outline-none transition"
+                                                            className={`flex-1 bg-slate-950 border rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none transition ${formWebhookHeadersType === 'expression' ? 'border-cyan-500/20 focus:border-cyan-500' : 'border-white/10 focus:border-slate-500'}`}
                                                         />
                                                         <input
                                                             type="text"
@@ -1284,7 +1398,7 @@ export default function CronJobsPage() {
                                                                 newHeaders[index].value = e.target.value;
                                                                 setFormWebhookHeaders(newHeaders);
                                                             }}
-                                                            className="flex-1 bg-slate-950 border border-white/10 rounded-xl px-3 py-2 text-xs text-slate-200 focus:border-cyan-500 outline-none transition"
+                                                            className={`flex-1 bg-slate-950 border rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none transition ${formWebhookHeadersType === 'expression' ? 'border-cyan-500/20 focus:border-cyan-500' : 'border-white/10 focus:border-slate-500'}`}
                                                         />
                                                         <button
                                                             type="button"
@@ -1298,6 +1412,26 @@ export default function CronJobsPage() {
                                                         </button>
                                                     </div>
                                                 ))}
+                                            </div>
+                                        )}
+
+                                        {/* Dynamic Expression Demo Preview Tab for Headers */}
+                                        {formWebhookHeadersType === 'expression' && formWebhookHeaders.length > 0 && (
+                                            <div className="border border-cyan-500/10 bg-cyan-950/10 rounded-2xl p-4 mt-2 space-y-2">
+                                                <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                                                    <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-widest block">⚡ Headers Preview (Evaluated)</span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={triggerHeadersPreviewUpdate}
+                                                        disabled={previewLoading}
+                                                        className="text-[9px] text-slate-500 hover:text-cyan-400 transition"
+                                                    >
+                                                        {previewLoading ? 'Compiling...' : 'Force Refresh'}
+                                                    </button>
+                                                </div>
+                                                <pre className="bg-slate-950 border border-white/5 p-3 rounded-xl font-mono text-[10px] text-cyan-300 overflow-x-auto max-h-36 whitespace-pre-wrap select-all text-left font-semibold">
+                                                    {headersPreviewOutput || 'Type variables in header values to see live dynamic evaluation preview...'}
+                                                </pre>
                                             </div>
                                         )}
                                     </div>
@@ -1364,6 +1498,72 @@ export default function CronJobsPage() {
                                             <span className="text-[10px] text-slate-500 leading-tight block">
                                                 Supports dynamic variable injection. Use singular/plural forms like <code>$blogs</code>, <code>$projects</code>, or <code>$time</code>.
                                             </span>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Secure Environment Variables Section (User defined only) */}
+                            {(!editingJob || editingJob.type === 'user') && (
+                                <div className="space-y-3 border-t border-white/5 pt-4">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block">Secure Environment Variables</label>
+                                            <span className="text-[10px] text-slate-500 leading-tight block mt-0.5">
+                                                Encrypted with AES-256 in the database. Link them via <code>$env.VARIABLE_NAME</code> in URL, Headers, or Body.
+                                            </span>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setFormWebhookEnv([...formWebhookEnv, { key: '', value: '' }])}
+                                            className="inline-flex items-center gap-1 text-[11px] font-bold text-cyan-400 hover:text-cyan-300 transition-colors"
+                                        >
+                                            <Plus size={12} /> Add Env
+                                        </button>
+                                    </div>
+                                    
+                                    {formWebhookEnv.length === 0 ? (
+                                        <div className="text-[11px] text-slate-500 italic bg-slate-950/20 border border-white/5 rounded-xl p-3 text-center">
+                                            No secure environment variables configured.
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                                            {formWebhookEnv.map((env, index) => (
+                                                <div key={index} className="flex gap-2 items-center">
+                                                    <input
+                                                        type="text"
+                                                        placeholder="VARIABLE_NAME"
+                                                        value={env.key}
+                                                        onChange={(e) => {
+                                                            const newEnv = [...formWebhookEnv];
+                                                            newEnv[index].key = e.target.value;
+                                                            setFormWebhookEnv(newEnv);
+                                                        }}
+                                                        className="flex-1 bg-slate-950 border border-white/10 rounded-xl px-3 py-2 text-xs text-slate-200 focus:border-cyan-500 outline-none transition font-mono"
+                                                    />
+                                                    <input
+                                                        type="password"
+                                                        placeholder="Value"
+                                                        value={env.value}
+                                                        onChange={(e) => {
+                                                            const newEnv = [...formWebhookEnv];
+                                                            newEnv[index].value = e.target.value;
+                                                            setFormWebhookEnv(newEnv);
+                                                        }}
+                                                        className="flex-1 bg-slate-950 border border-white/10 rounded-xl px-3 py-2 text-xs text-slate-200 focus:border-cyan-500 outline-none transition"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setFormWebhookEnv(formWebhookEnv.filter((_, i) => i !== index));
+                                                        }}
+                                                        className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition"
+                                                        title="Remove Env Variable"
+                                                    >
+                                                        <Trash2 size={13} />
+                                                    </button>
+                                                </div>
+                                            ))}
                                         </div>
                                     )}
                                 </div>
