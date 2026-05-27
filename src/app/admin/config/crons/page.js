@@ -104,6 +104,9 @@ export default function CronJobsPage() {
     const [formWebhookMethod, setFormWebhookMethod] = useState('POST');
     const [formWebhookHeaders, setFormWebhookHeaders] = useState([]); // Array of { key, value }
     const [formWebhookBody, setFormWebhookBody] = useState('');
+    const [formWebhookBodyType, setFormWebhookBodyType] = useState('expression'); // 'fixed' | 'expression'
+    const [previewOutput, setPreviewOutput] = useState('');
+    const [previewLoading, setPreviewLoading] = useState(false);
     const [formSubmitting, setFormSubmitting] = useState(false);
 
     // Notification Link States
@@ -338,6 +341,8 @@ export default function CronJobsPage() {
         setFormWebhookMethod('POST');
         setFormWebhookHeaders([]);
         setFormWebhookBody('');
+        setFormWebhookBodyType('expression');
+        setPreviewOutput('');
 
         // Initialize builder states
         setBuilderTab('simple');
@@ -360,6 +365,8 @@ export default function CronJobsPage() {
         setFormWebhookMethod(job.webhookMethod || 'POST');
         setFormWebhookHeaders(job.webhookHeaders || []);
         setFormWebhookBody(job.webhookBody || '');
+        setFormWebhookBodyType(job.webhookBodyType || 'expression');
+        setPreviewOutput('');
 
         // Parse current schedule to set builder states
         const parsed = parseCronToSimple(job.schedule);
@@ -394,6 +401,7 @@ export default function CronJobsPage() {
             webhookMethod: formWebhookMethod,
             webhookHeaders: formWebhookHeaders.filter(h => h.key && h.key.trim()),
             webhookBody: formWebhookBody,
+            webhookBodyType: formWebhookBodyType,
             notificationEnabled: formNotificationEnabled,
             notificationOn: formNotificationOn
         };
@@ -420,6 +428,59 @@ export default function CronJobsPage() {
             showMessage('error', 'Submit failed due to a communication issue.');
         } finally {
             setFormSubmitting(false);
+        }
+    };
+
+    // Debounced automatic template compiler for dynamic variables preview (same as n8n)
+    useEffect(() => {
+        if (!showFormModal || formWebhookBodyType !== 'expression' || !formWebhookBody.trim() || formWebhookMethod !== 'POST') {
+            setPreviewOutput('');
+            return;
+        }
+
+        const delayDebounceFn = setTimeout(async () => {
+            setPreviewLoading(true);
+            try {
+                const res = await fetch('/api/admin/crons/preview', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ template: formWebhookBody.trim() })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    setPreviewOutput(data.data);
+                } else {
+                    setPreviewOutput(`Evaluation Error: ${data.error}`);
+                }
+            } catch (err) {
+                setPreviewOutput('Failed to evaluate dynamic preview.');
+            } finally {
+                setPreviewLoading(false);
+            }
+        }, 600); // 600ms debounce
+
+        return () => clearTimeout(delayDebounceFn);
+    }, [formWebhookBody, formWebhookBodyType, formWebhookMethod, showFormModal]);
+
+    const triggerPreviewUpdate = async () => {
+        if (!formWebhookBody.trim()) return;
+        setPreviewLoading(true);
+        try {
+            const res = await fetch('/api/admin/crons/preview', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ template: formWebhookBody.trim() })
+            });
+            const data = await res.json();
+            if (data.success) {
+                setPreviewOutput(data.data);
+            } else {
+                setPreviewOutput(`Evaluation Error: ${data.error}`);
+            }
+        } catch (err) {
+            setPreviewOutput('Failed to evaluate dynamic preview.');
+        } finally {
+            setPreviewLoading(false);
         }
     };
 
@@ -1241,14 +1302,64 @@ export default function CronJobsPage() {
                                     </div>
                                     
                                     {formWebhookMethod === 'POST' && (
-                                        <div className="space-y-1.5 pt-2">
-                                            <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block">Custom HTTP Request Body</label>
-                                            <textarea
-                                                value={formWebhookBody}
-                                                onChange={(e) => setFormWebhookBody(e.target.value)}
-                                                className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs font-mono text-slate-200 focus:border-cyan-500 outline-none transition min-h-[80px]"
-                                                placeholder='e.g. {"title": "$blogs[0].title", "run_time": "$time"}'
-                                            />
+                                        <div className="space-y-3 pt-2">
+                                            <div className="flex items-center justify-between">
+                                                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block">Custom HTTP Request Body</label>
+                                                
+                                                {/* Tabs Selector: Fixed vs Expression */}
+                                                <div className="flex rounded-lg bg-slate-950 p-0.5 border border-white/5 shrink-0 select-none">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setFormWebhookBodyType('fixed')}
+                                                        className={`px-3 py-1 rounded-md text-[10px] font-mono tracking-wider transition-all ${formWebhookBodyType === 'fixed' ? 'bg-white/10 text-white font-bold border border-white/10 shadow-sm' : 'text-slate-500 hover:text-slate-350'}`}
+                                                    >
+                                                        Fixed
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setFormWebhookBodyType('expression')}
+                                                        className={`px-3 py-1 rounded-md text-[10px] font-mono tracking-wider transition-all ${formWebhookBodyType === 'expression' ? 'bg-cyan-500/10 text-cyan-400 font-bold border border-cyan-500/20 shadow-sm' : 'text-slate-500 hover:text-slate-355'}`}
+                                                    >
+                                                        Expression
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            {/* Textarea Input with code-like style */}
+                                            <div className="relative">
+                                                <textarea
+                                                    value={formWebhookBody}
+                                                    onChange={(e) => setFormWebhookBody(e.target.value)}
+                                                    className={`w-full bg-slate-950 border rounded-xl px-4 py-3 text-xs font-mono text-slate-200 focus:outline-none transition min-h-[120px] ${formWebhookBodyType === 'expression' ? 'border-cyan-500/30 focus:border-cyan-500' : 'border-white/10 focus:border-slate-500'}`}
+                                                    placeholder={formWebhookBodyType === 'expression' ? 'e.g. {"title": "$blogs[0].title", "run_time": "$time"}' : 'e.g. {"status": "active"}'}
+                                                />
+                                                {formWebhookBodyType === 'expression' && (
+                                                    <div className="absolute right-3 bottom-3 inline-flex items-center gap-1 bg-cyan-500/10 border border-cyan-500/20 rounded px-2 py-0.5 text-[9px] text-cyan-400 font-mono select-none">
+                                                        Expression Mode
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Dynamic Expression Demo Preview Tab below (n8n style) */}
+                                            {formWebhookBodyType === 'expression' && formWebhookBody.trim() && (
+                                                <div className="border border-cyan-500/10 bg-cyan-950/10 rounded-2xl p-4 mt-2 space-y-2">
+                                                    <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                                                        <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-widest block">⚡ Expression Preview (Evaluated)</span>
+                                                        <button
+                                                            type="button"
+                                                            onClick={triggerPreviewUpdate}
+                                                            disabled={previewLoading}
+                                                            className="text-[9px] text-slate-500 hover:text-cyan-400 transition"
+                                                        >
+                                                            {previewLoading ? 'Compiling...' : 'Force Refresh'}
+                                                        </button>
+                                                    </div>
+                                                    <pre className="bg-slate-950 border border-white/5 p-3 rounded-xl font-mono text-[10px] text-cyan-300 overflow-x-auto max-h-36 whitespace-pre-wrap select-all text-left font-semibold">
+                                                        {previewOutput || 'Type variables to see live dynamic evaluation preview...'}
+                                                    </pre>
+                                                </div>
+                                            )}
+
                                             <span className="text-[10px] text-slate-500 leading-tight block">
                                                 Supports dynamic variable injection. Use singular/plural forms like <code>$blogs</code>, <code>$projects</code>, or <code>$time</code>.
                                             </span>
