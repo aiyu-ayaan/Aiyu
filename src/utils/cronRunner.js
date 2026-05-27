@@ -355,7 +355,9 @@ export async function executeCronJob(job) {
                 console.error('[CRON SERVICE] Failed to load global environment variables:', envErr);
             }
 
-            const compiledUrl = await compileTemplate(job.webhookUrl, cachedData);
+            const compiledUrl = job.webhookUrlType === 'expression'
+                ? await compileTemplate(job.webhookUrl, cachedData)
+                : job.webhookUrl;
             const method = job.webhookMethod || 'POST';
 
             const rawHeaders = {

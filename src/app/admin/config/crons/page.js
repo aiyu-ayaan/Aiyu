@@ -90,6 +90,12 @@ function cronToHuman(cronExpression) {
     return `Custom Pattern (Min: ${min}, Hour: ${hour}, Day of Month: ${dom}, Month: ${month}, Day of Week: ${dow})`;
 }
 
+function formatPreviewValue(value) {
+    if (value === null || value === undefined || value === '') return '(empty)';
+    if (typeof value === 'object') return JSON.stringify(value);
+    return String(value);
+}
+
 export default function CronJobsPage() {
     const [jobs, setJobs] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -102,12 +108,15 @@ export default function CronJobsPage() {
     const [formName, setFormName] = useState('');
     const [formSchedule, setFormSchedule] = useState('0 0 * * *');
     const [formWebhookUrl, setFormWebhookUrl] = useState('');
+    const [formWebhookUrlType, setFormWebhookUrlType] = useState('fixed'); // 'fixed' | 'expression'
+    const [urlPreviewOutput, setUrlPreviewOutput] = useState('');
     const [formWebhookMethod, setFormWebhookMethod] = useState('POST');
     const [formWebhookHeaders, setFormWebhookHeaders] = useState([]); // Array of { key, value }
     const [formWebhookHeadersType, setFormWebhookHeadersType] = useState('fixed'); // 'fixed' | 'expression'
     const [headersPreviewOutput, setHeadersPreviewOutput] = useState('');
+    const [headersPreviewRows, setHeadersPreviewRows] = useState([]);
     const [formWebhookBody, setFormWebhookBody] = useState('');
-    const [formWebhookBodyType, setFormWebhookBodyType] = useState('expression'); // 'fixed' | 'expression'
+    const [formWebhookBodyType, setFormWebhookBodyType] = useState('fixed'); // 'fixed' | 'expression'
     const [formWebhookEnv, setFormWebhookEnv] = useState([]); // Array of { key, value }
     const [previewOutput, setPreviewOutput] = useState('');
     const [previewLoading, setPreviewLoading] = useState(false);
@@ -389,13 +398,16 @@ export default function CronJobsPage() {
         setFormName('');
         setFormSchedule('0 0 * * *');
         setFormWebhookUrl('https://');
+        setFormWebhookUrlType('fixed');
+        setUrlPreviewOutput('');
         setFormWebhookMethod('POST');
         setFormWebhookHeaders([]);
         setFormWebhookHeadersType('fixed');
         setFormWebhookEnv([]);
         setHeadersPreviewOutput('');
+        setHeadersPreviewRows([]);
         setFormWebhookBody('');
-        setFormWebhookBodyType('expression');
+        setFormWebhookBodyType('fixed');
         setPreviewOutput('');
 
         // Initialize builder states
@@ -416,13 +428,16 @@ export default function CronJobsPage() {
         setFormName(job.name);
         setFormSchedule(job.schedule);
         setFormWebhookUrl(job.webhookUrl || 'https://');
+        setFormWebhookUrlType(job.webhookUrlType || 'fixed');
+        setUrlPreviewOutput('');
         setFormWebhookMethod(job.webhookMethod || 'POST');
         setFormWebhookHeaders(job.webhookHeaders || []);
         setFormWebhookHeadersType(job.webhookHeadersType || 'fixed');
         setFormWebhookEnv(job.webhookEnv || []);
         setHeadersPreviewOutput('');
+        setHeadersPreviewRows([]);
         setFormWebhookBody(job.webhookBody || '');
-        setFormWebhookBodyType(job.webhookBodyType || 'expression');
+        setFormWebhookBodyType(job.webhookBodyType || 'fixed');
         setPreviewOutput('');
 
         // Parse current schedule to set builder states
@@ -455,6 +470,7 @@ export default function CronJobsPage() {
             name: formName,
             schedule: formSchedule,
             webhookUrl: formWebhookUrl,
+            webhookUrlType: formWebhookUrlType,
             webhookMethod: formWebhookMethod,
             webhookHeaders: formWebhookHeaders.filter(h => h.key && h.key.trim()),
             webhookHeadersType: formWebhookHeadersType,
@@ -543,35 +559,91 @@ export default function CronJobsPage() {
         }
     };
 
-    // Debounced automatic template compiler for custom headers preview
+    // Debounced automatic template compiler for webhook URL preview
     useEffect(() => {
-        if (!showFormModal || formWebhookHeadersType !== 'expression' || formWebhookHeaders.length === 0) {
-            setHeadersPreviewOutput('');
+        if (!showFormModal || formWebhookUrlType !== 'expression' || !formWebhookUrl.trim()) {
+            setUrlPreviewOutput('');
             return;
         }
 
         const delayDebounceFn = setTimeout(async () => {
             setPreviewLoading(true);
             try {
-                const headersObj = {};
-                formWebhookHeaders.forEach(h => {
-                    if (h.key && h.key.trim()) {
-                        headersObj[h.key.trim()] = h.value || '';
-                    }
+                const res = await fetch('/api/admin/crons/preview', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ template: formWebhookUrl.trim() })
                 });
+                const data = await res.json();
+                if (data.success) {
+                    setUrlPreviewOutput(data.data);
+                } else {
+                    setUrlPreviewOutput(`Evaluation Error: ${data.error}`);
+                }
+            } catch (err) {
+                setUrlPreviewOutput('Failed to evaluate dynamic preview.');
+            } finally {
+                setPreviewLoading(false);
+            }
+        }, 600);
+
+        return () => clearTimeout(delayDebounceFn);
+    }, [formWebhookUrl, formWebhookUrlType, showFormModal]);
+
+    const triggerUrlPreviewUpdate = async () => {
+        if (!formWebhookUrl.trim()) return;
+        setPreviewLoading(true);
+        try {
+            const res = await fetch('/api/admin/crons/preview', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ template: formWebhookUrl.trim() })
+            });
+            const data = await res.json();
+            if (data.success) {
+                setUrlPreviewOutput(data.data);
+            } else {
+                setUrlPreviewOutput(`Evaluation Error: ${data.error}`);
+            }
+        } catch (err) {
+            setUrlPreviewOutput('Failed to evaluate dynamic preview.');
+        } finally {
+            setPreviewLoading(false);
+        }
+    };
+
+    // Debounced automatic template compiler for custom headers preview
+    useEffect(() => {
+        if (!showFormModal || formWebhookHeadersType !== 'expression' || formWebhookHeaders.length === 0) {
+            setHeadersPreviewOutput('');
+            setHeadersPreviewRows([]);
+            return;
+        }
+
+        const delayDebounceFn = setTimeout(async () => {
+            setPreviewLoading(true);
+            try {
+                const headerRows = formWebhookHeaders.map((h, index) => ({
+                    index: index + 1,
+                    key: h.key || '',
+                    value: h.value || ''
+                }));
 
                 const res = await fetch('/api/admin/crons/preview', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ template: headersObj })
+                    body: JSON.stringify({ template: headerRows })
                 });
                 const data = await res.json();
                 if (data.success) {
-                    setHeadersPreviewOutput(data.data);
+                    setHeadersPreviewRows(JSON.parse(data.data));
+                    setHeadersPreviewOutput('');
                 } else {
+                    setHeadersPreviewRows([]);
                     setHeadersPreviewOutput(`Evaluation Error: ${data.error}`);
                 }
             } catch (err) {
+                setHeadersPreviewRows([]);
                 setHeadersPreviewOutput('Failed to evaluate dynamic preview.');
             } finally {
                 setPreviewLoading(false);
@@ -585,25 +657,27 @@ export default function CronJobsPage() {
         if (formWebhookHeaders.length === 0) return;
         setPreviewLoading(true);
         try {
-            const headersObj = {};
-            formWebhookHeaders.forEach(h => {
-                if (h.key && h.key.trim()) {
-                    headersObj[h.key.trim()] = h.value || '';
-                }
-            });
+            const headerRows = formWebhookHeaders.map((h, index) => ({
+                index: index + 1,
+                key: h.key || '',
+                value: h.value || ''
+            }));
 
             const res = await fetch('/api/admin/crons/preview', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ template: headersObj })
+                body: JSON.stringify({ template: headerRows })
             });
             const data = await res.json();
             if (data.success) {
-                setHeadersPreviewOutput(data.data);
+                setHeadersPreviewRows(JSON.parse(data.data));
+                setHeadersPreviewOutput('');
             } else {
+                setHeadersPreviewRows([]);
                 setHeadersPreviewOutput(`Evaluation Error: ${data.error}`);
             }
         } catch (err) {
+            setHeadersPreviewRows([]);
             setHeadersPreviewOutput('Failed to evaluate dynamic preview.');
         } finally {
             setPreviewLoading(false);
@@ -1371,15 +1445,53 @@ export default function CronJobsPage() {
                             {(!editingJob || editingJob.type === 'user') && (
                                 <div className="space-y-4 border-t border-white/5 pt-4">
                                     <div>
-                                        <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-1.5">Webhook URL</label>
+                                        <div className="flex items-center justify-between mb-1.5">
+                                            <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block">Webhook URL</label>
+
+                                            {/* Tabs Selector: Fixed vs Expression */}
+                                            <div className="flex rounded-lg bg-slate-950 p-0.5 border border-white/5 shrink-0 select-none">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setFormWebhookUrlType('fixed')}
+                                                    className={`px-3 py-1 rounded-md text-[10px] font-mono tracking-wider transition-all ${formWebhookUrlType === 'fixed' ? 'bg-white/10 text-white font-bold border border-white/10 shadow-sm' : 'text-slate-500 hover:text-slate-350'}`}
+                                                >
+                                                    Fixed
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setFormWebhookUrlType('expression')}
+                                                    className={`px-3 py-1 rounded-md text-[10px] font-mono tracking-wider transition-all ${formWebhookUrlType === 'expression' ? 'bg-cyan-500/10 text-cyan-400 font-bold border border-cyan-500/20 shadow-sm' : 'text-slate-500 hover:text-slate-355'}`}
+                                                >
+                                                    Expression
+                                                </button>
+                                            </div>
+                                        </div>
                                         <input
-                                            type="url"
+                                            type={formWebhookUrlType === 'expression' ? 'text' : 'url'}
                                             required
                                             value={formWebhookUrl}
                                             onChange={(e) => setFormWebhookUrl(e.target.value)}
-                                            className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:border-cyan-500 outline-none transition"
-                                            placeholder="https://example.com/api/tasks"
+                                            className={`w-full bg-slate-950 border rounded-xl px-4 py-2.5 text-sm text-slate-200 outline-none transition ${formWebhookUrlType === 'expression' ? 'border-cyan-500/30 focus:border-cyan-500' : 'border-white/10 focus:border-slate-500'}`}
+                                            placeholder={formWebhookUrlType === 'expression' ? 'https://example.com/api/$projects[0]._id' : 'https://example.com/api/tasks'}
                                         />
+                                        {formWebhookUrlType === 'expression' && formWebhookUrl.trim() && (
+                                            <div className="border border-cyan-500/10 bg-cyan-950/10 rounded-2xl p-4 mt-3 space-y-2">
+                                                <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                                                    <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-widest block">⚡ URL Preview (Evaluated)</span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={triggerUrlPreviewUpdate}
+                                                        disabled={previewLoading}
+                                                        className="text-[9px] text-slate-500 hover:text-cyan-400 transition"
+                                                    >
+                                                        {previewLoading ? 'Compiling...' : 'Force Refresh'}
+                                                    </button>
+                                                </div>
+                                                <pre className="bg-slate-950 border border-white/5 p-3 rounded-xl font-mono text-[10px] text-cyan-300 overflow-x-auto max-h-36 whitespace-pre-wrap select-all text-left font-semibold">
+                                                    {urlPreviewOutput || 'Type variables in the webhook URL to see live dynamic evaluation preview...'}
+                                                </pre>
+                                            </div>
+                                        )}
                                     </div>
                                     <div>
                                         <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-1.5">HTTP Method</label>
@@ -1486,9 +1598,35 @@ export default function CronJobsPage() {
                                                         {previewLoading ? 'Compiling...' : 'Force Refresh'}
                                                     </button>
                                                 </div>
-                                                <pre className="bg-slate-950 border border-white/5 p-3 rounded-xl font-mono text-[10px] text-cyan-300 overflow-x-auto max-h-36 whitespace-pre-wrap select-all text-left font-semibold">
-                                                    {headersPreviewOutput || 'Type variables in header values to see live dynamic evaluation preview...'}
-                                                </pre>
+                                                {headersPreviewOutput ? (
+                                                    <pre className="bg-slate-950 border border-white/5 p-3 rounded-xl font-mono text-[10px] text-cyan-300 overflow-x-auto max-h-36 whitespace-pre-wrap select-all text-left font-semibold">
+                                                        {headersPreviewOutput}
+                                                    </pre>
+                                                ) : (
+                                                    <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
+                                                        {formWebhookHeaders.map((header, index) => {
+                                                            const preview = headersPreviewRows[index] || { key: header.key || '', value: header.value || '' };
+                                                            return (
+                                                                <div key={`header-preview-${index}`} className="bg-slate-950 border border-white/5 rounded-xl p-3 space-y-2">
+                                                                    <div className="flex items-center justify-between gap-3">
+                                                                        <span className="text-[9px] text-slate-500 uppercase tracking-widest font-bold">Header {index + 1}</span>
+                                                                        <span className="text-[9px] text-slate-600 font-mono truncate">{header.key || 'Header-Name'}</span>
+                                                                    </div>
+                                                                    <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,0.7fr)_minmax(0,1fr)] gap-2 font-mono text-[10px]">
+                                                                        <div className="min-w-0">
+                                                                            <span className="block text-slate-500 uppercase tracking-widest text-[8px] mb-1">Name</span>
+                                                                            <code className="block text-cyan-300 truncate">{formatPreviewValue(preview.key)}</code>
+                                                                        </div>
+                                                                        <div className="min-w-0">
+                                                                            <span className="block text-slate-500 uppercase tracking-widest text-[8px] mb-1">Value</span>
+                                                                            <code className="block text-cyan-300 truncate">{formatPreviewValue(preview.value)}</code>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
                                     </div>
