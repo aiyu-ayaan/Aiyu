@@ -179,12 +179,25 @@ export async function executeCronJob(job) {
                         `Details: ${JSON.stringify(migrationResult.details, null, 2)}`;
         } else if (job.action === 'webhook') {
             const method = job.webhookMethod || 'POST';
+            const headers = {
+                'Content-Type': 'application/json',
+                'User-Agent': 'Aiyu-Task-Scheduler'
+            };
+
+            if (job.webhookHeaders && Array.isArray(job.webhookHeaders)) {
+                for (const header of job.webhookHeaders) {
+                    if (header.key && header.key.trim()) {
+                        const normalKey = Object.keys(headers).find(
+                            k => k.toLowerCase() === header.key.trim().toLowerCase()
+                        ) || header.key.trim();
+                        headers[normalKey] = header.value || '';
+                    }
+                }
+            }
+
             const res = await fetch(job.webhookUrl, {
                 method,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'User-Agent': 'Aiyu-Task-Scheduler'
-                },
+                headers,
                 body: method === 'POST' ? JSON.stringify({
                     cronName: job.name,
                     triggeredAt: new Date().toISOString()

@@ -38,6 +38,15 @@ const CronSchema = new mongoose.Schema({
         default: 'POST',
         required: function() { return this.action === 'webhook'; }
     },
+    webhookHeaders: {
+        type: [
+            {
+                key: { type: String, trim: true },
+                value: { type: String, trim: true }
+            }
+        ],
+        default: []
+    },
     lastRun: {
         type: Date
     },

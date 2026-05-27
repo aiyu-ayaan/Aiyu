@@ -102,6 +102,7 @@ export default function CronJobsPage() {
     const [formSchedule, setFormSchedule] = useState('0 0 * * *');
     const [formWebhookUrl, setFormWebhookUrl] = useState('');
     const [formWebhookMethod, setFormWebhookMethod] = useState('POST');
+    const [formWebhookHeaders, setFormWebhookHeaders] = useState([]); // Array of { key, value }
     const [formSubmitting, setFormSubmitting] = useState(false);
 
     // Notification Link States
@@ -334,6 +335,7 @@ export default function CronJobsPage() {
         setFormSchedule('0 0 * * *');
         setFormWebhookUrl('https://');
         setFormWebhookMethod('POST');
+        setFormWebhookHeaders([]);
 
         // Initialize builder states
         setBuilderTab('simple');
@@ -354,6 +356,7 @@ export default function CronJobsPage() {
         setFormSchedule(job.schedule);
         setFormWebhookUrl(job.webhookUrl || 'https://');
         setFormWebhookMethod(job.webhookMethod || 'POST');
+        setFormWebhookHeaders(job.webhookHeaders || []);
 
         // Parse current schedule to set builder states
         const parsed = parseCronToSimple(job.schedule);
@@ -386,6 +389,7 @@ export default function CronJobsPage() {
             schedule: formSchedule,
             webhookUrl: formWebhookUrl,
             webhookMethod: formWebhookMethod,
+            webhookHeaders: formWebhookHeaders.filter(h => h.key && h.key.trim()),
             notificationEnabled: formNotificationEnabled,
             notificationOn: formNotificationOn
         };
@@ -683,6 +687,14 @@ export default function CronJobsPage() {
                                                         {job.webhookUrl}
                                                     </span>
                                                 </div>
+                                                {job.webhookHeaders && job.webhookHeaders.length > 0 && (
+                                                    <div className="flex items-start gap-2 pt-1 border-t border-white/5 mt-1 overflow-hidden">
+                                                        <span className="text-slate-500 shrink-0">Headers:</span>
+                                                        <span className="text-cyan-400 truncate flex-1 hover:text-cyan-300 text-left block" title={job.webhookHeaders.map(h => `${h.key}: ${h.value}`).join('\n')}>
+                                                            {job.webhookHeaders.map(h => h.key).join(', ')}
+                                                        </span>
+                                                    </div>
+                                                )}
                                             </div>
 
                                             <div className="mt-5 grid grid-cols-2 gap-4 border-t border-white/5 pt-4 text-xs font-mono">
@@ -1094,6 +1106,65 @@ export default function CronJobsPage() {
                                             <option value="POST">POST (Recommended - Sends Trigger Metadata)</option>
                                             <option value="GET">GET (Simple Ping Request)</option>
                                         </select>
+                                    </div>
+
+                                    {/* Custom Headers Section */}
+                                    <div className="space-y-3 pt-2">
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block">Custom HTTP Headers</label>
+                                            <button
+                                                type="button"
+                                                onClick={() => setFormWebhookHeaders([...formWebhookHeaders, { key: '', value: '' }])}
+                                                className="inline-flex items-center gap-1 text-[11px] font-bold text-cyan-400 hover:text-cyan-300 transition-colors"
+                                            >
+                                                <Plus size={12} /> Add Header
+                                            </button>
+                                        </div>
+                                        
+                                        {formWebhookHeaders.length === 0 ? (
+                                            <div className="text-[11px] text-slate-500 italic bg-slate-950/20 border border-white/5 rounded-xl p-3 text-center">
+                                                No custom headers added. Requests will send default headers.
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                                                {formWebhookHeaders.map((header, index) => (
+                                                    <div key={index} className="flex gap-2 items-center">
+                                                        <input
+                                                            type="text"
+                                                            placeholder="Header-Name"
+                                                            value={header.key}
+                                                            onChange={(e) => {
+                                                                const newHeaders = [...formWebhookHeaders];
+                                                                newHeaders[index].key = e.target.value;
+                                                                setFormWebhookHeaders(newHeaders);
+                                                            }}
+                                                            className="flex-1 bg-slate-950 border border-white/10 rounded-xl px-3 py-2 text-xs text-slate-200 focus:border-cyan-500 outline-none transition"
+                                                        />
+                                                        <input
+                                                            type="text"
+                                                            placeholder="value"
+                                                            value={header.value}
+                                                            onChange={(e) => {
+                                                                const newHeaders = [...formWebhookHeaders];
+                                                                newHeaders[index].value = e.target.value;
+                                                                setFormWebhookHeaders(newHeaders);
+                                                            }}
+                                                            className="flex-1 bg-slate-950 border border-white/10 rounded-xl px-3 py-2 text-xs text-slate-200 focus:border-cyan-500 outline-none transition"
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setFormWebhookHeaders(formWebhookHeaders.filter((_, i) => i !== index));
+                                                            }}
+                                                            className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition"
+                                                            title="Remove Header"
+                                                        >
+                                                            <Trash2 size={13} />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             )}
