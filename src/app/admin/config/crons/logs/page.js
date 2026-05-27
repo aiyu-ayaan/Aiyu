@@ -19,6 +19,7 @@ function formatDuration(value) {
 export default function CronLogsPage() {
     const [logs, setLogs] = useState([]);
     const [pagination, setPagination] = useState({ page: 1, limit: PAGE_SIZE, total: 0, totalPages: 1 });
+    const [cronId, setCronId] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [searchInput, setSearchInput] = useState('');
     const [search, setSearch] = useState('');
@@ -34,10 +35,11 @@ export default function CronLogsPage() {
             page: String(page),
             limit: String(PAGE_SIZE)
         });
+        if (cronId) params.set('cronId', cronId);
         if (statusFilter !== 'all') params.set('status', statusFilter);
         if (search.trim()) params.set('search', search.trim());
         return params.toString();
-    }, [page, statusFilter, search]);
+    }, [page, cronId, statusFilter, search]);
 
     const fetchLogs = async ({ initial = false } = {}) => {
         if (initial) setLoading(true);
@@ -63,6 +65,11 @@ export default function CronLogsPage() {
     useEffect(() => {
         fetchLogs({ initial: true });
     }, [queryString]);
+
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        setCronId(params.get('cronId') || '');
+    }, []);
 
     const applySearch = (event) => {
         event.preventDefault();
@@ -99,10 +106,10 @@ export default function CronLogsPage() {
                             <div className="rounded-2xl border border-cyan-500/20 bg-cyan-500/10 p-3 text-cyan-400">
                                 <Terminal size={22} />
                             </div>
-                            <div>
-                                <h1 className="text-2xl md:text-3xl font-black tracking-tight text-white">Cron Execution Logs</h1>
-                                <p className="text-sm text-slate-400">Paginated history of scheduled and manually triggered task runs.</p>
-                            </div>
+                        <div>
+                            <h1 className="text-2xl md:text-3xl font-black tracking-tight text-white">Cron Execution Logs</h1>
+                            <p className="text-sm text-slate-400">Paginated history of scheduled and manually triggered task runs.</p>
+                        </div>
                         </div>
                     </div>
 

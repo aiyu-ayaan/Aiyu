@@ -248,10 +248,6 @@ export default function CronJobsPage() {
         setFormSchedule(compiled);
     };
 
-    // Logs Modal State
-    const [selectedJobForLogs, setSelectedJobForLogs] = useState(null);
-    const [showLogsModal, setShowLogsModal] = useState(false);
-
     // Manual run loading state
     const [runningJobId, setRunningJobId] = useState(null);
 
@@ -374,10 +370,6 @@ export default function CronJobsPage() {
             if (data.success) {
                 setJobs(jobs.map(j => j._id === job._id ? data.data : j));
                 showMessage('success', `${job.name} executed successfully.`);
-                // If logs are open for this job, refresh them!
-                if (selectedJobForLogs && selectedJobForLogs._id === job._id) {
-                    setSelectedJobForLogs(data.data);
-                }
             } else {
                 showMessage('error', data.error || 'Manual trigger failed.');
             }
@@ -720,6 +712,13 @@ export default function CronJobsPage() {
                         </div>
                     </div>
                     <div className="flex gap-3">
+                        <Link
+                            href="/admin/config/crons/logs"
+                            className="inline-flex items-center gap-2 rounded-xl border border-cyan-500/20 bg-cyan-500/5 px-4 py-2 text-sm font-semibold text-cyan-400 transition hover:border-cyan-500/30 hover:bg-cyan-500/10"
+                        >
+                            <Eye size={16} />
+                            Logs
+                        </Link>
                         <button
                             onClick={() => fetchJobs(false)}
                             disabled={refreshing}
@@ -870,18 +869,13 @@ export default function CronJobsPage() {
 
                                     {/* Action Buttons */}
                                     <div className="mt-6 flex justify-end gap-2.5 border-t border-white/5 pt-4">
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                setSelectedJobForLogs(job);
-                                                setShowLogsModal(true);
-                                            }}
-                                            disabled={!job.lastRun}
-                                            className="px-3.5 py-1.5 rounded-lg border border-white/10 hover:border-white/20 text-slate-300 hover:text-white transition-all text-xs font-semibold flex items-center gap-1.5 disabled:opacity-30 disabled:cursor-not-allowed"
+                                        <Link
+                                            href={`/admin/config/crons/logs?cronId=${job._id}`}
+                                            className="px-3.5 py-1.5 rounded-lg border border-white/10 hover:border-white/20 text-slate-300 hover:text-white transition-all text-xs font-semibold flex items-center gap-1.5"
                                         >
                                             <Eye size={12} />
                                             View Logs
-                                        </button>
+                                        </Link>
                                         <button
                                             type="button"
                                             onClick={() => openEditModal(job)}
@@ -1042,18 +1036,13 @@ export default function CronJobsPage() {
                                             </button>
 
                                             <div className="flex gap-2">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setSelectedJobForLogs(job);
-                                                        setShowLogsModal(true);
-                                                    }}
-                                                    disabled={!job.lastRun}
-                                                    className="px-3.5 py-1.5 rounded-lg border border-white/10 hover:border-white/20 text-slate-300 hover:text-white transition-all text-xs font-semibold flex items-center gap-1.5 disabled:opacity-30"
+                                                <Link
+                                                    href={`/admin/config/crons/logs?cronId=${job._id}`}
+                                                    className="px-3.5 py-1.5 rounded-lg border border-white/10 hover:border-white/20 text-slate-300 hover:text-white transition-all text-xs font-semibold flex items-center gap-1.5"
                                                 >
                                                     <Eye size={12} />
                                                     Logs
-                                                </button>
+                                                </Link>
                                                 <button
                                                     type="button"
                                                     onClick={() => openEditModal(job)}
@@ -1800,82 +1789,6 @@ export default function CronJobsPage() {
                 </div>
             )}
 
-            {/* LOGS DETAILS DIALOG MODAL */}
-            {showLogsModal && selectedJobForLogs && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
-                    <div className="w-full max-w-3xl rounded-3xl border border-white/10 bg-slate-900/95 p-6 shadow-2xl flex flex-col max-h-[80vh]">
-                        <div className="flex justify-between items-center border-b border-white/5 pb-4 mb-4 shrink-0">
-                            <div className="flex items-center gap-2">
-                                <Terminal size={18} className="text-cyan-400" />
-                                <h3 className="text-lg font-bold text-white">
-                                    Execution Log: {selectedJobForLogs.name}
-                                </h3>
-                            </div>
-                            <button
-                                onClick={() => {
-                                    setShowLogsModal(false);
-                                    setSelectedJobForLogs(null);
-                                }}
-                                className="text-slate-400 hover:text-white p-1 hover:bg-white/5 rounded-lg"
-                            >
-                                <X size={18} />
-                            </button>
-                        </div>
-
-                        {/* Meta info block */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 bg-slate-950/40 border border-white/5 rounded-2xl p-4 text-xs font-mono mb-4 shrink-0">
-                            <div>
-                                <span className="text-slate-500 block">Trigger Method</span>
-                                <span className="text-slate-300 font-bold uppercase">{selectedJobForLogs.action === 'webhook' ? 'Webhook (HTTP)' : 'System Native'}</span>
-                            </div>
-                            <div>
-                                <span className="text-slate-500 block">Last Run Status</span>
-                                <span className={`font-bold uppercase tracking-wider ${selectedJobForLogs.lastRunStatus === 'success' ? 'text-emerald-400' : 'text-red-400'}`}>
-                                    {selectedJobForLogs.lastRunStatus || 'Unknown'}
-                                </span>
-                            </div>
-                            <div className="col-span-2">
-                                <span className="text-slate-500 block">Execution Timestamp</span>
-                                <span className="text-slate-300">
-                                    {selectedJobForLogs.lastRun ? new Date(selectedJobForLogs.lastRun).toLocaleString() : 'Never'}
-                                </span>
-                            </div>
-                        </div>
-
-                        {/* Log Text Box */}
-                        <div className="flex-1 overflow-y-auto min-h-0 rounded-2xl border border-white/10 bg-slate-950/90 p-4 font-mono text-xs text-cyan-300 select-all custom-scrollbar leading-relaxed whitespace-pre-wrap text-left">
-                            {selectedJobForLogs.lastRunLog || 'No log records found for this task yet.'}
-                        </div>
-
-                        {/* Actions */}
-                        <div className="flex justify-end gap-3 border-t border-white/5 pt-4 mt-4 shrink-0">
-                            <button
-                                type="button"
-                                onClick={() => handleRunNow(selectedJobForLogs)}
-                                disabled={runningJobId === selectedJobForLogs._id}
-                                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
-                            >
-                                {runningJobId === selectedJobForLogs._id ? (
-                                    <RefreshCw size={12} className="animate-spin" />
-                                ) : (
-                                    <Play size={12} className="fill-current" />
-                                )}
-                                Run Now
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setShowLogsModal(false);
-                                    setSelectedJobForLogs(null);
-                                }}
-                                className="rounded-xl border border-white/10 px-4 py-2 text-sm text-slate-300 transition hover:border-white/20 hover:text-white"
-                            >
-                                Close Logs
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
             {/* GLOBAL ENV DIALOG MODAL */}
             {showGlobalEnvModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
