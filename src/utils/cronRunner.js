@@ -1,5 +1,6 @@
 import dbConnect from '@/lib/db';
 import Cron from '@/models/Cron';
+import CronLog from '@/models/CronLog';
 import { executeUnreferencedCleanup, executeWebPMigration } from '@/lib/storageAudit';
 import { sendNotification } from './notificationService';
 
@@ -351,6 +352,9 @@ export async function executeCronJob(job) {
     const startTime = Date.now();
     let status = 'success';
     let logOutput = '';
+    let requestMethod = '';
+    let requestUrl = '';
+    let requestUrlForLog = '';
 
     try {
         if (job.action === 'clean_unreferenced') {
@@ -389,6 +393,9 @@ export async function executeCronJob(job) {
                 : job.webhookUrl;
             const compiledUrl = valueToRequestString(compiledUrlValue);
             const method = job.webhookMethod || 'POST';
+            requestMethod = method;
+            requestUrl = compiledUrl;
+            requestUrlForLog = redactEnvSecrets(compiledUrl, cachedData.env);
 
             const rawHeaders = {
                 'Content-Type': 'application/json',
@@ -469,12 +476,25 @@ export async function executeCronJob(job) {
 
     // Update Cron document
     try {
-        const nextRun = getNextCronRun(job.schedule, new Date());
+        const ranAt = new Date();
+        const durationMs = Date.now() - startTime;
+        const nextRun = getNextCronRun(job.schedule, ranAt);
         await Cron.findByIdAndUpdate(job._id, {
-            lastRun: new Date(),
+            lastRun: ranAt,
             lastRunStatus: status,
             lastRunLog: logOutput,
             nextRun
+        });
+        await CronLog.create({
+            cronId: job._id,
+            cronName: job.name,
+            action: job.action,
+            status,
+            method: requestMethod,
+            url: requestUrlForLog || requestUrl,
+            log: logOutput,
+            durationMs,
+            ranAt
         });
         console.log(`[CRON SERVICE] Finished job: ${job.name} (${status})`);
 
