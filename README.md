@@ -34,7 +34,9 @@ Synthesize content, titles, and layouts directly from your admin panel:
 Full control over background tasks with a custom 60s ticking engine:
 - **Visual Builder & Parser**: Select intervals via UI; a real-time translator converts expressions (e.g. `*/15 * * * *`) into human-readable text.
 - **Automated Maintenance**: Auto-purge orphaned uploads and optimize heavy PNG/JPG files to highly compressed WebP.
-- **Custom Webhook Tasks**: Register API endpoints to execute on schedule, with thorough success/error logs.
+- **Custom Webhook Tasks**: Register API endpoints to execute on schedule, with custom methods, body payloads, and custom headers supporting n8n-style **Fixed/Expression switch toggles**.
+- **Global Encrypted Secrets**: Save secure environment variables (`$env.KEY`) globally using secure AES-256 encryption, safely masked (`[SECRET: KEY]`) inside dynamic evaluation previews.
+- **Predefined System Variables**: Evaluate context-aware variables dynamically, including `$site` for dynamic site URL mapping and `$device` for host OS/CPU platform specs (e.g., `$device.platform`, `$device.os`).
 
 ### 📧 Webhook & Push Dual-Routing
 Advanced contact settings for real-time lead routing:
