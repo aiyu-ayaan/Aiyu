@@ -3,6 +3,18 @@ import Cron from '@/models/Cron';
 import { executeUnreferencedCleanup, executeWebPMigration } from '@/lib/storageAudit';
 import { sendNotification } from './notificationService';
 
+// Dynamic variables query models
+import Blog from '@/models/Blog';
+import Project from '@/models/Project';
+import Gallery from '@/models/Gallery';
+import Config from '@/models/Config';
+import About from '@/models/About';
+import Ads from '@/models/Ads';
+import Social from '@/models/Social';
+import Theme from '@/models/Theme';
+import ContactMessage from '@/models/ContactMessage';
+import Deployment from '@/models/Deployment';
+
 function parseCronField(field, min, max) {
     if (field === '*') return Array.from({ length: max - min + 1 }, (_, i) => min + i);
     
@@ -160,6 +172,122 @@ async function runDueCronJobs() {
     }
 }
 
+function getValueByPath(obj, path) {
+    if (!path) return obj;
+    const cleanPath = path
+        .replace(/\[['"]?([^'"\]]+)['"]?\]/g, '.$1')
+        .replace(/^\./, '');
+    
+    const parts = cleanPath.split('.');
+    let current = obj;
+    for (const part of parts) {
+        if (current === null || current === undefined) return undefined;
+        current = current[part];
+    }
+    return current;
+}
+
+async function resolvePlaceholder(modelName, path, cachedData) {
+    const lowerModel = modelName.toLowerCase();
+    
+    if (lowerModel === 'time' || lowerModel === 'timestamp') {
+        return new Date().toISOString();
+    }
+    if (lowerModel === 'date') {
+        return new Date().toLocaleDateString();
+    }
+
+    const modelMapping = {
+        blogs: { model: Blog, query: () => Blog.find({}).sort({ createdAt: -1 }).lean() },
+        blog: { model: Blog, query: () => Blog.find({}).sort({ createdAt: -1 }).lean() },
+        projects: { model: Project, query: () => Project.find({}).sort({ order: 1 }).lean() },
+        project: { model: Project, query: () => Project.find({}).sort({ order: 1 }).lean() },
+        gallery: { model: Gallery, query: () => Gallery.find({}).sort({ order: 1 }).lean() },
+        config: { model: Config, query: () => Config.findOne({}).lean() },
+        about: { model: About, query: () => About.findOne({}).lean() },
+        ads: { model: Ads, query: () => Ads.findOne({}).lean() },
+        socials: { model: Social, query: () => Social.find({}).lean() },
+        social: { model: Social, query: () => Social.find({}).lean() },
+        theme: { model: Theme, query: () => Theme.findOne({}).lean() },
+        themes: { model: Theme, query: () => Theme.findOne({}).lean() },
+        messages: { model: ContactMessage, query: () => ContactMessage.find({}).sort({ createdAt: -1 }).lean() },
+        message: { model: ContactMessage, query: () => ContactMessage.find({}).sort({ createdAt: -1 }).lean() },
+        deployments: { model: Deployment, query: () => Deployment.find({}).sort({ order: 1 }).lean() },
+        deployment: { model: Deployment, query: () => Deployment.find({}).sort({ order: 1 }).lean() },
+        crons: { model: Cron, query: () => Cron.find({}).lean() },
+        cron: { model: Cron, query: () => Cron.find({}).lean() }
+    };
+
+    if (modelMapping[lowerModel]) {
+        if (!cachedData[lowerModel]) {
+            try {
+                await dbConnect();
+                cachedData[lowerModel] = await modelMapping[lowerModel].query();
+            } catch (err) {
+                console.error(`[CRON TEMPLATE ERROR] Failed to fetch model data for ${lowerModel}:`, err);
+                cachedData[lowerModel] = null;
+            }
+        }
+        return getValueByPath(cachedData[lowerModel], path);
+    }
+
+    return `$${modelName}${path}`;
+}
+
+async function compileTemplate(templateStr, cachedData) {
+    if (typeof templateStr !== 'string') return templateStr;
+    if (!templateStr.includes('$')) return templateStr;
+
+    const singlePlaceholderMatch = templateStr.match(/^\$([a-zA-Z0-9_]+)([\.\[\]'"\-a-zA-Z0-9_]*)$/);
+    if (singlePlaceholderMatch) {
+        return resolvePlaceholder(singlePlaceholderMatch[1], singlePlaceholderMatch[2], cachedData);
+    }
+
+    const regex = /\$([a-zA-Z0-9_]+)([\.\[\]'"\-a-zA-Z0-9_]*)/g;
+    let match;
+    let result = templateStr;
+    const matches = [];
+    while ((match = regex.exec(templateStr)) !== null) {
+        matches.push({
+            full: match[0],
+            model: match[1],
+            path: match[2],
+            index: match.index
+        });
+    }
+
+    for (let i = matches.length - 1; i >= 0; i--) {
+        const m = matches[i];
+        const val = await resolvePlaceholder(m.model, m.path, cachedData);
+        const replacement = typeof val === 'object' ? JSON.stringify(val) : String(val ?? '');
+        result = result.slice(0, m.index) + replacement + result.slice(m.index + m.full.length);
+    }
+
+    return result;
+}
+
+async function compileTemplateObject(obj, cachedData) {
+    if (obj === null || obj === undefined) return obj;
+    if (typeof obj === 'string') {
+        return compileTemplate(obj, cachedData);
+    }
+    if (Array.isArray(obj)) {
+        const compiledArray = [];
+        for (const item of obj) {
+            compiledArray.push(await compileTemplateObject(item, cachedData));
+        }
+        return compiledArray;
+    }
+    if (typeof obj === 'object') {
+        const compiledObj = {};
+        for (const key of Object.keys(obj)) {
+            compiledObj[key] = await compileTemplateObject(obj[key], cachedData);
+        }
+        return compiledObj;
+    }
+    return obj;
+}
+
 export async function executeCronJob(job) {
     const startTime = Date.now();
     let status = 'success';
@@ -178,8 +306,11 @@ export async function executeCronJob(job) {
                         `Space saved: ${migrationResult.reclaimedString}.\n` +
                         `Details: ${JSON.stringify(migrationResult.details, null, 2)}`;
         } else if (job.action === 'webhook') {
+            const cachedData = {};
+            const compiledUrl = await compileTemplate(job.webhookUrl, cachedData);
             const method = job.webhookMethod || 'POST';
-            const headers = {
+
+            const rawHeaders = {
                 'Content-Type': 'application/json',
                 'User-Agent': 'Aiyu-Task-Scheduler'
             };
@@ -187,21 +318,36 @@ export async function executeCronJob(job) {
             if (job.webhookHeaders && Array.isArray(job.webhookHeaders)) {
                 for (const header of job.webhookHeaders) {
                     if (header.key && header.key.trim()) {
-                        const normalKey = Object.keys(headers).find(
+                        const normalKey = Object.keys(rawHeaders).find(
                             k => k.toLowerCase() === header.key.trim().toLowerCase()
                         ) || header.key.trim();
-                        headers[normalKey] = header.value || '';
+                        rawHeaders[normalKey] = header.value || '';
                     }
                 }
             }
+            const headers = await compileTemplateObject(rawHeaders, cachedData);
 
-            const res = await fetch(job.webhookUrl, {
+            let bodyContent = undefined;
+            if (method === 'POST') {
+                if (job.webhookBody !== undefined && job.webhookBody !== null && job.webhookBody.trim() !== '') {
+                    const compiledBody = await compileTemplate(job.webhookBody.trim(), cachedData);
+                    bodyContent = typeof compiledBody === 'object' ? JSON.stringify(compiledBody) : String(compiledBody);
+                    
+                    if (typeof compiledBody === 'object' && !Object.keys(headers).some(k => k.toLowerCase() === 'content-type')) {
+                        headers['Content-Type'] = 'application/json';
+                    }
+                } else {
+                    bodyContent = JSON.stringify({
+                        cronName: job.name,
+                        triggeredAt: new Date().toISOString()
+                    });
+                }
+            }
+
+            const res = await fetch(compiledUrl, {
                 method,
                 headers,
-                body: method === 'POST' ? JSON.stringify({
-                    cronName: job.name,
-                    triggeredAt: new Date().toISOString()
-                }) : undefined
+                body: bodyContent
             });
             const text = await res.text();
             logOutput = `Webhook trigger returned HTTP status ${res.status}.\nResponse (truncated): ${text.slice(0, 500)}`;
