@@ -139,7 +139,8 @@ async function main() {
       });
       // Reload page to ensure theme logic hydrates cleanly
       await page.reload({ waitUntil: 'load' });
-      await page.waitForTimeout(2500); // Allow entry animations (framer-motion) to settle
+      const lightWaitTime = route.name === 'github' ? 4500 : 2500;
+      await page.waitForTimeout(lightWaitTime); // Allow entry animations and async data to settle
 
       const desktopLightPath = `public/screenshots/desktop-light-${route.name}.png`;
       await page.screenshot({ path: desktopLightPath });
@@ -166,7 +167,8 @@ async function main() {
       });
       // Reload page to ensure theme logic hydrates cleanly
       await page.reload({ waitUntil: 'load' });
-      await page.waitForTimeout(2500); // Allow entry animations (framer-motion) to settle
+      const darkWaitTime = route.name === 'github' ? 4500 : 2500;
+      await page.waitForTimeout(darkWaitTime); // Allow entry animations and async data to settle
 
       const desktopDarkPath = `public/screenshots/desktop-dark-${route.name}.png`;
       await page.screenshot({ path: desktopDarkPath });
