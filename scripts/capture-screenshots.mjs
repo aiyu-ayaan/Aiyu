@@ -8,6 +8,27 @@ import { chromium } from 'playwright';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// ==========================================
+// 0. Parse .env if it exists to load credentials into process.env
+// ==========================================
+const envPath = path.resolve('.env');
+if (fs.existsSync(envPath)) {
+  const lines = fs.readFileSync(envPath, 'utf8').split('\n');
+  for (const line of lines) {
+    const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
+    if (match) {
+      let value = match[2] ? match[2].trim() : '';
+      if (value.startsWith('"') && value.endsWith('"')) {
+        value = value.substring(1, value.length - 1);
+      } else if (value.startsWith("'") && value.endsWith("'")) {
+        value = value.substring(1, value.length - 1);
+      }
+      process.env[match[1]] = value;
+    }
+  }
+  console.log('Loaded credentials and config from .env successfully.');
+}
+
 const routes = [
   { name: 'home', label: 'Home Page', path: '/' },
   { name: 'about', label: 'About Me', path: '/about-me' },
@@ -100,7 +121,7 @@ async function main() {
 
     for (const route of routes) {
       const url = `http://localhost:3000${route.path}`;
-      console.log(`📸 Capturing: ${route.label} (${route.path})`);
+      console.log(`📸 Capturing public route: ${route.label} (${route.path})`);
 
       // ==========================================
       // LIGHT MODE CAPTURE
@@ -118,14 +139,14 @@ async function main() {
       });
       // Reload page to ensure theme logic hydrates cleanly
       await page.reload({ waitUntil: 'load' });
-      await page.waitForTimeout(2000); // Allow entry animations (framer-motion) to settle
+      await page.waitForTimeout(2500); // Allow entry animations (framer-motion) to settle
 
       const desktopLightPath = `public/screenshots/desktop-light-${route.name}.png`;
       await page.screenshot({ path: desktopLightPath });
 
       console.log(`  -> Mobile Light Mode (430x932)`);
       await page.setViewportSize({ width: 430, height: 932 });
-      await page.waitForTimeout(1000); // Allow viewport layout shift animations to settle
+      await page.waitForTimeout(1500); // Allow viewport layout shift animations to settle
       const mobileLightPath = `public/screenshots/mobile-light-${route.name}.png`;
       await page.screenshot({ path: mobileLightPath });
 
@@ -145,16 +166,63 @@ async function main() {
       });
       // Reload page to ensure theme logic hydrates cleanly
       await page.reload({ waitUntil: 'load' });
-      await page.waitForTimeout(2000); // Allow entry animations (framer-motion) to settle
+      await page.waitForTimeout(2500); // Allow entry animations (framer-motion) to settle
 
       const desktopDarkPath = `public/screenshots/desktop-dark-${route.name}.png`;
       await page.screenshot({ path: desktopDarkPath });
 
       console.log(`  -> Mobile Dark Mode (430x932)`);
       await page.setViewportSize({ width: 430, height: 932 });
-      await page.waitForTimeout(1000); // Allow viewport layout shift animations to settle
+      await page.waitForTimeout(1500); // Allow viewport layout shift animations to settle
       const mobileDarkPath = `public/screenshots/mobile-dark-${route.name}.png`;
       await page.screenshot({ path: mobileDarkPath });
+    }
+
+    // ==========================================
+    // ADMIN DASHBOARD CAPTURE (DARK MODE)
+    // ==========================================
+    console.log('\n📸 Capturing Admin Dashboard (/admin)');
+    const adminUrl = 'http://localhost:3000/admin';
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    await page.goto(adminUrl, { waitUntil: 'load' });
+    await page.waitForTimeout(2000);
+
+    // Check if we are on the login page or dashboard
+    const isLoginPage = await page.$('input[type="text"]');
+    if (isLoginPage) {
+      console.log('  -> Logging into Admin Panel...');
+      const username = process.env.ADMIN_USERNAME || 'aiyu';
+      const password = process.env.ADMIN_PASSWORD || '1501@AiyuLoveAnshu^2401!!';
+      await page.fill('input[type="text"]', username);
+      await page.fill('input[type="password"]', password);
+      await page.click('button[type="submit"]');
+
+      // Wait for login transition to complete
+      await page.waitForNavigation({ waitUntil: 'load' }).catch(() => {});
+      await page.waitForTimeout(3000);
+    }
+
+    // Set theme to dark for admin panel
+    await page.evaluate(() => {
+      localStorage.setItem('themeMode', 'dark');
+      localStorage.setItem('theme', 'dark');
+      localStorage.setItem('themeVariant', 'dark');
+      document.documentElement.setAttribute('data-theme', 'dark');
+    });
+    await page.reload({ waitUntil: 'load' });
+    await page.waitForTimeout(3000); // Allow charts, count widgets, and database stats to populate
+
+    const adminDashboardPath = 'public/screenshots/admin.png';
+    await page.screenshot({ path: adminDashboardPath });
+    console.log(`  -> Admin Dashboard screenshot captured at ${adminDashboardPath}`);
+
+    // Copy admin screenshot to docs/images/admin-dashboard.png too
+    const legacyAdminPath = 'docs/images/admin-dashboard.png';
+    try {
+      fs.copyFileSync(adminDashboardPath, legacyAdminPath);
+      console.log(`  -> Copied admin dashboard screenshot to ${legacyAdminPath}`);
+    } catch (err) {
+      console.error(`Failed to copy admin screenshot to ${legacyAdminPath}:`, err.message);
     }
 
     console.log('\nClosing Playwright Chromium...');
@@ -169,24 +237,51 @@ async function main() {
     }
     console.log('Next.js dev server stopped successfully.');
 
-    // 7. Update README.md
+    // ==========================================
+    // Copy new dark screenshots to legacy paths ("old images")
+    // ==========================================
+    console.log('\n--- Copying updated dark screenshots to legacy file paths ---');
+    const copyMapping = [
+      { src: 'public/screenshots/desktop-dark-home.png', dest: 'public/screenshots/home.png' },
+      { src: 'public/screenshots/desktop-dark-about.png', dest: 'public/screenshots/about.png' },
+      { src: 'public/screenshots/desktop-dark-projects.png', dest: 'public/screenshots/projects.png' },
+      { src: 'public/screenshots/desktop-dark-contact.png', dest: 'public/screenshots/contact.png' },
+      { src: 'public/screenshots/desktop-dark-home.png', dest: 'docs/images/home.png' }
+    ];
+
+    for (const pair of copyMapping) {
+      try {
+        if (fs.existsSync(pair.src)) {
+          fs.copyFileSync(pair.src, pair.dest);
+          console.log(`Success: ${pair.src} -> ${pair.dest}`);
+        } else {
+          console.warn(`Source not found: ${pair.src}`);
+        }
+      } catch (err) {
+        console.error(`Failed to copy ${pair.src} to ${pair.dest}:`, err.message);
+      }
+    }
+
+    // 7. Update README.md (Dark Theme Only)
     console.log('\n--- Updating README.md Screenshots Section ---');
     const readmePath = path.resolve('README.md');
     if (fs.existsSync(readmePath)) {
       let readme = fs.readFileSync(readmePath, 'utf8');
 
-      // Build the beautiful markdown table
-      let tableMarkdown = '| Page | Desktop Light Mode (1920x1080) | Desktop Dark Mode (1920x1080) | Mobile Light Mode (430x932) | Mobile Dark Mode (430x932) |\n';
-      tableMarkdown += '|---|---|---|---|---|\n';
+      // Build the beautiful markdown table with DARK THEME ONLY
+      let tableMarkdown = '| Page | Desktop Dark Mode (1920x1080) | Mobile Dark Mode (430x932) |\n';
+      tableMarkdown += '|---|---|---|\n';
 
       for (const route of routes) {
-        const dl = `public/screenshots/desktop-light-${route.name}.png`;
         const dd = `public/screenshots/desktop-dark-${route.name}.png`;
-        const ml = `public/screenshots/mobile-light-${route.name}.png`;
         const md = `public/screenshots/mobile-dark-${route.name}.png`;
 
-        tableMarkdown += `| **${route.label}** | [![Desktop Light](${dl})](${dl}) | [![Desktop Dark](${dd})](${dd}) | [![Mobile Light](${ml})](${ml}) | [![Mobile Dark](${md})](${md}) |\n`;
+        tableMarkdown += `| **${route.label}** | [![Desktop Dark](${dd})](${dd}) | [![Mobile Dark](${md})](${md}) |\n`;
       }
+
+      // Add Admin Panel row
+      const adminPath = 'public/screenshots/admin.png';
+      tableMarkdown += `| **Admin Dashboard** | [![Admin Dashboard](${adminPath})](${adminPath}) | *Desktop Only* |\n`;
 
       const screenshotsHeader = '## Screenshots';
       const techStackHeader = '## 🛠️ Tech Stack';
@@ -201,7 +296,7 @@ async function main() {
 
         readme = before + newScreenshotsSection + after;
         fs.writeFileSync(readmePath, readme, 'utf8');
-        console.log('Successfully injected screenshots comparison table into README.md!');
+        console.log('Successfully injected Dark-Mode screenshots comparison table into README.md!');
       } else {
         console.warn('Could not locate standard ## Screenshots or ## 🛠️ Tech Stack headers in README.md to replace. Table generated, but not injected.');
         console.log('Generated Table:\n', tableMarkdown);
