@@ -10,7 +10,7 @@ async function updateCron(request, { params }) {
     try {
         const { id } = await params;
         const body = await request.json();
-        const { name, schedule, enabled, webhookUrl, webhookMethod, webhookHeaders, webhookBody, notificationEnabled, notificationOn } = body;
+        const { name, schedule, enabled, webhookUrl, webhookMethod, webhookHeaders, webhookBody, webhookBodyType, notificationEnabled, notificationOn } = body;
 
         const cronJob = await Cron.findById(id);
         if (!cronJob) {
@@ -53,6 +53,7 @@ async function updateCron(request, { params }) {
             if (webhookMethod) cronJob.webhookMethod = webhookMethod;
             if (webhookHeaders !== undefined) cronJob.webhookHeaders = webhookHeaders;
             if (webhookBody !== undefined) cronJob.webhookBody = webhookBody;
+            if (webhookBodyType !== undefined) cronJob.webhookBodyType = webhookBodyType;
         }
 
         await cronJob.save();

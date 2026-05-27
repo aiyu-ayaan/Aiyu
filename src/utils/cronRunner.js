@@ -330,11 +330,15 @@ export async function executeCronJob(job) {
             let bodyContent = undefined;
             if (method === 'POST') {
                 if (job.webhookBody !== undefined && job.webhookBody !== null && job.webhookBody.trim() !== '') {
-                    const compiledBody = await compileTemplate(job.webhookBody.trim(), cachedData);
-                    bodyContent = typeof compiledBody === 'object' ? JSON.stringify(compiledBody) : String(compiledBody);
-                    
-                    if (typeof compiledBody === 'object' && !Object.keys(headers).some(k => k.toLowerCase() === 'content-type')) {
-                        headers['Content-Type'] = 'application/json';
+                    if (job.webhookBodyType === 'fixed') {
+                        bodyContent = job.webhookBody.trim();
+                    } else {
+                        const compiledBody = await compileTemplate(job.webhookBody.trim(), cachedData);
+                        bodyContent = typeof compiledBody === 'object' ? JSON.stringify(compiledBody) : String(compiledBody);
+                        
+                        if (typeof compiledBody === 'object' && !Object.keys(headers).some(k => k.toLowerCase() === 'content-type')) {
+                            headers['Content-Type'] = 'application/json';
+                        }
                     }
                 } else {
                     bodyContent = JSON.stringify({

@@ -51,6 +51,11 @@ const CronSchema = new mongoose.Schema({
         type: String,
         trim: true
     },
+    webhookBodyType: {
+        type: String,
+        enum: ['fixed', 'expression'],
+        default: 'expression'
+    },
     lastRun: {
         type: Date
     },
