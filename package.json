@@ -1,6 +1,6 @@
 {
   "name": "aiyu",
-  "version": "3.10.0",
+  "version": "4.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",

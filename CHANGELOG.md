@@ -1,5 +1,50 @@
 # Changelog
 
+## [4.0.0](https://github.com/aiyu-ayaan/Aiyu/compare/v3.10.0...v4.0.0) (2026-05-27)
+
+### Features
+
+* feat(crons): add log card collapse control
+* feat(crons): add execution logs history page
+* feat(crons): persist webhook execution logs
+* feat(cron): implement dynamic template resolution for webhook configurations
+* feat(cron): add webhook URL type support and enhance preview functionality
+* feat(terminal): add apps command and suggestions for navigation
+* feat(database): backup and restore cron jobs, ads, and notifications
+* feat(cron): add predefined site url and device metadata variables
+* feat(cron): make environment variables global and add global envs modal panel
+* feat(cron): integrate fixed/expression headers toggles and env secrets modal UI
+* feat(cron): encrypt environment variables and support secure  template evaluation
+* feat(cron): add webhookEnv and webhookHeadersType to database schema and APIs
+* feat(cron): integrate n8n-style fixed/expression tabs and live preview panel
+* feat(cron): create live template preview API endpoint
+* feat(cron): add webhookBodyType to database schema and API routes
+* feat(cron): add UI inputs for custom body and dynamic variables help guide
+* feat(cron): implement dynamic template variable compiler in execution runner
+* feat(cron): add webhookBody to database schema and API endpoints
+* feat(cron): add support for custom webhook headers in cron jobs
+* feat(screenshots): capture github page with 4.5s load delay for complete async data rendering
+* feat(screenshots): increase wait timeout to 4.5s specifically for GitHub route
+* feat(screenshots): filter table to dark-only, update legacy image files, and capture admin dashboard
+* feat(screenshots): expand script to support admin login, legacy copy, and dark-only table
+* feat(screenshots): capture all public pages in desktop/mobile and light/dark modes, and update README.md comparison table
+* feat(screenshots): add automated capture script for all pages
+
+### Bug Fixes
+
+* fix(crons): keep log collapse action visible
+* fix(terminal): prevent command output overlay from clipping in header
+* fix(readme): update Next.js version and enhance badge visibility
+
+### Other Changes
+
+* refactor(crons): replace log dialog with history page
+* docs: update README for webhook expression switches, global secrets, and variables
+* style(cron): make dialog modal form fields scrollable and header/footer stationary
+* docs(readme): rewrite bloated readme into sleek high-impact landing page
+* docs(readme): document task scheduler, notifications, contact webhooks, and adsense
+* chore(deps): add playwright to devDependencies and package scripts
+
 ## [3.10.0](https://github.com/aiyu-ayaan/Aiyu/compare/v3.9.2...v3.10.0) (2026-05-26)
 
 ### Features
