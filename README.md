@@ -11,7 +11,7 @@
 [![LOC](https://badge.aiyu.co.in/repo-batch?owner=aiyu-ayaan&repo=aiyu&fields=loc)](https://github.com/aiyu-ayaan/Aiyu)
 [![wakatime](https://wakatime.com/badge/github/aiyu-ayaan/Aiyu.svg)](https://wakatime.com/badge/github/aiyu-ayaan/Aiyu)
 
-![home](./docs/images/home.png)
+![home](public/screenshots/desktop-dark-home.png)
 
 A modern, responsive, and **fully customizable** portfolio website built with Next.js 15, Tailwind CSS, and MongoDB. This project showcases skills, detailed project case studies, blogs, and provides a way for visitors to contact you. It features a comprehensive **Admin Panel** for managing all content without touching code, making it perfect for developers who want a professional portfolio with zero-hassle content management.
 
