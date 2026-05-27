@@ -7,9 +7,9 @@ import confetti from 'canvas-confetti';
 import { themePresets } from '../../../lib/themePresets';
 import { applyThemeColors } from '../../../utils/themeUtils';
 
-const SUGGESTIONS = ['about-me', 'blogs', 'projects', 'gallery', 'github', 'resume', 'contact-me', 'admin'];
+const SUGGESTIONS = ['about-me', 'blogs', 'projects', 'gallery', 'github', 'resume', 'contact-me', 'apps', 'admin'];
 const ADMIN_SUGGESTIONS = ['dashboard', 'home', 'about', 'projects', 'blogs', 'gallery', 'header', 'footer', 'contact', 'themes', 'github', 'config', 'terminal', 'database'];
-const ALL_COMMANDS = ['cd', 'ls', 'pwd', 'clear', 'date', 'whoami', 'history', 'resume', 'email', 'socials', 'reboot', 'help', 'theme', 'echo', 'sysinfo', 'joke', 'projects', 'ascii', 'roll', 'flip', 'magic8', 'disco'];
+const ALL_COMMANDS = ['cd', 'ls', 'pwd', 'clear', 'date', 'whoami', 'history', 'resume', 'email', 'socials', 'reboot', 'help', 'theme', 'echo', 'sysinfo', 'joke', 'projects', 'apps', 'app', 'ascii', 'roll', 'flip', 'magic8', 'disco'];
 
 const ASCII_ARTS = [
     {
@@ -43,7 +43,7 @@ const ASCII_ARTS = [
     }
 ];
 
-export default function TerminalPath({ socialData, config }) {
+export default function TerminalPath({ socialData, config, onOutputChange }) {
     const pathname = usePathname();
     const router = useRouter();
     const { switchVariant, setThemeMode, theme, themeMode, activeThemeData } = useTheme();
@@ -54,6 +54,12 @@ export default function TerminalPath({ socialData, config }) {
     const [blogCache, setBlogCache] = useState([]); // Cache for blog slugs/ids
     const [history, setHistory] = useState([]); // Command history
     const inputRef = useRef(null);
+
+    useEffect(() => {
+        if (onOutputChange) {
+            onOutputChange(!!output);
+        }
+    }, [output, onOutputChange]);
 
     useEffect(() => {
         setMounted(true);
@@ -193,9 +199,9 @@ export default function TerminalPath({ socialData, config }) {
                     }
                 }
 
-                // Check if just navigating to a valid parent (e.g., cd blogs/ or cd admin/)
-                if ((SUGGESTIONS.includes(parentDir) || parentDir === 'admin') && !subPath) {
-                    router.push(`/${parentDir}`);
+                // Check if just navigating to a valid parent (e.g., cd blogs/, cd apps/ or cd admin/)
+                if ((SUGGESTIONS.includes(parentDir) || parentDir === 'admin' || parentDir === 'app') && !subPath) {
+                    router.push(parentDir === 'app' ? '/apps' : `/${parentDir}`);
                     return;
                 }
 
@@ -236,6 +242,11 @@ export default function TerminalPath({ socialData, config }) {
                 // 4. Special cases
                 if (cleanArg === 'home' || cleanArg === 'root') {
                     router.push('/');
+                    return;
+                }
+
+                if (cleanArg === 'app') {
+                    router.push('/apps');
                     return;
                 }
 
@@ -315,6 +326,7 @@ export default function TerminalPath({ socialData, config }) {
                     { cmd: 'email', desc: 'Get contact email' },
                     { cmd: 'socials', desc: 'List social links' },
                     { cmd: 'projects', desc: 'View projects' },
+                    { cmd: 'apps', desc: 'View hosted apps' },
                     { cmd: 'theme [mode]', desc: 'Switch theme (auto/light/dark)' },
                     { cmd: 'echo [text]', desc: 'Print text' },
                     { cmd: 'sysinfo', desc: 'System information' },
@@ -371,6 +383,8 @@ export default function TerminalPath({ socialData, config }) {
             setTimeout(() => setOutput(null), 6000);
         } else if (command === 'projects') {
             router.push('/projects');
+        } else if (command === 'apps' || command === 'app') {
+            router.push('/apps');
         } else if (command === 'ascii') {
             // Combine default ASCII arts with custom ones from config
             const customArts = config?.terminal?.asciiArts || [];
