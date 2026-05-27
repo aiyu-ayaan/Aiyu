@@ -96,6 +96,20 @@ function formatPreviewValue(value) {
     return String(value);
 }
 
+function hasDynamicTemplate(value) {
+    if (Array.isArray(value)) {
+        return value.some(item => hasDynamicTemplate(item));
+    }
+    if (value && typeof value === 'object') {
+        return Object.values(value).some(item => hasDynamicTemplate(item));
+    }
+    return typeof value === 'string' && value.includes('$');
+}
+
+function resolveTemplateMode(savedType, value) {
+    return savedType === 'expression' || hasDynamicTemplate(value) ? 'expression' : 'fixed';
+}
+
 export default function CronJobsPage() {
     const [jobs, setJobs] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -428,16 +442,16 @@ export default function CronJobsPage() {
         setFormName(job.name);
         setFormSchedule(job.schedule);
         setFormWebhookUrl(job.webhookUrl || 'https://');
-        setFormWebhookUrlType(job.webhookUrlType || 'fixed');
+        setFormWebhookUrlType(resolveTemplateMode(job.webhookUrlType, job.webhookUrl));
         setUrlPreviewOutput('');
         setFormWebhookMethod(job.webhookMethod || 'POST');
         setFormWebhookHeaders(job.webhookHeaders || []);
-        setFormWebhookHeadersType(job.webhookHeadersType || 'fixed');
+        setFormWebhookHeadersType(resolveTemplateMode(job.webhookHeadersType, job.webhookHeaders || []));
         setFormWebhookEnv(job.webhookEnv || []);
         setHeadersPreviewOutput('');
         setHeadersPreviewRows([]);
         setFormWebhookBody(job.webhookBody || '');
-        setFormWebhookBodyType(job.webhookBodyType || 'fixed');
+        setFormWebhookBodyType(resolveTemplateMode(job.webhookBodyType, job.webhookBody || ''));
         setPreviewOutput('');
 
         // Parse current schedule to set builder states
@@ -470,12 +484,12 @@ export default function CronJobsPage() {
             name: formName,
             schedule: formSchedule,
             webhookUrl: formWebhookUrl,
-            webhookUrlType: formWebhookUrlType,
+            webhookUrlType: resolveTemplateMode(formWebhookUrlType, formWebhookUrl),
             webhookMethod: formWebhookMethod,
             webhookHeaders: formWebhookHeaders.filter(h => h.key && h.key.trim()),
-            webhookHeadersType: formWebhookHeadersType,
+            webhookHeadersType: resolveTemplateMode(formWebhookHeadersType, formWebhookHeaders),
             webhookBody: formWebhookBody,
-            webhookBodyType: formWebhookBodyType,
+            webhookBodyType: resolveTemplateMode(formWebhookBodyType, formWebhookBody),
             webhookEnv: formWebhookEnv.filter(e => e.key && e.key.trim()),
             notificationEnabled: formNotificationEnabled,
             notificationOn: formNotificationOn

@@ -319,6 +319,34 @@ export async function compileTemplateObject(obj, cachedData) {
     return obj;
 }
 
+function hasTemplateValue(value) {
+    return typeof value === 'string' && value.includes('$');
+}
+
+function valueToRequestString(value) {
+    if (value === null || value === undefined) return '';
+    if (typeof value === 'object') {
+        if (typeof value.url === 'string') return value.url;
+        return JSON.stringify(value);
+    }
+    return String(value);
+}
+
+function redactEnvSecrets(value, env = {}) {
+    let output = typeof value === 'string' ? value : JSON.stringify(value, null, 2);
+
+    for (const [key, secret] of Object.entries(env)) {
+        if (!secret) continue;
+        output = output.split(String(secret)).join(`[SECRET: ${key}]`);
+    }
+
+    return output;
+}
+
+function safeLogJson(value, env = {}) {
+    return redactEnvSecrets(JSON.stringify(value, null, 2), env);
+}
+
 export async function executeCronJob(job) {
     const startTime = Date.now();
     let status = 'success';
@@ -355,9 +383,11 @@ export async function executeCronJob(job) {
                 console.error('[CRON SERVICE] Failed to load global environment variables:', envErr);
             }
 
-            const compiledUrl = job.webhookUrlType === 'expression'
+            const shouldCompileUrl = job.webhookUrlType === 'expression' || hasTemplateValue(job.webhookUrl);
+            const compiledUrlValue = shouldCompileUrl
                 ? await compileTemplate(job.webhookUrl, cachedData)
                 : job.webhookUrl;
+            const compiledUrl = valueToRequestString(compiledUrlValue);
             const method = job.webhookMethod || 'POST';
 
             const rawHeaders = {
@@ -368,21 +398,30 @@ export async function executeCronJob(job) {
             if (job.webhookHeaders && Array.isArray(job.webhookHeaders)) {
                 for (const header of job.webhookHeaders) {
                     if (header.key && header.key.trim()) {
+                        const headerKey = job.webhookHeadersType === 'expression' || hasTemplateValue(header.key)
+                            ? valueToRequestString(await compileTemplate(header.key.trim(), cachedData)).trim()
+                            : header.key.trim();
+
+                        if (!headerKey) continue;
+
                         const normalKey = Object.keys(rawHeaders).find(
-                            k => k.toLowerCase() === header.key.trim().toLowerCase()
-                        ) || header.key.trim();
-                        rawHeaders[normalKey] = header.value || '';
+                            k => k.toLowerCase() === headerKey.toLowerCase()
+                        ) || headerKey;
+
+                        rawHeaders[normalKey] = job.webhookHeadersType === 'expression' || hasTemplateValue(header.value)
+                            ? valueToRequestString(await compileTemplate(header.value || '', cachedData))
+                            : header.value || '';
                     }
                 }
             }
-            const headers = job.webhookHeadersType === 'expression'
-                ? await compileTemplateObject(rawHeaders, cachedData)
-                : rawHeaders;
+            const headers = Object.fromEntries(
+                Object.entries(rawHeaders).map(([key, value]) => [key, valueToRequestString(value)])
+            );
 
             let bodyContent = undefined;
             if (method === 'POST') {
                 if (job.webhookBody !== undefined && job.webhookBody !== null && job.webhookBody.trim() !== '') {
-                    if (job.webhookBodyType === 'fixed') {
+                    if (job.webhookBodyType === 'fixed' && !hasTemplateValue(job.webhookBody)) {
                         bodyContent = job.webhookBody.trim();
                     } else {
                         const compiledBody = await compileTemplate(job.webhookBody.trim(), cachedData);
@@ -400,13 +439,23 @@ export async function executeCronJob(job) {
                 }
             }
 
+            const requestLog = [
+                `Request Method: ${method}`,
+                `Request URL: ${redactEnvSecrets(compiledUrl, cachedData.env)}`,
+                shouldCompileUrl ? `Raw URL Template: ${redactEnvSecrets(job.webhookUrl, cachedData.env)}` : null,
+                `Request Headers:\n${safeLogJson(headers, cachedData.env)}`,
+                method === 'POST'
+                    ? `Request Body:\n${redactEnvSecrets(bodyContent || '', cachedData.env)}`
+                    : null
+            ].filter(Boolean).join('\n\n');
+
             const res = await fetch(compiledUrl, {
                 method,
                 headers,
                 body: bodyContent
             });
             const text = await res.text();
-            logOutput = `Webhook trigger returned HTTP status ${res.status}.\nResponse (truncated): ${text.slice(0, 500)}`;
+            logOutput = `${requestLog}\n\nWebhook trigger returned HTTP status ${res.status}.\nResponse:\n${text}`;
             if (!res.ok) {
                 status = 'failure';
             }

@@ -5,6 +5,20 @@ import Cron from '@/models/Cron';
 import { getNextCronRun } from '@/utils/cronRunner';
 import { encrypt, decrypt } from '@/lib/encryption';
 
+function hasDynamicTemplate(value) {
+    if (Array.isArray(value)) {
+        return value.some(item => hasDynamicTemplate(item));
+    }
+    if (value && typeof value === 'object') {
+        return Object.values(value).some(item => hasDynamicTemplate(item));
+    }
+    return typeof value === 'string' && value.includes('$');
+}
+
+function resolveTemplateMode(type, value) {
+    return type === 'expression' || hasDynamicTemplate(value) ? 'expression' : 'fixed';
+}
+
 // PUT: Update an existing cron job (Admin only)
 async function updateCron(request, { params }) {
     await dbConnect();
@@ -51,12 +65,18 @@ async function updateCron(request, { params }) {
 
         if (cronJob.type === 'user') {
             if (webhookUrl) cronJob.webhookUrl = webhookUrl;
-            if (webhookUrlType !== undefined) cronJob.webhookUrlType = webhookUrlType;
+            if (webhookUrlType !== undefined || webhookUrl !== undefined) {
+                cronJob.webhookUrlType = resolveTemplateMode(webhookUrlType, webhookUrl ?? cronJob.webhookUrl);
+            }
             if (webhookMethod) cronJob.webhookMethod = webhookMethod;
             if (webhookHeaders !== undefined) cronJob.webhookHeaders = webhookHeaders;
-            if (webhookHeadersType !== undefined) cronJob.webhookHeadersType = webhookHeadersType;
+            if (webhookHeadersType !== undefined || webhookHeaders !== undefined) {
+                cronJob.webhookHeadersType = resolveTemplateMode(webhookHeadersType, webhookHeaders ?? cronJob.webhookHeaders);
+            }
             if (webhookBody !== undefined) cronJob.webhookBody = webhookBody;
-            if (webhookBodyType !== undefined) cronJob.webhookBodyType = webhookBodyType;
+            if (webhookBodyType !== undefined || webhookBody !== undefined) {
+                cronJob.webhookBodyType = resolveTemplateMode(webhookBodyType, webhookBody ?? cronJob.webhookBody);
+            }
             if (webhookEnv !== undefined) {
                 cronJob.webhookEnv = (webhookEnv || []).map(env => ({
                     key: env.key,

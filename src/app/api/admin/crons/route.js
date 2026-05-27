@@ -10,6 +10,20 @@ if (typeof window === 'undefined') {
     initCronRunner().catch(err => console.error('[CRON SERVICE ERROR] Failed to initialize runner:', err));
 }
 
+function hasDynamicTemplate(value) {
+    if (Array.isArray(value)) {
+        return value.some(item => hasDynamicTemplate(item));
+    }
+    if (value && typeof value === 'object') {
+        return Object.values(value).some(item => hasDynamicTemplate(item));
+    }
+    return typeof value === 'string' && value.includes('$');
+}
+
+function resolveTemplateMode(type, value) {
+    return type === 'expression' || hasDynamicTemplate(value) ? 'expression' : 'fixed';
+}
+
 // GET: Retrieve all cron jobs (Admin only)
 async function getCrons(request) {
     await dbConnect();
@@ -70,6 +84,7 @@ async function createCron(request) {
             key: env.key,
             value: env.value ? encrypt(env.value) : ''
         }));
+        const cleanHeaders = webhookHeaders || [];
 
         const newCron = await Cron.create({
             name,
@@ -78,12 +93,12 @@ async function createCron(request) {
             enabled: true,
             action: 'webhook',
             webhookUrl,
-            webhookUrlType,
+            webhookUrlType: resolveTemplateMode(webhookUrlType, webhookUrl),
             webhookMethod,
-            webhookHeaders,
-            webhookHeadersType,
+            webhookHeaders: cleanHeaders,
+            webhookHeadersType: resolveTemplateMode(webhookHeadersType, cleanHeaders),
             webhookBody,
-            webhookBodyType,
+            webhookBodyType: resolveTemplateMode(webhookBodyType, webhookBody),
             webhookEnv: encryptedEnv,
             nextRun,
             notificationEnabled: notificationEnabled || false,
