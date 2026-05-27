@@ -13,6 +13,9 @@ import Social from "@/models/Social";
 import GitHub from "@/models/GitHub";
 import ContactMessage from "@/models/ContactMessage";
 import Theme from "@/models/Theme";
+import Cron from "@/models/Cron";
+import Ads from "@/models/Ads";
+import NotificationConfig from "@/models/NotificationConfig";
 import cache from "@/lib/cache";
 import AdmZip from "adm-zip";
 import { join } from "path";
@@ -172,6 +175,9 @@ export async function POST(request) {
             { model: GitHub, key: 'github' },
             { model: ContactMessage, key: 'contactMessages' },
             { model: Theme, key: 'themes' },
+            { model: Cron, key: 'crons' },
+            { model: Ads, key: 'ads' },
+            { model: NotificationConfig, key: 'notificationConfig' },
         ];
 
         // Restore database collections

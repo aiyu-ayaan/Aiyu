@@ -13,6 +13,9 @@ import Social from "@/models/Social";
 import GitHub from "@/models/GitHub";
 import ContactMessage from "@/models/ContactMessage";
 import Theme from "@/models/Theme";
+import Cron from "@/models/Cron";
+import Ads from "@/models/Ads";
+import NotificationConfig from "@/models/NotificationConfig";
 import archiver from "archiver";
 import { join } from "path";
 import { readFile, access, readdir } from "fs/promises";
@@ -30,6 +33,29 @@ export async function GET(request) {
         const includeGithub = searchParams.get('includeGithub') === 'true';
         const includeContact = searchParams.get('includeContact') === 'true';
 
+        const rawCrons = await Cron.find({}).lean();
+        const crons = rawCrons.map(cron => {
+            const cleanCron = { ...cron };
+            delete cleanCron.webhookEnv;
+            delete cleanCron.lastRun;
+            delete cleanCron.lastRunStatus;
+            delete cleanCron.lastRunLog;
+            return cleanCron;
+        });
+
+        // Fetch Ads including all select: false fields so they are fully backed up
+        const ads = await Ads.find({}).select(
+            '+encryptedClientId ' +
+            '+placements.top.encryptedSlotId ' +
+            '+placements.middle.encryptedSlotId ' +
+            '+placements.bottom.encryptedSlotId ' +
+            '+placements.sidebar.encryptedSlotId ' +
+            '+placements.footer.encryptedSlotId'
+        ).lean();
+
+        // Fetch NotificationConfig
+        const notificationConfig = await NotificationConfig.find({}).lean();
+
         // Build the database export data
         const data = {
             about: await About.find({}),
@@ -42,6 +68,9 @@ export async function GET(request) {
             deployments: await Deployment.find({}),
             socials: await Social.find({}),
             themes: await Theme.find({}),
+            crons,
+            ads,
+            notificationConfig,
             exportedAt: new Date().toISOString(),
         };
 
