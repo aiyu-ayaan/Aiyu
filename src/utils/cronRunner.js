@@ -200,6 +200,33 @@ async function resolvePlaceholder(modelName, path, cachedData) {
     if (lowerModel === 'env') {
         return getValueByPath(cachedData.env || {}, path);
     }
+    if (lowerModel === 'site') {
+        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || 'http://localhost:3000';
+        return getValueByPath({ url: siteUrl }, path) || siteUrl;
+    }
+    if (lowerModel === 'device') {
+        let osInfo = 'unknown';
+        let arch = 'unknown';
+        let nodeVersion = process.version;
+        let platform = process.platform;
+        try {
+            const os = await import('os');
+            osInfo = `${os.type()} ${os.release()}`;
+            arch = os.arch();
+        } catch (e) {
+            // Ignore dynamic OS import errors
+        }
+
+        const deviceInfo = {
+            platform,
+            os: osInfo,
+            arch,
+            nodeVersion,
+            environment: process.env.NODE_ENV || 'development'
+        };
+
+        return getValueByPath(deviceInfo, path) ?? deviceInfo;
+    }
 
     const modelMapping = {
         blogs: { model: Blog, query: () => Blog.find({}).sort({ createdAt: -1 }).lean() },

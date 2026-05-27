@@ -1031,6 +1031,15 @@ export default function CronJobsPage() {
                                 <li><span className="text-cyan-400">$env.KEY_NAME</span> - Decrypted secret value at runtime</li>
                             </ul>
                         </div>
+                        <div>
+                            <h3 className="font-bold text-slate-200 text-sm mb-1.5 uppercase tracking-wide">🌐 Predefined System Variables</h3>
+                            <ul className="list-disc pl-4 space-y-1.5 font-mono text-[11px]">
+                                <li><span className="text-cyan-400">$site</span> - Base URL of the website</li>
+                                <li><span className="text-cyan-400">$device</span> - Full device metadata object</li>
+                                <li><span className="text-cyan-400">$device.platform</span> - OS Platform (e.g. linux, win32)</li>
+                                <li><span className="text-cyan-400">$device.os</span> - Operating System details</li>
+                            </ul>
+                        </div>
                     </div>
 
                     <div className="space-y-4">
