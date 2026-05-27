@@ -65,6 +65,7 @@ export default memo(function Header({ data, logoText, socialData, config }) {
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [isTerminalOutputOpen, setIsTerminalOutputOpen] = useState(false);
   const overflowRestoreRef = useRef({ body: null, html: null });
   const { scrollYProgress } = useScroll();
   const progressScaleX = useSpring(scrollYProgress, {
@@ -133,8 +134,10 @@ export default memo(function Header({ data, logoText, socialData, config }) {
       <header className={clsx("sticky top-0 z-50 px-3 pb-0 pt-3 sm:px-4 lg:px-6", isBlogsRoute && "hidden")}>
         <div
           className={clsx(
-            "mx-auto w-full max-w-7xl rounded-2xl border transition-all duration-300 relative overflow-hidden",
+            "mx-auto w-full max-w-7xl rounded-2xl border transition-all duration-300 relative",
+            !isTerminalOutputOpen && "overflow-hidden",
             scrolled ? "header-scrolled" : "header-normal",
+            isTerminalOutputOpen && "terminal-output-open",
             isContentHeavyRoute && "heavy-route"
           )}
         >
@@ -331,10 +334,11 @@ export default memo(function Header({ data, logoText, socialData, config }) {
 
            <div
              className={clsx(
-               "transition-[max-height,opacity,padding] duration-250 overflow-hidden",
+               "transition-[max-height,opacity,padding] duration-250",
                scrolled
-                 ? "pointer-events-none max-h-0 opacity-0 px-0"
-                 : "max-h-24 opacity-100 px-2 pb-2 sm:px-3"
+                 ? "pointer-events-none max-h-0 opacity-0 px-0 overflow-hidden"
+                 : "max-h-24 opacity-100 px-2 pb-2 sm:px-3",
+               !isTerminalOutputOpen && "overflow-hidden"
              )}
              aria-hidden={scrolled}
              style={{
@@ -349,7 +353,7 @@ export default memo(function Header({ data, logoText, socialData, config }) {
                 backgroundColor: 'color-mix(in srgb, var(--bg-secondary) 65%, transparent)',
               }}
             >
-              <TerminalPath socialData={socialData} config={config} />
+              <TerminalPath socialData={socialData} config={config} onOutputChange={setIsTerminalOutputOpen} />
             </div>
           </div>
         </div>

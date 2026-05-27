@@ -63,6 +63,10 @@
   contain: paint;
 }
 
+.terminal-output-open {
+  contain: none !important;
+}
+
 /* Smooth continuous wave animation on the right edge */
 @keyframes continuousWave {
   0% {
