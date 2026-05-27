@@ -3,6 +3,7 @@ import { withAuth } from '@/middleware/auth';
 import dbConnect from '@/lib/db';
 import Cron from '@/models/Cron';
 import { getNextCronRun, initCronRunner } from '@/utils/cronRunner';
+import { encrypt, decrypt } from '@/lib/encryption';
 
 // Initialize background Task Scheduler singleton exactly once when this isolated admin API loads
 if (typeof window === 'undefined') {
@@ -29,7 +30,16 @@ async function getCrons(request) {
             await job.save();
         }
 
-        const crons = await Cron.find({}).sort({ type: 1, name: 1 });
+        const crons = await Cron.find({}).sort({ type: 1, name: 1 }).lean();
+        for (const cron of crons) {
+            if (cron.webhookEnv && Array.isArray(cron.webhookEnv)) {
+                cron.webhookEnv = cron.webhookEnv.map(env => ({
+                    key: env.key,
+                    value: env.value ? decrypt(env.value) : ''
+                }));
+            }
+        }
+
         return NextResponse.json({ success: true, data: crons });
     } catch (error) {
         console.error('[API CRON GET ERROR]:', error);
@@ -42,7 +52,7 @@ async function createCron(request) {
     await dbConnect();
     try {
         const body = await request.json();
-        const { name, schedule, webhookUrl, webhookMethod = 'POST', webhookHeaders = [], webhookBody = '', webhookBodyType = 'expression', notificationEnabled, notificationOn } = body;
+        const { name, schedule, webhookUrl, webhookMethod = 'POST', webhookHeaders = [], webhookHeadersType = 'fixed', webhookBody = '', webhookBodyType = 'expression', webhookEnv = [], notificationEnabled, notificationOn } = body;
 
         if (!name || !schedule || !webhookUrl) {
             return NextResponse.json({ success: false, error: 'Name, schedule (cron expression), and Webhook URL are required.' }, { status: 400 });
@@ -56,6 +66,11 @@ async function createCron(request) {
 
         const nextRun = getNextCronRun(schedule, new Date());
 
+        const encryptedEnv = (webhookEnv || []).map(env => ({
+            key: env.key,
+            value: env.value ? encrypt(env.value) : ''
+        }));
+
         const newCron = await Cron.create({
             name,
             type: 'user',
@@ -65,14 +80,25 @@ async function createCron(request) {
             webhookUrl,
             webhookMethod,
             webhookHeaders,
+            webhookHeadersType,
             webhookBody,
             webhookBodyType,
+            webhookEnv: encryptedEnv,
             nextRun,
             notificationEnabled: notificationEnabled || false,
             notificationOn: notificationOn || 'always'
         });
 
-        return NextResponse.json({ success: true, data: newCron }, { status: 201 });
+        // Decrypt values back for direct UI response compatibility
+        const responseData = newCron.toObject();
+        if (responseData.webhookEnv && Array.isArray(responseData.webhookEnv)) {
+            responseData.webhookEnv = responseData.webhookEnv.map(env => ({
+                key: env.key,
+                value: env.value ? decrypt(env.value) : ''
+            }));
+        }
+
+        return NextResponse.json({ success: true, data: responseData }, { status: 201 });
     } catch (error) {
         console.error('[API CRON POST ERROR]:', error);
         return NextResponse.json({ success: false, error: error.message }, { status: 500 });

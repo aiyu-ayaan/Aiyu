@@ -3,6 +3,7 @@ import { withAuth } from '@/middleware/auth';
 import dbConnect from '@/lib/db';
 import Cron from '@/models/Cron';
 import { getNextCronRun } from '@/utils/cronRunner';
+import { encrypt, decrypt } from '@/lib/encryption';
 
 // PUT: Update an existing cron job (Admin only)
 async function updateCron(request, { params }) {
@@ -10,7 +11,7 @@ async function updateCron(request, { params }) {
     try {
         const { id } = await params;
         const body = await request.json();
-        const { name, schedule, enabled, webhookUrl, webhookMethod, webhookHeaders, webhookBody, webhookBodyType, notificationEnabled, notificationOn } = body;
+        const { name, schedule, enabled, webhookUrl, webhookMethod, webhookHeaders, webhookHeadersType, webhookBody, webhookBodyType, webhookEnv, notificationEnabled, notificationOn } = body;
 
         const cronJob = await Cron.findById(id);
         if (!cronJob) {
@@ -52,12 +53,27 @@ async function updateCron(request, { params }) {
             if (webhookUrl) cronJob.webhookUrl = webhookUrl;
             if (webhookMethod) cronJob.webhookMethod = webhookMethod;
             if (webhookHeaders !== undefined) cronJob.webhookHeaders = webhookHeaders;
+            if (webhookHeadersType !== undefined) cronJob.webhookHeadersType = webhookHeadersType;
             if (webhookBody !== undefined) cronJob.webhookBody = webhookBody;
             if (webhookBodyType !== undefined) cronJob.webhookBodyType = webhookBodyType;
+            if (webhookEnv !== undefined) {
+                cronJob.webhookEnv = (webhookEnv || []).map(env => ({
+                    key: env.key,
+                    value: env.value ? encrypt(env.value) : ''
+                }));
+            }
         }
 
         await cronJob.save();
-        return NextResponse.json({ success: true, data: cronJob });
+        const responseData = cronJob.toObject();
+        if (responseData.webhookEnv && Array.isArray(responseData.webhookEnv)) {
+            responseData.webhookEnv = responseData.webhookEnv.map(env => ({
+                key: env.key,
+                value: env.value ? decrypt(env.value) : ''
+            }));
+        }
+
+        return NextResponse.json({ success: true, data: responseData });
     } catch (error) {
         console.error('[API CRON PUT ERROR]:', error);
         return NextResponse.json({ success: false, error: error.message }, { status: 500 });
