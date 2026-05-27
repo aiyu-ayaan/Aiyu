@@ -14,6 +14,7 @@ import Social from '@/models/Social';
 import Theme from '@/models/Theme';
 import ContactMessage from '@/models/ContactMessage';
 import Deployment from '@/models/Deployment';
+import { decrypt } from '@/lib/encryption';
 
 function parseCronField(field, min, max) {
     if (field === '*') return Array.from({ length: max - min + 1 }, (_, i) => min + i);
@@ -196,6 +197,9 @@ async function resolvePlaceholder(modelName, path, cachedData) {
     if (lowerModel === 'date') {
         return new Date().toLocaleDateString();
     }
+    if (lowerModel === 'env') {
+        return getValueByPath(cachedData.env || {}, path);
+    }
 
     const modelMapping = {
         blogs: { model: Blog, query: () => Blog.find({}).sort({ createdAt: -1 }).lean() },
@@ -266,7 +270,7 @@ export async function compileTemplate(templateStr, cachedData) {
     return result;
 }
 
-async function compileTemplateObject(obj, cachedData) {
+export async function compileTemplateObject(obj, cachedData) {
     if (obj === null || obj === undefined) return obj;
     if (typeof obj === 'string') {
         return compileTemplate(obj, cachedData);
@@ -307,6 +311,14 @@ export async function executeCronJob(job) {
                         `Details: ${JSON.stringify(migrationResult.details, null, 2)}`;
         } else if (job.action === 'webhook') {
             const cachedData = {};
+            cachedData.env = {};
+            if (job.webhookEnv && Array.isArray(job.webhookEnv)) {
+                for (const env of job.webhookEnv) {
+                    if (env.key && env.key.trim()) {
+                        cachedData.env[env.key.trim()] = env.value ? decrypt(env.value) : '';
+                    }
+                }
+            }
             const compiledUrl = await compileTemplate(job.webhookUrl, cachedData);
             const method = job.webhookMethod || 'POST';
 
@@ -325,7 +337,9 @@ export async function executeCronJob(job) {
                     }
                 }
             }
-            const headers = await compileTemplateObject(rawHeaders, cachedData);
+            const headers = job.webhookHeadersType === 'expression'
+                ? await compileTemplateObject(rawHeaders, cachedData)
+                : rawHeaders;
 
             let bodyContent = undefined;
             if (method === 'POST') {
