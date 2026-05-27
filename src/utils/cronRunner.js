@@ -234,7 +234,7 @@ async function resolvePlaceholder(modelName, path, cachedData) {
     return `$${modelName}${path}`;
 }
 
-async function compileTemplate(templateStr, cachedData) {
+export async function compileTemplate(templateStr, cachedData) {
     if (typeof templateStr !== 'string') return templateStr;
     if (!templateStr.includes('$')) return templateStr;
 
