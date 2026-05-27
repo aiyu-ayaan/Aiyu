@@ -312,13 +312,22 @@ export async function executeCronJob(job) {
         } else if (job.action === 'webhook') {
             const cachedData = {};
             cachedData.env = {};
-            if (job.webhookEnv && Array.isArray(job.webhookEnv)) {
-                for (const env of job.webhookEnv) {
-                    if (env.key && env.key.trim()) {
-                        cachedData.env[env.key.trim()] = env.value ? decrypt(env.value) : '';
+            
+            // Load global environment variables
+            try {
+                const CronEnv = (await import('@/models/CronEnv')).default;
+                const globalEnvDoc = await CronEnv.findOne({}).lean();
+                if (globalEnvDoc && Array.isArray(globalEnvDoc.env)) {
+                    for (const env of globalEnvDoc.env) {
+                        if (env.key && env.key.trim()) {
+                            cachedData.env[env.key.trim()] = env.value ? decrypt(env.value) : '';
+                        }
                     }
                 }
+            } catch (envErr) {
+                console.error('[CRON SERVICE] Failed to load global environment variables:', envErr);
             }
+
             const compiledUrl = await compileTemplate(job.webhookUrl, cachedData);
             const method = job.webhookMethod || 'POST';
 

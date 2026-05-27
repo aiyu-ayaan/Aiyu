@@ -21,7 +21,8 @@ import {
     ToggleRight,
     Globe,
     Terminal,
-    ShieldAlert
+    ShieldAlert,
+    Lock
 } from 'lucide-react';
 
 function cronToHuman(cronExpression) {
@@ -111,6 +112,11 @@ export default function CronJobsPage() {
     const [previewOutput, setPreviewOutput] = useState('');
     const [previewLoading, setPreviewLoading] = useState(false);
     const [formSubmitting, setFormSubmitting] = useState(false);
+
+    // Global Env Modal State
+    const [globalEnvs, setGlobalEnvs] = useState([]);
+    const [showGlobalEnvModal, setShowGlobalEnvModal] = useState(false);
+    const [globalEnvSubmitting, setGlobalEnvSubmitting] = useState(false);
 
     // Notification Link States
     const [notificationConfigured, setNotificationConfigured] = useState(false);
@@ -268,9 +274,51 @@ export default function CronJobsPage() {
         }
     };
 
+    const fetchGlobalEnvs = async () => {
+        try {
+            const res = await fetch('/api/admin/crons/env');
+            const data = await res.json();
+            if (data.success) {
+                setGlobalEnvs(data.data || []);
+            }
+        } catch (error) {
+            console.error('Failed to retrieve global environment variables:', error);
+        }
+    };
+
+    const openGlobalEnvModal = () => {
+        fetchGlobalEnvs();
+        setShowGlobalEnvModal(true);
+    };
+
+    const handleGlobalEnvSubmit = async (e) => {
+        e.preventDefault();
+        setGlobalEnvSubmitting(true);
+        try {
+            const res = await fetch('/api/admin/crons/env', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ env: globalEnvs.filter(ev => ev.key && ev.key.trim()) })
+            });
+            const data = await res.json();
+            if (data.success) {
+                setGlobalEnvs(data.data || []);
+                showMessage('success', 'Global environment secrets updated successfully.');
+                setShowGlobalEnvModal(false);
+            } else {
+                alert(data.error || 'Failed to save global environment secrets.');
+            }
+        } catch (error) {
+            showMessage('error', 'Communication error while saving global secrets.');
+        } finally {
+            setGlobalEnvSubmitting(false);
+        }
+    };
+
     useEffect(() => {
         fetchJobs(true);
         fetchNotificationStatus();
+        fetchGlobalEnvs();
     }, []);
 
     const handleToggle = async (job) => {
@@ -593,6 +641,13 @@ export default function CronJobsPage() {
                             Refresh Tasks
                         </button>
                         <button
+                            onClick={openGlobalEnvModal}
+                            className="inline-flex items-center gap-2 rounded-xl border border-pink-500/20 bg-pink-500/5 hover:bg-pink-500/10 px-4 py-2 text-sm font-semibold text-pink-400 transition hover:border-pink-500/30"
+                        >
+                            <Lock size={16} />
+                            Global Envs
+                        </button>
+                        <button
                             onClick={openCreateModal}
                             className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 px-4 py-2 text-sm font-semibold text-white transition shadow-lg shadow-emerald-950/20 hover:shadow-emerald-950/40"
                         >
@@ -838,14 +893,7 @@ export default function CronJobsPage() {
                                                         </span>
                                                     </div>
                                                 )}
-                                                {job.webhookEnv && job.webhookEnv.length > 0 && (
-                                                    <div className="flex items-start gap-2 pt-1 border-t border-white/5 mt-1 overflow-hidden">
-                                                        <span className="text-slate-500 shrink-0">Env Secrets:</span>
-                                                        <span className="text-pink-400 truncate flex-1 text-left block font-semibold" title={job.webhookEnv.map(e => e.key).join('\n')}>
-                                                            {job.webhookEnv.map(e => e.key).join(', ')}
-                                                        </span>
-                                                    </div>
-                                                )}
+
                                                 {job.webhookBody && (
                                                     <div className="flex items-start gap-2 pt-1 border-t border-white/5 mt-1 overflow-hidden">
                                                         <span className="text-slate-500 shrink-0">Payload:</span>
@@ -1503,71 +1551,7 @@ export default function CronJobsPage() {
                                 </div>
                             )}
 
-                            {/* Secure Environment Variables Section (User defined only) */}
-                            {(!editingJob || editingJob.type === 'user') && (
-                                <div className="space-y-3 border-t border-white/5 pt-4">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block">Secure Environment Variables</label>
-                                            <span className="text-[10px] text-slate-500 leading-tight block mt-0.5">
-                                                Encrypted with AES-256 in the database. Link them via <code>$env.VARIABLE_NAME</code> in URL, Headers, or Body.
-                                            </span>
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={() => setFormWebhookEnv([...formWebhookEnv, { key: '', value: '' }])}
-                                            className="inline-flex items-center gap-1 text-[11px] font-bold text-cyan-400 hover:text-cyan-300 transition-colors"
-                                        >
-                                            <Plus size={12} /> Add Env
-                                        </button>
-                                    </div>
-                                    
-                                    {formWebhookEnv.length === 0 ? (
-                                        <div className="text-[11px] text-slate-500 italic bg-slate-950/20 border border-white/5 rounded-xl p-3 text-center">
-                                            No secure environment variables configured.
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
-                                            {formWebhookEnv.map((env, index) => (
-                                                <div key={index} className="flex gap-2 items-center">
-                                                    <input
-                                                        type="text"
-                                                        placeholder="VARIABLE_NAME"
-                                                        value={env.key}
-                                                        onChange={(e) => {
-                                                            const newEnv = [...formWebhookEnv];
-                                                            newEnv[index].key = e.target.value;
-                                                            setFormWebhookEnv(newEnv);
-                                                        }}
-                                                        className="flex-1 bg-slate-950 border border-white/10 rounded-xl px-3 py-2 text-xs text-slate-200 focus:border-cyan-500 outline-none transition font-mono"
-                                                    />
-                                                    <input
-                                                        type="password"
-                                                        placeholder="Value"
-                                                        value={env.value}
-                                                        onChange={(e) => {
-                                                            const newEnv = [...formWebhookEnv];
-                                                            newEnv[index].value = e.target.value;
-                                                            setFormWebhookEnv(newEnv);
-                                                        }}
-                                                        className="flex-1 bg-slate-950 border border-white/10 rounded-xl px-3 py-2 text-xs text-slate-200 focus:border-cyan-500 outline-none transition"
-                                                    />
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => {
-                                                            setFormWebhookEnv(formWebhookEnv.filter((_, i) => i !== index));
-                                                        }}
-                                                        className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition"
-                                                        title="Remove Env Variable"
-                                                    >
-                                                        <Trash2 size={13} />
-                                                    </button>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            )}
+
 
                             {/* Notification Integrations Link Section */}
                             <div className="space-y-4 border-t border-white/5 pt-4">
@@ -1728,6 +1712,112 @@ export default function CronJobsPage() {
                                 Close Logs
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+            {/* GLOBAL ENV DIALOG MODAL */}
+            {showGlobalEnvModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
+                    <div className="w-full max-w-lg rounded-3xl border border-white/10 bg-slate-900/95 p-6 shadow-2xl flex flex-col max-h-[80vh]">
+                        <div className="flex justify-between items-center border-b border-white/5 pb-4 mb-4 shrink-0">
+                            <div className="flex items-center gap-2">
+                                <Lock size={18} className="text-pink-400" />
+                                <h3 className="text-lg font-bold text-white">
+                                    Manage Global Environment Secrets
+                                </h3>
+                            </div>
+                            <button
+                                onClick={() => setShowGlobalEnvModal(false)}
+                                className="text-slate-400 hover:text-white p-1 hover:bg-white/5 rounded-lg"
+                            >
+                                <X size={18} />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleGlobalEnvSubmit} className="flex flex-col flex-1 overflow-hidden space-y-4 text-left">
+                            <div className="flex-1 overflow-y-auto pr-1 space-y-4 custom-scrollbar">
+                                <p className="text-xs text-slate-400 leading-relaxed select-none">
+                                    Configure global environment keys. Values are saved securely with AES-256 encryption. Reference these variables in any cron webhook's URL, headers, or body using <code>$env.VARIABLE_NAME</code>.
+                                </p>
+
+                                <div className="space-y-3 pt-2">
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block">Environment Variables</label>
+                                        <button
+                                            type="button"
+                                            onClick={() => setGlobalEnvs([...globalEnvs, { key: '', value: '' }])}
+                                            className="inline-flex items-center gap-1 text-[11px] font-bold text-cyan-400 hover:text-cyan-300 transition-colors"
+                                        >
+                                            <Plus size={12} /> Add Variable
+                                        </button>
+                                    </div>
+                                    
+                                    {globalEnvs.length === 0 ? (
+                                        <div className="text-[11px] text-slate-500 italic bg-slate-950/20 border border-white/5 rounded-xl p-3 text-center">
+                                            No global environment variables configured.
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                                            {globalEnvs.map((env, index) => (
+                                                <div key={index} className="flex gap-2 items-center">
+                                                    <input
+                                                        type="text"
+                                                        placeholder="VARIABLE_NAME"
+                                                        value={env.key}
+                                                        onChange={(e) => {
+                                                            const newEnv = [...globalEnvs];
+                                                            newEnv[index].key = e.target.value;
+                                                            setGlobalEnvs(newEnv);
+                                                        }}
+                                                        className="flex-1 bg-slate-950 border border-white/10 rounded-xl px-3 py-2 text-xs text-slate-200 focus:border-cyan-500 outline-none transition font-mono"
+                                                    />
+                                                    <input
+                                                        type="password"
+                                                        placeholder="Value"
+                                                        value={env.value}
+                                                        onChange={(e) => {
+                                                            const newEnv = [...globalEnvs];
+                                                            newEnv[index].value = e.target.value;
+                                                            setGlobalEnvs(newEnv);
+                                                        }}
+                                                        className="flex-1 bg-slate-950 border border-white/10 rounded-xl px-3 py-2 text-xs text-slate-200 focus:border-cyan-500 outline-none transition"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setGlobalEnvs(globalEnvs.filter((_, i) => i !== index));
+                                                        }}
+                                                        className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition"
+                                                        title="Remove Env Variable"
+                                                    >
+                                                        <Trash2 size={13} />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex justify-end gap-3 border-t border-white/5 pt-4 mt-4 shrink-0">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowGlobalEnvModal(false)}
+                                    disabled={globalEnvSubmitting}
+                                    className="rounded-xl border border-white/10 px-4 py-2 text-sm text-slate-300 transition hover:border-white/20 disabled:opacity-50"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={globalEnvSubmitting}
+                                    className="rounded-xl bg-emerald-600 hover:bg-emerald-500 px-5 py-2 text-sm font-semibold text-white transition disabled:opacity-50"
+                                >
+                                    {globalEnvSubmitting ? 'Saving changes...' : 'Save Global Secrets'}
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}
