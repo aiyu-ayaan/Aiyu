@@ -103,6 +103,7 @@ export default function CronJobsPage() {
     const [formWebhookUrl, setFormWebhookUrl] = useState('');
     const [formWebhookMethod, setFormWebhookMethod] = useState('POST');
     const [formWebhookHeaders, setFormWebhookHeaders] = useState([]); // Array of { key, value }
+    const [formWebhookBody, setFormWebhookBody] = useState('');
     const [formSubmitting, setFormSubmitting] = useState(false);
 
     // Notification Link States
@@ -336,6 +337,7 @@ export default function CronJobsPage() {
         setFormWebhookUrl('https://');
         setFormWebhookMethod('POST');
         setFormWebhookHeaders([]);
+        setFormWebhookBody('');
 
         // Initialize builder states
         setBuilderTab('simple');
@@ -357,6 +359,7 @@ export default function CronJobsPage() {
         setFormWebhookUrl(job.webhookUrl || 'https://');
         setFormWebhookMethod(job.webhookMethod || 'POST');
         setFormWebhookHeaders(job.webhookHeaders || []);
+        setFormWebhookBody(job.webhookBody || '');
 
         // Parse current schedule to set builder states
         const parsed = parseCronToSimple(job.schedule);
@@ -390,6 +393,7 @@ export default function CronJobsPage() {
             webhookUrl: formWebhookUrl,
             webhookMethod: formWebhookMethod,
             webhookHeaders: formWebhookHeaders.filter(h => h.key && h.key.trim()),
+            webhookBody: formWebhookBody,
             notificationEnabled: formNotificationEnabled,
             notificationOn: formNotificationOn
         };
@@ -695,6 +699,14 @@ export default function CronJobsPage() {
                                                         </span>
                                                     </div>
                                                 )}
+                                                {job.webhookBody && (
+                                                    <div className="flex items-start gap-2 pt-1 border-t border-white/5 mt-1 overflow-hidden">
+                                                        <span className="text-slate-500 shrink-0">Payload:</span>
+                                                        <span className="text-emerald-400 truncate flex-1 hover:text-emerald-300 text-left block font-mono text-[10px]" title={job.webhookBody}>
+                                                            {job.webhookBody.length > 30 ? job.webhookBody.slice(0, 30) + '...' : job.webhookBody}
+                                                        </span>
+                                                    </div>
+                                                )}
                                             </div>
 
                                             <div className="mt-5 grid grid-cols-2 gap-4 border-t border-white/5 pt-4 text-xs font-mono">
@@ -789,6 +801,67 @@ export default function CronJobsPage() {
                     </section>
                 </div>
             )}
+
+            {/* TASK REFERENCE & DYNAMIC VARIABLES HELP GUIDE */}
+            <div className="mt-12 border border-white/10 bg-slate-900/40 rounded-3xl p-6 backdrop-blur-md relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/5 rounded-full blur-[60px] pointer-events-none" />
+                <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2.5 bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 rounded-xl">
+                        <Terminal size={20} />
+                    </div>
+                    <div>
+                        <h2 className="text-lg font-bold text-white">Dynamic Variables & Webhook Documentation</h2>
+                        <p className="text-xs text-slate-400">Configure templated webhooks to trigger remote services with live site data.</p>
+                    </div>
+                </div>
+
+                <div className="grid gap-6 md:grid-cols-2 text-xs leading-relaxed text-slate-400">
+                    <div className="space-y-4">
+                        <div>
+                            <h3 className="font-bold text-slate-200 text-sm mb-1.5 uppercase tracking-wide">💡 Templating Engine Basics</h3>
+                            <p>You can reference live site data and system properties using the prefix <code>$</code>. These placeholders will be evaluated dynamically at execution time and can be used in your <strong>Webhook URL</strong>, <strong>HTTP Headers</strong>, and <strong>Request Body</strong>.</p>
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-slate-200 text-sm mb-1.5 uppercase tracking-wide">⏱️ Time & Date Variables</h3>
+                            <ul className="list-disc pl-4 space-y-1.5 font-mono text-[11px]">
+                                <li><span className="text-cyan-400">$time</span> - Current ISO-8601 Timestamp</li>
+                                <li><span className="text-cyan-400">$timestamp</span> - Same as $time</li>
+                                <li><span className="text-cyan-400">$date</span> - Locale-specific current date</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div className="space-y-4">
+                        <div>
+                            <h3 className="font-bold text-slate-200 text-sm mb-1.5 uppercase tracking-wide">📁 Supported Site Data Models</h3>
+                            <p>Query any collection dynamically. Use standard array index <code>[0]</code> or dot <code>.0</code> notation to retrieve nested child properties:</p>
+                            <div className="mt-2 grid grid-cols-2 gap-2 text-[11px] font-mono">
+                                <div>• <span className="text-pink-400">$blogs</span> (or $blog)</div>
+                                <div>• <span className="text-pink-400">$projects</span> (or $project)</div>
+                                <div>• <span className="text-pink-400">$gallery</span></div>
+                                <div>• <span className="text-pink-400">$config</span></div>
+                                <div>• <span className="text-pink-400">$about</span></div>
+                                <div>• <span className="text-pink-400">$ads</span></div>
+                                <div>• <span className="text-pink-400">$socials</span> (or $social)</div>
+                                <div>• <span className="text-pink-400">$theme</span> (or $themes)</div>
+                                <div>• <span className="text-pink-400">$messages</span> (or $message)</div>
+                                <div>• <span className="text-pink-400">$deployments</span></div>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-slate-200 text-sm mb-1.5 uppercase tracking-wide">🔗 Real-World Example</h3>
+                            <p className="mb-2">Send a POST dispatch payload with your site's most recent blog post title:</p>
+                            <pre className="bg-slate-950 border border-white/5 p-3 rounded-xl font-mono text-[10px] text-emerald-400">
+{`{
+  "post_title": "$blogs[0].title",
+  "publish_date": "$blogs.0.createdAt",
+  "action_time": "$time"
+}`}
+                            </pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             {/* CREATE / EDIT DIALOG MODAL */}
             {showFormModal && (
@@ -1166,6 +1239,21 @@ export default function CronJobsPage() {
                                             </div>
                                         )}
                                     </div>
+                                    
+                                    {formWebhookMethod === 'POST' && (
+                                        <div className="space-y-1.5 pt-2">
+                                            <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block">Custom HTTP Request Body</label>
+                                            <textarea
+                                                value={formWebhookBody}
+                                                onChange={(e) => setFormWebhookBody(e.target.value)}
+                                                className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs font-mono text-slate-200 focus:border-cyan-500 outline-none transition min-h-[80px]"
+                                                placeholder='e.g. {"title": "$blogs[0].title", "run_time": "$time"}'
+                                            />
+                                            <span className="text-[10px] text-slate-500 leading-tight block">
+                                                Supports dynamic variable injection. Use singular/plural forms like <code>$blogs</code>, <code>$projects</code>, or <code>$time</code>.
+                                            </span>
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
