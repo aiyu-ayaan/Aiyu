@@ -31,7 +31,8 @@ A modern, responsive, and **fully customizable** portfolio website built with Ne
   - Live demo and GitHub repository links
   - Project screenshots and galleries
 - **Contact**: Functional contact form with:
-  - Email integration via n8n webhook
+  - Email & Webhook integration via n8n with **dual-routing capability**
+  - Instant dispatch to push notification channels (ntfy, Discord, Telegram)
   - Message management in admin panel
   - Real-time chat-style interface
 - **Gallery**: Visual collection of achievements, certifications, and awards with masonry layout
@@ -78,6 +79,17 @@ Access the admin panel at `/admin` to manage everything without touching code:
   - Reply functionality
   - Chat-style interface
   - Message threading
+  - **Webhook Dual-Routing Dashboard**: Toggle n8n integration and manage push channels in side-by-side push and webhook config cards
+- **Task Scheduler (Cron Jobs)**:
+  - High-fidelity visual Task Scheduler administration dashboard UI (`/admin/config/crons`)
+  - Visual cron builder with real-time, human-readable translations (e.g., converting `*/5 * * * *` into "Every 5 minutes")
+  - System-defined maintenance tasks (unreferenced file cleanups, image auto-conversions to WebP)
+  - Custom webhook task registers with detailed run/failure execution logs
+- **Unified Notification Integration**:
+  - Centralized notification dispatch service (`/admin/config/notification`)
+  - Integration with multiple push channels: **Discord Webhooks**, **Telegram Bots**, and **ntfy Topics** (with server URL, topic, and token auth support)
+  - Real-time event linking to trigger push notifications on new contact messages
+  - Direct endpoint validation route for instant connection checks
 - **Themes**: Live theme editor with:
   - 21 pre-built theme presets (VS Code Dark, Ocean Blue, Forest Green, Sunset Orange, Royal Purple, Monochrome, Dracula, Nord, Cyberpunk, Gruvbox, Solarized, Catppuccin, Tokyo Night, Material Ocean, Synthwave, Forest, Sunset, Aurora, Coral Reef, Espresso, Midnight Blue)
   - Custom color generation
@@ -90,6 +102,7 @@ Access the admin panel at `/admin` to manage everything without touching code:
 - **Global Config**:
   - SEO metadata (title, description, keywords)
   - Google Analytics integration
+  - **Google AdSense Integration**: Dynamically inject Google AdSense script from admin settings with real-time inline script preview
   - Feature flags and site-wide settings
   - Base URL configuration
 - **Database Management**:
