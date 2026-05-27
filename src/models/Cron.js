@@ -47,6 +47,10 @@ const CronSchema = new mongoose.Schema({
         ],
         default: []
     },
+    webhookBody: {
+        type: String,
+        trim: true
+    },
     lastRun: {
         type: Date
     },
