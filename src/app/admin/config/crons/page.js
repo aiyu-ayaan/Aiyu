@@ -927,8 +927,8 @@ export default function CronJobsPage() {
             {/* CREATE / EDIT DIALOG MODAL */}
             {showFormModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
-                    <div className="w-full max-w-lg rounded-3xl border border-white/10 bg-slate-900/95 p-6 shadow-2xl">
-                        <div className="flex justify-between items-center border-b border-white/5 pb-4 mb-4">
+                    <div className="w-full max-w-lg rounded-3xl border border-white/10 bg-slate-900/95 p-6 shadow-2xl flex flex-col max-h-[90vh]">
+                        <div className="flex justify-between items-center border-b border-white/5 pb-4 mb-4 shrink-0">
                             <h3 className="text-xl font-bold text-white">
                                 {editingJob ? `Modify Task: ${editingJob.name}` : 'Register Custom Webhook Task'}
                             </h3>
@@ -940,7 +940,8 @@ export default function CronJobsPage() {
                             </button>
                         </div>
 
-                        <form onSubmit={handleFormSubmit} className="space-y-4 text-left">
+                        <form onSubmit={handleFormSubmit} className="flex flex-col flex-1 overflow-hidden space-y-4 text-left">
+                            <div className="flex-1 overflow-y-auto pr-1 space-y-4 custom-scrollbar">
                             {/* Name (User defined only) */}
                             {(!editingJob || editingJob.type === 'user') ? (
                                 <div>
@@ -1429,8 +1430,10 @@ export default function CronJobsPage() {
                                 )}
                             </div>
 
+                            </div>
+
                             {/* Actions */}
-                            <div className="flex justify-end gap-3 border-t border-white/5 pt-4 mt-6">
+                            <div className="flex justify-end gap-3 border-t border-white/5 pt-4 mt-4 shrink-0">
                                 <button
                                     type="button"
                                     onClick={() => setShowFormModal(false)}
