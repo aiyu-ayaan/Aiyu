@@ -15,6 +15,81 @@ const ICON_MAP = {
     'FaBrain': FaBrain
 };
 
+const parseCodeLine = (lineStr, githubLink) => {
+    if (!lineStr) return <span>&nbsp;</span>;
+    
+    // Check if it's a comment line
+    if (lineStr.trim().startsWith('//')) {
+        return <span style={{ color: 'var(--syntax-comment)' }}>{lineStr}</span>;
+    }
+
+    // Tokenizer regex
+    const regex = /("[^"]*"|'[^']*'|`[^`]*`|\/\/.*|\b(?:const|let|var|function|return|import|export|from|await|async|class|extends|default|if|else|for|while|new|try|catch|finally)\b|\b\d+(?:\.\d+)?\b|[+\-*\/=<>!&|^%~?:]|[{}()\[\].;,]|\b[a-zA-Z_]\w*\b|\s+)/g;
+
+    const tokens = lineStr.split(regex);
+    
+    return (
+        <span className="break-words whitespace-pre-wrap">
+            {tokens.map((token, index) => {
+                if (!token) return null;
+
+                // Match strings
+                if (/^("[^"]*"|'[^']*'|`[^`]*`)$/.test(token)) {
+                    const stripped = token.replace(/['"`]/g, '');
+                    if (stripped.startsWith('http') || stripped.includes('github.com')) {
+                        return (
+                            <a
+                                key={index}
+                                href={githubLink || stripped}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="hover:underline transition-all"
+                                style={{ color: 'var(--syntax-string)' }}
+                            >
+                                {token}
+                            </a>
+                        );
+                    }
+                    return <span key={index} style={{ color: 'var(--syntax-string)' }}>{token}</span>;
+                }
+
+                // Match inline comments
+                if (token.startsWith('//')) {
+                    return <span key={index} style={{ color: 'var(--syntax-comment)' }}>{token}</span>;
+                }
+
+                // Match keywords
+                if (/^(const|let|var|function|return|import|export|from|await|async|class|extends|default|if|else|for|while|new|try|catch|finally)$/.test(token)) {
+                    return <span key={index} style={{ color: 'var(--syntax-keyword)' }}>{token}</span>;
+                }
+
+                // Match numbers
+                if (/^\d+(?:\.\d+)?$/.test(token)) {
+                    return <span key={index} style={{ color: 'var(--syntax-number)' }}>{token}</span>;
+                }
+
+                // Match operators
+                if (/^[+\-*\/=<>!&|^%~?:]+$/.test(token)) {
+                    return <span key={index} style={{ color: 'var(--syntax-operator)' }}>{token}</span>;
+                }
+
+                // Match function calls or built-ins
+                if (/^(console|log|alert|require|fetch|JSON|Math|Date|String|Number|Array|Object)$/.test(token)) {
+                    return <span key={index} style={{ color: 'var(--syntax-function)' }}>{token}</span>;
+                }
+
+                // Match variables/identifiers
+                if (/^[a-zA-Z_]\w*$/.test(token)) {
+                    return <span key={index} style={{ color: 'var(--syntax-variable)' }}>{token}</span>;
+                }
+
+                // Default plain text
+                return <span key={index} style={{ color: 'var(--text-primary)' }}>{token}</span>;
+            })}
+        </span>
+    );
+};
+
 const FuturisticResume = ({ data }) => {
     const { theme } = useTheme();
     const { tier, prefersReducedMotion } = useDevicePerformance();
@@ -64,38 +139,51 @@ const FuturisticResume = ({ data }) => {
     // Prepare dynamic editor lines to support scrolling & large content
     const editorLines = useMemo(() => {
         const lines = [];
-        if (codeSnippets && Array.isArray(codeSnippets)) {
+        if (codeSnippets && Array.isArray(codeSnippets) && codeSnippets.length > 0) {
             codeSnippets.forEach((snippet) => {
-                lines.push({ type: 'comment', content: `// ${snippet}` });
+                lines.push(snippet);
             });
         } else {
-            lines.push({ type: 'comment', content: '// Hi all.' });
-            lines.push({ type: 'comment', content: '// I am Ayaan Ansari,' });
-            lines.push({ type: 'comment', content: '// a Software Engineer' });
-            lines.push({ type: 'comment', content: '// and a Learner.' });
-            lines.push({ type: 'comment', content: '// Find my profile on GitHub:' });
+            lines.push("import { developer } from 'ayaan';");
+            lines.push("import { build, deploy } from 'next';");
+            lines.push("");
+            lines.push("// Live learning & engineering protocol");
+            lines.push("const executeLearningLoop = async () => {");
+            lines.push("  while (developer.curiosityNeverSleeps) {");
+            lines.push("    await build({ feature: 'innovation' });");
+            lines.push("    await deploy({ speed: 'optimum' });");
+            lines.push("  }");
+            lines.push("};");
         }
-        lines.push({
-            type: 'code',
-            content: (
-                <>
-                    <span style={{ color: 'var(--syntax-keyword)' }}>const</span>{' '}
-                    <span style={{ color: 'var(--syntax-variable)' }}>githubLink</span>{' '}
-                    <span style={{ color: 'var(--text-bright)' }}>=</span>{' '}
-                    <a
-                        href={githubLink || "https://github.com/aiyu-ayaan"}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="hover:underline transition-all"
-                        style={{ color: 'var(--syntax-string)' }}
-                    >
-                        &quot;{githubLink || "https://github.com/aiyu-ayaan"}&quot;
-                    </a>
-                </>
-            )
-        });
+        
+        // Append githubLink assignment
+        lines.push("");
+        lines.push(`const githubLink = "${githubLink || 'https://github.com/aiyu-ayaan'}";`);
+        
         return lines;
     }, [codeSnippets, githubLink]);
+
+    // --- Live Diagnostics Telemetry Logic ---
+    const [temp, setTemp] = useState(42);
+    const [uptime, setUptime] = useState(0);
+    const [fps, setFps] = useState(60.0);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setTemp(prev => {
+                const change = Math.random() > 0.5 ? 1 : -1;
+                const next = prev + change;
+                return next >= 40 && next <= 48 ? next : prev;
+            });
+            setFps(prev => {
+                const change = Math.random() > 0.5 ? 0.2 : -0.2;
+                const next = parseFloat((prev + change).toFixed(1));
+                return next >= 58.5 && next <= 60.0 ? next : prev;
+            });
+            setUptime(prev => prev + 1);
+        }, 1000);
+        return () => clearInterval(interval);
+    }, []);
 
     // --- Glitch & Tilt Card Logic ---
     const [text, setText] = useState('');
@@ -260,20 +348,55 @@ const FuturisticResume = ({ data }) => {
             {/* spacious floating container utilizing 80% margins with 1280px cap */}
             <div className="w-full max-w-[95%] lg:max-w-[80%] xl:max-w-7xl flex flex-col justify-center relative z-10">
 
-                {/* --- Top Column: Personal Info (Title & Roles) --- */}
+                {/* --- Top Column: Personal Info & Diagnostics Telemetry --- */}
                 <motion.div
                     initial={{ y: -20, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ duration: 0.8, delay: 0.1 }}
-                    className="text-center lg:text-left mb-10 w-full select-none"
+                    className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 mb-10 w-full select-none"
                 >
-                    <h1
-                        className="text-5xl sm:text-6xl lg:text-7xl font-bold mb-4 tracking-tight"
-                        style={{ color: 'var(--text-bright)' }}
+                    <div className="text-center lg:text-left">
+                        <h1
+                            className="text-5xl sm:text-6xl lg:text-7xl font-bold mb-4 tracking-tight"
+                            style={{ color: 'var(--text-bright)' }}
+                        >
+                            {name || "Ayaan Ansari"}
+                        </h1>
+                        <TypewriterEffect roles={homeRoles || []} />
+                    </div>
+
+                    {/* Glowing Live Diagnostics Telemetry Panel */}
+                    <div
+                        className="rounded-xl border backdrop-blur-md relative overflow-hidden group flex items-center gap-6 p-4 w-full lg:w-auto min-w-[280px] lg:min-w-[360px] shadow-[0_0_20px_rgba(34,211,238,0.02)] hover:border-[var(--accent-cyan)] hover:shadow-[0_0_30px_rgba(34,211,238,0.1)] transition-all duration-500 text-left"
+                        style={{
+                            backgroundColor: 'rgba(13, 17, 23, 0.45)',
+                            borderColor: 'var(--border-secondary)',
+                        }}
                     >
-                        {name || "Ayaan Ansari"}
-                    </h1>
-                    <TypewriterEffect roles={homeRoles || []} />
+                        {/* Status Pulse dot */}
+                        <div className="flex items-center gap-3">
+                            <span className="relative flex h-3.5 w-3.5">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--accent-cyan)] opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-[var(--accent-cyan)] shadow-[0_0_12px_var(--accent-cyan)]"></span>
+                            </span>
+                            <div className="h-8 w-px bg-white/10" />
+                        </div>
+                        
+                        {/* Live dynamic metrics readout */}
+                        <div className="grid grid-cols-2 gap-x-6 gap-y-2 font-mono text-[10px] tracking-widest text-[var(--text-secondary)] flex-grow">
+                            <div>SYS_TEMP: <span className="text-[var(--text-bright)] font-bold">{temp}°C</span></div>
+                            <div>SYS_FPS: <span className="text-[var(--accent-pink-bright)] font-bold">{fps} FPS</span></div>
+                            <div>CORE_UPTIME: <span className="text-[var(--accent-purple)] font-bold">{uptime}s</span></div>
+                            <div>ENGINE: <span className="text-[var(--syntax-keyword)] font-bold">V8_N16_R19</span></div>
+                        </div>
+
+                        {/* Visual cyber design highlight */}
+                        <div className="absolute right-0 bottom-0 opacity-10 pointer-events-none pr-1 pb-1">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                <path d="M4 4h4v4H4zm12 0h4v4h-4zM4 16h4v4H4zm12 0h4v4h-4z" />
+                            </svg>
+                        </div>
+                    </div>
                 </motion.div>
 
                 {/* --- Cards Workspace Grid: Perfectly Symmetric Side-by-Side --- */}
@@ -345,13 +468,9 @@ const FuturisticResume = ({ data }) => {
                                                 {index + 1}
                                             </span>
                                             {/* Line Content */}
-                                            <span className="font-mono min-w-0">
-                                                {line.type === 'comment' ? (
-                                                    <span style={{ color: 'var(--syntax-comment)' }} className="break-words whitespace-pre-wrap">{line.content}</span>
-                                                ) : (
-                                                    line.content
-                                                )}
-                                            </span>
+                                             <span className="font-mono min-w-0">
+                                                 {parseCodeLine(line, githubLink)}
+                                             </span>
                                         </React.Fragment>
                                     ))}
                                 </div>
