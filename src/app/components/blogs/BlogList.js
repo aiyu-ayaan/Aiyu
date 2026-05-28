@@ -167,8 +167,8 @@ export default function BlogList({ initialBlogs, initialConfig, initialPaginatio
 
   return (
     <div className="w-full overflow-x-clip px-4 py-8 sm:px-6 lg:px-8 bg-transparent transition-colors duration-200">
-      <div className="mx-auto w-full max-w-[95%] lg:max-w-[80%]">
-        <header className="mb-10 text-center border-b pb-8" style={{ borderColor: 'var(--border-primary)' }}>
+      <div className="mx-auto w-full max-w-4xl">
+        <header className="mb-12 text-center border-b pb-8" style={{ borderColor: 'var(--border-primary)' }}>
           <h1 className="text-4xl sm:text-5xl font-normal tracking-tight mb-3" style={{ color: 'var(--text-primary)' }}>
             {config?.blogsTitle || 'The Blogger'}
           </h1>
