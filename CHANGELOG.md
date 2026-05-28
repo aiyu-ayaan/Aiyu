@@ -1,5 +1,30 @@
 # Changelog
 
+## [4.0.1](https://github.com/aiyu-ayaan/Aiyu/compare/v4.0.0...v4.0.1) (2026-05-28)
+
+### Features
+
+* feat(blogs): expand BlogList and BlogsPageHeader layout container to 80%
+* feat(blogs): expand BlogDetailClient container to 80% and enhance typography legibility
+* feat(blogs): cap BlogDetailClient and article column to highly readable max-w-3xl
+* feat(blogs): redesign BlogCard listing row digests with structured image aspect ratios
+* feat(blogs): cap BlogList layout container to max-w-4xl for narrow paper grid
+* feat(admin): redesign header layout and add skins control button in HomeForm
+* feat(landing): enrich landing hero with top telemetry panel and syntax highlighted code blocks
+* feat(landing): increase size of left panel and code editor block
+* feat(landing): redesign hero to unified cyber dashboard console
+* feat(FuturisticResume): enhance code editor with dynamic lines and custom scrollbar
+
+### Other Changes
+
+* style(blogs): restore dynamic theme detection and dark mode overrides
+* style(blogs): lock blog theme context exclusively to light-paper mode
+* refactor(landing): align hero layout and set card heights to 450px for perfect vertical symmetry
+* refactor(landing): restore clean floating dual-column layout with widescreen cap
+* layout(pages): align all page containers with header width symmetry
+* layout(landing): expand homepage sections and footer container widths
+* layout(header): expand header container width to 80% on desktop
+
 ## [4.0.0](https://github.com/aiyu-ayaan/Aiyu/compare/v3.10.0...v4.0.0) (2026-05-27)
 
 ### Features
