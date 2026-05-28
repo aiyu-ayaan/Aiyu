@@ -250,7 +250,7 @@ export default memo(function BlogDetailClient({ blog, config, adsConfig }) {
     <div className="blog-detail-container p-4 lg:p-8">
       <div className="blog-detail-backdrop" />
 
-      <div className="relative mx-auto w-full max-w-[95%] lg:max-w-[80%]">
+      <div className="relative mx-auto w-full max-w-5xl">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <Link
             href="/blogs"
@@ -338,9 +338,9 @@ export default memo(function BlogDetailClient({ blog, config, adsConfig }) {
         )}
 
         <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px] items-start">
-          <article className="min-w-0 max-w-full lg:pr-8">
+          <article className="min-w-0 max-w-3xl lg:pr-8">
             <div
-              className="prose prose-lg max-w-none min-w-0 max-w-full mt-6"
+              className="prose prose-lg max-w-none mt-6"
               style={{
                 '--tw-prose-body': 'var(--text-secondary)',
                 '--tw-prose-headings': 'var(--text-primary)',
