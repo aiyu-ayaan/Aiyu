@@ -134,7 +134,7 @@ export default memo(function Header({ data, logoText, socialData, config }) {
       <header className={clsx("sticky top-0 z-50 px-3 pb-0 pt-3 sm:px-4 lg:px-6", isBlogsRoute && "hidden")}>
         <div
           className={clsx(
-            "mx-auto w-full max-w-7xl rounded-2xl border transition-all duration-300 relative",
+            "mx-auto w-full max-w-[95%] lg:max-w-[80%] rounded-2xl border transition-all duration-300 relative",
             !isTerminalOutputOpen && "overflow-hidden",
             scrolled ? "header-scrolled" : "header-normal",
             isTerminalOutputOpen && "terminal-output-open",
