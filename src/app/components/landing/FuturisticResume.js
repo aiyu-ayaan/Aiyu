@@ -61,6 +61,42 @@ const FuturisticResume = ({ data }) => {
     // Select the icon based on prop, default to Bolt
     const SelectedIcon = ICON_MAP[resumeIcon] || FaBolt;
 
+    // Prepare dynamic editor lines to support scrolling & large content
+    const editorLines = useMemo(() => {
+        const lines = [];
+        if (codeSnippets && Array.isArray(codeSnippets)) {
+            codeSnippets.forEach((snippet) => {
+                lines.push({ type: 'comment', content: `// ${snippet}` });
+            });
+        } else {
+            lines.push({ type: 'comment', content: '// Hi all.' });
+            lines.push({ type: 'comment', content: '// I am Ayaan Ansari,' });
+            lines.push({ type: 'comment', content: '// a Software Engineer' });
+            lines.push({ type: 'comment', content: '// and a Learner.' });
+            lines.push({ type: 'comment', content: '// Find my profile on GitHub:' });
+        }
+        lines.push({
+            type: 'code',
+            content: (
+                <>
+                    <span style={{ color: 'var(--syntax-keyword)' }}>const</span>{' '}
+                    <span style={{ color: 'var(--syntax-variable)' }}>githubLink</span>{' '}
+                    <span style={{ color: 'var(--text-bright)' }}>=</span>{' '}
+                    <a
+                        href={githubLink || "https://github.com/aiyu-ayaan"}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:underline transition-all"
+                        style={{ color: 'var(--syntax-string)' }}
+                    >
+                        &quot;{githubLink || "https://github.com/aiyu-ayaan"}&quot;
+                    </a>
+                </>
+            )
+        });
+        return lines;
+    }, [codeSnippets, githubLink]);
+
     // --- Glitch & Tilt Card Logic ---
     const [text, setText] = useState('');
     const [isHovering, setIsHovering] = useState(false);
@@ -242,43 +278,109 @@ const FuturisticResume = ({ data }) => {
                     </div>
 
                     <motion.div
-                        className="p-6 rounded-xl border backdrop-blur-sm relative overflow-hidden group"
+                        className="rounded-2xl border backdrop-blur-sm relative overflow-hidden group w-full transition-all duration-500 hover:border-[var(--accent-cyan)] hover:shadow-[0_0_45px_rgba(34,211,238,0.15)]"
                         style={{
-                            backgroundColor: 'var(--bg-elevated)',
-                            borderColor: 'var(--border-secondary)'
+                            backgroundColor: 'rgba(13, 17, 23, 0.7)',
+                            borderColor: 'var(--border-secondary)',
+                            boxShadow: '0 0 30px rgba(34, 211, 238, 0.05), inset 0 0 20px rgba(255,255,255,0.02)'
                         }}
                     >
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+                        {/* Sweeping shimmer hover reflection overlay */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-[1200ms] pointer-events-none z-30" />
+                        {/* Custom thin scrollbar style */}
+                        <style>{`
+                            .custom-editor-scroll::-webkit-scrollbar {
+                                width: 5px;
+                                height: 5px;
+                            }
+                            .custom-editor-scroll::-webkit-scrollbar-track {
+                                background: transparent;
+                            }
+                            .custom-editor-scroll::-webkit-scrollbar-thumb {
+                                background: rgba(34, 211, 238, 0.15);
+                                border-radius: 4px;
+                            }
+                            .custom-editor-scroll::-webkit-scrollbar-thumb:hover {
+                                background: rgba(34, 211, 238, 0.35);
+                            }
+                            .custom-editor-scroll {
+                                scrollbar-width: thin;
+                                scrollbar-color: rgba(34, 211, 238, 0.15) transparent;
+                            }
+                        `}</style>
 
-                        <div className="space-y-2 font-mono text-xs sm:text-sm text-left">
-                            {codeSnippets && codeSnippets.map((snippet, index) => (
-                                <p key={index} style={{ color: 'var(--text-secondary)' }}>{`// ${snippet}`}</p>
-                            ))}
-                            <p className="break-all">
-                                <span style={{ color: 'var(--syntax-keyword)' }}>const</span>{' '}
-                                <span style={{ color: 'var(--syntax-variable)' }}>githubLink</span>{' '}
-                                <span style={{ color: 'var(--text-bright)' }}>=</span>
-                                <br className="sm:hidden" />
-                                <a
-                                    href={githubLink}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="sm:ml-1 hover:underline transition-all"
-                                    style={{ color: 'var(--syntax-string)' }}
-                                >
-                                    &quot;{githubLink}&quot;
-                                </a>
-                            </p>
-                            {/* Dynamic Data Info */}
-                            <div className="mt-4 pt-4 border-t border-dashed" style={{ borderColor: 'var(--border-secondary)' }}>
-                                <p className="flex justify-between text-xs font-mono mb-1" style={{ color: 'var(--text-tertiary)' }}>
-                                    <span>STATUS</span>
-                                    <span style={{ color: 'var(--accent-cyan)' }}>{resumeStatus || 'ONLINE'}</span>
-                                </p>
-                                <p className="flex justify-between text-xs font-mono" style={{ color: 'var(--text-tertiary)' }}>
-                                    <span>MODE</span>
-                                    <span style={{ color: 'var(--accent-orange)' }}>{resumeMode || 'DEV_01'}</span>
-                                </p>
+                        {/* Top macOS-style window header bar */}
+                        <div className="relative flex items-center h-10 px-4 border-b select-none" style={{ borderColor: 'rgba(255, 255, 255, 0.06)', backgroundColor: 'rgba(10, 15, 25, 0.5)' }}>
+                            {/* Window Dots */}
+                            <div className="flex items-center space-x-1.5 z-10">
+                                <span className="w-3 h-3 rounded-full bg-[#ff5f56] block opacity-90"></span>
+                                <span className="w-3 h-3 rounded-full bg-[#ffbd2e] block opacity-90"></span>
+                                <span className="w-3 h-3 rounded-full bg-[#27c93f] block opacity-90"></span>
+                            </div>
+                            {/* Centered Tab Title */}
+                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                <div className="flex items-center space-x-1.5 text-xs font-mono text-[var(--text-secondary)]">
+                                    <span className="text-[var(--accent-cyan)] font-bold opacity-80">&gt;_</span>
+                                    <span className="opacity-90">developer.js</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Scrollable Code Block Editor */}
+                        <div className="custom-editor-scroll overflow-y-auto max-h-[260px] p-6 text-left select-text">
+                            <div className="grid grid-cols-[auto_1fr] gap-x-4 font-mono text-xs sm:text-sm leading-relaxed">
+                                {editorLines.map((line, index) => (
+                                    <React.Fragment key={index}>
+                                        {/* Line Number Gutter */}
+                                        <span className="text-right select-none opacity-25 font-mono text-[var(--text-secondary)] min-w-[1.25rem] pr-1">
+                                            {index + 1}
+                                        </span>
+                                        {/* Line Content */}
+                                        <span className="font-mono min-w-0">
+                                            {line.type === 'comment' ? (
+                                                <span style={{ color: 'var(--syntax-comment)' }} className="break-words whitespace-pre-wrap">{line.content}</span>
+                                            ) : (
+                                                line.content
+                                            )}
+                                        </span>
+                                    </React.Fragment>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Dashed Line Separator */}
+                        <div className="border-t border-dashed mx-6" style={{ borderColor: 'rgba(255, 255, 255, 0.08)' }}></div>
+
+                        {/* Connection & Mode bottom cards */}
+                        <div className="p-6 pt-4 grid grid-cols-2 gap-4">
+                            {/* CONNECTION STATUS */}
+                            <div className="p-4 rounded-xl border flex flex-col justify-between"
+                                style={{
+                                    backgroundColor: 'rgba(10, 25, 41, 0.35)',
+                                    borderColor: 'rgba(34, 211, 238, 0.06)',
+                                }}
+                            >
+                                <span className="text-[9px] sm:text-[10px] font-mono font-semibold uppercase tracking-wider opacity-50" style={{ color: 'var(--text-secondary)' }}>
+                                    CONNECTION STATUS
+                                </span>
+                                <span className="text-xs sm:text-sm font-mono font-bold mt-1.5" style={{ color: 'var(--syntax-string)' }}>
+                                    {resumeStatus || 'ONLINE'}
+                                </span>
+                            </div>
+
+                            {/* OPERATION MODE */}
+                            <div className="p-4 rounded-xl border flex flex-col justify-between"
+                                style={{
+                                    backgroundColor: 'rgba(10, 25, 41, 0.35)',
+                                    borderColor: 'rgba(34, 211, 238, 0.06)',
+                                }}
+                            >
+                                <span className="text-[9px] sm:text-[10px] font-mono font-semibold uppercase tracking-wider opacity-50" style={{ color: 'var(--text-secondary)' }}>
+                                    OPERATION MODE
+                                </span>
+                                <span className="text-xs sm:text-sm font-mono font-bold mt-1.5" style={{ color: 'var(--accent-cyan)' }}>
+                                    {resumeMode || 'DEV_01'}
+                                </span>
                             </div>
                         </div>
                     </motion.div>
