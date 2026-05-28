@@ -265,7 +265,7 @@ const FuturisticResume = ({ data }) => {
                     initial={{ x: -50, opacity: 0 }}
                     animate={{ x: 0, opacity: 1 }}
                     transition={{ duration: 0.8, delay: 0.2 }}
-                    className="flex-1 text-center lg:text-left order-1 max-w-lg lg:max-w-[620px] w-full relative"
+                    className="flex-1 text-center lg:text-left order-1 max-w-lg lg:max-w-[700px] w-full relative"
                 >
                     <motion.h1
                         className="text-5xl sm:text-6xl lg:text-7xl font-bold mb-6 tracking-tight"
@@ -328,7 +328,7 @@ const FuturisticResume = ({ data }) => {
                         </div>
 
                         {/* Scrollable Code Block Editor */}
-                        <div className="custom-editor-scroll overflow-y-auto max-h-[260px] p-6 text-left select-text">
+                        <div className="custom-editor-scroll overflow-y-auto max-h-[350px] p-6 text-left select-text">
                             <div className="grid grid-cols-[auto_1fr] gap-x-4 font-mono text-xs sm:text-sm leading-relaxed">
                                 {editorLines.map((line, index) => (
                                     <React.Fragment key={index}>
