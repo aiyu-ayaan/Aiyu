@@ -27,31 +27,9 @@
   color: var(--text-primary);
 }
 
-[data-theme="dark"] .blogs-theme {
-  --bg-primary: #121212;
-  --bg-secondary: #1e1e1e;
-  --bg-tertiary: #2a2a2a;
-  --bg-surface: #1e1e1e;
-  --bg-elevated: #2d2d2d;
-  --bg-hover: #333333;
 
-  --text-primary: #e8eaed;
-  --text-secondary: #9aa0a6;
-  --text-tertiary: #80868b;
-  --text-muted: #5f6368;
-  --text-bright: #ffffff;
+/* Blogs theme is strictly locked to a warm light-paper theme for high-contrast reading readability */
 
-  --accent-cyan: #8ab4f8; /* Dark mode optimized google link blue */
-  --accent-cyan-bright: #a8c7fa;
-  --accent-purple: #8ab4f8;
-  --accent-pink: #f28b82;
-  --accent-orange: #fdd663;
-
-  --border-primary: #3c4043;
-  --border-secondary: #202124;
-  --border-accent: #8ab4f8;
-  --border-cyan: #8ab4f8;
-}
 
 body:has(.blogs-theme)::before {
   opacity: 0 !important;
