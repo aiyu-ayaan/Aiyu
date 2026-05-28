@@ -133,7 +133,7 @@ const TechStackCarousel = ({ data }) => {
       />
 
       <div
-        className="relative mx-auto max-w-6xl rounded-3xl border p-6 sm:p-8"
+        className="relative mx-auto w-full max-w-[95%] lg:max-w-[80%] rounded-3xl border p-6 sm:p-8"
         style={{
           background: 'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 93%, transparent), color-mix(in srgb, var(--bg-secondary) 93%, transparent))',
           borderColor: 'color-mix(in srgb, var(--border-secondary) 76%, transparent)',

@@ -108,7 +108,7 @@ export default async function Home() {
         rootMargin="180px 0px"
         initialDelayMs={220}
       >
-        <div className="mx-auto max-w-6xl rounded-3xl border p-5 sm:p-7"
+        <div className="mx-auto w-full max-w-[95%] lg:max-w-[80%] rounded-3xl border p-5 sm:p-7"
           style={{
             background: 'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 92%, transparent), color-mix(in srgb, var(--bg-secondary) 92%, transparent))',
             borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',

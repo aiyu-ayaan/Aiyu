@@ -257,7 +257,7 @@ const FuturisticResume = ({ data }) => {
             className="min-h-screen flex flex-col lg:flex-row items-center justify-center p-4 lg:p-8 relative transition-colors duration-300 overflow-hidden"
             style={{ backgroundColor: 'transparent' }}
         >
-            <div className="w-full max-w-7xl flex flex-col lg:flex-row items-center justify-between gap-12 relative z-10">
+            <div className="w-full max-w-[95%] lg:max-w-[80%] flex flex-col lg:flex-row items-center justify-between gap-12 relative z-10">
 
                 {/* --- Left Column: Personal Info --- */}
                 <motion.div

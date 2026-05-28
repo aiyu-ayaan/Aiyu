@@ -53,7 +53,7 @@ export default function Footer({ socialData, name, config, packageVersion }) {
             />
 
             <div
-                className="relative mx-auto max-w-7xl rounded-3xl border p-5 sm:p-7"
+                className="relative mx-auto w-full max-w-[95%] lg:max-w-[80%] rounded-3xl border p-5 sm:p-7"
                 style={{
                     borderColor: 'color-mix(in srgb, var(--border-secondary) 74%, transparent)',
                     background:

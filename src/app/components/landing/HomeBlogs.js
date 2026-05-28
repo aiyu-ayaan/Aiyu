@@ -24,7 +24,7 @@ const HomeBlogs = ({ blogs }) => {
         style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--accent-cyan) 25%, transparent), transparent 70%)' }}
       />
 
-      <div className="relative mx-auto max-w-6xl rounded-3xl border p-6 sm:p-8"
+      <div className="relative mx-auto w-full max-w-[95%] lg:max-w-[80%] rounded-3xl border p-6 sm:p-8"
         style={{
           background: 'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 92%, transparent), color-mix(in srgb, var(--bg-secondary) 92%, transparent))',
           borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
