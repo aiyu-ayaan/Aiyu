@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Sparkles, Loader2, Wand2 } from 'lucide-react';
 import Toast from './Toast';
 
@@ -367,6 +368,34 @@ const HomeForm = () => {
                             <div className="absolute top-3 right-3 w-2 h-2 rounded-full bg-orange-500 shadow-[0_0_10px_rgba(249,115,22,1)] animate-ping" />
                         )}
                     </label>
+                </div>
+            </div>
+
+            {/* Active Theme & Skins Link Section */}
+            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-purple-500/20 p-8 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
+
+                <h2 className="text-sm font-mono text-purple-400 uppercase tracking-widest mb-6 flex items-center gap-4">
+                    Active Theme & Skins
+                    <div className="h-px bg-purple-500/20 flex-grow" />
+                </h2>
+
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-5 rounded-xl bg-slate-950/40 border border-white/5">
+                    <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-lg bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-xl select-none">
+                            🎨
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-mono text-purple-400 uppercase tracking-wider">INTERFACE CORE SKIN</p>
+                            <p className="text-sm font-bold text-white font-mono mt-0.5">Activate & Edit Visual Skin Presets</p>
+                        </div>
+                    </div>
+                    
+                    <Link href="/admin/themes" className="w-full sm:w-auto">
+                        <button type="button" className="w-full px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs tracking-wider transition-all font-mono cursor-pointer">
+                            LAUNCH_SKINS_CONTROL_CENTER →
+                        </button>
+                    </Link>
                 </div>
             </div>
 
