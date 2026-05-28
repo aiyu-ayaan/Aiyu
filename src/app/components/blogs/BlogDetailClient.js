@@ -250,7 +250,7 @@ export default memo(function BlogDetailClient({ blog, config, adsConfig }) {
     <div className="blog-detail-container p-4 lg:p-8">
       <div className="blog-detail-backdrop" />
 
-      <div className="relative mx-auto max-w-6xl">
+      <div className="relative mx-auto w-full max-w-[95%] lg:max-w-[80%]">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <Link
             href="/blogs"

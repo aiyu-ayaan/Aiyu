@@ -21,7 +21,7 @@ function SkeletonBlock({ className = '', style = {} }) {
     );
 }
 
-function PageShell({ maxWidth = 'max-w-6xl', children }) {
+function PageShell({ maxWidth = 'w-full max-w-[95%] lg:max-w-[80%]', children }) {
     return (
         <div className="min-h-screen p-4 lg:p-8">
             <div className={`mx-auto ${maxWidth} space-y-6`} aria-busy="true" aria-live="polite">
@@ -123,7 +123,7 @@ function DetailContentSkeleton() {
 
 export function HomePageSkeleton() {
     return (
-        <PageShell maxWidth="max-w-7xl">
+        <PageShell maxWidth="w-full max-w-[95%] lg:max-w-[80%]">
             <section className="rounded-3xl border p-6 sm:p-8 lg:p-10" style={shellPanelStyle}>
                 <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
                     <div>
@@ -191,7 +191,7 @@ export function BlogListPageSkeleton() {
 
 export function GalleryPageSkeleton() {
     return (
-        <PageShell maxWidth="max-w-7xl">
+        <PageShell maxWidth="w-full max-w-[95%] lg:max-w-[80%]">
             <HeroSkeleton stats={4} />
             <FilterBarSkeleton chips={5} />
             <CardGridSkeleton cards={9} minHeightClass="h-52" />
@@ -201,7 +201,7 @@ export function GalleryPageSkeleton() {
 
 export function GitHubPageSkeleton() {
     return (
-        <PageShell maxWidth="max-w-7xl">
+        <PageShell maxWidth="w-full max-w-[95%] lg:max-w-[80%]">
             <HeroSkeleton stats={5} />
             <section className="rounded-2xl border p-5" style={shellPanelStyle}>
                 <SkeletonBlock className="mb-4 h-8 w-1/3" />

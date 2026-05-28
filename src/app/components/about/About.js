@@ -121,7 +121,7 @@ const About = ({ data }) => {
         style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--accent-pink) 32%, transparent), transparent 68%)' }}
       />
 
-      <div className="relative mx-auto max-w-6xl">
+      <div className="relative mx-auto w-full max-w-[95%] lg:max-w-[80%]">
         <motion.section
           id="summary"
           initial={{ y: 24, opacity: 0 }}

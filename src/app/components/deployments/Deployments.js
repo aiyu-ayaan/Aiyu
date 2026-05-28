@@ -173,7 +173,7 @@ export default function Deployments({ data, config }) {
                 }}
             />
 
-            <div className="relative mx-auto max-w-6xl">
+            <div className="relative mx-auto w-full max-w-[95%] lg:max-w-[80%]">
                 <motion.section
                     initial={{ y: 22, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}

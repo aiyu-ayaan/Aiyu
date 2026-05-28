@@ -53,7 +53,7 @@ export default function ContactPageClient({ location, status, email, hasResume, 
         style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--accent-purple) 28%, transparent), transparent 70%)' }}
       />
 
-      <div className="relative mx-auto max-w-6xl">
+      <div className="relative mx-auto w-full max-w-[95%] lg:max-w-[80%]">
         <section
           className="rounded-3xl border p-6 sm:p-8"
           style={{
