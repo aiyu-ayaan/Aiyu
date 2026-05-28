@@ -254,249 +254,258 @@ const FuturisticResume = ({ data }) => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
-            className="min-h-screen flex flex-col lg:flex-row items-center justify-center p-4 lg:p-8 relative transition-colors duration-300 overflow-hidden"
+            className="min-h-screen flex flex-col items-center justify-center p-4 lg:p-8 relative transition-colors duration-300 overflow-hidden"
             style={{ backgroundColor: 'transparent' }}
         >
             {/* spacious floating container utilizing 80% margins with 1280px cap */}
-            <div className="w-full max-w-[95%] lg:max-w-[80%] xl:max-w-7xl flex flex-col lg:flex-row items-center justify-between gap-12 lg:gap-16 xl:gap-24 relative z-10">
+            <div className="w-full max-w-[95%] lg:max-w-[80%] xl:max-w-7xl flex flex-col justify-center relative z-10">
 
-                {/* --- Left Column: Personal Info --- */}
+                {/* --- Top Column: Personal Info (Title & Roles) --- */}
                 <motion.div
-                    initial={{ x: -50, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ duration: 0.8, delay: 0.2 }}
-                    className="flex-1 text-center lg:text-left order-1 max-w-lg lg:max-w-[700px] w-full relative"
+                    initial={{ y: -20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ duration: 0.8, delay: 0.1 }}
+                    className="text-center lg:text-left mb-10 w-full select-none"
                 >
-                    <motion.h1
-                        className="text-5xl sm:text-6xl lg:text-7xl font-bold mb-6 tracking-tight"
+                    <h1
+                        className="text-5xl sm:text-6xl lg:text-7xl font-bold mb-4 tracking-tight"
                         style={{ color: 'var(--text-bright)' }}
                     >
                         {name || "Ayaan Ansari"}
-                    </motion.h1>
-
-                    <div className="mb-8">
-                        <TypewriterEffect roles={homeRoles || []} />
-                    </div>
-
-                    <motion.div
-                        className="rounded-2xl border backdrop-blur-sm relative overflow-hidden group w-full transition-all duration-500 hover:border-[var(--accent-cyan)] hover:shadow-[0_0_45px_rgba(34,211,238,0.15)]"
-                        style={{
-                            backgroundColor: 'rgba(13, 17, 23, 0.7)',
-                            borderColor: 'var(--border-secondary)',
-                            boxShadow: '0 0 30px rgba(34, 211, 238, 0.05), inset 0 0 20px rgba(255,255,255,0.02)'
-                        }}
-                    >
-                        {/* Sweeping shimmer hover reflection overlay */}
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-[1200ms] pointer-events-none z-30" />
-                        {/* Custom thin scrollbar style */}
-                        <style>{`
-                            .custom-editor-scroll::-webkit-scrollbar {
-                                width: 5px;
-                                height: 5px;
-                            }
-                            .custom-editor-scroll::-webkit-scrollbar-track {
-                                background: transparent;
-                            }
-                            .custom-editor-scroll::-webkit-scrollbar-thumb {
-                                background: rgba(34, 211, 238, 0.15);
-                                border-radius: 4px;
-                            }
-                            .custom-editor-scroll::-webkit-scrollbar-thumb:hover {
-                                background: rgba(34, 211, 238, 0.35);
-                            }
-                            .custom-editor-scroll {
-                                scrollbar-width: thin;
-                                scrollbar-color: rgba(34, 211, 238, 0.15) transparent;
-                            }
-                        `}</style>
-
-                        {/* Top macOS-style window header bar */}
-                        <div className="relative flex items-center h-10 px-4 border-b select-none" style={{ borderColor: 'rgba(255, 255, 255, 0.06)', backgroundColor: 'rgba(10, 15, 25, 0.5)' }}>
-                            {/* Window Dots */}
-                            <div className="flex items-center space-x-1.5 z-10">
-                                <span className="w-3 h-3 rounded-full bg-[#ff5f56] block opacity-90"></span>
-                                <span className="w-3 h-3 rounded-full bg-[#ffbd2e] block opacity-90"></span>
-                                <span className="w-3 h-3 rounded-full bg-[#27c93f] block opacity-90"></span>
-                            </div>
-                            {/* Centered Tab Title */}
-                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                <div className="flex items-center space-x-1.5 text-xs font-mono text-[var(--text-secondary)]">
-                                    <span className="text-[var(--accent-cyan)] font-bold opacity-80">&gt;_</span>
-                                    <span className="opacity-90">developer.js</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Scrollable Code Block Editor */}
-                        <div className="custom-editor-scroll overflow-y-auto max-h-[350px] p-6 text-left select-text">
-                            <div className="grid grid-cols-[auto_1fr] gap-x-4 font-mono text-xs sm:text-sm leading-relaxed">
-                                {editorLines.map((line, index) => (
-                                    <React.Fragment key={index}>
-                                        {/* Line Number Gutter */}
-                                        <span className="text-right select-none opacity-25 font-mono text-[var(--text-secondary)] min-w-[1.25rem] pr-1">
-                                            {index + 1}
-                                        </span>
-                                        {/* Line Content */}
-                                        <span className="font-mono min-w-0">
-                                            {line.type === 'comment' ? (
-                                                <span style={{ color: 'var(--syntax-comment)' }} className="break-words whitespace-pre-wrap">{line.content}</span>
-                                            ) : (
-                                                line.content
-                                            )}
-                                        </span>
-                                    </React.Fragment>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Dashed Line Separator */}
-                        <div className="border-t border-dashed mx-6" style={{ borderColor: 'rgba(255, 255, 255, 0.08)' }}></div>
-
-                        {/* Connection & Mode bottom cards */}
-                        <div className="p-6 pt-4 grid grid-cols-2 gap-4">
-                            {/* CONNECTION STATUS */}
-                            <div className="p-4 rounded-xl border flex flex-col justify-between"
-                                style={{
-                                    backgroundColor: 'rgba(10, 25, 41, 0.35)',
-                                    borderColor: 'rgba(34, 211, 238, 0.06)',
-                                }}
-                            >
-                                <span className="text-[9px] sm:text-[10px] font-mono font-semibold uppercase tracking-wider opacity-50" style={{ color: 'var(--text-secondary)' }}>
-                                    CONNECTION STATUS
-                                </span>
-                                <span className="text-xs sm:text-sm font-mono font-bold mt-1.5" style={{ color: 'var(--syntax-string)' }}>
-                                    {resumeStatus || 'ONLINE'}
-                                </span>
-                            </div>
-
-                            {/* OPERATION MODE */}
-                            <div className="p-4 rounded-xl border flex flex-col justify-between"
-                                style={{
-                                    backgroundColor: 'rgba(10, 25, 41, 0.35)',
-                                    borderColor: 'rgba(34, 211, 238, 0.06)',
-                                }}
-                            >
-                                <span className="text-[9px] sm:text-[10px] font-mono font-semibold uppercase tracking-wider opacity-50" style={{ color: 'var(--text-secondary)' }}>
-                                    OPERATION MODE
-                                </span>
-                                <span className="text-xs sm:text-sm font-mono font-bold mt-1.5" style={{ color: 'var(--accent-cyan)' }}>
-                                    {resumeMode || 'DEV_01'}
-                                </span>
-                            </div>
-                        </div>
-                    </motion.div>
+                    </h1>
+                    <TypewriterEffect roles={homeRoles || []} />
                 </motion.div>
 
-                {/* --- Right Column: Enhanced Futuristic Glitch Card --- */}
-                <div className="flex-shrink-0 order-2 perspective-1000">
+                {/* --- Cards Workspace Grid: Perfectly Symmetric Side-by-Side --- */}
+                <div className="flex flex-col lg:flex-row items-center lg:items-start justify-between gap-12 lg:gap-16 xl:gap-24 w-full">
+
+                    {/* --- Left Panel: macOS IDE Mockup Card (Symmetric 450px height) --- */}
                     <motion.div
-                        ref={containerRef}
-                        style={{
-                            rotateX: config.enable3DTilt ? rotateX : 0,
-                            rotateY: config.enable3DTilt ? rotateY : 0,
-                            transformStyle: config.enable3DTilt ? "preserve-3d" : "flat",
-                        }}
-                        className="relative w-[300px] h-[300px] sm:w-[400px] sm:h-[400px] md:w-[450px] md:h-[450px] flex items-center justify-center cursor-pointer"
-                        onMouseMove={handleMouseMove}
-                        onMouseLeave={handleMouseLeave}
-                        whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
+                        initial={{ x: -50, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        transition={{ duration: 0.8, delay: 0.2 }}
+                        className="flex-1 max-w-lg lg:max-w-[700px] w-full relative"
                     >
-                        {/* 1. Glassmorphism Card Frame */}
-                        <div
-                            className="absolute inset-0 rounded-2xl border backdrop-blur-md shadow-2xl transition-all duration-300"
-                            style={{
-                                backgroundColor: isHovering ? 'rgba(0,0,0,0.85)' : 'rgba(0,0,0,0.6)',
-                                borderColor: isHovering ? 'var(--accent-cyan)' : 'var(--border-secondary)',
-                                boxShadow: isHovering ? '0 0 50px var(--shadow-glow)' : '0 0 30px rgba(0,0,0,0.5)'
-                            }}
-                        >
-                            {/* Inner Grid Texture */}
-                            <div
-                                className="absolute inset-0 opacity-20 rounded-2xl"
-                                style={{
-                                    backgroundImage: `linear-gradient(var(--border-secondary) 1px, transparent 1px), linear-gradient(90deg, var(--border-secondary) 1px, transparent 1px)`,
-                                    backgroundSize: '40px 40px'
-                                }}
-                            />
-
-                            {/* Active Scanline Effect - adaptive */}
-                            {config.enableScanline && isHovering && (
-                                <motion.div
-                                    className="absolute inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-50 z-20"
-                                    animate={{ top: ["0%", "100%"] }}
-                                    transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                                />
-                            )}
-                        </div>
-
-                        {/* 2. Extended Cinematic Lines (Fading Gradients) */}
-                        <div className="absolute top-1/2 left-[-100vh] right-[-100vh] h-[1px] bg-gradient-to-r from-transparent via-cyan-500/20 to-transparent pointer-events-none transform -translate-y-1/2 transition-opacity duration-300"
-                            style={{ opacity: isHovering ? 1 : 0.3 }}></div>
-                        <div className="absolute left-1/2 top-[-100vh] bottom-[-100vh] w-[1px] bg-gradient-to-b from-transparent via-cyan-500/20 to-transparent pointer-events-none transform -translate-x-1/2 transition-opacity duration-300"
-                            style={{ opacity: isHovering ? 1 : 0.3 }}></div>
-
-
-                        {/* 3. Corner Accents - Theme Aware */}
-                        <FaPlus className="absolute -top-3 -left-3 text-2xl transition-all duration-300" style={{ color: isHovering ? 'var(--accent-cyan)' : 'var(--text-tertiary)', opacity: isHovering ? 1 : 0.5 }} />
-                        <FaPlus className="absolute -top-3 -right-3 text-2xl transition-all duration-300" style={{ color: isHovering ? 'var(--accent-cyan)' : 'var(--text-tertiary)', opacity: isHovering ? 1 : 0.5 }} />
-                        <FaPlus className="absolute -bottom-3 -left-3 text-2xl transition-all duration-300" style={{ color: isHovering ? 'var(--accent-cyan)' : 'var(--text-tertiary)', opacity: isHovering ? 1 : 0.5 }} />
-                        <FaPlus className="absolute -bottom-3 -right-3 text-2xl transition-all duration-300" style={{ color: isHovering ? 'var(--accent-cyan)' : 'var(--text-tertiary)', opacity: isHovering ? 1 : 0.5 }} />
-
-                        {/* 4. Text Layer with Theme Color Gradient Mask & Flashlight Reveal */}
-                        <div
-                            className="absolute inset-6 overflow-hidden break-all text-[10px] sm:text-xs leading-none pointer-events-none select-none z-10 font-bold"
-                            style={{
-                                opacity: isHovering ? 1 : 0,
-                                transition: 'opacity 0.2s ease',
-                                fontFamily: "'Fira Code', monospace",
-                                color: 'transparent',
-                                backgroundImage: isHovering ? `radial-gradient(
-                                    300px circle at ${mousePos.x}px ${mousePos.y}px, 
-                                    var(--accent-cyan),
-                                    var(--accent-purple),
-                                    transparent
-                                )` : 'none',
-                                backgroundClip: 'text',
-                                WebkitBackgroundClip: 'text',
-                                maskImage: isHovering ? `radial-gradient(
-                                    circle at ${mousePos.x}px ${mousePos.y}px,
-                                    black 40%,
-                                    transparent 70%
-                                )` : 'none',
-                                WebkitMaskImage: isHovering ? `radial-gradient(
-                                    circle at ${mousePos.x}px ${mousePos.y}px,
-                                    black 40%,
-                                    transparent 70%
-                                )` : 'none',
-                            }}
-                        >
-                            {text}
-                        </div>
-
-                        {/* 5. Central Bolt Element - Floating & Magnetic */}
                         <motion.div
-                            className="relative z-20 w-24 h-24 sm:w-32 sm:h-32 rounded-3xl flex items-center justify-center backdrop-blur-xl border pointer-events-none"
+                            className="rounded-2xl border backdrop-blur-sm relative overflow-hidden group w-full h-[450px] flex flex-col justify-between transition-all duration-500 hover:border-[var(--accent-cyan)] hover:shadow-[0_0_45px_rgba(34,211,238,0.15)]"
                             style={{
-                                x: config.enableMagneticIcon ? iconX : 0,
-                                y: config.enableMagneticIcon ? iconY : 0,
-                                backgroundColor: 'var(--bg-elevated)',
-                                borderColor: isHovering ? 'var(--accent-cyan)' : 'var(--border-secondary)',
-                                transform: config.enable3DTilt ? "translateZ(80px)" : "none", // More depth
-                                boxShadow: isHovering ? '0 0 40px var(--shadow-glow)' : '0 0 20px rgba(0,0,0,0.5)'
+                                backgroundColor: 'rgba(13, 17, 23, 0.7)',
+                                borderColor: 'var(--border-secondary)',
+                                boxShadow: '0 0 30px rgba(34, 211, 238, 0.05), inset 0 0 20px rgba(255,255,255,0.02)'
                             }}
                         >
-                            <div
-                                className="w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center"
-                                style={{ backgroundColor: 'var(--bg-surface)' }}
-                            >
-                                <SelectedIcon
-                                    className={`text-3xl sm:text-4xl filter drop-shadow-[0_0_10px_rgba(255,255,255,0.5)] transition-all duration-300 ${isHovering ? 'text-[var(--accent-cyan)] scale-110' : 'text-[var(--text-secondary)]'}`}
-                                />
+                            {/* Sweeping shimmer hover reflection overlay */}
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-[1200ms] pointer-events-none z-30" />
+                            {/* Custom thin scrollbar style */}
+                            <style>{`
+                                .custom-editor-scroll::-webkit-scrollbar {
+                                    width: 5px;
+                                    height: 5px;
+                                }
+                                .custom-editor-scroll::-webkit-scrollbar-track {
+                                    background: transparent;
+                                }
+                                .custom-editor-scroll::-webkit-scrollbar-thumb {
+                                    background: rgba(34, 211, 238, 0.15);
+                                    border-radius: 4px;
+                                }
+                                .custom-editor-scroll::-webkit-scrollbar-thumb:hover {
+                                    background: rgba(34, 211, 238, 0.35);
+                                }
+                                .custom-editor-scroll {
+                                    scrollbar-width: thin;
+                                    scrollbar-color: rgba(34, 211, 238, 0.15) transparent;
+                                }
+                            `}</style>
+
+                            {/* Top macOS-style window header bar */}
+                            <div className="relative flex items-center h-10 px-4 border-b select-none flex-shrink-0" style={{ borderColor: 'rgba(255, 255, 255, 0.06)', backgroundColor: 'rgba(10, 15, 25, 0.5)' }}>
+                                {/* Window Dots */}
+                                <div className="flex items-center space-x-1.5 z-10">
+                                    <span className="w-3 h-3 rounded-full bg-[#ff5f56] block opacity-90"></span>
+                                    <span className="w-3 h-3 rounded-full bg-[#ffbd2e] block opacity-90"></span>
+                                    <span className="w-3 h-3 rounded-full bg-[#27c93f] block opacity-90"></span>
+                                </div>
+                                {/* Centered Tab Title */}
+                                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                    <div className="flex items-center space-x-1.5 text-xs font-mono text-[var(--text-secondary)]">
+                                        <span className="text-[var(--accent-cyan)] font-bold opacity-80">&gt;_</span>
+                                        <span className="opacity-90">developer.js</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Scrollable Code Block Editor - precisely 290px tall */}
+                            <div className="custom-editor-scroll overflow-y-auto h-[290px] p-6 text-left select-text flex-grow">
+                                <div className="grid grid-cols-[auto_1fr] gap-x-4 font-mono text-xs sm:text-sm leading-relaxed">
+                                    {editorLines.map((line, index) => (
+                                        <React.Fragment key={index}>
+                                            {/* Line Number Gutter */}
+                                            <span className="text-right select-none opacity-25 font-mono text-[var(--text-secondary)] min-w-[1.25rem] pr-1">
+                                                {index + 1}
+                                            </span>
+                                            {/* Line Content */}
+                                            <span className="font-mono min-w-0">
+                                                {line.type === 'comment' ? (
+                                                    <span style={{ color: 'var(--syntax-comment)' }} className="break-words whitespace-pre-wrap">{line.content}</span>
+                                                ) : (
+                                                    line.content
+                                                )}
+                                            </span>
+                                        </React.Fragment>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Dashed Line Separator */}
+                            <div className="border-t border-dashed mx-6 flex-shrink-0" style={{ borderColor: 'rgba(255, 255, 255, 0.08)' }}></div>
+
+                            {/* Connection & Mode bottom cards - precisely 120px tall including padding */}
+                            <div className="p-6 pt-4 h-[120px] grid grid-cols-2 gap-4 flex-shrink-0">
+                                {/* CONNECTION STATUS */}
+                                <div className="p-4 rounded-xl border flex flex-col justify-between"
+                                    style={{
+                                        backgroundColor: 'rgba(10, 25, 41, 0.35)',
+                                        borderColor: 'rgba(34, 211, 238, 0.06)',
+                                    }}
+                                >
+                                    <span className="text-[9px] sm:text-[10px] font-mono font-semibold uppercase tracking-wider opacity-50" style={{ color: 'var(--text-secondary)' }}>
+                                        CONNECTION STATUS
+                                    </span>
+                                    <span className="text-xs sm:text-sm font-mono font-bold mt-1.5" style={{ color: 'var(--syntax-string)' }}>
+                                        {resumeStatus || 'ONLINE'}
+                                    </span>
+                                </div>
+
+                                {/* OPERATION MODE */}
+                                <div className="p-4 rounded-xl border flex flex-col justify-between"
+                                    style={{
+                                        backgroundColor: 'rgba(10, 25, 41, 0.35)',
+                                        borderColor: 'rgba(34, 211, 238, 0.06)',
+                                    }}
+                                >
+                                    <span className="text-[9px] sm:text-[10px] font-mono font-semibold uppercase tracking-wider opacity-50" style={{ color: 'var(--text-secondary)' }}>
+                                        OPERATION MODE
+                                    </span>
+                                    <span className="text-xs sm:text-sm font-mono font-bold mt-1.5" style={{ color: 'var(--accent-cyan)' }}>
+                                        {resumeMode || 'DEV_01'}
+                                    </span>
+                                </div>
                             </div>
                         </motion.div>
                     </motion.div>
-                </div>
 
+                    {/* --- Right Column: Enhanced Futuristic Glitch Card (Symmetric 450px height) --- */}
+                    <div className="flex-shrink-0 order-2 perspective-1000">
+                        <motion.div
+                            ref={containerRef}
+                            style={{
+                                rotateX: config.enable3DTilt ? rotateX : 0,
+                                rotateY: config.enable3DTilt ? rotateY : 0,
+                                transformStyle: config.enable3DTilt ? "preserve-3d" : "flat",
+                            }}
+                            className="relative w-[300px] h-[300px] sm:w-[400px] sm:h-[400px] md:w-[450px] md:h-[450px] flex items-center justify-center cursor-pointer"
+                            onMouseMove={handleMouseMove}
+                            onMouseLeave={handleMouseLeave}
+                            whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
+                        >
+                            {/* 1. Glassmorphism Card Frame */}
+                            <div
+                                className="absolute inset-0 rounded-2xl border backdrop-blur-md shadow-2xl transition-all duration-300"
+                                style={{
+                                    backgroundColor: isHovering ? 'rgba(0,0,0,0.85)' : 'rgba(0,0,0,0.6)',
+                                    borderColor: isHovering ? 'var(--accent-cyan)' : 'var(--border-secondary)',
+                                    boxShadow: isHovering ? '0 0 50px var(--shadow-glow)' : '0 0 30px rgba(0,0,0,0.5)'
+                                }}
+                            >
+                                {/* Inner Grid Texture */}
+                                <div
+                                    className="absolute inset-0 opacity-20 rounded-2xl"
+                                    style={{
+                                        backgroundImage: `linear-gradient(var(--border-secondary) 1px, transparent 1px), linear-gradient(90deg, var(--border-secondary) 1px, transparent 1px)`,
+                                        backgroundSize: '40px 40px'
+                                    }}
+                                />
+
+                                {/* Active Scanline Effect - adaptive */}
+                                {config.enableScanline && isHovering && (
+                                    <motion.div
+                                        className="absolute inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-50 z-20"
+                                        animate={{ top: ["0%", "100%"] }}
+                                        transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                                    />
+                                )}
+                            </div>
+
+                            {/* 2. Extended Cinematic Lines (Fading Gradients) */}
+                            <div className="absolute top-1/2 left-[-100vh] right-[-100vh] h-[1px] bg-gradient-to-r from-transparent via-cyan-500/20 to-transparent pointer-events-none transform -translate-y-1/2 transition-opacity duration-300"
+                                style={{ opacity: isHovering ? 1 : 0.3 }}></div>
+                            <div className="absolute left-1/2 top-[-100vh] bottom-[-100vh] w-[1px] bg-gradient-to-b from-transparent via-cyan-500/20 to-transparent pointer-events-none transform -translate-x-1/2 transition-opacity duration-300"
+                                style={{ opacity: isHovering ? 1 : 0.3 }}></div>
+
+
+                            {/* 3. Corner Accents - Theme Aware */}
+                            <FaPlus className="absolute -top-3 -left-3 text-2xl transition-all duration-300" style={{ color: isHovering ? 'var(--accent-cyan)' : 'var(--text-tertiary)', opacity: isHovering ? 1 : 0.5 }} />
+                            <FaPlus className="absolute -top-3 -right-3 text-2xl transition-all duration-300" style={{ color: isHovering ? 'var(--accent-cyan)' : 'var(--text-tertiary)', opacity: isHovering ? 1 : 0.5 }} />
+                            <FaPlus className="absolute -bottom-3 -left-3 text-2xl transition-all duration-300" style={{ color: isHovering ? 'var(--accent-cyan)' : 'var(--text-tertiary)', opacity: isHovering ? 1 : 0.5 }} />
+                            <FaPlus className="absolute -bottom-3 -right-3 text-2xl transition-all duration-300" style={{ color: isHovering ? 'var(--accent-cyan)' : 'var(--text-tertiary)', opacity: isHovering ? 1 : 0.5 }} />
+
+                            {/* 4. Text Layer with Theme Color Gradient Mask & Flashlight Reveal */}
+                            <div
+                                className="absolute inset-6 overflow-hidden break-all text-[10px] sm:text-xs leading-none pointer-events-none select-none z-10 font-bold"
+                                style={{
+                                    opacity: isHovering ? 1 : 0,
+                                    transition: 'opacity 0.2s ease',
+                                    fontFamily: "'Fira Code', monospace",
+                                    color: 'transparent',
+                                    backgroundImage: isHovering ? `radial-gradient(
+                                        300px circle at ${mousePos.x}px ${mousePos.y}px, 
+                                        var(--accent-cyan),
+                                        var(--accent-purple),
+                                        transparent
+                                    )` : 'none',
+                                    backgroundClip: 'text',
+                                    WebkitBackgroundClip: 'text',
+                                    maskImage: isHovering ? `radial-gradient(
+                                        circle at ${mousePos.x}px ${mousePos.y}px,
+                                        black 40%,
+                                        transparent 70%
+                                    )` : 'none',
+                                    WebkitMaskImage: isHovering ? `radial-gradient(
+                                        circle at ${mousePos.x}px ${mousePos.y}px,
+                                        black 40%,
+                                        transparent 70%
+                                    )` : 'none',
+                                }}
+                            >
+                                {text}
+                            </div>
+
+                            {/* 5. Central Bolt Element - Floating & Magnetic */}
+                            <motion.div
+                                className="relative z-20 w-24 h-24 sm:w-32 sm:h-32 rounded-3xl flex items-center justify-center backdrop-blur-xl border pointer-events-none"
+                                style={{
+                                    x: config.enableMagneticIcon ? iconX : 0,
+                                    y: config.enableMagneticIcon ? iconY : 0,
+                                    backgroundColor: 'var(--bg-elevated)',
+                                    borderColor: isHovering ? 'var(--accent-cyan)' : 'var(--border-secondary)',
+                                    transform: config.enable3DTilt ? "translateZ(80px)" : "none", // More depth
+                                    boxShadow: isHovering ? '0 0 40px var(--shadow-glow)' : '0 0 20px rgba(0,0,0,0.5)'
+                                }}
+                            >
+                                <div
+                                    className="w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center"
+                                    style={{ backgroundColor: 'var(--bg-surface)' }}
+                                >
+                                    <SelectedIcon
+                                        className={`text-3xl sm:text-4xl filter drop-shadow-[0_0_10px_rgba(255,255,255,0.5)] transition-all duration-300 ${isHovering ? 'text-[var(--accent-cyan)] scale-110' : 'text-[var(--text-secondary)]'}`}
+                                    />
+                                </div>
+                            </motion.div>
+                        </motion.div>
+                    </div>
+
+                </div>
             </div>
         </motion.div>
     );
