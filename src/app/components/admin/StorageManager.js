@@ -152,7 +152,7 @@ function MigrationPreviewDialog({ open, onClose, onConfirm, data, busy }) {
                 </div>
 
                 {/* Summary bar */}
-                <div className="mb-4 grid grid-cols-3 gap-3 rounded-2xl border border-white/10 bg-slate-950/60 p-4 text-center">
+                <div className="mb-4 grid grid-cols-1 sm:grid-cols-3 gap-3 rounded-2xl border border-white/10 bg-slate-950/60 p-4 text-center">
                     <div>
                         <div className="text-[10px] uppercase tracking-widest text-slate-500 font-mono font-bold">Legacy Images</div>
                         <div className="mt-1 font-mono text-lg font-bold text-cyan-300">{totalCandidates}</div>

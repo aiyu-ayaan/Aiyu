@@ -249,8 +249,8 @@ export default function ThemeEditor({ theme, onSave, onCancel }) {
                             </div>
                         </div>
 
-                        <div className="flex gap-4 mb-4">
-                            <div className="w-[450px] shrink-0 grid grid-cols-2 gap-4">
+                        <div className="flex flex-col lg:flex-row gap-4 mb-4">
+                            <div className="w-full lg:w-[450px] shrink-0 grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <input
                                     type="text"
                                     placeholder="THEME_DESIGNATION"
@@ -323,7 +323,7 @@ export default function ThemeEditor({ theme, onSave, onCancel }) {
                 <div className="h-px bg-white/10 w-full shrink-0 relative z-0" />
 
                 {/* Color Editor Content */}
-                <div className="flex-1 overflow-y-auto p-8 hide-scrollbar relative z-10 scroll-smooth">
+                <div className="flex-1 overflow-y-auto p-4 sm:p-8 hide-scrollbar relative z-10 scroll-smooth">
                     <div className="max-w-5xl mx-auto space-y-2">
                         <ColorSection
                             title="Structure & Backgrounds"
