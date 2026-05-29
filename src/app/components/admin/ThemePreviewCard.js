@@ -9,7 +9,8 @@ export default function ThemePreviewCard({
     onActivate,
     onEdit,
     onDelete,
-    isPredefined = false
+    isPredefined = false,
+    hideActions = false
 }) {
     const colors = theme.variants?.[variant] || theme.variants?.dark;
 
@@ -77,45 +78,47 @@ export default function ThemePreviewCard({
                 </div>
 
                 {/* Action Bar */}
-                <div className="flex items-center gap-2 pt-4 border-t border-white/5">
-                    {!isActive ? (
-                        <button
-                            onClick={onActivate}
-                            className="flex-1 bg-white/5 hover:bg-cyan-500/20 hover:text-cyan-400 text-slate-300 py-2 rounded-lg transition-all text-xs font-bold uppercase tracking-wide flex items-center justify-center gap-2 border border-white/5 hover:border-cyan-500/30 group/btn"
-                        >
-                            <Power className="w-3 h-3 group-hover/btn:scale-110 transition-transform" />
-                            Activate
-                        </button>
-                    ) : (
-                        <div className="flex-1 bg-cyan-500/10 text-cyan-400 py-2 rounded-lg text-xs font-bold uppercase tracking-wide flex items-center justify-center gap-2 border border-cyan-500/20 cursor-default">
-                            <Check className="w-3 h-3" />
-                            Deployed
-                        </div>
-                    )}
+                {!hideActions && (
+                    <div className="flex items-center gap-2 pt-4 border-t border-white/5">
+                        {!isActive ? (
+                            <button
+                                onClick={onActivate}
+                                className="flex-1 bg-white/5 hover:bg-cyan-500/20 hover:text-cyan-400 text-slate-300 py-2 rounded-lg transition-all text-xs font-bold uppercase tracking-wide flex items-center justify-center gap-2 border border-white/5 hover:border-cyan-500/30 group/btn"
+                            >
+                                <Power className="w-3 h-3 group-hover/btn:scale-110 transition-transform" />
+                                Activate
+                            </button>
+                        ) : (
+                            <div className="flex-1 bg-cyan-500/10 text-cyan-400 py-2 rounded-lg text-xs font-bold uppercase tracking-wide flex items-center justify-center gap-2 border border-cyan-500/20 cursor-default">
+                                <Check className="w-3 h-3" />
+                                Deployed
+                            </div>
+                        )}
 
-                    {!isPredefined && (
-                        <div className="flex gap-1">
-                            {onEdit && (
-                                <button
-                                    onClick={onEdit}
-                                    className="w-8 h-8 flex items-center justify-center bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white rounded-lg transition-colors"
-                                    title="Edit Schema"
-                                >
-                                    <Edit2 className="w-3.5 h-3.5" />
-                                </button>
-                            )}
-                            {onDelete && !isActive && (
-                                <button
-                                    onClick={onDelete}
-                                    className="w-8 h-8 flex items-center justify-center bg-white/5 hover:bg-red-500/20 text-slate-400 hover:text-red-400 rounded-lg transition-colors"
-                                    title="Delete Schema"
-                                >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                            )}
-                        </div>
-                    )}
-                </div>
+                        {!isPredefined && (
+                            <div className="flex gap-1">
+                                {onEdit && (
+                                    <button
+                                        onClick={onEdit}
+                                        className="w-8 h-8 flex items-center justify-center bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white rounded-lg transition-colors"
+                                        title="Edit Schema"
+                                    >
+                                        <Edit2 className="w-3.5 h-3.5" />
+                                    </button>
+                                )}
+                                {onDelete && !isActive && (
+                                    <button
+                                        onClick={onDelete}
+                                        className="w-8 h-8 flex items-center justify-center bg-white/5 hover:bg-red-500/20 text-slate-400 hover:text-red-400 rounded-lg transition-colors"
+                                        title="Delete Schema"
+                                    >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
         </div>
     );

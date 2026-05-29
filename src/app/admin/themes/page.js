@@ -661,6 +661,7 @@ export default function AdminThemesPage() {
                                 variant={activeVariant}
                                 isActive={false}
                                 isPredefined={true}
+                                hideActions={true}
                             />
                         )}
                     </div>
