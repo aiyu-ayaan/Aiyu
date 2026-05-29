@@ -261,6 +261,24 @@ const About = ({ data }) => {
         <Divider />
 
         <motion.section
+          id="experience"
+          initial={{ y: 24, opacity: 0 }}
+          whileInView={{ y: 0, opacity: 1 }}
+          viewport={{ once: true, amount: 0.15 }}
+          transition={{ duration: 0.65 }}
+          className="mt-10"
+        >
+          <QuestMap 
+            items={experiencesMapped} 
+            title="Professional Experience" 
+            icon={FaLaptopCode} 
+            zoneType="experience" 
+          />
+        </motion.section>
+
+        <Divider />
+
+        <motion.section
           id="skills"
           layout
           initial={{ y: 24, opacity: 0 }}
@@ -355,24 +373,6 @@ const About = ({ data }) => {
               {isSkillsExpanded ? 'Show fewer skills' : 'Show all skills'}
             </motion.button>
           )}
-        </motion.section>
-
-        <Divider />
-
-        <motion.section
-          id="experience"
-          initial={{ y: 24, opacity: 0 }}
-          whileInView={{ y: 0, opacity: 1 }}
-          viewport={{ once: true, amount: 0.15 }}
-          transition={{ duration: 0.65 }}
-          className="mt-10"
-        >
-          <QuestMap 
-            items={experiencesMapped} 
-            title="Professional Experience" 
-            icon={FaLaptopCode} 
-            zoneType="experience" 
-          />
         </motion.section>
 
         <Divider />
