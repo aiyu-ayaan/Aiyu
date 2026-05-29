@@ -1,62 +1,50 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, useAnimation } from 'framer-motion';
+import { motion } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import QuestNode from './QuestNode';
-import { FaFlagCheckered, FaMapSigns } from 'react-icons/fa';
+import { FaFlagCheckered } from 'react-icons/fa';
 
-const QuestMap = ({ data }) => {
-  const { experiences = [], education = [], certifications = [] } = data || {};
+const QuestMap = ({ items = [], title = "Quest Map", icon: Icon, zoneType = "experience" }) => {
   const containerRef = useRef(null);
   const [containerWidth, setContainerWidth] = useState(800);
   const [activeNodeIndex, setActiveNodeIndex] = useState(0);
 
-  // Group into single combined list of items
-  // Chronological group: Experience (Zone 1) -> Education (Zone 2) -> Certifications (Zone 3)
-  const experiencesMapped = experiences.map((exp) => ({
-    ...exp,
-    type: 'experience',
-  }));
-
-  const educationMapped = education.map((edu) => ({
-    ...edu,
-    type: 'education',
-    company: edu.institution,
-    role: edu.degree,
-    description: edu.cgpa ? `CGPA: ${edu.cgpa}` : '',
-  }));
-
-  const certificationsMapped = certifications.map((cert) => ({
-    ...cert,
-    type: 'certification',
-    company: cert.issuer,
-    role: cert.name,
-    duration: cert.date,
-  }));
-
-  const combinedNodes = [
-    ...experiencesMapped,
-    ...educationMapped,
-    ...certificationsMapped,
-  ];
-
   // Measure container width for responsive coordinate projection
   useEffect(() => {
     if (!containerRef.current) return;
+    
+    // Use lightweight handler
     const handleResize = () => {
-      setContainerWidth(containerRef.current.offsetWidth);
+      if (containerRef.current) {
+        setContainerWidth(containerRef.current.offsetWidth);
+      }
     };
+    
     handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    
+    // Add lightweight resize listener
+    let resizeTimer;
+    const optimizedResize = () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(handleResize, 100);
+    };
+    
+    window.addEventListener('resize', optimizedResize);
+    return () => {
+      window.removeEventListener('resize', optimizedResize);
+      clearTimeout(resizeTimer);
+    };
   }, []);
+
+  if (!items || items.length === 0) return null;
 
   const isMobile = containerWidth < 640;
   const isTablet = containerWidth >= 640 && containerWidth < 1024;
 
   // Layout constants
-  const spacing = isMobile ? 150 : 200;
+  const spacing = isMobile ? 140 : 180;
   const swayWidth = isMobile
     ? containerWidth * 0.15
     : isTablet
@@ -65,7 +53,7 @@ const QuestMap = ({ data }) => {
   const centerX = containerWidth / 2;
 
   // Calculate pixel coordinates for each node
-  const points = combinedNodes.map((_, idx) => {
+  const points = items.map((_, idx) => {
     // Alternates Left (-1) and Right (1)
     const direction = idx % 2 === 0 ? -1 : 1;
     const x = centerX + direction * swayWidth;
@@ -95,14 +83,20 @@ const QuestMap = ({ data }) => {
     
     // Celebratory confetti explosion
     const nodePoint = points[index];
-    if (nodePoint) {
-      const xPercent = nodePoint.x / containerWidth;
+    if (nodePoint && containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const xPercent = (rect.left + nodePoint.x) / window.innerWidth;
+      const yPercent = (rect.top + nodePoint.y) / window.innerHeight;
       
       confetti({
-        particleCount: 80,
-        spread: 60,
-        origin: { x: xPercent, y: 0.5 },
-        colors: ['#22d3ee', '#c084fc', '#f43f5e', '#fb923c'],
+        particleCount: 50,
+        spread: 45,
+        origin: { x: xPercent, y: yPercent },
+        colors: zoneType === 'experience' 
+          ? ['#22d3ee', '#fb923c'] 
+          : zoneType === 'education'
+          ? ['#c084fc', '#a855f7']
+          : ['#f43f5e', '#fb7185'],
       });
     }
   };
@@ -110,24 +104,60 @@ const QuestMap = ({ data }) => {
   // Character Avatar coordinates
   const activePoint = points[activeNodeIndex] || { x: centerX, y: spacing / 2 };
 
+  // Setup color tokens for trail based on zoneType
+  const getTrailColors = () => {
+    switch (zoneType) {
+      case 'experience':
+        return {
+          gradientId: 'experienceTrailGrad',
+          color1: 'var(--accent-cyan)',
+          color2: 'var(--accent-orange)',
+          badgeColor: 'border-orange-500/20 text-orange-400 bg-orange-950/20',
+        };
+      case 'education':
+        return {
+          gradientId: 'educationTrailGrad',
+          color1: 'var(--accent-purple)',
+          color2: 'var(--accent-purple-dark, #a855f7)',
+          badgeColor: 'border-purple-500/20 text-purple-400 bg-purple-950/20',
+        };
+      case 'certification':
+        return {
+          gradientId: 'certificationTrailGrad',
+          color1: 'var(--accent-pink)',
+          color2: 'var(--accent-orange-bright)',
+          badgeColor: 'border-pink-500/20 text-pink-400 bg-pink-950/20',
+        };
+      default:
+        return {
+          gradientId: 'defaultTrailGrad',
+          color1: 'var(--accent-cyan)',
+          color2: 'var(--accent-purple)',
+          badgeColor: 'border-cyan-500/20 text-cyan-400 bg-cyan-950/20',
+        };
+    }
+  };
+
+  const themeColors = getTrailColors();
+
   return (
-    <div className="relative w-full rounded-3xl border p-4 sm:p-8"
+    <div className="relative w-full rounded-3xl border p-4 sm:p-6"
       style={{
         background: 'linear-gradient(180deg, color-mix(in srgb, var(--bg-surface) 96%, transparent), color-mix(in srgb, var(--bg-secondary) 94%, transparent))',
         borderColor: 'color-mix(in srgb, var(--border-secondary) 80%, transparent)',
-        boxShadow: '0 12px 36px var(--shadow-sm)',
+        boxShadow: '0 8px 24px var(--shadow-sm)',
       }}
     >
       {/* Chapter header */}
-      <div className="mb-8 flex items-center justify-between border-b pb-4" style={{ borderColor: 'var(--border-secondary)' }}>
+      <div className="mb-6 flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--border-secondary)' }}>
         <div className="flex items-center gap-2">
-          <FaMapSigns className="text-xl text-cyan-400" />
-          <h2 className="text-xl font-bold tracking-wide" style={{ color: 'var(--text-primary)' }}>
-            Career Quest Adventure Map
-          </h2>
+          {Icon && <Icon className="text-xl" style={{ color: themeColors.color1 }} />}
+          <h3 className="text-lg font-bold tracking-wide" style={{ color: 'var(--text-primary)' }}>
+            {title}
+          </h3>
         </div>
-        <div className="flex items-center gap-1.5 text-xs text-amber-500 font-bold uppercase tracking-wider bg-amber-950/20 border border-amber-500/20 px-2 py-0.5 rounded">
-          <FaFlagCheckered /> {combinedNodes.length} Levels
+        <div className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider border px-2 py-0.5 rounded ${themeColors.badgeColor}`}>
+          <FaFlagCheckered /> {items.length} Levels
         </div>
       </div>
 
@@ -135,53 +165,44 @@ const QuestMap = ({ data }) => {
       <div
         ref={containerRef}
         className="relative overflow-hidden transition-all duration-300"
-        style={{ height: `${totalHeight}px`, minHeight: '300px' }}
+        style={{ height: `${totalHeight}px`, minHeight: '220px' }}
       >
-        {/* SVG Serpentine Trail */}
+        {/* SVG Serpentine Trail (Optimized: No heavy CPU Gaussian Blur filters) */}
         {points.length > 0 && (
           <svg
             className="pointer-events-none absolute left-0 top-0 h-full w-full"
             style={{ zIndex: 1 }}
           >
             <defs>
-              <linearGradient id="questTrailGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="var(--accent-cyan)" stopOpacity="0.8" />
-                <stop offset="50%" stopColor="var(--accent-purple)" stopOpacity="0.8" />
-                <stop offset="100%" stopColor="var(--accent-pink)" stopOpacity="0.8" />
+              <linearGradient id={themeColors.gradientId} x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor={themeColors.color1} stopOpacity="0.8" />
+                <stop offset="100%" stopColor={themeColors.color2} stopOpacity="0.8" />
               </linearGradient>
-              <filter id="glowFilter">
-                <feGaussianBlur stdDeviation="6" result="coloredBlur"/>
-                <feMerge>
-                  <feMergeNode in="coloredBlur"/>
-                  <feMergeNode in="SourceGraphic"/>
-                </feMerge>
-              </filter>
             </defs>
 
-            {/* Glowing background path */}
+            {/* Glowing background path (Clean overlay - no filter, extremely high performance) */}
             <path
               d={pathD}
               fill="none"
-              stroke="url(#questTrailGradient)"
-              strokeWidth={isMobile ? '6' : '10'}
+              stroke={`url(#${themeColors.gradientId})`}
+              strokeWidth={isMobile ? '8' : '12'}
               strokeLinecap="round"
               strokeLinejoin="round"
-              filter="url(#glowFilter)"
-              opacity="0.35"
+              className="opacity-[0.12] transition-all"
             />
 
             {/* Main dashed overlay trail */}
             <path
               d={pathD}
               fill="none"
-              stroke="url(#questTrailGradient)"
-              strokeWidth={isMobile ? '4' : '6'}
-              strokeDasharray="12, 12"
+              stroke={`url(#${themeColors.gradientId})`}
+              strokeWidth={isMobile ? '3' : '5'}
+              strokeDasharray="10, 10"
               strokeLinecap="round"
               strokeLinejoin="round"
               style={{
                 strokeDashoffset: 100,
-                animation: 'dashMove 20s linear infinite',
+                animation: 'dashMove 25s linear infinite',
               }}
             />
           </svg>
@@ -201,35 +222,31 @@ const QuestMap = ({ data }) => {
           <motion.div
             animate={{
               left: activePoint.x,
-              top: activePoint.y - 12,
+              top: activePoint.y - 10,
             }}
             transition={{
               type: 'spring',
-              stiffness: 70,
-              damping: 12,
+              stiffness: 80,
+              damping: 14,
             }}
             className="absolute z-30 -translate-x-1/2 -translate-y-1/2 cursor-pointer pointer-events-none"
           >
-            {/* Pulsing ring indicator */}
-            <motion.div
-              animate={{ scale: [0.8, 1.4, 0.8], opacity: [0.5, 0.1, 0.5] }}
-              transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
-              className="absolute -inset-4 rounded-full border-2 border-cyan-400 bg-cyan-400/5 blur-sm"
-            />
             {/* The Developer Character */}
             <motion.div
-              animate={{ y: [0, -10, 0] }}
-              transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
-              className="flex h-12 w-12 items-center justify-center rounded-2xl border-2 border-white bg-slate-950 text-2xl shadow-2xl"
+              animate={{ y: [0, -6, 0] }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+              className="flex h-10 w-10 items-center justify-center rounded-xl border bg-slate-950 text-xl shadow-lg"
               style={{
-                borderColor: 'var(--accent-cyan)',
-                boxShadow: '0 8px 24px rgba(34, 211, 238, 0.4), inset 0 0 10px rgba(34, 211, 238, 0.2)',
+                borderColor: themeColors.color1,
+                boxShadow: `0 4px 12px color-mix(in srgb, ${themeColors.color1} 30%, transparent)`,
               }}
             >
               👾
             </motion.div>
             {/* Balloon tooltip */}
-            <div className="absolute -top-7 left-1/2 -translate-x-1/2 rounded bg-cyan-400 px-2 py-0.5 text-[9px] font-bold text-slate-950 uppercase shadow-md whitespace-nowrap">
+            <div className="absolute -top-5 left-1/2 -translate-x-1/2 rounded px-1.5 py-0.5 text-[8px] font-bold text-slate-950 uppercase shadow whitespace-nowrap"
+              style={{ backgroundColor: themeColors.color1 }}
+            >
               You
             </div>
           </motion.div>
@@ -238,8 +255,8 @@ const QuestMap = ({ data }) => {
         {/* Render Quest Level Nodes */}
         {points.map((pt, idx) => (
           <QuestNode
-            key={`${combinedNodes[idx].type}-${idx}`}
-            item={combinedNodes[idx]}
+            key={`${zoneType}-${idx}`}
+            item={items[idx]}
             index={idx}
             x={pt.x}
             y={pt.y}

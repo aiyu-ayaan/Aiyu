@@ -34,8 +34,10 @@ const timelineContentStyle = {
 const sectionNavItems = [
   { href: '#summary', label: 'Summary' },
   { href: '#profile', label: 'Profile' },
+  { href: '#experience', label: 'Experience' },
   { href: '#skills', label: 'Skills' },
-  { href: '#quest-map', label: 'Quest Map' },
+  { href: '#education', label: 'Education' },
+  { href: '#certifications', label: 'Certifications' },
 ];
 
 const statIconMap = {
@@ -64,6 +66,10 @@ const About = ({ data }) => {
     education = [],
     certifications = [],
   } = data || {};
+
+  const experiencesMapped = useMemo(() => experiences.map(exp => ({ ...exp, type: 'experience' })), [experiences]);
+  const educationMapped = useMemo(() => education.map(edu => ({ ...edu, type: 'education', company: edu.institution, role: edu.degree, description: edu.cgpa ? `CGPA: ${edu.cgpa}` : '' })), [education]);
+  const certificationsMapped = useMemo(() => certifications.map(cert => ({ ...cert, type: 'certification', company: cert.issuer, role: cert.name, duration: cert.date })), [certifications]);
 
   const safeRoles = roles.length ? roles : ['Software Developer'];
 
@@ -354,14 +360,55 @@ const About = ({ data }) => {
         <Divider />
 
         <motion.section
-          id="quest-map"
+          id="experience"
           initial={{ y: 24, opacity: 0 }}
           whileInView={{ y: 0, opacity: 1 }}
           viewport={{ once: true, amount: 0.15 }}
           transition={{ duration: 0.65 }}
           className="mt-10"
         >
-          <QuestMap data={data} />
+          <QuestMap 
+            items={experiencesMapped} 
+            title="Professional Experience" 
+            icon={FaLaptopCode} 
+            zoneType="experience" 
+          />
+        </motion.section>
+
+        <Divider />
+
+        <motion.section
+          id="education"
+          initial={{ y: 24, opacity: 0 }}
+          whileInView={{ y: 0, opacity: 1 }}
+          viewport={{ once: true, amount: 0.15 }}
+          transition={{ duration: 0.65 }}
+          className="mt-10"
+        >
+          <QuestMap 
+            items={educationMapped} 
+            title="Education" 
+            icon={FaGraduationCap} 
+            zoneType="education" 
+          />
+        </motion.section>
+
+        <Divider />
+
+        <motion.section
+          id="certifications"
+          initial={{ y: 24, opacity: 0 }}
+          whileInView={{ y: 0, opacity: 1 }}
+          viewport={{ once: true, amount: 0.15 }}
+          transition={{ duration: 0.65 }}
+          className="mt-10"
+        >
+          <QuestMap 
+            items={certificationsMapped} 
+            title="Certifications" 
+            icon={FaMedal} 
+            zoneType="certification" 
+          />
         </motion.section>
       </div>
     </motion.div>
