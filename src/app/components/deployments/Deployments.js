@@ -348,7 +348,7 @@ export default function Deployments({ data, config }) {
                     className="mt-8"
                 >
                     {filteredDeployments.length > 0 ? (
-                        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3 w-full">
+                        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 w-full">
                             {filteredDeployments.map((deployment, index) => {
                                 const statusStyles = getStatusStyles(deployment?.status);
                                 const stackList = Array.isArray(deployment?.techStack) ? deployment.techStack : [];
@@ -386,7 +386,7 @@ export default function Deployments({ data, config }) {
                                         >
                                             {/* Preview/Image Block */}
                                             <div
-                                                className="relative h-44 overflow-hidden border-b flex items-center justify-center"
+                                                className="relative h-32 overflow-hidden border-b flex items-center justify-center"
                                                 style={{
                                                     borderColor: 'color-mix(in srgb, var(--border-secondary) 70%, transparent)',
                                                     backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 86%, transparent)',
@@ -396,7 +396,7 @@ export default function Deployments({ data, config }) {
                                                     <img
                                                         src={deployment.image}
                                                         alt={deployment.name}
-                                                        className="h-full w-full object-contain p-4 transition-transform duration-500 group-hover:scale-105"
+                                                        className="h-full w-full object-contain p-3 transition-transform duration-500 group-hover:scale-105"
                                                         loading="lazy"
                                                         decoding="async"
                                                     />
@@ -436,9 +436,9 @@ export default function Deployments({ data, config }) {
                                                 )}
 
                                                 {/* Top-Left: Status Badge */}
-                                                <div className="absolute left-3 top-3">
+                                                <div className="absolute left-2.5 top-2.5">
                                                     <span
-                                                        className="rounded-full border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
+                                                        className="rounded-full border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide"
                                                         style={{
                                                             backgroundColor: statusStyles.badge,
                                                             borderColor: statusStyles.border,
@@ -450,9 +450,9 @@ export default function Deployments({ data, config }) {
                                                 </div>
 
                                                 {/* Top-Right: Env Badge */}
-                                                <div className="absolute right-3 top-3">
+                                                <div className="absolute right-2.5 top-2.5">
                                                     <span
-                                                        className="rounded-full border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
+                                                        className="rounded-full border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide"
                                                         style={{
                                                             borderColor: 'color-mix(in srgb, var(--accent-purple) 45%, var(--border-secondary))',
                                                             color: 'var(--accent-purple)',
@@ -465,10 +465,10 @@ export default function Deployments({ data, config }) {
                                             </div>
 
                                             {/* Body Area */}
-                                            <div className="flex flex-col flex-1 p-5">
+                                            <div className="flex flex-col flex-1 p-4">
                                                 <div className="mb-2">
                                                     <h3
-                                                        className="text-xl font-bold leading-tight"
+                                                        className="text-base font-bold leading-tight"
                                                         style={{
                                                             background: 'linear-gradient(to right, var(--accent-cyan), var(--accent-purple))',
                                                             WebkitBackgroundClip: 'text',
@@ -478,32 +478,32 @@ export default function Deployments({ data, config }) {
                                                     >
                                                         {deployment?.name}
                                                     </h3>
-                                                    <p className="mt-0.5 text-[10px] uppercase tracking-[0.2em]" style={{ color: 'var(--text-tertiary)' }}>
+                                                    <p className="mt-0.5 text-[9px] uppercase tracking-[0.2em]" style={{ color: 'var(--text-tertiary)' }}>
                                                         {deployment?.appType || 'Application'}
                                                     </p>
                                                 </div>
 
-                                                <p className="mb-4 text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                                                <p className="mb-3 text-[11px] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
                                                     <span style={multiLineClampStyle}>
                                                         {deployment?.description}
                                                     </span>
                                                 </p>
 
                                                 {/* Hosting Info Row */}
-                                                <div className="mb-4 flex flex-wrap gap-x-4 gap-y-2 text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                                                <div className="mb-3 flex flex-wrap gap-x-3 gap-y-1 text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
                                                     <span className="inline-flex items-center gap-1.5">
-                                                        <FaServer className="text-[11px]" style={{ color: 'var(--accent-orange)' }} />
+                                                        <FaServer className="text-[10px]" style={{ color: 'var(--accent-orange)' }} />
                                                         <span>{deployment?.hostingProvider || 'Unknown Host'}</span>
                                                     </span>
                                                 </div>
 
                                                 {/* Tech Stack Row */}
                                                 {stackList.length > 0 && (
-                                                    <div className="mb-4 flex flex-wrap gap-1.5">
+                                                    <div className="mb-3 flex flex-wrap gap-1">
                                                         {previewStack.map((tech) => (
                                                             <span
                                                                 key={`${deployment?._id || deployment?.name}-${tech}`}
-                                                                className="rounded-md border px-2 py-0.5 text-[10px] font-medium"
+                                                                className="rounded-md border px-1.5 py-0.5 text-[9px] font-medium"
                                                                 style={{
                                                                     borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
                                                                     color: 'var(--accent-cyan)',
@@ -515,7 +515,7 @@ export default function Deployments({ data, config }) {
                                                         ))}
                                                         {stackList.length > previewStack.length && (
                                                             <span
-                                                                className="rounded-md border px-2 py-0.5 text-[10px] font-medium"
+                                                                className="rounded-md border px-1.5 py-0.5 text-[9px] font-medium"
                                                                 style={{
                                                                     borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
                                                                     color: 'var(--text-secondary)',
@@ -530,14 +530,14 @@ export default function Deployments({ data, config }) {
 
                                                 {/* Footer Actions */}
                                                 <div
-                                                    className="mt-auto flex items-center justify-between border-t pt-3 text-xs"
+                                                    className="mt-auto flex items-center justify-between border-t pt-3 text-[11px]"
                                                     style={{
                                                         borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)',
                                                         color: 'var(--text-tertiary)',
                                                     }}
                                                 >
                                                     <span className="inline-flex items-center gap-1.5 transition-colors group-hover:text-[var(--accent-cyan)] font-medium">
-                                                        <FaExpand className="text-[11px]" />
+                                                        <FaExpand className="text-[10px]" />
                                                         Open Details
                                                     </span>
 
@@ -546,13 +546,13 @@ export default function Deployments({ data, config }) {
                                                             href={deployment.hostedUrl}
                                                             target="_blank"
                                                             onClick={(event) => event.stopPropagation()}
-                                                            className="inline-flex items-center gap-1 font-semibold uppercase tracking-wider text-[10px] hover:underline"
+                                                            className="inline-flex items-center gap-1 font-semibold uppercase tracking-wider text-[9px] hover:underline"
                                                             style={{ color: 'var(--accent-cyan)' }}
                                                         >
                                                             <span className="inline-flex items-center gap-1">
-                                                                <FaGlobe className="text-[10px]" />
+                                                                <FaGlobe className="text-[9px]" />
                                                                 Launch App
-                                                                <FaArrowUpRightFromSquare className="text-[9px]" />
+                                                                <FaArrowUpRightFromSquare className="text-[8px]" />
                                                             </span>
                                                         </Link>
                                                     )}
