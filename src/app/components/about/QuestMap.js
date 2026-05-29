@@ -38,13 +38,11 @@ const QuestMap = ({ items = [], title = "Quest Map", icon: Icon, zoneType = "exp
     };
   }, []);
 
-  if (!items || items.length === 0) return null;
-
   const isMobile = containerWidth < 640;
   const isTablet = containerWidth >= 640 && containerWidth < 1024;
 
   // Layout constants
-  const spacing = isMobile ? 140 : 180;
+  const spacing = isMobile ? 360 : 180;
   const swayWidth = isMobile
     ? containerWidth * 0.15
     : isTablet
@@ -62,6 +60,41 @@ const QuestMap = ({ items = [], title = "Quest Map", icon: Icon, zoneType = "exp
   });
 
   const totalHeight = points.length * spacing;
+
+  // Scroll observer to automatically trigger active states on scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!containerRef.current || points.length === 0) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const targetY = window.innerHeight * 0.45; // Focus target 45% down viewport
+      const relativeTargetY = targetY - rect.top;
+
+      let closestIndex = 0;
+      let minDistance = Infinity;
+
+      points.forEach((pt, idx) => {
+        const distance = Math.abs(pt.y - relativeTargetY);
+        if (distance < minDistance) {
+          minDistance = distance;
+          closestIndex = idx;
+        }
+      });
+
+      setActiveNodeIndex(closestIndex);
+    };
+
+    handleScroll();
+    
+    // Add optimized, passive scroll listener
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+    };
+  }, [containerWidth, items.length]);
+
+  if (!items || items.length === 0) return null;
 
   // Winding SVG path generator
   let pathD = '';

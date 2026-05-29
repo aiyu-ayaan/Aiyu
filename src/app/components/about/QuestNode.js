@@ -66,10 +66,18 @@ const QuestNode = ({ item, index, x, y, isActive, isUnlocked, onNodeClick, isMob
     zIndex: 10,
   };
 
-  // Card position styles (Desktop only)
+  // Card position styles
+  const mobileCardStyle = {
+    position: 'absolute',
+    left: '50%',
+    top: `${y + 45}px`,
+  };
+
   const desktopCardStyle = direction === -1
     ? { left: `${x + 60}px`, top: `${y}px`, transform: 'translateY(-50%)' }
     : { right: `calc(100% - ${x - 60}px)`, top: `${y}px`, transform: 'translateY(-50%)' };
+
+  const cardStyle = isMobile ? mobileCardStyle : desktopCardStyle;
 
   return (
     <div className="contents">
@@ -126,17 +134,15 @@ const QuestNode = ({ item, index, x, y, isActive, isUnlocked, onNodeClick, isMob
 
       {/* Quest Details Card */}
       <AnimatePresence>
-        {isUnlocked && (isMobile || isActive) && (
+        {isUnlocked && isActive && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: isMobile ? 15 : '-50%' }}
-            animate={{ opacity: 1, scale: 1, y: isMobile ? 0 : '-50%' }}
-            exit={{ opacity: 0, scale: 0.9 }}
+            initial={isMobile ? { opacity: 0, scale: 0.9, x: '-50%', y: 15 } : { opacity: 0, scale: 0.9, y: '-50%' }}
+            animate={isMobile ? { opacity: 1, scale: 1, x: '-50%', y: 0 } : { opacity: 1, scale: 1, y: '-50%' }}
+            exit={isMobile ? { opacity: 0, scale: 0.9, x: '-50%', y: 15 } : { opacity: 0, scale: 0.9 }}
             transition={{ duration: 0.3, cubicBezier: [0.34, 1.56, 0.64, 1] }}
-            className={`w-[290px] sm:w-[350px] md:w-[420px] rounded-2xl border p-5 shadow-2xl backdrop-blur-md ${
-              isMobile ? 'relative mx-auto mt-12 z-20' : 'absolute z-20'
-            }`}
+            className="w-[285px] sm:w-[350px] md:w-[420px] rounded-2xl border p-5 shadow-2xl backdrop-blur-md absolute z-20"
             style={{
-              ...(!isMobile ? desktopCardStyle : {}),
+              ...cardStyle,
               background: 'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 95%, transparent), color-mix(in srgb, var(--bg-secondary) 92%, transparent))',
               borderColor: isActive ? theme.primary : 'var(--border-secondary)',
               boxShadow: isActive ? `0 10px 30px rgba(0,0,0,0.5), 0 0 15px color-mix(in srgb, ${theme.glow} 20%, transparent)` : '0 10px 30px rgba(0,0,0,0.4)',
