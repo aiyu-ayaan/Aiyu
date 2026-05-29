@@ -369,7 +369,7 @@ const FuturisticResume = ({ data }) => {
                     <div
                         className="rounded-xl border backdrop-blur-md relative overflow-hidden group flex items-center gap-6 p-4 w-full lg:w-auto min-w-[280px] lg:min-w-[360px] shadow-[0_0_20px_rgba(34,211,238,0.02)] hover:border-[var(--accent-cyan)] hover:shadow-[0_0_30px_rgba(34,211,238,0.1)] transition-all duration-500 text-left"
                         style={{
-                            backgroundColor: 'rgba(13, 17, 23, 0.45)',
+                            backgroundColor: theme === 'dark' ? 'rgba(13, 17, 23, 0.45)' : 'rgba(255, 255, 255, 0.65)',
                             borderColor: 'var(--border-secondary)',
                         }}
                     >
@@ -412,9 +412,11 @@ const FuturisticResume = ({ data }) => {
                         <motion.div
                             className="rounded-2xl border backdrop-blur-sm relative overflow-hidden group w-full h-[450px] flex flex-col justify-between transition-all duration-500 hover:border-[var(--accent-cyan)] hover:shadow-[0_0_45px_rgba(34,211,238,0.15)]"
                             style={{
-                                backgroundColor: 'rgba(13, 17, 23, 0.7)',
+                                backgroundColor: theme === 'dark' ? 'rgba(13, 17, 23, 0.7)' : 'rgba(255, 255, 255, 0.8)',
                                 borderColor: 'var(--border-secondary)',
-                                boxShadow: '0 0 30px rgba(34, 211, 238, 0.05), inset 0 0 20px rgba(255,255,255,0.02)'
+                                boxShadow: theme === 'dark'
+                                    ? '0 0 30px rgba(34, 211, 238, 0.05), inset 0 0 20px rgba(255,255,255,0.02)'
+                                    : '0 10px 30px rgba(0, 0, 0, 0.05), inset 0 0 20px rgba(255,255,255,0.5)'
                             }}
                         >
                             {/* Sweeping shimmer hover reflection overlay */}
@@ -442,7 +444,10 @@ const FuturisticResume = ({ data }) => {
                             `}</style>
 
                             {/* Top macOS-style window header bar */}
-                            <div className="relative flex items-center h-10 px-4 border-b select-none flex-shrink-0" style={{ borderColor: 'rgba(255, 255, 255, 0.06)', backgroundColor: 'rgba(10, 15, 25, 0.5)' }}>
+                            <div className="relative flex items-center h-10 px-4 border-b select-none flex-shrink-0" style={{
+                                borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.06)' : 'var(--border-primary)',
+                                backgroundColor: theme === 'dark' ? 'rgba(10, 15, 25, 0.5)' : 'rgba(241, 245, 249, 0.85)'
+                            }}>
                                 {/* Window Dots */}
                                 <div className="flex items-center space-x-1.5 z-10">
                                     <span className="w-3 h-3 rounded-full bg-[#ff5f56] block opacity-90"></span>
@@ -477,15 +482,17 @@ const FuturisticResume = ({ data }) => {
                             </div>
 
                             {/* Dashed Line Separator */}
-                            <div className="border-t border-dashed mx-6 flex-shrink-0" style={{ borderColor: 'rgba(255, 255, 255, 0.08)' }}></div>
+                            <div className="border-t border-dashed mx-6 flex-shrink-0" style={{
+                                borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'var(--border-primary)'
+                            }}></div>
 
                             {/* Connection & Mode bottom cards - precisely 120px tall including padding */}
                             <div className="p-6 pt-4 h-[120px] grid grid-cols-2 gap-4 flex-shrink-0">
                                 {/* CONNECTION STATUS */}
                                 <div className="p-4 rounded-xl border flex flex-col justify-between"
                                     style={{
-                                        backgroundColor: 'rgba(10, 25, 41, 0.35)',
-                                        borderColor: 'rgba(34, 211, 238, 0.06)',
+                                        backgroundColor: theme === 'dark' ? 'rgba(10, 25, 41, 0.35)' : 'rgba(241, 245, 249, 0.6)',
+                                        borderColor: theme === 'dark' ? 'rgba(34, 211, 238, 0.06)' : 'var(--border-primary)',
                                     }}
                                 >
                                     <span className="text-[9px] sm:text-[10px] font-mono font-semibold uppercase tracking-wider opacity-50" style={{ color: 'var(--text-secondary)' }}>
@@ -499,8 +506,8 @@ const FuturisticResume = ({ data }) => {
                                 {/* OPERATION MODE */}
                                 <div className="p-4 rounded-xl border flex flex-col justify-between"
                                     style={{
-                                        backgroundColor: 'rgba(10, 25, 41, 0.35)',
-                                        borderColor: 'rgba(34, 211, 238, 0.06)',
+                                        backgroundColor: theme === 'dark' ? 'rgba(10, 25, 41, 0.35)' : 'rgba(241, 245, 249, 0.6)',
+                                        borderColor: theme === 'dark' ? 'rgba(34, 211, 238, 0.06)' : 'var(--border-primary)',
                                     }}
                                 >
                                     <span className="text-[9px] sm:text-[10px] font-mono font-semibold uppercase tracking-wider opacity-50" style={{ color: 'var(--text-secondary)' }}>
@@ -532,9 +539,13 @@ const FuturisticResume = ({ data }) => {
                             <div
                                 className="absolute inset-0 rounded-2xl border backdrop-blur-md shadow-2xl transition-all duration-300"
                                 style={{
-                                    backgroundColor: isHovering ? 'rgba(0,0,0,0.85)' : 'rgba(0,0,0,0.6)',
+                                    backgroundColor: theme === 'dark' 
+                                        ? (isHovering ? 'rgba(0,0,0,0.85)' : 'rgba(0,0,0,0.6)') 
+                                        : (isHovering ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.7)'),
                                     borderColor: isHovering ? 'var(--accent-cyan)' : 'var(--border-secondary)',
-                                    boxShadow: isHovering ? '0 0 50px var(--shadow-glow)' : '0 0 30px rgba(0,0,0,0.5)'
+                                    boxShadow: isHovering 
+                                        ? '0 0 50px var(--shadow-glow)' 
+                                        : (theme === 'dark' ? '0 0 30px rgba(0,0,0,0.5)' : '0 10px 30px rgba(0,0,0,0.05)')
                                 }}
                             >
                                 {/* Inner Grid Texture */}
@@ -609,7 +620,9 @@ const FuturisticResume = ({ data }) => {
                                     backgroundColor: 'var(--bg-elevated)',
                                     borderColor: isHovering ? 'var(--accent-cyan)' : 'var(--border-secondary)',
                                     transform: config.enable3DTilt ? "translateZ(80px)" : "none", // More depth
-                                    boxShadow: isHovering ? '0 0 40px var(--shadow-glow)' : '0 0 20px rgba(0,0,0,0.5)'
+                                    boxShadow: isHovering 
+                                        ? '0 0 40px var(--shadow-glow)' 
+                                        : (theme === 'dark' ? '0 0 20px rgba(0,0,0,0.5)' : '0 10px 20px rgba(0,0,0,0.05)')
                                 }}
                             >
                                 <div
