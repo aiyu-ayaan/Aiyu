@@ -5,8 +5,10 @@ import { motion } from 'framer-motion';
 import {
   FaArrowRight,
   FaCode,
+  FaGraduationCap,
   FaLaptopCode,
   FaLayerGroup,
+  FaMedal,
 } from 'react-icons/fa';
 import QuestProfile from './QuestProfile';
 import QuestMap from './QuestMap';
