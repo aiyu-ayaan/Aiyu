@@ -1,5 +1,43 @@
 # Changelog
 
+## [4.1.0](https://github.com/aiyu-ayaan/Aiyu/compare/v4.0.1...v4.1.0) (2026-05-29)
+
+### Features
+
+* feat(FuturisticResume): enhance theme support for dynamic styling based on light/dark mode
+* feat(themes): add 8 additional beautiful modern system presets, bringing total to 18
+* feat(themes): remove Dynamic Theme Synthesizer section
+* feat(themes): implement Dynamic Theme Synthesizer and separate modern and legacy presets sections
+* feat(api): expose legacy themes and add isLegacy flag in GET themes endpoint
+* feat(admin): add back navigation button to adsense configuration page
+* feat(screenshots): update various screenshots for improved visual representation
+* feat(crons): implement stable and exponential retry backoff policies for task scheduler
+* feat(timezone): implement timezone configuration API with GET and POST endpoints to manage default timezone and recalculate active cron job schedules
+* feat(about): implement scroll-triggered active state and fully responsive, centered mobile card layout to prevent overlaps
+* feat(about): swap experience section above technical skills section
+* feat(about): segregate sections into separate maps and optimize scroll performance by removing SVG filters
+* feat(about): integrate QuestProfile and QuestMap into About page component
+* feat(about): implement winding serpentine QuestMap and responsive QuestNode components
+* feat(about): create QuestProfile component for RPG status tracking
+* feat(deployments): update card layout and adjust typography for improved readability
+* feat(apps): redesign apps page cards and grid spacing
+
+### Bug Fixes
+
+* fix(themes): remove activate action bar from synthesizer preview card
+* fix(themes): correct synthesizer vertical stretch and dropdown text truncation
+* fix(about): revert inline mobile card and implement responsive, widened 90vw card layout under nodes to resolve text wrapping
+* fix(about): resolve clipping on quest cards by removing overflow-hidden from game board wrapper
+* fix(about): resolve missing FaGraduationCap and FaMedal imports
+* fix(header): adjust scroll progress damping and refine gradient background
+
+### Other Changes
+
+* refactor(themes): migrate original 21 presets to legacy and define 10 modern system presets
+* refactor(admin): optimize core settings and identity forms layout for mobile responsiveness
+* refactor(admin): make ThemeEditor, StorageManager, and MarkdownToolbar components fully responsive
+* refactor(admin): optimize core layout containers and dashboard padding for mobile responsiveness
+
 ## [4.0.1](https://github.com/aiyu-ayaan/Aiyu/compare/v4.0.0...v4.0.1) (2026-05-28)
 
 ### Features
