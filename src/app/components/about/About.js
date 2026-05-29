@@ -2,18 +2,14 @@
 
 import React, { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { VerticalTimeline, VerticalTimelineElement } from 'react-vertical-timeline-component';
-import 'react-vertical-timeline-component/style.min.css';
 import {
   FaArrowRight,
-  FaBriefcase,
-  FaCertificate,
   FaCode,
-  FaGraduationCap,
   FaLaptopCode,
   FaLayerGroup,
-  FaMedal,
 } from 'react-icons/fa';
+import QuestProfile from './QuestProfile';
+import QuestMap from './QuestMap';
 import Link from 'next/link';
 import TypewriterEffect from '../shared/TypewriterEffect';
 import Divider from '../landing/Divider';
@@ -35,10 +31,9 @@ const timelineContentStyle = {
 
 const sectionNavItems = [
   { href: '#summary', label: 'Summary' },
-  { href: '#experience', label: 'Experience' },
+  { href: '#profile', label: 'Profile' },
   { href: '#skills', label: 'Skills' },
-  { href: '#education', label: 'Education' },
-  { href: '#certifications', label: 'Certifications' },
+  { href: '#quest-map', label: 'Quest Map' },
 ];
 
 const statIconMap = {
@@ -218,6 +213,18 @@ const About = ({ data }) => {
           })}
         </motion.section>
 
+        <Divider />
+
+        <motion.section
+          id="profile"
+          initial={{ y: 24, opacity: 0 }}
+          whileInView={{ y: 0, opacity: 1 }}
+          viewport={{ once: true, amount: 0.15 }}
+          transition={{ duration: 0.65 }}
+        >
+          <QuestProfile data={data} />
+        </motion.section>
+
         <div className="sticky top-[76px] z-10 mt-6 overflow-x-auto pb-1">
           <div
             className="inline-flex min-w-full gap-2 rounded-xl border p-2"
@@ -242,47 +249,6 @@ const About = ({ data }) => {
             ))}
           </div>
         </div>
-
-        <Divider />
-
-        <motion.section
-          id="experience"
-          initial={{ y: 24, opacity: 0 }}
-          whileInView={{ y: 0, opacity: 1 }}
-          viewport={{ once: true, amount: 0.15 }}
-          transition={{ duration: 0.65 }}
-          className="mt-10"
-        >
-          <h2 className="mb-8 flex items-center justify-center gap-3 text-center text-2xl font-bold sm:text-3xl md:text-4xl" style={{ color: 'var(--accent-cyan)' }}>
-            <FaLaptopCode size={24} style={{ color: 'var(--accent-orange)' }} />
-            Professional Experience
-          </h2>
-          <VerticalTimeline>
-            {experiences.map((exp, index) => (
-              <VerticalTimelineElement
-                key={`${exp.company}-${exp.role}-${index}`}
-                className="vertical-timeline-element--work"
-                contentStyle={timelineContentStyle}
-                contentArrowStyle={{ borderRight: '7px solid var(--bg-surface)' }}
-                iconStyle={{
-                  background: 'linear-gradient(135deg, var(--accent-orange), var(--accent-orange-bright))',
-                  color: '#fff',
-                  boxShadow: '0 0 0 4px color-mix(in srgb, var(--accent-orange) 20%, transparent)',
-                }}
-                icon={<FaBriefcase />}
-              >
-                <h3 className="vertical-timeline-element-title text-xl font-bold" style={{ color: 'var(--accent-orange-bright)' }}>
-                  {exp.role}
-                </h3>
-                <h4 className="vertical-timeline-element-subtitle" style={{ color: 'var(--text-secondary)' }}>
-                  {exp.company}
-                </h4>
-                <p style={{ color: 'var(--text-tertiary)' }}>{exp.duration}</p>
-                <p className="mt-2" style={{ color: 'var(--text-secondary)' }}>{exp.description}</p>
-              </VerticalTimelineElement>
-            ))}
-          </VerticalTimeline>
-        </motion.section>
 
         <Divider />
 
@@ -386,107 +352,14 @@ const About = ({ data }) => {
         <Divider />
 
         <motion.section
-          id="education"
+          id="quest-map"
           initial={{ y: 24, opacity: 0 }}
           whileInView={{ y: 0, opacity: 1 }}
           viewport={{ once: true, amount: 0.15 }}
           transition={{ duration: 0.65 }}
           className="mt-10"
         >
-          <h2 className="mb-8 text-center text-2xl font-bold sm:text-3xl md:text-4xl" style={{ color: 'var(--accent-cyan)' }}>
-            Education
-          </h2>
-          <VerticalTimeline>
-            {education.map((edu, index) => (
-              <VerticalTimelineElement
-                key={`${edu.institution}-${edu.degree}-${index}`}
-                className="vertical-timeline-element--education"
-                contentStyle={timelineContentStyle}
-                contentArrowStyle={{ borderRight: '7px solid var(--bg-surface)' }}
-                iconStyle={{
-                  background: 'linear-gradient(135deg, var(--accent-purple-dark), var(--accent-purple))',
-                  color: '#fff',
-                  boxShadow: '0 0 0 4px color-mix(in srgb, var(--accent-purple) 20%, transparent)',
-                }}
-                icon={<FaGraduationCap />}
-              >
-                <h3 className="vertical-timeline-element-title text-xl font-bold" style={{ color: 'var(--accent-purple)' }}>
-                  {edu.institution}
-                </h3>
-                <h4 className="vertical-timeline-element-subtitle" style={{ color: 'var(--text-secondary)' }}>
-                  {edu.degree}
-                </h4>
-                <p style={{ color: 'var(--text-tertiary)' }}>{edu.duration}</p>
-                {edu.cgpa && <p style={{ color: 'var(--text-muted)' }}>CGPA: {edu.cgpa}</p>}
-              </VerticalTimelineElement>
-            ))}
-          </VerticalTimeline>
-        </motion.section>
-
-        <Divider />
-
-        <motion.section
-          id="certifications"
-          initial={{ y: 24, opacity: 0 }}
-          whileInView={{ y: 0, opacity: 1 }}
-          viewport={{ once: true, amount: 0.15 }}
-          transition={{ duration: 0.65 }}
-          className="mt-10"
-        >
-          <h2 className="mb-8 text-center text-2xl font-bold sm:text-3xl md:text-4xl" style={{ color: 'var(--accent-cyan)' }}>
-            Certifications
-          </h2>
-          <VerticalTimeline>
-            {certifications.map((cert, index) => (
-              <VerticalTimelineElement
-                key={`${cert.name}-${cert.issuer}-${index}`}
-                className="vertical-timeline-element--education"
-                contentStyle={timelineContentStyle}
-                contentArrowStyle={{ borderRight: '7px solid var(--bg-surface)' }}
-                iconStyle={{
-                  background: 'linear-gradient(135deg, var(--accent-pink), var(--accent-orange-bright))',
-                  color: '#fff',
-                  boxShadow: '0 0 0 4px color-mix(in srgb, var(--accent-pink) 20%, transparent)',
-                }}
-                icon={<FaCertificate />}
-              >
-                {cert.url ? (
-                  <Link href={cert.url} target="_blank" rel="noopener noreferrer" className="group inline-block">
-                    <h3 className="vertical-timeline-element-title text-xl font-bold transition-all group-hover:underline" style={{ color: 'var(--accent-orange-bright)' }}>
-                      {cert.name}
-                    </h3>
-                  </Link>
-                ) : (
-                  <h3 className="vertical-timeline-element-title text-xl font-bold" style={{ color: 'var(--accent-orange-bright)' }}>
-                    {cert.name}
-                  </h3>
-                )}
-
-                <h4 className="vertical-timeline-element-subtitle" style={{ color: 'var(--text-secondary)' }}>
-                  {cert.issuer}
-                </h4>
-                <p style={{ color: 'var(--text-tertiary)' }}>{cert.date}</p>
-
-                {Array.isArray(cert.skills) && cert.skills.length > 0 && (
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {cert.skills.map((skill) => (
-                      <span
-                        key={`${cert.name}-${skill}`}
-                        className="rounded-md border px-2 py-1 text-xs"
-                        style={{
-                          borderColor: 'color-mix(in srgb, var(--accent-orange) 45%, var(--border-secondary))',
-                          color: 'var(--accent-orange-bright)',
-                          backgroundColor: 'color-mix(in srgb, var(--accent-orange) 10%, transparent)',
-                        }}
-                      >
-                        {skill}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </VerticalTimelineElement>
-            ))}
-          </VerticalTimeline>
+          <QuestMap data={data} />
         </motion.section>
       </div>
     </motion.div>
