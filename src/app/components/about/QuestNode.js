@@ -140,7 +140,7 @@ const QuestNode = ({ item, index, x, y, isActive, isUnlocked, onNodeClick, isMob
             animate={isMobile ? { opacity: 1, scale: 1, x: '-50%', y: 0 } : { opacity: 1, scale: 1, y: '-50%' }}
             exit={isMobile ? { opacity: 0, scale: 0.9, x: '-50%', y: 15 } : { opacity: 0, scale: 0.9 }}
             transition={{ duration: 0.3, cubicBezier: [0.34, 1.56, 0.64, 1] }}
-            className="w-[285px] sm:w-[350px] md:w-[420px] rounded-2xl border p-5 shadow-2xl backdrop-blur-md absolute z-20"
+            className="w-[90vw] max-w-[340px] sm:max-w-none sm:w-[360px] md:w-[420px] rounded-2xl border p-5 shadow-2xl backdrop-blur-md absolute z-20"
             style={{
               ...cardStyle,
               background: 'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 95%, transparent), color-mix(in srgb, var(--bg-secondary) 92%, transparent))',
