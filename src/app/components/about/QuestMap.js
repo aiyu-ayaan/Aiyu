@@ -164,7 +164,7 @@ const QuestMap = ({ items = [], title = "Quest Map", icon: Icon, zoneType = "exp
       {/* Main Game Board relative wrapper */}
       <div
         ref={containerRef}
-        className="relative overflow-hidden transition-all duration-300"
+        className="relative transition-all duration-300"
         style={{ height: `${totalHeight}px`, minHeight: '220px' }}
       >
         {/* SVG Serpentine Trail (Optimized: No heavy CPU Gaussian Blur filters) */}
