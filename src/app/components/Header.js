@@ -71,7 +71,7 @@ export default memo(function Header({ data, logoText, socialData, config }) {
   const progressScaleX = useSpring(scrollYProgress, {
     stiffness: 100,
     damping: 20,
-    restDelta: 0.01,
+    restDelta: 0.001,
   });
   const progressOpacity = useTransform(progressScaleX, [0, 0.01], [0, 1]);
 
@@ -161,8 +161,7 @@ export default memo(function Header({ data, logoText, socialData, config }) {
                    inset: 0,
                    background: `linear-gradient(to right, 
                      color-mix(in srgb, var(--accent-cyan) 15%, transparent) 0%,
-                     color-mix(in srgb, var(--accent-purple) 12%, transparent) 50%,
-                     transparent 100%)`,
+                     color-mix(in srgb, var(--accent-purple) 12%, transparent) 100%)`,
                  }}
                />
                
