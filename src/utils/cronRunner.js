@@ -429,122 +429,153 @@ export async function executeCronJob(job) {
     let requestUrl = '';
     let requestUrlForLog = '';
 
-    try {
-        if (job.action === 'clean_unreferenced') {
-            const auditResult = await executeUnreferencedCleanup();
-            logOutput = `Cleanup completed in ${Date.now() - startTime}ms.\n` +
-                        `Deleted ${auditResult.deletedCount} files, reclaiming ${auditResult.reclaimedString}.\n` +
-                        `Skipped files: ${auditResult.skippedCount}.`;
-        } else if (job.action === 'migrate_webp') {
-            const migrationResult = await executeWebPMigration();
-            logOutput = `WebP migration completed in ${Date.now() - startTime}ms.\n` +
-                        `Migrated: ${migrationResult.migratedCount} images.\n` +
-                        `Space saved: ${migrationResult.reclaimedString}.\n` +
-                        `Details: ${JSON.stringify(migrationResult.details, null, 2)}`;
-        } else if (job.action === 'webhook') {
-            const cachedData = {};
-            cachedData.env = {};
-            
-            // Load global environment variables
-            try {
-                const CronEnv = (await import('@/models/CronEnv')).default;
-                const globalEnvDoc = await CronEnv.findOne({}).lean();
-                if (globalEnvDoc && Array.isArray(globalEnvDoc.env)) {
-                    for (const env of globalEnvDoc.env) {
-                        if (env.key && env.key.trim()) {
-                            cachedData.env[env.key.trim()] = env.value ? decrypt(env.value) : '';
+    const maxAttempts = job.retryEnabled ? (job.retryCount ?? 3) + 1 : 1;
+    const baseDelay = job.retryDelay ?? 60;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        const attemptStartTime = Date.now();
+        let attemptStatus = 'success';
+        let attemptLogOutput = '';
+
+        try {
+            if (job.action === 'clean_unreferenced') {
+                const auditResult = await executeUnreferencedCleanup();
+                attemptLogOutput = `Cleanup completed in ${Date.now() - attemptStartTime}ms.\n` +
+                            `Deleted ${auditResult.deletedCount} files, reclaiming ${auditResult.reclaimedString}.\n` +
+                            `Skipped files: ${auditResult.skippedCount}.`;
+            } else if (job.action === 'migrate_webp') {
+                const migrationResult = await executeWebPMigration();
+                attemptLogOutput = `WebP migration completed in ${Date.now() - attemptStartTime}ms.\n` +
+                            `Migrated: ${migrationResult.migratedCount} images.\n` +
+                            `Space saved: ${migrationResult.reclaimedString}.\n` +
+                            `Details: ${JSON.stringify(migrationResult.details, null, 2)}`;
+            } else if (job.action === 'webhook') {
+                const cachedData = {};
+                cachedData.env = {};
+                
+                // Load global environment variables
+                try {
+                    const CronEnv = (await import('@/models/CronEnv')).default;
+                    const globalEnvDoc = await CronEnv.findOne({}).lean();
+                    if (globalEnvDoc && Array.isArray(globalEnvDoc.env)) {
+                        for (const env of globalEnvDoc.env) {
+                            if (env.key && env.key.trim()) {
+                                cachedData.env[env.key.trim()] = env.value ? decrypt(env.value) : '';
+                            }
+                        }
+                    }
+                } catch (envErr) {
+                    console.error('[CRON SERVICE] Failed to load global environment variables:', envErr);
+                }
+
+                const shouldCompileUrl = job.webhookUrlType === 'expression' || hasTemplateValue(job.webhookUrl);
+                const compiledUrlValue = shouldCompileUrl
+                    ? await compileTemplate(job.webhookUrl, cachedData)
+                    : job.webhookUrl;
+                const compiledUrl = valueToRequestString(compiledUrlValue);
+                const method = job.webhookMethod || 'POST';
+                requestMethod = method;
+                requestUrl = compiledUrl;
+                requestUrlForLog = redactEnvSecrets(compiledUrl, cachedData.env);
+
+                const rawHeaders = {
+                    'Content-Type': 'application/json',
+                    'User-Agent': 'Aiyu-Task-Scheduler'
+                };
+
+                if (job.webhookHeaders && Array.isArray(job.webhookHeaders)) {
+                    for (const header of job.webhookHeaders) {
+                        if (header.key && header.key.trim()) {
+                            const headerKey = job.webhookHeadersType === 'expression' || hasTemplateValue(header.key)
+                                ? valueToRequestString(await compileTemplate(header.key.trim(), cachedData)).trim()
+                                : header.key.trim();
+
+                            if (!headerKey) continue;
+
+                            const normalKey = Object.keys(rawHeaders).find(
+                                k => k.toLowerCase() === headerKey.toLowerCase()
+                            ) || headerKey;
+
+                            rawHeaders[normalKey] = job.webhookHeadersType === 'expression' || hasTemplateValue(header.value)
+                                ? valueToRequestString(await compileTemplate(header.value || '', cachedData))
+                                : header.value || '';
                         }
                     }
                 }
-            } catch (envErr) {
-                console.error('[CRON SERVICE] Failed to load global environment variables:', envErr);
-            }
+                const headers = Object.fromEntries(
+                    Object.entries(rawHeaders).map(([key, value]) => [key, valueToRequestString(value)])
+                );
 
-            const shouldCompileUrl = job.webhookUrlType === 'expression' || hasTemplateValue(job.webhookUrl);
-            const compiledUrlValue = shouldCompileUrl
-                ? await compileTemplate(job.webhookUrl, cachedData)
-                : job.webhookUrl;
-            const compiledUrl = valueToRequestString(compiledUrlValue);
-            const method = job.webhookMethod || 'POST';
-            requestMethod = method;
-            requestUrl = compiledUrl;
-            requestUrlForLog = redactEnvSecrets(compiledUrl, cachedData.env);
-
-            const rawHeaders = {
-                'Content-Type': 'application/json',
-                'User-Agent': 'Aiyu-Task-Scheduler'
-            };
-
-            if (job.webhookHeaders && Array.isArray(job.webhookHeaders)) {
-                for (const header of job.webhookHeaders) {
-                    if (header.key && header.key.trim()) {
-                        const headerKey = job.webhookHeadersType === 'expression' || hasTemplateValue(header.key)
-                            ? valueToRequestString(await compileTemplate(header.key.trim(), cachedData)).trim()
-                            : header.key.trim();
-
-                        if (!headerKey) continue;
-
-                        const normalKey = Object.keys(rawHeaders).find(
-                            k => k.toLowerCase() === headerKey.toLowerCase()
-                        ) || headerKey;
-
-                        rawHeaders[normalKey] = job.webhookHeadersType === 'expression' || hasTemplateValue(header.value)
-                            ? valueToRequestString(await compileTemplate(header.value || '', cachedData))
-                            : header.value || '';
-                    }
-                }
-            }
-            const headers = Object.fromEntries(
-                Object.entries(rawHeaders).map(([key, value]) => [key, valueToRequestString(value)])
-            );
-
-            let bodyContent = undefined;
-            if (method === 'POST') {
-                if (job.webhookBody !== undefined && job.webhookBody !== null && job.webhookBody.trim() !== '') {
-                    if (job.webhookBodyType === 'fixed' && !hasTemplateValue(job.webhookBody)) {
-                        bodyContent = job.webhookBody.trim();
+                let bodyContent = undefined;
+                if (method === 'POST') {
+                    if (job.webhookBody !== undefined && job.webhookBody !== null && job.webhookBody.trim() !== '') {
+                        if (job.webhookBodyType === 'fixed' && !hasTemplateValue(job.webhookBody)) {
+                            bodyContent = job.webhookBody.trim();
+                        } else {
+                            const compiledBody = await compileTemplate(job.webhookBody.trim(), cachedData);
+                            bodyContent = typeof compiledBody === 'object' ? JSON.stringify(compiledBody) : String(compiledBody);
+                            
+                            if (typeof compiledBody === 'object' && !Object.keys(headers).some(k => k.toLowerCase() === 'content-type')) {
+                                headers['Content-Type'] = 'application/json';
+                            }
+                        }
                     } else {
-                        const compiledBody = await compileTemplate(job.webhookBody.trim(), cachedData);
-                        bodyContent = typeof compiledBody === 'object' ? JSON.stringify(compiledBody) : String(compiledBody);
-                        
-                        if (typeof compiledBody === 'object' && !Object.keys(headers).some(k => k.toLowerCase() === 'content-type')) {
-                            headers['Content-Type'] = 'application/json';
-                        }
+                        bodyContent = JSON.stringify({
+                            cronName: job.name,
+                            triggeredAt: new Date().toISOString()
+                        });
                     }
-                } else {
-                    bodyContent = JSON.stringify({
-                        cronName: job.name,
-                        triggeredAt: new Date().toISOString()
-                    });
                 }
-            }
 
-            const requestLog = [
-                `Request Method: ${method}`,
-                `Request URL: ${redactEnvSecrets(compiledUrl, cachedData.env)}`,
-                shouldCompileUrl ? `Raw URL Template: ${redactEnvSecrets(job.webhookUrl, cachedData.env)}` : null,
-                `Request Headers:\n${safeLogJson(headers, cachedData.env)}`,
-                method === 'POST'
-                    ? `Request Body:\n${redactEnvSecrets(bodyContent || '', cachedData.env)}`
-                    : null
-            ].filter(Boolean).join('\n\n');
+                const requestLog = [
+                    `Request Method: ${method}`,
+                    `Request URL: ${redactEnvSecrets(compiledUrl, cachedData.env)}`,
+                    shouldCompileUrl ? `Raw URL Template: ${redactEnvSecrets(job.webhookUrl, cachedData.env)}` : null,
+                    `Request Headers:\n${safeLogJson(headers, cachedData.env)}`,
+                    method === 'POST'
+                        ? `Request Body:\n${redactEnvSecrets(bodyContent || '', cachedData.env)}`
+                        : null
+                ].filter(Boolean).join('\n\n');
 
-            const res = await fetch(compiledUrl, {
-                method,
-                headers,
-                body: bodyContent
-            });
-            const text = await res.text();
-            logOutput = `${requestLog}\n\nWebhook trigger returned HTTP status ${res.status}.\nResponse:\n${text}`;
-            if (!res.ok) {
-                status = 'failure';
+                const res = await fetch(compiledUrl, {
+                    method,
+                    headers,
+                    body: bodyContent
+                });
+                const text = await res.text();
+                attemptLogOutput = `${requestLog}\n\nWebhook trigger returned HTTP status ${res.status}.\nResponse:\n${text}`;
+                if (!res.ok) {
+                    attemptStatus = 'failure';
+                }
+            } else {
+                throw new Error(`Unknown action: ${job.action}`);
             }
-        } else {
-            throw new Error(`Unknown action: ${job.action}`);
+        } catch (err) {
+            attemptStatus = 'failure';
+            attemptLogOutput = `Execution failed after ${Date.now() - attemptStartTime}ms.\nError: ${err.message}\nStack: ${err.stack}`;
         }
-    } catch (err) {
-        status = 'failure';
-        logOutput = `Execution failed after ${Date.now() - startTime}ms.\nError: ${err.message}\nStack: ${err.stack}`;
+
+        // Add to main logOutput
+        if (maxAttempts > 1) {
+            logOutput += `--- Attempt ${attempt} of ${maxAttempts} ---\n${attemptLogOutput}\n\n`;
+        } else {
+            logOutput = attemptLogOutput;
+        }
+
+        status = attemptStatus;
+
+        if (status === 'success') {
+            break;
+        }
+
+        if (attempt < maxAttempts) {
+            let nextDelay = baseDelay;
+            if (job.retryType === 'exponential') {
+                nextDelay = baseDelay * Math.pow(2, attempt - 1);
+            }
+            logOutput += `[Attempt ${attempt} failed. Retrying in ${nextDelay}s (${job.retryType} delay)...]\n\n`;
+            await new Promise(resolve => setTimeout(resolve, nextDelay * 1000));
+        }
     }
 
     // Update Cron document

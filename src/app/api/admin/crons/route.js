@@ -70,7 +70,7 @@ async function createCron(request) {
     await dbConnect();
     try {
         const body = await request.json();
-        const { name, schedule, webhookUrl, webhookUrlType = 'fixed', webhookMethod = 'POST', webhookHeaders = [], webhookHeadersType = 'fixed', webhookBody = '', webhookBodyType = 'fixed', webhookEnv = [], notificationEnabled, notificationOn } = body;
+        const { name, schedule, webhookUrl, webhookUrlType = 'fixed', webhookMethod = 'POST', webhookHeaders = [], webhookHeadersType = 'fixed', webhookBody = '', webhookBodyType = 'fixed', webhookEnv = [], notificationEnabled, notificationOn, retryEnabled = false, retryType = 'stable', retryCount = 3, retryDelay = 60 } = body;
 
         if (!name || !schedule || !webhookUrl) {
             return NextResponse.json({ success: false, error: 'Name, schedule (cron expression), and Webhook URL are required.' }, { status: 400 });
@@ -108,7 +108,11 @@ async function createCron(request) {
             webhookEnv: encryptedEnv,
             nextRun,
             notificationEnabled: notificationEnabled || false,
-            notificationOn: notificationOn || 'always'
+            notificationOn: notificationOn || 'always',
+            retryEnabled,
+            retryType,
+            retryCount,
+            retryDelay
         });
 
         // Decrypt values back for direct UI response compatibility

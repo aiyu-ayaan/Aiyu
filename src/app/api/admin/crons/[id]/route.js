@@ -26,7 +26,7 @@ async function updateCron(request, { params }) {
     try {
         const { id } = await params;
         const body = await request.json();
-        const { name, schedule, enabled, webhookUrl, webhookUrlType, webhookMethod, webhookHeaders, webhookHeadersType, webhookBody, webhookBodyType, webhookEnv, notificationEnabled, notificationOn } = body;
+        const { name, schedule, enabled, webhookUrl, webhookUrlType, webhookMethod, webhookHeaders, webhookHeadersType, webhookBody, webhookBodyType, webhookEnv, notificationEnabled, notificationOn, retryEnabled, retryType, retryCount, retryDelay } = body;
 
         const config = await Config.findOne().lean();
         const timeZone = config?.defaultTimezone || 'UTC';
@@ -65,6 +65,22 @@ async function updateCron(request, { params }) {
 
         if (notificationOn !== undefined) {
             cronJob.notificationOn = notificationOn;
+        }
+
+        if (retryEnabled !== undefined) {
+            cronJob.retryEnabled = retryEnabled;
+        }
+
+        if (retryType !== undefined) {
+            cronJob.retryType = retryType;
+        }
+
+        if (retryCount !== undefined) {
+            cronJob.retryCount = retryCount;
+        }
+
+        if (retryDelay !== undefined) {
+            cronJob.retryDelay = retryDelay;
         }
 
         if (cronJob.type === 'user') {

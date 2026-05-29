@@ -96,6 +96,25 @@ const CronSchema = new mongoose.Schema({
         type: String,
         enum: ['always', 'success', 'failure'],
         default: 'always'
+    },
+    retryEnabled: {
+        type: Boolean,
+        default: false
+    },
+    retryType: {
+        type: String,
+        enum: ['stable', 'exponential'],
+        default: 'stable'
+    },
+    retryCount: {
+        type: Number,
+        default: 3,
+        min: 1
+    },
+    retryDelay: {
+        type: Number,
+        default: 60,
+        min: 1
     }
 }, { timestamps: true });
 

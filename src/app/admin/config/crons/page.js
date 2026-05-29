@@ -147,6 +147,12 @@ export default function CronJobsPage() {
     const [formNotificationEnabled, setFormNotificationEnabled] = useState(false);
     const [formNotificationOn, setFormNotificationOn] = useState('always');
 
+    // Retry Mechanism States
+    const [formRetryEnabled, setFormRetryEnabled] = useState(false);
+    const [formRetryType, setFormRetryType] = useState('stable'); // 'stable' | 'exponential'
+    const [formRetryCount, setFormRetryCount] = useState(3);
+    const [formRetryDelay, setFormRetryDelay] = useState(60);
+
     // Visual Cron Builder States
     const [builderTab, setBuilderTab] = useState('simple'); // 'simple' | 'advanced'
     const [freqType, setFreqType] = useState('daily'); // 'minutes' | 'hourly' | 'daily' | 'weekly' | 'monthly'
@@ -467,6 +473,12 @@ export default function CronJobsPage() {
         setFormNotificationEnabled(false);
         setFormNotificationOn('always');
 
+        // Initialize retry states
+        setFormRetryEnabled(false);
+        setFormRetryType('stable');
+        setFormRetryCount(3);
+        setFormRetryDelay(60);
+
         setShowFormModal(true);
     };
 
@@ -506,6 +518,12 @@ export default function CronJobsPage() {
         setFormNotificationEnabled(job.notificationEnabled || false);
         setFormNotificationOn(job.notificationOn || 'always');
 
+        // Initialize retry states
+        setFormRetryEnabled(job.retryEnabled || false);
+        setFormRetryType(job.retryType || 'stable');
+        setFormRetryCount(job.retryCount ?? 3);
+        setFormRetryDelay(job.retryDelay ?? 60);
+
         setShowFormModal(true);
     };
 
@@ -525,7 +543,11 @@ export default function CronJobsPage() {
             webhookBodyType: resolveTemplateMode(formWebhookBodyType, formWebhookBody),
             webhookEnv: formWebhookEnv.filter(e => e.key && e.key.trim()),
             notificationEnabled: formNotificationEnabled,
-            notificationOn: formNotificationOn
+            notificationOn: formNotificationOn,
+            retryEnabled: formRetryEnabled,
+            retryType: formRetryType,
+            retryCount: formRetryCount,
+            retryDelay: formRetryDelay
         };
 
         const url = editingJob ? `/api/admin/crons/${editingJob._id}` : '/api/admin/crons';
@@ -937,6 +959,16 @@ export default function CronJobsPage() {
                                                     <span className="text-slate-500 italic">Never executed</span>
                                                 )}
                                             </div>
+                                            <div className="col-span-2 flex items-center gap-2 mt-0.5">
+                                                <span className="text-slate-500">Retry Policy:</span>
+                                                {job.retryEnabled ? (
+                                                    <span className="text-slate-300 font-medium">
+                                                        {job.retryType === 'stable' ? 'Stable' : 'Exponential'} ({job.retryCount}x retries, {job.retryDelay}s delay)
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-slate-500 italic">Off</span>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
 
@@ -1092,6 +1124,16 @@ export default function CronJobsPage() {
                                                         </span>
                                                     ) : (
                                                         <span className="text-slate-500 italic">Never executed</span>
+                                                    )}
+                                                </div>
+                                                <div className="col-span-2 flex items-center gap-2 mt-0.5">
+                                                    <span className="text-slate-500">Retry Policy:</span>
+                                                    {job.retryEnabled ? (
+                                                        <span className="text-slate-300 font-medium">
+                                                            {job.retryType === 'stable' ? 'Stable' : 'Exponential'} ({job.retryCount}x retries, {job.retryDelay}s delay)
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-slate-500 italic">Off</span>
                                                     )}
                                                 </div>
                                             </div>
@@ -1835,6 +1877,78 @@ export default function CronJobsPage() {
                                         </div>
                                     </div>
                                 )}
+                            </div>
+
+                            {/* Retry Mechanism */}
+                            <div className="space-y-4 border-t border-white/5 pt-4">
+                                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-1.5">Retry Mechanism</label>
+                                
+                                <div className="bg-slate-950/20 border border-white/5 rounded-2xl p-4 space-y-4">
+                                    <div className="flex justify-between items-center">
+                                        <div className="space-y-0.5">
+                                            <div className="text-xs font-bold text-white">Enable Task Retries</div>
+                                            <div className="text-[10px] text-slate-400">Automatically retry the task if it fails or returns a non-ok status. Off by default.</div>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setFormRetryEnabled(!formRetryEnabled)}
+                                            className="text-slate-400 hover:text-white transition shrink-0"
+                                        >
+                                            {formRetryEnabled ? (
+                                                <ToggleRight className="w-9 h-9 text-emerald-400" />
+                                            ) : (
+                                                <ToggleLeft className="w-9 h-9 text-slate-600" />
+                                            )}
+                                        </button>
+                                    </div>
+
+                                    {formRetryEnabled && (
+                                        <div className="space-y-4 border-t border-white/5 pt-3">
+                                            <div>
+                                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Retry Backoff Policy</label>
+                                                <select
+                                                    value={formRetryType}
+                                                    onChange={(e) => setFormRetryType(e.target.value)}
+                                                    className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-slate-200 focus:border-cyan-500 outline-none transition"
+                                                >
+                                                    <option value="stable">Stable Backoff (Equal delay between attempts)</option>
+                                                    <option value="exponential">Exponential Backoff (Delay doubles after each failure)</option>
+                                                </select>
+                                                <p className="text-[9px] text-slate-500 mt-1 font-mono leading-tight">
+                                                    {formRetryType === 'stable' 
+                                                        ? `Stable: Task will retry every ${formRetryDelay}s.` 
+                                                        : `Exponential: Retry delay doubles each time (e.g. ${formRetryDelay}s, ${formRetryDelay * 2}s, ${formRetryDelay * 4}s...).`
+                                                    }
+                                                </p>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Max Retries</label>
+                                                    <input
+                                                        type="number"
+                                                        min="1"
+                                                        max="10"
+                                                        value={formRetryCount}
+                                                        onChange={(e) => setFormRetryCount(parseInt(e.target.value, 10) || 3)}
+                                                        className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2 text-xs text-slate-200 focus:border-cyan-500 outline-none transition"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Base Delay (seconds)</label>
+                                                    <input
+                                                        type="number"
+                                                        min="1"
+                                                        max="3600"
+                                                        value={formRetryDelay}
+                                                        onChange={(e) => setFormRetryDelay(parseInt(e.target.value, 10) || 60)}
+                                                        className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2 text-xs text-slate-200 focus:border-cyan-500 outline-none transition"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
 
                             </div>
