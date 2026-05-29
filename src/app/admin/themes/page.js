@@ -579,9 +579,9 @@ export default function AdminThemesPage() {
             <div className="bg-slate-900/50 backdrop-blur-xl border border-emerald-500/30 rounded-2xl p-6 mb-12 relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-[100px] pointer-events-none" />
                 
-                <div className="relative z-10 flex flex-col lg:flex-row gap-8">
+                <div className="relative z-10 flex flex-col lg:flex-row items-start gap-8">
                     {/* Left Panel: Generator Controls */}
-                    <div className="flex-1 flex flex-col justify-between">
+                    <div className="flex-1 flex flex-col justify-between self-stretch">
                         <div>
                             <div className="flex items-center gap-3 mb-4">
                                 <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/30 text-emerald-400">
@@ -601,14 +601,17 @@ export default function AdminThemesPage() {
                                     <select
                                         value={selectedSeedId}
                                         onChange={(e) => handleSeedChange(e.target.value)}
-                                        className="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-emerald-500 transition-colors"
+                                        className="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-emerald-500 transition-colors cursor-pointer"
                                     >
                                         {DYNAMIC_SEEDS.map(seed => (
                                             <option key={seed.id} value={seed.id}>
-                                                {seed.name} — {seed.description}
+                                                {seed.name}
                                             </option>
                                         ))}
                                     </select>
+                                    <p className="text-slate-400 text-[11px] font-mono mt-2 italic px-1">
+                                        {DYNAMIC_SEEDS.find(s => s.id === selectedSeedId)?.description}
+                                    </p>
                                 </div>
 
                                 <div className="bg-slate-950/60 p-4 rounded-xl border border-white/5 font-mono text-xs text-slate-400">
