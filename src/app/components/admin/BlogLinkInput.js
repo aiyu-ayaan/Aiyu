@@ -112,7 +112,7 @@ export default function BlogLinkInput({ value, onChange }) {
             {/* Modal Portal Alternative (Using absolute fixed since we're in the same layout) */}
             <AnimatePresence>
                 {isModalOpen && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 lg:p-8">
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 lg:p-4 md:p-8">
                         <motion.div 
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}

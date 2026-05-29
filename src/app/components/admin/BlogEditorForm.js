@@ -360,14 +360,14 @@ export default function BlogEditorForm({ mode = 'create', blogId = null }) {
 
     if (loading) {
         return (
-            <div className="p-8 text-slate-300">
+            <div className="p-4 md:p-8 text-slate-300">
                 Loading blog editor...
             </div>
         );
     }
 
     return (
-        <div className="mx-auto max-w-[1300px] p-4 sm:p-6 lg:p-8">
+        <div className="mx-auto max-w-[1300px] p-4 sm:p-6 lg:p-4 md:p-8">
             <div className="mb-6 flex items-end justify-between gap-4">
                 <div>
                     <button

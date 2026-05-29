@@ -109,7 +109,7 @@ export default function TerminalForm() {
                 onSubmit={handleSubmit}
             >
                 {/* Visual Settings */}
-                <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 relative overflow-hidden group">
+                <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 md:p-8 relative overflow-hidden group">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
 
                     <h2 className="text-sm font-mono text-cyan-500/70 uppercase tracking-widest mb-8 flex items-center gap-4 relative z-10">
@@ -146,7 +146,7 @@ export default function TerminalForm() {
                 </div>
 
                 {/* ASCII Art Config */}
-                <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 relative overflow-hidden group">
+                <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 md:p-8 relative overflow-hidden group">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
 
                     <div className="flex justify-between items-center mb-8 relative z-10">
@@ -206,7 +206,7 @@ export default function TerminalForm() {
                 </div>
 
                 {/* Toggles */}
-                <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 relative overflow-hidden group">
+                <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 md:p-8 relative overflow-hidden group">
                     <h2 className="text-sm font-mono text-slate-500 uppercase tracking-widest mb-8 flex items-center gap-4">
                         Display Options
                         <div className="h-px bg-white/5 flex-grow" />

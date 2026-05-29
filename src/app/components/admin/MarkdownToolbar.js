@@ -373,7 +373,7 @@ export default function MarkdownToolbar({ textareaRef, value, onChange, showNoti
                     </div>
                 ) : (
                     // Preview Mode
-                    <div className="absolute inset-0 overflow-y-auto p-8 prose prose-invert max-w-none prose-headings:font-bold prose-headings:tracking-tight prose-a:text-cyan-400 prose-img:rounded-xl prose-pre:bg-black/50 prose-pre:border prose-pre:border-white/10">
+                    <div className="absolute inset-0 overflow-y-auto p-4 md:p-8 prose prose-invert max-w-none prose-headings:font-bold prose-headings:tracking-tight prose-a:text-cyan-400 prose-img:rounded-xl prose-pre:bg-black/50 prose-pre:border prose-pre:border-white/10">
                         <ReactMarkdown
                             remarkPlugins={[remarkGfm]}
                             components={{
@@ -470,7 +470,7 @@ export default function MarkdownToolbar({ textareaRef, value, onChange, showNoti
                                     <div>
                                         {!imageUploadFile && !imageUrl ? (
                                             <div
-                                                className={`border-2 border-dashed rounded-xl p-8 text-center transition-all cursor-pointer group/drop ${dragActive ? 'border-cyan-500 bg-cyan-500/10' : 'border-white/10 hover:border-cyan-500/30 hover:bg-white/[0.02]'
+                                                className={`border-2 border-dashed rounded-xl p-4 md:p-8 text-center transition-all cursor-pointer group/drop ${dragActive ? 'border-cyan-500 bg-cyan-500/10' : 'border-white/10 hover:border-cyan-500/30 hover:bg-white/[0.02]'
                                                     }`}
                                                 onDragEnter={handleDrag}
                                                 onDragLeave={handleDrag}

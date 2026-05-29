@@ -68,7 +68,7 @@ const SocialForm = ({ initialData, isEdit = false }) => {
     };
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl mx-auto bg-slate-900/50 p-8 rounded-xl border border-white/10 backdrop-blur-xl">
+        <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl mx-auto bg-slate-900/50 p-4 md:p-8 rounded-xl border border-white/10 backdrop-blur-xl">
             {error && (
                 <div className="bg-red-500/10 border border-red-500/20 text-red-300 p-3 rounded font-mono text-sm">
                     {error}

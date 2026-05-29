@@ -280,7 +280,7 @@ const ConfigForm = () => {
             )}
 
             {/* Branding Section */}
-            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 relative overflow-hidden group">
+            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 md:p-8 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
 
                 <h2 className="text-sm font-mono text-cyan-500/70 uppercase tracking-widest mb-8 flex items-center gap-4">
@@ -309,7 +309,7 @@ const ConfigForm = () => {
 
 
             {/* Browser & SEO Section */}
-            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 relative overflow-hidden group">
+            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 md:p-8 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-green-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
 
                 <h2 className="text-sm font-mono text-green-500/70 uppercase tracking-widest mb-8 flex items-center gap-4">
@@ -399,7 +399,7 @@ const ConfigForm = () => {
             </div>
 
             {/* Page Headers Section */}
-            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 relative overflow-hidden group">
+            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 md:p-8 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
 
                 <h2 className="text-sm font-mono text-orange-500/70 uppercase tracking-widest mb-8 flex items-center gap-4">
@@ -549,7 +549,7 @@ const ConfigForm = () => {
             </div>
 
             {/* Integrations Section */}
-            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 relative overflow-hidden group">
+            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 md:p-8 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
 
                 <h2 className="text-sm font-mono text-yellow-500/70 uppercase tracking-widest mb-8 flex items-center gap-4">
@@ -576,7 +576,7 @@ const ConfigForm = () => {
             </div>
 
             {/* Resume Section */}
-            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 relative overflow-hidden group">
+            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 md:p-8 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
 
                 <h2 className="text-sm font-mono text-blue-500/70 uppercase tracking-widest mb-8 flex items-center gap-4">
@@ -584,7 +584,7 @@ const ConfigForm = () => {
                     <div className="h-px bg-blue-500/10 flex-grow" />
                 </h2>
 
-                <div className="flex gap-6 mb-8">
+                <div className="flex flex-col md:flex-row gap-4 mb-8">
                     <label className={`flex items-center gap-3 cursor-pointer p-4 rounded-xl border transition-all w-full
                         ${formData.resume.type === 'url' ? 'bg-blue-500/10 border-blue-500/40 text-blue-300' : 'bg-slate-950/50 border-white/10 text-slate-400'}
                     `}>
