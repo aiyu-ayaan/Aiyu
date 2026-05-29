@@ -2,7 +2,7 @@ import dbConnect from "@/lib/db";
 import Theme from "@/models/Theme";
 import { getSession } from "@/lib/auth";
 import { NextResponse } from "next/server";
-import { themePresets, isPredefinedTheme } from "@/lib/themePresets";
+import { themePresets, legacyThemePresets, isPredefinedTheme } from "@/lib/themePresets";
 import cache, { CACHE_TTL, createCacheDebugHeaders } from "@/lib/cache";
 import { createPublicCacheHeaders, RESPONSE_CACHE } from "@/lib/httpCache";
 
@@ -21,16 +21,18 @@ export async function GET() {
         );
 
         // Convert predefined themes to array format
-        const predefinedThemes = Object.values(themePresets);
+        const predefinedThemes = Object.values(themePresets).map(t => ({ ...t, isLegacy: false }));
+        const legacyThemes = Object.values(legacyThemePresets).map(t => ({ ...t, isLegacy: true }));
 
         // Combine both
-        const allThemes = [...predefinedThemes, ...customThemes];
+        const allThemes = [...predefinedThemes, ...legacyThemes, ...customThemes];
 
         return NextResponse.json({
             success: true,
             data: allThemes,
             count: {
                 predefined: predefinedThemes.length,
+                legacy: legacyThemes.length,
                 custom: customThemes.length,
                 total: allThemes.length
             }
