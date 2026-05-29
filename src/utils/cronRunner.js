@@ -55,7 +55,48 @@ function parseCronField(field, min, max) {
     return Array.from(new Set(values));
 }
 
-export function isCronDue(cronExpression, date = new Date()) {
+export function getDateTimeParts(date, timeZone) {
+    try {
+        const parts = new Intl.DateTimeFormat('en-US', {
+            timeZone,
+            year: 'numeric',
+            month: 'numeric',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: 'numeric',
+            second: 'numeric',
+            weekday: 'short',
+            hour12: false
+        }).formatToParts(date);
+
+        const map = {};
+        for (const p of parts) {
+            map[p.type] = p.value;
+        }
+
+        const weekdayMap = {
+            'Sun': 0, 'Mon': 1, 'Tue': 2, 'Wed': 3, 'Thu': 4, 'Fri': 5, 'Sat': 6
+        };
+
+        return {
+            minute: parseInt(map.minute, 10),
+            hour: parseInt(map.hour, 10) % 24,
+            day: parseInt(map.day, 10),
+            month: parseInt(map.month, 10),
+            weekday: weekdayMap[map.weekday] ?? date.getDay()
+        };
+    } catch (e) {
+        return {
+            minute: date.getMinutes(),
+            hour: date.getHours(),
+            day: date.getDate(),
+            month: date.getMonth() + 1,
+            weekday: date.getDay()
+        };
+    }
+}
+
+export function isCronDue(cronExpression, date = new Date(), timeZone) {
     const fields = cronExpression.trim().split(/\s+/);
     if (fields.length !== 5) return false;
     
@@ -67,11 +108,22 @@ export function isCronDue(cronExpression, date = new Date()) {
     const months = parseCronField(monthExp, 1, 12);
     const dows = parseCronField(dowExp, 0, 6).map(v => v === 7 ? 0 : v);
     
-    const currentMin = date.getMinutes();
-    const currentHour = date.getHours();
-    const currentDom = date.getDate();
-    const currentMonth = date.getMonth() + 1;
-    const currentDow = date.getDay();
+    let currentMin, currentHour, currentDom, currentMonth, currentDow;
+    
+    if (timeZone) {
+        const parts = getDateTimeParts(date, timeZone);
+        currentMin = parts.minute;
+        currentHour = parts.hour;
+        currentDom = parts.day;
+        currentMonth = parts.month;
+        currentDow = parts.weekday;
+    } else {
+        currentMin = date.getMinutes();
+        currentHour = date.getHours();
+        currentDom = date.getDate();
+        currentMonth = date.getMonth() + 1;
+        currentDow = date.getDay();
+    }
     
     return minutes.includes(currentMin) &&
            hours.includes(currentHour) &&
@@ -80,13 +132,13 @@ export function isCronDue(cronExpression, date = new Date()) {
            dows.includes(currentDow);
 }
 
-export function getNextCronRun(cronExpression, startDate = new Date()) {
+export function getNextCronRun(cronExpression, startDate = new Date(), timeZone) {
     const checkDate = new Date(startDate.getTime());
     checkDate.setSeconds(0, 0);
     
     for (let i = 0; i < 14400; i++) { // Max 10 days
         checkDate.setMinutes(checkDate.getMinutes() + 1);
-        if (isCronDue(cronExpression, checkDate)) {
+        if (isCronDue(cronExpression, checkDate, timeZone)) {
             return checkDate;
         }
     }
@@ -100,6 +152,17 @@ export async function initCronRunner() {
     console.log('[CRON SERVICE] Initializing task scheduler...');
     await dbConnect();
 
+    // Fetch global default timezone
+    let timeZone = 'UTC';
+    try {
+        const config = await Config.findOne().lean();
+        if (config && config.defaultTimezone) {
+            timeZone = config.defaultTimezone;
+        }
+    } catch (configErr) {
+        console.error('[CRON SERVICE] Failed to load global timezone config:', configErr);
+    }
+
     // Seed system cron jobs
     try {
         const cleanupJob = await Cron.findOne({ action: 'clean_unreferenced' });
@@ -110,7 +173,7 @@ export async function initCronRunner() {
                 schedule: '0 2 * * *', // Daily at 2:00 AM
                 enabled: true,
                 action: 'clean_unreferenced',
-                nextRun: getNextCronRun('0 2 * * *', new Date())
+                nextRun: getNextCronRun('0 2 * * *', new Date(), timeZone)
             });
             console.log('[CRON SERVICE] Seeded: Unreferenced Uploads Cleanup');
         }
@@ -123,7 +186,7 @@ export async function initCronRunner() {
                 schedule: '0 3 * * *', // Daily at 3:00 AM
                 enabled: true,
                 action: 'migrate_webp',
-                nextRun: getNextCronRun('0 3 * * *', new Date())
+                nextRun: getNextCronRun('0 3 * * *', new Date(), timeZone)
             });
             console.log('[CRON SERVICE] Seeded: WebP Image Migration');
         }
@@ -139,7 +202,7 @@ export async function initCronRunner() {
             ]
         });
         for (const job of jobsToHeal) {
-            job.nextRun = getNextCronRun(job.schedule, now);
+            job.nextRun = getNextCronRun(job.schedule, now, timeZone);
             await job.save();
             console.log(`[CRON SERVICE] Self-healed nextRun for task: ${job.name} -> ${job.nextRun}`);
         }
@@ -161,8 +224,18 @@ async function runDueCronJobs() {
         const activeJobs = await Cron.find({ enabled: true });
         const now = new Date();
 
+        let timeZone = 'UTC';
+        try {
+            const config = await Config.findOne().lean();
+            if (config && config.defaultTimezone) {
+                timeZone = config.defaultTimezone;
+            }
+        } catch (configErr) {
+            console.error('[CRON SERVICE] Failed to load global timezone config in run loop:', configErr);
+        }
+
         for (const job of activeJobs) {
-            if (isCronDue(job.schedule, now)) {
+            if (isCronDue(job.schedule, now, timeZone)) {
                 console.log(`[CRON SERVICE] Triggering job: ${job.name}`);
                 executeCronJob(job).catch(err => {
                     console.error(`[CRON SERVICE] Failed executing job ${job.name}:`, err);
@@ -478,7 +551,18 @@ export async function executeCronJob(job) {
     try {
         const ranAt = new Date();
         const durationMs = Date.now() - startTime;
-        const nextRun = getNextCronRun(job.schedule, ranAt);
+        
+        let timeZone = 'UTC';
+        try {
+            const config = await Config.findOne().lean();
+            if (config && config.defaultTimezone) {
+                timeZone = config.defaultTimezone;
+            }
+        } catch (configErr) {
+            console.error('[CRON SERVICE] Failed to load global timezone config in execute job:', configErr);
+        }
+
+        const nextRun = getNextCronRun(job.schedule, ranAt, timeZone);
         await Cron.findByIdAndUpdate(job._id, {
             lastRun: ranAt,
             lastRunStatus: status,

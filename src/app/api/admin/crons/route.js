@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { withAuth } from '@/middleware/auth';
 import dbConnect from '@/lib/db';
 import Cron from '@/models/Cron';
+import Config from '@/models/Config';
 import { getNextCronRun, initCronRunner } from '@/utils/cronRunner';
 import { encrypt, decrypt } from '@/lib/encryption';
 
@@ -39,8 +40,11 @@ async function getCrons(request) {
             ]
         });
         
+        const config = await Config.findOne().lean();
+        const timeZone = config?.defaultTimezone || 'UTC';
+
         for (const job of jobsToHeal) {
-            job.nextRun = getNextCronRun(job.schedule, now);
+            job.nextRun = getNextCronRun(job.schedule, now, timeZone);
             await job.save();
         }
 
@@ -78,7 +82,9 @@ async function createCron(request) {
             return NextResponse.json({ success: false, error: 'Invalid cron expression. Must have exactly 5 fields (minute hour day-of-month month day-of-week).' }, { status: 400 });
         }
 
-        const nextRun = getNextCronRun(schedule, new Date());
+        const config = await Config.findOne().lean();
+        const timeZone = config?.defaultTimezone || 'UTC';
+        const nextRun = getNextCronRun(schedule, new Date(), timeZone);
 
         const encryptedEnv = (webhookEnv || []).map(env => ({
             key: env.key,

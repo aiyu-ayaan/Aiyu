@@ -22,7 +22,8 @@ import {
     Globe,
     Terminal,
     ShieldAlert,
-    Lock
+    Lock,
+    ChevronDown
 } from 'lucide-react';
 
 function cronToHuman(cronExpression) {
@@ -334,10 +335,50 @@ export default function CronJobsPage() {
         }
     };
 
+    // Timezone settings states
+    const [timezone, setTimezone] = useState('UTC');
+    const [timezoneSaving, setTimezoneSaving] = useState(false);
+
+    const fetchTimezone = async () => {
+        try {
+            const res = await fetch('/api/admin/crons/timezone');
+            const data = await res.json();
+            if (data.success && data.timezone) {
+                setTimezone(data.timezone);
+            }
+        } catch (error) {
+            console.error('Failed to fetch timezone:', error);
+        }
+    };
+
+    const handleTimezoneChange = async (newTimezone) => {
+        setTimezoneSaving(true);
+        try {
+            const res = await fetch('/api/admin/crons/timezone', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ timezone: newTimezone })
+            });
+            const data = await res.json();
+            if (data.success) {
+                setTimezone(data.timezone);
+                showMessage('success', `Global scheduler timezone set to ${data.timezone}. Active job next run recalculated.`);
+                fetchJobs(false);
+            } else {
+                showMessage('error', data.error || 'Failed to update timezone.');
+            }
+        } catch (error) {
+            showMessage('error', 'Connection error. Timezone update failed.');
+        } finally {
+            setTimezoneSaving(false);
+        }
+    };
+
     useEffect(() => {
         fetchJobs(true);
         fetchNotificationStatus();
         fetchGlobalEnvs();
+        fetchTimezone();
     }, []);
 
     const handleToggle = async (job) => {
@@ -711,7 +752,39 @@ export default function CronJobsPage() {
                             <p className="text-slate-400">Configure background cron protocols, clean legacy data, and orchestrate webhooks.</p>
                         </div>
                     </div>
-                    <div className="flex gap-3">
+                    <div className="flex gap-3 flex-wrap">
+                        {/* Timezone Configuration */}
+                        <div className="relative inline-flex items-center gap-2 rounded-xl border border-white/10 bg-slate-900/50 px-3.5 py-2 text-sm font-semibold text-slate-300 hover:border-cyan-500/20 transition-all focus-within:ring-1 focus-within:ring-cyan-500">
+                            <Globe size={15} className="text-cyan-400 shrink-0" />
+                            <select
+                                value={timezone}
+                                onChange={(e) => handleTimezoneChange(e.target.value)}
+                                disabled={timezoneSaving}
+                                className="bg-transparent text-xs font-mono font-bold text-slate-300 uppercase tracking-wider cursor-pointer pr-5 focus:outline-none disabled:opacity-50 appearance-none"
+                            >
+                                <option value="UTC" className="bg-slate-950 text-slate-300 py-1">UTC (GMT+00:00)</option>
+                                <option value="Asia/Kolkata" className="bg-slate-950 text-slate-300 py-1">Kolkata (GMT+05:30)</option>
+                                <option value="Asia/Singapore" className="bg-slate-950 text-slate-300 py-1">Singapore (GMT+08:00)</option>
+                                <option value="Asia/Tokyo" className="bg-slate-950 text-slate-300 py-1">Tokyo (GMT+09:00)</option>
+                                <option value="Asia/Dubai" className="bg-slate-950 text-slate-300 py-1">Dubai (GMT+04:00)</option>
+                                <option value="Europe/London" className="bg-slate-950 text-slate-300 py-1">London (GMT+00:00)</option>
+                                <option value="Europe/Paris" className="bg-slate-950 text-slate-300 py-1">Paris (GMT+01:00)</option>
+                                <option value="Europe/Moscow" className="bg-slate-950 text-slate-300 py-1">Moscow (GMT+03:00)</option>
+                                <option value="America/New_York" className="bg-slate-950 text-slate-300 py-1">New York (GMT-05:00)</option>
+                                <option value="America/Chicago" className="bg-slate-950 text-slate-300 py-1">Chicago (GMT-06:00)</option>
+                                <option value="America/Denver" className="bg-slate-950 text-slate-300 py-1">Denver (GMT-07:00)</option>
+                                <option value="America/Los_Angeles" className="bg-slate-950 text-slate-300 py-1">Los Angeles (GMT-08:00)</option>
+                                <option value="Australia/Sydney" className="bg-slate-950 text-slate-300 py-1">Sydney (GMT+10:00)</option>
+                            </select>
+                            <div className="absolute right-3 pointer-events-none text-slate-500">
+                                {timezoneSaving ? (
+                                    <RefreshCw size={12} className="animate-spin text-cyan-400" />
+                                ) : (
+                                    <ChevronDown size={12} />
+                                )}
+                            </div>
+                        </div>
+
                         <Link
                             href="/admin/config/crons/logs"
                             className="inline-flex items-center gap-2 rounded-xl border border-cyan-500/20 bg-cyan-500/5 px-4 py-2 text-sm font-semibold text-cyan-400 transition hover:border-cyan-500/30 hover:bg-cyan-500/10"

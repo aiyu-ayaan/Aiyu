@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { withAuth } from '@/middleware/auth';
 import dbConnect from '@/lib/db';
 import Cron from '@/models/Cron';
+import Config from '@/models/Config';
 import { getNextCronRun } from '@/utils/cronRunner';
 import { encrypt, decrypt } from '@/lib/encryption';
 
@@ -27,6 +28,9 @@ async function updateCron(request, { params }) {
         const body = await request.json();
         const { name, schedule, enabled, webhookUrl, webhookUrlType, webhookMethod, webhookHeaders, webhookHeadersType, webhookBody, webhookBodyType, webhookEnv, notificationEnabled, notificationOn } = body;
 
+        const config = await Config.findOne().lean();
+        const timeZone = config?.defaultTimezone || 'UTC';
+
         const cronJob = await Cron.findById(id);
         if (!cronJob) {
             return NextResponse.json({ success: false, error: 'Cron job not found.' }, { status: 404 });
@@ -39,7 +43,7 @@ async function updateCron(request, { params }) {
                 return NextResponse.json({ success: false, error: 'Invalid cron expression. Must have exactly 5 fields.' }, { status: 400 });
             }
             cronJob.schedule = schedule;
-            cronJob.nextRun = getNextCronRun(schedule, new Date());
+            cronJob.nextRun = getNextCronRun(schedule, new Date(), timeZone);
         }
 
         if (name && cronJob.type === 'user') {
@@ -49,7 +53,7 @@ async function updateCron(request, { params }) {
         if (enabled !== undefined) {
             cronJob.enabled = enabled;
             if (enabled) {
-                cronJob.nextRun = getNextCronRun(cronJob.schedule, new Date());
+                cronJob.nextRun = getNextCronRun(cronJob.schedule, new Date(), timeZone);
             } else {
                 cronJob.nextRun = null;
             }

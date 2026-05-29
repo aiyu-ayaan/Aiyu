@@ -29,6 +29,7 @@ const ConfigSchema = new mongoose.Schema({
     contactLocation: { type: String, default: '' },
     contactEmail: { type: String, default: '' },
     contactStatus: { type: String, default: 'Open to opportunities' },
+    defaultTimezone: { type: String, default: 'UTC' },
 
     // Footer Configuration
     footerText: { type: String, default: '© 2025 Ayaan Ansari. All rights reserved.' },
