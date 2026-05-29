@@ -114,10 +114,10 @@ export default function AdminFooter() {
         }
     };
 
-    if (loading) return <div className="p-8 text-white">Loading...</div>;
+    if (loading) return <div className="p-4 md:p-8 text-white">Loading...</div>;
 
     return (
-        <div className="p-8 max-w-7xl mx-auto">
+        <div className="p-4 md:p-8 max-w-7xl mx-auto">
             <div className="mb-8">
                 <Link href="/admin" className="text-cyan-400 hover:text-cyan-300 flex items-center gap-2 transition-colors mb-4 text-sm font-mono opacity-60 hover:opacity-100">
                     ← BACK_TO_COMMAND_CENTER
@@ -137,7 +137,7 @@ export default function AdminFooter() {
             </div>
 
             {/* Config Section */}
-            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 mb-12 relative overflow-hidden">
+            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 md:p-8 mb-12 relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-[100px] pointer-events-none" />
 
                 <h2 className="text-sm font-mono text-cyan-500/70 uppercase tracking-widest mb-8 flex items-center gap-4">

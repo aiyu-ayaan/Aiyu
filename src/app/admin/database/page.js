@@ -134,7 +134,7 @@ export default function DatabaseManager() {
     };
 
     return (
-        <div className="p-8 max-w-7xl mx-auto min-h-screen">
+        <div className="p-4 md:p-8 max-w-7xl mx-auto min-h-screen">
             <div className="mb-8">
                 <Link href="/admin" className="text-cyan-400 hover:text-cyan-300 flex items-center gap-2 transition-colors mb-4 text-sm font-mono opacity-60 hover:opacity-100">
                     ← BACK_TO_COMMAND_CENTER
@@ -170,7 +170,7 @@ export default function DatabaseManager() {
                 <motion.div
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    className="bg-slate-900/50 backdrop-blur-xl p-8 rounded-2xl border border-white/10 relative overflow-hidden group"
+                    className="bg-slate-900/50 backdrop-blur-xl p-4 md:p-8 rounded-2xl border border-white/10 relative overflow-hidden group"
                 >
                     <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
 
@@ -205,7 +205,7 @@ export default function DatabaseManager() {
                 <motion.div
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    className="bg-slate-900/50 backdrop-blur-xl p-8 rounded-2xl border border-white/10 relative overflow-hidden group"
+                    className="bg-slate-900/50 backdrop-blur-xl p-4 md:p-8 rounded-2xl border border-white/10 relative overflow-hidden group"
                 >
                     <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
 
@@ -260,7 +260,7 @@ export default function DatabaseManager() {
                 <motion.div
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    className="bg-slate-900/50 backdrop-blur-xl p-8 rounded-2xl border border-white/10 relative overflow-hidden group"
+                    className="bg-slate-900/50 backdrop-blur-xl p-4 md:p-8 rounded-2xl border border-white/10 relative overflow-hidden group"
                 >
                     <div className="absolute top-0 right-0 w-64 h-64 bg-red-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
 

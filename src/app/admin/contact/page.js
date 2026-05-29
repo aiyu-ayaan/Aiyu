@@ -163,7 +163,7 @@ export default function ContactAdminPage() {
     }
 
     return (
-        <div className="p-8 max-w-7xl mx-auto min-h-screen w-full flex flex-col">
+        <div className="p-4 md:p-8 max-w-7xl mx-auto min-h-screen w-full flex flex-col">
             <div className="mb-8">
                 <Link
                     href="/admin"
@@ -178,7 +178,7 @@ export default function ContactAdminPage() {
             <form onSubmit={handleSave} className="space-y-12">
 
                 {/* General Coordinates Section */}
-                <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 relative overflow-hidden group">
+                <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 md:p-8 relative overflow-hidden group">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
 
                     <h2 className="text-sm font-mono text-cyan-500/70 uppercase tracking-widest mb-8 flex items-center gap-4 relative z-10">
@@ -234,7 +234,7 @@ export default function ContactAdminPage() {
                 </div>
 
                 {/* Notification Transmission Routing Card */}
-                <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 relative overflow-hidden group">
+                <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 md:p-8 relative overflow-hidden group">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-pink-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
                     
                     <h2 className="text-sm font-mono text-pink-500/70 uppercase tracking-widest mb-8 flex items-center gap-4 relative z-10">

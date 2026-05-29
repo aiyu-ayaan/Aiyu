@@ -62,10 +62,10 @@ export default function AdminBlogsPage() {
         }
     };
 
-    if (loading) return <div className="p-8 text-center text-white">Loading...</div>;
+    if (loading) return <div className="p-4 md:p-8 text-center text-white">Loading...</div>;
 
     return (
-        <div className="p-8 max-w-7xl mx-auto">
+        <div className="p-4 md:p-8 max-w-7xl mx-auto">
             <div className="mb-8">
                 <Link href="/admin" className="text-cyan-400 hover:text-cyan-300 flex items-center gap-2 transition-colors mb-4 text-sm font-mono opacity-60 hover:opacity-100">
                     ← BACK_TO_COMMAND_CENTER

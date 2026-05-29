@@ -219,7 +219,7 @@ export default function GitHubConfigPage() {
     }
 
     return (
-        <div className="p-8 max-w-7xl mx-auto min-h-screen w-full flex flex-col">
+        <div className="p-4 md:p-8 max-w-7xl mx-auto min-h-screen w-full flex flex-col">
             <div className="mb-8">
                 <Link
                     href="/admin"
@@ -264,7 +264,7 @@ export default function GitHubConfigPage() {
             <form onSubmit={handleSave} className="space-y-8">
 
                 {/* Connection Settings */}
-                <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 relative overflow-hidden group">
+                <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 md:p-8 relative overflow-hidden group">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
 
                     <div className="flex justify-between items-center mb-8 relative z-10">
@@ -382,7 +382,7 @@ export default function GitHubConfigPage() {
                 </div>
 
                 {/* Module Layout */}
-                <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 relative overflow-hidden group">
+                <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 md:p-8 relative overflow-hidden group">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-green-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
 
                     <div className="flex justify-between items-center mb-8 relative z-10">
@@ -422,7 +422,7 @@ export default function GitHubConfigPage() {
                 </div>
 
                 {/* Repo Visibility */}
-                <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 relative overflow-hidden group">
+                <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 md:p-8 relative overflow-hidden group">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
 
                     <div className="flex flex-col gap-4 mb-6 relative z-10">
@@ -451,7 +451,7 @@ export default function GitHubConfigPage() {
 
                     <div className="relative z-10">
                         {loadingRepos ? (
-                            <div className="flex items-center justify-center p-8 text-slate-500 gap-2">
+                            <div className="flex items-center justify-center p-4 md:p-8 text-slate-500 gap-2">
                                 <Loader2 className="w-4 h-4 animate-spin" />
                                 <span className="text-sm font-mono">LOADING_REPOSITORIES...</span>
                             </div>
@@ -485,7 +485,7 @@ export default function GitHubConfigPage() {
                                     })}
                             </div>
                         ) : (
-                            <div className="text-center p-8 text-slate-500 font-mono text-sm">
+                            <div className="text-center p-4 md:p-8 text-slate-500 font-mono text-sm">
                                 NO_PUBLIC_REPOSITORIES_FOUND
                             </div>
                         )}

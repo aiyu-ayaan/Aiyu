@@ -182,7 +182,7 @@ export default function NotificationConfigPage() {
     );
 
     return (
-        <div className="p-8 max-w-6xl mx-auto min-h-screen text-slate-200">
+        <div className="p-4 md:p-8 max-w-6xl mx-auto min-h-screen text-slate-200">
             {/* Nav */}
             <div className="mb-10">
                 <Link href="/admin" className="text-cyan-400 hover:text-cyan-300 flex items-center gap-2 transition-colors mb-4 text-sm font-mono opacity-60 hover:opacity-100">

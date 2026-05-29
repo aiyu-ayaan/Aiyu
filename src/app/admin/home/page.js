@@ -5,7 +5,7 @@ import Link from 'next/link';
 
 export default function EditHomePage() {
     return (
-        <div className="p-8 max-w-7xl mx-auto">
+        <div className="p-4 md:p-8 max-w-7xl mx-auto">
             {/* Redesigned Header Layout with direct Skins Link */}
             <div className="mb-12 flex flex-col md:flex-row md:items-center md:justify-between gap-6 pb-6 border-b border-white/5">
                 <div>

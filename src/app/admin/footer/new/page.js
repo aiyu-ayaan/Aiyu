@@ -5,7 +5,7 @@ import Link from 'next/link';
 
 export default function NewSocialPage() {
     return (
-        <div className="p-8">
+        <div className="p-4 md:p-8">
             <div className="mb-6">
                 <Link href="/admin/footer" className="text-cyan-400 hover:text-cyan-300 flex items-center gap-2 transition-colors">
                     ← Back to Footer

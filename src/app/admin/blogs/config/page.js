@@ -69,7 +69,7 @@ export default function BlogConfigPage() {
     };
 
     return (
-        <div className="p-8 max-w-6xl mx-auto min-h-screen text-slate-200">
+        <div className="p-4 md:p-8 max-w-6xl mx-auto min-h-screen text-slate-200">
             <div className="mb-8">
                 <Link href="/admin/blogs" className="text-cyan-400 hover:text-cyan-300 flex items-center gap-2 transition-colors mb-4 text-sm font-mono opacity-70 hover:opacity-100">
                     ← BACK_TO_BLOGS

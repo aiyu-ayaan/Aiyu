@@ -5,7 +5,7 @@ import Link from 'next/link';
 
 export default function EditHeaderPage() {
     return (
-        <div className="p-8 max-w-7xl mx-auto">
+        <div className="p-4 md:p-8 max-w-7xl mx-auto">
             <div className="mb-8">
                 <Link href="/admin" className="text-cyan-400 hover:text-cyan-300 transition-colors mb-4 inline-flex items-center gap-2 font-mono text-sm tracking-wide">
                     ← BACK_TO_COMMAND_CENTER

@@ -183,7 +183,7 @@ export default function AiConfigPage() {
     }
 
     return (
-        <div className="p-8 max-w-7xl mx-auto min-h-screen w-full flex flex-col">
+        <div className="p-4 md:p-8 max-w-7xl mx-auto min-h-screen w-full flex flex-col">
             <div className="mb-8">
                 <Link
                     href="/admin"
@@ -205,7 +205,7 @@ export default function AiConfigPage() {
             <form onSubmit={handleSave} className="space-y-8">
 
                 {/* Master Switch & Status */}
-                <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 relative overflow-hidden group">
+                <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 md:p-8 relative overflow-hidden group">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
 
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative z-10">
@@ -243,7 +243,7 @@ export default function AiConfigPage() {
 
                 {/* Intelligence Provider Section intentionally removed: Model selection is now unified below */}
                 {/* API Key Configuration */}
-                <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 relative overflow-hidden group">
+                <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 md:p-8 relative overflow-hidden group">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
 
                     <h2 className="text-sm font-mono text-purple-400 uppercase tracking-widest mb-6 flex items-center gap-3">
@@ -316,7 +316,7 @@ export default function AiConfigPage() {
                 </div>
 
                 {/* Model Configuration */}
-                <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-8 relative overflow-hidden group">
+                <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 md:p-8 relative overflow-hidden group">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
 
                     <h2 className="text-sm font-mono text-blue-400 uppercase tracking-widest mb-6 flex items-center gap-3">

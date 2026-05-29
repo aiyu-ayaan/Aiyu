@@ -197,7 +197,7 @@ export default function AdminThemesPage() {
     }
 
     return (
-        <div className="p-8 max-w-7xl mx-auto min-h-screen">
+        <div className="p-4 md:p-8 max-w-7xl mx-auto min-h-screen">
             {/* Header */}
             <div className="mb-8 flex justify-between items-end">
                 <div>
