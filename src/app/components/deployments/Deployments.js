@@ -348,166 +348,162 @@ export default function Deployments({ data, config }) {
                     className="mt-8"
                 >
                     {filteredDeployments.length > 0 ? (
-                        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+                        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3 w-full">
                             {filteredDeployments.map((deployment, index) => {
                                 const statusStyles = getStatusStyles(deployment?.status);
                                 const stackList = Array.isArray(deployment?.techStack) ? deployment.techStack : [];
-                                const previewStack = stackList.slice(0, 4);
+                                const previewStack = stackList.slice(0, 3);
+                                const placeholderGradient = getPlaceholderGradient(deployment?.name);
 
                                 return (
                                     <motion.article
                                         key={deployment?._id || `${deployment?.name}-${index}`}
-                                        whileHover={{ y: -4 }}
-                                        className="h-full w-full max-w-[410px] justify-self-center overflow-hidden rounded-2xl border flex flex-col"
-                                        style={heroCardStyle}
+                                        layout
+                                        initial={{ opacity: 0, y: 16 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ duration: 0.35, ease: 'easeOut' }}
+                                        className="group relative cursor-pointer overflow-hidden rounded-2xl border flex flex-col h-full w-full"
+                                        style={{
+                                            borderColor: 'color-mix(in srgb, var(--border-secondary) 74%, transparent)',
+                                        }}
+                                        onClick={() => setSelectedDeployment(deployment)}
+                                        whileHover={{ y: -5 }}
                                     >
                                         <div
-                                            className="relative aspect-[16/9] w-full overflow-hidden border-b"
+                                            className="absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none"
                                             style={{
-                                                borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)',
-                                                backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 86%, transparent)',
+                                                background:
+                                                    'linear-gradient(135deg, color-mix(in srgb, var(--accent-cyan) 12%, transparent), color-mix(in srgb, var(--accent-purple) 10%, transparent))',
+                                            }}
+                                        />
+
+                                        <div
+                                            className="relative flex h-full flex-col flex-1"
+                                            style={{
+                                                background:
+                                                    'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 95%, transparent), color-mix(in srgb, var(--bg-secondary) 95%, transparent))',
                                             }}
                                         >
-                                            {deployment?.image ? (
-                                                <img
-                                                    src={deployment.image}
-                                                    alt={deployment.name}
-                                                    className="h-full w-full object-contain p-2"
-                                                    loading="lazy"
-                                                    decoding="async"
-                                                />
-                                            ) : (
-                                                <div
-                                                    className="relative flex h-full w-full items-center justify-center"
-                                                    style={{ backgroundImage: getPlaceholderGradient(deployment?.name) }}
-                                                >
-                                                    <div
-                                                        className="absolute inset-0"
-                                                        style={{
-                                                            backgroundImage:
-                                                                'linear-gradient(color-mix(in srgb, var(--border-secondary) 24%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, var(--border-secondary) 24%, transparent) 1px, transparent 1px)',
-                                                            backgroundSize: '22px 22px',
-                                                            opacity: 0.35,
-                                                        }}
+                                            {/* Preview/Image Block */}
+                                            <div
+                                                className="relative h-44 overflow-hidden border-b flex items-center justify-center"
+                                                style={{
+                                                    borderColor: 'color-mix(in srgb, var(--border-secondary) 70%, transparent)',
+                                                    backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 86%, transparent)',
+                                                }}
+                                            >
+                                                {deployment?.image ? (
+                                                    <img
+                                                        src={deployment.image}
+                                                        alt={deployment.name}
+                                                        className="h-full w-full object-contain p-4 transition-transform duration-500 group-hover:scale-105"
+                                                        loading="lazy"
+                                                        decoding="async"
                                                     />
+                                                ) : (
                                                     <div
-                                                        className="rounded-2xl border px-5 py-2 text-2xl font-bold"
+                                                        className="relative flex h-full w-full items-center justify-center overflow-hidden"
+                                                        style={{ backgroundImage: placeholderGradient }}
+                                                    >
+                                                        <div
+                                                            className="absolute -left-8 -top-8 h-28 w-28 rounded-full blur-2xl"
+                                                            style={{ background: 'color-mix(in srgb, var(--accent-cyan) 35%, transparent)' }}
+                                                        />
+                                                        <div
+                                                            className="absolute -bottom-8 -right-8 h-28 w-28 rounded-full blur-2xl"
+                                                            style={{ background: 'color-mix(in srgb, var(--accent-purple) 35%, transparent)' }}
+                                                        />
+                                                        <div
+                                                            className="absolute inset-0"
+                                                            style={{
+                                                                backgroundImage:
+                                                                    'linear-gradient(color-mix(in srgb, var(--border-secondary) 24%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, var(--border-secondary) 24%, transparent) 1px, transparent 1px)',
+                                                                backgroundSize: '22px 22px',
+                                                                opacity: 0.35,
+                                                            }}
+                                                        />
+                                                        <div
+                                                            className="rounded-xl border px-3 py-1 text-lg font-bold"
+                                                            style={{
+                                                                borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)',
+                                                                color: 'var(--text-bright)',
+                                                                backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 70%, transparent)',
+                                                            }}
+                                                        >
+                                                            {getProjectInitials(deployment?.name)}
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Top-Left: Status Badge */}
+                                                <div className="absolute left-3 top-3">
+                                                    <span
+                                                        className="rounded-full border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
                                                         style={{
-                                                            borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)',
-                                                            color: 'var(--text-bright)',
-                                                            backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 70%, transparent)',
+                                                            backgroundColor: statusStyles.badge,
+                                                            borderColor: statusStyles.border,
+                                                            color: statusStyles.text,
                                                         }}
                                                     >
-                                                        {getProjectInitials(deployment?.name)}
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        <div className="space-y-4 p-4 flex flex-col flex-1">
-                                            <div className="flex flex-wrap items-center gap-2">
-                                                <span
-                                                    className="rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-wide"
-                                                    style={{
-                                                        backgroundColor: statusStyles.badge,
-                                                        borderColor: statusStyles.border,
-                                                        color: statusStyles.text,
-                                                    }}
-                                                >
-                                                    {normalizeStatus(deployment?.status)}
-                                                </span>
-                                                <span
-                                                    className="rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-wide"
-                                                    style={{
-                                                        borderColor: 'color-mix(in srgb, var(--accent-purple) 45%, var(--border-secondary))',
-                                                        color: 'var(--accent-purple)',
-                                                        backgroundColor: 'color-mix(in srgb, var(--accent-purple) 10%, transparent)',
-                                                    }}
-                                                >
-                                                    {deployment?.environment || 'Production'}
-                                                </span>
-                                                <span
-                                                    className="rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-wide"
-                                                    style={{
-                                                        borderColor: 'color-mix(in srgb, var(--accent-orange) 45%, var(--border-secondary))',
-                                                        color: 'var(--accent-orange)',
-                                                        backgroundColor: 'color-mix(in srgb, var(--accent-orange) 10%, transparent)',
-                                                    }}
-                                                >
-                                                    {deployment?.hostingProvider || 'Hosting Provider'}
-                                                </span>
-                                            </div>
-
-                                            <div>
-                                                <h2 className="text-[1.65rem] leading-tight font-bold">{deployment?.name}</h2>
-                                                <p className="mt-1 text-xs uppercase tracking-[0.22em]" style={{ color: 'var(--text-tertiary)' }}>
-                                                    {deployment?.appType || 'Application'}
-                                                </p>
-                                            </div>
-
-                                            <p className="text-sm leading-7" style={{ color: 'var(--text-secondary)' }}>
-                                                <span style={multiLineClampStyle}>
-                                                    {deployment?.description}
-                                                </span>
-                                            </p>
-
-                                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                                <div
-                                                    className="rounded-xl border p-3"
-                                                    style={{
-                                                        borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)',
-                                                        backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 80%, transparent)',
-                                                    }}
-                                                >
-                                                    <div className="mb-2 flex items-center gap-2 text-xs uppercase tracking-[0.18em]" style={{ color: 'var(--text-tertiary)' }}>
-                                                        <FaGlobe />
-                                                        Live URL
-                                                    </div>
-                                                    {deployment?.hostedUrl ? (
-                                                        <Link
-                                                            href={deployment.hostedUrl}
-                                                            target="_blank"
-                                                            className="flex w-full items-start gap-2 text-sm font-medium min-w-0 overflow-hidden"
-                                                            style={{ color: 'var(--accent-cyan)' }}
-                                                        >
-                                                            <span className="min-w-0 flex-1 break-all leading-relaxed">{deployment.hostedUrl}</span>
-                                                            <FaArrowUpRightFromSquare className="shrink-0 mt-0.5" />
-                                                        </Link>
-                                                    ) : (
-                                                        <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                                                            Private or internal endpoint
-                                                        </span>
-                                                    )}
+                                                        {normalizeStatus(deployment?.status)}
+                                                    </span>
                                                 </div>
 
-                                                <div
-                                                    className="rounded-xl border p-3"
-                                                    style={{
-                                                        borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)',
-                                                        backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 80%, transparent)',
-                                                    }}
-                                                >
-                                                    <div className="mb-2 flex items-center gap-2 text-xs uppercase tracking-[0.18em]" style={{ color: 'var(--text-tertiary)' }}>
-                                                        <FaShieldHalved />
-                                                        Runtime
-                                                    </div>
-                                                    <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                                                        {deployment?.environment || 'Production'} on {deployment?.hostingProvider || 'Unknown Host'}
+                                                {/* Top-Right: Env Badge */}
+                                                <div className="absolute right-3 top-3">
+                                                    <span
+                                                        className="rounded-full border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
+                                                        style={{
+                                                            borderColor: 'color-mix(in srgb, var(--accent-purple) 45%, var(--border-secondary))',
+                                                            color: 'var(--accent-purple)',
+                                                            backgroundColor: 'color-mix(in srgb, var(--accent-purple) 10%, transparent)',
+                                                        }}
+                                                    >
+                                                        {deployment?.environment || 'Production'}
                                                     </span>
                                                 </div>
                                             </div>
 
-                                            {stackList.length > 0 && (
-                                                <div>
-                                                    <div className="mb-2 flex items-center gap-2 text-xs uppercase tracking-[0.18em]" style={{ color: 'var(--text-tertiary)' }}>
-                                                        <FaScrewdriverWrench />
-                                                        Stack
-                                                    </div>
-                                                    <div className="flex flex-wrap gap-2">
+                                            {/* Body Area */}
+                                            <div className="flex flex-col flex-1 p-5">
+                                                <div className="mb-2">
+                                                    <h3
+                                                        className="text-xl font-bold leading-tight"
+                                                        style={{
+                                                            background: 'linear-gradient(to right, var(--accent-cyan), var(--accent-purple))',
+                                                            WebkitBackgroundClip: 'text',
+                                                            WebkitTextFillColor: 'transparent',
+                                                            backgroundClip: 'text',
+                                                        }}
+                                                    >
+                                                        {deployment?.name}
+                                                    </h3>
+                                                    <p className="mt-0.5 text-[10px] uppercase tracking-[0.2em]" style={{ color: 'var(--text-tertiary)' }}>
+                                                        {deployment?.appType || 'Application'}
+                                                    </p>
+                                                </div>
+
+                                                <p className="mb-4 text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                                                    <span style={multiLineClampStyle}>
+                                                        {deployment?.description}
+                                                    </span>
+                                                </p>
+
+                                                {/* Hosting Info Row */}
+                                                <div className="mb-4 flex flex-wrap gap-x-4 gap-y-2 text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                                                    <span className="inline-flex items-center gap-1.5">
+                                                        <FaServer className="text-[11px]" style={{ color: 'var(--accent-orange)' }} />
+                                                        <span>{deployment?.hostingProvider || 'Unknown Host'}</span>
+                                                    </span>
+                                                </div>
+
+                                                {/* Tech Stack Row */}
+                                                {stackList.length > 0 && (
+                                                    <div className="mb-4 flex flex-wrap gap-1.5">
                                                         {previewStack.map((tech) => (
                                                             <span
                                                                 key={`${deployment?._id || deployment?.name}-${tech}`}
-                                                                className="rounded-md border px-2.5 py-1 text-xs font-semibold"
+                                                                className="rounded-md border px-2 py-0.5 text-[10px] font-medium"
                                                                 style={{
                                                                     borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
                                                                     color: 'var(--accent-cyan)',
@@ -519,34 +515,48 @@ export default function Deployments({ data, config }) {
                                                         ))}
                                                         {stackList.length > previewStack.length && (
                                                             <span
-                                                                className="rounded-md border px-2.5 py-1 text-xs font-semibold"
+                                                                className="rounded-md border px-2 py-0.5 text-[10px] font-medium"
                                                                 style={{
                                                                     borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
                                                                     color: 'var(--text-secondary)',
                                                                     backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 80%, transparent)',
                                                                 }}
                                                             >
-                                                                +{stackList.length - previewStack.length} more
+                                                                +{stackList.length - previewStack.length}
                                                             </span>
                                                         )}
                                                     </div>
-                                                </div>
-                                            )}
+                                                )}
 
-                                            <div className="pt-1 mt-auto">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setSelectedDeployment(deployment)}
-                                                    className="inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-xs font-semibold uppercase tracking-wide transition-colors"
+                                                {/* Footer Actions */}
+                                                <div
+                                                    className="mt-auto flex items-center justify-between border-t pt-3 text-xs"
                                                     style={{
-                                                        borderColor: 'color-mix(in srgb, var(--accent-cyan) 45%, var(--border-secondary))',
-                                                        color: 'var(--accent-cyan)',
-                                                        backgroundColor: 'color-mix(in srgb, var(--accent-cyan) 10%, transparent)',
+                                                        borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)',
+                                                        color: 'var(--text-tertiary)',
                                                     }}
                                                 >
-                                                    <FaExpand />
-                                                    Details
-                                                </button>
+                                                    <span className="inline-flex items-center gap-1.5 transition-colors group-hover:text-[var(--accent-cyan)] font-medium">
+                                                        <FaExpand className="text-[11px]" />
+                                                        Open Details
+                                                    </span>
+
+                                                    {deployment?.hostedUrl && (
+                                                        <Link
+                                                            href={deployment.hostedUrl}
+                                                            target="_blank"
+                                                            onClick={(event) => event.stopPropagation()}
+                                                            className="inline-flex items-center gap-1 font-semibold uppercase tracking-wider text-[10px] hover:underline"
+                                                            style={{ color: 'var(--accent-cyan)' }}
+                                                        >
+                                                            <span className="inline-flex items-center gap-1">
+                                                                <FaGlobe className="text-[10px]" />
+                                                                Launch App
+                                                                <FaArrowUpRightFromSquare className="text-[9px]" />
+                                                            </span>
+                                                        </Link>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     </motion.article>
