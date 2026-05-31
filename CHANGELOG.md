@@ -1,5 +1,11 @@
 # Changelog
 
+## [4.1.1](https://github.com/aiyu-ayaan/Aiyu/compare/v4.1.0...v4.1.1) (2026-05-31)
+
+### Features
+
+* feat(QuestMap, QuestNode, QuestProfile): enhance responsiveness and styling adjustments for better mobile experience
+
 ## [4.1.0](https://github.com/aiyu-ayaan/Aiyu/compare/v4.0.1...v4.1.0) (2026-05-29)
 
 ### Features
