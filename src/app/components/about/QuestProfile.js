@@ -35,17 +35,17 @@ const QuestProfile = ({ data }) => {
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
-      className="mb-8 overflow-hidden rounded-3xl border p-6 shadow-2xl backdrop-blur-md"
+      className="mb-8 overflow-hidden rounded-3xl border p-4 sm:p-6 shadow-2xl backdrop-blur-md"
       style={{
         background: 'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 92%, transparent), color-mix(in srgb, var(--bg-secondary) 88%, transparent))',
         borderColor: 'color-mix(in srgb, var(--accent-cyan) 30%, var(--border-secondary))',
         boxShadow: '0 8px 32px var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,0.05)',
       }}
     >
-      <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
         {/* Left Side: Avatar Details */}
-        <div className="flex items-center gap-4">
-          <div className="relative">
+        <div className="flex items-center gap-3 sm:gap-4">
+          <div className="relative flex-shrink-0">
             <div className="flex h-20 w-20 items-center justify-center rounded-2xl border bg-gradient-to-br shadow-inner"
               style={{
                 borderColor: 'var(--accent-cyan)',
@@ -66,7 +66,7 @@ const QuestProfile = ({ data }) => {
 
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-2xl font-bold tracking-wide" style={{ color: 'var(--text-primary)' }}>
+              <h2 className="text-xl sm:text-2xl font-bold tracking-wide" style={{ color: 'var(--text-primary)' }}>
                 {name}
               </h2>
               <span className="rounded-full px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider"
@@ -82,16 +82,16 @@ const QuestProfile = ({ data }) => {
             <p className="text-sm font-medium tracking-wide" style={{ color: 'var(--text-secondary)' }}>
               {role}
             </p>
-            <div className="mt-2 flex items-center gap-2 text-xs" style={{ color: 'var(--text-tertiary)' }}>
-              <span className="flex items-center gap-1">
+            <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-xs" style={{ color: 'var(--text-tertiary)' }}>
+              <span className="flex items-center gap-1 whitespace-nowrap">
                 <FaHeart className="text-red-500" /> HP: 100%
               </span>
-              <span>•</span>
-              <span className="flex items-center gap-1">
+              <span className="hidden sm:inline">•</span>
+              <span className="flex items-center gap-1 whitespace-nowrap">
                 <FaFire className="text-orange-500" /> Mana: Max
               </span>
-              <span>•</span>
-              <span className="rounded bg-emerald-950/40 border border-emerald-500/30 px-1 text-[10px] text-emerald-400 font-bold uppercase">
+              <span className="hidden sm:inline">•</span>
+              <span className="rounded bg-emerald-950/40 border border-emerald-500/30 px-1.5 py-0.5 text-[10px] text-emerald-400 font-bold uppercase whitespace-nowrap">
                 Active status: Open to Quests
               </span>
             </div>
@@ -99,7 +99,7 @@ const QuestProfile = ({ data }) => {
         </div>
 
         {/* Right Side: XP and RPG Attributes */}
-        <div className="flex-1 max-w-xl">
+        <div className="w-full lg:flex-1 max-w-xl">
           {/* XP Progress Bar */}
           <div className="mb-4">
             <div className="mb-1 flex items-center justify-between text-xs font-semibold uppercase tracking-wider">
@@ -125,7 +125,7 @@ const QuestProfile = ({ data }) => {
           </div>
 
           {/* Stats Grid */}
-          <div className="grid grid-cols-4 gap-2 text-center">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 text-center">
             {[
               { label: 'INT (Tech)', val: intelligence, color: 'var(--accent-cyan)' },
               { label: 'VIT (Exp)', val: vitality, color: 'var(--accent-orange)' },
@@ -140,7 +140,7 @@ const QuestProfile = ({ data }) => {
                   borderColor: 'color-mix(in srgb, ' + stat.color + ' 20%, var(--border-secondary))',
                 }}
               >
-                <div className="font-bold uppercase tracking-wider text-[10px]" style={{ color: 'var(--text-muted)' }}>
+                <div className="font-bold uppercase tracking-wider text-[10px] whitespace-nowrap" style={{ color: 'var(--text-muted)' }}>
                   {stat.label}
                 </div>
                 <div className="mt-1 text-lg font-bold" style={{ color: stat.color }}>

@@ -8,8 +8,13 @@ import { FaFlagCheckered } from 'react-icons/fa';
 
 const QuestMap = ({ items = [], title = "Quest Map", icon: Icon, zoneType = "experience" }) => {
   const containerRef = useRef(null);
-  const [containerWidth, setContainerWidth] = useState(800);
+  const [containerWidth, setContainerWidth] = useState(320); // Default to a safe mobile width
   const [activeNodeIndex, setActiveNodeIndex] = useState(0);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Measure container width for responsive coordinate projection
   useEffect(() => {
@@ -36,7 +41,7 @@ const QuestMap = ({ items = [], title = "Quest Map", icon: Icon, zoneType = "exp
       window.removeEventListener('resize', optimizedResize);
       clearTimeout(resizeTimer);
     };
-  }, []);
+  }, [isMounted]);
 
   const isMobile = containerWidth < 640;
   const isTablet = containerWidth >= 640 && containerWidth < 1024;
@@ -93,6 +98,21 @@ const QuestMap = ({ items = [], title = "Quest Map", icon: Icon, zoneType = "exp
       window.removeEventListener('resize', handleScroll);
     };
   }, [containerWidth, items.length]);
+
+  if (!isMounted) {
+    return (
+      <div className="relative w-full rounded-3xl border p-4 sm:p-6 animate-pulse"
+        style={{
+          background: 'linear-gradient(180deg, color-mix(in srgb, var(--bg-surface) 96%, transparent), color-mix(in srgb, var(--bg-secondary) 94%, transparent))',
+          borderColor: 'color-mix(in srgb, var(--border-secondary) 80%, transparent)',
+          boxShadow: '0 8px 24px var(--shadow-sm)',
+        }}
+      >
+        <div className="h-6 w-48 bg-[var(--bg-elevated)] rounded mb-4" />
+        <div className="h-[220px] bg-[var(--bg-elevated)] rounded-2xl animate-pulse opacity-40" />
+      </div>
+    );
+  }
 
   if (!items || items.length === 0) return null;
 
