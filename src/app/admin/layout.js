@@ -1,15 +1,4 @@
-import { Geist, Geist_Mono } from "next/font/google";
 import "../styles/globals.css";
-
-const geistSans = Geist({
-    variable: "--font-geist-sans",
-    subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-    variable: "--font-geist-mono",
-    subsets: ["latin"],
-});
 
 export const metadata = {
     title: "Admin | Aiyu Portfolio",
@@ -23,7 +12,7 @@ export const dynamic = 'force-dynamic';
 
 export default function AdminLayout({ children }) {
     return (
-        <div className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen relative text-slate-200 selection:bg-cyan-500/30`}>
+        <div className="antialiased min-h-screen relative text-slate-200 selection:bg-cyan-500/30">
             {/* Deep Space Background for Admin */}
             <div className="fixed inset-0 z-[-1] bg-[#0f172a]">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(56,189,248,0.15),transparent_60%)]" />

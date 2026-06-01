@@ -1,7 +1,5 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./styles/globals.css";
-import "./styles/timeline.css";
-import "./styles/custom-timeline.css";
 import { ThemeProvider } from "./context/ThemeContext";
 import { getConfigData } from "@/lib/dataFetchers";
 import { getSiteUrl } from "@/lib/siteUrl";
