@@ -1,5 +1,28 @@
 # Changelog
 
+## [4.1.2](https://github.com/aiyu-ayaan/Aiyu/compare/v4.1.1...v4.1.2) (2026-06-01)
+
+### Bug Fixes
+
+* fix(seo): replace dynamic import with direct component usage in work-in-progress page
+* fix(seo): split dynamic ssr:false into client wrapper component
+* fix(seo): add noindex metadata to 404 page to prevent indexing
+* fix(seo): add metadata to work-in-progress page with canonical and robots
+* fix(seo): use getSiteUrl() and add robots metadata on about-me page
+* fix(seo): block all query-string URLs in robots.txt to prevent parameter duplicates
+* fix(config): add trailingSlash: false to eliminate trailing-slash duplicate pages
+* fix: resolve build errors from dynamic import and restored data files
+
+### Other Changes
+
+* Revert "refactor: remove unused components and stale fallback data"
+* refactor: remove unused hooks (useProgressiveImage, useBackgroundLinkExtraction)
+* refactor: remove unused components and stale fallback data
+* perf: convert blog images to next/image for optimized delivery
+* security: add CSP, HSTS, X-Content-Type-Options, X-Frame-Options, Referrer-Policy
+* perf: remove blocking CSS imports and duplicate font declarations
+* perf: lazy load heavyweight components with next/dynamic
+
 ## [4.1.1](https://github.com/aiyu-ayaan/Aiyu/compare/v4.1.0...v4.1.1) (2026-05-31)
 
 ### Features
