@@ -324,13 +324,14 @@ export default memo(function BlogDetailClient({ blog, config, adsConfig }) {
               backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 82%, transparent)',
             }}
           >
-            <button type="button" onClick={() => handleImageSelect(blog.image)} className="block w-full cursor-zoom-in">
-              <img
+            <button type="button" onClick={() => handleImageSelect(blog.image)} className="relative block w-full cursor-zoom-in" style={{ maxHeight: '620px' }}>
+              <Image
                 src={blog.image}
                 alt={blog?.imageAlt || blog.title}
-                className="max-h-[620px] w-full object-cover"
-                loading="lazy"
-                decoding="async"
+                fill
+                className="object-cover"
+                sizes="(max-width: 1200px) 95vw, 80vw"
+                priority
                 onError={handleImageError}
               />
             </button>
@@ -603,13 +604,16 @@ export default memo(function BlogDetailClient({ blog, config, adsConfig }) {
             >
               Close
             </button>
-            <img
-              src={selectedImage}
-              alt="Blog full view"
-              className="max-h-[90vh] max-w-full rounded-lg object-contain"
-              loading="eager"
-              decoding="sync"
-            />
+            <div className="relative h-[90vh] w-full">
+              <Image
+                src={selectedImage}
+                alt="Blog full view"
+                fill
+                className="rounded-lg object-contain"
+                sizes="90vw"
+                priority
+              />
+            </div>
           </motion.div>
         </motion.div>
       )}
