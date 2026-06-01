@@ -85,12 +85,7 @@ export const viewport = {
 
 import GoogleAnalytics from "./components/GoogleAnalytics";
 import ClientEnhancements from "./components/shared/ClientEnhancements";
-import dynamic from "next/dynamic";
-
-const LiveCommitStream = dynamic(() => import("./components/shared/LiveCommitStream"), {
-  ssr: false,
-  loading: () => null,
-});
+import DynamicLiveCommitStream from "./components/shared/DynamicLiveCommitStream";
 
 export default async function RootLayout({ children }) {
   const config = await getConfigData();
@@ -146,7 +141,7 @@ export default async function RootLayout({ children }) {
         <GoogleAnalytics gaId={gaId} />
         <ThemeProvider>
           <ClientEnhancements />
-          <LiveCommitStream />
+          <DynamicLiveCommitStream />
           <div className="relative z-0">
             {children}
           </div>
