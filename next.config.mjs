@@ -18,6 +18,7 @@ const standaloneOutput = process.platform === 'win32' ? undefined : 'standalone'
 const nextConfig = {
   // output: 'export' // Disabled to allow dynamic API routes
   output: standaloneOutput,
+  trailingSlash: false,
   allowedDevOrigins: ['192.168.31.54'],
   assetPrefix: isProduction && cdnUrl ? cdnUrl : undefined,
 
