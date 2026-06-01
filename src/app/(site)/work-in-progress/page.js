@@ -1,10 +1,6 @@
-import dynamic from 'next/dynamic';
+import WorkInProgressShell from './WorkInProgressShell';
 import { getSiteUrl } from '@/lib/siteUrl';
 import { getConfigData } from '@/lib/dataFetchers';
-
-const WorkInProgressComponent = dynamic(() => import('../../components/shared/WorkInProgressComponent'), {
-  ssr: false,
-});
 
 export async function generateMetadata() {
   const config = await getConfigData();
@@ -24,5 +20,5 @@ export async function generateMetadata() {
 }
 
 export default function WorkInProgressPage() {
-  return <WorkInProgressComponent />;
+  return <WorkInProgressShell />;
 }
