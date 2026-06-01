@@ -135,6 +135,46 @@ const nextConfig = {
       ? 'public, max-age=0, s-maxage=0, must-revalidate'
       : 'no-store';
 
+    // Security headers (CSP + HSTS) for all HTML routes
+    const cspDirectives = [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://pagead2.googlesyndication.com https://www.googletagmanager.com https://www.google-analytics.com https://*.googlesyndication.com",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "img-src 'self' data: blob: https: http:",
+      "font-src 'self' https://fonts.gstatic.com data:",
+      "connect-src 'self' https://*.githubusercontent.com https://api.github.com https://www.google-analytics.com https://pagead2.googlesyndication.com",
+      "frame-src 'self' https://pagead2.googlesyndication.com",
+      "media-src 'self'",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "frame-ancestors 'none'",
+    ];
+    const securityHeaders = [
+      { key: 'Content-Security-Policy', value: cspDirectives.join('; ') },
+      { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
+      { key: 'X-Content-Type-Options', value: 'nosniff' },
+      { key: 'X-Frame-Options', value: 'DENY' },
+      { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+    ];
+
+    // Apply security headers to all HTML pages
+    for (const prefix of ['/', '/about-me', '/apps', '/blogs', '/contact-us', '/gallery', '/github', '/projects', '/work-in-progress']) {
+      headers.push({ source: prefix, headers: securityHeaders });
+      if (prefix !== '/') {
+        headers.push({ source: `${prefix}/:path*`, headers: securityHeaders });
+      }
+    }
+
+    // Preconnect resource hints for faster third-party connections
+    const preconnectUrls = [
+      'https://fonts.googleapis.com',
+      'https://fonts.gstatic.com',
+      'https://www.google-analytics.com',
+      'https://pagead2.googlesyndication.com',
+    ];
+    const preconnectLinks = preconnectUrls.map((url) => `<${url}>; rel=preconnect`).join(', ');
+
     headers.push({
       source: '/',
       headers: [
@@ -144,7 +184,7 @@ const nextConfig = {
         },
         {
           key: 'Link',
-          value: '</.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json", </.well-known/openapi.json>; rel="service-desc"; type="application/openapi+json", </docs/api>; rel="service-doc"; type="text/markdown", </.well-known/oauth-protected-resource>; rel="describedby"; type="application/json", </.well-known/agent-skills/index.json>; rel="describedby"; type="application/json", </.well-known/mcp/server-card.json>; rel="describedby"; type="application/json"',
+          value: '</.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json", </.well-known/openapi.json>; rel="service-desc"; type="application/openapi+json", </docs/api>; rel="service-doc"; type="text/markdown", </.well-known/oauth-protected-resource>; rel="describedby"; type="application/json", </.well-known/agent-skills/index.json>; rel="describedby"; type="application/json", </.well-known/mcp/server-card.json>; rel="describedby"; type="application/json"' + (isProduction ? `, ${preconnectLinks}` : ''),
         },
       ],
     });
