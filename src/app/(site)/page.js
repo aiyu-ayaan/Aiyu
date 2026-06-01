@@ -1,12 +1,18 @@
 import Link from "next/link";
-import FuturisticResume from "../components/landing/FuturisticResume";
-import GamePortfolio from "../components/landing/GamePortfolio";
+import dynamic from "next/dynamic";
 import HomeLazySections from "../components/landing/HomeLazySections";
 import ViewportLazySection from "../components/shared/ViewportLazySection";
 import WebMCPTools from "../components/agent/WebMCPTools";
 import { getHomePageData, getConfigData } from "@/lib/dataFetchers";
 import { generateWebsiteSchema, generatePersonSchema, generateOrganizationSchema } from "@/app/schema";
 import { getSiteUrl } from '@/lib/siteUrl';
+
+const FuturisticResume = dynamic(() => import("../components/landing/FuturisticResume"), {
+  loading: () => <div className="h-screen" />,
+});
+const GamePortfolio = dynamic(() => import("../components/landing/GamePortfolio"), {
+  loading: () => <div className="h-screen" />,
+});
 export const revalidate = 0;
 
 export async function generateMetadata() {

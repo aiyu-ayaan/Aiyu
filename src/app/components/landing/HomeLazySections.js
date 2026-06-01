@@ -1,11 +1,13 @@
 "use client";
 
-import TechStackCarousel from './TechStackCarousel';
-import HomeAbout from './HomeAbout';
-import HomeProjects from './HomeProjects';
-import HomeBlogs from './HomeBlogs';
+import dynamic from 'next/dynamic';
 import Divider from './Divider';
 import ViewportLazySection from '../shared/ViewportLazySection';
+
+const TechStackCarousel = dynamic(() => import('./TechStackCarousel'), { loading: () => <div className="h-[420px]" /> });
+const HomeAbout = dynamic(() => import('./HomeAbout'), { loading: () => <div className="h-[420px]" /> });
+const HomeProjects = dynamic(() => import('./HomeProjects'), { loading: () => <div className="h-[520px]" /> });
+const HomeBlogs = dynamic(() => import('./HomeBlogs'), { loading: () => <div className="h-[520px]" /> });
 
 export default function HomeLazySections({ aboutData, projectsData, blogsData }) {
   return (
