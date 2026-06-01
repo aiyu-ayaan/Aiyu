@@ -7,8 +7,7 @@ const DISALLOWED_PATHS = [
     '/api/auth/logout',
     '/api/config',
     '/*.json$',
-    '/*?*sort=',
-    '/*?*page=',
+    '/*?',
     '/blog/',
     '/deployments/',
 ];
