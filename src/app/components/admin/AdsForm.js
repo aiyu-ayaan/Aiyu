@@ -17,6 +17,7 @@ const AdsForm = () => {
     const [formData, setFormData] = useState({
         adsenseEnabled: false,
         clientId: '',
+        adsTxt: '',
         placements: {
             top: { enabled: false, slotId: '', adType: 'display', adLayoutKey: '' },
             middle: { enabled: false, slotId: '', adType: 'display', adLayoutKey: '' },
@@ -44,6 +45,7 @@ const AdsForm = () => {
                     setFormData({
                         adsenseEnabled: data.adsenseEnabled || false,
                         clientId: data.clientId || '',
+                        adsTxt: data.adsTxt || '',
                         placements: {
                             top: data.placements?.top || { enabled: false, slotId: '', adType: 'display', adLayoutKey: '' },
                             middle: data.placements?.middle || { enabled: false, slotId: '', adType: 'display', adLayoutKey: '' },
@@ -222,6 +224,38 @@ const AdsForm = () => {
                             Add a Master Client ID to replace the placeholder before enabling verification on the live site.
                         </div>
                     )}
+                </div>
+            </div>
+            
+            {/* ads.txt Settings */}
+            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
+                <h2 className="text-sm font-mono text-green-500/70 uppercase tracking-widest mb-6">ads.txt Configuration</h2>
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">ads.txt Content</label>
+                        <textarea
+                            name="adsTxt" value={formData.adsTxt} onChange={handleGlobalChange}
+                            placeholder="google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0"
+                            rows={6}
+                            className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-green-500/50 focus:ring-1 outline-none font-mono text-sm leading-6 resize-y"
+                        />
+                    </div>
+                    <div className="rounded-xl border border-slate-700/50 bg-slate-950/50 p-4">
+                        <div className="flex items-start justify-between gap-4">
+                            <div className="space-y-2">
+                                <h4 className="text-white text-sm font-bold">Dynamic ads.txt Hosting</h4>
+                                <p className="text-xs text-slate-400 leading-5">
+                                    Your dynamic <code>ads.txt</code> file is hosted and live at: 
+                                    <a href="/ads.txt" target="_blank" rel="noreferrer" className="text-cyan-400 hover:underline font-mono ml-1">
+                                        /ads.txt
+                                    </a>
+                                </p>
+                                <p className="text-xs text-slate-500 leading-5">
+                                    Google AdSense crawlers will request this file regularly to verify your publisher identity. Format must follow the Google specification strictly.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
