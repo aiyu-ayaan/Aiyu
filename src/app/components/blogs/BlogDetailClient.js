@@ -324,12 +324,12 @@ export default memo(function BlogDetailClient({ blog, config, adsConfig }) {
               backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 82%, transparent)',
             }}
           >
-            <button type="button" onClick={() => handleImageSelect(blog.image)} className="relative block w-full cursor-zoom-in" style={{ maxHeight: '620px' }}>
+            <button type="button" onClick={() => handleImageSelect(blog.image)} className="relative block w-full cursor-zoom-in aspect-video md:aspect-[21/9]" style={{ maxHeight: '620px' }}>
               <Image
                 src={blog.image}
                 alt={blog?.imageAlt || blog.title}
                 fill
-                className="object-cover"
+                className="object-cover transition-transform duration-500 hover:scale-[1.02]"
                 sizes="(max-width: 1200px) 95vw, 80vw"
                 priority
                 onError={handleImageError}
