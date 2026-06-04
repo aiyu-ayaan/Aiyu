@@ -81,6 +81,7 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
   const [loading, setLoading] = useState(!hasInitialData);
   const [selectedImage, setSelectedImage] = useState(null);
   const [modalImageError, setModalImageError] = useState(false);
+  const [highResLoaded, setHighResLoaded] = useState(false);
   const [viewerZoom, setViewerZoom] = useState(1);
   const [viewerOffset, setViewerOffset] = useState({ x: 0, y: 0 });
   const [showViewerInfo, setShowViewerInfo] = useState(false);
@@ -96,6 +97,10 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
   }));
   const [searchQuery, setSearchQuery] = useState('');
   const [orientationFilter, setOrientationFilter] = useState('all');
+
+  useEffect(() => {
+    setHighResLoaded(false);
+  }, [selectedImage]);
 
   useEffect(() => {
     if (hasInitialData) {
@@ -794,16 +799,34 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
                     style={{ transform: `translate3d(${viewerOffset.x}px, ${viewerOffset.y}px, 0) scale(${viewerZoom})` }}
                   >
                     {selectedImage?.src && !modalImageError ? (
-                      <Image
-                        src={selectedImage.src}
-                        alt={selectedImage.description || 'Gallery view'}
-                        fill
-                        className="object-contain"
-                        sizes={showViewerInfo ? '(max-width: 1024px) 100vw, 76vw' : '100vw'}
-                        quality={90}
-                        priority
-                        onError={() => setModalImageError(true)}
-                      />
+                      <>
+                        {/* Instant Low-Res Thumbnail (cached by browser) */}
+                        {(selectedImage.thumbnail || selectedImage.src) && (
+                          <img
+                            src={selectedImage.thumbnail || selectedImage.src}
+                            alt=""
+                            className="absolute inset-0 w-full h-full object-contain"
+                            style={{
+                              filter: 'blur(8px)',
+                              opacity: highResLoaded ? 0 : 0.7,
+                              transition: 'opacity 0.4s ease-in-out',
+                            }}
+                          />
+                        )}
+
+                        {/* High-Resolution Main Image */}
+                        <img
+                          src={selectedImage.src}
+                          alt={selectedImage.description || 'Gallery view'}
+                          className="absolute inset-0 w-full h-full object-contain"
+                          style={{
+                            opacity: highResLoaded ? 1 : 0,
+                            transition: 'opacity 0.4s ease-in-out',
+                          }}
+                          onLoad={() => setHighResLoaded(true)}
+                          onError={() => setModalImageError(true)}
+                        />
+                      </>
                     ) : (
                       <div className="relative flex h-full w-full items-center justify-center overflow-hidden" style={{ backgroundImage: getPlaceholderGradient(selectedImage?.description || selectedImage?._id) }}>
                         <div
