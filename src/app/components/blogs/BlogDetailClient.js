@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState, useMemo, memo, useCallback } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import Script from 'next/script';
 import { motion } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
