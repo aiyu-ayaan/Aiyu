@@ -42,6 +42,7 @@ export async function GET() {
         const data = {
             adsenseEnabled: adsConfig.adsenseEnabled || false,
             clientId: decrypt(adsConfig.encryptedClientId) || '',
+            adsTxt: adsConfig.adsTxt || '',
             placements
         };
 
@@ -64,6 +65,7 @@ export async function PUT(request) {
         
         const updateData = {
             adsenseEnabled: Boolean(body.adsenseEnabled),
+            adsTxt: body.adsTxt !== undefined ? String(body.adsTxt) : '',
         };
 
         if (body.clientId !== undefined) {

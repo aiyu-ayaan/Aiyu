@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 
 const AdsSchema = new mongoose.Schema({
     adsenseEnabled: { type: Boolean, default: false },
+    adsTxt: { type: String, default: '' },
     encryptedClientId: { type: String, select: false, default: '' },
     placements: {
         top: {
