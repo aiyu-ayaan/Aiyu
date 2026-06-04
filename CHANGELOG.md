@@ -1,5 +1,27 @@
 # Changelog
 
+## [4.1.3](https://github.com/aiyu-ayaan/Aiyu/compare/v4.1.2...v4.1.3) (2026-06-04)
+
+### Features
+
+* feat(admin): implement ads.txt content editor in ads config dashboard
+* feat(ads): add adsTxt database field and dynamic ads.txt route handler
+* feat(gallery): add click-to-close on empty/padding space in lightbox
+
+### Bug Fixes
+
+* fix(gallery): resolve viewport image cropping in lightbox by adding inline contain styles
+* fix(blog): replace next/image with standard img in blog detail full-screen modal
+* fix(blog): preserve aspect ratio and auto-adjust height for blog banner image
+* fix(blog): resolve blog title image visibility in blog details page
+
+### Other Changes
+
+* refactor(blogs): clean up unused next/image import in BlogDetailClient
+* perf(layout): optimize google adsense script loading strategy
+* perf(gallery): implement progressive loading for lightbox images
+* Merge branch 'master' of https://github.com/aiyu-ayaan/Aiyu
+
 ## [4.1.2](https://github.com/aiyu-ayaan/Aiyu/compare/v4.1.1...v4.1.2) (2026-06-01)
 
 ### Bug Fixes
