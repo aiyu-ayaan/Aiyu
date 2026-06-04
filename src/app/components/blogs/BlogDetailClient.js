@@ -603,14 +603,12 @@ export default memo(function BlogDetailClient({ blog, config, adsConfig }) {
             >
               Close
             </button>
-            <div className="relative h-[90vh] w-full">
-              <Image
+            <div className="relative h-[90vh] w-full flex items-center justify-center">
+              <img
                 src={selectedImage}
                 alt="Blog full view"
-                fill
-                className="rounded-lg object-contain"
-                sizes="90vw"
-                priority
+                className="rounded-lg object-contain w-full h-full"
+                loading="eager"
               />
             </div>
           </motion.div>
