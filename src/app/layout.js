@@ -4,6 +4,7 @@ import { ThemeProvider } from "./context/ThemeContext";
 import { getConfigData } from "@/lib/dataFetchers";
 import { getSiteUrl } from "@/lib/siteUrl";
 import { getAdsData } from "@/lib/adsDataFetcher";
+import Script from "next/script";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -101,13 +102,6 @@ export default async function RootLayout({ children }) {
       style={{ backgroundColor: '#0d1117' }}
     >
       <head>
-        {adsConfig?.adsenseEnabled && adsenseClientId && (
-          <script
-            async
-            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClientId}`}
-            crossOrigin="anonymous"
-          />
-        )}
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -138,6 +132,13 @@ export default async function RootLayout({ children }) {
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         suppressHydrationWarning
       >
+        {adsConfig?.adsenseEnabled && adsenseClientId && (
+          <Script
+            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClientId}`}
+            crossOrigin="anonymous"
+            strategy="afterInteractive"
+          />
+        )}
         <GoogleAnalytics gaId={gaId} />
         <ThemeProvider>
           <ClientEnhancements />
