@@ -805,8 +805,11 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
                           <img
                             src={selectedImage.thumbnail || selectedImage.src}
                             alt=""
-                            className="absolute inset-0 w-full h-full object-contain"
+                            className="absolute inset-0"
                             style={{
+                              width: '100%',
+                              height: '100%',
+                              objectFit: 'contain',
                               filter: 'blur(8px)',
                               opacity: highResLoaded ? 0 : 0.7,
                               transition: 'opacity 0.4s ease-in-out',
@@ -818,8 +821,11 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
                         <img
                           src={selectedImage.src}
                           alt={selectedImage.description || 'Gallery view'}
-                          className="absolute inset-0 w-full h-full object-contain"
+                          className="absolute inset-0"
                           style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'contain',
                             opacity: highResLoaded ? 1 : 0,
                             transition: 'opacity 0.4s ease-in-out',
                           }}
