@@ -366,6 +366,46 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
     }
   }, [getFileExtension]);
 
+  const handleBackgroundClick = useCallback((event) => {
+    if (viewerZoom > 1) return;
+
+    if (event.target === event.currentTarget) {
+      setSelectedImage(null);
+      return;
+    }
+
+    if (event.target.tagName === 'IMG' && selectedImage) {
+      const rect = event.target.getBoundingClientRect();
+      const clickX = event.clientX - rect.left;
+      const clickY = event.clientY - rect.top;
+
+      const imgWidth = event.target.naturalWidth || Number(selectedImage.width) || 4;
+      const imgHeight = event.target.naturalHeight || Number(selectedImage.height) || 3;
+      const imgAspect = imgWidth / imgHeight;
+      const containerAspect = rect.width / rect.height;
+
+      let actualWidth, actualHeight;
+      if (containerAspect > imgAspect) {
+        // Pillarbox
+        actualHeight = rect.height;
+        actualWidth = rect.height * imgAspect;
+      } else {
+        // Letterbox
+        actualWidth = rect.width;
+        actualHeight = rect.width / imgAspect;
+      }
+
+      const activeLeft = (rect.width - actualWidth) / 2;
+      const activeRight = activeLeft + actualWidth;
+      const activeTop = (rect.height - actualHeight) / 2;
+      const activeBottom = activeTop + actualHeight;
+
+      if (clickX < activeLeft || clickX > activeRight || clickY < activeTop || clickY > activeBottom) {
+        setSelectedImage(null);
+      }
+    }
+  }, [selectedImage, viewerZoom]);
+
   const openLightbox = (image) => {
     setModalImageError(false);
     setViewerZoom(1);
@@ -778,6 +818,7 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
 
                 <div
                   className="flex h-full w-full items-center justify-center overflow-hidden px-0 py-4 sm:px-8"
+                  onClick={handleBackgroundClick}
                   onWheel={handleViewerWheel}
                   onDoubleClick={() => updateViewerZoom(viewerZoom > 1 ? 1 : 2)}
                   onPointerDown={handleViewerPointerDown}
@@ -795,7 +836,7 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
                     initial={{ opacity: 0.2 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.2 }}
-                    className="pointer-events-none relative h-full w-full origin-center transition-transform duration-200"
+                    className="pointer-events-auto relative h-full w-full origin-center transition-transform duration-200"
                     style={{ transform: `translate3d(${viewerOffset.x}px, ${viewerOffset.y}px, 0) scale(${viewerZoom})` }}
                   >
                     {selectedImage?.src && !modalImageError ? (
@@ -806,6 +847,7 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
                             src={selectedImage.thumbnail || selectedImage.src}
                             alt=""
                             className="absolute inset-0"
+                            draggable="false"
                             style={{
                               width: '100%',
                               height: '100%',
@@ -822,6 +864,7 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
                           src={selectedImage.src}
                           alt={selectedImage.description || 'Gallery view'}
                           className="absolute inset-0"
+                          draggable="false"
                           style={{
                             width: '100%',
                             height: '100%',
