@@ -159,9 +159,9 @@ export default memo(function Header({ data, logoText, socialData, config }) {
                  style={{
                    position: 'absolute',
                    inset: 0,
-                   background: `linear-gradient(to right, 
-                     color-mix(in srgb, var(--accent-cyan) 15%, transparent) 0%,
-                     color-mix(in srgb, var(--accent-purple) 12%, transparent) 100%)`,
+                   background: `linear-gradient(to right,
+                     color-mix(in srgb, var(--accent-cyan) 8%, transparent) 0%,
+                     color-mix(in srgb, var(--accent-purple) 6%, transparent) 100%)`,
                  }}
                />
                
@@ -187,22 +187,13 @@ export default memo(function Header({ data, logoText, socialData, config }) {
           >
             <Link href="/" className="min-w-0 flex-shrink-0">
               <motion.div
-                className="inline-flex items-center gap-2 rounded-xl border px-3 py-2"
-                style={{
-                  borderColor: 'color-mix(in srgb, var(--border-secondary) 70%, transparent)',
-                  backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 75%, transparent)',
-                }}
+                className="inline-flex items-center gap-2 px-2 py-2"
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
               >
                 <span
-                  className="text-xl font-bold"
-                  style={{
-                    backgroundImage: 'linear-gradient(to right, var(--accent-cyan), var(--accent-orange))',
-                    WebkitBackgroundClip: 'text',
-                    backgroundClip: 'text',
-                    color: 'transparent',
-                  }}
+                  className="text-lg font-semibold tracking-tight"
+                  style={{ color: 'var(--text-bright)' }}
                 >
                   {displayLogo}
                 </span>
@@ -213,8 +204,8 @@ export default memo(function Header({ data, logoText, socialData, config }) {
               <div
                 className="flex max-w-full items-center gap-1 overflow-x-auto rounded-full border p-1"
                 style={{
-                  borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
-                  backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 70%, transparent)',
+                  borderColor: 'var(--hairline)',
+                  backgroundColor: 'var(--surface-tile)',
                 }}
               >
                 {visibleNavLinks.map((link) => {
@@ -224,17 +215,15 @@ export default memo(function Header({ data, logoText, socialData, config }) {
                       key={link.name}
                       href={link.href}
                       target={link.target}
-                      className="relative rounded-full px-3 py-1.5 text-sm font-semibold transition-colors"
-                      style={{ color: isActive ? 'var(--text-bright)' : 'var(--text-secondary)' }}
+                      className="relative rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors"
+                      style={{ color: isActive ? 'var(--text-bright)' : 'var(--text-tertiary)' }}
                     >
                       {isActive && (
                         <motion.span
                           layoutId="header-nav-active-pill"
                           className="absolute inset-0 rounded-full"
                           style={{
-                            background:
-                              'linear-gradient(120deg, color-mix(in srgb, var(--accent-cyan) 25%, transparent), color-mix(in srgb, var(--accent-purple) 30%, transparent))',
-                            border: '1px solid color-mix(in srgb, var(--accent-cyan) 55%, transparent)',
+                            backgroundColor: 'color-mix(in srgb, var(--text-bright) 12%, transparent)',
                           }}
                           transition={{ type: 'spring', stiffness: 360, damping: 32 }}
                         />
@@ -243,11 +232,11 @@ export default memo(function Header({ data, logoText, socialData, config }) {
                         <span>{link.name}</span>
                         {link.beta === true && (
                           <span
-                            className="rounded-full border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
+                            className="rounded-full border px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide"
                             style={{
-                              borderColor: 'color-mix(in srgb, var(--accent-orange) 55%, var(--border-secondary))',
-                              color: 'var(--accent-orange-bright)',
-                              backgroundColor: 'color-mix(in srgb, var(--accent-orange) 12%, transparent)',
+                              borderColor: 'var(--hairline-strong)',
+                              color: 'var(--text-tertiary)',
+                              backgroundColor: 'var(--surface-tile)',
                             }}
                           >
                             Beta
@@ -288,9 +277,9 @@ export default memo(function Header({ data, logoText, socialData, config }) {
                 <motion.button
                   className="hidden items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold xl:inline-flex"
                   style={{
-                    background: 'linear-gradient(to right, var(--accent-cyan), var(--accent-purple))',
+                    backgroundColor: 'var(--accent-cyan)',
                     color: '#ffffff',
-                    boxShadow: '0 10px 20px color-mix(in srgb, var(--shadow-md) 65%, transparent)',
+                    boxShadow: '0 12px 28px -12px color-mix(in srgb, var(--accent-cyan) 55%, transparent)',
                   }}
                   whileHover={{ scale: 1.04 }}
                   whileTap={{ scale: 0.96 }}
@@ -375,13 +364,8 @@ export default memo(function Header({ data, logoText, socialData, config }) {
          <div className="mx-auto mt-4 flex min-h-[calc(100dvh-2rem)] w-[92%] max-w-xl flex-col rounded-2xl border p-4" style={{ borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)', backgroundColor: 'color-mix(in srgb, var(--bg-surface) 88%, transparent)' }}>
           <div className="mb-4 flex items-center justify-between">
             <span
-              className="text-lg font-bold"
-              style={{
-                backgroundImage: 'linear-gradient(to right, var(--accent-cyan), var(--accent-orange))',
-                WebkitBackgroundClip: 'text',
-                backgroundClip: 'text',
-                color: 'transparent',
-              }}
+              className="text-lg font-semibold tracking-tight"
+              style={{ color: 'var(--text-bright)' }}
             >
               {displayLogo}
             </span>
@@ -412,15 +396,15 @@ export default memo(function Header({ data, logoText, socialData, config }) {
                   href={link.href}
                   target={link.target}
                   onClick={() => setIsMenuOpen(false)}
-                  className="flex items-center justify-between rounded-xl border px-4 py-3 text-base font-semibold"
+                  className="flex items-center justify-between rounded-xl border px-4 py-3 text-base font-medium"
                   style={{
                     borderColor: isRouteMatch(pathname, link.href)
-                      ? 'color-mix(in srgb, var(--accent-cyan) 55%, transparent)'
-                      : 'color-mix(in srgb, var(--border-secondary) 70%, transparent)',
-                    color: isRouteMatch(pathname, link.href) ? 'var(--accent-cyan)' : 'var(--text-primary)',
+                      ? 'var(--hairline-strong)'
+                      : 'var(--hairline)',
+                    color: isRouteMatch(pathname, link.href) ? 'var(--text-bright)' : 'var(--text-secondary)',
                     backgroundColor: isRouteMatch(pathname, link.href)
-                      ? 'color-mix(in srgb, var(--accent-cyan) 10%, transparent)'
-                      : 'color-mix(in srgb, var(--bg-elevated) 75%, transparent)',
+                      ? 'color-mix(in srgb, var(--text-bright) 10%, transparent)'
+                      : 'var(--surface-tile)',
                   }}
                 >
                   <span className="inline-flex items-center gap-2">
@@ -457,7 +441,7 @@ export default memo(function Header({ data, logoText, socialData, config }) {
                 type="button"
                 className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold"
                 style={{
-                  background: 'linear-gradient(to right, var(--accent-cyan), var(--accent-purple))',
+                  backgroundColor: 'var(--accent-cyan)',
                   color: '#ffffff',
                 }}
               >
