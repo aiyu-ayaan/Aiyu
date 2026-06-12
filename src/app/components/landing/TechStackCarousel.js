@@ -96,7 +96,7 @@ const TechStackCarousel = ({ data }) => {
       scrollTrigger: {
         trigger: gridRef.current,
         start: 'top 90%',
-        once: true,
+        toggleActions: 'play none none reverse',
       },
     });
 
@@ -111,7 +111,7 @@ const TechStackCarousel = ({ data }) => {
         scrollTrigger: {
           trigger: card,
           start: 'top 92%',
-          once: true,
+          toggleActions: 'play none none reverse',
         },
       });
     });

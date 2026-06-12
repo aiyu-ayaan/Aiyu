@@ -6,18 +6,21 @@ import { useGSAP } from '@gsap/react';
 
 if (typeof window !== 'undefined') {
     gsap.registerPlugin(ScrollTrigger, useGSAP);
+    // Mobile browsers fire resize when the address bar collapses; recomputing
+    // every trigger mid-scroll causes visible jumps.
+    ScrollTrigger.config({ ignoreMobileResize: true });
 }
 
 // 3D entrance presets, applied to elements tagged with data-reveal="<preset>".
 // All presets rely on transformPerspective so each element gets its own vanishing point.
 const REVEAL_PRESETS = {
-    rise: { autoAlpha: 0, y: 64, rotateX: -16, transformPerspective: 900 },
-    tilt: { autoAlpha: 0, y: 90, rotateX: 38, scale: 0.94, transformPerspective: 1200 },
-    flip: { autoAlpha: 0, rotateY: -52, z: -120, transformPerspective: 1100 },
-    'flip-right': { autoAlpha: 0, rotateY: 52, z: -120, transformPerspective: 1100 },
-    zoom: { autoAlpha: 0, scale: 0.86, z: -140, transformPerspective: 1000 },
-    swing: { autoAlpha: 0, x: -70, rotateY: 26, transformPerspective: 1000 },
-    'swing-right': { autoAlpha: 0, x: 70, rotateY: -26, transformPerspective: 1000 },
+    rise: { autoAlpha: 0, y: 48, rotateX: -12, transformPerspective: 900 },
+    tilt: { autoAlpha: 0, y: 70, rotateX: 26, scale: 0.96, transformPerspective: 1200 },
+    flip: { autoAlpha: 0, rotateY: -45, z: -100, transformPerspective: 1100 },
+    'flip-right': { autoAlpha: 0, rotateY: 45, z: -100, transformPerspective: 1100 },
+    zoom: { autoAlpha: 0, scale: 0.9, z: -120, transformPerspective: 1000 },
+    swing: { autoAlpha: 0, x: -56, rotateY: 20, transformPerspective: 1000 },
+    'swing-right': { autoAlpha: 0, x: 56, rotateY: -20, transformPerspective: 1000 },
 };
 
 const DEFAULT_REVEAL = 'rise';
@@ -49,14 +52,16 @@ export function animateReveals(scope, { reducedMotion = false } = {}) {
         const preset = getPreset(children[0]);
         gsap.from(children, {
             ...preset,
-            duration: 0.9,
+            duration: 0.8,
             ease: 'power3.out',
             clearProps: 'all',
             stagger: Number(group.dataset.revealStagger) || 0.09,
             scrollTrigger: {
                 trigger: group,
                 start: 'top 86%',
-                once: true,
+                // Replay when the section re-enters from above; reverse out
+                // when it drops below the viewport again.
+                toggleActions: 'play none none reverse',
             },
         });
     });
@@ -67,14 +72,14 @@ export function animateReveals(scope, { reducedMotion = false } = {}) {
     singles.forEach((el) => {
         gsap.from(el, {
             ...getPreset(el),
-            duration: 0.95,
+            duration: 0.85,
             ease: 'power3.out',
             clearProps: 'all',
             delay: Number(el.dataset.revealDelay) || 0,
             scrollTrigger: {
                 trigger: el,
                 start: 'top 88%',
-                once: true,
+                toggleActions: 'play none none reverse',
             },
         });
     });

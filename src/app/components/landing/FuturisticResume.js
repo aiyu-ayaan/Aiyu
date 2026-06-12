@@ -193,42 +193,41 @@ const FuturisticResume = ({ data }) => {
             .from('.hero-scroll-cue', { autoAlpha: 0, y: -14, duration: 0.5 }, '-=0.4');
 
         if (config.enableScrollFx && heroRef.current) {
-            const exit = {
-                trigger: heroRef.current,
-                start: 'top top',
-                end: 'bottom 25%',
-                scrub: true,
-            };
-            gsap.to('.hero-ide-card', {
-                xPercent: -7,
-                rotateY: 20,
-                rotateX: 9,
-                scale: 0.96,
+            // The scrub targets only the stage wrapper (which the intro
+            // timeline never touches) with explicit fromTo end points, so
+            // start values can never be captured mid-intro and the effect is
+            // fully reversible when scrolling back up.
+            gsap.fromTo('.hero-stage', {
+                yPercent: 0,
+                scale: 1,
+                rotateX: 0,
+                autoAlpha: 1,
+            }, {
+                yPercent: -8,
+                scale: 0.93,
+                rotateX: 7,
                 autoAlpha: 0.25,
-                transformPerspective: 1200,
+                transformOrigin: 'center top',
+                transformPerspective: 1400,
                 ease: 'none',
-                scrollTrigger: exit,
+                immediateRender: false,
+                scrollTrigger: {
+                    trigger: heroRef.current,
+                    start: 'top top',
+                    end: 'bottom 30%',
+                    scrub: 0.4,
+                },
             });
-            gsap.to('.hero-glitch-wrap', {
-                xPercent: 7,
-                rotateY: -20,
-                rotateX: 9,
-                scale: 0.96,
-                autoAlpha: 0.25,
-                transformPerspective: 1200,
-                ease: 'none',
-                scrollTrigger: { ...exit },
-            });
-            gsap.to('.hero-head', {
-                yPercent: -36,
+            gsap.fromTo('.hero-scroll-cue', { autoAlpha: 1 }, {
                 autoAlpha: 0,
                 ease: 'none',
-                scrollTrigger: { ...exit, end: 'bottom 45%' },
-            });
-            gsap.to('.hero-scroll-cue', {
-                autoAlpha: 0,
-                ease: 'none',
-                scrollTrigger: { ...exit, end: '15% top' },
+                immediateRender: false,
+                scrollTrigger: {
+                    trigger: heroRef.current,
+                    start: 'top top',
+                    end: '12% top',
+                    scrub: true,
+                },
             });
         }
     }, { scope: heroRef, dependencies: [prefersReducedMotion, config.enableScrollFx] });
@@ -444,7 +443,7 @@ const FuturisticResume = ({ data }) => {
             {config.enableScene && <HeroScene quality={config.sceneQuality} />}
 
             {/* spacious floating container utilizing 80% margins with 1280px cap */}
-            <div className="w-full max-w-[95%] lg:max-w-[80%] xl:max-w-7xl flex flex-col justify-center relative z-10">
+            <div className="hero-stage w-full max-w-[95%] lg:max-w-[80%] xl:max-w-7xl flex flex-col justify-center relative z-10">
 
                 {/* --- Top Column: Personal Info & Diagnostics Telemetry --- */}
                 <div className="hero-head flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 mb-10 w-full select-none">
