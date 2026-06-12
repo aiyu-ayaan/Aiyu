@@ -32,7 +32,24 @@ const REVEAL_PRESETS = {
 
 const DEFAULT_REVEAL = 'rise';
 
-const getPreset = (el) => REVEAL_PRESETS[el.dataset.reveal] || REVEAL_PRESETS[DEFAULT_REVEAL];
+// True on low-end / data-saver / reduced-motion devices (flag set pre-paint in
+// layout.js). Used for animation level-of-detail.
+const isLiteDevice = () =>
+    typeof document !== 'undefined' &&
+    document.documentElement.getAttribute('data-perf') === 'lite';
+
+// Animating `filter: blur()` recomputes a GPU blur every frame for every
+// element — the single most expensive thing in these reveals on budget
+// Android. On lite devices we strip blur and keep pure transform + opacity
+// (compositor-only, 60fps-friendly) while the motion stays visually intact.
+const presetForDevice = (preset, lite) => {
+    if (!lite || !preset.filter) return preset;
+    const { filter, ...rest } = preset;
+    return rest;
+};
+
+const getPreset = (el, lite = false) =>
+    presetForDevice(REVEAL_PRESETS[el.dataset.reveal] || REVEAL_PRESETS[DEFAULT_REVEAL], lite);
 
 /**
  * Animate every [data-reveal] element inside scope with a 3D entrance driven
@@ -46,6 +63,7 @@ const getPreset = (el) => REVEAL_PRESETS[el.dataset.reveal] || REVEAL_PRESETS[DE
 export function animateReveals(scope, { reducedMotion = false } = {}) {
     if (!scope) return;
 
+    const lite = isLiteDevice();
     const groups = Array.from(scope.querySelectorAll('[data-reveal-group]'));
     const grouped = new Set();
 
@@ -56,7 +74,7 @@ export function animateReveals(scope, { reducedMotion = false } = {}) {
 
         if (reducedMotion) return;
 
-        const preset = getPreset(children[0]);
+        const preset = getPreset(children[0], lite);
         gsap.from(children, {
             ...preset,
             duration: 0.8,
@@ -77,7 +95,7 @@ export function animateReveals(scope, { reducedMotion = false } = {}) {
 
     singles.forEach((el) => {
         gsap.from(el, {
-            ...getPreset(el),
+            ...getPreset(el, lite),
             duration: 0.85,
             ease: 'power3.out',
             clearProps: 'all',
@@ -130,7 +148,9 @@ export function animateCounters(scope, { reducedMotion = false } = {}) {
  * data-parallax="<speed>" (positive drifts down slower, negative floats up).
  */
 export function animateParallax(scope, { reducedMotion = false } = {}) {
-    if (!scope || reducedMotion) return;
+    // Scrubbed parallax does layout-free transform work on every scroll frame.
+    // It's purely decorative, so skip it on lite devices to protect scroll FPS.
+    if (!scope || reducedMotion || isLiteDevice()) return;
 
     scope.querySelectorAll('[data-parallax]').forEach((el) => {
         const speed = Number(el.dataset.parallax) || 0.2;

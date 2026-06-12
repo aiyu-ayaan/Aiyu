@@ -690,3 +690,74 @@ html.lenis body {
 .custom-datepicker-wrapper .react-datepicker-wrapper {
   width: 100%;
 }
+
+/* ============================================================
+   Performance level-of-detail (LOD)
+   `data-perf` is set on <html> before first paint (see layout.js)
+   based on prefers-reduced-motion, data-saver, slow networks and
+   low-end hardware. On "lite" devices we drop the most expensive
+   GPU/compositor work — backdrop-filter blur and infinite
+   decorative animations — which is what actually drags scroll FPS
+   on budget Android. Capable devices ("full") are untouched, so
+   the premium look is preserved everywhere it can run smoothly.
+   ============================================================ */
+html[data-perf="lite"] .glass-panel,
+html[data-perf="lite"] .glass-tile {
+  /* backdrop-filter is one of the heaviest effects during scroll;
+     swap it for an opaque-ish surface that reads almost identically. */
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--bg-surface) 94%, transparent),
+    color-mix(in srgb, var(--bg-secondary) 92%, transparent)
+  );
+}
+
+html[data-perf="lite"] body::before {
+  /* The fixed full-viewport blurred glow is a permanent compositor
+     layer; shrink and de-blur it on low-end devices. */
+  filter: blur(24px);
+  opacity: 0.04;
+}
+
+/* Stop perpetual decorative animations from holding the main thread /
+   compositor awake (battery + CPU) on low-end devices. */
+html[data-perf="lite"] .animate-blob,
+html[data-perf="lite"] .animate-gradient-x,
+html[data-perf="lite"] .animate-pulse-glow,
+html[data-perf="lite"] .shimmer {
+  animation: none !important;
+}
+
+/* ============================================================
+   Reduced-motion: honor the OS-level accessibility preference.
+   Disable non-essential animation and smooth scrolling, but keep
+   determinate loading spinners so progress is still communicated.
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto !important;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .animate-spin {
+    /* Indeterminate progress indicators stay animated for clarity. */
+    animation-duration: 1s !important;
+    animation-iteration-count: infinite !important;
+  }
+
+  .glass-panel,
+  .glass-tile {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+}
