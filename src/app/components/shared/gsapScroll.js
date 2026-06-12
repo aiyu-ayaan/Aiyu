@@ -11,16 +11,23 @@ if (typeof window !== 'undefined') {
     ScrollTrigger.config({ ignoreMobileResize: true });
 }
 
-// 3D entrance presets, applied to elements tagged with data-reveal="<preset>".
-// All presets rely on transformPerspective so each element gets its own vanishing point.
+// Horizontal entrance presets, applied to elements tagged with data-reveal="<preset>".
+// Elements slide in along the X axis with a soft fade + de-blur as they enter the
+// viewport — no 3D flips. Directions alternate (left/right) to give sections rhythm.
+// `html`/`body` set overflow-x: hidden, so the off-screen offsets never add a scrollbar.
 const REVEAL_PRESETS = {
-    rise: { autoAlpha: 0, y: 48, rotateX: -12, transformPerspective: 900 },
-    tilt: { autoAlpha: 0, y: 70, rotateX: 26, scale: 0.96, transformPerspective: 1200 },
-    flip: { autoAlpha: 0, rotateY: -45, z: -100, transformPerspective: 1100 },
-    'flip-right': { autoAlpha: 0, rotateY: 45, z: -100, transformPerspective: 1100 },
-    zoom: { autoAlpha: 0, scale: 0.9, z: -120, transformPerspective: 1000 },
-    swing: { autoAlpha: 0, x: -56, rotateY: 20, transformPerspective: 1000 },
-    'swing-right': { autoAlpha: 0, x: 56, rotateY: -20, transformPerspective: 1000 },
+    // Headings, subcopy, pills — gentle glide upwards.
+    rise: { autoAlpha: 0, y: 32, filter: 'blur(6px)' },
+    // Large panels / cards — vertical drift with a soft scale-up.
+    tilt: { autoAlpha: 0, y: 48, scale: 0.99, filter: 'blur(8px)' },
+    // Grid tiles — enter vertically from bottom.
+    flip: { autoAlpha: 0, y: 40, filter: 'blur(6px)' },
+    // Right-aligned actions / mirrored tiles — same elegant rise.
+    'flip-right': { autoAlpha: 0, y: 40, filter: 'blur(6px)' },
+    // Empty states / mission control — slide up with a subtle scale.
+    zoom: { autoAlpha: 0, y: 24, scale: 0.97, filter: 'blur(8px)' },
+    swing: { autoAlpha: 0, y: 44, x: -12, filter: 'blur(6px)' },
+    'swing-right': { autoAlpha: 0, y: 44, x: 12, filter: 'blur(6px)' },
 };
 
 const DEFAULT_REVEAL = 'rise';
@@ -59,9 +66,8 @@ export function animateReveals(scope, { reducedMotion = false } = {}) {
             scrollTrigger: {
                 trigger: group,
                 start: 'top 86%',
-                // Replay when the section re-enters from above; reverse out
-                // when it drops below the viewport again.
-                toggleActions: 'play none none reverse',
+                // Play once for a stable, distraction-free reading experience
+                once: true,
             },
         });
     });
@@ -79,7 +85,7 @@ export function animateReveals(scope, { reducedMotion = false } = {}) {
             scrollTrigger: {
                 trigger: el,
                 start: 'top 88%',
-                toggleActions: 'play none none reverse',
+                once: true,
             },
         });
     });

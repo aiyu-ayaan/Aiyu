@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";
+import Lenis from "lenis";
+import { gsap, ScrollTrigger } from "./gsapScroll";
 
 const CommandPalette = dynamic(() => import("./CommandPalette"), {
     ssr: false,
@@ -163,6 +165,55 @@ export default function ClientEnhancements() {
             }
             if (footerRetryInterval !== null) {
                 window.clearInterval(footerRetryInterval);
+            }
+        };
+    }, [pathname]);
+
+    // Buttery smooth scroll setup with Lenis
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+
+        // Skip Lenis on administrative panels
+        if (pathname.startsWith('/admin')) {
+            return;
+        }
+
+        let lenis;
+        let tickerCallback;
+
+        try {
+            lenis = new Lenis({
+                duration: 1.1,
+                easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+                orientation: 'vertical',
+                gestureOrientation: 'vertical',
+                smoothWheel: true,
+                wheelMultiplier: 1.0,
+                touchMultiplier: 1.5,
+                infinite: false,
+            });
+
+            // Update ScrollTrigger on Lenis scroll
+            lenis.on('scroll', () => {
+                ScrollTrigger.update();
+            });
+
+            // Sync GSAP ticker with Lenis frame rendering
+            tickerCallback = (time) => {
+                lenis.raf(time * 1000);
+            };
+            gsap.ticker.add(tickerCallback);
+            gsap.ticker.lagSmoothing(0);
+        } catch (error) {
+            console.error("Failed to initialize Lenis:", error);
+        }
+
+        return () => {
+            if (lenis) {
+                lenis.destroy();
+            }
+            if (tickerCallback) {
+                gsap.ticker.remove(tickerCallback);
             }
         };
     }, [pathname]);

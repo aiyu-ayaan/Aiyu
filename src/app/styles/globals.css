@@ -455,8 +455,30 @@ html.admin-screen ::-webkit-scrollbar-track {
 }
 
 /* Smooth scroll behavior */
-html {
+html:not(.lenis) {
   scroll-behavior: smooth;
+}
+
+/* Lenis smooth scrolling rules */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+.lenis.lenis-scrolling iframe {
+  pointer-events: none;
 }
 
 /* Gradient text animation */
