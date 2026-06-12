@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";
-import Lenis from "lenis";
 import { gsap, ScrollTrigger } from "./gsapScroll";
 
 const CommandPalette = dynamic(() => import("./CommandPalette"), {
@@ -191,35 +190,42 @@ export default function ClientEnhancements() {
 
         let lenis;
         let tickerCallback;
+        let cancelled = false;
 
-        try {
-            lenis = new Lenis({
-                duration: 1.1,
-                easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-                orientation: 'vertical',
-                gestureOrientation: 'vertical',
-                smoothWheel: true,
-                wheelMultiplier: 1.0,
-                touchMultiplier: 1.5,
-                infinite: false,
+        // Lenis is desktop-only, so load it on demand instead of shipping it in
+        // the global shell (and never on mobile/touch, which returned above).
+        import("lenis")
+            .then(({ default: Lenis }) => {
+                if (cancelled) return;
+                lenis = new Lenis({
+                    duration: 1.1,
+                    easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+                    orientation: 'vertical',
+                    gestureOrientation: 'vertical',
+                    smoothWheel: true,
+                    wheelMultiplier: 1.0,
+                    touchMultiplier: 1.5,
+                    infinite: false,
+                });
+
+                // Update ScrollTrigger on Lenis scroll
+                lenis.on('scroll', () => {
+                    ScrollTrigger.update();
+                });
+
+                // Sync GSAP ticker with Lenis frame rendering
+                tickerCallback = (time) => {
+                    lenis.raf(time * 1000);
+                };
+                gsap.ticker.add(tickerCallback);
+                gsap.ticker.lagSmoothing(0);
+            })
+            .catch((error) => {
+                console.error("Failed to initialize Lenis:", error);
             });
-
-            // Update ScrollTrigger on Lenis scroll
-            lenis.on('scroll', () => {
-                ScrollTrigger.update();
-            });
-
-            // Sync GSAP ticker with Lenis frame rendering
-            tickerCallback = (time) => {
-                lenis.raf(time * 1000);
-            };
-            gsap.ticker.add(tickerCallback);
-            gsap.ticker.lagSmoothing(0);
-        } catch (error) {
-            console.error("Failed to initialize Lenis:", error);
-        }
 
         return () => {
+            cancelled = true;
             if (lenis) {
                 lenis.destroy();
             }
