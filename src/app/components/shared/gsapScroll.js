@@ -51,6 +51,7 @@ export function animateReveals(scope, { reducedMotion = false } = {}) {
             ...preset,
             duration: 0.9,
             ease: 'power3.out',
+            clearProps: 'all',
             stagger: Number(group.dataset.revealStagger) || 0.09,
             scrollTrigger: {
                 trigger: group,
@@ -68,6 +69,7 @@ export function animateReveals(scope, { reducedMotion = false } = {}) {
             ...getPreset(el),
             duration: 0.95,
             ease: 'power3.out',
+            clearProps: 'all',
             delay: Number(el.dataset.revealDelay) || 0,
             scrollTrigger: {
                 trigger: el,

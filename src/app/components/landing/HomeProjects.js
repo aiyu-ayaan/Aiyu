@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
+import React, { useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { FaArrowRight, FaBoxes, FaCheckCircle, FaTools } from 'react-icons/fa';
 import ProjectCard from '../projects/ProjectCard';
 import ProjectDialog from '../projects/ProjectDialog';
+import useDevicePerformance from '../../hooks/useDevicePerformance';
+import { useSectionFx } from '../shared/gsapScroll';
 
 const normalizeStatus = (status) => {
   const safeStatus = String(status || '').trim().toLowerCase();
@@ -17,7 +18,11 @@ const normalizeStatus = (status) => {
 
 const HomeProjects = ({ data }) => {
   const [selectedProject, setSelectedProject] = useState(null);
+  const sectionRef = useRef(null);
+  const { prefersReducedMotion } = useDevicePerformance();
   const projects = Array.isArray(data) ? data : [];
+
+  useSectionFx(sectionRef, { reducedMotion: prefersReducedMotion });
 
   const latestProjects = useMemo(() => projects.slice(0, 3), [projects]);
   const doneProjects = useMemo(
@@ -36,22 +41,24 @@ const HomeProjects = ({ data }) => {
   ];
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.7, ease: 'easeOut' }}
+    <div
+      ref={sectionRef}
       className="relative p-4 lg:p-8"
       style={{
         backgroundColor: 'transparent',
         color: 'var(--text-primary)',
+        perspective: '1400px',
       }}
     >
       <div
+        data-parallax="0.3"
         className="pointer-events-none absolute -right-6 top-4 h-44 w-44 rounded-full blur-3xl"
         style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--accent-cyan) 26%, transparent), transparent 70%)' }}
       />
 
-      <div className="relative mx-auto w-full max-w-[95%] lg:max-w-[80%] rounded-3xl border p-6 sm:p-8"
+      <div
+        data-reveal="tilt"
+        className="relative mx-auto w-full max-w-[95%] lg:max-w-[80%] rounded-3xl border p-6 sm:p-8"
         style={{
           background: 'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 92%, transparent), color-mix(in srgb, var(--bg-secondary) 92%, transparent))',
           borderColor: 'color-mix(in srgb, var(--border-secondary) 74%, transparent)',
@@ -59,7 +66,7 @@ const HomeProjects = ({ data }) => {
         }}
       >
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
+          <div data-reveal="rise">
             <p className="mb-2 inline-flex rounded-full border px-3 py-1 text-xs uppercase tracking-[0.18em]"
               style={{
                 borderColor: 'color-mix(in srgb, var(--accent-orange) 45%, var(--border-secondary))',
@@ -77,6 +84,7 @@ const HomeProjects = ({ data }) => {
           </div>
           <Link
             href="/projects"
+            data-reveal="flip-right"
             className="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold"
             style={{
               borderColor: 'var(--accent-cyan)',
@@ -88,12 +96,13 @@ const HomeProjects = ({ data }) => {
           </Link>
         </div>
 
-        <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div data-reveal-group className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3" style={{ perspective: '1100px' }}>
           {statCards.map((item) => {
             const Icon = item.icon;
             return (
               <div
                 key={item.label}
+                data-reveal="flip"
                 className="rounded-xl border p-3"
                 style={{
                   borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)',
@@ -105,7 +114,9 @@ const HomeProjects = ({ data }) => {
                 >
                   <Icon size={14} style={{ color: item.accent }} />
                 </div>
-                <p className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{item.value}</p>
+                <p className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+                  <span data-counter={item.value}>{item.value}</span>
+                </p>
                 <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{item.label}</p>
               </div>
             );
@@ -113,13 +124,16 @@ const HomeProjects = ({ data }) => {
         </div>
 
         {latestProjects.length > 0 ? (
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+          <div data-reveal-group data-reveal-stagger="0.12" className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3" style={{ perspective: '1300px' }}>
             {latestProjects.map((project, index) => (
-              <ProjectCard key={project?._id || `${project?.name}-${index}`} project={project} onCardClick={setSelectedProject} />
+              <div key={project?._id || `${project?.name}-${index}`} data-reveal="tilt">
+                <ProjectCard project={project} onCardClick={setSelectedProject} />
+              </div>
             ))}
           </div>
         ) : (
           <div
+            data-reveal="zoom"
             className="rounded-2xl border p-8 text-center"
             style={{
               borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)',
@@ -137,7 +151,7 @@ const HomeProjects = ({ data }) => {
       </div>
 
       <ProjectDialog project={selectedProject} onClose={() => setSelectedProject(null)} />
-    </motion.div>
+    </div>
   );
 };
 

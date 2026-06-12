@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { FaCode, FaFilter, FaLayerGroup } from 'react-icons/fa';
 import { useTheme } from '../../context/ThemeContext';
 import { getIcon } from '../../../lib/iconLibrary';
+import useDevicePerformance from '../../hooks/useDevicePerformance';
+import { gsap, useGSAP, useSectionFx } from '../shared/gsapScroll';
 
 const DEFAULT_ICON_COLOR = '22d3ee';
 
@@ -64,11 +65,57 @@ const SkillIcon = ({ iconName, cleanName, accentColor }) => {
 
 const TechStackCarousel = ({ data }) => {
   const { theme } = useTheme();
+  const { prefersReducedMotion } = useDevicePerformance();
   const skills = Array.isArray(data?.skills) ? data.skills : [];
 
+  const sectionRef = useRef(null);
+  const gridRef = useRef(null);
   const [accentColor, setAccentColor] = useState(DEFAULT_ICON_COLOR);
   const [activeBand, setActiveBand] = useState('All');
   const [showAll, setShowAll] = useState(false);
+
+  // Static parts of the section: panel tilt-in, parallax glows.
+  useSectionFx(sectionRef, { reducedMotion: prefersReducedMotion });
+
+  // Skill cards re-cascade in 3D whenever the visible set changes.
+  useGSAP(() => {
+    if (prefersReducedMotion) return;
+    const cards = gridRef.current?.querySelectorAll('.skill-card');
+    if (!cards?.length) return;
+
+    gsap.from(cards, {
+      autoAlpha: 0,
+      y: 52,
+      rotateX: -30,
+      z: -90,
+      transformPerspective: 1000,
+      duration: 0.7,
+      ease: 'power3.out',
+      stagger: 0.05,
+      clearProps: 'all',
+      scrollTrigger: {
+        trigger: gridRef.current,
+        start: 'top 90%',
+        once: true,
+      },
+    });
+
+    cards.forEach((card) => {
+      const bar = card.querySelector('.skill-bar');
+      if (!bar) return;
+      gsap.from(bar, {
+        width: 0,
+        duration: 1,
+        ease: 'power2.out',
+        clearProps: 'width',
+        scrollTrigger: {
+          trigger: card,
+          start: 'top 92%',
+          once: true,
+        },
+      });
+    });
+  }, { scope: sectionRef, dependencies: [activeBand, showAll, prefersReducedMotion] });
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -122,17 +169,20 @@ const TechStackCarousel = ({ data }) => {
   };
 
   return (
-    <section className="relative px-4 py-14 lg:px-8 lg:py-16">
+    <section ref={sectionRef} className="relative px-4 py-14 lg:px-8 lg:py-16" style={{ perspective: '1400px' }}>
       <div
+        data-parallax="-0.25"
         className="pointer-events-none absolute -left-20 top-14 h-64 w-64 rounded-full blur-3xl"
         style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--accent-cyan) 28%, transparent), transparent 70%)' }}
       />
       <div
+        data-parallax="0.3"
         className="pointer-events-none absolute -right-16 top-20 h-56 w-56 rounded-full blur-3xl"
         style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--accent-purple) 25%, transparent), transparent 68%)' }}
       />
 
       <div
+        data-reveal="tilt"
         className="relative mx-auto w-full max-w-[95%] lg:max-w-[80%] rounded-3xl border p-6 sm:p-8"
         style={{
           background: 'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 93%, transparent), color-mix(in srgb, var(--bg-secondary) 93%, transparent))',
@@ -204,7 +254,7 @@ const TechStackCarousel = ({ data }) => {
         </div>
 
         {visibleSkills.length > 0 ? (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div ref={gridRef} className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" style={{ perspective: '1200px' }}>
             {visibleSkills.map((skill, index) => {
               const cleanName = String(skill.name).split('(')[0].trim();
               const iconName = skill.icon || cleanName;
@@ -213,14 +263,9 @@ const TechStackCarousel = ({ data }) => {
               const skillLevel = Number(skill.level) || 0;
 
               return (
-                <motion.article
+                <article
                   key={`${skill.name}-${index}`}
-                  initial={{ opacity: 0, y: 18 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, amount: 0.25 }}
-                  transition={{ duration: 0.3, delay: index * 0.03 }}
-                  whileHover={{ y: -4 }}
-                  className="rounded-2xl border p-4"
+                  className="skill-card rounded-2xl border p-4 transition-transform duration-300 hover:-translate-y-1"
                   style={{
                     borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
                     backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 84%, transparent)',
@@ -258,18 +303,15 @@ const TechStackCarousel = ({ data }) => {
                   </div>
 
                   <div className="h-2 w-full overflow-hidden rounded-full" style={{ backgroundColor: 'color-mix(in srgb, var(--bg-secondary) 82%, transparent)' }}>
-                    <motion.div
-                      className="h-2 rounded-full"
+                    <div
+                      className="skill-bar h-2 rounded-full"
                       style={{
+                        width: `${skillLevel}%`,
                         background: `linear-gradient(to right, ${accent}, color-mix(in srgb, ${accent} 60%, var(--accent-cyan)))`,
                       }}
-                      initial={{ width: 0 }}
-                      whileInView={{ width: `${skillLevel}%` }}
-                      viewport={{ once: true, amount: 0.8 }}
-                      transition={{ duration: 0.9, ease: 'easeOut' }}
                     />
                   </div>
-                </motion.article>
+                </article>
               );
             })}
           </div>
