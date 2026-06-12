@@ -34,7 +34,7 @@ export default function Footer({ socialData, name, config, packageVersion }) {
     return (
         <footer
             id="site-footer"
-            className={`relative w-full px-4 pb-10 pt-16 sm:px-6 ${isBlogsRoute ? 'hidden' : ''}`}
+            className={`chapter-section relative w-full pb-10 ${isBlogsRoute ? 'hidden' : ''}`}
             style={{ color: 'var(--text-primary)' }}
         >
             <div
@@ -45,22 +45,22 @@ export default function Footer({ socialData, name, config, packageVersion }) {
                 }}
             />
 
-            <div className="glass-panel relative mx-auto w-full max-w-[95%] p-8 sm:p-12 lg:max-w-[80%]">
-                <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1.3fr_1fr_auto] lg:items-start">
+            <div className="glass-panel relative mx-auto w-full max-w-[95%] p-8 sm:p-12 lg:max-w-[80%] xl:max-w-7xl xl:p-16">
+                <div className="grid grid-cols-1 gap-12 lg:grid-cols-[1.35fr_1fr_auto] lg:items-start">
                     <div>
                         <p className="eyebrow mb-3">Thanks for visiting</p>
 
                         <h3
-                            className="mb-3 text-3xl font-semibold tracking-tight sm:text-4xl"
+                            className="mb-4 text-4xl font-semibold tracking-tight sm:text-5xl"
                             style={{ color: 'var(--text-bright)' }}
                         >
                             {name || 'Ayaaan'}
                         </h3>
 
-                        <p className="text-base leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                        <p className="max-w-xl text-lg leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
                             {footerPrimaryText}
                         </p>
-                        <p className="mt-2 text-sm leading-relaxed" style={{ color: 'var(--text-tertiary)' }}>
+                        <p className="mt-3 max-w-xl text-sm leading-relaxed sm:text-base" style={{ color: 'var(--text-tertiary)' }}>
                             {footerSecondaryText}
                         </p>
 
@@ -83,7 +83,7 @@ export default function Footer({ socialData, name, config, packageVersion }) {
                         <p className="eyebrow mb-4 !text-xs">Find Me Online</p>
 
                         {visibleSocials.length > 0 ? (
-                            <div className="flex flex-wrap gap-2">
+                            <div className="flex flex-wrap gap-2.5">
                                 {visibleSocials.map((social) => (
                                     <Link
                                         key={`${social.name}-${social.url}`}
@@ -94,7 +94,7 @@ export default function Footer({ socialData, name, config, packageVersion }) {
                                         title={social.name}
                                     >
                                         <motion.div
-                                            className="inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm font-medium transition-colors"
+                                            className="inline-flex items-center gap-2 rounded-full border px-4 py-2.5 text-sm font-medium transition-colors"
                                             style={{
                                                 borderColor: 'var(--hairline)',
                                                 backgroundColor: 'var(--surface-tile)',
@@ -190,11 +190,11 @@ export default function Footer({ socialData, name, config, packageVersion }) {
                 </div>
 
                 <div
-                    className="mt-10 flex flex-col gap-3 border-t pt-6 text-sm"
+                    className="mt-12 flex flex-col gap-4 border-t pt-7 text-sm"
                     style={{ borderColor: 'var(--hairline)' }}
                 >
                     <p className="eyebrow !text-xs">Site Navigation</p>
-                    <div className="flex flex-wrap gap-x-5 gap-y-2">
+                    <div className="flex flex-wrap gap-x-6 gap-y-2">
                         {[
                             { name: 'Home', href: '/' },
                             { name: 'Projects', href: '/projects' },
@@ -218,7 +218,7 @@ export default function Footer({ socialData, name, config, packageVersion }) {
                 </div>
 
                 <div
-                    className="mt-8 flex flex-col gap-2 border-t pt-5 text-xs sm:flex-row sm:items-center sm:justify-between"
+                    className="mt-8 flex flex-col gap-2 border-t pt-6 text-xs sm:flex-row sm:items-center sm:justify-between"
                     style={{
                         borderColor: 'var(--hairline)',
                         color: 'var(--text-muted)',

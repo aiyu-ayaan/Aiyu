@@ -2,13 +2,13 @@
 
 .header-scrolled {
   background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--bg-surface) 96%, transparent),
-    color-mix(in srgb, var(--bg-secondary) 97%, transparent)
+    180deg,
+    color-mix(in srgb, var(--bg-surface) 82%, transparent),
+    color-mix(in srgb, var(--bg-secondary) 70%, transparent)
   );
-  border-color: color-mix(in srgb, var(--border-secondary) 75%, transparent);
-  backdrop-filter: blur(4px);
-  box-shadow: 0 8px 16px color-mix(in srgb, var(--shadow-sm) 40%, transparent);
+  border-color: var(--hairline-strong);
+  backdrop-filter: blur(24px) saturate(145%);
+  box-shadow: 0 20px 70px -42px var(--shadow-md);
 }
 
 .header-scrolled.heavy-route {
@@ -23,13 +23,13 @@
 
 .header-normal {
   background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--bg-surface) 70%, transparent),
-    color-mix(in srgb, var(--bg-secondary) 70%, transparent)
+    180deg,
+    color-mix(in srgb, var(--bg-surface) 54%, transparent),
+    color-mix(in srgb, var(--bg-secondary) 42%, transparent)
   );
-  border-color: color-mix(in srgb, var(--border-secondary) 40%, transparent);
-  backdrop-filter: blur(8px);
-  box-shadow: 0 4px 12px color-mix(in srgb, var(--shadow-sm) 30%, transparent);
+  border-color: var(--hairline);
+  backdrop-filter: blur(28px) saturate(145%);
+  box-shadow: 0 18px 60px -48px var(--shadow-md);
 }
 
 .header-normal.heavy-route {

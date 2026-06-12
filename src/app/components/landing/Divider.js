@@ -3,7 +3,7 @@
 import React from 'react';
 
 const Divider = () => (
-  <div className="my-16 w-full sm:my-20" aria-hidden="true">
+  <div className="my-4 w-full sm:my-6" aria-hidden="true">
     <div className="hairline-divider" />
   </div>
 );
