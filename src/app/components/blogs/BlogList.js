@@ -167,7 +167,7 @@ export default function BlogList({ initialBlogs, initialConfig, initialPaginatio
 
   return (
     <div className="w-full overflow-x-clip bg-transparent px-4 py-8 transition-colors duration-200 sm:px-6 lg:px-8">
-      <div className="mx-auto w-full max-w-[95%] lg:max-w-[80%] xl:max-w-7xl">
+      <div className="mx-auto w-full max-w-[95%] lg:max-w-[80%]">
         <header className="glass-panel mb-12 p-6 text-center sm:p-8">
           <p className="eyebrow mb-4">Writing</p>
           <h1 className="headline-section mb-3">
