@@ -26,6 +26,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@google/genai": "^1.52.0",
     "@google/generative-ai": "^0.24.1",
+    "@gsap/react": "^2.1.2",
     "@tailwindcss/typography": "^0.5.19",
     "adm-zip": "^0.5.17",
     "archiver": "^7.0.1",
@@ -37,6 +38,7 @@
     "form-data": "^4.0.5",
     "formdata-node": "^6.0.3",
     "framer-motion": "^12.35.0",
+    "gsap": "^3.15.0",
     "heic-convert": "^2.1.0",
     "jose": "^6.2.2",
     "js-cookie": "^3.0.5",
@@ -56,7 +58,8 @@
     "react-vertical-timeline-component": "^3.5.3",
     "remark-gfm": "^4.0.1",
     "sharp": "^0.34.5",
-    "simple-icons": "^16.14.0"
+    "simple-icons": "^16.14.0",
+    "three": "^0.184.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
@@ -67,7 +70,7 @@
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.6.0",
-    "tailwindcss": "^4",
-    "playwright": "^1.51.1"
+    "playwright": "^1.51.1",
+    "tailwindcss": "^4"
   }
 }
