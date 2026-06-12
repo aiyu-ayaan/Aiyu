@@ -88,10 +88,10 @@ const HeroScene = ({ quality = 'high' }) => {
             particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
             particleGeometry.setAttribute('color', new THREE.BufferAttribute(particleColors, 3));
             const particleMaterial = new THREE.PointsMaterial({
-                size: 0.16,
+                size: 0.13,
                 vertexColors: true,
                 transparent: true,
-                opacity: 0.55,
+                opacity: 0.3,
                 depthWrite: false,
                 blending: THREE.AdditiveBlending,
             });
@@ -103,7 +103,7 @@ const HeroScene = ({ quality = 'high' }) => {
                 color: cyan,
                 wireframe: true,
                 transparent: true,
-                opacity: 0.28,
+                opacity: 0.12,
             });
             const core = new THREE.Mesh(new THREE.IcosahedronGeometry(6.5, 1), coreMaterial);
             group.add(core);
@@ -112,7 +112,7 @@ const HeroScene = ({ quality = 'high' }) => {
                 color: purple,
                 wireframe: true,
                 transparent: true,
-                opacity: 0.1,
+                opacity: 0.05,
             });
             const cage = new THREE.Mesh(new THREE.IcosahedronGeometry(10.5, 0), cageMaterial);
             group.add(cage);

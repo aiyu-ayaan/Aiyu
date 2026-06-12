@@ -1,10 +1,9 @@
 "use client";
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import dynamic from 'next/dynamic';
-import { FaPlus, FaBolt, FaCode, FaTerminal, FaRobot, FaRocket, FaBrain } from "react-icons/fa6";
+import { FaBolt, FaCode, FaTerminal, FaRobot, FaRocket, FaBrain } from "react-icons/fa6";
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import TypewriterEffect from '../shared/TypewriterEffect';
-import { useTheme } from '../../context/ThemeContext';
 import useDevicePerformance from '../../hooks/useDevicePerformance';
 import { gsap, useGSAP } from '../shared/gsapScroll';
 
@@ -95,7 +94,6 @@ const parseCodeLine = (lineStr, githubLink) => {
 };
 
 const FuturisticResume = ({ data }) => {
-    const { theme } = useTheme();
     const { tier, prefersReducedMotion } = useDevicePerformance();
     const { name, homeRoles, githubLink, codeSnippets, resumeStatus, resumeMode, resumeIcon } = data || {};
 
@@ -445,13 +443,13 @@ const FuturisticResume = ({ data }) => {
             {/* spacious floating container utilizing 80% margins with 1280px cap */}
             <div className="hero-stage w-full max-w-[95%] lg:max-w-[80%] xl:max-w-7xl flex flex-col justify-center relative z-10">
 
-                {/* --- Top Column: Personal Info & Diagnostics Telemetry --- */}
-                <div className="hero-head flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 mb-10 w-full select-none">
-                    <div className="text-center lg:text-left">
+                {/* --- Hero Head: centered large-type introduction --- */}
+                <div className="hero-head mb-14 flex w-full select-none flex-col items-center gap-6 text-center lg:mb-16">
+                    <div className="flex flex-col items-center gap-4">
                         <h1
                             aria-label={displayName}
-                            className="text-5xl sm:text-6xl lg:text-7xl font-bold mb-4 tracking-tight"
-                            style={{ color: 'var(--text-bright)', perspective: '600px' }}
+                            className="headline-hero"
+                            style={{ perspective: '600px' }}
                         >
                             {displayName.split('').map((char, index) => (
                                 <span
@@ -469,37 +467,27 @@ const FuturisticResume = ({ data }) => {
                         </div>
                     </div>
 
-                    {/* Glowing Live Diagnostics Telemetry Panel */}
-                    <div
-                        className="hero-telemetry rounded-xl border backdrop-blur-md relative overflow-hidden group flex items-center gap-6 p-4 w-full lg:w-auto min-w-[280px] lg:min-w-[360px] shadow-[0_0_20px_rgba(34,211,238,0.02)] hover:border-[var(--accent-cyan)] hover:shadow-[0_0_30px_rgba(34,211,238,0.1)] transition-all duration-500 text-left"
-                        style={{
-                            backgroundColor: theme === 'dark' ? 'rgba(13, 17, 23, 0.45)' : 'rgba(255, 255, 255, 0.65)',
-                            borderColor: 'var(--border-secondary)',
-                        }}
-                    >
-                        {/* Status Pulse dot */}
-                        <div className="flex items-center gap-3">
-                            <span className="relative flex h-3.5 w-3.5">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--accent-cyan)] opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-[var(--accent-cyan)] shadow-[0_0_12px_var(--accent-cyan)]"></span>
-                            </span>
-                            <div className="h-8 w-px bg-white/10" />
-                        </div>
-
-                        {/* Live dynamic metrics readout */}
-                        <div className="grid grid-cols-2 gap-x-6 gap-y-2 font-mono text-[10px] tracking-widest text-[var(--text-secondary)] flex-grow">
-                            <div>SYS_TEMP: <span className="text-[var(--text-bright)] font-bold">{temp}°C</span></div>
-                            <div>SYS_FPS: <span className="text-[var(--accent-pink-bright)] font-bold">{fps} FPS</span></div>
-                            <div>CORE_UPTIME: <span className="text-[var(--accent-purple)] font-bold">{uptime}s</span></div>
-                            <div>ENGINE: <span className="text-[var(--syntax-keyword)] font-bold">V8_N16_R19</span></div>
-                        </div>
-
-                        {/* Visual cyber design highlight */}
-                        <div className="absolute right-0 bottom-0 opacity-10 pointer-events-none pr-1 pb-1">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                                <path d="M4 4h4v4H4zm12 0h4v4h-4zM4 16h4v4H4zm12 0h4v4h-4z" />
-                            </svg>
-                        </div>
+                    {/* Live telemetry condensed into a quiet glass strip */}
+                    <div className="hero-telemetry glass-tile flex flex-wrap items-center justify-center gap-x-5 gap-y-2 px-5 py-3">
+                        <span className="relative flex h-2 w-2">
+                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60" style={{ backgroundColor: 'var(--status-success)' }}></span>
+                            <span className="relative inline-flex h-2 w-2 rounded-full" style={{ backgroundColor: 'var(--status-success)' }}></span>
+                        </span>
+                        <span className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                            Temp <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{temp}°C</span>
+                        </span>
+                        <span className="hidden h-3 w-px sm:block" style={{ backgroundColor: 'var(--hairline-strong)' }} />
+                        <span className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                            Render <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{fps} fps</span>
+                        </span>
+                        <span className="hidden h-3 w-px sm:block" style={{ backgroundColor: 'var(--hairline-strong)' }} />
+                        <span className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                            Uptime <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{uptime}s</span>
+                        </span>
+                        <span className="hidden h-3 w-px sm:block" style={{ backgroundColor: 'var(--hairline-strong)' }} />
+                        <span className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                            Engine <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>V8_N16_R19</span>
+                        </span>
                     </div>
                 </div>
 
@@ -509,17 +497,8 @@ const FuturisticResume = ({ data }) => {
                     {/* --- Left Panel: macOS IDE Mockup Card (Symmetric 450px height) --- */}
                     <div className="hero-ide-card flex-1 max-w-lg lg:max-w-[700px] w-full relative">
                         <motion.div
-                            className="rounded-2xl border backdrop-blur-sm relative overflow-hidden group w-full h-[450px] flex flex-col justify-between transition-all duration-500 hover:border-[var(--accent-cyan)] hover:shadow-[0_0_45px_rgba(34,211,238,0.15)]"
-                            style={{
-                                backgroundColor: theme === 'dark' ? 'rgba(13, 17, 23, 0.7)' : 'rgba(255, 255, 255, 0.8)',
-                                borderColor: 'var(--border-secondary)',
-                                boxShadow: theme === 'dark'
-                                    ? '0 0 30px rgba(34, 211, 238, 0.05), inset 0 0 20px rgba(255,255,255,0.02)'
-                                    : '0 10px 30px rgba(0, 0, 0, 0.05), inset 0 0 20px rgba(255,255,255,0.5)'
-                            }}
+                            className="glass-panel relative overflow-hidden group w-full h-[450px] flex flex-col justify-between"
                         >
-                            {/* Sweeping shimmer hover reflection overlay */}
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-[1200ms] pointer-events-none z-30" />
                             {/* Custom thin scrollbar style */}
                             <style>{`
                                 .custom-editor-scroll::-webkit-scrollbar {
@@ -543,9 +522,9 @@ const FuturisticResume = ({ data }) => {
                             `}</style>
 
                             {/* Top macOS-style window header bar */}
-                            <div className="relative flex items-center h-10 px-4 border-b select-none flex-shrink-0" style={{
-                                borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.06)' : 'var(--border-primary)',
-                                backgroundColor: theme === 'dark' ? 'rgba(10, 15, 25, 0.5)' : 'rgba(241, 245, 249, 0.85)'
+                            <div className="relative flex items-center h-11 px-4 border-b select-none flex-shrink-0" style={{
+                                borderColor: 'var(--hairline)',
+                                backgroundColor: 'color-mix(in srgb, var(--bg-secondary) 55%, transparent)',
                             }}>
                                 {/* Window Dots */}
                                 <div className="flex items-center space-x-1.5 z-10">
@@ -555,10 +534,7 @@ const FuturisticResume = ({ data }) => {
                                 </div>
                                 {/* Centered Tab Title */}
                                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                    <div className="flex items-center space-x-1.5 text-xs font-mono text-[var(--text-secondary)]">
-                                        <span className="text-[var(--accent-cyan)] font-bold opacity-80">&gt;_</span>
-                                        <span className="opacity-90">developer.js</span>
-                                    </div>
+                                    <span className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>developer.js</span>
                                 </div>
                             </div>
 
@@ -580,39 +556,38 @@ const FuturisticResume = ({ data }) => {
                                 </div>
                             </div>
 
-                            {/* Dashed Line Separator */}
-                            <div className="border-t border-dashed mx-6 flex-shrink-0" style={{
-                                borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'var(--border-primary)'
-                            }}></div>
+                            {/* Hairline Separator */}
+                            <div className="border-t mx-6 flex-shrink-0" style={{ borderColor: 'var(--hairline)' }}></div>
 
                             {/* Connection & Mode bottom cards - precisely 120px tall including padding */}
                             <div className="p-6 pt-4 h-[120px] grid grid-cols-2 gap-4 flex-shrink-0">
                                 {/* CONNECTION STATUS */}
-                                <div className="p-4 rounded-xl border flex flex-col justify-between"
+                                <div className="p-4 rounded-2xl border flex flex-col justify-between"
                                     style={{
-                                        backgroundColor: theme === 'dark' ? 'rgba(10, 25, 41, 0.35)' : 'rgba(241, 245, 249, 0.6)',
-                                        borderColor: theme === 'dark' ? 'rgba(34, 211, 238, 0.06)' : 'var(--border-primary)',
+                                        backgroundColor: 'color-mix(in srgb, var(--bg-secondary) 45%, transparent)',
+                                        borderColor: 'var(--hairline)',
                                     }}
                                 >
-                                    <span className="text-[9px] sm:text-[10px] font-mono font-semibold uppercase tracking-wider opacity-50" style={{ color: 'var(--text-secondary)' }}>
-                                        CONNECTION STATUS
+                                    <span className="text-[10px] font-medium uppercase tracking-[0.12em]" style={{ color: 'var(--text-muted)' }}>
+                                        Connection
                                     </span>
-                                    <span className="text-xs sm:text-sm font-mono font-bold mt-1.5" style={{ color: 'var(--syntax-string)' }}>
+                                    <span className="text-xs sm:text-sm font-semibold mt-1.5 inline-flex items-center gap-1.5" style={{ color: 'var(--text-primary)' }}>
+                                        <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: 'var(--status-success)' }} />
                                         {resumeStatus || 'ONLINE'}
                                     </span>
                                 </div>
 
                                 {/* OPERATION MODE */}
-                                <div className="p-4 rounded-xl border flex flex-col justify-between"
+                                <div className="p-4 rounded-2xl border flex flex-col justify-between"
                                     style={{
-                                        backgroundColor: theme === 'dark' ? 'rgba(10, 25, 41, 0.35)' : 'rgba(241, 245, 249, 0.6)',
-                                        borderColor: theme === 'dark' ? 'rgba(34, 211, 238, 0.06)' : 'var(--border-primary)',
+                                        backgroundColor: 'color-mix(in srgb, var(--bg-secondary) 45%, transparent)',
+                                        borderColor: 'var(--hairline)',
                                     }}
                                 >
-                                    <span className="text-[9px] sm:text-[10px] font-mono font-semibold uppercase tracking-wider opacity-50" style={{ color: 'var(--text-secondary)' }}>
-                                        OPERATION MODE
+                                    <span className="text-[10px] font-medium uppercase tracking-[0.12em]" style={{ color: 'var(--text-muted)' }}>
+                                        Mode
                                     </span>
-                                    <span className="text-xs sm:text-sm font-mono font-bold mt-1.5" style={{ color: 'var(--accent-cyan)' }}>
+                                    <span className="text-xs sm:text-sm font-semibold mt-1.5" style={{ color: 'var(--text-primary)' }}>
                                         {resumeMode || 'DEV_01'}
                                     </span>
                                 </div>
@@ -634,50 +609,31 @@ const FuturisticResume = ({ data }) => {
                             onMouseLeave={handleMouseLeave}
                             whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
                         >
-                            {/* 1. Glassmorphism Card Frame */}
+                            {/* 1. Glass Card Frame */}
                             <div
-                                className="absolute inset-0 rounded-2xl border backdrop-blur-md shadow-2xl transition-all duration-300"
+                                className="absolute inset-0 backdrop-blur-xl transition-all duration-500"
                                 style={{
-                                    backgroundColor: theme === 'dark'
-                                        ? (isHovering ? 'rgba(0,0,0,0.85)' : 'rgba(0,0,0,0.6)')
-                                        : (isHovering ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.7)'),
-                                    borderColor: isHovering ? 'var(--accent-cyan)' : 'var(--border-secondary)',
+                                    borderRadius: 'var(--radius-panel)',
+                                    border: '1px solid',
+                                    background: `linear-gradient(180deg,
+                                        color-mix(in srgb, var(--bg-surface) ${isHovering ? 72 : 58}%, transparent),
+                                        color-mix(in srgb, var(--bg-secondary) ${isHovering ? 64 : 50}%, transparent))`,
+                                    borderColor: isHovering ? 'var(--hairline-strong)' : 'var(--hairline)',
                                     boxShadow: isHovering
-                                        ? '0 0 50px var(--shadow-glow)'
-                                        : (theme === 'dark' ? '0 0 30px rgba(0,0,0,0.5)' : '0 10px 30px rgba(0,0,0,0.05)')
+                                        ? '0 32px 80px -28px var(--shadow-md)'
+                                        : 'var(--shadow-panel)',
                                 }}
                             >
-                                {/* Inner Grid Texture */}
+                                {/* Soft top light, like glass catching the light */}
                                 <div
-                                    className="absolute inset-0 opacity-20 rounded-2xl"
+                                    className="absolute inset-x-8 top-0 h-px"
                                     style={{
-                                        backgroundImage: `linear-gradient(var(--border-secondary) 1px, transparent 1px), linear-gradient(90deg, var(--border-secondary) 1px, transparent 1px)`,
-                                        backgroundSize: '40px 40px'
+                                        background: 'linear-gradient(90deg, transparent, color-mix(in srgb, var(--text-bright) 28%, transparent), transparent)',
+                                        opacity: isHovering ? 0.9 : 0.45,
+                                        transition: 'opacity 0.4s ease',
                                     }}
                                 />
-
-                                {/* Active Scanline Effect - adaptive */}
-                                {config.enableScanline && isHovering && (
-                                    <motion.div
-                                        className="absolute inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-50 z-20"
-                                        animate={{ top: ["0%", "100%"] }}
-                                        transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                                    />
-                                )}
                             </div>
-
-                            {/* 2. Extended Cinematic Lines (Fading Gradients) */}
-                            <div className="absolute top-1/2 left-[-100vh] right-[-100vh] h-[1px] bg-gradient-to-r from-transparent via-cyan-500/20 to-transparent pointer-events-none transform -translate-y-1/2 transition-opacity duration-300"
-                                style={{ opacity: isHovering ? 1 : 0.3 }}></div>
-                            <div className="absolute left-1/2 top-[-100vh] bottom-[-100vh] w-[1px] bg-gradient-to-b from-transparent via-cyan-500/20 to-transparent pointer-events-none transform -translate-x-1/2 transition-opacity duration-300"
-                                style={{ opacity: isHovering ? 1 : 0.3 }}></div>
-
-
-                            {/* 3. Corner Accents - Theme Aware */}
-                            <FaPlus className="absolute -top-3 -left-3 text-2xl transition-all duration-300" style={{ color: isHovering ? 'var(--accent-cyan)' : 'var(--text-tertiary)', opacity: isHovering ? 1 : 0.5 }} />
-                            <FaPlus className="absolute -top-3 -right-3 text-2xl transition-all duration-300" style={{ color: isHovering ? 'var(--accent-cyan)' : 'var(--text-tertiary)', opacity: isHovering ? 1 : 0.5 }} />
-                            <FaPlus className="absolute -bottom-3 -left-3 text-2xl transition-all duration-300" style={{ color: isHovering ? 'var(--accent-cyan)' : 'var(--text-tertiary)', opacity: isHovering ? 1 : 0.5 }} />
-                            <FaPlus className="absolute -bottom-3 -right-3 text-2xl transition-all duration-300" style={{ color: isHovering ? 'var(--accent-cyan)' : 'var(--text-tertiary)', opacity: isHovering ? 1 : 0.5 }} />
 
                             {/* 4. Text Layer with Theme Color Gradient Mask & Flashlight Reveal */}
                             <div
@@ -689,8 +645,8 @@ const FuturisticResume = ({ data }) => {
                                     color: 'transparent',
                                     backgroundImage: isHovering ? `radial-gradient(
                                         300px circle at ${mousePos.x}px ${mousePos.y}px,
-                                        var(--accent-cyan),
-                                        var(--accent-purple),
+                                        color-mix(in srgb, var(--text-bright) 85%, transparent),
+                                        color-mix(in srgb, var(--text-tertiary) 60%, transparent),
                                         transparent
                                     )` : 'none',
                                     backgroundClip: 'text',
@@ -710,26 +666,28 @@ const FuturisticResume = ({ data }) => {
                                 {text}
                             </div>
 
-                            {/* 5. Central Bolt Element - Floating & Magnetic */}
+                            {/* 5. Central Icon Element - Floating & Magnetic */}
                             <motion.div
-                                className="relative z-20 w-24 h-24 sm:w-32 sm:h-32 rounded-3xl flex items-center justify-center backdrop-blur-xl border pointer-events-none"
+                                className="relative z-20 w-24 h-24 sm:w-32 sm:h-32 rounded-[1.75rem] flex items-center justify-center backdrop-blur-xl border pointer-events-none"
                                 style={{
                                     x: config.enableMagneticIcon ? iconX : 0,
                                     y: config.enableMagneticIcon ? iconY : 0,
-                                    backgroundColor: 'var(--bg-elevated)',
-                                    borderColor: isHovering ? 'var(--accent-cyan)' : 'var(--border-secondary)',
+                                    backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 80%, transparent)',
+                                    borderColor: isHovering ? 'var(--hairline-strong)' : 'var(--hairline)',
                                     transform: config.enable3DTilt ? "translateZ(80px)" : "none", // More depth
-                                    boxShadow: isHovering
-                                        ? '0 0 40px var(--shadow-glow)'
-                                        : (theme === 'dark' ? '0 0 20px rgba(0,0,0,0.5)' : '0 10px 20px rgba(0,0,0,0.05)')
+                                    boxShadow: '0 18px 44px -16px var(--shadow-md)',
                                 }}
                             >
                                 <div
-                                    className="w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center"
-                                    style={{ backgroundColor: 'var(--bg-surface)' }}
+                                    className="w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center border"
+                                    style={{
+                                        backgroundColor: 'color-mix(in srgb, var(--bg-surface) 85%, transparent)',
+                                        borderColor: 'var(--hairline)',
+                                    }}
                                 >
                                     <SelectedIcon
-                                        className={`text-3xl sm:text-4xl filter drop-shadow-[0_0_10px_rgba(255,255,255,0.5)] transition-all duration-300 ${isHovering ? 'text-[var(--accent-cyan)] scale-110' : 'text-[var(--text-secondary)]'}`}
+                                        className={`text-3xl sm:text-4xl transition-all duration-300 ${isHovering ? 'scale-110' : ''}`}
+                                        style={{ color: isHovering ? 'var(--text-bright)' : 'var(--text-secondary)' }}
                                     />
                                 </div>
                             </motion.div>
@@ -746,7 +704,7 @@ const FuturisticResume = ({ data }) => {
                 </span>
                 <span
                     className="block h-9 w-px animate-pulse"
-                    style={{ background: 'linear-gradient(to bottom, var(--accent-cyan), transparent)' }}
+                    style={{ background: 'linear-gradient(to bottom, color-mix(in srgb, var(--text-bright) 55%, transparent), transparent)' }}
                 />
             </div>
         </div>
