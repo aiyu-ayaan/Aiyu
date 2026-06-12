@@ -178,6 +178,17 @@ export default function ClientEnhancements() {
             return;
         }
 
+        // Skip Lenis on mobile/tablet/touch devices to avoid scroll-locking and preserve native momentum scrolling
+        const isTouchDevice = 
+            /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+            ('ontouchstart' in window) ||
+            (navigator.maxTouchPoints > 0) ||
+            (window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+
+        if (isTouchDevice) {
+            return;
+        }
+
         let lenis;
         let tickerCallback;
 
