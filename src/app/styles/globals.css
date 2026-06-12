@@ -37,7 +37,7 @@
 }
 
 .headline-hero {
-  font-size: clamp(3.75rem, 9.5vw, 7.8rem);
+  font-size: clamp(2.2rem, 9.5vw, 7.8rem);
   font-weight: 700;
   letter-spacing: -0.045em;
   line-height: 0.95;

@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
 import { FaArrowUpRightFromSquare, FaGlobe, FaShieldHalved, FaScrewdriverWrench, FaXmark } from 'react-icons/fa6';
@@ -18,6 +19,11 @@ const normalizeStatus = (status) => {
 };
 
 export default function DeploymentDialog({ deployment, onClose }) {
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
     useEffect(() => {
         if (!deployment) return undefined;
 
@@ -42,21 +48,22 @@ export default function DeploymentDialog({ deployment, onClose }) {
         };
     }, [deployment, onClose]);
 
-    if (!deployment) return null;
+    if (!mounted) return null;
 
-    return (
+    return createPortal(
         <AnimatePresence>
-            <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[95] flex items-center justify-center px-4 py-6 backdrop-blur-md sm:py-10"
-                style={{
-                    background:
-                        'radial-gradient(circle at 20% 15%, color-mix(in srgb, var(--accent-cyan) 15%, transparent), transparent 45%), radial-gradient(circle at 80% 80%, color-mix(in srgb, var(--accent-purple) 15%, transparent), transparent 45%), var(--overlay-bg)',
-                }}
-                onClick={onClose}
-            >
+            {deployment && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 z-[95] flex items-center justify-center px-4 py-6 backdrop-blur-md sm:py-10"
+                    style={{
+                        background:
+                            'radial-gradient(circle at 20% 15%, color-mix(in srgb, var(--accent-cyan) 15%, transparent), transparent 45%), radial-gradient(circle at 80% 80%, color-mix(in srgb, var(--accent-purple) 15%, transparent), transparent 45%), var(--overlay-bg)',
+                    }}
+                    onClick={onClose}
+                >
                 <motion.div
                     initial={{ scale: 0.96, opacity: 0, y: 16 }}
                     animate={{ scale: 1, opacity: 1, y: 0 }}
@@ -286,6 +293,8 @@ export default function DeploymentDialog({ deployment, onClose }) {
                     </div>
                 </motion.div>
             </motion.div>
-        </AnimatePresence>
+            )}
+        </AnimatePresence>,
+        document.body
     );
 }
