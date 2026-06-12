@@ -169,88 +169,72 @@ const TechStackCarousel = ({ data }) => {
   };
 
   return (
-    <section ref={sectionRef} className="relative px-4 py-14 lg:px-8 lg:py-16" style={{ perspective: '1400px' }}>
+    <section ref={sectionRef} className="relative px-4 py-16 lg:px-8 lg:py-20" style={{ perspective: '1400px' }}>
       <div
         data-parallax="-0.25"
         className="pointer-events-none absolute -left-20 top-14 h-64 w-64 rounded-full blur-3xl"
-        style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--accent-cyan) 28%, transparent), transparent 70%)' }}
+        style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--accent-cyan) 12%, transparent), transparent 70%)' }}
       />
       <div
         data-parallax="0.3"
         className="pointer-events-none absolute -right-16 top-20 h-56 w-56 rounded-full blur-3xl"
-        style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--accent-purple) 25%, transparent), transparent 68%)' }}
+        style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--accent-purple) 10%, transparent), transparent 68%)' }}
       />
 
       <div
         data-reveal="tilt"
-        className="relative mx-auto w-full max-w-[95%] lg:max-w-[80%] rounded-3xl border p-6 sm:p-8"
-        style={{
-          background: 'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 93%, transparent), color-mix(in srgb, var(--bg-secondary) 93%, transparent))',
-          borderColor: 'color-mix(in srgb, var(--border-secondary) 76%, transparent)',
-          boxShadow: '0 16px 38px var(--shadow-sm)',
-        }}
+        className="glass-panel relative mx-auto w-full max-w-[95%] p-8 sm:p-12 lg:max-w-[80%]"
       >
-        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p
-              className="mb-2 inline-flex rounded-full border px-3 py-1 text-xs uppercase tracking-[0.2em]"
-              style={{
-                borderColor: 'color-mix(in srgb, var(--accent-cyan) 45%, var(--border-secondary))',
-                color: 'var(--accent-cyan)',
-              }}
-            >
-              Tech Command Center
-            </p>
-            <h2 className="text-2xl font-bold sm:text-3xl lg:text-4xl" style={{ color: 'var(--text-primary)' }}>
-              Technologies I Work With
+        <div className="mb-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-2xl">
+            <p className="eyebrow mb-3">Tech Stack</p>
+            <h2 className="headline-section">
+              Technologies I work with.
             </h2>
-            <p className="mt-2 max-w-2xl text-sm sm:text-base" style={{ color: 'var(--text-secondary)' }}>
+            <p className="subcopy mt-4">
               A structured view of my current stack, grouped by confidence and day-to-day usage.
             </p>
           </div>
 
           <div
-            className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold uppercase tracking-wide"
-            style={{
-              borderColor: 'color-mix(in srgb, var(--accent-orange) 44%, var(--border-secondary))',
-              color: 'var(--accent-orange)',
-              backgroundColor: 'color-mix(in srgb, var(--accent-orange) 10%, transparent)',
-            }}
+            className="glass-tile inline-flex items-center gap-2 self-start px-4 py-2.5 text-sm font-medium lg:self-auto"
+            style={{ color: 'var(--text-secondary)' }}
           >
-            <FaLayerGroup />
-            {sortedSkills.length} Skills Listed
+            <FaLayerGroup size={13} style={{ color: 'var(--text-tertiary)' }} />
+            {sortedSkills.length} skills
           </div>
         </div>
 
-        <div className="mb-5 flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--text-tertiary)' }}>
-            <FaFilter />
-            Filter by level
+        <div className="mb-8 flex flex-wrap items-center gap-3">
+          <span className="inline-flex items-center gap-2 text-xs font-medium" style={{ color: 'var(--text-muted)' }}>
+            <FaFilter size={11} />
+            Level
           </span>
-          {['All', 'Core', 'Advanced', 'Intermediate', 'Fundamentals'].map((band) => {
-            const isActive = activeBand === band;
-            const accent = band === 'All' ? 'var(--accent-cyan)' : LEVEL_META[band].accent;
+          <div
+            className="inline-flex max-w-full flex-wrap items-center gap-1 rounded-full border p-1"
+            style={{ borderColor: 'var(--hairline)', backgroundColor: 'var(--surface-tile)' }}
+          >
+            {['All', 'Core', 'Advanced', 'Intermediate', 'Fundamentals'].map((band) => {
+              const isActive = activeBand === band;
 
-            return (
-              <button
-                key={band}
-                type="button"
-                onClick={() => switchBand(band)}
-                className="rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-wide transition-colors duration-200"
-                style={{
-                  borderColor: isActive
-                    ? `color-mix(in srgb, ${accent} 58%, var(--border-secondary))`
-                    : 'color-mix(in srgb, var(--border-secondary) 76%, transparent)',
-                  color: isActive ? accent : 'var(--text-secondary)',
-                  backgroundColor: isActive
-                    ? `color-mix(in srgb, ${accent} 12%, transparent)`
-                    : 'color-mix(in srgb, var(--bg-elevated) 80%, transparent)',
-                }}
-              >
-                {band} ({bandCounts[band] || 0})
-              </button>
-            );
-          })}
+              return (
+                <button
+                  key={band}
+                  type="button"
+                  onClick={() => switchBand(band)}
+                  className="rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors duration-250"
+                  style={{
+                    color: isActive ? 'var(--text-bright)' : 'var(--text-tertiary)',
+                    backgroundColor: isActive
+                      ? 'color-mix(in srgb, var(--text-bright) 12%, transparent)'
+                      : 'transparent',
+                  }}
+                >
+                  {band} <span style={{ color: 'var(--text-muted)' }}>{bandCounts[band] || 0}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {visibleSkills.length > 0 ? (
@@ -265,49 +249,35 @@ const TechStackCarousel = ({ data }) => {
               return (
                 <article
                   key={`${skill.name}-${index}`}
-                  className="skill-card rounded-2xl border p-4 transition-transform duration-300 hover:-translate-y-1"
-                  style={{
-                    borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
-                    backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 84%, transparent)',
-                  }}
+                  className="skill-card glass-tile p-5 transition-transform duration-300 hover:-translate-y-1"
                 >
-                  <div className="mb-4 flex items-start justify-between gap-2">
+                  <div className="mb-5 flex items-start justify-between gap-2">
                     <div
-                      className="flex h-11 w-11 items-center justify-center rounded-xl border"
-                      style={{
-                        borderColor: `color-mix(in srgb, ${accent} 44%, var(--border-secondary))`,
-                        backgroundColor: `color-mix(in srgb, ${accent} 12%, transparent)`,
-                      }}
+                      className="flex h-11 w-11 items-center justify-center rounded-full"
+                      style={{ backgroundColor: `color-mix(in srgb, ${accent} 10%, transparent)` }}
                     >
                       <SkillIcon iconName={iconName} cleanName={cleanName} accentColor={accentColor} />
                     </div>
-                    <span
-                      className="rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-wide"
-                      style={{
-                        borderColor: `color-mix(in srgb, ${accent} 45%, var(--border-secondary))`,
-                        color: accent,
-                        backgroundColor: `color-mix(in srgb, ${accent} 10%, transparent)`,
-                      }}
-                    >
+                    <span className="text-xs font-medium uppercase tracking-[0.1em]" style={{ color: 'var(--text-muted)' }}>
                       {levelBand}
                     </span>
                   </div>
 
-                  <h3 className="mb-2 text-base font-semibold leading-snug" style={{ color: 'var(--text-primary)' }}>
+                  <h3 className="mb-3 text-base font-semibold leading-snug" style={{ color: 'var(--text-primary)' }}>
                     {cleanName}
                   </h3>
 
                   <div className="mb-2 flex items-center justify-between text-xs" style={{ color: 'var(--text-tertiary)' }}>
                     <span>Proficiency</span>
-                    <span className="font-semibold" style={{ color: accent }}>{skillLevel}%</span>
+                    <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{skillLevel}%</span>
                   </div>
 
-                  <div className="h-2 w-full overflow-hidden rounded-full" style={{ backgroundColor: 'color-mix(in srgb, var(--bg-secondary) 82%, transparent)' }}>
+                  <div className="h-1 w-full overflow-hidden rounded-full" style={{ backgroundColor: 'color-mix(in srgb, var(--border-secondary) 35%, transparent)' }}>
                     <div
-                      className="skill-bar h-2 rounded-full"
+                      className="skill-bar h-1 rounded-full"
                       style={{
                         width: `${skillLevel}%`,
-                        background: `linear-gradient(to right, ${accent}, color-mix(in srgb, ${accent} 60%, var(--accent-cyan)))`,
+                        backgroundColor: accent,
                       }}
                     />
                   </div>
@@ -316,13 +286,7 @@ const TechStackCarousel = ({ data }) => {
             })}
           </div>
         ) : (
-          <div
-            className="rounded-2xl border p-7 text-center"
-            style={{
-              borderColor: 'color-mix(in srgb, var(--border-secondary) 76%, transparent)',
-              backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 80%, transparent)',
-            }}
-          >
+          <div className="glass-tile p-8 text-center">
             <h3 className="mb-2 text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
               No Skills In This Filter
             </h3>
@@ -333,16 +297,11 @@ const TechStackCarousel = ({ data }) => {
         )}
 
         {canExpand && (
-          <div className="mt-5 text-center">
+          <div className="mt-8 text-center">
             <button
               type="button"
               onClick={() => setShowAll((prev) => !prev)}
-              className="rounded-lg border px-4 py-2 text-sm font-semibold"
-              style={{
-                borderColor: 'var(--accent-cyan)',
-                color: 'var(--accent-cyan)',
-                backgroundColor: 'color-mix(in srgb, var(--accent-cyan) 10%, transparent)',
-              }}
+              className="pill-ghost"
             >
               {showAll ? 'Show Fewer Skills' : `Show All ${filteredCount} Skills`}
             </button>
