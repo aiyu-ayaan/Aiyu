@@ -24,6 +24,8 @@ export default function ViewportLazySection({
       return;
     }
 
+    const isMobileViewport = window.matchMedia('(max-width: 768px), (pointer: coarse)').matches;
+
     const preloadDistance = Number.parseInt(String(rootMargin).split(' ')[0], 10) || 240;
 
     const shouldRevealByPosition = () => {
@@ -58,6 +60,17 @@ export default function ViewportLazySection({
 
     revealIfNeeded();
     if (shouldRevealByPosition()) return;
+
+    if (isMobileViewport) {
+      const mobileRevealTimer = window.setTimeout(() => setIsVisible(true), Math.max(initialDelayMs, 180));
+      return () => {
+        window.clearTimeout(mobileRevealTimer);
+        window.clearTimeout(scrollTimeoutRef.current);
+        if (revealTimerRef.current) {
+          window.clearTimeout(revealTimerRef.current);
+        }
+      };
+    }
 
     const observer = new IntersectionObserver(
       (entries) => {

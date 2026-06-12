@@ -111,8 +111,8 @@ export default async function Home() {
       <ViewportLazySection
         id="home-snapshot"
         className="relative z-20 px-4 pb-10 lg:px-8 lg:pb-12"
-        placeholderHeight={380}
-        rootMargin="180px 0px"
+        placeholderHeight={720}
+        rootMargin="420px 0px"
         initialDelayMs={220}
       >
         <HomeSnapshot
@@ -126,8 +126,8 @@ export default async function Home() {
         <ViewportLazySection
           id="home-status"
           className="relative z-20 px-4 pb-10 lg:px-8 lg:pb-12"
-          placeholderHeight={320}
-          rootMargin="220px 0px"
+          placeholderHeight={720}
+          rootMargin="420px 0px"
         >
           <HomeMissionControl data={serializedHomeData?.statusSection} />
         </ViewportLazySection>
