@@ -50,27 +50,23 @@ const ProjectCard = ({ project, onCardClick = () => { } }) => {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35, ease: 'easeOut' }}
-        className="group relative cursor-pointer overflow-hidden rounded-2xl border"
+        className="group relative cursor-pointer overflow-hidden rounded-[1.25rem] border transition-shadow duration-300"
         onClick={() => onCardClick(project)}
         whileHover={{ y: -4 }}
+        style={{
+          borderColor: 'var(--hairline)',
+          boxShadow: 'var(--shadow-tile)',
+        }}
       >
-        <div
-          className="absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-          style={{
-            background:
-              'linear-gradient(135deg, color-mix(in srgb, var(--accent-cyan) 14%, transparent), color-mix(in srgb, var(--accent-purple) 12%, transparent))',
-          }}
-        />
-
         <div
           className="relative flex h-full flex-col"
           style={{
             background:
-              'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 95%, transparent), color-mix(in srgb, var(--bg-secondary) 95%, transparent))',
-            borderColor: 'color-mix(in srgb, var(--border-secondary) 74%, transparent)',
+              'linear-gradient(180deg, color-mix(in srgb, var(--bg-surface) 62%, transparent), color-mix(in srgb, var(--bg-secondary) 55%, transparent))',
+            backdropFilter: 'blur(14px)',
           }}
         >
-          <div className="relative h-44 overflow-hidden border-b" style={{ borderColor: 'color-mix(in srgb, var(--border-secondary) 70%, transparent)' }}>
+          <div className="relative h-44 overflow-hidden border-b" style={{ borderColor: 'var(--hairline)' }}>
             {project?.image ? (
               <img
                 src={project.image}
@@ -87,11 +83,11 @@ const ProjectCard = ({ project, onCardClick = () => { } }) => {
               >
                 <div
                   className="absolute -left-8 -top-8 h-28 w-28 rounded-full blur-2xl"
-                  style={{ background: 'color-mix(in srgb, var(--accent-cyan) 35%, transparent)' }}
+                  style={{ background: 'color-mix(in srgb, var(--accent-cyan) 18%, transparent)' }}
                 />
                 <div
                   className="absolute -bottom-8 -right-8 h-28 w-28 rounded-full blur-2xl"
-                  style={{ background: 'color-mix(in srgb, var(--accent-purple) 35%, transparent)' }}
+                  style={{ background: 'color-mix(in srgb, var(--accent-purple) 18%, transparent)' }}
                 />
                 <div
                   className="absolute inset-0"
@@ -146,18 +142,13 @@ const ProjectCard = ({ project, onCardClick = () => { } }) => {
 
           <div className="flex flex-1 flex-col p-5">
             <h3
-              className="mb-2 text-xl font-bold leading-snug"
-              style={{
-                background: 'linear-gradient(to right, var(--accent-orange), var(--accent-pink), var(--accent-purple))',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-              }}
+              className="mb-2 text-xl font-semibold leading-snug tracking-tight"
+              style={{ color: 'var(--text-bright)' }}
             >
               {project?.name || 'Untitled Project'}
             </h3>
 
-            <p className="mb-4 text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+            <p className="mb-4 text-sm leading-relaxed" style={{ color: 'var(--text-tertiary)' }}>
               {String(project?.description || '').slice(0, 120)}
               {String(project?.description || '').length > 120 ? '...' : ''}
             </p>
@@ -166,11 +157,11 @@ const ProjectCard = ({ project, onCardClick = () => { } }) => {
               {stackList.slice(0, 3).map((tech) => (
                 <span
                   key={`${project?.name}-${tech}`}
-                  className="rounded-md border px-2.5 py-1 text-[11px] font-semibold"
+                  className="rounded-full border px-2.5 py-1 text-[11px] font-medium"
                   style={{
-                    borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
-                    color: 'var(--accent-cyan)',
-                    backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 82%, transparent)',
+                    borderColor: 'var(--hairline)',
+                    color: 'var(--text-secondary)',
+                    backgroundColor: 'var(--surface-tile)',
                   }}
                 >
                   {tech}
@@ -180,11 +171,11 @@ const ProjectCard = ({ project, onCardClick = () => { } }) => {
               {stackList.length > 3 && (
                 <button
                   type="button"
-                  className="rounded-md border px-2.5 py-1 text-[11px] font-semibold"
+                  className="rounded-full border px-2.5 py-1 text-[11px] font-medium"
                   style={{
-                    borderColor: 'color-mix(in srgb, var(--accent-orange) 45%, var(--border-secondary))',
-                    color: 'var(--accent-orange)',
-                    backgroundColor: 'color-mix(in srgb, var(--accent-orange) 10%, transparent)',
+                    borderColor: 'var(--hairline-strong)',
+                    color: 'var(--text-primary)',
+                    backgroundColor: 'var(--surface-tile)',
                   }}
                   onClick={openTechStackDialog}
                 >
@@ -195,13 +186,16 @@ const ProjectCard = ({ project, onCardClick = () => { } }) => {
 
             <div
               className="mt-auto flex items-center justify-between border-t pt-3 text-xs"
-              style={{ borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)', color: 'var(--text-tertiary)' }}
+              style={{ borderColor: 'var(--hairline)', color: 'var(--text-tertiary)' }}
             >
               <span className="inline-flex items-center gap-1.5">
                 <FaCalendarDay />
                 {project?.year || 'Unknown Year'}
               </span>
-              <span className="inline-flex items-center gap-1.5" style={{ color: 'var(--accent-cyan)' }}>
+              <span
+                className="inline-flex items-center gap-1.5 font-medium transition-colors duration-300 group-hover:opacity-100"
+                style={{ color: 'var(--accent-cyan)' }}
+              >
                 <FaCodeBranch />
                 Open Details
               </span>
