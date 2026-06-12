@@ -6,6 +6,132 @@
   transform-style: preserve-3d;
 }
 
+/* ============================================================
+   Premium design system
+   Shared tokens and surfaces for the Apple-inspired presentation
+   layer. Everything derives from the runtime theme variables so
+   admin-selected themes keep working.
+   ============================================================ */
+:root {
+  --radius-panel: 1.75rem;
+  --radius-tile: 1.25rem;
+  --hairline: color-mix(in srgb, var(--border-secondary) 38%, transparent);
+  --hairline-strong: color-mix(in srgb, var(--border-secondary) 60%, transparent);
+  --surface-glass: color-mix(in srgb, var(--bg-surface) 58%, transparent);
+  --surface-tile: color-mix(in srgb, var(--bg-elevated) 55%, transparent);
+  --shadow-panel: 0 24px 70px -28px var(--shadow-md);
+  --shadow-tile: 0 12px 36px -20px var(--shadow-sm);
+}
+
+/* Chapter typography */
+.eyebrow {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+.headline-hero {
+  font-size: clamp(3rem, 7.5vw, 5.75rem);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1.02;
+  color: var(--text-bright);
+}
+
+.headline-section {
+  font-size: clamp(2rem, 4.2vw, 3.25rem);
+  font-weight: 700;
+  letter-spacing: -0.028em;
+  line-height: 1.08;
+  color: var(--text-bright);
+}
+
+.subcopy {
+  font-size: clamp(1.0625rem, 1.4vw, 1.1875rem);
+  line-height: 1.6;
+  color: var(--text-tertiary);
+}
+
+/* Glass surfaces */
+.glass-panel {
+  position: relative;
+  border-radius: var(--radius-panel);
+  border: 1px solid var(--hairline);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--bg-surface) 62%, transparent),
+    color-mix(in srgb, var(--bg-secondary) 52%, transparent)
+  );
+  backdrop-filter: blur(22px) saturate(140%);
+  -webkit-backdrop-filter: blur(22px) saturate(140%);
+  box-shadow: var(--shadow-panel);
+}
+
+.glass-tile {
+  border-radius: var(--radius-tile);
+  border: 1px solid var(--hairline);
+  background: var(--surface-tile);
+  box-shadow: var(--shadow-tile);
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease, border-color 0.35s ease;
+}
+
+.glass-tile:hover {
+  border-color: var(--hairline-strong);
+  box-shadow: 0 20px 48px -20px var(--shadow-md);
+}
+
+/* Pill controls */
+.pill-solid {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  padding: 0.625rem 1.375rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #ffffff;
+  background: var(--accent-cyan);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.pill-solid:hover {
+  opacity: 0.88;
+}
+
+.pill-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  padding: 0.625rem 1.375rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  border: 1px solid var(--hairline-strong);
+  background: var(--surface-tile);
+  transition: border-color 0.25s ease, background-color 0.25s ease;
+}
+
+.pill-ghost:hover {
+  border-color: var(--border-secondary);
+}
+
+/* Soft section divider */
+.hairline-divider {
+  height: 1px;
+  width: min(640px, 72%);
+  margin: 0 auto;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--border-secondary) 70%, transparent),
+    transparent
+  );
+}
+
 /* Dark Theme - Based on VS Code theme */
 [data-theme="dark"] {
   /* Background Colors */
@@ -170,7 +296,9 @@ body {
   background-color: transparent;
   /* Keep transparent for SpaceBackground */
   color: var(--text-primary);
-  font-family: 'Fira Code', monospace;
+  font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
   position: relative;
   transition: color 0.3s ease;
   caret-color: transparent;
@@ -196,7 +324,7 @@ body::before {
   max-width: 320px;
   /* Cap the maximum size */
   background: radial-gradient(circle, var(--accent-cyan), transparent 70%);
-  opacity: 0.14;
+  opacity: 0.07;
   pointer-events: none;
   z-index: 0;
   filter: blur(48px);
