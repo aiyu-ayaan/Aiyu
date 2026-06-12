@@ -8,21 +8,21 @@ import { useSectionFx } from '../shared/gsapScroll';
 const STATUS_CARDS = [
     {
         key: 'focus',
-        label: 'CURRENT_FOCUS',
+        label: 'Current Focus',
         icon: FaBullseye,
         accent: 'var(--accent-cyan)',
         fallback: 'Building delightful web experiences',
     },
     {
         key: 'learning',
-        label: 'NOW_LEARNING',
+        label: 'Now Learning',
         icon: FaGraduationCap,
         accent: 'var(--accent-purple)',
         fallback: 'Exploring new tools and patterns',
     },
     {
         key: 'availability',
-        label: 'AVAILABILITY',
+        label: 'Availability',
         icon: FaSatelliteDish,
         accent: 'var(--accent-orange)',
         fallback: 'Open to collaborations',
@@ -31,7 +31,7 @@ const STATUS_CARDS = [
 
 /**
  * Mission Control: a live status strip configured from /admin/home.
- * The three holo-cards start fanned open in 3D and flatten into place as the
+ * The three glass cards start fanned open in 3D and settle flat as the
  * section scrolls through the viewport (scrubbed, not just triggered).
  */
 const HomeMissionControl = ({ data }) => {
@@ -88,58 +88,26 @@ const HomeMissionControl = ({ data }) => {
     return (
         <div ref={sectionRef} className="relative" style={{ perspective: '1400px' }}>
             <div
-                data-parallax="0.25"
-                className="pointer-events-none absolute -left-10 top-0 h-52 w-52 rounded-full blur-3xl"
-                style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--accent-orange) 22%, transparent), transparent 70%)' }}
-            />
-
-            <div
                 data-reveal="zoom"
-                className="relative mx-auto w-full max-w-[95%] lg:max-w-[80%] overflow-hidden rounded-3xl border p-6 sm:p-8"
-                style={{
-                    background: 'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 93%, transparent), color-mix(in srgb, var(--bg-secondary) 93%, transparent))',
-                    borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
-                    boxShadow: '0 16px 36px var(--shadow-sm)',
-                }}
+                className="glass-panel relative mx-auto w-full max-w-[95%] overflow-hidden p-8 sm:p-12 lg:max-w-[80%]"
             >
-                {/* Faint command-grid texture */}
-                <div
-                    aria-hidden="true"
-                    className="pointer-events-none absolute inset-0 opacity-[0.07]"
-                    style={{
-                        backgroundImage: 'linear-gradient(var(--accent-cyan) 1px, transparent 1px), linear-gradient(90deg, var(--accent-cyan) 1px, transparent 1px)',
-                        backgroundSize: '44px 44px',
-                    }}
-                />
-
-                <div className="relative mb-7 flex flex-wrap items-center justify-between gap-4">
-                    <div>
-                        <p className="mb-2 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs uppercase tracking-[0.2em]"
-                            style={{
-                                borderColor: 'color-mix(in srgb, var(--accent-orange) 45%, var(--border-secondary))',
-                                color: 'var(--accent-orange)',
-                            }}
-                        >
+                <div className="relative mb-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+                    <div className="max-w-2xl">
+                        <p className="eyebrow mb-3 flex items-center gap-2">
                             <span className="relative flex h-2 w-2">
-                                <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-75" style={{ backgroundColor: 'var(--accent-orange)' }} />
-                                <span className="relative inline-flex h-2 w-2 rounded-full" style={{ backgroundColor: 'var(--accent-orange)' }} />
+                                <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60" style={{ backgroundColor: 'var(--status-success)' }} />
+                                <span className="relative inline-flex h-2 w-2 rounded-full" style={{ backgroundColor: 'var(--status-success)' }} />
                             </span>
                             Live Status
                         </p>
-                        <h2 className="text-2xl font-bold sm:text-3xl" style={{ color: 'var(--text-primary)' }}>
-                            {headline}
-                        </h2>
+                        <h2 className="headline-section">{headline}</h2>
                     </div>
 
-                    <div
-                        className="rounded-xl border px-4 py-3 font-mono text-xs tracking-widest"
-                        style={{
-                            borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
-                            backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 80%, transparent)',
-                            color: 'var(--text-secondary)',
-                        }}
-                    >
-                        LOCAL_TIME: <span className="font-bold" style={{ color: 'var(--accent-cyan)' }} suppressHydrationWarning>{clock || '--:--:--'}</span>
+                    <div className="glass-tile self-start px-5 py-3 lg:self-auto">
+                        <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Local time</p>
+                        <p className="text-base font-semibold tabular-nums" style={{ color: 'var(--text-primary)' }} suppressHydrationWarning>
+                            {clock || '--:--:--'}
+                        </p>
                     </div>
                 </div>
 
@@ -151,26 +119,21 @@ const HomeMissionControl = ({ data }) => {
                         return (
                             <div
                                 key={card.key}
-                                className="mc-card rounded-2xl border p-5 transition-transform duration-300 hover:-translate-y-1"
-                                style={{
-                                    borderColor: `color-mix(in srgb, ${card.accent} 35%, var(--border-secondary))`,
-                                    backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 86%, transparent)',
-                                    boxShadow: `0 10px 28px color-mix(in srgb, ${card.accent} 8%, transparent)`,
-                                    transformStyle: 'preserve-3d',
-                                }}
+                                className="mc-card glass-tile p-6"
+                                style={{ transformStyle: 'preserve-3d' }}
                             >
-                                <div className="mb-4 flex items-center justify-between">
+                                <div className="mb-5 flex items-center justify-between">
                                     <span
-                                        className="inline-flex rounded-lg p-2.5"
-                                        style={{ backgroundColor: `color-mix(in srgb, ${card.accent} 14%, transparent)` }}
+                                        className="inline-flex h-10 w-10 items-center justify-center rounded-full"
+                                        style={{ backgroundColor: `color-mix(in srgb, ${card.accent} 12%, transparent)` }}
                                     >
-                                        <Icon size={16} style={{ color: card.accent }} />
+                                        <Icon size={15} style={{ color: card.accent }} />
                                     </span>
-                                    <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] opacity-60" style={{ color: card.accent }}>
+                                    <span className="text-xs font-medium uppercase tracking-[0.12em]" style={{ color: 'var(--text-muted)' }}>
                                         {card.label}
                                     </span>
                                 </div>
-                                <p className="text-base font-semibold leading-relaxed sm:text-lg" style={{ color: 'var(--text-primary)' }}>
+                                <p className="text-lg font-semibold leading-snug sm:text-xl" style={{ color: 'var(--text-primary)' }}>
                                     {value}
                                 </p>
                             </div>
