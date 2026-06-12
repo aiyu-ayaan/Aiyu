@@ -37,7 +37,7 @@ const HomeAbout = ({ data }) => {
   return (
     <div
       ref={sectionRef}
-      className="relative px-4 py-16 lg:px-8 lg:py-20"
+      className="chapter-section"
       style={{ backgroundColor: 'transparent', perspective: '1400px' }}
     >
       <div
@@ -48,7 +48,7 @@ const HomeAbout = ({ data }) => {
 
       <div
         data-reveal="tilt"
-        className="glass-panel relative mx-auto w-full max-w-[95%] p-8 sm:p-12 lg:max-w-[80%]"
+        className="chapter-panel glass-panel relative mx-auto flex w-full max-w-[95%] flex-col justify-center p-8 sm:p-12 lg:max-w-[80%] xl:p-16"
       >
         <div className="mb-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div data-reveal="rise" className="max-w-2xl">
@@ -62,27 +62,27 @@ const HomeAbout = ({ data }) => {
           </Link>
         </div>
 
-        <p data-reveal="rise" className="subcopy mb-12 max-w-3xl !text-lg sm:!text-xl" style={{ color: 'var(--text-secondary)' }}>
+        <p data-reveal="rise" className="subcopy mb-14 max-w-4xl !text-xl sm:!text-2xl" style={{ color: 'var(--text-secondary)' }}>
           {professionalSummary || 'I create user-first software experiences, pairing strong technical decisions with thoughtful product execution.'}
         </p>
 
-        <div data-reveal-group className="grid grid-cols-1 gap-4 md:grid-cols-3" style={{ perspective: '1100px' }}>
+        <div data-reveal-group className="grid grid-cols-1 gap-5 md:grid-cols-3 lg:gap-6" style={{ perspective: '1100px' }}>
           {highlightItems.map((item) => {
             const Icon = item.icon;
             return (
               <div
                 key={item.title}
                 data-reveal="flip"
-                className="glass-tile p-6 transition-transform duration-300 hover:-translate-y-1"
+                className="glass-tile p-7 transition-transform duration-300 hover:-translate-y-1"
               >
                 <div
-                  className="mb-5 inline-flex h-10 w-10 items-center justify-center rounded-full"
+                  className="mb-7 inline-flex h-12 w-12 items-center justify-center rounded-2xl border"
                   style={{ backgroundColor: `color-mix(in srgb, ${item.accent} 12%, transparent)` }}
                 >
                   <Icon size={15} style={{ color: item.accent }} />
                 </div>
-                <h3 className="mb-2 text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>{item.title}</h3>
-                <p className="text-sm leading-relaxed" style={{ color: 'var(--text-tertiary)' }}>{item.description}</p>
+                <h3 className="mb-3 text-xl font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>{item.title}</h3>
+                <p className="text-sm leading-relaxed sm:text-base" style={{ color: 'var(--text-tertiary)' }}>{item.description}</p>
               </div>
             );
           })}

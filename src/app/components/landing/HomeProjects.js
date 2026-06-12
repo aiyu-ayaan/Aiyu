@@ -43,7 +43,7 @@ const HomeProjects = ({ data }) => {
   return (
     <div
       ref={sectionRef}
-      className="relative px-4 py-16 lg:px-8 lg:py-20"
+      className="chapter-section"
       style={{
         backgroundColor: 'transparent',
         color: 'var(--text-primary)',
@@ -58,7 +58,7 @@ const HomeProjects = ({ data }) => {
 
       <div
         data-reveal="tilt"
-        className="glass-panel relative mx-auto w-full max-w-[95%] p-8 sm:p-12 lg:max-w-[80%]"
+        className="chapter-panel glass-panel relative mx-auto flex w-full max-w-[95%] flex-col justify-center p-8 sm:p-12 lg:max-w-[80%] xl:p-16"
       >
         <div className="mb-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div data-reveal="rise" className="max-w-2xl">
@@ -75,22 +75,22 @@ const HomeProjects = ({ data }) => {
           </Link>
         </div>
 
-        <div data-reveal-group className="mb-10 grid grid-cols-1 gap-4 sm:grid-cols-3" style={{ perspective: '1100px' }}>
+        <div data-reveal-group className="mb-12 grid grid-cols-1 gap-4 sm:grid-cols-3 lg:gap-5" style={{ perspective: '1100px' }}>
           {statCards.map((item) => {
             const Icon = item.icon;
             return (
               <div
                 key={item.label}
                 data-reveal="flip"
-                className="glass-tile p-5"
+                className="glass-tile p-6"
               >
                 <div
-                  className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-full"
+                  className="mb-5 inline-flex h-11 w-11 items-center justify-center rounded-2xl border"
                   style={{ backgroundColor: `color-mix(in srgb, ${item.accent} 12%, transparent)` }}
                 >
                   <Icon size={14} style={{ color: item.accent }} />
                 </div>
-                <p className="text-3xl font-bold tracking-tight" style={{ color: 'var(--text-bright)' }}>
+                <p className="text-4xl font-semibold tracking-tight" style={{ color: 'var(--text-bright)' }}>
                   <span data-counter={item.value}>{item.value}</span>
                 </p>
                 <p className="mt-1 text-sm" style={{ color: 'var(--text-tertiary)' }}>{item.label}</p>
@@ -100,7 +100,7 @@ const HomeProjects = ({ data }) => {
         </div>
 
         {latestProjects.length > 0 ? (
-          <div data-reveal-group data-reveal-stagger="0.12" className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3" style={{ perspective: '1300px' }}>
+          <div data-reveal-group data-reveal-stagger="0.12" className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3 xl:gap-7" style={{ perspective: '1300px' }}>
             {latestProjects.map((project, index) => (
               <div key={project?._id || `${project?.name}-${index}`} data-reveal="tilt">
                 <ProjectCard project={project} onCardClick={setSelectedProject} />

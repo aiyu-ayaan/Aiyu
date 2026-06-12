@@ -24,7 +24,7 @@ const HomeBlogs = ({ blogs }) => {
   if (recentBlogs.length === 0) return null;
 
   return (
-    <section ref={sectionRef} className="relative px-4 py-16 sm:px-6 lg:py-20" style={{ perspective: '1400px' }}>
+    <section ref={sectionRef} className="chapter-section" style={{ perspective: '1400px' }}>
       <div
         data-parallax="-0.25"
         className="pointer-events-none absolute left-10 top-16 h-44 w-44 rounded-full blur-3xl"
@@ -33,7 +33,7 @@ const HomeBlogs = ({ blogs }) => {
 
       <div
         data-reveal="tilt"
-        className="glass-panel relative mx-auto w-full max-w-[95%] p-8 sm:p-12 lg:max-w-[80%]"
+        className="chapter-panel glass-panel relative mx-auto flex w-full max-w-[95%] flex-col justify-center p-8 sm:p-12 lg:max-w-[80%] xl:p-16"
       >
         <div className="mb-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div data-reveal="rise" className="max-w-2xl">
@@ -51,7 +51,7 @@ const HomeBlogs = ({ blogs }) => {
           </Link>
         </div>
 
-        <div data-reveal-group data-reveal-stagger="0.12" className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3" style={{ perspective: '1300px' }}>
+        <div data-reveal-group data-reveal-stagger="0.12" className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:gap-7" style={{ perspective: '1300px' }}>
           {recentBlogs.map((blog, index) => {
             const previewText = String(blog?.content || '').replace(/[#[\]*`_]/g, '').trim();
             const displayText = previewText.length > 160 ? `${previewText.slice(0, 160)}...` : previewText;
@@ -61,7 +61,7 @@ const HomeBlogs = ({ blogs }) => {
               <article
                 key={blog?._id || `${blog?.title}-${index}`}
                 data-reveal="flip"
-                className="group glass-tile flex h-full flex-col p-6 transition-transform duration-300 hover:-translate-y-1"
+                className="group glass-tile flex h-full flex-col p-7 transition-transform duration-300 hover:-translate-y-1"
               >
                 <div className="mb-5 flex items-center justify-between gap-2 text-xs" style={{ color: 'var(--text-muted)' }}>
                   <span className="inline-flex items-center gap-2">
@@ -79,12 +79,12 @@ const HomeBlogs = ({ blogs }) => {
                 </div>
 
                 <Link href={blogPath} className="group-hover:underline" style={{ textDecorationColor: 'var(--text-tertiary)' }}>
-                  <h3 className="mb-3 text-xl font-semibold leading-snug tracking-tight" style={{ color: 'var(--text-bright)' }}>
+                  <h3 className="mb-4 text-2xl font-semibold leading-tight tracking-tight" style={{ color: 'var(--text-bright)' }}>
                     {blog?.title}
                   </h3>
                 </Link>
 
-                <p className="mb-6 text-sm leading-relaxed" style={{ color: 'var(--text-tertiary)' }}>
+                <p className="mb-7 text-sm leading-relaxed sm:text-base" style={{ color: 'var(--text-tertiary)' }}>
                   {displayText || 'Open this article to read the full write-up.'}
                 </p>
 

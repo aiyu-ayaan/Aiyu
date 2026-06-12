@@ -169,7 +169,7 @@ const TechStackCarousel = ({ data }) => {
   };
 
   return (
-    <section ref={sectionRef} className="relative px-4 py-16 lg:px-8 lg:py-20" style={{ perspective: '1400px' }}>
+    <section ref={sectionRef} className="chapter-section" style={{ perspective: '1400px' }}>
       <div
         data-parallax="-0.25"
         className="pointer-events-none absolute -left-20 top-14 h-64 w-64 rounded-full blur-3xl"
@@ -183,7 +183,7 @@ const TechStackCarousel = ({ data }) => {
 
       <div
         data-reveal="tilt"
-        className="glass-panel relative mx-auto w-full max-w-[95%] p-8 sm:p-12 lg:max-w-[80%]"
+        className="chapter-panel glass-panel relative mx-auto flex w-full max-w-[95%] flex-col justify-center p-8 sm:p-12 lg:max-w-[80%] xl:p-16"
       >
         <div className="mb-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
@@ -205,13 +205,13 @@ const TechStackCarousel = ({ data }) => {
           </div>
         </div>
 
-        <div className="mb-8 flex flex-wrap items-center gap-3">
+        <div className="mb-10 flex flex-wrap items-center gap-3">
           <span className="inline-flex items-center gap-2 text-xs font-medium" style={{ color: 'var(--text-muted)' }}>
             <FaFilter size={11} />
             Level
           </span>
           <div
-            className="inline-flex max-w-full flex-wrap items-center gap-1 rounded-full border p-1"
+            className="inline-flex max-w-full flex-wrap items-center gap-1 rounded-full border p-1.5"
             style={{ borderColor: 'var(--hairline)', backgroundColor: 'var(--surface-tile)' }}
           >
             {['All', 'Core', 'Advanced', 'Intermediate', 'Fundamentals'].map((band) => {
@@ -222,7 +222,7 @@ const TechStackCarousel = ({ data }) => {
                   key={band}
                   type="button"
                   onClick={() => switchBand(band)}
-                  className="rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors duration-250"
+                  className="rounded-full px-4 py-2 text-sm font-medium transition-colors duration-250"
                   style={{
                     color: isActive ? 'var(--text-bright)' : 'var(--text-tertiary)',
                     backgroundColor: isActive
@@ -238,7 +238,7 @@ const TechStackCarousel = ({ data }) => {
         </div>
 
         {visibleSkills.length > 0 ? (
-          <div ref={gridRef} className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" style={{ perspective: '1200px' }}>
+          <div ref={gridRef} className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 xl:gap-5" style={{ perspective: '1200px' }}>
             {visibleSkills.map((skill, index) => {
               const cleanName = String(skill.name).split('(')[0].trim();
               const iconName = skill.icon || cleanName;
@@ -249,11 +249,11 @@ const TechStackCarousel = ({ data }) => {
               return (
                 <article
                   key={`${skill.name}-${index}`}
-                  className="skill-card glass-tile p-5 transition-transform duration-300 hover:-translate-y-1"
+                  className="skill-card glass-tile p-6 transition-transform duration-300 hover:-translate-y-1"
                 >
                   <div className="mb-5 flex items-start justify-between gap-2">
                     <div
-                      className="flex h-11 w-11 items-center justify-center rounded-full"
+                      className="flex h-12 w-12 items-center justify-center rounded-2xl border"
                       style={{ backgroundColor: `color-mix(in srgb, ${accent} 10%, transparent)` }}
                     >
                       <SkillIcon iconName={iconName} cleanName={cleanName} accentColor={accentColor} />
@@ -263,7 +263,7 @@ const TechStackCarousel = ({ data }) => {
                     </span>
                   </div>
 
-                  <h3 className="mb-3 text-base font-semibold leading-snug" style={{ color: 'var(--text-primary)' }}>
+                  <h3 className="mb-4 text-lg font-semibold leading-snug" style={{ color: 'var(--text-primary)' }}>
                     {cleanName}
                   </h3>
 

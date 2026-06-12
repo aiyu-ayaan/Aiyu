@@ -89,7 +89,7 @@ const HomeMissionControl = ({ data }) => {
         <div ref={sectionRef} className="relative" style={{ perspective: '1400px' }}>
             <div
                 data-reveal="zoom"
-                className="glass-panel relative mx-auto w-full max-w-[95%] overflow-hidden p-8 sm:p-12 lg:max-w-[80%]"
+                className="chapter-panel glass-panel relative mx-auto flex w-full max-w-[95%] flex-col justify-center overflow-hidden p-8 sm:p-12 lg:max-w-[80%] xl:p-16"
             >
                 <div className="relative mb-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
                     <div className="max-w-2xl">
@@ -111,7 +111,7 @@ const HomeMissionControl = ({ data }) => {
                     </div>
                 </div>
 
-                <div className="mc-deck relative grid grid-cols-1 gap-4 md:grid-cols-3" style={{ perspective: '1200px' }}>
+                <div className="mc-deck relative grid grid-cols-1 gap-5 md:grid-cols-3 lg:gap-6" style={{ perspective: '1200px' }}>
                     {STATUS_CARDS.map((card) => {
                         const Icon = card.icon;
                         const value = data?.[card.key] || card.fallback;
@@ -119,7 +119,7 @@ const HomeMissionControl = ({ data }) => {
                         return (
                             <div
                                 key={card.key}
-                                className="mc-card glass-tile p-6"
+                                className="mc-card glass-tile p-7 sm:p-8"
                                 style={{ transformStyle: 'preserve-3d' }}
                             >
                                 <div className="mb-5 flex items-center justify-between">
@@ -133,7 +133,7 @@ const HomeMissionControl = ({ data }) => {
                                         {card.label}
                                     </span>
                                 </div>
-                                <p className="text-lg font-semibold leading-snug sm:text-xl" style={{ color: 'var(--text-primary)' }}>
+                                <p className="text-xl font-semibold leading-tight sm:text-2xl" style={{ color: 'var(--text-primary)' }}>
                                     {value}
                                 </p>
                             </div>

@@ -85,6 +85,11 @@
   opacity: 0.7;
 }
 
+.glass-panel > * {
+  position: relative;
+  z-index: 1;
+}
+
 .glass-tile {
   border-radius: var(--radius-tile);
   border: 1px solid var(--hairline);
@@ -94,6 +99,22 @@
   -webkit-backdrop-filter: blur(18px) saturate(135%);
   box-shadow: var(--shadow-tile);
   transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease, border-color 0.35s ease;
+}
+
+.chapter-section {
+  position: relative;
+  padding: clamp(5rem, 10vw, 9rem) 1rem;
+}
+
+@media (min-width: 1024px) {
+  .chapter-section {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
+.chapter-panel {
+  min-height: min(760px, calc(100dvh - 8rem));
 }
 
 .glass-tile:hover {

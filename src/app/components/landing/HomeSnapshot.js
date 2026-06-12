@@ -23,7 +23,7 @@ const HomeSnapshot = ({ stats = [], recentProjectNames = [], recentBlogTitles = 
         <div ref={scopeRef} style={{ perspective: '1400px' }}>
             <div
                 data-reveal="tilt"
-                className="glass-panel mx-auto w-full max-w-[95%] p-8 sm:p-12 lg:max-w-[80%]"
+                className="chapter-panel glass-panel mx-auto flex w-full max-w-[95%] flex-col justify-center p-8 sm:p-12 lg:max-w-[80%] xl:p-16"
                 style={{ transformStyle: 'preserve-3d' }}
             >
                 <div className="mb-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
@@ -38,14 +38,14 @@ const HomeSnapshot = ({ stats = [], recentProjectNames = [], recentBlogTitles = 
                     </Link>
                 </div>
 
-                <div data-reveal-group className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                <div data-reveal-group className="grid grid-cols-2 gap-4 md:grid-cols-4 lg:gap-5">
                     {stats.map((item) => (
                         <div
                             key={item.label}
                             data-reveal="flip"
-                            className="glass-tile p-5"
+                            className="glass-tile p-5 sm:p-6"
                         >
-                            <p className="text-3xl font-bold tracking-tight sm:text-4xl" style={{ color: 'var(--text-bright)' }}>
+                            <p className="text-4xl font-semibold tracking-tight sm:text-5xl" style={{ color: 'var(--text-bright)' }}>
                                 <span data-counter={item.value}>{item.value}</span>
                             </p>
                             <p className="mt-1 text-sm" style={{ color: 'var(--text-tertiary)' }}>{item.label}</p>
@@ -53,7 +53,7 @@ const HomeSnapshot = ({ stats = [], recentProjectNames = [], recentBlogTitles = 
                     ))}
                 </div>
 
-                <div data-reveal-group data-reveal-stagger="0.05" className="mt-8 flex flex-wrap gap-2.5">
+                <div data-reveal-group data-reveal-stagger="0.05" className="mt-10 flex flex-wrap gap-2.5">
                     {quickLinks.map((item) => (
                         <a
                             key={item.href}
@@ -72,14 +72,14 @@ const HomeSnapshot = ({ stats = [], recentProjectNames = [], recentBlogTitles = 
                 </div>
 
                 {(recentProjectNames.length > 0 || recentBlogTitles.length > 0) && (
-                    <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2">
-                        <div data-reveal="swing" className="glass-tile p-5">
+                    <div className="mt-10 grid grid-cols-1 gap-5 md:grid-cols-2">
+                        <div data-reveal="swing" className="glass-tile p-6 sm:p-7">
                             <p className="eyebrow mb-2 !text-xs">Project Picks</p>
                             <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
                                 {recentProjectNames.length ? recentProjectNames.join(' · ') : 'Projects will appear here soon.'}
                             </p>
                         </div>
-                        <div data-reveal="swing-right" className="glass-tile p-5">
+                        <div data-reveal="swing-right" className="glass-tile p-6 sm:p-7">
                             <p className="eyebrow mb-2 !text-xs">Latest Writing</p>
                             <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
                                 {recentBlogTitles.length ? recentBlogTitles.join(' · ') : 'Blog updates coming soon.'}

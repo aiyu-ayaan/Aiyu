@@ -50,7 +50,7 @@ const ProjectCard = ({ project, onCardClick = () => { } }) => {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35, ease: 'easeOut' }}
-        className="group relative cursor-pointer overflow-hidden rounded-[1.25rem] border transition-shadow duration-300"
+        className="group relative h-full cursor-pointer overflow-hidden rounded-[1.625rem] border transition-shadow duration-300"
         onClick={() => onCardClick(project)}
         whileHover={{ y: -4 }}
         style={{
@@ -66,7 +66,7 @@ const ProjectCard = ({ project, onCardClick = () => { } }) => {
             backdropFilter: 'blur(14px)',
           }}
         >
-          <div className="relative h-44 overflow-hidden border-b" style={{ borderColor: 'var(--hairline)' }}>
+          <div className="relative h-56 overflow-hidden border-b sm:h-60" style={{ borderColor: 'var(--hairline)' }}>
             {project?.image ? (
               <img
                 src={project.image}
@@ -113,9 +113,9 @@ const ProjectCard = ({ project, onCardClick = () => { } }) => {
               </div>
             )}
 
-            <div className="absolute left-3 top-3 flex items-center gap-2">
+            <div className="absolute left-4 top-4 flex items-center gap-2">
               <span
-                className="rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide"
+                className="rounded-full border px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wide backdrop-blur-md"
                 style={{
                   borderColor: 'color-mix(in srgb, var(--border-secondary) 74%, transparent)',
                   color: 'var(--text-secondary)',
@@ -126,9 +126,9 @@ const ProjectCard = ({ project, onCardClick = () => { } }) => {
               </span>
             </div>
 
-            <div className="absolute right-3 top-3">
+            <div className="absolute right-4 top-4">
               <span
-                className="rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide"
+                className="rounded-full border px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wide backdrop-blur-md"
                 style={{
                   borderColor: 'transparent',
                   color: status.color,
@@ -140,24 +140,24 @@ const ProjectCard = ({ project, onCardClick = () => { } }) => {
             </div>
           </div>
 
-          <div className="flex flex-1 flex-col p-5">
+          <div className="flex flex-1 flex-col p-6">
             <h3
-              className="mb-2 text-xl font-semibold leading-snug tracking-tight"
+              className="mb-3 text-2xl font-semibold leading-tight tracking-tight"
               style={{ color: 'var(--text-bright)' }}
             >
               {project?.name || 'Untitled Project'}
             </h3>
 
-            <p className="mb-4 text-sm leading-relaxed" style={{ color: 'var(--text-tertiary)' }}>
+            <p className="mb-5 text-sm leading-relaxed sm:text-base" style={{ color: 'var(--text-tertiary)' }}>
               {String(project?.description || '').slice(0, 120)}
               {String(project?.description || '').length > 120 ? '...' : ''}
             </p>
 
-            <div className="mb-4 flex flex-wrap gap-2">
+            <div className="mb-5 flex flex-wrap gap-2">
               {stackList.slice(0, 3).map((tech) => (
                 <span
                   key={`${project?.name}-${tech}`}
-                  className="rounded-full border px-2.5 py-1 text-[11px] font-medium"
+                  className="rounded-full border px-3 py-1.5 text-[11px] font-medium"
                   style={{
                     borderColor: 'var(--hairline)',
                     color: 'var(--text-secondary)',
@@ -171,7 +171,7 @@ const ProjectCard = ({ project, onCardClick = () => { } }) => {
               {stackList.length > 3 && (
                 <button
                   type="button"
-                  className="rounded-full border px-2.5 py-1 text-[11px] font-medium"
+                  className="rounded-full border px-3 py-1.5 text-[11px] font-medium"
                   style={{
                     borderColor: 'var(--hairline-strong)',
                     color: 'var(--text-primary)',
@@ -185,7 +185,7 @@ const ProjectCard = ({ project, onCardClick = () => { } }) => {
             </div>
 
             <div
-              className="mt-auto flex items-center justify-between border-t pt-3 text-xs"
+              className="mt-auto flex items-center justify-between border-t pt-4 text-xs"
               style={{ borderColor: 'var(--hairline)', color: 'var(--text-tertiary)' }}
             >
               <span className="inline-flex items-center gap-1.5">
