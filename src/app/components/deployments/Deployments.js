@@ -22,9 +22,10 @@ import DeploymentDialog from './DeploymentDialog';
 
 const heroCardStyle = {
     background:
-        'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 92%, transparent), color-mix(in srgb, var(--bg-secondary) 92%, transparent))',
-    border: '1px solid color-mix(in srgb, var(--border-secondary) 75%, transparent)',
-    boxShadow: '0 16px 36px var(--shadow-sm)',
+        'linear-gradient(180deg, color-mix(in srgb, var(--bg-surface) 58%, transparent), color-mix(in srgb, var(--bg-secondary) 46%, transparent))',
+    border: '1px solid var(--hairline)',
+    boxShadow: 'var(--shadow-panel)',
+    backdropFilter: 'blur(28px) saturate(150%)',
 };
 
 const multiLineClampStyle = {
@@ -155,7 +156,7 @@ export default function Deployments({ data, config }) {
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, ease: 'easeOut' }}
-            className="relative min-h-screen overflow-hidden p-4 lg:p-8"
+            className="relative min-h-screen overflow-hidden px-4 py-16 sm:px-6 lg:px-8 lg:py-24"
             style={{ color: 'var(--text-primary)' }}
         >
             <div
@@ -173,12 +174,12 @@ export default function Deployments({ data, config }) {
                 }}
             />
 
-            <div className="relative mx-auto w-full max-w-[95%] lg:max-w-[80%]">
+            <div className="relative mx-auto w-full max-w-[95%] lg:max-w-[80%] xl:max-w-7xl">
                 <motion.section
                     initial={{ y: 22, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ duration: 0.6 }}
-                    className="rounded-3xl p-6 sm:p-8"
+                    className="glass-panel p-8 sm:p-12 lg:p-16"
                     style={heroCardStyle}
                 >
                     <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -195,23 +196,19 @@ export default function Deployments({ data, config }) {
                     </div>
 
                     <h1
-                        className="mb-1 pb-2 leading-tight bg-linear-to-r bg-clip-text text-4xl font-bold text-transparent sm:text-5xl lg:text-6xl"
-                        style={{
-                            backgroundImage:
-                                'linear-gradient(to right, var(--accent-cyan), var(--accent-purple), var(--accent-orange-bright))',
-                        }}
+                        className="headline-section mb-4"
                     >
                         {heroTitle}
                     </h1>
                     <TypewriterEffect roles={roles} />
 
-                    <div className="mt-7 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                    <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-3 lg:gap-5">
                         {statCards.map((item) => {
                             const Icon = item.icon;
                             return (
                                 <div
                                     key={item.label}
-                                    className="rounded-xl border p-3"
+                                    className="glass-tile p-5 sm:p-6"
                                     style={{
                                         borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)',
                                         backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 82%, transparent)',
@@ -223,7 +220,7 @@ export default function Deployments({ data, config }) {
                                     >
                                         <Icon size={14} style={{ color: item.accent }} />
                                     </div>
-                                    <p className="text-2xl font-bold">{item.value}</p>
+                                    <p className="text-3xl font-semibold tracking-tight">{item.value}</p>
                                     <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
                                         {item.label}
                                     </p>
@@ -237,7 +234,7 @@ export default function Deployments({ data, config }) {
                     initial={{ y: 22, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ duration: 0.6, delay: 0.12 }}
-                    className="mt-6 rounded-2xl border p-4 sm:p-5"
+                    className="glass-panel mt-8 p-5 sm:p-6"
                     style={heroCardStyle}
                 >
                     <div className="mb-4 flex items-center gap-2 text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>
@@ -257,7 +254,7 @@ export default function Deployments({ data, config }) {
                                 value={searchQuery}
                                 onChange={(event) => setSearchQuery(event.target.value)}
                                 placeholder="Search apps by name, provider, stack, or environment"
-                                className="w-full rounded-lg border py-2.5 pl-9 pr-3 text-sm focus:outline-none"
+                                className="w-full rounded-2xl border py-3.5 pl-10 pr-4 text-sm focus:outline-none"
                                 style={{
                                     backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 80%, transparent)',
                                     borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
@@ -274,7 +271,7 @@ export default function Deployments({ data, config }) {
                             </label>
                             <select
                                 id="deploymentTypeFilter"
-                                className="w-full rounded-lg border px-3 py-2.5 focus:outline-none"
+                                className="w-full rounded-2xl border px-4 py-3.5 focus:outline-none"
                                 style={{
                                     backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 80%, transparent)',
                                     borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
@@ -297,7 +294,7 @@ export default function Deployments({ data, config }) {
                             </label>
                             <select
                                 id="deploymentProviderFilter"
-                                className="w-full rounded-lg border px-3 py-2.5 focus:outline-none"
+                                className="w-full rounded-2xl border px-4 py-3.5 focus:outline-none"
                                 style={{
                                     backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 80%, transparent)',
                                     borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
@@ -348,7 +345,7 @@ export default function Deployments({ data, config }) {
                     className="mt-8"
                 >
                     {filteredDeployments.length > 0 ? (
-                        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 w-full">
+                        <div className="grid w-full grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                             {filteredDeployments.map((deployment, index) => {
                                 const statusStyles = getStatusStyles(deployment?.status);
                                 const stackList = Array.isArray(deployment?.techStack) ? deployment.techStack : [];
@@ -362,7 +359,7 @@ export default function Deployments({ data, config }) {
                                         initial={{ opacity: 0, y: 16 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ duration: 0.35, ease: 'easeOut' }}
-                                        className="group relative cursor-pointer overflow-hidden rounded-2xl border flex flex-col h-full w-full"
+                                        className="glass-tile group relative flex h-full w-full cursor-pointer flex-col overflow-hidden rounded-[1.625rem] border"
                                         style={{
                                             borderColor: 'color-mix(in srgb, var(--border-secondary) 74%, transparent)',
                                         }}
@@ -386,7 +383,7 @@ export default function Deployments({ data, config }) {
                                         >
                                             {/* Preview/Image Block */}
                                             <div
-                                                className="relative h-32 overflow-hidden border-b flex items-center justify-center"
+                                                className="relative flex h-44 items-center justify-center overflow-hidden border-b"
                                                 style={{
                                                     borderColor: 'color-mix(in srgb, var(--border-secondary) 70%, transparent)',
                                                     backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 86%, transparent)',
@@ -465,10 +462,10 @@ export default function Deployments({ data, config }) {
                                             </div>
 
                                             {/* Body Area */}
-                                            <div className="flex flex-col flex-1 p-4">
+                                            <div className="flex flex-1 flex-col p-5">
                                                 <div className="mb-2">
                                                     <h3
-                                                        className="text-base font-bold leading-tight"
+                                                        className="text-xl font-semibold leading-tight tracking-tight"
                                                         style={{
                                                             background: 'linear-gradient(to right, var(--accent-cyan), var(--accent-purple))',
                                                             WebkitBackgroundClip: 'text',
@@ -564,7 +561,7 @@ export default function Deployments({ data, config }) {
                             })}
                         </div>
                     ) : (
-                        <div className="rounded-2xl border p-10 text-center" style={heroCardStyle}>
+                        <div className="glass-panel p-10 text-center" style={heroCardStyle}>
                             <h3 className="mb-2 text-2xl font-semibold" style={{ color: 'var(--text-primary)' }}>
                                 No Apps Match These Filters
                             </h3>

@@ -18,9 +18,11 @@ import Divider from '../landing/Divider';
 import RouteBetaBadge from '../shared/RouteBetaBadge';
 
 const cardStyle = {
-  background: 'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 92%, transparent), color-mix(in srgb, var(--bg-secondary) 92%, transparent))',
-  border: '1px solid var(--border-secondary)',
-  boxShadow: '0 14px 28px var(--shadow-sm)',
+  background:
+    'linear-gradient(180deg, color-mix(in srgb, var(--bg-surface) 58%, transparent), color-mix(in srgb, var(--bg-secondary) 46%, transparent))',
+  border: '1px solid var(--hairline)',
+  boxShadow: 'var(--shadow-panel)',
+  backdropFilter: 'blur(28px) saturate(150%)',
 };
 
 const timelineContentStyle = {
@@ -112,7 +114,7 @@ const About = ({ data }) => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
-      className="relative min-h-screen overflow-hidden p-4 lg:p-8"
+      className="relative min-h-screen overflow-hidden px-4 py-16 sm:px-6 lg:px-8 lg:py-24"
       style={{ color: 'var(--text-primary)' }}
     >
       <div
@@ -124,13 +126,13 @@ const About = ({ data }) => {
         style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--accent-pink) 32%, transparent), transparent 68%)' }}
       />
 
-      <div className="relative mx-auto w-full max-w-[95%] lg:max-w-[80%]">
+      <div className="relative mx-auto w-full max-w-[95%] lg:max-w-[80%] xl:max-w-7xl">
         <motion.section
           id="summary"
           initial={{ y: 24, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.65, ease: 'easeOut' }}
-          className="rounded-3xl border p-6 sm:p-8 lg:p-10"
+          className="glass-panel overflow-hidden p-8 sm:p-12 lg:p-16"
           style={{
             ...cardStyle,
             borderColor: 'color-mix(in srgb, var(--border-cyan) 48%, var(--border-secondary))',
@@ -149,19 +151,14 @@ const About = ({ data }) => {
             <RouteBetaBadge />
           </div>
 
-          <h1
-            className="mb-3 bg-gradient-to-r bg-clip-text text-4xl font-bold text-transparent sm:text-5xl lg:text-6xl"
-            style={{
-              backgroundImage: 'linear-gradient(to right, var(--accent-cyan), var(--accent-purple), var(--accent-orange-bright))',
-            }}
-          >
+          <h1 className="headline-section mb-5">
             {name}
           </h1>
 
           <TypewriterEffect roles={safeRoles} />
 
           <p
-            className="mt-6 max-w-4xl text-base leading-relaxed sm:text-lg"
+            className="subcopy mt-8 max-w-4xl !text-xl sm:!text-2xl"
             style={{ color: 'var(--text-secondary)' }}
           >
             {professionalSummary}
@@ -170,23 +167,13 @@ const About = ({ data }) => {
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <Link
               href="#experience"
-              className="inline-flex items-center gap-2 rounded-lg border px-4 py-2 font-semibold transition-all duration-300"
-              style={{
-                borderColor: 'var(--accent-cyan)',
-                color: 'var(--accent-cyan)',
-                backgroundColor: 'color-mix(in srgb, var(--accent-cyan) 9%, transparent)',
-              }}
+              className="pill-solid"
             >
               Explore Journey <FaArrowRight size={14} />
             </Link>
             <Link
               href="/contact-us"
-              className="inline-flex items-center gap-2 rounded-lg border px-4 py-2 font-semibold transition-all duration-300"
-              style={{
-                borderColor: 'var(--border-secondary)',
-                color: 'var(--text-secondary)',
-                backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 70%, transparent)',
-              }}
+              className="pill-ghost"
             >
               Let&apos;s Connect
             </Link>
@@ -197,7 +184,7 @@ const About = ({ data }) => {
           initial={{ y: 24, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.65, delay: 0.2, ease: 'easeOut' }}
-          className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4"
+          className="mt-8 grid grid-cols-2 gap-4 md:grid-cols-4 lg:gap-5"
         >
           {statCards.map((item) => {
             const Icon = statIconMap[item.key];
@@ -205,7 +192,7 @@ const About = ({ data }) => {
               <motion.div
                 key={item.key}
                 whileHover={{ y: -4 }}
-                className="rounded-2xl border p-4"
+                className="glass-tile p-5 sm:p-6"
                 style={{
                   ...cardStyle,
                   borderColor: 'color-mix(in srgb, var(--border-secondary) 80%, transparent)',
@@ -214,7 +201,7 @@ const About = ({ data }) => {
                 <div className="mb-3 inline-flex rounded-lg p-2" style={{ backgroundColor: 'color-mix(in srgb, ' + item.accent + ' 14%, transparent)' }}>
                   <Icon size={16} style={{ color: item.accent }} />
                 </div>
-                <p className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{item.value}</p>
+                <p className="text-3xl font-semibold tracking-tight" style={{ color: 'var(--text-bright)' }}>{item.value}</p>
                 <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{item.label}</p>
               </motion.div>
             );
@@ -285,10 +272,10 @@ const About = ({ data }) => {
           whileInView={{ y: 0, opacity: 1 }}
           viewport={{ once: true, amount: 0.15 }}
           transition={{ duration: 0.65 }}
-          className="rounded-3xl border p-6 sm:p-8"
+          className="glass-panel p-8 sm:p-12"
           style={cardStyle}
         >
-          <h2 className="mb-5 text-2xl font-bold sm:text-3xl" style={{ color: 'var(--accent-cyan)' }}>
+          <h2 className="headline-section mb-8 !text-3xl sm:!text-4xl">
             Technical Skills
           </h2>
 
@@ -361,12 +348,7 @@ const About = ({ data }) => {
           {skills.length > 8 && (
             <motion.button
               onClick={() => setIsSkillsExpanded((prev) => !prev)}
-              className="mt-6 rounded-lg border px-4 py-2 font-semibold transition-all duration-300"
-              style={{
-                color: 'var(--accent-cyan)',
-                borderColor: 'var(--accent-cyan)',
-                backgroundColor: 'color-mix(in srgb, var(--accent-cyan) 7%, transparent)',
-              }}
+              className="pill-ghost mt-8"
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
             >
