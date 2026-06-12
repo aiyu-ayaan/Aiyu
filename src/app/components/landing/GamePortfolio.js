@@ -35,28 +35,38 @@ const GamePortfolio = ({ data, onUnlock = () => { } }) => {
         return <TicTacToe onBack={() => setSelectedGame(null)} />;
       default:
         return (
-          <div className="flex flex-col items-center gap-4">
+          <div className="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-1">
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setSelectedGame('snake')}
-              className="text-white px-6 py-3 rounded-lg font-mono text-lg transition-colors"
+              className="rounded-2xl border px-6 py-5 text-left transition-colors"
               style={{
-                backgroundColor: theme === 'dark' ? '#f97316' : '#ea580c',
+                borderColor: 'var(--hairline)',
+                backgroundColor: theme === 'dark'
+                  ? 'color-mix(in srgb, var(--bg-elevated) 72%, transparent)'
+                  : 'color-mix(in srgb, var(--bg-elevated) 90%, white)',
+                color: 'var(--text-primary)',
               }}
             >
-              Play Snake
+              <span className="block text-sm font-semibold" style={{ color: 'var(--text-bright)' }}>Play Snake</span>
+              <span className="mt-1 block text-xs" style={{ color: 'var(--text-tertiary)' }}>Unlock the portfolio interaction.</span>
             </motion.button>
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setSelectedGame('tictactoe')}
-              className="text-white px-6 py-3 rounded-lg font-mono text-lg transition-colors"
+              className="rounded-2xl border px-6 py-5 text-left transition-colors"
               style={{
-                backgroundColor: theme === 'dark' ? '#22d3ee' : '#0891b2',
+                borderColor: 'var(--hairline)',
+                backgroundColor: theme === 'dark'
+                  ? 'color-mix(in srgb, var(--bg-elevated) 72%, transparent)'
+                  : 'color-mix(in srgb, var(--bg-elevated) 90%, white)',
+                color: 'var(--text-primary)',
               }}
             >
-              Play Tic-Tac-Toe
+              <span className="block text-sm font-semibold" style={{ color: 'var(--text-bright)' }}>Play Tic-Tac-Toe</span>
+              <span className="mt-1 block text-xs" style={{ color: 'var(--text-tertiary)' }}>A focused side quest in the hero.</span>
             </motion.button>
           </div>
         );
@@ -68,32 +78,37 @@ const GamePortfolio = ({ data, onUnlock = () => { } }) => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.8, ease: "easeOut" }}
-      className="min-h-screen flex flex-col lg:flex-row items-center justify-center p-4 lg:p-8 relative transition-colors duration-300"
+      className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-4 pb-14 pt-24 transition-colors duration-300 sm:px-6 lg:px-8"
       style={{ backgroundColor: 'transparent' }}
     >
-      <div className="w-full max-w-7xl flex flex-col lg:flex-row items-center justify-between gap-12 relative z-10">
+      <div
+        className="pointer-events-none absolute left-1/2 top-24 h-[34rem] w-[34rem] -translate-x-1/2 rounded-full blur-3xl"
+        style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--text-bright) 11%, var(--accent-cyan)), transparent 70%)', opacity: 0.32 }}
+      />
+
+      <div className="relative z-10 grid w-full max-w-[95%] items-center gap-12 lg:max-w-[80%] lg:grid-cols-[minmax(0,1fr)_minmax(340px,0.68fr)] xl:max-w-7xl xl:gap-20">
         <motion.div
           initial={{ x: -50, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.2 }}
-          className="flex-1 text-center lg:text-left order-1 max-w-lg relative"
+          className="order-1 mx-auto max-w-4xl text-center lg:mx-0 lg:text-left"
         >
+          <p className="eyebrow mb-5">Portfolio</p>
           <motion.h1
-            className="text-5xl sm:text-6xl lg:text-7xl font-bold mb-6 tracking-tight"
+            className="headline-hero mb-6"
             style={{ color: 'var(--text-bright)' }}
           >
             {name || "Ayaan Ansari"}
           </motion.h1>
 
-          <div className="mb-8">
+          <div className="mb-10">
             <TypewriterEffect roles={homeRoles || []} />
           </div>
 
           <motion.div
-            className="p-6 rounded-xl border backdrop-blur-sm relative overflow-hidden group"
+            className="glass-panel group relative overflow-hidden p-5 sm:p-6 lg:max-w-2xl"
             style={{
-              backgroundColor: 'var(--bg-elevated)',
-              borderColor: 'var(--border-secondary)'
+              transformStyle: 'preserve-3d',
             }}
           >
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
@@ -137,9 +152,18 @@ const GamePortfolio = ({ data, onUnlock = () => { } }) => {
           initial={{ x: 50, opacity: 0, rotateY: 15 }}
           animate={{ x: 0, opacity: 1, rotateY: 0 }}
           transition={{ duration: 1, delay: 0.4, ease: "easeOut" }}
-          className="flex-shrink-0 order-2"
+          className="order-2 w-full"
         >
-          {renderGame()}
+          <div className="glass-panel relative mx-auto w-full max-w-[28rem] overflow-hidden p-4 sm:p-5">
+            <div className="mb-5 flex items-center justify-between border-b pb-4" style={{ borderColor: 'var(--hairline)' }}>
+              <div>
+                <p className="text-xs font-medium uppercase tracking-[0.14em]" style={{ color: 'var(--text-muted)' }}>Interactive Module</p>
+                <p className="mt-1 text-lg font-semibold" style={{ color: 'var(--text-bright)' }}>Choose a game</p>
+              </div>
+              <span className="h-2 w-2 rounded-full" style={{ backgroundColor: 'var(--status-success)' }} />
+            </div>
+            {renderGame()}
+          </div>
         </motion.div>
       </div>
     </motion.div>

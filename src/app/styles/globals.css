@@ -13,14 +13,17 @@
    admin-selected themes keep working.
    ============================================================ */
 :root {
-  --radius-panel: 1.75rem;
-  --radius-tile: 1.25rem;
-  --hairline: color-mix(in srgb, var(--border-secondary) 38%, transparent);
-  --hairline-strong: color-mix(in srgb, var(--border-secondary) 60%, transparent);
-  --surface-glass: color-mix(in srgb, var(--bg-surface) 58%, transparent);
-  --surface-tile: color-mix(in srgb, var(--bg-elevated) 55%, transparent);
-  --shadow-panel: 0 24px 70px -28px var(--shadow-md);
-  --shadow-tile: 0 12px 36px -20px var(--shadow-sm);
+  --radius-panel: 2rem;
+  --radius-tile: 1.375rem;
+  --hairline: color-mix(in srgb, var(--border-secondary) 28%, transparent);
+  --hairline-strong: color-mix(in srgb, var(--border-secondary) 52%, transparent);
+  --surface-glass: color-mix(in srgb, var(--bg-surface) 46%, transparent);
+  --surface-tile: color-mix(in srgb, var(--bg-elevated) 46%, transparent);
+  --surface-quiet: color-mix(in srgb, var(--bg-secondary) 62%, transparent);
+  --shadow-panel: 0 44px 120px -56px var(--shadow-md);
+  --shadow-tile: 0 22px 70px -46px var(--shadow-sm);
+  --apple-blue: #2997ff;
+  --apple-silver: #f5f5f7;
 }
 
 /* Chapter typography */
@@ -34,18 +37,18 @@
 }
 
 .headline-hero {
-  font-size: clamp(3rem, 7.5vw, 5.75rem);
+  font-size: clamp(3.75rem, 9.5vw, 7.8rem);
   font-weight: 700;
-  letter-spacing: -0.035em;
-  line-height: 1.02;
+  letter-spacing: -0.045em;
+  line-height: 0.95;
   color: var(--text-bright);
 }
 
 .headline-section {
-  font-size: clamp(2rem, 4.2vw, 3.25rem);
+  font-size: clamp(2.45rem, 5.2vw, 4.85rem);
   font-weight: 700;
-  letter-spacing: -0.028em;
-  line-height: 1.08;
+  letter-spacing: -0.04em;
+  line-height: 0.98;
   color: var(--text-bright);
 }
 
@@ -62,18 +65,33 @@
   border: 1px solid var(--hairline);
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--bg-surface) 62%, transparent),
-    color-mix(in srgb, var(--bg-secondary) 52%, transparent)
+    color-mix(in srgb, var(--bg-surface) 58%, transparent),
+    color-mix(in srgb, var(--bg-secondary) 46%, transparent)
   );
-  backdrop-filter: blur(22px) saturate(140%);
-  -webkit-backdrop-filter: blur(22px) saturate(140%);
+  backdrop-filter: blur(28px) saturate(150%);
+  -webkit-backdrop-filter: blur(28px) saturate(150%);
   box-shadow: var(--shadow-panel);
+}
+
+.glass-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--text-bright) 12%, transparent), transparent 26%),
+    radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--text-bright) 9%, transparent), transparent 48%);
+  opacity: 0.7;
 }
 
 .glass-tile {
   border-radius: var(--radius-tile);
   border: 1px solid var(--hairline);
-  background: var(--surface-tile);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--bg-elevated) 58%, transparent), color-mix(in srgb, var(--bg-secondary) 42%, transparent));
+  backdrop-filter: blur(18px) saturate(135%);
+  -webkit-backdrop-filter: blur(18px) saturate(135%);
   box-shadow: var(--shadow-tile);
   transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease, border-color 0.35s ease;
 }
@@ -93,7 +111,8 @@
   font-size: 0.9375rem;
   font-weight: 600;
   color: #ffffff;
-  background: var(--accent-cyan);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--apple-blue) 92%, white), var(--apple-blue));
+  box-shadow: 0 18px 45px -24px color-mix(in srgb, var(--apple-blue) 70%, transparent);
   transition: opacity 0.25s ease, transform 0.25s ease;
 }
 
@@ -111,7 +130,7 @@
   font-weight: 600;
   color: var(--text-primary);
   border: 1px solid var(--hairline-strong);
-  background: var(--surface-tile);
+  background: color-mix(in srgb, var(--surface-tile) 86%, transparent);
   transition: border-color 0.25s ease, background-color 0.25s ease;
 }
 
@@ -135,37 +154,37 @@
 /* Dark Theme - Based on VS Code theme */
 [data-theme="dark"] {
   /* Background Colors */
-  --bg-primary: #0d1117;
-  --bg-secondary: #0a1929;
-  --bg-tertiary: #080a0e;
-  --bg-surface: #1e1433;
-  --bg-elevated: #1a0f2e;
-  --bg-hover: #1e3a5f;
+  --bg-primary: #050506;
+  --bg-secondary: #0b0b0d;
+  --bg-tertiary: #111114;
+  --bg-surface: #17171a;
+  --bg-elevated: #202024;
+  --bg-hover: #2b2b30;
 
   /* Text Colors */
   --text-primary: #e5e7eb;
-  --text-secondary: #cbd5e1;
-  --text-tertiary: #94a3b8;
-  --text-muted: #64748b;
+  --text-secondary: #d2d2d7;
+  --text-tertiary: #a1a1a6;
+  --text-muted: #6e6e73;
   --text-bright: #ffffff;
 
   /* Accent Colors */
-  --accent-cyan: #22d3ee;
-  --accent-cyan-bright: #00ffff;
-  --accent-purple: #c084fc;
-  --accent-purple-dark: #7c3aed;
-  --accent-purple-darker: #4c1d95;
-  --accent-pink: #ec4899;
-  --accent-pink-bright: #f472b6;
-  --accent-pink-hot: #ff0080;
-  --accent-orange: #f97316;
-  --accent-orange-bright: #ff9500;
+  --accent-cyan: #2997ff;
+  --accent-cyan-bright: #6bb7ff;
+  --accent-purple: #bf5af2;
+  --accent-purple-dark: #8e44ce;
+  --accent-purple-darker: #3b2354;
+  --accent-pink: #ff375f;
+  --accent-pink-bright: #ff6482;
+  --accent-pink-hot: #ff2d55;
+  --accent-orange: #ff9f0a;
+  --accent-orange-bright: #ffd60a;
 
   /* Border Colors */
-  --border-primary: #1e293b;
-  --border-secondary: #374151;
-  --border-accent: #4c1d95;
-  --border-cyan: #22d3ee;
+  --border-primary: #1d1d20;
+  --border-secondary: #3a3a3c;
+  --border-accent: #4a3a5f;
+  --border-cyan: #2997ff;
 
   /* Status Colors */
   --status-error: #f87171;
@@ -187,9 +206,9 @@
   --syntax-punctuation: #fde047;
 
   /* Shadow Colors */
-  --shadow-sm: rgba(0, 0, 0, 0.3);
-  --shadow-md: rgba(0, 0, 0, 0.5);
-  --shadow-lg: rgba(34, 211, 238, 0.3);
+  --shadow-sm: rgba(0, 0, 0, 0.36);
+  --shadow-md: rgba(0, 0, 0, 0.68);
+  --shadow-lg: rgba(41, 151, 255, 0.24);
 
   /* Overlay Colors */
   --overlay-bg: rgba(0, 0, 0, 0.5);
@@ -314,20 +333,20 @@ textarea,
 body::before {
   content: "";
   position: fixed;
-  top: 20%;
-  left: 30%;
+  top: 12%;
+  left: 50%;
   /* Reduced from 20% */
-  width: min(320px, 72vw);
+  width: min(720px, 84vw);
   /* Responsive width */
-  height: min(320px, 72vw);
+  height: min(720px, 84vw);
   /* Responsive height */
-  max-width: 320px;
+  max-width: 720px;
   /* Cap the maximum size */
-  background: radial-gradient(circle, var(--accent-cyan), transparent 70%);
-  opacity: 0.07;
+  background: radial-gradient(circle, color-mix(in srgb, var(--text-bright) 30%, var(--accent-cyan)), transparent 68%);
+  opacity: 0.055;
   pointer-events: none;
   z-index: 0;
-  filter: blur(48px);
+  filter: blur(74px);
   transform: translateX(-50%);
   /* Center it properly */
   transition: opacity 0.3s ease;

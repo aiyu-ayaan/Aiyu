@@ -434,18 +434,24 @@ const FuturisticResume = ({ data }) => {
     return (
         <div
             ref={heroRef}
-            className="min-h-screen flex flex-col items-center justify-center p-4 lg:p-8 relative transition-colors duration-300 overflow-hidden"
+            className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-4 pb-16 pt-24 transition-colors duration-300 sm:px-6 lg:px-8"
             style={{ backgroundColor: 'transparent' }}
         >
             {/* three.js particle nebula backdrop (lazy, perf-gated) */}
             {config.enableScene && <HeroScene quality={config.sceneQuality} />}
 
             {/* spacious floating container utilizing 80% margins with 1280px cap */}
-            <div className="hero-stage w-full max-w-[95%] lg:max-w-[80%] xl:max-w-7xl flex flex-col justify-center relative z-10">
+            <div
+                className="pointer-events-none absolute left-1/2 top-20 h-[38rem] w-[38rem] -translate-x-1/2 rounded-full blur-3xl"
+                style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--text-bright) 12%, var(--accent-cyan)), transparent 70%)', opacity: 0.26 }}
+            />
+
+            <div className="hero-stage relative z-10 flex w-full max-w-[95%] flex-col justify-center lg:max-w-[80%] xl:max-w-7xl">
 
                 {/* --- Hero Head: centered large-type introduction --- */}
-                <div className="hero-head mb-14 flex w-full select-none flex-col items-center gap-6 text-center lg:mb-16">
+                <div className="hero-head mb-14 flex w-full select-none flex-col items-center gap-6 text-center lg:mb-18">
                     <div className="flex flex-col items-center gap-4">
+                        <p className="eyebrow">Portfolio</p>
                         <h1
                             aria-label={displayName}
                             className="headline-hero"
@@ -492,12 +498,12 @@ const FuturisticResume = ({ data }) => {
                 </div>
 
                 {/* --- Cards Workspace Grid: Perfectly Symmetric Side-by-Side --- */}
-                <div className="flex flex-col lg:flex-row items-center lg:items-start justify-between gap-12 lg:gap-16 xl:gap-24 w-full" style={{ perspective: '1600px' }}>
+                <div className="grid w-full items-start gap-8 lg:grid-cols-[minmax(0,1.08fr)_minmax(340px,0.82fr)] lg:gap-12 xl:gap-16" style={{ perspective: '1600px' }}>
 
                     {/* --- Left Panel: macOS IDE Mockup Card (Symmetric 450px height) --- */}
-                    <div className="hero-ide-card flex-1 max-w-lg lg:max-w-[700px] w-full relative">
+                    <div className="hero-ide-card relative w-full">
                         <motion.div
-                            className="glass-panel relative overflow-hidden group w-full h-[450px] flex flex-col justify-between"
+                            className="glass-panel group relative flex h-[450px] w-full flex-col justify-between overflow-hidden"
                         >
                             {/* Custom thin scrollbar style */}
                             <style>{`
@@ -596,7 +602,7 @@ const FuturisticResume = ({ data }) => {
                     </div>
 
                     {/* --- Right Column: Enhanced Futuristic Glitch Card (Symmetric 450px height) --- */}
-                    <div className="hero-glitch-wrap flex-shrink-0 order-2 perspective-1000">
+                    <div className="hero-glitch-wrap order-2 flex justify-center perspective-1000 lg:justify-end">
                         <motion.div
                             ref={containerRef}
                             style={{

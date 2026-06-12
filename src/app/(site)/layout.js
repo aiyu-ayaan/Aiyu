@@ -68,13 +68,25 @@ export default async function SiteLayout({ children }) {
 
     return (
         <div className="relative">
-            <div aria-hidden="true" className="absolute inset-0 pointer-events-none z-0">
+            <div aria-hidden="true" className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
                 <div
                     className="absolute inset-0"
                     style={{
-                        opacity: 0.075,
-                        backgroundImage: 'linear-gradient(color-mix(in srgb, var(--accent-cyan) 24%, var(--border-secondary)) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, var(--accent-cyan) 24%, var(--border-secondary)) 1px, transparent 1px)',
-                        backgroundSize: '40px 40px',
+                        background:
+                            'radial-gradient(circle at 50% -10%, color-mix(in srgb, var(--text-bright) 8%, transparent), transparent 34%), linear-gradient(180deg, color-mix(in srgb, var(--bg-tertiary) 78%, var(--bg-primary)), var(--bg-primary) 42%, color-mix(in srgb, var(--bg-secondary) 86%, var(--bg-primary)))',
+                    }}
+                />
+                <div
+                    className="absolute left-1/2 top-0 h-[42rem] w-[42rem] -translate-x-1/2 rounded-full blur-3xl"
+                    style={{
+                        opacity: 0.08,
+                        background: 'radial-gradient(circle, color-mix(in srgb, var(--apple-silver) 80%, var(--accent-cyan)), transparent 68%)',
+                    }}
+                />
+                <div
+                    className="absolute inset-x-0 top-0 h-px"
+                    style={{
+                        background: 'linear-gradient(90deg, transparent, color-mix(in srgb, var(--text-bright) 18%, transparent), transparent)',
                     }}
                 />
             </div>
