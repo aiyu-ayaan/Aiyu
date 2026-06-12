@@ -117,6 +117,63 @@
   min-height: min(760px, calc(100dvh - 8rem));
 }
 
+/* Horizontal scroll showcase (data-hscroll viewport + data-hscroll-track) */
+.hscroll-viewport {
+  position: relative;
+  width: 100%;
+  /* Ships natively scrollable; JS adds .is-pinned to take over on capable devices. */
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-secondary) transparent;
+}
+
+.hscroll-viewport.is-pinned {
+  overflow: hidden;
+  scroll-snap-type: none;
+}
+
+.hscroll-viewport::-webkit-scrollbar {
+  height: 6px;
+}
+
+.hscroll-viewport::-webkit-scrollbar-thumb {
+  background: var(--border-secondary);
+  border-radius: 9999px;
+}
+
+.hscroll-viewport.is-pinned::-webkit-scrollbar {
+  display: none;
+}
+
+.hscroll-track {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: clamp(1rem, 2.2vw, 1.75rem);
+  width: max-content;
+  padding-block: 0.5rem;
+  padding-inline-end: clamp(1rem, 6vw, 5rem);
+}
+
+.hscroll-viewport.is-pinned .hscroll-track {
+  will-change: transform;
+}
+
+.hscroll-panel {
+  flex: 0 0 auto;
+  width: min(85vw, 30rem);
+  scroll-snap-align: start;
+}
+
+@media (min-width: 1024px) {
+  .hscroll-panel {
+    width: 26rem;
+  }
+}
+
 .glass-tile:hover {
   border-color: var(--hairline-strong);
   box-shadow: 0 20px 48px -20px var(--shadow-md);
