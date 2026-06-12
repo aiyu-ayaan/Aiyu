@@ -1,5 +1,51 @@
 # Changelog
 
+## [4.2.0](https://github.com/aiyu-ayaan/Aiyu/compare/v4.1.3...v4.2.0) (2026-06-12)
+
+### Features
+
+* feat(metrics): add detailed performance metrics and logs for k6 tests
+* feat(public-ui): align about projects and apps with premium design
+* feat(portfolio): polish navigation and footer chrome
+* feat(portfolio): refine landing chapters and showcase cards
+* feat(portfolio): establish premium landing visual system
+* feat(codegraph): add .gitignore and daemon.pid for CodeGraph configuration
+* feat(tech-stack): configure skill cards and progress bar scroll animations to play once
+* feat(scroll): integrate Lenis smooth scroll and refine GSAP entrance presets
+* feat(design): refine navigation and footer with quiet premium chrome
+* feat(design): restyle project showcase and blog cards with premium glass treatment
+* feat(design): restyle tech stack and about sections with refined chapter layout
+* feat(design): restyle snapshot and mission control as premium glass chapters
+* feat(design): restyle hero with centered large-type layout and quiet glass surfaces
+* feat(design): add premium design foundation with glass surfaces and refined typography
+* feat(home): add admin-configurable mission control status section
+* feat(home): redesign snapshot, tech stack, about, projects and blogs with 3d scroll reveals
+* feat(home): rebuild hero with three.js particle scene and gsap scroll choreography
+* feat(home): add shared gsap scroll-trigger utilities with 3d reveal presets
+* feat(docker): support NGINX_HTTPS_PORT and mount certs directory in Nginx service
+* feat(nginx): configure HTTPS server on port 443 with SSL hardening and HTTP redirect
+* feat(nginx): add self-signed certificate generation helper scripts
+* feat(nginx): set up certs directory structure and update gitignore
+* feat(docker): add replica set compose configuration
+
+### Bug Fixes
+
+* fix(public-ui): restore compact premium page spacing
+* fix(portfolio): stabilize mobile lazy section loading
+* fix(scroll): disable Lenis on mobile and touch devices to prevent scroll-locking
+* fix(home): replace deprecated THREE.Clock with timestamp-based elapsed time
+* fix(home): make scroll animations reversible and conflict-free
+
+### Other Changes
+
+* Merge branch 'codex/perf-priority-fixes'
+* style(landing): restore original container max-width for hero panels
+* style(blogs): align BlogList, BlogDetailClient, and BlogsPageHeader container widths with header
+* style(components): align About, Projects, Deployments, ContactPageClient, and GalleryClient container widths with header
+* style(landing): align FuturisticResume, GamePortfolio, and Footer container widths with header
+* chore(deps): add gsap, @gsap/react and three for 3d homescreen experience
+* refactor(docker): change default database to standalone mongodb to reduce RAM usage
+
 ## [4.1.3](https://github.com/aiyu-ayaan/Aiyu/compare/v4.1.2...v4.1.3) (2026-06-04)
 
 ### Features
