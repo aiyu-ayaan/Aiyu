@@ -62,9 +62,9 @@ export default function DeploymentDialog({ deployment, onClose }) {
                     animate={{ scale: 1, opacity: 1, y: 0 }}
                     exit={{ scale: 0.96, opacity: 0, y: 16 }}
                     transition={{ duration: 0.2, ease: 'easeOut' }}
-                    className="relative w-full max-w-4xl overflow-hidden rounded-3xl border shadow-2xl"
+                    className="relative w-full max-w-4xl overflow-hidden rounded-3xl border shadow-2xl flex flex-col"
                     style={{
-                        maxHeight: '88vh',
+                        maxHeight: 'min(88dvh, calc(100% - 2rem))',
                         background:
                             'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 95%, transparent), color-mix(in srgb, var(--bg-secondary) 96%, transparent))',
                         borderColor: 'color-mix(in srgb, var(--border-secondary) 80%, transparent)',
@@ -72,7 +72,7 @@ export default function DeploymentDialog({ deployment, onClose }) {
                     onClick={(event) => event.stopPropagation()}
                 >
                     <div
-                        className="h-1.5 w-full"
+                        className="h-1.5 w-full shrink-0"
                         style={{
                             background:
                                 'linear-gradient(90deg, var(--accent-cyan), var(--accent-purple), var(--accent-orange), var(--accent-cyan))',
@@ -94,7 +94,7 @@ export default function DeploymentDialog({ deployment, onClose }) {
                         <FaXmark />
                     </button>
 
-                    <div className="hide-scrollbar overflow-y-auto p-5 sm:p-7" style={{ maxHeight: 'calc(88vh - 6px)' }}>
+                    <div className="hide-scrollbar overflow-y-auto p-5 sm:p-7 flex-1">
                         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_1.1fr]">
                             <div
                                 className="relative aspect-[16/10] overflow-hidden rounded-2xl border"

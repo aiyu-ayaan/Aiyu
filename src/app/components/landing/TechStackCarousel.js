@@ -211,7 +211,7 @@ const TechStackCarousel = ({ data }) => {
             Level
           </span>
           <div
-            className="inline-flex max-w-full flex-wrap items-center gap-1 rounded-full border p-1.5"
+            className="flex max-w-full items-center gap-1 overflow-x-auto rounded-full border p-1.5 hide-scrollbar whitespace-nowrap w-fit"
             style={{ borderColor: 'var(--hairline)', backgroundColor: 'var(--surface-tile)' }}
           >
             {['All', 'Core', 'Advanced', 'Intermediate', 'Fundamentals'].map((band) => {
@@ -222,7 +222,7 @@ const TechStackCarousel = ({ data }) => {
                   key={band}
                   type="button"
                   onClick={() => switchBand(band)}
-                  className="rounded-full px-4 py-2 text-sm font-medium transition-colors duration-250"
+                  className="shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors duration-250"
                   style={{
                     color: isActive ? 'var(--text-bright)' : 'var(--text-tertiary)',
                     backgroundColor: isActive

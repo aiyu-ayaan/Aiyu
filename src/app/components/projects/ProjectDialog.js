@@ -64,9 +64,9 @@ const ProjectDialog = ({ project, onClose }) => {
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.96, opacity: 0, y: 18 }}
           transition={{ duration: 0.22, ease: 'easeOut' }}
-          className="relative w-full max-w-5xl overflow-hidden rounded-3xl border shadow-2xl"
+          className="relative w-full max-w-5xl overflow-hidden rounded-3xl border shadow-2xl flex flex-col"
           style={{
-            maxHeight: '88vh',
+            maxHeight: 'min(88dvh, calc(100% - 2rem))',
             background:
               'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 95%, transparent), color-mix(in srgb, var(--bg-secondary) 96%, transparent))',
             borderColor: 'color-mix(in srgb, var(--border-secondary) 80%, transparent)',
@@ -74,7 +74,7 @@ const ProjectDialog = ({ project, onClose }) => {
           onClick={(e) => e.stopPropagation()}
         >
           <div
-            className="h-1.5 w-full"
+            className="h-1.5 w-full shrink-0"
             style={{
               background:
                 'linear-gradient(90deg, var(--accent-cyan), var(--accent-purple), var(--accent-pink), var(--accent-cyan))',
@@ -95,7 +95,7 @@ const ProjectDialog = ({ project, onClose }) => {
             <FaTimes />
           </button>
 
-          <div className="hide-scrollbar overflow-y-auto" style={{ maxHeight: 'calc(88vh - 6px)' }}>
+          <div className="hide-scrollbar overflow-y-auto flex-1">
             <div className="grid grid-cols-1 gap-6 p-5 sm:p-7 lg:grid-cols-[1.2fr_1fr]">
               <div className="space-y-4">
                 <div
@@ -324,7 +324,7 @@ const ProjectDialog = ({ project, onClose }) => {
 
           {project?.codeLink && (
             <div
-              className="border-t px-5 py-3 text-xs sm:px-7"
+              className="border-t px-5 py-3 text-xs sm:px-7 shrink-0"
               style={{
                 borderColor: 'color-mix(in srgb, var(--border-secondary) 70%, transparent)',
                 color: 'var(--text-tertiary)',
