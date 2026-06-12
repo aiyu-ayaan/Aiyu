@@ -446,7 +446,7 @@ const FuturisticResume = ({ data }) => {
                 style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--text-bright) 12%, var(--accent-cyan)), transparent 70%)', opacity: 0.26 }}
             />
 
-            <div className="hero-stage relative z-10 flex w-full max-w-[95%] flex-col justify-center lg:max-w-[80%]">
+            <div className="hero-stage relative z-10 flex w-full max-w-[95%] flex-col justify-center lg:max-w-[80%] xl:max-w-7xl">
 
                 {/* --- Hero Head: centered large-type introduction --- */}
                 <div className="hero-head mb-14 flex w-full select-none flex-col items-center gap-6 text-center lg:mb-18">

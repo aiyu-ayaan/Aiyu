@@ -86,7 +86,7 @@ const GamePortfolio = ({ data, onUnlock = () => { } }) => {
         style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--text-bright) 11%, var(--accent-cyan)), transparent 70%)', opacity: 0.32 }}
       />
 
-      <div className="relative z-10 grid w-full max-w-[95%] items-center gap-12 lg:max-w-[80%] lg:grid-cols-[minmax(0,1fr)_minmax(340px,0.68fr)] xl:gap-20">
+      <div className="relative z-10 grid w-full max-w-[95%] items-center gap-12 lg:max-w-[80%] lg:grid-cols-[minmax(0,1fr)_minmax(340px,0.68fr)] xl:max-w-7xl xl:gap-20">
         <motion.div
           initial={{ x: -50, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
