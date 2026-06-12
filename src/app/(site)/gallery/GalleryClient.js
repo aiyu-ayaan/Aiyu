@@ -436,7 +436,7 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
       <div className="pointer-events-none absolute -left-24 top-8 h-72 w-72 rounded-full blur-3xl" style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--accent-cyan) 30%, transparent), transparent 70%)' }} />
       <div className="pointer-events-none absolute -right-20 top-1/4 h-64 w-64 rounded-full blur-3xl" style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--accent-purple) 24%, transparent), transparent 70%)' }} />
 
-      <div className="relative mx-auto w-full max-w-[95%] lg:max-w-[80%] xl:max-w-7xl">
+      <div className="relative mx-auto w-full max-w-[95%] lg:max-w-[80%]">
         <section
           className="glass-panel p-6 sm:p-8"
           style={{
