@@ -142,12 +142,12 @@ const HeroScene = ({ quality = 'high' }) => {
             observer.observe(mount);
 
             let rafId = 0;
-            const clock = new THREE.Clock();
+            const startTime = performance.now();
             const renderLoop = () => {
                 rafId = window.requestAnimationFrame(renderLoop);
                 if (!inView || document.hidden) return;
 
-                const elapsed = clock.getElapsedTime();
+                const elapsed = (performance.now() - startTime) / 1000;
                 const themeColors = themeColorsRef.current;
                 if (themeColors?.dirty) {
                     coreMaterial.color.set(themeColors.cyan);
