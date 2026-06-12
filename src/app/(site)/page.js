@@ -1,6 +1,7 @@
 import dynamic from "next/dynamic";
 import HomeLazySections from "../components/landing/HomeLazySections";
 import HomeSnapshot from "../components/landing/HomeSnapshot";
+import HomeMissionControl from "../components/landing/HomeMissionControl";
 import ViewportLazySection from "../components/shared/ViewportLazySection";
 import WebMCPTools from "../components/agent/WebMCPTools";
 import { getHomePageData, getConfigData } from "@/lib/dataFetchers";
@@ -120,6 +121,17 @@ export default async function Home() {
           recentBlogTitles={recentBlogTitles}
         />
       </ViewportLazySection>
+
+      {serializedHomeData?.statusSection?.enabled !== false && (
+        <ViewportLazySection
+          id="home-status"
+          className="relative z-20 px-4 pb-10 lg:px-8 lg:pb-12"
+          placeholderHeight={320}
+          rootMargin="220px 0px"
+        >
+          <HomeMissionControl data={serializedHomeData?.statusSection} />
+        </ViewportLazySection>
+      )}
 
       <HomeLazySections
         aboutData={serializedAboutData}

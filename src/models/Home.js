@@ -11,6 +11,14 @@ const HomeSchema = new mongoose.Schema({
     resumeIcon: { type: String, default: 'FaBolt' }, // FaBolt, FaCode, etc.
     // New toggle for Hero Section
     heroSectionType: { type: String, enum: ['game', 'futuristic'], default: 'futuristic' },
+    // Mission Control: live status strip rendered on the homepage
+    statusSection: {
+        enabled: { type: Boolean, default: true },
+        headline: { type: String, default: 'Mission Control' },
+        focus: { type: String, default: 'Building delightful web experiences' },
+        learning: { type: String, default: 'Exploring new tools and patterns' },
+        availability: { type: String, default: 'Open to collaborations' },
+    },
 });
 
 export default mongoose.models.Home || mongoose.model('Home', HomeSchema);

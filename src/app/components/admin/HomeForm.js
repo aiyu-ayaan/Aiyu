@@ -12,6 +12,11 @@ const HomeForm = () => {
         homeRoles: '',
         githubLink: '',
         codeSnippets: '',
+        statusEnabled: true,
+        statusHeadline: '',
+        statusFocus: '',
+        statusLearning: '',
+        statusAvailability: '',
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -48,6 +53,11 @@ const HomeForm = () => {
                         ...data,
                         homeRoles: data.homeRoles ? data.homeRoles.join(', ') : '',
                         codeSnippets: data.codeSnippets ? data.codeSnippets.join('\n') : '',
+                        statusEnabled: data.statusSection?.enabled !== false,
+                        statusHeadline: data.statusSection?.headline || '',
+                        statusFocus: data.statusSection?.focus || '',
+                        statusLearning: data.statusSection?.learning || '',
+                        statusAvailability: data.statusSection?.availability || '',
                     });
                 }
             }
@@ -105,8 +115,8 @@ const HomeForm = () => {
     };
 
     const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData((prev) => ({ ...prev, [name]: value }));
+        const { name, value, type, checked } = e.target;
+        setFormData((prev) => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
     };
 
     const showNotification = (success, message) => {
@@ -123,7 +133,19 @@ const HomeForm = () => {
             ...formData,
             homeRoles: formData.homeRoles.split(',').map((item) => item.trim()),
             codeSnippets: formData.codeSnippets.split('\n').filter((item) => item.trim() !== ''),
+            statusSection: {
+                enabled: formData.statusEnabled,
+                headline: formData.statusHeadline.trim() || 'Mission Control',
+                focus: formData.statusFocus.trim(),
+                learning: formData.statusLearning.trim(),
+                availability: formData.statusAvailability.trim(),
+            },
         };
+        delete payload.statusEnabled;
+        delete payload.statusHeadline;
+        delete payload.statusFocus;
+        delete payload.statusLearning;
+        delete payload.statusAvailability;
 
         try {
             const response = await fetch('/api/home', {
@@ -313,6 +335,77 @@ const HomeForm = () => {
                             <option value="FaRocket">🚀 Rocket</option>
                             <option value="FaBrain">🧠 Brain</option>
                         </select>
+                    </div>
+                </div>
+            </div>
+
+            {/* Mission Control Section */}
+            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 md:p-8 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-pink-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
+
+                <h2 className="text-sm font-mono text-pink-400 uppercase tracking-widest mb-8 flex items-center gap-4">
+                    Mission Control
+                    <div className="h-px bg-pink-500/20 flex-grow" />
+                </h2>
+
+                <label className="flex items-center justify-between gap-4 p-4 rounded-xl bg-slate-950/40 border border-white/5 mb-6 cursor-pointer">
+                    <div>
+                        <p className="text-sm font-bold text-white">Show Live Status Section</p>
+                        <p className="text-xs text-slate-500 mt-1 font-mono">{'// Renders the Mission Control strip on the homepage'}</p>
+                    </div>
+                    <input
+                        type="checkbox"
+                        name="statusEnabled"
+                        checked={formData.statusEnabled}
+                        onChange={handleChange}
+                        className="h-5 w-5 accent-pink-500 cursor-pointer"
+                    />
+                </label>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Section Headline</label>
+                        <input
+                            type="text"
+                            name="statusHeadline"
+                            value={formData.statusHeadline}
+                            onChange={handleChange}
+                            placeholder="Mission Control"
+                            className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-pink-500/50 focus:ring-1 focus:ring-pink-500/50 outline-none transition-all placeholder:text-slate-600"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Availability</label>
+                        <input
+                            type="text"
+                            name="statusAvailability"
+                            value={formData.statusAvailability}
+                            onChange={handleChange}
+                            placeholder="Open to collaborations"
+                            className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-pink-500/50 focus:ring-1 focus:ring-pink-500/50 outline-none transition-all placeholder:text-slate-600"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Current Focus</label>
+                        <input
+                            type="text"
+                            name="statusFocus"
+                            value={formData.statusFocus}
+                            onChange={handleChange}
+                            placeholder="Building delightful web experiences"
+                            className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-pink-500/50 focus:ring-1 focus:ring-pink-500/50 outline-none transition-all placeholder:text-slate-600"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Now Learning</label>
+                        <input
+                            type="text"
+                            name="statusLearning"
+                            value={formData.statusLearning}
+                            onChange={handleChange}
+                            placeholder="Exploring new tools and patterns"
+                            className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-pink-500/50 focus:ring-1 focus:ring-pink-500/50 outline-none transition-all placeholder:text-slate-600"
+                        />
                     </div>
                 </div>
             </div>
