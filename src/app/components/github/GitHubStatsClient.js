@@ -243,12 +243,9 @@ export default function GitHubStatsClient({ data }) {
 
       <div className="relative mx-auto w-full max-w-[95%] lg:max-w-[80%]">
         <section
-          className="rounded-3xl border p-6 sm:p-8"
+          className="glass-panel p-6 sm:p-8"
           style={{
-            background:
-              'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 93%, transparent), color-mix(in srgb, var(--bg-secondary) 93%, transparent))',
-            borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
-            boxShadow: '0 16px 36px var(--shadow-sm)',
+            borderColor: 'var(--hairline)',
           }}
         >
           <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -257,7 +254,7 @@ export default function GitHubStatsClient({ data }) {
             </p>
             <RouteBetaBadge />
           </div>
-          <h1 className="mb-3 bg-gradient-to-r bg-clip-text text-4xl font-bold text-transparent sm:text-5xl lg:text-6xl" style={{ backgroundImage: 'linear-gradient(to right, var(--accent-cyan), var(--accent-purple), var(--accent-pink))' }}>
+          <h1 className="headline-section mb-3">
             GitHub Statistics
           </h1>
           <p className="max-w-2xl text-base sm:text-lg" style={{ color: 'var(--text-secondary)' }}>
@@ -265,7 +262,7 @@ export default function GitHubStatsClient({ data }) {
           </p>
 
           {sections.showProfile && (
-            <div className="mt-6 rounded-2xl border p-5" style={{ borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)', backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 82%, transparent)' }}>
+            <div className="glass-tile mt-6 p-5">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                 {isOptimizableImage(profile.avatar) ? (
                   <Image
@@ -332,7 +329,7 @@ export default function GitHubStatsClient({ data }) {
               return (
                 <div
                   key={item.label}
-                  className="rounded-xl border p-3"
+                  className="glass-tile p-3"
                   style={{
                     borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)',
                     backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 82%, transparent)',
@@ -351,11 +348,9 @@ export default function GitHubStatsClient({ data }) {
 
         {sections.showRepositories && (
           <section
-            className="mt-8 rounded-2xl border p-5"
+            className="glass-panel mt-8 p-5"
             style={{
-              background:
-                'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 94%, transparent), color-mix(in srgb, var(--bg-secondary) 94%, transparent))',
-              borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
+              borderColor: 'var(--hairline)',
             }}
           >
             <h2 className="mb-4 text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
@@ -421,7 +416,7 @@ export default function GitHubStatsClient({ data }) {
                     <Wrapper
                       key={`${repo?.name}-${repo?.updated_at}`}
                       {...wrapperProps}
-                      className="rounded-xl border p-4 transition-colors"
+                      className="glass-tile p-4 transition-colors"
                       style={{
                         borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)',
                         backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 82%, transparent)',
@@ -470,11 +465,9 @@ export default function GitHubStatsClient({ data }) {
 
         {sections.showContributions && contributionWeeks.length > 0 && (
           <section
-            className="mt-8 rounded-2xl border p-5"
+            className="glass-panel mt-8 p-5"
             style={{
-              background:
-                'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 94%, transparent), color-mix(in srgb, var(--bg-secondary) 94%, transparent))',
-              borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
+              borderColor: 'var(--hairline)',
             }}
           >
             <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
@@ -521,11 +514,9 @@ export default function GitHubStatsClient({ data }) {
 
         {sections.showActivity && recentActivity.length > 0 && (
           <section
-            className="mt-8 rounded-2xl border p-5"
+            className="glass-panel mt-8 p-5"
             style={{
-              background:
-                'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 94%, transparent), color-mix(in srgb, var(--bg-secondary) 94%, transparent))',
-              borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
+              borderColor: 'var(--hairline)',
             }}
           >
             <h2 className="mb-4 text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>

@@ -242,7 +242,7 @@ const Projects = ({ data, initialConfig = null }) => {
       initial={{ opacity: 0, y: 18 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.7, ease: 'easeOut' }}
-      className="relative min-h-screen overflow-hidden px-4 py-16 sm:px-6 lg:px-8 lg:py-24"
+      className="relative min-h-screen overflow-hidden p-4 lg:p-8"
       style={{ color: 'var(--text-primary)' }}
     >
       <div
@@ -265,7 +265,7 @@ const Projects = ({ data, initialConfig = null }) => {
           initial={{ y: 22, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.6 }}
-          className="glass-panel p-8 sm:p-12 lg:p-16"
+          className="glass-panel p-6 sm:p-8"
           style={heroCardStyle}
         >
           <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -283,20 +283,20 @@ const Projects = ({ data, initialConfig = null }) => {
 
           <>
             <h1
-              className="headline-section mb-4"
+              className="headline-section mb-1 pb-2"
             >
               {config?.projectsTitle || 'Projects Portfolio'}
             </h1>
             <TypewriterEffect roles={roles} />
           </>
 
-          <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-3 lg:gap-5">
+          <div className="mt-7 grid grid-cols-1 gap-3 sm:grid-cols-3">
             {statCards.map((item) => {
               const Icon = item.icon;
               return (
                 <div
                   key={item.label}
-                  className="glass-tile p-5 sm:p-6"
+                  className="glass-tile p-3"
                   style={{
                     borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)',
                     backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 82%, transparent)',
@@ -322,7 +322,7 @@ const Projects = ({ data, initialConfig = null }) => {
           initial={{ y: 22, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.12 }}
-          className="glass-panel mt-8 p-5 sm:p-6"
+          className="glass-panel mt-6 p-4 sm:p-5"
           style={{
             ...heroCardStyle,
             border: '1px solid color-mix(in srgb, var(--border-secondary) 72%, transparent)',
@@ -343,7 +343,7 @@ const Projects = ({ data, initialConfig = null }) => {
               <button
                 type="button"
                 onClick={() => setViewMode('grid')}
-                    className="rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wide"
+                    className="rounded-md px-3 py-1.5 text-xs font-semibold uppercase tracking-wide"
                 style={{
                   color: viewMode === 'grid' ? 'var(--accent-cyan)' : 'var(--text-secondary)',
                   backgroundColor:
@@ -357,7 +357,7 @@ const Projects = ({ data, initialConfig = null }) => {
               <button
                 type="button"
                 onClick={() => setViewMode('timeline')}
-                className="rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wide"
+                className="rounded-md px-3 py-1.5 text-xs font-semibold uppercase tracking-wide"
                 style={{
                   color: viewMode === 'timeline' ? 'var(--accent-cyan)' : 'var(--text-secondary)',
                   backgroundColor:
@@ -383,7 +383,7 @@ const Projects = ({ data, initialConfig = null }) => {
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
                 placeholder="Search by name, stack, type, or description"
-                className="w-full rounded-2xl border py-3.5 pl-10 pr-4 text-sm focus:outline-none"
+                className="w-full rounded-lg border py-2.5 pl-9 pr-3 text-sm focus:outline-none"
                 style={{
                   backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 80%, transparent)',
                   borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
@@ -400,7 +400,7 @@ const Projects = ({ data, initialConfig = null }) => {
               </label>
               <select
                 id="techStackFilter"
-                className="w-full rounded-2xl border px-4 py-3.5 focus:outline-none"
+                className="w-full rounded-lg border px-3 py-2.5 focus:outline-none"
                 style={{
                   backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 80%, transparent)',
                   borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
@@ -423,7 +423,7 @@ const Projects = ({ data, initialConfig = null }) => {
               </label>
               <select
                 id="projectTypeFilter"
-                className="w-full rounded-2xl border px-4 py-3.5 focus:outline-none"
+                className="w-full rounded-lg border px-3 py-2.5 focus:outline-none"
                 style={{
                   backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 80%, transparent)',
                   borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
@@ -510,7 +510,7 @@ const Projects = ({ data, initialConfig = null }) => {
                 {spotlightProject && (
                   <motion.article
                     whileHover={{ y: -3 }}
-                    className="glass-panel cursor-pointer overflow-hidden p-6 sm:p-8"
+                    className="glass-panel cursor-pointer overflow-hidden p-5 sm:p-6"
                     style={heroCardStyle}
                     onClick={() => setSelectedProject(spotlightProject)}
                   >

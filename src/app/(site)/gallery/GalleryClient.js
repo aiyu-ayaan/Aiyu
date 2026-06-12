@@ -436,13 +436,11 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
       <div className="pointer-events-none absolute -left-24 top-8 h-72 w-72 rounded-full blur-3xl" style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--accent-cyan) 30%, transparent), transparent 70%)' }} />
       <div className="pointer-events-none absolute -right-20 top-1/4 h-64 w-64 rounded-full blur-3xl" style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--accent-purple) 24%, transparent), transparent 70%)' }} />
 
-      <div className="relative mx-auto w-full max-w-[95%] lg:max-w-[80%]">
+      <div className="relative mx-auto w-full max-w-[95%] lg:max-w-[80%] xl:max-w-7xl">
         <section
-          className="rounded-3xl border p-6 sm:p-8"
+          className="glass-panel p-6 sm:p-8"
           style={{
-            background: 'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 93%, transparent), color-mix(in srgb, var(--bg-secondary) 93%, transparent))',
-            borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
-            boxShadow: '0 16px 36px var(--shadow-sm)',
+            borderColor: 'var(--hairline)',
           }}
         >
           <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -451,7 +449,7 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
             </p>
             <RouteBetaBadge />
           </div>
-          <h1 className="mb-3 bg-linear-to-r bg-clip-text text-4xl font-bold text-transparent sm:text-5xl lg:text-6xl" style={{ backgroundImage: 'linear-gradient(to right, var(--accent-cyan), var(--accent-purple), var(--accent-pink))' }}>
+          <h1 className="headline-section mb-3">
             {headerInfo.title}
           </h1>
           <p className="max-w-2xl text-base sm:text-lg" style={{ color: 'var(--text-secondary)' }}>
@@ -467,24 +465,23 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
             ].map((item) => (
               <div
                 key={item.label}
-                className="rounded-xl border p-3"
+                className="glass-tile p-3"
                 style={{
                   borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)',
                   backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 82%, transparent)',
                 }}
               >
                 <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{item.label}</p>
-                <p className="text-base font-semibold sm:text-lg" style={{ color: item.accent }}>{item.value}</p>
+                <p className="text-lg font-semibold sm:text-xl" style={{ color: item.accent }}>{item.value}</p>
               </div>
             ))}
           </div>
         </section>
 
         <section
-          className="mt-6 rounded-2xl border p-4 sm:p-5"
+          className="glass-panel mt-6 p-4 sm:p-5"
           style={{
-            background: 'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 94%, transparent), color-mix(in srgb, var(--bg-secondary) 94%, transparent))',
-            borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
+            borderColor: 'var(--hairline)',
           }}
         >
           <div className="mb-4">
@@ -501,8 +498,8 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
                 placeholder="Search by description"
                 className="w-full rounded-lg border py-2.5 pl-9 pr-3 text-sm focus:outline-none"
                 style={{
-                  backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 80%, transparent)',
-                  borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
+                  backgroundColor: 'var(--surface-tile)',
+                  borderColor: 'var(--hairline)',
                   color: 'var(--text-primary)',
                 }}
               />
@@ -574,11 +571,11 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
         <section className="mt-8">
           {filteredImages.length > 0 ? (
             <div
-              className="grid gap-4"
+              className="grid gap-5"
               style={{ gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))` }}
             >
               {balancedColumns.map((column, columnIndex) => (
-                <div key={`gallery-col-${columnIndex}`} className="flex flex-col gap-4">
+                <div key={`gallery-col-${columnIndex}`} className="flex flex-col gap-5">
                   {column.map(({ image, globalIndex }) => {
                     const imageKey = image?._id || `${image?.src}-${globalIndex}`;
                     const orientation = getOrientation(image);
@@ -595,10 +592,9 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ duration: 0.35, delay: Math.min(globalIndex * 0.03, 0.8) }}
-                        className="overflow-hidden rounded-xl border"
+                        className="glass-tile overflow-hidden rounded-[1.625rem] border"
                         style={{
-                          borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)',
-                          backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 85%, transparent)',
+                          borderColor: 'var(--hairline)',
                         }}
                       >
                         <div
@@ -695,10 +691,9 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
             </div>
           ) : (
             <div
-              className="rounded-2xl border p-12 text-center"
+              className="glass-panel p-12 text-center"
               style={{
-                borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)',
-                background: 'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 94%, transparent), color-mix(in srgb, var(--bg-secondary) 94%, transparent))',
+                borderColor: 'var(--hairline)',
               }}
             >
               <h3 className="mb-2 text-2xl font-semibold" style={{ color: 'var(--text-primary)' }}>

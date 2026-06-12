@@ -156,7 +156,7 @@ export default function Deployments({ data, config }) {
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, ease: 'easeOut' }}
-            className="relative min-h-screen overflow-hidden px-4 py-16 sm:px-6 lg:px-8 lg:py-24"
+            className="relative min-h-screen overflow-hidden p-4 lg:p-8"
             style={{ color: 'var(--text-primary)' }}
         >
             <div
@@ -179,7 +179,7 @@ export default function Deployments({ data, config }) {
                     initial={{ y: 22, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ duration: 0.6 }}
-                    className="glass-panel p-8 sm:p-12 lg:p-16"
+                    className="glass-panel p-6 sm:p-8"
                     style={heroCardStyle}
                 >
                     <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -196,19 +196,19 @@ export default function Deployments({ data, config }) {
                     </div>
 
                     <h1
-                        className="headline-section mb-4"
+                        className="headline-section mb-1 pb-2"
                     >
                         {heroTitle}
                     </h1>
                     <TypewriterEffect roles={roles} />
 
-                    <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-3 lg:gap-5">
+                    <div className="mt-7 grid grid-cols-1 gap-3 sm:grid-cols-3">
                         {statCards.map((item) => {
                             const Icon = item.icon;
                             return (
                                 <div
                                     key={item.label}
-                                    className="glass-tile p-5 sm:p-6"
+                                    className="glass-tile p-3"
                                     style={{
                                         borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)',
                                         backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 82%, transparent)',
@@ -234,7 +234,7 @@ export default function Deployments({ data, config }) {
                     initial={{ y: 22, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ duration: 0.6, delay: 0.12 }}
-                    className="glass-panel mt-8 p-5 sm:p-6"
+                    className="glass-panel mt-6 p-4 sm:p-5"
                     style={heroCardStyle}
                 >
                     <div className="mb-4 flex items-center gap-2 text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>
@@ -254,7 +254,7 @@ export default function Deployments({ data, config }) {
                                 value={searchQuery}
                                 onChange={(event) => setSearchQuery(event.target.value)}
                                 placeholder="Search apps by name, provider, stack, or environment"
-                                className="w-full rounded-2xl border py-3.5 pl-10 pr-4 text-sm focus:outline-none"
+                                className="w-full rounded-lg border py-2.5 pl-9 pr-3 text-sm focus:outline-none"
                                 style={{
                                     backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 80%, transparent)',
                                     borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
@@ -271,7 +271,7 @@ export default function Deployments({ data, config }) {
                             </label>
                             <select
                                 id="deploymentTypeFilter"
-                                className="w-full rounded-2xl border px-4 py-3.5 focus:outline-none"
+                                className="w-full rounded-lg border px-3 py-2.5 focus:outline-none"
                                 style={{
                                     backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 80%, transparent)',
                                     borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
@@ -294,7 +294,7 @@ export default function Deployments({ data, config }) {
                             </label>
                             <select
                                 id="deploymentProviderFilter"
-                                className="w-full rounded-2xl border px-4 py-3.5 focus:outline-none"
+                                className="w-full rounded-lg border px-3 py-2.5 focus:outline-none"
                                 style={{
                                     backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 80%, transparent)',
                                     borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',

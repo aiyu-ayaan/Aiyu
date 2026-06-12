@@ -23,10 +23,10 @@ const BlogCard = ({ blog }) => {
   const blogPath = getBlogPath(blog);
 
   return (
-    <article className="border-b pb-8 mb-8 group" style={{ borderColor: 'var(--border-primary)' }}>
-      <div className="flex flex-col md:flex-row gap-6 items-start">
+    <article className="glass-tile group overflow-hidden p-4 sm:p-5">
+      <div className="flex flex-col items-start gap-6 md:flex-row">
         {!showPlaceholder && (
-          <div className="w-full md:w-56 h-36 flex-shrink-0 rounded-xl overflow-hidden border relative" style={{ borderColor: 'var(--border-secondary)' }}>
+          <div className="relative h-36 w-full flex-shrink-0 overflow-hidden rounded-xl border md:w-56" style={{ borderColor: 'var(--hairline)' }}>
             <Link href={blogPath} className="block w-full h-full">
               <img
                 src={blog.image}
@@ -54,28 +54,28 @@ const BlogCard = ({ blog }) => {
         )}
         <div className="flex-1 min-w-0">
           <header className="mb-2">
-            <h3 className="text-xl sm:text-2xl font-bold leading-snug mb-2 group-hover:text-[var(--accent-cyan)] transition-colors duration-200">
-              <Link href={blogPath} className="hover:underline text-[var(--text-bright)]">
+            <h3 className="mb-2 text-xl font-bold leading-snug sm:text-2xl">
+              <Link href={blogPath} className="text-[var(--text-bright)] transition-colors hover:text-[var(--accent-cyan)]">
                 {blog?.title}
               </Link>
             </h3>
             
-            <div className="text-xs font-medium flex flex-wrap items-center gap-3 mb-3 text-[var(--text-tertiary)] font-mono">
+            <div className="mb-3 flex flex-wrap items-center gap-3 text-xs font-medium text-[var(--text-tertiary)]">
               <span>{formatBlogDate(blog?.date || blog?.createdAt)}</span>
               <span>&bull;</span>
               <span>{getReadTime(blog?.content || '')}</span>
             </div>
           </header>
 
-          <p className="text-sm leading-relaxed mb-4 text-[var(--text-secondary)]">
+          <p className="mb-4 text-sm leading-relaxed text-[var(--text-secondary)]">
             {excerpt || 'Open the article to read the full write-up.'}
           </p>
 
           <div className="flex flex-wrap items-center justify-between gap-4 mt-2">
             <Link
               href={blogPath}
-              className="text-xs font-bold uppercase tracking-wider hover:text-[var(--accent-cyan-bright)] transition-colors inline-flex items-center gap-1.5"
-              style={{ color: 'var(--accent-cyan)' }}
+              className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-wide transition-colors hover:text-[var(--accent-cyan-bright)]"
+              style={{ borderColor: 'var(--hairline-strong)', color: 'var(--accent-cyan)', backgroundColor: 'var(--surface-tile)' }}
             >
               Read Article &rarr;
             </Link>
@@ -85,7 +85,7 @@ const BlogCard = ({ blog }) => {
                 {tags.slice(0, 3).map((tag) => (
                   <span
                     key={`${blog?._id}-${tag}`}
-                    className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-medium tracking-wide border"
+                    className="inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-medium tracking-wide"
                     style={{
                       borderColor: 'color-mix(in srgb, var(--accent-purple) 25%, var(--border-secondary))',
                       color: 'var(--accent-purple)',

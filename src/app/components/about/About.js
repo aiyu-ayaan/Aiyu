@@ -114,7 +114,7 @@ const About = ({ data }) => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
-      className="relative min-h-screen overflow-hidden px-4 py-16 sm:px-6 lg:px-8 lg:py-24"
+      className="relative min-h-screen overflow-hidden p-4 lg:p-8"
       style={{ color: 'var(--text-primary)' }}
     >
       <div
@@ -132,7 +132,7 @@ const About = ({ data }) => {
           initial={{ y: 24, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.65, ease: 'easeOut' }}
-          className="glass-panel overflow-hidden p-8 sm:p-12 lg:p-16"
+          className="glass-panel overflow-hidden p-6 sm:p-8 lg:p-10"
           style={{
             ...cardStyle,
             borderColor: 'color-mix(in srgb, var(--border-cyan) 48%, var(--border-secondary))',
@@ -151,14 +151,14 @@ const About = ({ data }) => {
             <RouteBetaBadge />
           </div>
 
-          <h1 className="headline-section mb-5">
+          <h1 className="headline-section mb-3">
             {name}
           </h1>
 
           <TypewriterEffect roles={safeRoles} />
 
           <p
-            className="subcopy mt-8 max-w-4xl !text-xl sm:!text-2xl"
+            className="subcopy mt-6 max-w-4xl !text-base sm:!text-lg"
             style={{ color: 'var(--text-secondary)' }}
           >
             {professionalSummary}
@@ -184,7 +184,7 @@ const About = ({ data }) => {
           initial={{ y: 24, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.65, delay: 0.2, ease: 'easeOut' }}
-          className="mt-8 grid grid-cols-2 gap-4 md:grid-cols-4 lg:gap-5"
+          className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4"
         >
           {statCards.map((item) => {
             const Icon = statIconMap[item.key];
@@ -192,7 +192,7 @@ const About = ({ data }) => {
               <motion.div
                 key={item.key}
                 whileHover={{ y: -4 }}
-                className="glass-tile p-5 sm:p-6"
+                className="glass-tile p-4"
                 style={{
                   ...cardStyle,
                   borderColor: 'color-mix(in srgb, var(--border-secondary) 80%, transparent)',
@@ -272,10 +272,10 @@ const About = ({ data }) => {
           whileInView={{ y: 0, opacity: 1 }}
           viewport={{ once: true, amount: 0.15 }}
           transition={{ duration: 0.65 }}
-          className="glass-panel p-8 sm:p-12"
+          className="glass-panel p-6 sm:p-8"
           style={cardStyle}
         >
-          <h2 className="headline-section mb-8 !text-3xl sm:!text-4xl">
+          <h2 className="headline-section mb-5 !text-2xl sm:!text-3xl">
             Technical Skills
           </h2>
 
