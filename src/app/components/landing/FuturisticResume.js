@@ -1,10 +1,14 @@
 "use client";
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import dynamic from 'next/dynamic';
 import { FaPlus, FaBolt, FaCode, FaTerminal, FaRobot, FaRocket, FaBrain } from "react-icons/fa6";
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import TypewriterEffect from '../shared/TypewriterEffect';
 import { useTheme } from '../../context/ThemeContext';
 import useDevicePerformance from '../../hooks/useDevicePerformance';
+import { gsap, useGSAP } from '../shared/gsapScroll';
+
+const HeroScene = dynamic(() => import('./HeroScene'), { ssr: false });
 
 const ICON_MAP = {
     'FaBolt': FaBolt,
@@ -17,7 +21,7 @@ const ICON_MAP = {
 
 const parseCodeLine = (lineStr, githubLink) => {
     if (!lineStr) return <span>&nbsp;</span>;
-    
+
     // Check if it's a comment line
     if (lineStr.trim().startsWith('//')) {
         return <span style={{ color: 'var(--syntax-comment)' }}>{lineStr}</span>;
@@ -27,7 +31,7 @@ const parseCodeLine = (lineStr, githubLink) => {
     const regex = /("[^"]*"|'[^']*'|`[^`]*`|\/\/.*|\b(?:const|let|var|function|return|import|export|from|await|async|class|extends|default|if|else|for|while|new|try|catch|finally)\b|\b\d+(?:\.\d+)?\b|[+\-*\/=<>!&|^%~?:]|[{}()\[\].;,]|\b[a-zA-Z_]\w*\b|\s+)/g;
 
     const tokens = lineStr.split(regex);
-    
+
     return (
         <span className="break-words whitespace-pre-wrap">
             {tokens.map((token, index) => {
@@ -95,6 +99,8 @@ const FuturisticResume = ({ data }) => {
     const { tier, prefersReducedMotion } = useDevicePerformance();
     const { name, homeRoles, githubLink, codeSnippets, resumeStatus, resumeMode, resumeIcon } = data || {};
 
+    const heroRef = useRef(null);
+
     // Adaptive configuration based on device performance
     const config = useMemo(() => {
         if (prefersReducedMotion || tier === 'low') {
@@ -104,6 +110,8 @@ const FuturisticResume = ({ data }) => {
                 enableMagneticIcon: false,
                 enableScanline: false,
                 enableMobileAutoAnimation: false,
+                enableScene: false,
+                enableScrollFx: false,
                 tiltStiffness: 100,
                 tiltDamping: 30,
                 mobileAnimationFps: 0,
@@ -115,6 +123,9 @@ const FuturisticResume = ({ data }) => {
                 enableMagneticIcon: true,
                 enableScanline: true,
                 enableMobileAutoAnimation: true,
+                enableScene: true,
+                enableScrollFx: true,
+                sceneQuality: 'medium',
                 tiltStiffness: 80,
                 tiltDamping: 40,
                 mobileAnimationFps: 30, // Throttled
@@ -126,6 +137,9 @@ const FuturisticResume = ({ data }) => {
                 enableMagneticIcon: true,
                 enableScanline: true,
                 enableMobileAutoAnimation: true,
+                enableScene: true,
+                enableScrollFx: true,
+                sceneQuality: 'high',
                 tiltStiffness: 100,
                 tiltDamping: 30,
                 mobileAnimationFps: 60, // Full
@@ -135,6 +149,89 @@ const FuturisticResume = ({ data }) => {
 
     // Select the icon based on prop, default to Bolt
     const SelectedIcon = ICON_MAP[resumeIcon] || FaBolt;
+
+    const displayName = name || "Ayaan Ansari";
+
+    // GSAP choreography: 3D entrance timeline, then a scroll-scrubbed "depth
+    // exit" where the two cards swing apart as the hero leaves the viewport.
+    useGSAP(() => {
+        if (prefersReducedMotion) return;
+
+        const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+        tl.from('.hero-name-char', {
+            autoAlpha: 0,
+            yPercent: 70,
+            rotateX: -90,
+            transformPerspective: 600,
+            duration: 0.8,
+            stagger: 0.035,
+        })
+            .from('.hero-typewriter', { autoAlpha: 0, y: 24, duration: 0.6 }, '-=0.45')
+            .from('.hero-telemetry', {
+                autoAlpha: 0,
+                rotateY: -32,
+                z: -90,
+                transformPerspective: 900,
+                duration: 0.8,
+            }, '-=0.45')
+            .from('.hero-ide-card', {
+                autoAlpha: 0,
+                x: -90,
+                rotateY: 26,
+                z: -140,
+                transformPerspective: 1200,
+                duration: 1,
+            }, '-=0.5')
+            .from('.hero-glitch-wrap', {
+                autoAlpha: 0,
+                x: 90,
+                rotateY: -26,
+                z: -140,
+                transformPerspective: 1200,
+                duration: 1,
+            }, '-=0.85')
+            .from('.hero-scroll-cue', { autoAlpha: 0, y: -14, duration: 0.5 }, '-=0.4');
+
+        if (config.enableScrollFx && heroRef.current) {
+            const exit = {
+                trigger: heroRef.current,
+                start: 'top top',
+                end: 'bottom 25%',
+                scrub: true,
+            };
+            gsap.to('.hero-ide-card', {
+                xPercent: -7,
+                rotateY: 20,
+                rotateX: 9,
+                scale: 0.96,
+                autoAlpha: 0.25,
+                transformPerspective: 1200,
+                ease: 'none',
+                scrollTrigger: exit,
+            });
+            gsap.to('.hero-glitch-wrap', {
+                xPercent: 7,
+                rotateY: -20,
+                rotateX: 9,
+                scale: 0.96,
+                autoAlpha: 0.25,
+                transformPerspective: 1200,
+                ease: 'none',
+                scrollTrigger: { ...exit },
+            });
+            gsap.to('.hero-head', {
+                yPercent: -36,
+                autoAlpha: 0,
+                ease: 'none',
+                scrollTrigger: { ...exit, end: 'bottom 45%' },
+            });
+            gsap.to('.hero-scroll-cue', {
+                autoAlpha: 0,
+                ease: 'none',
+                scrollTrigger: { ...exit, end: '15% top' },
+            });
+        }
+    }, { scope: heroRef, dependencies: [prefersReducedMotion, config.enableScrollFx] });
 
     // Prepare dynamic editor lines to support scrolling & large content
     const editorLines = useMemo(() => {
@@ -155,11 +252,11 @@ const FuturisticResume = ({ data }) => {
             lines.push("  }");
             lines.push("};");
         }
-        
+
         // Append githubLink assignment
         lines.push("");
         lines.push(`const githubLink = "${githubLink || 'https://github.com/aiyu-ayaan'}";`);
-        
+
         return lines;
     }, [codeSnippets, githubLink]);
 
@@ -338,36 +435,44 @@ const FuturisticResume = ({ data }) => {
     // -------------------------
 
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
+        <div
+            ref={heroRef}
             className="min-h-screen flex flex-col items-center justify-center p-4 lg:p-8 relative transition-colors duration-300 overflow-hidden"
             style={{ backgroundColor: 'transparent' }}
         >
+            {/* three.js particle nebula backdrop (lazy, perf-gated) */}
+            {config.enableScene && <HeroScene quality={config.sceneQuality} />}
+
             {/* spacious floating container utilizing 80% margins with 1280px cap */}
             <div className="w-full max-w-[95%] lg:max-w-[80%] xl:max-w-7xl flex flex-col justify-center relative z-10">
 
                 {/* --- Top Column: Personal Info & Diagnostics Telemetry --- */}
-                <motion.div
-                    initial={{ y: -20, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={{ duration: 0.8, delay: 0.1 }}
-                    className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 mb-10 w-full select-none"
-                >
+                <div className="hero-head flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 mb-10 w-full select-none">
                     <div className="text-center lg:text-left">
                         <h1
+                            aria-label={displayName}
                             className="text-5xl sm:text-6xl lg:text-7xl font-bold mb-4 tracking-tight"
-                            style={{ color: 'var(--text-bright)' }}
+                            style={{ color: 'var(--text-bright)', perspective: '600px' }}
                         >
-                            {name || "Ayaan Ansari"}
+                            {displayName.split('').map((char, index) => (
+                                <span
+                                    key={index}
+                                    aria-hidden="true"
+                                    className="hero-name-char inline-block"
+                                    style={{ transformOrigin: '50% 85%' }}
+                                >
+                                    {char === ' ' ? ' ' : char}
+                                </span>
+                            ))}
                         </h1>
-                        <TypewriterEffect roles={homeRoles || []} />
+                        <div className="hero-typewriter">
+                            <TypewriterEffect roles={homeRoles || []} />
+                        </div>
                     </div>
 
                     {/* Glowing Live Diagnostics Telemetry Panel */}
                     <div
-                        className="rounded-xl border backdrop-blur-md relative overflow-hidden group flex items-center gap-6 p-4 w-full lg:w-auto min-w-[280px] lg:min-w-[360px] shadow-[0_0_20px_rgba(34,211,238,0.02)] hover:border-[var(--accent-cyan)] hover:shadow-[0_0_30px_rgba(34,211,238,0.1)] transition-all duration-500 text-left"
+                        className="hero-telemetry rounded-xl border backdrop-blur-md relative overflow-hidden group flex items-center gap-6 p-4 w-full lg:w-auto min-w-[280px] lg:min-w-[360px] shadow-[0_0_20px_rgba(34,211,238,0.02)] hover:border-[var(--accent-cyan)] hover:shadow-[0_0_30px_rgba(34,211,238,0.1)] transition-all duration-500 text-left"
                         style={{
                             backgroundColor: theme === 'dark' ? 'rgba(13, 17, 23, 0.45)' : 'rgba(255, 255, 255, 0.65)',
                             borderColor: 'var(--border-secondary)',
@@ -381,7 +486,7 @@ const FuturisticResume = ({ data }) => {
                             </span>
                             <div className="h-8 w-px bg-white/10" />
                         </div>
-                        
+
                         {/* Live dynamic metrics readout */}
                         <div className="grid grid-cols-2 gap-x-6 gap-y-2 font-mono text-[10px] tracking-widest text-[var(--text-secondary)] flex-grow">
                             <div>SYS_TEMP: <span className="text-[var(--text-bright)] font-bold">{temp}°C</span></div>
@@ -397,18 +502,13 @@ const FuturisticResume = ({ data }) => {
                             </svg>
                         </div>
                     </div>
-                </motion.div>
+                </div>
 
                 {/* --- Cards Workspace Grid: Perfectly Symmetric Side-by-Side --- */}
-                <div className="flex flex-col lg:flex-row items-center lg:items-start justify-between gap-12 lg:gap-16 xl:gap-24 w-full">
+                <div className="flex flex-col lg:flex-row items-center lg:items-start justify-between gap-12 lg:gap-16 xl:gap-24 w-full" style={{ perspective: '1600px' }}>
 
                     {/* --- Left Panel: macOS IDE Mockup Card (Symmetric 450px height) --- */}
-                    <motion.div
-                        initial={{ x: -50, opacity: 0 }}
-                        animate={{ x: 0, opacity: 1 }}
-                        transition={{ duration: 0.8, delay: 0.2 }}
-                        className="flex-1 max-w-lg lg:max-w-[700px] w-full relative"
-                    >
+                    <div className="hero-ide-card flex-1 max-w-lg lg:max-w-[700px] w-full relative">
                         <motion.div
                             className="rounded-2xl border backdrop-blur-sm relative overflow-hidden group w-full h-[450px] flex flex-col justify-between transition-all duration-500 hover:border-[var(--accent-cyan)] hover:shadow-[0_0_45px_rgba(34,211,238,0.15)]"
                             style={{
@@ -519,10 +619,10 @@ const FuturisticResume = ({ data }) => {
                                 </div>
                             </div>
                         </motion.div>
-                    </motion.div>
+                    </div>
 
                     {/* --- Right Column: Enhanced Futuristic Glitch Card (Symmetric 450px height) --- */}
-                    <div className="flex-shrink-0 order-2 perspective-1000">
+                    <div className="hero-glitch-wrap flex-shrink-0 order-2 perspective-1000">
                         <motion.div
                             ref={containerRef}
                             style={{
@@ -539,12 +639,12 @@ const FuturisticResume = ({ data }) => {
                             <div
                                 className="absolute inset-0 rounded-2xl border backdrop-blur-md shadow-2xl transition-all duration-300"
                                 style={{
-                                    backgroundColor: theme === 'dark' 
-                                        ? (isHovering ? 'rgba(0,0,0,0.85)' : 'rgba(0,0,0,0.6)') 
+                                    backgroundColor: theme === 'dark'
+                                        ? (isHovering ? 'rgba(0,0,0,0.85)' : 'rgba(0,0,0,0.6)')
                                         : (isHovering ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.7)'),
                                     borderColor: isHovering ? 'var(--accent-cyan)' : 'var(--border-secondary)',
-                                    boxShadow: isHovering 
-                                        ? '0 0 50px var(--shadow-glow)' 
+                                    boxShadow: isHovering
+                                        ? '0 0 50px var(--shadow-glow)'
                                         : (theme === 'dark' ? '0 0 30px rgba(0,0,0,0.5)' : '0 10px 30px rgba(0,0,0,0.05)')
                                 }}
                             >
@@ -589,7 +689,7 @@ const FuturisticResume = ({ data }) => {
                                     fontFamily: "'Fira Code', monospace",
                                     color: 'transparent',
                                     backgroundImage: isHovering ? `radial-gradient(
-                                        300px circle at ${mousePos.x}px ${mousePos.y}px, 
+                                        300px circle at ${mousePos.x}px ${mousePos.y}px,
                                         var(--accent-cyan),
                                         var(--accent-purple),
                                         transparent
@@ -620,8 +720,8 @@ const FuturisticResume = ({ data }) => {
                                     backgroundColor: 'var(--bg-elevated)',
                                     borderColor: isHovering ? 'var(--accent-cyan)' : 'var(--border-secondary)',
                                     transform: config.enable3DTilt ? "translateZ(80px)" : "none", // More depth
-                                    boxShadow: isHovering 
-                                        ? '0 0 40px var(--shadow-glow)' 
+                                    boxShadow: isHovering
+                                        ? '0 0 40px var(--shadow-glow)'
                                         : (theme === 'dark' ? '0 0 20px rgba(0,0,0,0.5)' : '0 10px 20px rgba(0,0,0,0.05)')
                                 }}
                             >
@@ -639,9 +739,19 @@ const FuturisticResume = ({ data }) => {
 
                 </div>
             </div>
-        </motion.div>
+
+            {/* Scroll cue */}
+            <div className="hero-scroll-cue pointer-events-none absolute bottom-6 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-2">
+                <span className="font-mono text-[10px] uppercase tracking-[0.3em]" style={{ color: 'var(--text-tertiary)' }}>
+                    Scroll
+                </span>
+                <span
+                    className="block h-9 w-px animate-pulse"
+                    style={{ background: 'linear-gradient(to bottom, var(--accent-cyan), transparent)' }}
+                />
+            </div>
+        </div>
     );
 };
 
 export default FuturisticResume;
-
