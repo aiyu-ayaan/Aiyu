@@ -100,15 +100,15 @@ const AboutForm = () => {
     useEffect(() => {
         const fetchIcons = async () => {
             try {
-                // Load icons from the installed simple-icons package
-                console.log("Loading icons from simple-icons package...");
-                const iconsModule = await import('simple-icons/icons');
-                const iconArray = Object.values(iconsModule).map(icon => ({
-                    title: icon.title,
-                    slug: icon.slug
-                }));
-                console.log(`Loaded ${iconArray.length} icons from package`);
-                setAllCdnIcons(iconArray);
+                // Pull the {title, slug} catalog from the server route instead of
+                // importing `simple-icons/icons` on the client, which would drag a
+                // ~5MB chunk into the admin bundle just to populate this picker.
+                const res = await fetch('/api/admin/icons');
+                if (!res.ok) throw new Error(`icons request failed: ${res.status}`);
+                const data = await res.json();
+                if (Array.isArray(data?.icons)) {
+                    setAllCdnIcons(data.icons);
+                }
             } catch (err) {
                 console.error("Failed to load icon library:", err);
             }
