@@ -5,7 +5,7 @@ import { FaBolt, FaCode, FaTerminal, FaRobot, FaRocket, FaBrain } from "react-ic
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import TypewriterEffect from '../shared/TypewriterEffect';
 import useDevicePerformance from '../../hooks/useDevicePerformance';
-import { gsap, useGSAP } from '../shared/gsapScroll';
+import { gsap, useGSAP, isLiteDevice } from '../shared/gsapScroll';
 
 const HeroScene = dynamic(() => import('./HeroScene'), { ssr: false });
 
@@ -94,7 +94,7 @@ const parseCodeLine = (lineStr, githubLink) => {
 };
 
 const FuturisticResume = ({ data }) => {
-    const { tier, prefersReducedMotion } = useDevicePerformance();
+    const { tier, prefersReducedMotion, ready: perfReady } = useDevicePerformance();
     const { name, homeRoles, githubLink, codeSnippets, resumeStatus, resumeMode, resumeIcon } = data || {};
 
     const heroRef = useRef(null);
@@ -153,7 +153,9 @@ const FuturisticResume = ({ data }) => {
     // GSAP choreography: 3D entrance timeline, then a scroll-scrubbed "depth
     // exit" where the two cards swing apart as the hero leaves the viewport.
     useGSAP(() => {
-        if (prefersReducedMotion) return;
+        // Lite / reduced-motion devices keep the hero fully static and visible —
+        // no entrance timeline that could leave content hidden if GSAP stalls.
+        if (prefersReducedMotion || isLiteDevice()) return;
 
         const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
         tl.from('.hero-name-char', {
@@ -437,8 +439,12 @@ const FuturisticResume = ({ data }) => {
             className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-4 pb-16 pt-24 transition-colors duration-300 sm:px-6 lg:px-8"
             style={{ backgroundColor: 'transparent' }}
         >
-            {/* three.js particle nebula backdrop (lazy, perf-gated) */}
-            {config.enableScene && <HeroScene quality={config.sceneQuality} />}
+            {/* three.js particle nebula backdrop. Gated to non-touch, capable
+                desktops only and held until the perf tier is resolved, so the
+                heavy WebGL bundle never even imports on low-end / touch devices. */}
+            {perfReady && config.enableScene && !isTouch && (
+                <HeroScene quality={config.sceneQuality} />
+            )}
 
             {/* spacious floating container utilizing 80% margins with 1280px cap */}
             <div

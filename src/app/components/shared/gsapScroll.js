@@ -46,6 +46,18 @@ const DEFAULT_REVEAL = 'rise';
 const getPreset = (el) => REVEAL_PRESETS[el.dataset.reveal] || REVEAL_PRESETS[DEFAULT_REVEAL];
 
 /**
+ * Low-end / touch device tier, set pre-paint on <html data-perf="lite"> by the
+ * inline script in layout.js (reduced-motion / data-saver / slow network / weak
+ * touch hardware). On these devices we skip every scrubbed/pinned timeline and
+ * let content render statically — the scroll FX are what make low-end screens
+ * stutter or appear blank, so we treat lite exactly like reduced-motion.
+ */
+export function isLiteDevice() {
+    if (typeof document === 'undefined') return false;
+    return document.documentElement.getAttribute('data-perf') === 'lite';
+}
+
+/**
  * Animate every [data-reveal] element inside scope with an entrance driven by
  * ScrollTrigger. There are three ways to opt in, resolved in priority order so
  * an element is only ever animated once:
@@ -255,13 +267,17 @@ export function useSectionFx(scopeRef, { reducedMotion = false, extra } = {}) {
             const scope = scopeRef.current;
             if (!scope) return;
 
-            animateReveals(scope, { reducedMotion });
-            animateCounters(scope, { reducedMotion });
-            animateParallax(scope, { reducedMotion });
-            animateHorizontalScroll(scope, { reducedMotion });
+            // Lite devices get a static, fully-visible layout: no blur reveals,
+            // no parallax, no pinned horizontal scroll, no bespoke 3D timelines.
+            const reduced = reducedMotion || isLiteDevice();
+
+            animateReveals(scope, { reducedMotion: reduced });
+            animateCounters(scope, { reducedMotion: reduced });
+            animateParallax(scope, { reducedMotion: reduced });
+            animateHorizontalScroll(scope, { reducedMotion: reduced });
 
             if (typeof extra === 'function') {
-                extra({ gsap, ScrollTrigger, scope, reducedMotion });
+                extra({ gsap, ScrollTrigger, scope, reducedMotion: reduced });
             }
 
             refreshScrollTriggersSoon();
