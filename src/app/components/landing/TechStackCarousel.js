@@ -213,30 +213,32 @@ const TechStackCarousel = ({ data }) => {
             <FaFilter size={11} />
             Level
           </span>
-          <div
-            className="inline-flex max-w-full flex-wrap items-center gap-1 rounded-full border p-1.5"
-            style={{ borderColor: 'var(--hairline)', backgroundColor: 'var(--surface-tile)' }}
-          >
-            {['All', 'Core', 'Advanced', 'Intermediate', 'Fundamentals'].map((band) => {
-              const isActive = activeBand === band;
+          <div className="max-w-full overflow-x-auto hide-scrollbar">
+            <div
+              className="inline-flex min-w-max items-center gap-1 rounded-full border p-1.5"
+              style={{ borderColor: 'var(--hairline)', backgroundColor: 'var(--surface-tile)' }}
+            >
+              {['All', 'Core', 'Advanced', 'Intermediate', 'Fundamentals'].map((band) => {
+                const isActive = activeBand === band;
 
-              return (
-                <button
-                  key={band}
-                  type="button"
-                  onClick={() => switchBand(band)}
-                  className="rounded-full px-4 py-2 text-sm font-medium transition-colors duration-250"
-                  style={{
-                    color: isActive ? 'var(--text-bright)' : 'var(--text-tertiary)',
-                    backgroundColor: isActive
-                      ? 'color-mix(in srgb, var(--text-bright) 12%, transparent)'
-                      : 'transparent',
-                  }}
-                >
-                  {band} <span style={{ color: 'var(--text-muted)' }}>{bandCounts[band] || 0}</span>
-                </button>
-              );
-            })}
+                return (
+                  <button
+                    key={band}
+                    type="button"
+                    onClick={() => switchBand(band)}
+                    className="rounded-full px-4 py-2 text-sm font-medium transition-colors duration-250"
+                    style={{
+                      color: isActive ? 'var(--text-bright)' : 'var(--text-tertiary)',
+                      backgroundColor: isActive
+                        ? 'color-mix(in srgb, var(--text-bright) 12%, transparent)'
+                        : 'transparent',
+                    }}
+                  >
+                    {band} <span style={{ color: 'var(--text-muted)' }}>{bandCounts[band] || 0}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 
