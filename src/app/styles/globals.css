@@ -37,11 +37,16 @@
 }
 
 .headline-hero {
-  font-size: clamp(3.75rem, 9.5vw, 7.8rem);
+  /* The hero name is rendered as per-character inline-block spans (for the
+     entrance animation), so without nowrap the line breaks between letters on
+     narrow screens. Keep it on one line and let the viewport-relative size
+     shrink it to fit instead of wrapping/overflowing. */
+  font-size: clamp(2.5rem, 13vw, 7.8rem);
   font-weight: 700;
   letter-spacing: -0.045em;
   line-height: 0.95;
   color: var(--text-bright);
+  white-space: nowrap;
 }
 
 .headline-section {
