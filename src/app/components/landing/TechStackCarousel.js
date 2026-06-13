@@ -83,15 +83,17 @@ const TechStackCarousel = ({ data }) => {
     const cards = gridRef.current?.querySelectorAll('.skill-card');
     if (!cards?.length) return;
 
+    // Refined hinge-up: a gentle lift with a subtle forward tilt (no deep
+    // z-push), so the grid settles cleanly instead of lurching out of the page.
     gsap.from(cards, {
       autoAlpha: 0,
-      y: 52,
-      rotateX: -30,
-      z: -90,
-      transformPerspective: 1000,
-      duration: 0.7,
+      y: 44,
+      rotateX: -10,
+      transformOrigin: 'center bottom',
+      transformPerspective: 900,
+      duration: 0.6,
       ease: 'power3.out',
-      stagger: 0.05,
+      stagger: { each: 0.045, from: 'start' },
       clearProps: 'all',
       scrollTrigger: {
         trigger: gridRef.current,
@@ -186,7 +188,7 @@ const TechStackCarousel = ({ data }) => {
         className="chapter-panel glass-panel relative mx-auto flex w-full max-w-[95%] flex-col justify-center p-8 sm:p-12 lg:max-w-[80%] xl:p-16"
       >
         <div className="mb-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-2xl">
+          <div data-reveal="left" className="max-w-2xl">
             <p className="eyebrow mb-3">Tech Stack</p>
             <h2 className="headline-section">
               Technologies I work with.
@@ -197,6 +199,7 @@ const TechStackCarousel = ({ data }) => {
           </div>
 
           <div
+            data-reveal="right"
             className="glass-tile inline-flex items-center gap-2 self-start px-4 py-2.5 text-sm font-medium lg:self-auto"
             style={{ color: 'var(--text-secondary)' }}
           >
@@ -205,7 +208,7 @@ const TechStackCarousel = ({ data }) => {
           </div>
         </div>
 
-        <div className="mb-10 flex flex-wrap items-center gap-3">
+        <div data-reveal="rise" className="mb-10 flex flex-wrap items-center gap-3">
           <span className="inline-flex items-center gap-2 text-xs font-medium" style={{ color: 'var(--text-muted)' }}>
             <FaFilter size={11} />
             Level
