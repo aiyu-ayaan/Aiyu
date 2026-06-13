@@ -9,6 +9,7 @@ const quickLinks = [
     { href: '#home-status', label: 'Mission Control' },
     { href: '#home-tech', label: 'Tech Stack' },
     { href: '#home-about', label: 'About Highlights' },
+    { href: '#home-showcase', label: 'Focus Areas' },
     { href: '#home-projects', label: 'Featured Projects' },
     { href: '#home-blogs', label: 'Recent Blogs' },
 ];
@@ -27,22 +28,21 @@ const HomeSnapshot = ({ stats = [], recentProjectNames = [], recentBlogTitles = 
                 style={{ transformStyle: 'preserve-3d' }}
             >
                 <div className="mb-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-                    <div className="max-w-2xl">
+                    <div data-reveal="left" className="max-w-2xl">
                         <p className="eyebrow mb-3">Portfolio Snapshot</p>
                         <h2 className="headline-section">
                             Highlights across home, projects, and writing.
                         </h2>
                     </div>
-                    <Link href="/projects" className="pill-ghost self-start lg:self-auto">
+                    <Link href="/projects" data-reveal="right" className="pill-ghost self-start lg:self-auto">
                         Browse Full Projects
                     </Link>
                 </div>
 
-                <div data-reveal-group className="grid grid-cols-2 gap-4 md:grid-cols-4 lg:gap-5">
+                <div data-reveal-auto data-reveal-stagger="0.07" className="grid grid-cols-2 gap-4 md:grid-cols-4 lg:gap-5">
                     {stats.map((item) => (
                         <div
                             key={item.label}
-                            data-reveal="flip"
                             className="glass-tile p-5 sm:p-6"
                         >
                             <p className="text-4xl font-semibold tracking-tight sm:text-5xl" style={{ color: 'var(--text-bright)' }}>

@@ -51,28 +51,27 @@ const HomeAbout = ({ data }) => {
         className="chapter-panel glass-panel relative mx-auto flex w-full max-w-[95%] flex-col justify-center p-8 sm:p-12 lg:max-w-[80%] xl:p-16"
       >
         <div className="mb-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <div data-reveal="rise" className="max-w-2xl">
+          <div data-reveal="left" className="max-w-2xl">
             <p className="eyebrow mb-3">About</p>
             <h2 className="headline-section">
               Intentional engineering with creative energy.
             </h2>
           </div>
-          <Link href="/about-me" data-reveal="flip-right" className="pill-ghost self-start lg:self-auto">
+          <Link href="/about-me" data-reveal="right" className="pill-ghost self-start lg:self-auto">
             Full Story <FaArrowRight size={12} />
           </Link>
         </div>
 
-        <p data-reveal="rise" className="subcopy mb-14 max-w-4xl !text-xl sm:!text-2xl" style={{ color: 'var(--text-secondary)' }}>
+        <p data-reveal="left-soft" className="subcopy mb-14 max-w-4xl !text-xl sm:!text-2xl" style={{ color: 'var(--text-secondary)' }}>
           {professionalSummary || 'I create user-first software experiences, pairing strong technical decisions with thoughtful product execution.'}
         </p>
 
-        <div data-reveal-group className="grid grid-cols-1 gap-5 md:grid-cols-3 lg:gap-6" style={{ perspective: '1100px' }}>
+        <div data-reveal-auto data-reveal-stagger="0.08" className="grid grid-cols-1 gap-5 md:grid-cols-3 lg:gap-6" style={{ perspective: '1100px' }}>
           {highlightItems.map((item) => {
             const Icon = item.icon;
             return (
               <div
                 key={item.title}
-                data-reveal="flip"
                 className="glass-tile p-7 transition-transform duration-300 hover:-translate-y-1"
               >
                 <div

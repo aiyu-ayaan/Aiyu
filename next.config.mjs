@@ -19,7 +19,7 @@ const nextConfig = {
   // output: 'export' // Disabled to allow dynamic API routes
   output: standaloneOutput,
   trailingSlash: false,
-  allowedDevOrigins: ['192.168.31.54'],
+  allowedDevOrigins: ['192.168.31.54', '192.168.1.102'],
   assetPrefix: isProduction && cdnUrl ? cdnUrl : undefined,
 
   // Enhanced performance optimizations
