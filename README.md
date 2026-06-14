@@ -4,7 +4,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Next.js](https://img.shields.io/badge/Next.js-15.0-black?logo=next.js)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19.0-blue?logo=react)](https://reactjs.org/)
-[![MongoDB](https://img.shields.io/badge/MongoDB-6.0-green?logo=mongodb)](https://www.mongodb.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-336791?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Prisma](https://img.shields.io/badge/Prisma-ORM-2D3748?logo=prisma)](https://www.prisma.io/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker)](https://www.docker.com/)
 [![Documentation](https://img.shields.io/badge/Wiki-Documentation-blue?logo=github)](https://github.com/aiyu-ayaan/Aiyu/wiki)
 [![LOC](https://badge.aiyu.co.in/repo-batch?owner=aiyu-ayaan&repo=aiyu&fields=loc)](https://github.com/aiyu-ayaan/Aiyu)
@@ -13,7 +14,7 @@
 
 ![home](public/screenshots/desktop-dark-home.png)
 
-A modern, responsive, and **fully customizable** portfolio website and Content Management System built with **Next.js 16 (App Router)**, **React 19**, **Tailwind CSS 4**, and **MongoDB**. 
+A modern, responsive, and **fully customizable** portfolio website and Content Management System built with **Next.js 16 (App Router)**, **React 19**, **Tailwind CSS 4**, and **PostgreSQL (Prisma ORM)**. 
 
 Featuring a gorgeous space-themed user interface, a highly advanced **Admin Panel**, an integrated **AI Neural Core (Gemini)**, and a visual **Task Scheduler**, `Aiyu` is designed for developers who want a production-ready, security-hardened portfolio with zero-hassle content management.
 
@@ -84,16 +85,22 @@ Run these node commands to generate secure keys for your `.env` file:
 ```bash
 # JWT Secret Key
 node -e "console.log('JWT_SECRET=' + require('crypto').randomBytes(64).toString('hex'))"
-# MongoDB Key
-node -e "console.log('MONGO_REPLICA_SET_KEY=' + require('crypto').randomBytes(48).toString('hex'))"
+# PostgreSQL password
+node -e "console.log('POSTGRES_PASSWORD=' + require('crypto').randomBytes(24).toString('hex'))"
 ```
+Set `DATABASE_URL` to match your `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB`
+(use host `postgres` inside Docker, `localhost` for host-based development).
 
 ### 3. Build & Deploy
-Start all services (App + 3-Node MongoDB Replica Set + Nginx Proxy):
+Start all services (App + PostgreSQL + Nginx Proxy):
 ```bash
 npm run docker:build
 npm run docker:up
 ```
+> The app container runs `prisma migrate deploy` on startup (`RUN_MIGRATIONS=true`),
+> so the schema is created/updated automatically against the Postgres service.
+> For a high-availability primary + read-replica Postgres topology, use
+> `docker compose -f docker-compose.replication.yml up -d` instead.
 
 ### 4. Verify Security Hardening
 Check if non-root user settings, read-only root system, and miner-prevention capabilities are active:
@@ -111,10 +118,29 @@ curl http://localhost/api/seed
 
 ---
 
+## 💻 Local Development (host + Dockerized Postgres)
+
+Run Next.js and the Prisma CLI directly on your machine, with only PostgreSQL
+(and optional pgAdmin) in Docker:
+
+```bash
+cp .env.example .env.local         # set DATABASE_URL to localhost
+npm install                        # postinstall runs `prisma generate`
+npm run db:up                      # start Postgres + pgAdmin (docker-compose-dev.yml)
+npx prisma migrate deploy          # apply the schema
+npm run db:seed                    # populate sample data (or curl /api/seed)
+npm run dev                        # http://localhost:3000
+```
+
+Useful scripts: `npm run db:studio` (Prisma Studio), `npm run db:down` (stop the
+dev database). pgAdmin is available at `http://localhost:5050`.
+
+---
+
 ## 🛠️ The Tech Stack
 
 - **Core**: Next.js 16 (App Router), React 19, Tailwind CSS 4, Framer Motion
-- **Database**: MongoDB with Mongoose ODM
+- **Database**: PostgreSQL 17 with Prisma ORM (Postgres full-text search for blogs)
 - **Image Processing**: Sharp (with HEIC support)
 - **Authentication**: JWT (`jose`), bcrypt hashing
 - **Security Protocols**: Non-root execution, Capability dropping, `noexec /tmp` directory, rate limiting, and secure headers.

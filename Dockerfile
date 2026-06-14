@@ -5,11 +5,13 @@ WORKDIR /app
 
 # Install compiler toolchain for native modules (e.g. sharp/canvas-related transitive deps).
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends python3 make g++ \
+    && apt-get install -y --no-install-recommends python3 make g++ openssl \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy manifests for deterministic installs.
+# The prisma schema is needed because the `postinstall` script runs `prisma generate`.
 COPY package.json package-lock.json ./
+COPY prisma ./prisma
 
 # Harden npm fetch behavior for flaky network/proxy conditions.
 RUN npm config set fetch-retries 5 \
@@ -22,9 +24,17 @@ RUN npm config set fetch-retries 5 \
 FROM node:20-bookworm-slim AS builder
 WORKDIR /app
 
+# OpenSSL is required by the Prisma query engine at generate/runtime.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends openssl \
+    && rm -rf /var/lib/apt/lists/*
+
 # Copy dependencies from deps stage
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+
+# Ensure the Prisma client is generated against the committed schema.
+RUN npx prisma generate
 
 # Build-time args
 ARG NEXT_PUBLIC_N8N_WEBHOOK_URL
@@ -33,7 +43,8 @@ ARG NEXT_PUBLIC_BASE_URL
 ARG SITE_URL
 
 # Build with ephemeral env values (prevents secret-name warnings from ENV instructions).
-RUN MONGODB_URI="mongodb://dummy:dummy@dummy:27017/dummy" \
+# DATABASE_URL is a dummy here; no DB connection happens during the build.
+RUN DATABASE_URL="postgresql://dummy:dummy@dummy:5432/dummy?schema=public" \
     NEXT_PUBLIC_N8N_WEBHOOK_URL="${NEXT_PUBLIC_N8N_WEBHOOK_URL}" \
     NEXT_PUBLIC_AUTHOR_NAME="${NEXT_PUBLIC_AUTHOR_NAME}" \
     NEXT_PUBLIC_BASE_URL="${NEXT_PUBLIC_BASE_URL}" \
@@ -48,6 +59,11 @@ RUN MONGODB_URI="mongodb://dummy:dummy@dummy:27017/dummy" \
 FROM node:20-bookworm-slim AS runner
 WORKDIR /app
 
+# OpenSSL is required by the Prisma engines at runtime (migrate deploy + client).
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends openssl \
+    && rm -rf /var/lib/apt/lists/*
+
 # Runtime environment
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -61,13 +77,22 @@ COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Copy healthcheck script
+# Prisma assets needed to run `migrate deploy` at container start.
+# The schema + migrations and the Prisma CLI/engines are not part of the
+# Next.js standalone trace, so copy them explicitly.
+COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/prisma ./node_modules/prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
+
+# Copy healthcheck script and the entrypoint
 COPY --chown=nextjs:nodejs scripts/healthcheck.sh /app/healthcheck.sh
+COPY --chown=nextjs:nodejs scripts/docker-entrypoint.sh /app/docker-entrypoint.sh
 
 # Create writable directories needed when running with read-only root fs.
 RUN mkdir -p /app/public/uploads \
     && mkdir -p /app/.next/cache \
-    && chmod +x /app/healthcheck.sh \
+    && chmod +x /app/healthcheck.sh /app/docker-entrypoint.sh \
     && chown -R nextjs:nodejs /app/public/uploads /app/.next/cache
 
 # Switch to non-root user
@@ -80,6 +105,7 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# Start one Next.js server process. This is much lighter than PM2 clustering
-# and is the best default for small VPS/Docker Desktop deployments.
-CMD ["node", "server.js"]
+# Apply migrations (when RUN_MIGRATIONS=true) then start one Next.js server
+# process. This is much lighter than PM2 clustering and is the best default
+# for small VPS/Docker Desktop deployments.
+ENTRYPOINT ["sh", "/app/docker-entrypoint.sh"]

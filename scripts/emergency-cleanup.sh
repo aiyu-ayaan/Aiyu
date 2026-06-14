@@ -161,7 +161,7 @@ if [[ $REPLY =~ ^[Yy]es$ ]]; then
     docker-compose down || true
     
     log "Removing aiyu containers..."
-    docker rm -f aiyu-app aiyu-mongodb 2>/dev/null || true
+    docker rm -f aiyu-app aiyu-postgres 2>/dev/null || true
     
     log "✅ Containers stopped and removed"
 else
@@ -241,7 +241,7 @@ echo ""
 echo "1. 🔑 ROTATE ALL CREDENTIALS in .env file:"
 echo "   - JWT_SECRET"
 echo "   - ADMIN_PASSWORD"
-echo "   - MONGO_ROOT_PASSWORD"
+echo "   - POSTGRES_PASSWORD (and DATABASE_URL)"
 echo "   - BLOG_API_KEY"
 echo ""
 echo "   Generate new secrets:"

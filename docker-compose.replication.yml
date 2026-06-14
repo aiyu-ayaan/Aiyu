@@ -1,194 +1,97 @@
+# High-availability PostgreSQL via streaming replication (Bitnami images).
+#
+# Topology: 1 primary + 2 read replicas. The app talks to the primary for
+# reads AND writes (single DATABASE_URL pointing at "postgres-primary").
+# The replicas provide hot standbys / read scaling and can be promoted on
+# failover.
+#
+# Required env (see .env.example):
+#   POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB
+#   POSTGRES_REPLICATION_USER, POSTGRES_REPLICATION_PASSWORD
+#
+#   docker compose --env-file .env.production -f docker-compose.replication.yml up -d
+
 services:
-  mongo1:
-    image: mongo:7
+  postgres-primary:
+    image: bitnami/postgresql:17
     restart: unless-stopped
-    hostname: mongo1
-    entrypoint:
-      - sh
-      - -lc
-      - |
-        KEYFILE=/data/configdb/keyfile
-        if [ ! -f "$$KEYFILE" ]; then
-          mkdir -p /data/configdb
-          printf '%s' "$$MONGO_REPLICA_SET_KEY" > "$$KEYFILE"
-          chmod 600 "$$KEYFILE"
-        fi
-        exec docker-entrypoint.sh mongod --bind_ip_all --replSet rs0 --keyFile "$$KEYFILE" --auth
+    hostname: postgres-primary
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
-      MONGO_REPLICA_SET_KEY: ${MONGO_REPLICA_SET_KEY}
+      POSTGRESQL_REPLICATION_MODE: master
+      POSTGRESQL_REPLICATION_USER: ${POSTGRES_REPLICATION_USER:-replicator}
+      POSTGRESQL_REPLICATION_PASSWORD: ${POSTGRES_REPLICATION_PASSWORD}
+      POSTGRESQL_USERNAME: ${POSTGRES_USER:-aiyu}
+      POSTGRESQL_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRESQL_DATABASE: ${POSTGRES_DB:-aiyu}
     volumes:
-      - mongo1_data:/data/db
-      - mongo1_config:/data/configdb
+      - postgres_primary_data:/bitnami/postgresql
     networks:
       - aiyu-network
-    mem_limit: ${MONGO_MEMORY_LIMIT:-512m}
-    mem_reservation: ${MONGO_MEMORY_RESERVATION:-256m}
-    cpus: ${MONGO_CPUS:-0.5}
+    mem_limit: ${POSTGRES_MEMORY_LIMIT:-512m}
+    mem_reservation: ${POSTGRES_MEMORY_RESERVATION:-256m}
+    cpus: ${POSTGRES_CPUS:-0.5}
     healthcheck:
-      test:
-        - CMD-SHELL
-        - >
-          mongosh --host 127.0.0.1 --port 27017
-          -u "$${MONGO_INITDB_ROOT_USERNAME}" -p "$${MONGO_INITDB_ROOT_PASSWORD}"
-          --authenticationDatabase admin --quiet --eval "db.adminCommand('ping').ok"
-      interval: 60s
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-aiyu} -d ${POSTGRES_DB:-aiyu}"]
+      interval: 30s
       timeout: 5s
       retries: 5
-      start_period: 30s
+      start_period: 20s
 
-  mongo2:
-    image: mongo:7
+  postgres-replica-1:
+    image: bitnami/postgresql:17
     restart: unless-stopped
-    hostname: mongo2
-    entrypoint:
-      - sh
-      - -lc
-      - |
-        KEYFILE=/data/configdb/keyfile
-        if [ ! -f "$$KEYFILE" ]; then
-          mkdir -p /data/configdb
-          printf '%s' "$$MONGO_REPLICA_SET_KEY" > "$$KEYFILE"
-          chmod 600 "$$KEYFILE"
-        fi
-        exec docker-entrypoint.sh mongod --bind_ip_all --replSet rs0 --keyFile "$$KEYFILE" --auth
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
-      MONGO_REPLICA_SET_KEY: ${MONGO_REPLICA_SET_KEY}
-    volumes:
-      - mongo2_data:/data/db
-      - mongo2_config:/data/configdb
-    networks:
-      - aiyu-network
-    mem_limit: ${MONGO_MEMORY_LIMIT:-512m}
-    mem_reservation: ${MONGO_MEMORY_RESERVATION:-256m}
-    cpus: ${MONGO_CPUS:-0.5}
-    healthcheck:
-      test:
-        - CMD-SHELL
-        - >
-          mongosh --host 127.0.0.1 --port 27017
-          -u "$${MONGO_INITDB_ROOT_USERNAME}" -p "$${MONGO_INITDB_ROOT_PASSWORD}"
-          --authenticationDatabase admin --quiet --eval "db.adminCommand('ping').ok"
-      interval: 60s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-
-  mongo3:
-    image: mongo:7
-    restart: unless-stopped
-    hostname: mongo3
-    entrypoint:
-      - sh
-      - -lc
-      - |
-        KEYFILE=/data/configdb/keyfile
-        if [ ! -f "$$KEYFILE" ]; then
-          mkdir -p /data/configdb
-          printf '%s' "$$MONGO_REPLICA_SET_KEY" > "$$KEYFILE"
-          chmod 600 "$$KEYFILE"
-        fi
-        exec docker-entrypoint.sh mongod --bind_ip_all --replSet rs0 --keyFile "$$KEYFILE" --auth
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
-      MONGO_REPLICA_SET_KEY: ${MONGO_REPLICA_SET_KEY}
-    volumes:
-      - mongo3_data:/data/db
-      - mongo3_config:/data/configdb
-    networks:
-      - aiyu-network
-    mem_limit: ${MONGO_MEMORY_LIMIT:-512m}
-    mem_reservation: ${MONGO_MEMORY_RESERVATION:-256m}
-    cpus: ${MONGO_CPUS:-0.5}
-    healthcheck:
-      test:
-        - CMD-SHELL
-        - >
-          mongosh --host 127.0.0.1 --port 27017
-          -u "$${MONGO_INITDB_ROOT_USERNAME}" -p "$${MONGO_INITDB_ROOT_PASSWORD}"
-          --authenticationDatabase admin --quiet --eval "db.adminCommand('ping').ok"
-      interval: 60s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-
-  mongo-init:
-    image: mongo:7
-    restart: "no"
+    hostname: postgres-replica-1
     depends_on:
-      mongo1:
-        condition: service_healthy
-      mongo2:
-        condition: service_healthy
-      mongo3:
+      postgres-primary:
         condition: service_healthy
     environment:
-      MONGO_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
-      MONGO_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
-    command:
-      - sh
-      - -lc
-      - |
-        cat <<'EOF' >/tmp/init-rs.js
-        const admin = process.env.MONGO_ROOT_USERNAME;
-        const password = process.env.MONGO_ROOT_PASSWORD;
-        const uri = 'mongodb://' + admin + ':' + password + '@mongo1:27017/admin?authSource=admin';
-        const maxAttempts = 120;
-        let conn;
-        let adminDb;
-        const cfg = {
-          _id: 'rs0',
-          members: [
-            { _id: 0, host: 'mongo1:27017', priority: 2 },
-            { _id: 1, host: 'mongo2:27017', priority: 1 },
-            { _id: 2, host: 'mongo3:27017', priority: 1 }
-          ]
-        };
-
-        for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-          try {
-            conn = new Mongo(uri);
-            adminDb = conn.getDB('admin');
-
-            const hello = adminDb.runCommand({ hello: 1 });
-            if (hello.ok === 1 && hello.isWritablePrimary) {
-              const status = adminDb.runCommand({ replSetGetStatus: 1 });
-              if (status.ok === 1) {
-                print('Replica set already healthy.');
-                quit(0);
-              }
-            }
-
-            try {
-              const initiateResult = adminDb.runCommand({ replSetInitiate: cfg });
-              printjson(initiateResult);
-            } catch (initErr) {
-              if (!String(initErr).includes('already initialized')) {
-                throw initErr;
-              }
-            }
-
-            const postHello = adminDb.runCommand({ hello: 1 });
-            if (postHello.ok === 1 && postHello.isWritablePrimary) {
-              print('Replica set initialized and primary elected.');
-              quit(0);
-            }
-          } catch (error) {
-            print('mongo-init attempt ' + attempt + '/' + maxAttempts + ': ' + String(error));
-          }
-          sleep(2000);
-        }
-
-        print('mongo-init timed out waiting for replica set readiness');
-        quit(1);
-        EOF
-        mongosh --nodb /tmp/init-rs.js
+      POSTGRESQL_REPLICATION_MODE: slave
+      POSTGRESQL_REPLICATION_USER: ${POSTGRES_REPLICATION_USER:-replicator}
+      POSTGRESQL_REPLICATION_PASSWORD: ${POSTGRES_REPLICATION_PASSWORD}
+      POSTGRESQL_MASTER_HOST: postgres-primary
+      POSTGRESQL_MASTER_PORT_NUMBER: "5432"
+      POSTGRESQL_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_replica1_data:/bitnami/postgresql
     networks:
       - aiyu-network
+    mem_limit: ${POSTGRES_MEMORY_LIMIT:-512m}
+    mem_reservation: ${POSTGRES_MEMORY_RESERVATION:-256m}
+    cpus: ${POSTGRES_CPUS:-0.5}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-aiyu} -d ${POSTGRES_DB:-aiyu}"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  postgres-replica-2:
+    image: bitnami/postgresql:17
+    restart: unless-stopped
+    hostname: postgres-replica-2
+    depends_on:
+      postgres-primary:
+        condition: service_healthy
+    environment:
+      POSTGRESQL_REPLICATION_MODE: slave
+      POSTGRESQL_REPLICATION_USER: ${POSTGRES_REPLICATION_USER:-replicator}
+      POSTGRESQL_REPLICATION_PASSWORD: ${POSTGRES_REPLICATION_PASSWORD}
+      POSTGRESQL_MASTER_HOST: postgres-primary
+      POSTGRESQL_MASTER_PORT_NUMBER: "5432"
+      POSTGRESQL_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_replica2_data:/bitnami/postgresql
+    networks:
+      - aiyu-network
+    mem_limit: ${POSTGRES_MEMORY_LIMIT:-512m}
+    mem_reservation: ${POSTGRES_MEMORY_RESERVATION:-256m}
+    cpus: ${POSTGRES_CPUS:-0.5}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-aiyu} -d ${POSTGRES_DB:-aiyu}"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   app:
     image: aiyuayaan/aiyu:${APP_IMAGE_TAG:-latest}
@@ -196,7 +99,8 @@ services:
     expose:
       - "3000"
     environment:
-      MONGODB_URI: ${MONGODB_URI:-mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongo1:27017,mongo2:27017,mongo3:27017/aiyu?replicaSet=rs0&authSource=admin}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://${POSTGRES_USER:-aiyu}:${POSTGRES_PASSWORD}@postgres-primary:5432/${POSTGRES_DB:-aiyu}?schema=public}
+      RUN_MIGRATIONS: "true"
       NEXT_PUBLIC_N8N_WEBHOOK_URL: ${NEXT_PUBLIC_N8N_WEBHOOK_URL}
       NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL}
       SITE_URL: ${SITE_URL}
@@ -233,8 +137,8 @@ services:
       retries: 12
       start_period: 150s
     depends_on:
-      mongo-init:
-        condition: service_completed_successfully
+      postgres-primary:
+        condition: service_healthy
     networks:
       - aiyu-network
 
@@ -263,19 +167,11 @@ services:
       start_period: 20s
 
 volumes:
-  mongo1_data:
-    name: mongodb_data
+  postgres_primary_data:
     driver: local
-  mongo1_config:
-    name: mongodb_config
+  postgres_replica1_data:
     driver: local
-  mongo2_data:
-    driver: local
-  mongo2_config:
-    driver: local
-  mongo3_data:
-    driver: local
-  mongo3_config:
+  postgres_replica2_data:
     driver: local
   nextjs_cache:
     driver: local
