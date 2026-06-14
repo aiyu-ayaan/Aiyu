@@ -27,7 +27,10 @@ services:
     expose:
       - "3000"
     environment:
-      DATABASE_URL: ${DATABASE_URL:-postgresql://${POSTGRES_USER:-aiyu}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-aiyu}?schema=public}
+      # In-container host MUST be the "postgres" service, never "localhost".
+      # Built from POSTGRES_* (not $DATABASE_URL, which host-dev .env sets to
+      # localhost and Compose auto-loads). Set APP_DATABASE_URL for an external DB.
+      DATABASE_URL: ${APP_DATABASE_URL:-postgresql://${POSTGRES_USER:-aiyu}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-aiyu}?schema=public}
       # Apply pending Prisma migrations on container start (entrypoint).
       RUN_MIGRATIONS: "true"
       NEXT_PUBLIC_N8N_WEBHOOK_URL: ${NEXT_PUBLIC_N8N_WEBHOOK_URL}

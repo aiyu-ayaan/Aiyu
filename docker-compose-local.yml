@@ -43,8 +43,13 @@ services:
     ports:
       - "${APP_PORT:-3000}:3000"
     environment:
-      # PostgreSQL connection (in-container host is the "postgres" service).
-      DATABASE_URL: ${DATABASE_URL:-postgresql://${POSTGRES_USER:-aiyu}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-aiyu}?schema=public}
+      # PostgreSQL connection. The in-container host MUST be the "postgres"
+      # service, never "localhost". We intentionally do NOT read $DATABASE_URL
+      # here: the .env used for host dev sets it to localhost, and Compose
+      # auto-loads .env, so honoring it would point the container at itself.
+      # The URL is built from the POSTGRES_* vars instead. To use an external
+      # managed database, set APP_DATABASE_URL.
+      DATABASE_URL: ${APP_DATABASE_URL:-postgresql://${POSTGRES_USER:-aiyu}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-aiyu}?schema=public}
       # Run `prisma migrate deploy` from the container entrypoint before boot.
       RUN_MIGRATIONS: "true"
       # N8N webhook URL
