@@ -141,13 +141,23 @@ const HeroScene = ({ quality = 'high' }) => {
             });
             observer.observe(mount);
 
+            // Cap the decorative loop well below the display refresh rate: this
+            // nebula drifts slowly, so 30/48fps is visually indistinguishable
+            // from 120/144Hz while cutting GPU draw calls and battery/thermal
+            // cost on every device.
+            const targetFps = quality === 'high' ? 48 : 30;
+            const frameInterval = 1000 / targetFps;
+
             let rafId = 0;
+            let lastRender = 0;
             const startTime = performance.now();
-            const renderLoop = () => {
+            const renderLoop = (now) => {
                 rafId = window.requestAnimationFrame(renderLoop);
                 if (!inView || document.hidden) return;
+                if (now - lastRender < frameInterval) return;
+                lastRender = now;
 
-                const elapsed = (performance.now() - startTime) / 1000;
+                const elapsed = (now - startTime) / 1000;
                 const themeColors = themeColorsRef.current;
                 if (themeColors?.dirty) {
                     coreMaterial.color.set(themeColors.cyan);
@@ -174,7 +184,7 @@ const HeroScene = ({ quality = 'high' }) => {
 
                 renderer.render(scene, camera);
             };
-            renderLoop();
+            rafId = window.requestAnimationFrame(renderLoop);
 
             cleanup = () => {
                 window.cancelAnimationFrame(rafId);
