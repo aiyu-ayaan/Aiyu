@@ -2,10 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { motion, AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";
-import Lenis from "lenis";
-import { gsap, ScrollTrigger } from "./gsapScroll";
 
 const CommandPalette = dynamic(() => import("./CommandPalette"), {
     ssr: false,
@@ -189,42 +186,57 @@ export default function ClientEnhancements() {
             return;
         }
 
+        // Lenis + GSAP are only needed for desktop smooth-scroll. Loading them
+        // lazily here keeps them out of the always-loaded root bundle, so mobile
+        // and admin routes never download them.
+        let cancelled = false;
         let lenis;
         let tickerCallback;
+        let gsapRef;
 
-        try {
-            lenis = new Lenis({
-                duration: 1.1,
-                easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-                orientation: 'vertical',
-                gestureOrientation: 'vertical',
-                smoothWheel: true,
-                wheelMultiplier: 1.0,
-                touchMultiplier: 1.5,
-                infinite: false,
-            });
+        (async () => {
+            try {
+                const [{ default: Lenis }, { gsap, ScrollTrigger }] = await Promise.all([
+                    import("lenis"),
+                    import("./gsapScroll"),
+                ]);
+                if (cancelled) return;
+                gsapRef = gsap;
 
-            // Update ScrollTrigger on Lenis scroll
-            lenis.on('scroll', () => {
-                ScrollTrigger.update();
-            });
+                lenis = new Lenis({
+                    duration: 1.1,
+                    easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+                    orientation: 'vertical',
+                    gestureOrientation: 'vertical',
+                    smoothWheel: true,
+                    wheelMultiplier: 1.0,
+                    touchMultiplier: 1.5,
+                    infinite: false,
+                });
 
-            // Sync GSAP ticker with Lenis frame rendering
-            tickerCallback = (time) => {
-                lenis.raf(time * 1000);
-            };
-            gsap.ticker.add(tickerCallback);
-            gsap.ticker.lagSmoothing(0);
-        } catch (error) {
-            console.error("Failed to initialize Lenis:", error);
-        }
+                // Update ScrollTrigger on Lenis scroll
+                lenis.on('scroll', () => {
+                    ScrollTrigger.update();
+                });
+
+                // Sync GSAP ticker with Lenis frame rendering
+                tickerCallback = (time) => {
+                    lenis.raf(time * 1000);
+                };
+                gsap.ticker.add(tickerCallback);
+                gsap.ticker.lagSmoothing(0);
+            } catch (error) {
+                console.error("Failed to initialize Lenis:", error);
+            }
+        })();
 
         return () => {
+            cancelled = true;
             if (lenis) {
                 lenis.destroy();
             }
-            if (tickerCallback) {
-                gsap.ticker.remove(tickerCallback);
+            if (tickerCallback && gsapRef) {
+                gsapRef.ticker.remove(tickerCallback);
             }
         };
     }, [pathname]);
@@ -249,41 +261,39 @@ export default function ClientEnhancements() {
             )}
             {mountPalette && <CommandPalette />}
 
-            {/* Scroll to top button */}
-            <AnimatePresence>
-                {showScrollTop && !isFooterVisible && (
-                    <motion.button
-                        id="scroll-to-top"
-                        className="fixed bottom-6 right-6 w-12 h-12 rounded-full cursor-pointer flex items-center justify-center z-[100] backdrop-blur-md border border-[rgba(255,255,255,0.08)] shadow-lg transition-transform"
-                        style={{
-                            backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                        }}
-                        initial={{ opacity: 0, y: 20, scale: 0.8 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 20, scale: 0.8 }}
-                        whileHover={{ scale: 1.1, backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                        aria-label="Scroll to Top"
-                    >
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="20"
-                            height="20"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="text-[var(--text-primary)]"
-                        >
-                            <path d="m18 15-6-6-6 6" />
-                        </svg>
-                        <div className="absolute inset-0 rounded-full bg-gradient-to-r from-[var(--accent-cyan)] to-[var(--accent-purple)] opacity-0 group-hover:opacity-10 dark:group-hover:opacity-20 transition-opacity duration-300" />
-                    </motion.button>
-                )}
-            </AnimatePresence>
+            {/* Scroll to top button — CSS-only transitions (no framer-motion) so
+                this always-rendered root component stays out of the heavy
+                animation bundle. Kept mounted; visibility is toggled via opacity
+                + transform so it animates in/out without AnimatePresence. */}
+            <button
+                id="scroll-to-top"
+                className="fixed bottom-6 right-6 w-12 h-12 rounded-full cursor-pointer flex items-center justify-center z-[100] backdrop-blur-md border border-[rgba(255,255,255,0.08)] shadow-lg transition-all duration-300 ease-out hover:scale-110 hover:bg-[rgba(255,255,255,0.1)] active:scale-95 motion-reduce:transition-none"
+                style={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                    opacity: showScrollTop && !isFooterVisible ? 1 : 0,
+                    transform: showScrollTop && !isFooterVisible ? 'translateY(0)' : 'translateY(20px)',
+                    pointerEvents: showScrollTop && !isFooterVisible ? 'auto' : 'none',
+                }}
+                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                aria-label="Scroll to Top"
+                aria-hidden={showScrollTop && !isFooterVisible ? undefined : 'true'}
+                tabIndex={showScrollTop && !isFooterVisible ? 0 : -1}
+            >
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="text-[var(--text-primary)]"
+                >
+                    <path d="m18 15-6-6-6 6" />
+                </svg>
+            </button>
         </>
     );
 }
