@@ -1,10 +1,5 @@
-import dbConnect from '@/lib/db';
-import Project from '@/models/Project';
-import Deployment from '@/models/Deployment';
-import About from '@/models/About';
-import Home from '@/models/Home';
-import Header from '@/models/Header';
-import Social from '@/models/Social';
+import { prisma } from '@/lib/prisma';
+import { fromClient, upsertSingleton } from '@/lib/serialize';
 
 import projects from '@/app/data/projectsData';
 import deployments from '@/app/data/deploymentsData';
@@ -14,27 +9,31 @@ import { navLinks, contactLink } from '@/app/data/headerData';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
-    await dbConnect();
-
     try {
         // Clear existing data
-        await Project.deleteMany({});
-        await Deployment.deleteMany({});
-        await About.deleteMany({});
-        await Home.deleteMany({});
-        await Header.deleteMany({});
-        await Social.deleteMany({});
+        await prisma.project.deleteMany();
+        await prisma.deployment.deleteMany();
+        await prisma.about.deleteMany();
+        await prisma.home.deleteMany();
+        await prisma.header.deleteMany();
+        await prisma.social.deleteMany();
 
         // Seed Projects
-        await Project.insertMany(projects);
+        if (projects.length > 0) {
+            await prisma.project.createMany({
+                data: projects.map((project) => fromClient('project', project, { keepId: false })),
+            });
+        }
 
         // Seed Deployments
         if (deployments.length > 0) {
-            await Deployment.insertMany(deployments);
+            await prisma.deployment.createMany({
+                data: deployments.map((deployment) => fromClient('deployment', deployment, { keepId: false })),
+            });
         }
 
-        // Seed About
-        await About.create({
+        // Seed About (singleton)
+        await upsertSingleton(prisma, 'about', {
             name,
             roles,
             professionalSummary,
@@ -44,16 +43,16 @@ export async function GET() {
             certifications,
         });
 
-        // Seed Home
-        await Home.create({
+        // Seed Home (singleton)
+        await upsertSingleton(prisma, 'home', {
             name: homeName,
             homeRoles,
             githubLink,
             codeSnippets,
         });
 
-        // Seed Header
-        await Header.create({
+        // Seed Header (singleton)
+        await upsertSingleton(prisma, 'header', {
             navLinks,
             contactLink,
         });
@@ -65,7 +64,9 @@ export async function GET() {
             { name: 'Email', url: 'mailto:aiyu.ayaan@gmail.com', iconName: 'FaEnvelope' },
         ];
 
-        await Social.insertMany(socialDataFixed);
+        await prisma.social.createMany({
+            data: socialDataFixed.map((social) => fromClient('social', social, { keepId: false })),
+        });
 
         return NextResponse.json({ message: 'Database seeded successfully' });
     } catch (error) {

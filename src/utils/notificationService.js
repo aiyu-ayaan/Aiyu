@@ -1,5 +1,5 @@
-import dbConnect from '@/lib/db';
-import NotificationConfig from '@/models/NotificationConfig';
+import { prisma } from '@/lib/prisma';
+import { getSingleton } from '@/lib/serialize';
 
 // Safely encodes HTTP headers containing unicode characters using MIME Base64 (RFC 2047) to avoid WHATWG fetch ByteString TypeErrors
 function encodeMimeHeader(str) {
@@ -26,9 +26,8 @@ function encodeMimeHeader(str) {
  */
 export async function sendNotification({ title, message, priority = '3', tags = '' }) {
     try {
-        await dbConnect();
-        const config = await NotificationConfig.findOne({});
-        
+        const config = await getSingleton(prisma, 'notificationConfig');
+
         if (!config || !config.enabled) {
             console.log('[NOTIFICATION SERVICE] Notifications are disabled or not configured.');
             return { success: false, reason: 'disabled' };
