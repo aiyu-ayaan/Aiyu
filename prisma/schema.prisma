@@ -198,6 +198,16 @@ model CronLog {
   @@index([ranAt])
 }
 
+model Social {
+  id       String  @id @default(cuid())
+  name     String
+  url      String
+  iconName String
+  isHidden Boolean @default(false)
+
+  @@index([isHidden])
+}
+
 model Theme {
   id           String   @id @default(cuid())
   name         String

@@ -1,6 +1,6 @@
-import dbConnect from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import cache, { CACHE_TTL } from '@/lib/cache';
-import AdsModel from '@/models/Ads';
+import { getSingleton } from '@/lib/serialize';
 import { decrypt } from '@/lib/encryption';
 
 const IS_PRODUCTION_BUILD = process.env.NEXT_PHASE === 'phase-production-build';
@@ -41,15 +41,10 @@ export async function getAdsData() {
         const adsData = await cache.getOrSet(
             'db:ads',
             async () => {
-                await dbConnect();
-                return AdsModel.findOne().select(
-                    '+encryptedClientId ' +
-                    '+placements.top.encryptedSlotId ' +
-                    '+placements.middle.encryptedSlotId ' +
-                    '+placements.bottom.encryptedSlotId ' +
-                    '+placements.sidebar.encryptedSlotId ' +
-                    '+placements.footer.encryptedSlotId'
-                ).lean();
+                // Ads secrets (encryptedClientId / placements.*.encryptedSlotId)
+                // live inside the json `data` blob and are returned here for
+                // server-side decryption; only decrypted values reach the client.
+                return getSingleton(prisma, 'ads');
             },
             CACHE_TTL.LONG
         );

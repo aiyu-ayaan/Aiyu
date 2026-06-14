@@ -1,5 +1,6 @@
 import crypto from 'crypto';
-import Config from '@/models/Config';
+import { prisma } from '@/lib/prisma';
+import { getSingleton } from '@/lib/serialize';
 
 export function validateExternalApiKey(request) {
     const apiKey = request.headers.get('x-api-key');
@@ -15,7 +16,7 @@ export async function validateBearerBlogToken(request) {
     }
 
     const providedHash = crypto.createHash('sha256').update(rawToken.trim()).digest('hex');
-    const config = await Config.findOne().select('+blogApiTokenHash').lean();
+    const config = await getSingleton(prisma, 'config', { withSecrets: true });
     const storedHash = String(config?.blogApiTokenHash || '');
     if (!storedHash) return false;
 
