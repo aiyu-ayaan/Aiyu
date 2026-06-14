@@ -1,13 +1,10 @@
 import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/db';
-import ContactMessage from '@/models/ContactMessage';
-import Config from '@/models/Config';
-import NotificationConfig from '@/models/NotificationConfig';
+import { prisma } from '@/lib/prisma';
+import { getSingleton, toClientList, fromClient } from '@/lib/serialize';
 import { sendNotification } from '@/utils/notificationService';
 
 export async function POST(request) {
     try {
-        await dbConnect();
         const body = await request.json();
         const { name, email, message } = body;
 
@@ -19,15 +16,13 @@ export async function POST(request) {
         }
 
         // 1. Save to Database
-        await ContactMessage.create({
-            name,
-            email,
-            message,
+        await prisma.contactMessage.create({
+            data: fromClient('contactMessage', { name, email, message }, { keepId: false }),
         });
 
         // 1.5. Dispatch Notification Integrations if enabled
         try {
-            const notifConfig = await NotificationConfig.findOne({});
+            const notifConfig = await getSingleton(prisma, 'notificationConfig');
             if (notifConfig && notifConfig.enabled && notifConfig.notifyOnContactMessage) {
                 const title = `📧 New Contact Message: ${name}`;
                 const text = `From: ${name} <${email}>\n\nMessage:\n${message}`;
@@ -44,7 +39,7 @@ export async function POST(request) {
         }
 
         // 2. Check for n8n Webhook and forward if exists and enabled
-        const config = await Config.findOne().lean();
+        const config = await getSingleton(prisma, 'config');
         if (config?.n8nWebhookEnabled && config?.n8nWebhookUrl) {
             try {
                 const payload = {
@@ -105,12 +100,11 @@ export async function GET(request) {
         const requestedLimit = Number.parseInt(searchParams.get('limit') || '100', 10);
         const limit = Number.isFinite(requestedLimit) ? Math.min(Math.max(requestedLimit, 1), 500) : 100;
 
-        await dbConnect();
-        const messages = await ContactMessage.find()
-            .sort({ createdAt: -1 })
-            .limit(limit)
-            .lean();
-        return NextResponse.json({ success: true, data: messages }, { status: 200 });
+        const messages = await prisma.contactMessage.findMany({
+            orderBy: { createdAt: 'desc' },
+            take: limit,
+        });
+        return NextResponse.json({ success: true, data: toClientList('contactMessage', messages) }, { status: 200 });
     } catch (error) {
         console.error('Failed to fetch messages:', error);
         return NextResponse.json({ error: 'Failed to fetch messages' }, { status: 500 });
@@ -119,7 +113,6 @@ export async function GET(request) {
 
 export async function DELETE(request) {
     try {
-        await dbConnect();
         const { searchParams } = new URL(request.url);
         const id = searchParams.get('id');
 
@@ -127,7 +120,9 @@ export async function DELETE(request) {
             return NextResponse.json({ error: 'Message ID is required' }, { status: 400 });
         }
 
-        await ContactMessage.findByIdAndDelete(id);
+        // deleteMany is a no-op (no throw) when the id does not exist, matching
+        // the previous findByIdAndDelete behaviour that ignored a missing doc.
+        await prisma.contactMessage.deleteMany({ where: { id } });
 
         return NextResponse.json({ success: true, message: 'Message deleted' }, { status: 200 });
     } catch (error) {

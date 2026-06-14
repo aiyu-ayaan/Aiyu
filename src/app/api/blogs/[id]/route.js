@@ -1,6 +1,6 @@
 
-import dbConnect from "@/lib/db";
-import Blog from "@/models/Blog";
+import { prisma } from "@/lib/prisma";
+import { toClient, fromClient } from "@/lib/serialize";
 import { NextResponse } from "next/server";
 import cache from '@/lib/cache';
 import { createUniqueBlogSlug, resolveBlogByIdentifier } from '@/lib/blogSlugs';
@@ -62,7 +62,8 @@ function normalizeBlogPayload(body = {}) {
 }
 
 function isDuplicateTitleError(error) {
-    return error?.code === 11000 && (error?.keyPattern?.title || error?.keyValue?.title);
+    // Prisma unique-constraint violation on the case-insensitive title index.
+    return error?.code === 'P2002';
 }
 
 function revalidateBlogPublicPaths(slug = '') {
@@ -75,10 +76,9 @@ function revalidateBlogPublicPaths(slug = '') {
 }
 
 export async function GET(request, { params }) {
-    await dbConnect();
     const { id } = await params;
     try {
-        const blog = await resolveBlogByIdentifier(Blog, id);
+        const blog = await resolveBlogByIdentifier(null, id);
         if (!blog) {
             return NextResponse.json({ success: false, error: "Blog not found" }, { status: 404 });
         }
@@ -89,23 +89,21 @@ export async function GET(request, { params }) {
 }
 
 export async function PUT(request, { params }) {
-    await dbConnect();
     const { id } = await params;
     try {
         const rawBody = await request.json();
         const body = normalizeBlogPayload(rawBody);
-        console.log('PUT /api/blogs/[id] - Body:', body);
 
-        const existingBlog = await Blog.findById(id).select('_id title slug').lean();
+        const existingBlog = await prisma.blog.findUnique({ where: { id }, select: { id: true, title: true, slug: true } });
         if (!existingBlog) {
             return NextResponse.json({ success: false, error: "Blog not found" }, { status: 404 });
         }
 
         const nextTitle = typeof body?.title === 'string' && body.title.trim() ? body.title : existingBlog.title;
-        const duplicateTitle = await Blog.findOne({ _id: { $ne: id }, title: nextTitle })
-            .collation({ locale: 'en', strength: 2 })
-            .select('_id')
-            .lean();
+        const duplicateTitle = await prisma.blog.findFirst({
+            where: { id: { not: id }, title: { equals: nextTitle, mode: 'insensitive' } },
+            select: { id: true },
+        });
 
         if (duplicateTitle) {
             return NextResponse.json(
@@ -115,21 +113,19 @@ export async function PUT(request, { params }) {
         }
 
         const nextSlug = body?.title || !existingBlog.slug
-            ? await createUniqueBlogSlug(Blog, nextTitle, existingBlog._id, existingBlog._id)
+            ? await createUniqueBlogSlug(null, nextTitle, existingBlog.id, existingBlog.id)
             : existingBlog.slug;
 
-        const blog = await Blog.findByIdAndUpdate(id, { ...body, slug: nextSlug }, {
-            new: true,
-            runValidators: true,
-            strict: false,
+        const blog = await prisma.blog.update({
+            where: { id },
+            data: fromClient('blog', { ...body, slug: nextSlug }, { keepId: false }),
         });
 
-        console.log('PUT /api/blogs/[id] - Updated Blog:', blog);
         await cache.invalidatePrefixAsync('db:blogs');
         await cache.invalidatePrefixAsync('db:blog');
         revalidateBlogPublicPaths(existingBlog?.slug);
         revalidateBlogPublicPaths(blog?.slug);
-        return NextResponse.json({ success: true, data: blog });
+        return NextResponse.json({ success: true, data: toClient('blog', blog) });
     } catch (error) {
         if (isDuplicateTitleError(error)) {
             return NextResponse.json(
@@ -142,12 +138,16 @@ export async function PUT(request, { params }) {
 }
 
 export async function DELETE(request, { params }) {
-    await dbConnect();
     const { id } = await params;
     try {
-        const blog = await Blog.findByIdAndDelete(id);
-        if (!blog) {
-            return NextResponse.json({ success: false, error: "Blog not found" }, { status: 404 });
+        let blog;
+        try {
+            blog = await prisma.blog.delete({ where: { id } });
+        } catch (error) {
+            if (error?.code === 'P2025') {
+                return NextResponse.json({ success: false, error: "Blog not found" }, { status: 404 });
+            }
+            throw error;
         }
         await cache.invalidatePrefixAsync('db:blogs');
         await cache.invalidatePrefixAsync('db:blog');

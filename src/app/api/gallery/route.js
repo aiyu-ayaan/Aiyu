@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/db';
-import Gallery from '@/models/Gallery';
+import { prisma } from '@/lib/prisma';
+import { toClient, toClientList, fromClient } from '@/lib/serialize';
 import { withAuth } from '@/middleware/auth';
 import { deleteThumbnail } from '@/utils/imageProcessing';
 import cache, { CACHE_KEYS, CACHE_TTL, createCacheDebugHeaders } from '@/lib/cache';
@@ -12,8 +12,10 @@ export async function GET() {
         const { value: images, meta } = await cache.getOrSetWithMeta(
             CACHE_KEYS.GALLERY,
             async () => {
-                await dbConnect();
-                return Gallery.find({}).sort({ isPinned: -1, order: 1, createdAt: -1 }).lean();
+                const rows = await prisma.gallery.findMany({
+                    orderBy: [{ isPinned: 'desc' }, { order: 'asc' }, { createdAt: 'desc' }],
+                });
+                return toClientList('gallery', rows);
             },
             CACHE_TTL.MEDIUM
         );
@@ -31,13 +33,11 @@ export async function GET() {
 
 // POST: Create a new gallery item (Admin only)
 async function createGalleryItem(req) {
-    await dbConnect();
-
     try {
         const body = await req.json();
-        const galleryItem = await Gallery.create(body);
+        const galleryItem = await prisma.gallery.create({ data: fromClient('gallery', body, { keepId: false }) });
         await cache.invalidateAsync(CACHE_KEYS.GALLERY);
-        return NextResponse.json({ success: true, data: galleryItem }, { status: 201 });
+        return NextResponse.json({ success: true, data: toClient('gallery', galleryItem) }, { status: 201 });
     } catch (error) {
         return NextResponse.json({ success: false, error: error.message }, { status: 400 });
     }
@@ -45,8 +45,6 @@ async function createGalleryItem(req) {
 
 // DELETE: Remove a gallery item (Admin only)
 async function deleteGalleryItem(req) {
-    await dbConnect();
-
     try {
         const { searchParams } = new URL(req.url);
         const id = searchParams.get('id');
@@ -55,10 +53,14 @@ async function deleteGalleryItem(req) {
             return NextResponse.json({ success: false, error: 'ID is required' }, { status: 400 });
         }
 
-        const deletedItem = await Gallery.findByIdAndDelete(id);
-
-        if (!deletedItem) {
-            return NextResponse.json({ success: false, error: 'Item not found' }, { status: 404 });
+        let deletedItem;
+        try {
+            deletedItem = await prisma.gallery.delete({ where: { id } });
+        } catch (error) {
+            if (error?.code === 'P2025') {
+                return NextResponse.json({ success: false, error: 'Item not found' }, { status: 404 });
+            }
+            throw error;
         }
 
         await cache.invalidateAsync(CACHE_KEYS.GALLERY);
@@ -78,37 +80,40 @@ async function deleteGalleryItem(req) {
 
 // PUT: Update gallery items (Admin only)
 async function updateGalleryItem(req) {
-    await dbConnect();
-
     try {
         const body = await req.json();
 
         // Bulk update for ordering
         if (body.items && Array.isArray(body.items)) {
-            const bulkOps = body.items.map((item) => ({
-                updateOne: {
-                    filter: { _id: item.id },
-                    update: { order: item.order }
-                }
-            }));
-            await Gallery.bulkWrite(bulkOps);
+            await prisma.$transaction(
+                body.items.map((item) =>
+                    prisma.gallery.update({
+                        where: { id: item.id },
+                        data: { order: Number(item.order) },
+                    })
+                )
+            );
             await cache.invalidateAsync(CACHE_KEYS.GALLERY);
             return NextResponse.json({ success: true, message: 'Ordering updated successfully' });
         }
 
         // Single update (e.g. isPinned toggle)
         if (body.id) {
-            const updatedItem = await Gallery.findByIdAndUpdate(
-                body.id,
-                { $set: body.update },
-                { new: true }
-            );
-            if (!updatedItem) {
-                return NextResponse.json({ success: false, error: 'Item not found' }, { status: 404 });
+            let updatedItem;
+            try {
+                updatedItem = await prisma.gallery.update({
+                    where: { id: body.id },
+                    data: fromClient('gallery', body.update, { keepId: false }),
+                });
+            } catch (error) {
+                if (error?.code === 'P2025') {
+                    return NextResponse.json({ success: false, error: 'Item not found' }, { status: 404 });
+                }
+                throw error;
             }
 
             await cache.invalidateAsync(CACHE_KEYS.GALLERY);
-            return NextResponse.json({ success: true, data: updatedItem });
+            return NextResponse.json({ success: true, data: toClient('gallery', updatedItem) });
         }
 
         return NextResponse.json({ success: false, error: 'Invalid request payload' }, { status: 400 });

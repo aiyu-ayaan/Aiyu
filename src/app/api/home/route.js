@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/db';
-import Home from '@/models/Home';
+import { prisma } from '@/lib/prisma';
+import { getSingleton, upsertSingleton } from '@/lib/serialize';
 import { getSession } from '@/lib/auth';
 import cache, { CACHE_KEYS, CACHE_TTL, createCacheDebugHeaders } from '@/lib/cache';
 import { createPublicCacheHeaders, RESPONSE_CACHE } from '@/lib/httpCache';
@@ -10,8 +10,7 @@ export async function GET() {
         const { value: home, meta } = await cache.getOrSetWithMeta(
             CACHE_KEYS.HOME,
             async () => {
-                await dbConnect();
-                return Home.findOne().lean();
+                return getSingleton(prisma, 'home');
             },
             CACHE_TTL.LONG
         );
@@ -33,14 +32,9 @@ export async function PUT(request) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await dbConnect();
     try {
         const body = await request.json();
-        const home = await Home.findOneAndUpdate({}, body, {
-            new: true,
-            upsert: true, // Create if doesn't exist
-            runValidators: true,
-        });
+        const home = await upsertSingleton(prisma, 'home', body);
         await cache.invalidateAsync(CACHE_KEYS.HOME);
         return NextResponse.json(home);
     } catch (error) {

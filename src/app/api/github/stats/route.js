@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/db';
-import GitHub from '@/models/GitHub';
-import Config from '@/models/Config';
+import { prisma } from '@/lib/prisma';
+import { getSingleton } from '@/lib/serialize';
 import { decrypt } from '@/lib/encryption';
 import cache, { CACHE_TTL, createCacheDebugHeaders } from '@/lib/cache';
 import { createPublicCacheHeaders, RESPONSE_CACHE } from '@/lib/httpCache';
@@ -367,10 +366,8 @@ export async function GET(request) {
     let trafficReservation = null;
 
     try {
-        await dbConnect();
-
         // Get GitHub config
-        const config = await GitHub.findOne().lean();
+        const config = await getSingleton(prisma, 'github');
 
         if (!config || !config.username) {
             return NextResponse.json({
@@ -452,7 +449,7 @@ export async function GET(request) {
             const result = await cache.getOrSetWithMeta(
                 cacheKey,
                 async () => {
-                const configDoc = await Config.findOne().select('+encryptedGithubToken').lean();
+                const configDoc = await getSingleton(prisma, 'config', { withSecrets: true });
                 const dbToken = configDoc?.encryptedGithubToken ? decrypt(configDoc.encryptedGithubToken) : null;
                 const envToken = process.env.GITHUB_TOKEN ? process.env.GITHUB_TOKEN.trim() : null;
                 const token = dbToken || envToken;

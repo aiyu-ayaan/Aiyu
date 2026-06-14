@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/db';
-import Project from '@/models/Project';
+import { prisma } from '@/lib/prisma';
+import { toClient, fromClient } from '@/lib/serialize';
 import { getSession } from '@/lib/auth';
-import cache, { CACHE_KEYS, CACHE_TTL, createCacheDebugHeaders } from '@/lib/cache';
+import cache, { CACHE_TTL, createCacheDebugHeaders } from '@/lib/cache';
 import { createPublicCacheHeaders, RESPONSE_CACHE } from '@/lib/httpCache';
 
 export async function PUT(request, { params }) {
@@ -11,20 +11,19 @@ export async function PUT(request, { params }) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await dbConnect();
     try {
         const { id } = await params;
         const body = await request.json();
-        const project = await Project.findByIdAndUpdate(id, body, {
-            new: true,
-            runValidators: true,
+        const project = await prisma.project.update({
+            where: { id },
+            data: fromClient('project', body, { keepId: false }),
         });
-        if (!project) {
+        await cache.invalidatePrefixAsync('db:projects');
+        return NextResponse.json(toClient('project', project));
+    } catch (error) {
+        if (error?.code === 'P2025') {
             return NextResponse.json({ error: 'Project not found' }, { status: 404 });
         }
-        await cache.invalidatePrefixAsync('db:projects');
-        return NextResponse.json(project);
-    } catch (error) {
         return NextResponse.json({ error: 'Failed to update project' }, { status: 500 });
     }
 }
@@ -35,16 +34,15 @@ export async function DELETE(request, { params }) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await dbConnect();
     try {
         const { id } = await params;
-        const project = await Project.findByIdAndDelete(id);
-        if (!project) {
-            return NextResponse.json({ error: 'Project not found' }, { status: 404 });
-        }
+        await prisma.project.delete({ where: { id } });
         await cache.invalidatePrefixAsync('db:projects');
         return NextResponse.json({ message: 'Project deleted successfully' });
     } catch (error) {
+        if (error?.code === 'P2025') {
+            return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+        }
         return NextResponse.json({ error: 'Failed to delete project' }, { status: 500 });
     }
 }
@@ -55,8 +53,7 @@ export async function GET(request, { params }) {
         const { value: project, meta } = await cache.getOrSetWithMeta(
             `db:projects:item:${id}`,
             async () => {
-                await dbConnect();
-                return Project.findById(id).lean();
+                return toClient('project', await prisma.project.findUnique({ where: { id } }));
             },
             CACHE_TTL.MEDIUM
         );

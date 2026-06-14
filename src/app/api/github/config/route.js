@@ -1,14 +1,13 @@
 import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/db';
-import GitHub from '@/models/GitHub';
-import Config from '@/models/Config';
+import { prisma } from '@/lib/prisma';
+import { getSingleton, upsertSingleton } from '@/lib/serialize';
 import { withAuth } from '@/middleware/auth';
 import { encrypt, decrypt } from '@/lib/encryption';
 import cache from '@/lib/cache';
 
 // Helper to get token
 async function getDecryptedToken() {
-    const config = await Config.findOne().select('+encryptedGithubToken').lean();
+    const config = await getSingleton(prisma, 'config', { withSecrets: true });
     if (config?.encryptedGithubToken) {
         return decrypt(config.encryptedGithubToken);
     }
@@ -18,17 +17,15 @@ async function getDecryptedToken() {
 // GET: Fetch GitHub configuration or full repo list
 async function getConfig(request) {
     try {
-        await dbConnect();
-
         // check for mode=repos
         const { searchParams } = new URL(request.url);
         const mode = searchParams.get('mode');
 
-        let config = await GitHub.findOne().lean();
+        let config = await getSingleton(prisma, 'github');
 
         // Create default if doesn't exist
         if (!config) {
-            config = await GitHub.create({ username: '', enabled: false });
+            config = await upsertSingleton(prisma, 'github', { username: '', enabled: false });
         }
 
         // Get token from DB (encrypted) or Env
@@ -148,11 +145,8 @@ async function getConfig(request) {
 // PUT: Update GitHub configuration (Admin only)
 async function updateConfig(request) {
     try {
-        await dbConnect();
         const body = await request.json();
         const { username, enabled, sections } = body;
-
-        console.log('[GitHub Config] Update request:', { username, enabled, sections });
 
         // Validate
         if (username !== undefined && typeof username !== 'string') {
@@ -162,40 +156,34 @@ async function updateConfig(request) {
             }, { status: 400 });
         }
 
-        // Find and update or create
-        let config = await GitHub.findOne();
+        const existing = await getSingleton(prisma, 'github');
+        const patch = {};
 
-        if (!config) {
-            config = new GitHub({
-                username,
-                enabled: enabled !== undefined ? enabled : true,
-                sections: sections || {}
-            });
-        } else {
-            if (username !== undefined) config.username = username;
-            if (enabled !== undefined) config.enabled = enabled;
-            if (body.includePrivate !== undefined) config.includePrivate = body.includePrivate;
-            if (sections !== undefined) {
-                config.sections = { ...config.sections, ...sections };
-                config.markModified('sections'); // Force Mongoose to detect change
-            }
-            if (body.hiddenRepos !== undefined) {
-                config.hiddenRepos = body.hiddenRepos;
-            }
+        if (username !== undefined) patch.username = username;
+        if (body.includePrivate !== undefined) patch.includePrivate = body.includePrivate;
+        if (sections !== undefined) {
+            patch.sections = { ...(existing?.sections || {}), ...sections };
+        }
+        if (body.hiddenRepos !== undefined) {
+            patch.hiddenRepos = body.hiddenRepos;
+        }
+        // Match the create-time default: enabled defaults to true on first save.
+        if (enabled !== undefined) {
+            patch.enabled = enabled;
+        } else if (!existing) {
+            patch.enabled = true;
         }
 
         if (body.githubToken !== undefined) {
-            // Update token in Config
+            // Update token in Config (stored encrypted in a dedicated secret column)
             const encryptedToken = body.githubToken ? encrypt(body.githubToken) : '';
-            await Config.findOneAndUpdate({}, { encryptedGithubToken: encryptedToken }, { upsert: true });
+            await upsertSingleton(prisma, 'config', { encryptedGithubToken: encryptedToken });
             await cache.invalidatePrefixAsync('db:github');
             await cache.invalidatePrefixAsync('db:config');
         }
 
-        await config.save();
+        const config = await upsertSingleton(prisma, 'github', patch);
         await cache.invalidatePrefixAsync('db:github');
-
-        console.log('[GitHub Config] Updated successfully:', config);
 
         return NextResponse.json({
             success: true,

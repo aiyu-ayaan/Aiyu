@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/db';
-import Social from '@/models/Social';
+import { prisma } from '@/lib/prisma';
+import { toClient, toClientList, fromClient } from '@/lib/serialize';
 import { getSession } from '@/lib/auth';
 import cache, { CACHE_KEYS, CACHE_TTL, createCacheDebugHeaders } from '@/lib/cache';
 import { createPublicCacheHeaders, RESPONSE_CACHE } from '@/lib/httpCache';
@@ -10,8 +10,7 @@ export async function GET() {
         const { value: socials, meta } = await cache.getOrSetWithMeta(
             CACHE_KEYS.SOCIALS,
             async () => {
-                await dbConnect();
-                return Social.find({}).lean();
+                return toClientList('social', await prisma.social.findMany());
             },
             CACHE_TTL.LONG
         );
@@ -33,12 +32,11 @@ export async function POST(request) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await dbConnect();
     try {
         const body = await request.json();
-        const social = await Social.create(body);
+        const social = await prisma.social.create({ data: fromClient('social', body, { keepId: false }) });
         await cache.invalidatePrefixAsync('db:socials');
-        return NextResponse.json(social, { status: 201 });
+        return NextResponse.json(toClient('social', social), { status: 201 });
     } catch (error) {
         return NextResponse.json({ error: 'Failed to create social link' }, { status: 500 });
     }

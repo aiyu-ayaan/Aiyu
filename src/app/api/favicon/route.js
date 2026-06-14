@@ -1,12 +1,10 @@
 
-import dbConnect from "@/lib/db";
-import ConfigModel from "@/models/Config";
+import { prisma } from "@/lib/prisma";
+import { getSingleton } from "@/lib/serialize";
 
 export async function GET() {
-    await dbConnect();
-
     try {
-        const config = await ConfigModel.findOne().lean();
+        const config = await getSingleton(prisma, 'config');
 
         if (config && config.favicon && config.favicon.value) {
             const base64Data = config.favicon.value.split(';base64,').pop();

@@ -4,8 +4,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import mongoose from 'mongoose';
-import dbConnect from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 
 export async function GET(request) {
     const startedAt = Date.now();
@@ -31,14 +30,14 @@ export async function GET(request) {
             });
         }
 
-        await dbConnect();
-
-        const isMongoReady = mongoose.connection.readyState === 1 && Boolean(mongoose.connection.db);
-        if (isMongoReady) {
-            await mongoose.connection.db.admin().ping();
+        let databaseStatus = 'down';
+        try {
+            await prisma.$queryRaw`SELECT 1`;
+            databaseStatus = 'up';
+        } catch {
+            databaseStatus = 'down';
         }
 
-        const databaseStatus = isMongoReady ? 'up' : 'down';
         const healthy = databaseStatus === 'up';
 
         return NextResponse.json({

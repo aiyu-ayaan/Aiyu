@@ -1,7 +1,5 @@
 import { notFound, permanentRedirect } from 'next/navigation';
 import { cache } from 'react';
-import dbConnect from '@/lib/db';
-import ProjectModel from '@/models/Project';
 import { getConfigData } from '@/lib/dataFetchers';
 import { getProjectSlug, resolveProjectByIdentifier } from '@/lib/contentSlugs';
 import { getSiteUrl } from '@/lib/siteUrl';
@@ -27,8 +25,7 @@ function isExternalHttpUrl(value) {
 }
 
 const getProjectByIdentifier = cache(async (identifier) => {
-    await dbConnect();
-    return resolveProjectByIdentifier(ProjectModel, identifier);
+    return resolveProjectByIdentifier(null, identifier);
 });
 
 export async function generateMetadata({ params }) {

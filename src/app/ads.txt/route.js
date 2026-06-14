@@ -1,14 +1,12 @@
-import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/db';
-import Ads from '@/models/Ads';
+import { prisma } from '@/lib/prisma';
+import { getSingleton } from '@/lib/serialize';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export async function GET() {
     try {
-        await dbConnect();
-        const adsConfig = await Ads.findOne().lean();
+        const adsConfig = await getSingleton(prisma, 'ads');
         const adsTxt = adsConfig?.adsTxt || '';
         
         return new Response(adsTxt, {

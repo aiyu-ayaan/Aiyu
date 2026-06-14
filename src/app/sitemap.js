@@ -1,7 +1,5 @@
-import dbConnect from '@/lib/db';
-import BlogModel from '@/models/Blog';
-import ProjectModel from '@/models/Project';
-import DeploymentModel from '@/models/Deployment';
+import { prisma } from '@/lib/prisma';
+import { toClientList } from '@/lib/serialize';
 import { getBlogSlug } from '@/lib/blogSlugs';
 import { getSiteUrl, toCanonicalSiteUrl } from '@/lib/siteUrl';
 import {
@@ -162,14 +160,22 @@ export default async function sitemap() {
   }
 
   try {
-    // Attempt database connection
-    await dbConnect();
-
-    const [blogs, projects, deployments] = await Promise.all([
-      BlogModel.find({ published: { $ne: false }, noIndex: { $ne: true } }, { title: 1, slug: 1, updatedAt: 1, createdAt: 1 }).lean(),
-      ProjectModel.find({}, { _id: 1, name: 1, slug: 1, updatedAt: 1, createdAt: 1 }).lean(),
-      DeploymentModel.find({}, { _id: 1, name: 1, slug: 1, updatedAt: 1, createdAt: 1 }).lean(),
+    const [blogRows, projectRows, deploymentRows] = await Promise.all([
+      prisma.blog.findMany({
+        where: { published: true, noIndex: false },
+        select: { id: true, title: true, slug: true, updatedAt: true, createdAt: true },
+      }),
+      prisma.project.findMany({
+        select: { id: true, name: true, slug: true, updatedAt: true, createdAt: true },
+      }),
+      prisma.deployment.findMany({
+        select: { id: true, name: true, slug: true, updatedAt: true, createdAt: true },
+      }),
     ]);
+
+    const blogs = toClientList('blog', blogRows);
+    const projects = toClientList('project', projectRows);
+    const deployments = toClientList('deployment', deploymentRows);
 
     const staticRoutesWithRealtimeCollections = createStaticRoutes(baseUrl, {
       blogsLastModified: getLatestLastModified(blogs) || new Date(),
