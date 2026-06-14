@@ -124,7 +124,7 @@ export const MODELS = {
   home: { delegate: 'home', kind: 'json', singleton: true, timestamps: false },
   header: { delegate: 'header', kind: 'json', singleton: true, timestamps: false },
   notificationConfig: { delegate: 'notificationConfig', kind: 'json', singleton: true, timestamps: true },
-  github: { delegate: 'github', kind: 'json', singleton: true, timestamps: false },
+  github: { delegate: 'gitHub', kind: 'json', singleton: true, timestamps: false },
   cronEnv: { delegate: 'cronEnv', kind: 'json', singleton: true, timestamps: true },
 };
 

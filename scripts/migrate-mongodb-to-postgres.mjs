@@ -63,7 +63,7 @@ const MODELS = [
     { collection: 'homes', delegate: 'home', kind: 'json', timestamps: false },
     { collection: 'headers', delegate: 'header', kind: 'json', timestamps: false },
     { collection: 'notificationconfigs', delegate: 'notificationConfig', kind: 'json', timestamps: true },
-    { collection: 'githubs', delegate: 'github', kind: 'json', timestamps: false },
+    { collection: 'githubs', delegate: 'gitHub', kind: 'json', timestamps: false },
     { collection: 'cronenvs', delegate: 'cronEnv', kind: 'json', timestamps: true },
 ];
 

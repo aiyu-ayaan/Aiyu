@@ -52,7 +52,7 @@ export async function GET(request) {
         };
 
         if (includeGithub) {
-            data.github = toClientList('github', await prisma.github.findMany());
+            data.github = toClientList('github', await prisma.gitHub.findMany());
         }
 
         if (includeContact) {
