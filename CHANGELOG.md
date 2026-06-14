@@ -1,5 +1,24 @@
 # Changelog
 
+## [4.2.1](https://github.com/aiyu-ayaan/Aiyu/compare/v4.2.0...v4.2.1) (2026-06-13)
+
+### Features
+
+* feat(admin): implement server route for lightweight icon catalog to optimize admin bundle
+* feat: Add UI/UX Pro Max Search script and Home Showcase Scroll component
+* feat(landing): refine entrance choreography for projects/tech/status
+* feat(scroll): add left/right reveals, auto-alternating containers, and horizontal scroll
+
+### Bug Fixes
+
+* fix(landing): resolve filter layout wrap styling issue on mobile
+* fix(hero): keep the hero name on one line across viewports
+
+### Other Changes
+
+* perf(scroll): gate blur/parallax/pin + WebGL hero on lite & touch devices
+* perf(landing): add data-perf device tier flag + lite CSS fallbacks
+
 ## [4.2.0](https://github.com/aiyu-ayaan/Aiyu/compare/v4.1.3...v4.2.0) (2026-06-12)
 
 ### Features
