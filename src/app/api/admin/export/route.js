@@ -1,28 +1,13 @@
-import dbConnect from "@/lib/db";
+import { prisma } from "@/lib/prisma";
+import { toClientList } from "@/lib/serialize";
 import { getSession } from "@/lib/auth";
 import { NextResponse } from "next/server";
-import About from "@/models/About";
-import Blog from "@/models/Blog";
-import Config from "@/models/Config";
-import Gallery from "@/models/Gallery";
-import Header from "@/models/Header";
-import Home from "@/models/Home";
-import Project from "@/models/Project";
-import Deployment from "@/models/Deployment";
-import Social from "@/models/Social";
-import GitHub from "@/models/GitHub";
-import ContactMessage from "@/models/ContactMessage";
-import Theme from "@/models/Theme";
-import Cron from "@/models/Cron";
-import Ads from "@/models/Ads";
-import NotificationConfig from "@/models/NotificationConfig";
 import archiver from "archiver";
 import { join } from "path";
 import { readFile, access, readdir } from "fs/promises";
 
 export async function GET(request) {
     try {
-        await dbConnect();
         const session = await getSession();
 
         if (!session) {
@@ -33,8 +18,7 @@ export async function GET(request) {
         const includeGithub = searchParams.get('includeGithub') === 'true';
         const includeContact = searchParams.get('includeContact') === 'true';
 
-        const rawCrons = await Cron.find({}).lean();
-        const crons = rawCrons.map(cron => {
+        const crons = toClientList('cron', await prisma.cron.findMany()).map(cron => {
             const cleanCron = { ...cron };
             delete cleanCron.webhookEnv;
             delete cleanCron.lastRun;
@@ -43,31 +27,24 @@ export async function GET(request) {
             return cleanCron;
         });
 
-        // Fetch Ads including all select: false fields so they are fully backed up
-        const ads = await Ads.find({}).select(
-            '+encryptedClientId ' +
-            '+placements.top.encryptedSlotId ' +
-            '+placements.middle.encryptedSlotId ' +
-            '+placements.bottom.encryptedSlotId ' +
-            '+placements.sidebar.encryptedSlotId ' +
-            '+placements.footer.encryptedSlotId'
-        ).lean();
+        // Ads secrets live inside the json data blob, so they are fully backed up.
+        const ads = toClientList('ads', await prisma.ads.findMany());
 
         // Fetch NotificationConfig
-        const notificationConfig = await NotificationConfig.find({}).lean();
+        const notificationConfig = toClientList('notificationConfig', await prisma.notificationConfig.findMany());
 
         // Build the database export data
         const data = {
-            about: await About.find({}),
-            blogs: await Blog.find({}),
-            config: await Config.find({}),
-            gallery: await Gallery.find({}),
-            header: await Header.find({}),
-            home: await Home.find({}),
-            projects: await Project.find({}),
-            deployments: await Deployment.find({}),
-            socials: await Social.find({}),
-            themes: await Theme.find({}),
+            about: toClientList('about', await prisma.about.findMany()),
+            blogs: toClientList('blog', await prisma.blog.findMany()),
+            config: toClientList('config', await prisma.config.findMany()),
+            gallery: toClientList('gallery', await prisma.gallery.findMany()),
+            header: toClientList('header', await prisma.header.findMany()),
+            home: toClientList('home', await prisma.home.findMany()),
+            projects: toClientList('project', await prisma.project.findMany()),
+            deployments: toClientList('deployment', await prisma.deployment.findMany()),
+            socials: toClientList('social', await prisma.social.findMany()),
+            themes: toClientList('theme', await prisma.theme.findMany()),
             crons,
             ads,
             notificationConfig,
@@ -75,11 +52,11 @@ export async function GET(request) {
         };
 
         if (includeGithub) {
-            data.github = await GitHub.find({});
+            data.github = toClientList('github', await prisma.github.findMany());
         }
 
         if (includeContact) {
-            data.contactMessages = await ContactMessage.find({});
+            data.contactMessages = toClientList('contactMessage', await prisma.contactMessage.findMany());
         }
 
         // Collect all image filenames from gallery entries
