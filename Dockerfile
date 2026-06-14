@@ -55,6 +55,21 @@ RUN DATABASE_URL="postgresql://dummy:dummy@dummy:5432/dummy?schema=public" \
     NEXT_TELEMETRY_DISABLED=1 \
     npm run build -- --webpack
 
+# Stage 2.5: Isolated Prisma CLI
+# Prisma 6.19's CLI loads @prisma/config, which pulls a large transitive
+# closure (effect, c12, and ~20 more). None of it is part of the Next.js
+# standalone trace, and hand-copying the closure is brittle (it changes between
+# Prisma releases — that is what caused "Cannot find module 'effect'"). Install
+# the CLI on its own so the runner can copy a complete, self-consistent
+# node_modules used solely for `migrate deploy`. Pinned to match @prisma/client.
+FROM node:20-bookworm-slim AS prismacli
+WORKDIR /prismacli
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends openssl \
+    && rm -rf /var/lib/apt/lists/*
+RUN npm init -y >/dev/null 2>&1 \
+    && npm install prisma@6.19.3 --no-audit --no-fund
+
 # Stage 3: Runner
 FROM node:20-bookworm-slim AS runner
 WORKDIR /app
@@ -77,13 +92,17 @@ COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Prisma assets needed to run `migrate deploy` at container start.
-# The schema + migrations and the Prisma CLI/engines are not part of the
-# Next.js standalone trace, so copy them explicitly.
+# Prisma schema/migrations + runtime client. The Next.js standalone trace is
+# unreliable for Prisma's engine, so copy the generated client (.prisma) and
+# the runtime @prisma packages explicitly. These serve queries at runtime.
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/prisma ./node_modules/prisma
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
+
+# Self-contained Prisma CLI (with its full @prisma/config -> effect/c12 closure)
+# kept in its own directory so it can't shadow the app's runtime node_modules.
+# Used only by the entrypoint to run `migrate deploy` at container start.
+COPY --from=prismacli --chown=nextjs:nodejs /prismacli/node_modules /app/prisma-cli/node_modules
 
 # Copy healthcheck script and the entrypoint
 COPY --chown=nextjs:nodejs scripts/healthcheck.sh /app/healthcheck.sh
