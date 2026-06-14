@@ -1,17 +1,8 @@
 import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/db';
+import { prisma } from '@/lib/prisma';
+import { getSingleton, toClientList } from '@/lib/serialize';
 import { getSession } from '@/lib/auth';
 import { validateBearerBlogToken, validateExternalApiKey } from '@/lib/blogApiAuth';
-import About from '@/models/About';
-import Blog from '@/models/Blog';
-import Config from '@/models/Config';
-import Deployment from '@/models/Deployment';
-import Gallery from '@/models/Gallery';
-import Header from '@/models/Header';
-import Home from '@/models/Home';
-import Project from '@/models/Project';
-import Social from '@/models/Social';
-import Theme from '@/models/Theme';
 
 function serialize(value) {
     return JSON.parse(JSON.stringify(value));
@@ -101,7 +92,6 @@ ${JSON.stringify(payload, null, 2)}`;
 
 export async function GET(request) {
     try {
-        await dbConnect();
         const session = await getSession();
         const hasValidApiKey = validateExternalApiKey(request);
         const isBearerTokenValid = await validateBearerBlogToken(request);
@@ -122,16 +112,16 @@ export async function GET(request) {
             gallery,
             themes,
         ] = await Promise.all([
-            Config.findOne().select('+blogApiTokenHash').lean(),
-            Header.findOne().lean(),
-            Home.findOne().lean(),
-            About.findOne().lean(),
-            Social.find({}).lean(),
-            Project.find({}).sort({ displayOrder: 1, updatedAt: -1, createdAt: -1 }).lean(),
-            Deployment.find({}).sort({ displayOrder: 1, updatedAt: -1, createdAt: -1 }).lean(),
-            Blog.find({}).sort({ createdAt: -1 }).lean(),
-            Gallery.find({}).sort({ isPinned: -1, order: 1, createdAt: -1 }).lean(),
-            Theme.find({}).lean(),
+            getSingleton(prisma, 'config'),
+            getSingleton(prisma, 'header'),
+            getSingleton(prisma, 'home'),
+            getSingleton(prisma, 'about'),
+            prisma.social.findMany().then((rows) => toClientList('social', rows)),
+            prisma.project.findMany({ orderBy: [{ displayOrder: 'asc' }, { updatedAt: 'desc' }, { createdAt: 'desc' }] }).then((rows) => toClientList('project', rows)),
+            prisma.deployment.findMany({ orderBy: [{ displayOrder: 'asc' }, { updatedAt: 'desc' }, { createdAt: 'desc' }] }).then((rows) => toClientList('deployment', rows)),
+            prisma.blog.findMany({ orderBy: { createdAt: 'desc' } }).then((rows) => toClientList('blog', rows)),
+            prisma.gallery.findMany({ orderBy: [{ isPinned: 'desc' }, { order: 'asc' }, { createdAt: 'desc' }] }).then((rows) => toClientList('gallery', rows)),
+            prisma.theme.findMany().then((rows) => toClientList('theme', rows)),
         ]);
 
         const payload = buildPromptPayload({

@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/db';
-import Config from '@/models/Config';
+import { prisma } from '@/lib/prisma';
+import { getSingleton, upsertSingleton } from '@/lib/serialize';
 import { getSession } from '@/lib/auth';
 
 function hashToken(rawToken) {
@@ -21,8 +21,7 @@ async function requireSession() {
 
 async function getTokenStatus() {
     try {
-        await dbConnect();
-        const config = await Config.findOne().select('+blogApiTokenHash blogApiTokenLast4 blogApiTokenCreatedAt').lean();
+        const config = await getSingleton(prisma, 'config', { withSecrets: true });
 
         return NextResponse.json({
             success: true,
@@ -43,22 +42,14 @@ async function getTokenStatus() {
 
 async function generateToken() {
     try {
-        await dbConnect();
-
         const token = `blg_${crypto.randomBytes(32).toString('hex')}`;
         const tokenHash = hashToken(token);
 
-        await Config.findOneAndUpdate(
-            {},
-            {
-                $set: {
-                    blogApiTokenHash: tokenHash,
-                    blogApiTokenLast4: token.slice(-4),
-                    blogApiTokenCreatedAt: new Date(),
-                },
-            },
-            { new: true, upsert: true, setDefaultsOnInsert: true }
-        );
+        await upsertSingleton(prisma, 'config', {
+            blogApiTokenHash: tokenHash,
+            blogApiTokenLast4: token.slice(-4),
+            blogApiTokenCreatedAt: new Date().toISOString(),
+        });
 
         return NextResponse.json({
             success: true,
@@ -79,18 +70,11 @@ async function generateToken() {
 
 async function revokeToken() {
     try {
-        await dbConnect();
-        await Config.findOneAndUpdate(
-            {},
-            {
-                $set: {
-                    blogApiTokenHash: '',
-                    blogApiTokenLast4: '',
-                    blogApiTokenCreatedAt: null,
-                },
-            },
-            { upsert: true, setDefaultsOnInsert: true }
-        );
+        await upsertSingleton(prisma, 'config', {
+            blogApiTokenHash: '',
+            blogApiTokenLast4: '',
+            blogApiTokenCreatedAt: null,
+        });
 
         return NextResponse.json({ success: true });
     } catch (error) {

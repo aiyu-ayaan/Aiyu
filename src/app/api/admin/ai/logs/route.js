@@ -1,30 +1,22 @@
 import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/db';
-import AiLog from '@/models/AiLog';
+import { prisma } from '@/lib/prisma';
+import { toClientList } from '@/lib/serialize';
 import { withAuth } from '@/middleware/auth';
 
 async function getAiLogs(request) {
     try {
-        await dbConnect();
-
         // Fetch recent logs (limit 50)
-        const logs = await AiLog.find({})
-            .sort({ createdAt: -1 })
-            .limit(50)
-            .lean();
+        const logs = toClientList('aiLog', await prisma.aiLog.findMany({
+            orderBy: { createdAt: 'desc' },
+            take: 50,
+        }));
 
         // Aggregate statistics per provider
-        const aggregation = await AiLog.aggregate([
-            {
-                $group: {
-                    _id: '$provider',
-                    inputTokens: { $sum: '$inputTokens' },
-                    outputTokens: { $sum: '$outputTokens' },
-                    totalTokens: { $sum: '$totalTokens' },
-                    requestCount: { $sum: 1 }
-                }
-            }
-        ]);
+        const aggregation = await prisma.aiLog.groupBy({
+            by: ['provider'],
+            _sum: { inputTokens: true, outputTokens: true, totalTokens: true },
+            _count: { _all: true },
+        });
 
         const stats = {
             gemini: { input: 0, output: 0, total: 0, requests: 0 },
@@ -35,13 +27,13 @@ async function getAiLogs(request) {
         let overallTotalTokens = 0;
 
         aggregation.forEach(item => {
-            const provider = item._id.toLowerCase();
+            const provider = String(item.provider || '').toLowerCase();
             if (stats[provider] !== undefined) {
                 stats[provider] = {
-                    input: item.inputTokens || 0,
-                    output: item.outputTokens || 0,
-                    total: item.totalTokens || 0,
-                    requests: item.requestCount || 0
+                    input: item._sum.inputTokens || 0,
+                    output: item._sum.outputTokens || 0,
+                    total: item._sum.totalTokens || 0,
+                    requests: item._count._all || 0
                 };
                 overallTotalTokens += stats[provider].total;
             }

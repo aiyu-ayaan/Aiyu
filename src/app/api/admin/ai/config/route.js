@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/db';
-import Config from '@/models/Config';
+import { prisma } from '@/lib/prisma';
+import { getSingleton, upsertSingleton } from '@/lib/serialize';
 import { withAuth } from '@/middleware/auth';
 import { encrypt, decrypt } from '@/lib/encryption';
 import cache from '@/lib/cache';
 
 // Helper to get key
 async function getDecryptedKeys() {
-    const config = await Config.findOne().select('+encryptedGeminiApiKey +encryptedGroqApiKey +encryptedOpenRouterApiKey').lean();
+    const config = await getSingleton(prisma, 'config', { withSecrets: true });
     return {
         gemini: config?.encryptedGeminiApiKey ? decrypt(config.encryptedGeminiApiKey) : null,
         groq: config?.encryptedGroqApiKey ? decrypt(config.encryptedGroqApiKey) : null,
@@ -18,13 +18,11 @@ async function getDecryptedKeys() {
 // GET: Fetch AI configuration
 async function getAiConfig(request) {
     try {
-        await dbConnect();
-
-        let config = await Config.findOne().lean();
+        let config = await getSingleton(prisma, 'config');
 
         // Create default if doesn't exist
         if (!config) {
-            config = await Config.create({});
+            config = await upsertSingleton(prisma, 'config', {});
         }
 
         const keys = await getDecryptedKeys();
@@ -65,47 +63,43 @@ async function getAiConfig(request) {
 // PUT: Update AI configuration
 async function updateAiConfig(request) {
     try {
-        await dbConnect();
         const body = await request.json();
         const { enabled, provider, model, models, enabledProviders, systemInstruction, keys } = body;
 
-        let config = await Config.findOne().select('+encryptedGeminiApiKey +encryptedGroqApiKey +encryptedOpenRouterApiKey');
-        if (!config) {
-            config = new Config({});
-        }
+        const current = (await getSingleton(prisma, 'config', { withSecrets: true })) || {};
+        const ai = { ...(current.ai || {}) };
 
-        // Update AI settings
-        if (!config.ai) config.ai = {};
+        if (enabled !== undefined) ai.enabled = enabled;
+        if (provider !== undefined) ai.provider = provider;
+        if (model !== undefined) ai.model = model;
+        if (models !== undefined) ai.models = models;
+        if (enabledProviders !== undefined) ai.enabledProviders = enabledProviders;
+        if (systemInstruction !== undefined) ai.systemInstruction = systemInstruction;
 
-        if (enabled !== undefined) config.ai.enabled = enabled;
-        if (provider !== undefined) config.ai.provider = provider;
-        if (model !== undefined) config.ai.model = model;
-        if (models !== undefined) config.ai.models = models;
-        if (enabledProviders !== undefined) config.ai.enabledProviders = enabledProviders;
-        if (systemInstruction !== undefined) config.ai.systemInstruction = systemInstruction;
+        const patch = { ai };
 
-        // Update API Keys if provided
+        // Update API Keys if provided (stored in dedicated encrypted secret columns)
         if (keys?.gemini !== undefined) {
-            config.encryptedGeminiApiKey = keys.gemini ? encrypt(keys.gemini) : '';
+            patch.encryptedGeminiApiKey = keys.gemini ? encrypt(keys.gemini) : '';
         }
         if (keys?.groq !== undefined) {
-            config.encryptedGroqApiKey = keys.groq ? encrypt(keys.groq) : '';
+            patch.encryptedGroqApiKey = keys.groq ? encrypt(keys.groq) : '';
         }
         if (keys?.openrouter !== undefined) {
-            config.encryptedOpenRouterApiKey = keys.openrouter ? encrypt(keys.openrouter) : '';
+            patch.encryptedOpenRouterApiKey = keys.openrouter ? encrypt(keys.openrouter) : '';
         }
 
-        await config.save();
+        const updated = await upsertSingleton(prisma, 'config', patch, { withSecrets: true });
         cache.invalidatePrefix('db:config');
 
         return NextResponse.json({
             success: true,
             data: {
-                ...config.ai,
+                ...updated.ai,
                 hasKey: {
-                    gemini: !!config.encryptedGeminiApiKey,
-                    groq: !!config.encryptedGroqApiKey,
-                    openrouter: !!config.encryptedOpenRouterApiKey
+                    gemini: !!updated.encryptedGeminiApiKey,
+                    groq: !!updated.encryptedGroqApiKey,
+                    openrouter: !!updated.encryptedOpenRouterApiKey
                 }
             }
         });

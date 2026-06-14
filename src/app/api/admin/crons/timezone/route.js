@@ -1,15 +1,13 @@
 import { NextResponse } from 'next/server';
 import { withAuth } from '@/middleware/auth';
-import dbConnect from '@/lib/db';
-import Config from '@/models/Config';
-import Cron from '@/models/Cron';
+import { prisma } from '@/lib/prisma';
+import { getSingleton, upsertSingleton } from '@/lib/serialize';
 import { getNextCronRun } from '@/utils/cronRunner';
 
 // GET: Fetch current default timezone
 async function getCronTimezone(request) {
-    await dbConnect();
     try {
-        const config = await Config.findOne().lean();
+        const config = await getSingleton(prisma, 'config');
         return NextResponse.json({ success: true, timezone: config?.defaultTimezone || 'UTC' });
     } catch (error) {
         console.error('[API CRON TIMEZONE GET ERROR]:', error);
@@ -19,7 +17,6 @@ async function getCronTimezone(request) {
 
 // POST: Save new default timezone and recalculate active schedules
 async function saveCronTimezone(request) {
-    await dbConnect();
     try {
         const body = await request.json();
         const { timezone } = body;
@@ -35,20 +32,16 @@ async function saveCronTimezone(request) {
             return NextResponse.json({ success: false, error: 'Invalid timezone identifier.' }, { status: 400 });
         }
 
-        let config = await Config.findOne({});
-        if (!config) {
-            config = await Config.create({ defaultTimezone: timezone });
-        } else {
-            config.defaultTimezone = timezone;
-            await config.save();
-        }
+        await upsertSingleton(prisma, 'config', { defaultTimezone: timezone });
 
         // Recalculate nextRun for all active enabled cron jobs
         const now = new Date();
-        const activeJobs = await Cron.find({ enabled: true });
+        const activeJobs = await prisma.cron.findMany({ where: { enabled: true } });
         for (const job of activeJobs) {
-            job.nextRun = getNextCronRun(job.schedule, now, timezone);
-            await job.save();
+            await prisma.cron.update({
+                where: { id: job.id },
+                data: { nextRun: getNextCronRun(job.schedule, now, timezone) },
+            });
         }
 
         return NextResponse.json({ success: true, timezone });

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/db';
-import Config from '@/models/Config';
+import { prisma } from '@/lib/prisma';
+import { getSingleton } from '@/lib/serialize';
 import { decrypt } from '@/lib/encryption';
 import { withAuth } from '@/middleware/auth';
 
@@ -77,9 +77,7 @@ async function getModels(request) {
         const { searchParams } = new URL(request.url);
         const provider = searchParams.get('provider') || 'all';
 
-        await dbConnect();
-
-        const config = await Config.findOne().select('+encryptedGeminiApiKey +encryptedGroqApiKey +encryptedOpenRouterApiKey').lean();
+        const config = await getSingleton(prisma, 'config', { withSecrets: true });
 
         const keys = {
             gemini: config?.encryptedGeminiApiKey ? decrypt(config.encryptedGeminiApiKey) : null,
