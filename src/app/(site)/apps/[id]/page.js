@@ -3,6 +3,7 @@ import { cache } from 'react';
 import { getConfigData } from '@/lib/dataFetchers';
 import { getDeploymentSlug, resolveDeploymentByIdentifier } from '@/lib/contentSlugs';
 import { getSiteUrl } from '@/lib/siteUrl';
+import SectionReveal from '@/app/components/shared/SectionReveal';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -119,93 +120,96 @@ export default async function AppDetailsPage({ params }) {
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(appSchema) }}
             />
-            <main className="mx-auto w-full max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
-            <article className="overflow-hidden rounded-2xl border border-white/10 bg-slate-900/60 shadow-2xl backdrop-blur">
-                {deployment?.image ? (
-                    <img
-                        src={deployment.image}
-                        alt={deployment?.name || 'App image'}
-                        className="h-64 w-full object-cover sm:h-80"
-                        loading="eager"
-                        decoding="async"
-                    />
-                ) : null}
-
-                <div className="space-y-6 p-6 sm:p-8">
-                    <header className="space-y-3">
-                        <p className="text-xs uppercase tracking-[0.2em] text-cyan-400">App Details</p>
-                        <h1 className="text-3xl font-bold text-white sm:text-4xl">{deployment?.name}</h1>
-                        <div className="flex flex-wrap gap-2 text-xs uppercase tracking-wide">
-                            <span className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1 text-cyan-300">
-                                {deployment?.appType || 'Application'}
-                            </span>
-                            <span className="rounded-full border border-purple-400/30 bg-purple-400/10 px-3 py-1 text-purple-300">
-                                {deployment?.status || 'Unknown'}
-                            </span>
-                            <span className="rounded-full border border-slate-400/30 bg-slate-400/10 px-3 py-1 text-slate-300">
-                                {deployment?.environment || 'Environment not set'}
-                            </span>
-                        </div>
-                    </header>
-
-                    <section>
-                        <h2 className="mb-2 text-lg font-semibold text-white">Overview</h2>
-                        <p className="leading-7 text-slate-200">{deployment?.description || 'No description provided.'}</p>
-                    </section>
-
-                    <section className="grid grid-cols-1 gap-3 text-sm text-slate-200 sm:grid-cols-2">
-                        <div className="rounded-lg border border-white/10 bg-slate-800/50 p-4">
-                            <p className="mb-1 text-xs uppercase tracking-wider text-slate-400">Hosting Provider</p>
-                            <p className="font-semibold">{deployment?.hostingProvider || 'N/A'}</p>
-                        </div>
-                        <div className="rounded-lg border border-white/10 bg-slate-800/50 p-4">
-                            <p className="mb-1 text-xs uppercase tracking-wider text-slate-400">Environment</p>
-                            <p className="font-semibold">{deployment?.environment || 'N/A'}</p>
-                        </div>
-                    </section>
-
-                    {stackList.length > 0 ? (
-                        <section>
-                            <h2 className="mb-2 text-lg font-semibold text-white">Tech Stack</h2>
-                            <div className="flex flex-wrap gap-2">
-                                {stackList.map((tech) => (
-                                    <span
-                                        key={`${deployment?._id}-${tech}`}
-                                        className="rounded-md border border-cyan-400/30 bg-cyan-400/10 px-2.5 py-1 text-sm font-medium text-cyan-300"
-                                    >
-                                        {tech}
-                                    </span>
-                                ))}
-                            </div>
-                        </section>
+            <SectionReveal as="main" className="mx-auto w-full max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
+                <article
+                    className="overflow-hidden rounded-2xl border border-white/10 bg-slate-900/60 shadow-2xl backdrop-blur"
+                    data-reveal="tilt"
+                >
+                    {deployment?.image ? (
+                        <img
+                            src={deployment.image}
+                            alt={deployment?.name || 'App image'}
+                            className="h-64 w-full object-cover sm:h-80"
+                            loading="eager"
+                            decoding="async"
+                        />
                     ) : null}
 
-                    <section className="flex flex-wrap gap-3 pt-2">
-                        {isExternalHttpUrl(deployment?.hostedUrl) ? (
-                            <a
-                                href={deployment.hostedUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="rounded-lg bg-cyan-500 px-4 py-2 font-semibold text-black transition hover:bg-cyan-400"
-                            >
-                                Open Live App
-                            </a>
+                    <div className="space-y-6 p-6 sm:p-8">
+                        <header className="space-y-3">
+                            <p className="text-xs uppercase tracking-[0.2em] text-cyan-400" data-reveal="rise">App Details</p>
+                            <h1 className="text-3xl font-bold text-white sm:text-4xl" data-reveal="left">{deployment?.name}</h1>
+                            <div className="flex flex-wrap gap-2 text-xs uppercase tracking-wide" data-reveal="left-soft">
+                                <span className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1 text-cyan-300">
+                                    {deployment?.appType || 'Application'}
+                                </span>
+                                <span className="rounded-full border border-purple-400/30 bg-purple-400/10 px-3 py-1 text-purple-300">
+                                    {deployment?.status || 'Unknown'}
+                                </span>
+                                <span className="rounded-full border border-slate-400/30 bg-slate-400/10 px-3 py-1 text-slate-300">
+                                    {deployment?.environment || 'Environment not set'}
+                                </span>
+                            </div>
+                        </header>
+
+                        <section data-reveal="left-soft">
+                            <h2 className="mb-2 text-lg font-semibold text-white">Overview</h2>
+                            <p className="leading-7 text-slate-200">{deployment?.description || 'No description provided.'}</p>
+                        </section>
+
+                        <section className="grid grid-cols-1 gap-3 text-sm text-slate-200 sm:grid-cols-2" data-reveal="left-soft">
+                            <div className="rounded-lg border border-white/10 bg-slate-800/50 p-4">
+                                <p className="mb-1 text-xs uppercase tracking-wider text-slate-400">Hosting Provider</p>
+                                <p className="font-semibold">{deployment?.hostingProvider || 'N/A'}</p>
+                            </div>
+                            <div className="rounded-lg border border-white/10 bg-slate-800/50 p-4">
+                                <p className="mb-1 text-xs uppercase tracking-wider text-slate-400">Environment</p>
+                                <p className="font-semibold">{deployment?.environment || 'N/A'}</p>
+                            </div>
+                        </section>
+
+                        {stackList.length > 0 ? (
+                            <section data-reveal="left-soft">
+                                <h2 className="mb-2 text-lg font-semibold text-white">Tech Stack</h2>
+                                <div className="flex flex-wrap gap-2">
+                                    {stackList.map((tech) => (
+                                        <span
+                                            key={`${deployment?._id}-${tech}`}
+                                            className="rounded-md border border-cyan-400/30 bg-cyan-400/10 px-2.5 py-1 text-sm font-medium text-cyan-300"
+                                        >
+                                            {tech}
+                                        </span>
+                                    ))}
+                                </div>
+                            </section>
                         ) : null}
 
-                        {isExternalHttpUrl(deployment?.blogLink) ? (
-                            <a
-                                href={deployment.blogLink}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="rounded-lg border border-purple-400/40 bg-purple-500/10 px-4 py-2 font-semibold text-purple-200 transition hover:border-purple-300"
-                            >
-                                Read Related Blog
-                            </a>
-                        ) : null}
-                    </section>
-                </div>
-            </article>
-        </main>
+                        <section className="flex flex-wrap gap-3 pt-2" data-reveal="left-soft">
+                            {isExternalHttpUrl(deployment?.hostedUrl) ? (
+                                <a
+                                    href={deployment.hostedUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="rounded-lg bg-cyan-500 px-4 py-2 font-semibold text-black transition hover:bg-cyan-400"
+                                >
+                                    Open Live App
+                                </a>
+                            ) : null}
+
+                            {isExternalHttpUrl(deployment?.blogLink) ? (
+                                <a
+                                    href={deployment.blogLink}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="rounded-lg border border-purple-400/40 bg-purple-500/10 px-4 py-2 font-semibold text-purple-200 transition hover:border-purple-300"
+                                >
+                                    Read Related Blog
+                                </a>
+                            ) : null}
+                        </section>
+                    </div>
+                </article>
+            </SectionReveal>
         </>
     );
 }
