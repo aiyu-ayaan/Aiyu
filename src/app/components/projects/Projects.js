@@ -304,24 +304,24 @@ const Projects = ({ data, initialConfig = null }) => {
             </div>
           </>
 
-          <div className="mt-7 grid grid-cols-1 gap-3 sm:grid-cols-3" data-reveal-group data-reveal-stagger="0.06">
+          <div className="mt-7 grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-3" data-reveal-group data-reveal-stagger="0.06">
             {statCards.map((item) => {
               const Icon = item.icon;
               return (
                 <div
                   key={item.label}
                   data-reveal="flip"
-                  className="glass-tile p-3"
+                  className="glass-tile p-5 sm:p-4"
                   style={{
                     borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)',
                     backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 82%, transparent)',
                   }}
                 >
                   <div
-                    className="mb-2 inline-flex rounded-lg p-2"
+                    className="mb-3 sm:mb-2 inline-flex rounded-lg p-2.5 sm:p-2"
                     style={{ backgroundColor: `color-mix(in srgb, ${item.accent} 14%, transparent)` }}
                   >
-                    <Icon size={14} style={{ color: item.accent }} />
+                    <Icon size={16} style={{ color: item.accent }} />
                   </div>
                   <p className="text-3xl font-semibold tracking-tight">{item.value}</p>
                   <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
@@ -520,7 +520,7 @@ const Projects = ({ data, initialConfig = null }) => {
               <div className="space-y-6">
                 {spotlightProject && (
                   <article
-                    className="glass-panel cursor-pointer overflow-hidden p-5 sm:p-6 transition-transform duration-300 hover:-translate-y-1"
+                    className="glass-panel cursor-pointer overflow-hidden p-6 sm:p-7 transition-transform duration-300 hover:-translate-y-1"
                     style={heroCardStyle}
                     onClick={() => setSelectedProject(spotlightProject)}
                     data-reveal="left-soft"
