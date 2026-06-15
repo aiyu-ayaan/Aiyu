@@ -6,6 +6,8 @@ import {
   formatBlogDate,
   getReadTime,
   stripMarkdown,
+  getBlogPlaceholderGradient,
+  getBlogInitials,
 } from './blogUtils';
 import { getBlogPath } from '@/lib/publicPaths';
 

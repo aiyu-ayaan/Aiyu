@@ -959,7 +959,7 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+    </div>
   );
 };
 
