@@ -87,6 +87,7 @@ export const viewport = {
 import GoogleAnalytics from "./components/GoogleAnalytics";
 import ClientEnhancements from "./components/shared/ClientEnhancements";
 import DynamicLiveCommitStream from "./components/shared/DynamicLiveCommitStream";
+import BootLoader from "./components/shared/BootLoader";
 
 export default async function RootLayout({ children }) {
   const config = await getConfigData();
@@ -153,11 +154,25 @@ export default async function RootLayout({ children }) {
             `,
           }}
         />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  if (sessionStorage.getItem('aiyu:booted') === '1') {
+                    document.documentElement.setAttribute('data-booted', '1');
+                  }
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         suppressHydrationWarning
       >
+        <BootLoader />
         {adsConfig?.adsenseEnabled && adsenseClientId && (
           <Script
             src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClientId}`}
