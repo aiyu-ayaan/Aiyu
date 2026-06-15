@@ -100,7 +100,6 @@ const Projects = ({ data, initialConfig = null }) => {
   const sectionRef = useRef(null);
   const { prefersReducedMotion } = useDevicePerformance();
 
-  useSectionFx(sectionRef, { reducedMotion: prefersReducedMotion });
 
   useEffect(() => {
     if (initialConfig) {
@@ -179,6 +178,11 @@ const Projects = ({ data, initialConfig = null }) => {
       })
       .sort(sortProjects);
   }, [projects, searchQuery, selectedTechStack, selectedProjectType, selectedStatus]);
+
+  useSectionFx(sectionRef, {
+    reducedMotion: prefersReducedMotion,
+    dependencies: [filteredProjects, viewMode],
+  });
 
   useEffect(() => {
     refreshScrollTriggersSoon();

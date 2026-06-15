@@ -103,7 +103,6 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
   const containerRef = useRef(null);
   const { prefersReducedMotion } = useDevicePerformance();
 
-  useSectionFx(containerRef, { reducedMotion: prefersReducedMotion });
 
   useEffect(() => {
     setHighResLoaded(false);
@@ -304,6 +303,11 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
     () => getColumnCount(viewportWidth, filteredImages.length),
     [viewportWidth, filteredImages.length]
   );
+
+  useSectionFx(containerRef, {
+    reducedMotion: prefersReducedMotion,
+    dependencies: [filteredImages, columnCount],
+  });
 
   const balancedColumns = useMemo(() => {
     const columns = Array.from({ length: columnCount }, () => ({

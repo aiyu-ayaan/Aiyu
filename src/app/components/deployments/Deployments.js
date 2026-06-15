@@ -101,7 +101,6 @@ export default function Deployments({ data, config }) {
     const containerRef = useRef(null);
     const { prefersReducedMotion } = useDevicePerformance();
 
-    useSectionFx(containerRef, { reducedMotion: prefersReducedMotion });
 
     const siteLabel = config?.logoText || config?.siteTitle || 'Portfolio';
     const roles = [
@@ -148,6 +147,11 @@ export default function Deployments({ data, config }) {
             return matchesQuery && matchesStatus && matchesType && matchesProvider;
         });
     }, [deployments, searchQuery, selectedStatus, selectedType, selectedProvider]);
+
+    useSectionFx(containerRef, {
+        reducedMotion: prefersReducedMotion,
+        dependencies: [filteredDeployments],
+    });
 
     useEffect(() => {
         refreshScrollTriggersSoon();

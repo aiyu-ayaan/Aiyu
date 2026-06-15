@@ -269,7 +269,7 @@ export function refreshScrollTriggersSoon() {
  * elements plus an optional `extra` callback for bespoke timelines.
  * Cleanup is handled by useGSAP's context revert.
  */
-export function useSectionFx(scopeRef, { reducedMotion = false, extra } = {}) {
+export function useSectionFx(scopeRef, { reducedMotion = false, extra, dependencies = [] } = {}) {
     useGSAP(
         () => {
             const scope = scopeRef.current;
@@ -290,7 +290,7 @@ export function useSectionFx(scopeRef, { reducedMotion = false, extra } = {}) {
 
             refreshScrollTriggersSoon();
         },
-        { scope: scopeRef, dependencies: [reducedMotion] }
+        { scope: scopeRef, dependencies: [reducedMotion, ...dependencies] }
     );
 }
 

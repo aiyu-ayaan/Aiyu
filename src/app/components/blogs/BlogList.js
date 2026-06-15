@@ -39,7 +39,6 @@ export default function BlogList({ initialBlogs, initialConfig, initialPaginatio
   const containerRef = useRef(null);
   const { prefersReducedMotion } = useDevicePerformance();
 
-  useSectionFx(containerRef, { reducedMotion: prefersReducedMotion });
 
   const mergeBlogs = useCallback((existingBlogs, incomingBlogs) => {
     const mergedMap = new Map();
@@ -166,6 +165,11 @@ export default function BlogList({ initialBlogs, initialConfig, initialPaginatio
       })
       .sort((a, b) => getBlogPublishTimestamp(b) - getBlogPublishTimestamp(a));
   }, [blogs, searchQuery, selectedTag]);
+
+  useSectionFx(containerRef, {
+    reducedMotion: prefersReducedMotion,
+    dependencies: [filteredBlogs],
+  });
 
   useEffect(() => {
     refreshScrollTriggersSoon();

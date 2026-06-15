@@ -132,7 +132,6 @@ export default function GitHubStatsClient({ data }) {
   const containerRef = useRef(null);
   const { prefersReducedMotion } = useDevicePerformance();
 
-  useSectionFx(containerRef, { reducedMotion: prefersReducedMotion });
 
   const payload = data?.data || {};
   const profile = payload?.profile || {};
@@ -170,6 +169,11 @@ export default function GitHubStatsClient({ data }) {
       return matchesSearch && matchesType;
     });
   }, [topRepos, repoSearch, repoType]);
+
+  useSectionFx(containerRef, {
+    reducedMotion: prefersReducedMotion,
+    dependencies: [filteredRepos],
+  });
 
   useEffect(() => {
     refreshScrollTriggersSoon();
