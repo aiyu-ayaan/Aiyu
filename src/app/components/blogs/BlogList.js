@@ -3,6 +3,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BlogListPageSkeleton } from '../shared/skeletons/PublicPageSkeletons';
 import BlogCard from './BlogCard';
+import useDevicePerformance from '../../hooks/useDevicePerformance';
+import { useSectionFx, refreshScrollTriggersSoon } from '../shared/gsapScroll';
 
 const DEFAULT_BLOG_PAGE_SIZE = 6;
 
@@ -34,6 +36,14 @@ export default function BlogList({ initialBlogs, initialConfig, initialPaginatio
   const [hasMore, setHasMore] = useState(Boolean(initialPagination?.hasMore));
   const [loadingMore, setLoadingMore] = useState(false);
   const loadMoreRef = useRef(null);
+  const containerRef = useRef(null);
+  const { prefersReducedMotion } = useDevicePerformance();
+
+  useSectionFx(containerRef, { reducedMotion: prefersReducedMotion });
+
+  useEffect(() => {
+    refreshScrollTriggersSoon();
+  }, [filteredBlogs.length]);
 
   const mergeBlogs = useCallback((existingBlogs, incomingBlogs) => {
     const mergedMap = new Map();
@@ -166,19 +176,19 @@ export default function BlogList({ initialBlogs, initialConfig, initialPaginatio
   }
 
   return (
-    <div className="w-full overflow-x-clip bg-transparent px-4 py-8 transition-colors duration-200 sm:px-6 lg:px-8">
+    <div ref={containerRef} className="w-full overflow-x-clip bg-transparent px-4 py-8 transition-colors duration-200 sm:px-6 lg:px-8">
       <div className="mx-auto w-full max-w-[95%] lg:max-w-[80%]">
-        <header className="glass-panel mb-12 p-6 text-center sm:p-8">
-          <p className="eyebrow mb-4">Writing</p>
-          <h1 className="headline-section mb-3">
+        <header className="glass-panel mb-12 p-6 text-center sm:p-8" data-reveal="tilt">
+          <p className="eyebrow mb-4" data-reveal="rise">Writing</p>
+          <h1 className="headline-section mb-3" data-reveal="left">
             {config?.blogsTitle || 'The Blogger'}
           </h1>
-          <p className="mx-auto max-w-2xl text-base sm:text-lg" style={{ color: 'var(--text-secondary)' }}>
+          <p className="mx-auto max-w-2xl text-base sm:text-lg" style={{ color: 'var(--text-secondary)' }} data-reveal="left-soft">
             {config?.blogsSubtitle || 'Insights, stories and updates.'}
           </p>
         </header>
 
-        <div className="glass-panel mb-12 flex flex-col gap-3 p-4 sm:flex-row">
+        <div className="glass-panel mb-12 flex flex-col gap-3 p-4 sm:flex-row" data-reveal="tilt">
           <div className="flex-1 w-full">
             <input
               type="text"
@@ -217,10 +227,18 @@ export default function BlogList({ initialBlogs, initialConfig, initialPaginatio
         <main>
           {filteredBlogs.length > 0 ? (
             <>
-              <div className="grid grid-cols-1 gap-6">
-                {filteredBlogs.map((blog) => (
-                  <BlogCard key={blog?._id || blog?.slug} blog={blog} />
-                ))}
+              <div data-hscroll className="hscroll-viewport hscroll-stage mx-auto w-full max-w-[95%] lg:max-w-[80%]">
+                <div data-hscroll-track className="hscroll-track">
+                  {filteredBlogs.map((blog) => (
+                    <div
+                      key={blog?._id || blog?.slug}
+                      className="hscroll-panel"
+                      data-reveal="flip"
+                    >
+                      <BlogCard blog={blog} />
+                    </div>
+                  ))}
+                </div>
               </div>
 
               {hasMore && <div ref={loadMoreRef} className="h-1" />}
@@ -232,7 +250,7 @@ export default function BlogList({ initialBlogs, initialConfig, initialPaginatio
               )}
             </>
           ) : (
-            <div className="py-20 text-center">
+            <div className="py-20 text-center" data-reveal="zoom">
               <h3 className="text-2xl font-normal mb-2" style={{ color: 'var(--text-primary)' }}>No posts found</h3>
               <p className="text-base" style={{ color: 'var(--text-secondary)' }}>Try another search term or tag.</p>
             </div>
