@@ -207,7 +207,11 @@ html[data-perf="lite"] .shimmer {
 .hscroll-viewport.is-pinned.hscroll-stage {
   display: flex;
   align-items: center;
-  min-height: min(620px, 80vh);
+  min-height: min(520px, 75vh);
+}
+
+.hscroll-viewport.is-pinned.hscroll-stage-github {
+  min-height: min(400px, 55vh);
 }
 
 .hscroll-track {
@@ -219,6 +223,10 @@ html[data-perf="lite"] .shimmer {
   flex-shrink: 0;
   padding-block: 0.5rem;
   padding-inline-end: clamp(1rem, 6vw, 5rem);
+}
+
+.hscroll-track-github {
+  height: 260px;
 }
 
 .hscroll-viewport.is-pinned .hscroll-track {

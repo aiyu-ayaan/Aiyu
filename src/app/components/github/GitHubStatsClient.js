@@ -416,8 +416,8 @@ export default function GitHubStatsClient({ data }) {
             </div>
 
             {filteredRepos.length > 0 ? (
-              <div data-hscroll className="hscroll-viewport hscroll-stage mx-auto w-full max-w-[95%] lg:max-w-[80%]">
-                <div data-hscroll-track className="hscroll-track">
+              <div data-hscroll className="hscroll-viewport hscroll-stage hscroll-stage-github mx-auto w-full max-w-[95%] lg:max-w-[80%]">
+                <div data-hscroll-track className="hscroll-track hscroll-track-github">
                   {filteredRepos.map((repo) => {
                     const Wrapper = repo?.isPrivate ? 'div' : 'a';
                     const wrapperProps = repo?.isPrivate
