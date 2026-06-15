@@ -416,7 +416,7 @@ export default function GitHubStatsClient({ data }) {
             </div>
 
             {filteredRepos.length > 0 ? (
-              <div data-hscroll className="hscroll-viewport hscroll-stage hscroll-stage-github mx-auto w-full max-w-[95%] lg:max-w-[80%]">
+              <div data-hscroll className="hscroll-viewport hscroll-stage hscroll-stage-github mx-auto w-full">
                 <div data-hscroll-track className="hscroll-track hscroll-track-github">
                   {filteredRepos.map((repo, index) => {
                     const Wrapper = repo?.isPrivate ? 'div' : 'a';
@@ -434,27 +434,28 @@ export default function GitHubStatsClient({ data }) {
                         className="hscroll-panel"
                         initial={{ opacity: 0, y: 16 }}
                         whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true, margin: "-20px" }}
+                        viewport={{ once: true, margin: '-20px' }}
                         transition={{ duration: 0.4, delay: Math.min(index * 0.05, 0.3) }}
                       >
                         <Wrapper
                           {...wrapperProps}
-                          className="glass-tile group relative flex flex-col justify-between p-5 transition-all duration-300 h-full rounded-2xl border hover:scale-[1.02] hover:-translate-y-1 hover:shadow-lg hover:shadow-black/20"
+                          className="glass-tile group relative flex h-full cursor-pointer flex-col justify-between rounded-2xl border p-5 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1 hover:shadow-lg hover:shadow-black/20"
                           style={{
                             borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)',
                             backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 82%, transparent)',
                           }}
                         >
                           <div>
-                            {/* Header */}
                             <div className="mb-3 flex items-start justify-between gap-3">
-                              <div className="flex items-center gap-2.5 min-w-0">
-                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border transition-transform duration-300 group-hover:scale-110"
-                                     style={{ 
-                                       borderColor: 'color-mix(in srgb, var(--accent-cyan) 25%, var(--border-secondary))',
-                                       backgroundColor: 'color-mix(in srgb, var(--accent-cyan) 8%, transparent)',
-                                       color: 'var(--accent-cyan)'
-                                      }}>
+                              <div className="flex min-w-0 items-center gap-2.5">
+                                <div
+                                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border transition-transform duration-300 group-hover:scale-110"
+                                  style={{
+                                    borderColor: 'color-mix(in srgb, var(--accent-cyan) 25%, var(--border-secondary))',
+                                    backgroundColor: 'color-mix(in srgb, var(--accent-cyan) 8%, transparent)',
+                                    color: 'var(--accent-cyan)',
+                                  }}
+                                >
                                   <FaGithub size={18} />
                                 </div>
                                 <h3 className="truncate text-base font-bold tracking-tight text-[var(--text-primary)] transition-colors group-hover:text-[var(--accent-cyan)]">
@@ -463,24 +464,26 @@ export default function GitHubStatsClient({ data }) {
                               </div>
 
                               {repo?.isPrivate ? (
-                                <span className="inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide" 
-                                      style={{ borderColor: 'color-mix(in srgb, var(--accent-orange) 40%, transparent)', color: 'var(--accent-orange)', backgroundColor: 'color-mix(in srgb, var(--accent-orange) 10%, transparent)' }}>
+                                <span
+                                  className="inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide"
+                                  style={{ borderColor: 'color-mix(in srgb, var(--accent-orange) 40%, transparent)', color: 'var(--accent-orange)', backgroundColor: 'color-mix(in srgb, var(--accent-orange) 10%, transparent)' }}
+                                >
                                   <Lock size={9} /> Private
                                 </span>
                               ) : (
-                                <span className="inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide" 
-                                      style={{ borderColor: 'color-mix(in srgb, var(--accent-cyan) 40%, transparent)', color: 'var(--accent-cyan)', backgroundColor: 'color-mix(in srgb, var(--accent-cyan) 10%, transparent)' }}>
+                                <span
+                                  className="inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide"
+                                  style={{ borderColor: 'color-mix(in srgb, var(--accent-cyan) 40%, transparent)', color: 'var(--accent-cyan)', backgroundColor: 'color-mix(in srgb, var(--accent-cyan) 10%, transparent)' }}
+                                >
                                   <Unlock size={9} /> Public
                                 </span>
                               )}
                             </div>
 
-                            {/* Description */}
-                            <p className="mb-4 text-xs sm:text-sm leading-relaxed text-[var(--text-secondary)] line-clamp-2 min-h-[36px] sm:min-h-[40px]">
+                            <p className="mb-4 min-h-[36px] text-xs leading-relaxed text-[var(--text-secondary)] line-clamp-2 sm:min-h-[40px] sm:text-sm">
                               {repo?.description || 'No description provided.'}
                             </p>
 
-                            {/* Topics / Tags */}
                             {repo?.topics && repo.topics.length > 0 && (
                               <div className="mb-4 flex flex-wrap gap-1">
                                 {repo.topics.slice(0, 3).map((topic) => (
@@ -500,9 +503,10 @@ export default function GitHubStatsClient({ data }) {
                             )}
                           </div>
 
-                          {/* Footer Info */}
-                          <div className="pt-3 border-t flex flex-wrap items-center justify-between gap-2 text-xs sm:text-sm" 
-                               style={{ borderColor: 'color-mix(in srgb, var(--border-secondary) 40%, transparent)', color: 'var(--text-secondary)' }}>
+                          <div
+                            className="flex flex-wrap items-center justify-between gap-2 border-t pt-3 text-xs sm:text-sm"
+                            style={{ borderColor: 'color-mix(in srgb, var(--border-secondary) 40%, transparent)', color: 'var(--text-secondary)' }}
+                          >
                             <div className="flex items-center gap-3">
                               {repo?.language && (
                                 <span className="inline-flex items-center gap-1">
