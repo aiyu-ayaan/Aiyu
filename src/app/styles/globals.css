@@ -211,6 +211,8 @@ html[data-perf="lite"] .shimmer {
 }
 
 .hscroll-viewport.is-pinned.hscroll-stage-github {
+  display: flex;
+  align-items: center;
   min-height: min(400px, 55vh);
 }
 
@@ -227,6 +229,27 @@ html[data-perf="lite"] .shimmer {
 
 .hscroll-track-github {
   height: 260px;
+}
+
+@media (max-width: 767px) {
+  .hscroll-viewport.hscroll-stage-github {
+    overflow: visible;
+    scroll-snap-type: none;
+  }
+
+  .hscroll-track.hscroll-track-github {
+    display: flex;
+    flex-direction: column;
+    width: 100% !important;
+    height: auto !important;
+    gap: 1.25rem;
+    padding-inline-end: 0;
+  }
+
+  .hscroll-track-github .hscroll-panel {
+    width: 100% !important;
+    height: auto !important;
+  }
 }
 
 .hscroll-viewport.is-pinned .hscroll-track {

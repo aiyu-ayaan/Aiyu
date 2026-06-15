@@ -418,7 +418,7 @@ export default function GitHubStatsClient({ data }) {
             {filteredRepos.length > 0 ? (
               <div data-hscroll className="hscroll-viewport hscroll-stage hscroll-stage-github mx-auto w-full max-w-[95%] lg:max-w-[80%]">
                 <div data-hscroll-track className="hscroll-track hscroll-track-github">
-                  {filteredRepos.map((repo) => {
+                  {filteredRepos.map((repo, index) => {
                     const Wrapper = repo?.isPrivate ? 'div' : 'a';
                     const wrapperProps = repo?.isPrivate
                       ? {}
@@ -429,9 +429,13 @@ export default function GitHubStatsClient({ data }) {
                       };
 
                     return (
-                      <div
+                      <motion.div
                         key={`${repo?.name}-${repo?.updated_at}`}
                         className="hscroll-panel"
+                        initial={{ opacity: 0, y: 16 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true, margin: "-20px" }}
+                        transition={{ duration: 0.4, delay: Math.min(index * 0.05, 0.3) }}
                       >
                         <Wrapper
                           {...wrapperProps}
@@ -450,7 +454,7 @@ export default function GitHubStatsClient({ data }) {
                                        borderColor: 'color-mix(in srgb, var(--accent-cyan) 25%, var(--border-secondary))',
                                        backgroundColor: 'color-mix(in srgb, var(--accent-cyan) 8%, transparent)',
                                        color: 'var(--accent-cyan)'
-                                     }}>
+                                      }}>
                                   <FaGithub size={18} />
                                 </div>
                                 <h3 className="truncate text-base font-bold tracking-tight text-[var(--text-primary)] transition-colors group-hover:text-[var(--accent-cyan)]">
@@ -517,7 +521,7 @@ export default function GitHubStatsClient({ data }) {
                             )}
                           </div>
                         </Wrapper>
-                      </div>
+                      </motion.div>
                     );
                   })}
                 </div>
