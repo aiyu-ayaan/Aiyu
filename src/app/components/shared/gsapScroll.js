@@ -82,6 +82,21 @@ export function animateReveals(scope, { reducedMotion = false } = {}) {
     const claimed = new Set();
 
     const reveal = (target, preset, { delay = 0, stagger = 0, trigger } = {}) => {
+        const firstTarget = Array.isArray(target) ? target[0] : target;
+        const track = firstTarget?.closest?.('[data-hscroll-track]');
+        const containerAnimation = track?._hScrollTween;
+
+        const scrollTriggerConfig = {
+            trigger: trigger || firstTarget,
+            start: containerAnimation ? 'left 90%' : 'top 90%',
+            toggleActions: 'play none none reverse',
+            once: false,
+        };
+
+        if (containerAnimation) {
+            scrollTriggerConfig.containerAnimation = containerAnimation;
+        }
+
         gsap.from(target, {
             ...preset,
             duration: 1.0,
@@ -89,12 +104,7 @@ export function animateReveals(scope, { reducedMotion = false } = {}) {
             clearProps: 'all',
             delay,
             stagger,
-            scrollTrigger: {
-                trigger: trigger || (Array.isArray(target) ? target[0] : target),
-                start: 'top 90%',
-                toggleActions: 'play none none reverse',
-                once: false,
-            },
+            scrollTrigger: scrollTriggerConfig,
         });
     };
 
@@ -228,7 +238,7 @@ export function animateHorizontalScroll(scope, { reducedMotion = false } = {}) {
 
         viewport.classList.add('is-pinned');
 
-        gsap.to(track, {
+        const scrollTween = gsap.to(track, {
             x: () => -distance(),
             ease: 'none',
             scrollTrigger: {
@@ -241,6 +251,7 @@ export function animateHorizontalScroll(scope, { reducedMotion = false } = {}) {
                 invalidateOnRefresh: true,
             },
         });
+        track._hScrollTween = scrollTween;
     });
 }
 
@@ -268,10 +279,10 @@ export function useSectionFx(scopeRef, { reducedMotion = false, extra } = {}) {
             // no parallax, no pinned horizontal scroll, no bespoke 3D timelines.
             const reduced = reducedMotion || isLiteDevice();
 
+            animateHorizontalScroll(scope, { reducedMotion: reduced });
             animateReveals(scope, { reducedMotion: reduced });
             animateCounters(scope, { reducedMotion: reduced });
             animateParallax(scope, { reducedMotion: reduced });
-            animateHorizontalScroll(scope, { reducedMotion: reduced });
 
             if (typeof extra === 'function') {
                 extra({ gsap, ScrollTrigger, scope, reducedMotion: reduced });
