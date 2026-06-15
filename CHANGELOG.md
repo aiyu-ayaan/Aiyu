@@ -1,5 +1,63 @@
 # Changelog
 
+## [4.3.2](https://github.com/aiyu-ayaan/Aiyu/compare/v4.3.1...v4.3.2) (2026-06-15)
+
+### Features
+
+* Add session-aware terminal boot screen with 3D wireframe
+* Add Terminal Matrix programmer-vibe preset
+* Add six fresh predefined theme presets
+* Loosen mobile stat tiles and spotlight padding
+* Scale up mobile repo cards, stats, profile and activity
+* Enlarge mobile card content to match home project cards
+* Revert apps to vertical grid and add entrance animations on mobile
+* Redesign repository cards with premium styling, icons, topics, and animations
+* Convert to native CSS columns layout for clean vertical list scroll animations
+* Revert horizontal scroll views to vertical masonry and grid layouts with GSAP reveals
+* Revert list view layout to vertical layout as requested
+* Add GSAP scroll reveals to app details page
+* Add GSAP scroll reveals and horizontal scroll pinning for apps
+* Add GSAP scroll reveals and horizontal scroll pinning for repos
+* Add GSAP scroll reveals and horizontal scroll pinning in filmstrip view
+* Add scroll-reveal animations to blog detail page
+* Add scroll-reveal animations and horizontal scrolling layout to blogs page
+* Add GSAP scroll reveals and horizontal scroll pinning in grid view
+* Add scroll-reveal animations to About Me page
+* Support horizontal reveals using GSAP containerAnimation
+* Repeat scroll entrance reveals on vertical scroll and soften duration
+* Add live icon preview to showcase cards configuration
+* Make focus areas editable and add database migration guide
+* Enable smooth horizontal pinning scroll on mobile devices
+
+### Bug Fixes
+
+* : Fix version release done 🚀
+* Adjust horizontal scroll container and improve layout for GitHub stats display
+* Cross-tab presence gating + no content flash; skip on blogs
+* Remove buggy horizontal scroll reveal animation causing empty area on load
+* Remove buggy horizontal scroll reveal animation causing empty area on load
+* Change default mobile card width to 80vw for correct rendering
+* Resolve horizontal card cutoff on mobile viewports
+* Reduce horizontal scroll stage height and stretch repo cards
+* Remove GSAP scroll reveal animations to prevent page scrolling lag
+* Fix gallery and dynamic lists scroll reveal animations by adding dependencies to useSectionFx
+* Prevent temporal dead zone ReferenceErrors by moving useEffects after memo declarations
+* Fix closing JSX tags and imports
+* Use portal for dialogs to prevent transform offset and reduce hero clamp min size
+* Resolve tech stack filter wrapping and dialog centering issues
+
+### Other Changes
+
+* Merge branch 'feat/terminal-boot-loader'
+* Merge branch 'feat/fresh-theme-presets'
+* Merge branch 'feat/mobile-card-redesign'
+* Merge branch 'perf/optimization-pass'
+* Untrack local codegraph files and enforce gitignore
+* Fix tech stack card animations on filter switch
+* Remove obsolete codegraph daemon PID file
+* Lazy-load Lenis instead of bundling it in the global shell
+* Add device-tier LOD, reduced-motion support, and animation optimizations
+
 ## [4.3.1](https://github.com/aiyu-ayaan/Aiyu/compare/v4.3.0...v4.3.1) (2026-06-15)
 
 ### Features
