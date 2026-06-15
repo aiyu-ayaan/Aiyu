@@ -436,40 +436,86 @@ export default function GitHubStatsClient({ data }) {
                       >
                         <Wrapper
                           {...wrapperProps}
-                          className="glass-tile block p-4 transition-colors h-full"
+                          className="glass-tile group relative flex flex-col justify-between p-5 transition-all duration-300 h-full rounded-2xl border hover:scale-[1.02] hover:-translate-y-1 hover:shadow-lg hover:shadow-black/20"
                           style={{
                             borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)',
                             backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 82%, transparent)',
                           }}
                         >
-                          <div className="mb-2 flex items-start justify-between gap-2">
-                            <h3 className="truncate text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
-                              {repo?.name}
-                            </h3>
-                            {repo?.isPrivate ? (
-                              <span className="inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-wide" style={{ borderColor: 'color-mix(in srgb, #f59e0b 40%, transparent)', color: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.12)' }}>
-                                <Lock size={10} /> Private
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-wide" style={{ borderColor: 'color-mix(in srgb, #10b981 40%, transparent)', color: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.12)' }}>
-                                <Unlock size={10} /> Public
-                              </span>
+                          <div>
+                            {/* Header */}
+                            <div className="mb-3 flex items-start justify-between gap-3">
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border transition-transform duration-300 group-hover:scale-110"
+                                     style={{ 
+                                       borderColor: 'color-mix(in srgb, var(--accent-cyan) 25%, var(--border-secondary))',
+                                       backgroundColor: 'color-mix(in srgb, var(--accent-cyan) 8%, transparent)',
+                                       color: 'var(--accent-cyan)'
+                                     }}>
+                                  <FaGithub size={18} />
+                                </div>
+                                <h3 className="truncate text-base font-bold tracking-tight text-[var(--text-primary)] transition-colors group-hover:text-[var(--accent-cyan)]">
+                                  {repo?.name}
+                                </h3>
+                              </div>
+
+                              {repo?.isPrivate ? (
+                                <span className="inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide" 
+                                      style={{ borderColor: 'color-mix(in srgb, var(--accent-orange) 40%, transparent)', color: 'var(--accent-orange)', backgroundColor: 'color-mix(in srgb, var(--accent-orange) 10%, transparent)' }}>
+                                  <Lock size={9} /> Private
+                                </span>
+                              ) : (
+                                <span className="inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide" 
+                                      style={{ borderColor: 'color-mix(in srgb, var(--accent-cyan) 40%, transparent)', color: 'var(--accent-cyan)', backgroundColor: 'color-mix(in srgb, var(--accent-cyan) 10%, transparent)' }}>
+                                  <Unlock size={9} /> Public
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Description */}
+                            <p className="mb-4 text-xs sm:text-sm leading-relaxed text-[var(--text-secondary)] line-clamp-2 min-h-[36px] sm:min-h-[40px]">
+                              {repo?.description || 'No description provided.'}
+                            </p>
+
+                            {/* Topics / Tags */}
+                            {repo?.topics && repo.topics.length > 0 && (
+                              <div className="mb-4 flex flex-wrap gap-1">
+                                {repo.topics.slice(0, 3).map((topic) => (
+                                  <span
+                                    key={`${repo.name}-${topic}`}
+                                    className="rounded-md border px-1.5 py-0.5 text-[9px] font-medium tracking-wide"
+                                    style={{
+                                      borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
+                                      color: 'var(--text-secondary)',
+                                      backgroundColor: 'color-mix(in srgb, var(--bg-surface) 40%, transparent)',
+                                    }}
+                                  >
+                                    {topic}
+                                  </span>
+                                ))}
+                              </div>
                             )}
                           </div>
 
-                          <p className="mb-3 min-h-[40px] text-sm" style={{ color: 'var(--text-secondary)' }}>
-                            {repo?.description || 'No description provided.'}
-                          </p>
+                          {/* Footer Info */}
+                          <div className="pt-3 border-t flex flex-wrap items-center justify-between gap-2 text-xs sm:text-sm" 
+                               style={{ borderColor: 'color-mix(in srgb, var(--border-secondary) 40%, transparent)', color: 'var(--text-secondary)' }}>
+                            <div className="flex items-center gap-3">
+                              {repo?.language && (
+                                <span className="inline-flex items-center gap-1">
+                                  <span className="h-2 w-2 rounded-full" style={{ backgroundColor: languageColors[repo.language] || '#64748b' }} />
+                                  {repo.language}
+                                </span>
+                              )}
+                              <span className="inline-flex items-center gap-1"><Star size={12} className="text-amber-400" /> {repo?.stars || 0}</span>
+                              <span className="inline-flex items-center gap-1"><GitFork size={12} className="text-slate-400" /> {repo?.forks || 0}</span>
+                            </div>
 
-                          <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm" style={{ color: 'var(--text-secondary)' }}>
-                            {repo?.language && (
-                              <span className="inline-flex items-center gap-1.5">
-                                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: languageColors[repo.language] || '#64748b' }} />
-                                {repo.language}
+                            {repo?.updated_at && (
+                              <span className="text-[10px] text-[var(--text-tertiary)]">
+                                Updated {toDateLabel(repo.updated_at)}
                               </span>
                             )}
-                            <span className="inline-flex items-center gap-1.5"><Star size={13} /> {repo?.stars || 0}</span>
-                            <span className="inline-flex items-center gap-1.5"><GitFork size={13} /> {repo?.forks || 0}</span>
                           </div>
                         </Wrapper>
                       </div>
