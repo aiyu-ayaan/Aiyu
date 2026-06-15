@@ -1,5 +1,27 @@
 # Changelog
 
+## [4.3.1](https://github.com/aiyu-ayaan/Aiyu/compare/v4.3.0...v4.3.1) (2026-06-15)
+
+### Features
+
+* Automate releases from commit-message markers (#210)
+
+### Bug Fixes
+
+* : Dependencies are update now 🚀
+* Unblock PR builds failing on standalone + Turbopack (middleware NFT) (#209)
+* HTTP-only origin for Cloudflare tunnel (drop HTTPS/certs)
+
+### Other Changes
+
+* Merge branch 'master' of https://github.com/aiyu-ayaan/Aiyu
+* Bump lucide-react from 1.14.0 to 1.18.0 (#189)
+* Bump js-cookie from 3.0.5 to 3.0.7 (#194)
+* Bump react from 19.2.5 to 19.2.7 (#191)
+* Bump tailwindcss from 4.2.4 to 4.3.1 (#190)
+* Bump protobufjs from 7.5.6 to 7.6.4 (#196)
+* Bump ws from 8.20.0 to 8.21.0 (#197)
+
 ## [4.3.0](https://github.com/aiyu-ayaan/Aiyu/compare/v4.2.1...v4.3.0) (2026-06-15)
 
 ### Features
