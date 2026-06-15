@@ -200,6 +200,11 @@ html[data-perf="lite"] .shimmer {
 
 /* Full-height stage so a pinned track fills the screen and centres vertically. */
 .hscroll-viewport.hscroll-stage {
+  display: block;
+  min-height: auto;
+}
+
+.hscroll-viewport.is-pinned.hscroll-stage {
   display: flex;
   align-items: center;
   min-height: min(620px, 80vh);
@@ -211,6 +216,7 @@ html[data-perf="lite"] .shimmer {
   align-items: stretch;
   gap: clamp(1rem, 2.2vw, 1.75rem);
   width: max-content;
+  flex-shrink: 0;
   padding-block: 0.5rem;
   padding-inline-end: clamp(1rem, 6vw, 5rem);
 }

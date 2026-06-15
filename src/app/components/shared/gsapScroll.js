@@ -214,11 +214,8 @@ export function animateParallax(scope, { reducedMotion = false } = {}) {
 export function animateHorizontalScroll(scope, { reducedMotion = false } = {}) {
     if (!scope) return;
 
-    // Pinned horizontal scroll is unreliable on touch / small screens — let those
-    // devices scroll the track natively instead.
-    const preferNative = reducedMotion
-        || (typeof window !== 'undefined'
-            && (window.matchMedia?.('(pointer: coarse)').matches || window.innerWidth < 768));
+    // Enable pinning scroll on all devices, unless reduced motion is preferred.
+    const preferNative = reducedMotion;
 
     scope.querySelectorAll('[data-hscroll]').forEach((viewport) => {
         const track = viewport.querySelector('[data-hscroll-track]');
@@ -236,8 +233,8 @@ export function animateHorizontalScroll(scope, { reducedMotion = false } = {}) {
             ease: 'none',
             scrollTrigger: {
                 trigger: viewport,
-                start: 'top top',
-                end: () => `+=${distance()}`,
+                start: 'top 80px',
+                end: () => `+=${distance() * 1.2}`,
                 pin: true,
                 scrub: 1,
                 anticipatePin: 1,
