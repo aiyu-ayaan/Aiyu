@@ -84,16 +84,16 @@ export function animateReveals(scope, { reducedMotion = false } = {}) {
     const reveal = (target, preset, { delay = 0, stagger = 0, trigger } = {}) => {
         gsap.from(target, {
             ...preset,
-            duration: 0.85,
+            duration: 1.0,
             ease: 'power3.out',
             clearProps: 'all',
             delay,
             stagger,
             scrollTrigger: {
                 trigger: trigger || (Array.isArray(target) ? target[0] : target),
-                start: 'top 88%',
-                // Play once for a stable, distraction-free reading experience.
-                once: true,
+                start: 'top 90%',
+                toggleActions: 'play none none reverse',
+                once: false,
             },
         });
     };
