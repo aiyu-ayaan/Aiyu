@@ -276,7 +276,7 @@ export default function GitHubStatsClient({ data }) {
           </p>
 
           {sections.showProfile && (
-            <div className="glass-tile mt-6 p-5" data-reveal="zoom">
+            <div className="glass-tile mt-6 p-6 sm:p-5" data-reveal="zoom">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                 {isOptimizableImage(profile.avatar) ? (
                   <Image
@@ -337,20 +337,20 @@ export default function GitHubStatsClient({ data }) {
         </section>
 
         {sections.showStats && (
-          <section className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5" data-reveal="tilt">
+          <section className="mt-6 grid grid-cols-2 gap-4 sm:gap-3 md:grid-cols-3 xl:grid-cols-5" data-reveal="tilt">
             {statCards.map((item) => {
               const Icon = item.icon;
               return (
                 <div
                   key={item.label}
-                  className="glass-tile p-3"
+                  className="glass-tile p-4 sm:p-3"
                   style={{
                     borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)',
                     backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 82%, transparent)',
                   }}
                 >
-                  <div className="mb-2 inline-flex rounded-lg p-2" style={{ backgroundColor: `color-mix(in srgb, ${item.accent} 14%, transparent)` }}>
-                    <Icon size={14} style={{ color: item.accent }} />
+                  <div className="mb-3 sm:mb-2 inline-flex rounded-lg p-2.5 sm:p-2" style={{ backgroundColor: `color-mix(in srgb, ${item.accent} 14%, transparent)` }}>
+                    <Icon size={16} style={{ color: item.accent }} />
                   </div>
                   <p className="text-2xl font-bold">{item.value}</p>
                   <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{item.label}</p>
@@ -439,7 +439,7 @@ export default function GitHubStatsClient({ data }) {
                       >
                         <Wrapper
                           {...wrapperProps}
-                          className="glass-tile group relative flex flex-col justify-between p-5 transition-all duration-300 h-full rounded-2xl border hover:scale-[1.02] hover:-translate-y-1 hover:shadow-lg hover:shadow-black/20"
+                          className="glass-tile group relative flex flex-col justify-between p-6 sm:p-5 transition-all duration-300 h-full rounded-2xl border hover:scale-[1.02] hover:-translate-y-1 hover:shadow-lg hover:shadow-black/20"
                           style={{
                             borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)',
                             backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 82%, transparent)',
@@ -449,26 +449,26 @@ export default function GitHubStatsClient({ data }) {
                             {/* Header */}
                             <div className="mb-3 flex items-start justify-between gap-3">
                               <div className="flex items-center gap-2.5 min-w-0">
-                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border transition-transform duration-300 group-hover:scale-110"
-                                     style={{ 
+                                <div className="flex h-10 w-10 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-lg border transition-transform duration-300 group-hover:scale-110"
+                                     style={{
                                        borderColor: 'color-mix(in srgb, var(--accent-cyan) 25%, var(--border-secondary))',
                                        backgroundColor: 'color-mix(in srgb, var(--accent-cyan) 8%, transparent)',
                                        color: 'var(--accent-cyan)'
                                       }}>
                                   <FaGithub size={18} />
                                 </div>
-                                <h3 className="truncate text-base font-bold tracking-tight text-[var(--text-primary)] transition-colors group-hover:text-[var(--accent-cyan)]">
+                                <h3 className="truncate text-lg sm:text-base font-bold tracking-tight text-[var(--text-primary)] transition-colors group-hover:text-[var(--accent-cyan)]">
                                   {repo?.name}
                                 </h3>
                               </div>
 
                               {repo?.isPrivate ? (
-                                <span className="inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide" 
+                                <span className="inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] sm:px-2 sm:py-0.5 sm:text-[9px] font-semibold uppercase tracking-wide"
                                       style={{ borderColor: 'color-mix(in srgb, var(--accent-orange) 40%, transparent)', color: 'var(--accent-orange)', backgroundColor: 'color-mix(in srgb, var(--accent-orange) 10%, transparent)' }}>
                                   <Lock size={9} /> Private
                                 </span>
                               ) : (
-                                <span className="inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide" 
+                                <span className="inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] sm:px-2 sm:py-0.5 sm:text-[9px] font-semibold uppercase tracking-wide"
                                       style={{ borderColor: 'color-mix(in srgb, var(--accent-cyan) 40%, transparent)', color: 'var(--accent-cyan)', backgroundColor: 'color-mix(in srgb, var(--accent-cyan) 10%, transparent)' }}>
                                   <Unlock size={9} /> Public
                                 </span>
@@ -476,17 +476,17 @@ export default function GitHubStatsClient({ data }) {
                             </div>
 
                             {/* Description */}
-                            <p className="mb-4 text-xs sm:text-sm leading-relaxed text-[var(--text-secondary)] line-clamp-2 min-h-[36px] sm:min-h-[40px]">
+                            <p className="mb-4 text-sm leading-relaxed text-[var(--text-secondary)] line-clamp-2 min-h-[40px]">
                               {repo?.description || 'No description provided.'}
                             </p>
 
                             {/* Topics / Tags */}
                             {repo?.topics && repo.topics.length > 0 && (
-                              <div className="mb-4 flex flex-wrap gap-1">
+                              <div className="mb-4 flex flex-wrap gap-1.5 sm:gap-1">
                                 {repo.topics.slice(0, 3).map((topic) => (
                                   <span
                                     key={`${repo.name}-${topic}`}
-                                    className="rounded-md border px-1.5 py-0.5 text-[9px] font-medium tracking-wide"
+                                    className="rounded-md border px-2 py-0.5 text-[10px] sm:px-1.5 sm:text-[9px] font-medium tracking-wide"
                                     style={{
                                       borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
                                       color: 'var(--text-secondary)',
@@ -501,7 +501,7 @@ export default function GitHubStatsClient({ data }) {
                           </div>
 
                           {/* Footer Info */}
-                          <div className="pt-3 border-t flex flex-wrap items-center justify-between gap-2 text-xs sm:text-sm" 
+                          <div className="pt-4 sm:pt-3 border-t flex flex-wrap items-center justify-between gap-2 text-sm"
                                style={{ borderColor: 'color-mix(in srgb, var(--border-secondary) 40%, transparent)', color: 'var(--text-secondary)' }}>
                             <div className="flex items-center gap-3">
                               {repo?.language && (
@@ -515,7 +515,7 @@ export default function GitHubStatsClient({ data }) {
                             </div>
 
                             {repo?.updated_at && (
-                              <span className="text-[10px] text-[var(--text-tertiary)]">
+                              <span className="text-[11px] sm:text-[10px] text-[var(--text-tertiary)]">
                                 Updated {toDateLabel(repo.updated_at)}
                               </span>
                             )}
@@ -601,7 +601,7 @@ export default function GitHubStatsClient({ data }) {
                 return (
                   <div
                     key={`${activity?.repo}-${activity?.created_at}-${index}`}
-                    className="rounded-xl border p-3"
+                    className="rounded-xl border p-4 sm:p-3"
                     style={{
                       borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)',
                       backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 82%, transparent)',
