@@ -1,5 +1,14 @@
 name: Release PR + Deploy After Merge
 
+# Automated release flow driven by commit-message markers on master:
+#   !major  -> major bump (1.x.x -> 2.0.0)
+#   !feat   -> minor bump (x.1.x -> x.2.0)
+#   !fix    -> patch bump (x.x.1 -> x.x.2)
+# A push to master containing one of these markers opens (or updates) a release
+# PR with categorized release notes. Merging that release PR builds + pushes the
+# Docker image, deploys, and publishes a GitHub Release. Pushes without a marker
+# are skipped. `workflow_dispatch` is kept as a manual override.
+
 on:
   workflow_dispatch:
     inputs:
@@ -25,9 +34,12 @@ permissions:
 jobs:
   determine-release:
     name: Determine Next Version
-    if: github.event_name == 'workflow_dispatch'
+    # Runs for manual dispatch and for every push to master. On a push it only
+    # proceeds when a commit contains a release marker (!major / !feat / !fix);
+    # otherwise should_release=false and every release-PR step is skipped.
     runs-on: ubuntu-latest
     outputs:
+      should_release: ${{ steps.bump.outputs.should_release }}
       release_type: ${{ steps.bump.outputs.release_type }}
       release_as: ${{ steps.bump.outputs.release_as }}
       version: ${{ steps.bump.outputs.version }}
@@ -35,34 +47,92 @@ jobs:
     steps:
       - name: Check out the repo
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Calculate next version from release type
+      - name: Determine release type and next version
         id: bump
         env:
-          RELEASE_TYPE: ${{ github.event.inputs.release_type }}
+          EVENT_NAME: ${{ github.event_name }}
+          DISPATCH_RELEASE_TYPE: ${{ github.event.inputs.release_type }}
+          BEFORE_SHA: ${{ github.event.before }}
+          AFTER_SHA: ${{ github.sha }}
+          HEAD_COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
         run: |
           python - <<'PY'
           import json
           import os
           import re
+          import subprocess
 
-          release_type = os.environ.get("RELEASE_TYPE", "").strip().lower()
+          event_name = os.environ.get("EVENT_NAME", "").strip()
           allowed_types = {"feat", "fix", "major"}
-          if release_type not in allowed_types:
-              raise SystemExit(
-                  "Invalid release_type. Allowed values: feat, fix, major."
-              )
 
-          with open("package.json", "r", encoding="utf-8") as f:
-              current_version = json.load(f).get("version", "").strip()
+          # Highest precedence wins: major > feat > fix.
+          MARKERS = [
+              ("major", re.compile(r"(?i)(?<!\w)!major(?!\w)")),
+              ("feat", re.compile(r"(?i)(?<!\w)!feat(?!\w)")),
+              ("fix", re.compile(r"(?i)(?<!\w)!fix(?!\w)")),
+          ]
+          # A merged release PR lands as "chore(master): release vX.Y.Z" — never
+          # treat that commit as a trigger, so releases don't loop.
+          RELEASE_COMMIT = re.compile(
+              r"^\s*chore(?:\([^)]+\))?:\s*release\s+v?\d+\.\d+\.\d+\s*$",
+              re.IGNORECASE,
+          )
 
+          def detect(messages):
+              joined = "\n".join(messages)
+              for release_type, pattern in MARKERS:
+                  if pattern.search(joined):
+                      return release_type
+              return ""
+
+          release_type = ""
+          should_release = False
+
+          if event_name == "workflow_dispatch":
+              release_type = os.environ.get("DISPATCH_RELEASE_TYPE", "").strip().lower()
+              if release_type not in allowed_types:
+                  raise SystemExit("Invalid release_type. Allowed values: feat, fix, major.")
+              should_release = True
+          else:
+              before = os.environ.get("BEFORE_SHA", "").strip()
+              after = os.environ.get("AFTER_SHA", "").strip()
+              messages = []
+              try:
+                  if before and set(before) != {"0"}:
+                      out = subprocess.check_output(
+                          ["git", "log", f"{before}..{after}", "--format=%B%x00"],
+                          text=True,
+                      )
+                      messages = [m for m in out.split("\x00") if m.strip()]
+                  if not messages:
+                      out = subprocess.check_output(
+                          ["git", "log", "-1", "--format=%B"], text=True
+                      )
+                      messages = [out]
+              except subprocess.CalledProcessError:
+                  messages = [os.environ.get("HEAD_COMMIT_MESSAGE", "")]
+
+              non_release = [m for m in messages if not RELEASE_COMMIT.match(m.strip())]
+              release_type = detect(non_release)
+              should_release = release_type in allowed_types
+
+          output_file = os.environ["GITHUB_OUTPUT"]
+          if not should_release:
+              with open(output_file, "a", encoding="utf-8") as f:
+                  f.write("should_release=false\n")
+              print("No release marker (!major/!feat/!fix) found; skipping release.")
+              raise SystemExit(0)
+
+          current_version = json.loads(
+              open("package.json", encoding="utf-8").read()
+          ).get("version", "").strip()
           if not re.fullmatch(r"\d+\.\d+\.\d+", current_version):
-              raise SystemExit(
-                  f"Invalid package.json version '{current_version}'. Expected X.Y.Z."
-              )
+              raise SystemExit(f"Invalid package.json version '{current_version}'. Expected X.Y.Z.")
 
           major, minor, patch = [int(part) for part in current_version.split(".")]
-
           if release_type == "feat":
               minor += 1
               patch = 0
@@ -76,8 +146,8 @@ jobs:
           release_as = f"{major}.{minor}.{patch}"
           version = f"v{release_as}"
 
-          output_file = os.environ["GITHUB_OUTPUT"]
           with open(output_file, "a", encoding="utf-8") as f:
+              f.write("should_release=true\n")
               f.write(f"release_type={release_type}\n")
               f.write(f"release_as={release_as}\n")
               f.write(f"version={version}\n")
@@ -89,7 +159,7 @@ jobs:
 
   create-release-pr:
     name: Create or Update Release PR
-    if: github.event_name == 'workflow_dispatch'
+    if: needs.determine-release.outputs.should_release == 'true'
     needs: determine-release
     runs-on: ubuntu-latest
     outputs:
@@ -111,6 +181,7 @@ jobs:
           python - <<'PY'
           import json
           import os
+          import re
           import subprocess
           from datetime import date
           from pathlib import Path
@@ -147,63 +218,54 @@ jobs:
           changelog_text = changelog_path.read_text(encoding="utf-8")
           compare_url = f"https://github.com/{repository}/compare/v{current_version}...v{next_version}"
           heading = f"## [{next_version}]({compare_url}) ({date.today().isoformat()})"
-          
+
+          def clean(msg: str) -> str:
+              # Drop the release marker and any conventional-commit prefix, then
+              # tidy the message so the changelog reads as proper release notes.
+              text = re.sub(r"\s*!(major|feat|fix)\b", "", msg, flags=re.IGNORECASE)
+              text = re.sub(
+                  r"^(feat|fix|chore|docs|refactor|perf|test|build|ci|style)(\([^)]*\))?!?:\s*",
+                  "",
+                  text.strip(),
+                  flags=re.IGNORECASE,
+              )
+              text = text.strip().rstrip(".")
+              return (text[:1].upper() + text[1:]) if text else text
+
           if heading not in changelog_text:
-              # Extract commits between versions
               commits_output = subprocess.check_output(
-                  ["git", "log", f"v{current_version}..HEAD", "--oneline", "--format=%s"],
+                  ["git", "log", f"v{current_version}..HEAD", "--format=%s"],
                   text=True,
               ).strip()
-              
-              features = []
-              bug_fixes = []
-              breaking_changes = []
-              other_commits = []
-              
-              if commits_output:
-                  for commit_msg in commits_output.split('\n'):
-                      if not commit_msg:
-                          continue
-                      
-                      if commit_msg.startswith("feat"):
-                          features.append(commit_msg)
-                      elif commit_msg.startswith("fix"):
-                          bug_fixes.append(commit_msg)
-                      elif "BREAKING" in commit_msg.upper():
-                          breaking_changes.append(commit_msg)
-                      else:
-                          other_commits.append(commit_msg)
-              
-              # Build changelog entry
+
+              features, bug_fixes, breaking_changes, other_commits = [], [], [], []
+              for commit_msg in [c for c in commits_output.split("\n") if c.strip()]:
+                  lowered = commit_msg.lower()
+                  if "!major" in lowered or "BREAKING" in commit_msg.upper():
+                      breaking_changes.append(clean(commit_msg))
+                  elif "!feat" in lowered or lowered.startswith("feat"):
+                      features.append(clean(commit_msg))
+                  elif "!fix" in lowered or lowered.startswith("fix"):
+                      bug_fixes.append(clean(commit_msg))
+                  else:
+                      other_commits.append(clean(commit_msg))
+
               entry = f"{heading}\n\n"
-              
-              if breaking_changes:
-                  entry += "### ⚠ BREAKING CHANGES\n\n"
-                  for commit in breaking_changes:
-                      entry += f"* {commit}\n"
-                  entry += "\n"
-              
-              if features:
-                  entry += "### Features\n\n"
-                  for commit in features:
-                      entry += f"* {commit}\n"
-                  entry += "\n"
-              
-              if bug_fixes:
-                  entry += "### Bug Fixes\n\n"
-                  for commit in bug_fixes:
-                      entry += f"* {commit}\n"
-                  entry += "\n"
-              
-              if other_commits:
-                  entry += "### Other Changes\n\n"
-                  for commit in other_commits:
-                      entry += f"* {commit}\n"
-                  entry += "\n"
-              
-              if not commits_output:
-                  entry += "### Notes\n\n* Release {next_version}\n\n"
-              
+              for title, items in (
+                  ("### ⚠ BREAKING CHANGES", breaking_changes),
+                  ("### Features", features),
+                  ("### Bug Fixes", bug_fixes),
+                  ("### Other Changes", other_commits),
+              ):
+                  if items:
+                      entry += f"{title}\n\n"
+                      for item in items:
+                          entry += f"* {item}\n"
+                      entry += "\n"
+
+              if not (breaking_changes or features or bug_fixes or other_commits):
+                  entry += f"### Notes\n\n* Release {next_version}\n\n"
+
               marker = "# Changelog\n\n"
               if marker in changelog_text:
                   changelog_text = changelog_text.replace(marker, marker + entry, 1)
@@ -223,7 +285,7 @@ jobs:
           commit-message: 'chore(master): release v${{ needs.determine-release.outputs.release_as }}'
           title: 'chore(master): release v${{ needs.determine-release.outputs.release_as }}'
           body: |
-            This automated release PR updates the version based on selected release type.
+            Automated release PR (${{ needs.determine-release.outputs.release_type }} bump) triggered by a commit marker on master.
 
             - Release type: ${{ needs.determine-release.outputs.release_type }}
             - Target version: v${{ needs.determine-release.outputs.release_as }}
@@ -233,7 +295,8 @@ jobs:
               - .release-please-manifest.json
               - CHANGELOG.md
 
-            Deployment runs automatically after this PR is merged into master.
+            Categorized release notes for this version are in `CHANGELOG.md` (see the diff below).
+            Deployment + GitHub Release run automatically after this PR is merged into master.
           branch: chore/release-v${{ needs.determine-release.outputs.release_as }}
           base: master
           labels: release
@@ -432,6 +495,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Get version
         id: get-version
@@ -439,6 +504,36 @@ jobs:
           VERSION="${{ needs.detect-release-merge.outputs.version }}"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Creating release: $VERSION"
+
+      - name: Extract release notes from CHANGELOG
+        id: notes
+        env:
+          RELEASE_VERSION: ${{ needs.detect-release-merge.outputs.version }}
+        run: |
+          python - <<'PY'
+          import os
+          import re
+
+          version = os.environ["RELEASE_VERSION"].lstrip("v").strip()
+          try:
+              text = open("CHANGELOG.md", encoding="utf-8").read()
+          except FileNotFoundError:
+              text = ""
+
+          notes = ""
+          # Grab this version's section (## [x.y.z] ...) up to the next "## " heading.
+          match = re.search(
+              rf"(?ms)^##\s*\[?{re.escape(version)}\]?.*?(?=^##\s|\Z)",
+              text,
+          )
+          if match:
+              parts = match.group(0).strip().split("\n", 1)
+              notes = parts[1].strip() if len(parts) > 1 else ""
+
+          delimiter = "CHANGELOG_NOTES_EOF"
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
+              f.write(f"notes<<{delimiter}\n{notes}\n{delimiter}\n")
+          PY
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
@@ -452,6 +547,8 @@ jobs:
             ### Deployment Status
             - ✅ Docker image pushed to Docker Hub
             - ✅ Server successfully deployed
+
+            ${{ steps.notes.outputs.notes }}
 
             ---
           draft: false
