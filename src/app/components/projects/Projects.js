@@ -513,121 +513,121 @@ const Projects = ({ data, initialConfig = null }) => {
         >
           {filteredProjects.length > 0 ? (
             viewMode === 'grid' ? (
-              <div data-hscroll className="hscroll-viewport hscroll-stage mx-auto w-full max-w-[95%] lg:max-w-[80%]">
-                <div data-hscroll-track className="hscroll-track">
-                  {spotlightProject && (
-                    <article
-                      data-reveal="tilt"
-                      className="hscroll-panel glass-panel cursor-pointer overflow-hidden p-5 sm:p-6 flex flex-col justify-between"
-                      style={{
-                        ...heroCardStyle,
-                        width: 'min(90vw, 44rem)',
-                        flex: '0 0 auto',
-                      }}
-                      onClick={() => setSelectedProject(spotlightProject)}
-                    >
-                      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 md:items-center">
-                        <div>
-                          <p
-                            className="mb-2 inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide"
-                            style={{
-                              borderColor: 'color-mix(in srgb, var(--accent-orange) 48%, var(--border-secondary))',
-                              color: 'var(--accent-orange)',
-                              backgroundColor: 'color-mix(in srgb, var(--accent-orange) 10%, transparent)',
-                            }}
-                          >
-                            Spotlight Project
-                          </p>
-                          <h3 className="mb-3 text-3xl font-semibold tracking-tight" style={{ color: 'var(--text-bright)' }}>
-                            {spotlightProject.name}
-                          </h3>
-                          <p className="mb-4 text-sm leading-relaxed sm:text-base" style={{ color: 'var(--text-secondary)' }}>
-                            {String(spotlightProject.description || '').slice(0, 220)}
-                            {String(spotlightProject.description || '').length > 220 ? '...' : ''}
-                          </p>
-                          <div className="flex flex-wrap gap-2">
-                            {(spotlightProject.techStack || []).slice(0, 4).map((tech) => (
-                              <span
-                                key={`${spotlightProject.name}-${tech}`}
-                                className="rounded-md border px-2.5 py-1 text-xs font-semibold"
-                                style={{
-                                  borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
-                                  color: 'var(--accent-cyan)',
-                                  backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 80%, transparent)',
-                                }}
-                              >
-                                {tech}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className="overflow-hidden rounded-xl border"
+              <div className="space-y-6">
+                {spotlightProject && (
+                  <article
+                    className="glass-panel cursor-pointer overflow-hidden p-5 sm:p-6 transition-transform duration-300 hover:-translate-y-1"
+                    style={heroCardStyle}
+                    onClick={() => setSelectedProject(spotlightProject)}
+                    data-reveal="left-soft"
+                  >
+                    <div className="grid grid-cols-1 gap-5 md:grid-cols-2 md:items-center">
+                      <div>
+                        <p
+                          className="mb-2 inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide"
                           style={{
-                            borderColor: 'color-mix(in srgb, var(--border-secondary) 70%, transparent)',
-                            backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 82%, transparent)',
-                            minHeight: '180px',
+                            borderColor: 'color-mix(in srgb, var(--accent-orange) 48%, var(--border-secondary))',
+                            color: 'var(--accent-orange)',
+                            backgroundColor: 'color-mix(in srgb, var(--accent-orange) 10%, transparent)',
                           }}
                         >
-                          {spotlightProject.image ? (
-                            <img
-                              src={spotlightProject.image}
-                              alt={spotlightProject.name}
-                              className="h-full w-full object-cover"
-                              loading="lazy"
-                              decoding="async"
-                            />
-                          ) : (
-                            <div
-                              className="relative flex h-full min-h-45 items-center justify-center overflow-hidden"
-                              style={{ backgroundImage: getPlaceholderGradient(spotlightProject?.name) }}
+                          Spotlight Project
+                        </p>
+                        <h3 className="mb-3 text-3xl font-semibold tracking-tight" style={{ color: 'var(--text-bright)' }}>
+                          {spotlightProject.name}
+                        </h3>
+                        <p className="mb-4 text-sm leading-relaxed sm:text-base" style={{ color: 'var(--text-secondary)' }}>
+                          {String(spotlightProject.description || '').slice(0, 220)}
+                          {String(spotlightProject.description || '').length > 220 ? '...' : ''}
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {(spotlightProject.techStack || []).slice(0, 4).map((tech) => (
+                            <span
+                              key={`${spotlightProject.name}-${tech}`}
+                              className="rounded-md border px-2.5 py-1 text-xs font-semibold"
+                              style={{
+                                borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
+                                color: 'var(--accent-cyan)',
+                                backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 80%, transparent)',
+                              }}
                             >
-                              <div
-                                className="absolute -left-8 -top-8 h-28 w-28 rounded-full blur-2xl"
-                                style={{ background: 'color-mix(in srgb, var(--accent-cyan) 35%, transparent)' }}
-                              />
-                              <div
-                                className="absolute -bottom-8 -right-8 h-28 w-28 rounded-full blur-2xl"
-                                style={{ background: 'color-mix(in srgb, var(--accent-purple) 35%, transparent)' }}
-                              />
-                              <div
-                                className="absolute inset-0"
-                                style={{
-                                  backgroundImage:
-                                    'linear-gradient(color-mix(in srgb, var(--border-secondary) 24%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, var(--border-secondary) 24%, transparent) 1px, transparent 1px)',
-                                  backgroundSize: '22px 22px',
-                                  opacity: 0.35,
-                                }}
-                              />
-                              <div className="relative z-10 flex items-center justify-center px-4 text-center">
-                                <div
-                                  className="rounded-xl border px-4 py-1.5 text-xl font-bold tracking-wide"
-                                  style={{
-                                    borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)',
-                                    color: 'var(--text-bright)',
-                                    backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 70%, transparent)',
-                                  }}
-                                >
-                                  {getProjectInitials(spotlightProject?.name)}
-                                </div>
-                              </div>
-                            </div>
-                          )}
+                              {tech}
+                            </span>
+                          ))}
                         </div>
                       </div>
-                    </article>
-                  )}
 
-                  {remainingProjects.map((project, index) => (
-                    <div
-                      key={project?._id || `${project?.name}-${index}`}
-                      className="hscroll-panel"
-                      data-reveal="flip"
-                    >
-                      <ProjectCard project={project} onCardClick={setSelectedProject} />
+                      <div className="overflow-hidden rounded-xl border"
+                        style={{
+                          borderColor: 'color-mix(in srgb, var(--border-secondary) 70%, transparent)',
+                          backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 82%, transparent)',
+                          minHeight: '180px',
+                        }}
+                      >
+                        {spotlightProject.image ? (
+                          <img
+                            src={spotlightProject.image}
+                            alt={spotlightProject.name}
+                            className="h-full w-full object-cover"
+                            loading="lazy"
+                            decoding="async"
+                          />
+                        ) : (
+                          <div
+                            className="relative flex h-full min-h-45 items-center justify-center overflow-hidden"
+                            style={{ backgroundImage: getPlaceholderGradient(spotlightProject?.name) }}
+                          >
+                            <div
+                              className="absolute -left-8 -top-8 h-28 w-28 rounded-full blur-2xl"
+                              style={{ background: 'color-mix(in srgb, var(--accent-cyan) 35%, transparent)' }}
+                            />
+                            <div
+                              className="absolute -bottom-8 -right-8 h-28 w-28 rounded-full blur-2xl"
+                              style={{ background: 'color-mix(in srgb, var(--accent-purple) 35%, transparent)' }}
+                            />
+                            <div
+                              className="absolute inset-0"
+                              style={{
+                                backgroundImage:
+                                  'linear-gradient(color-mix(in srgb, var(--border-secondary) 24%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, var(--border-secondary) 24%, transparent) 1px, transparent 1px)',
+                                backgroundSize: '22px 22px',
+                                opacity: 0.35,
+                              }}
+                            />
+                            <div className="relative z-10 flex items-center justify-center px-4 text-center">
+                              <div
+                                className="rounded-xl border px-4 py-1.5 text-xl font-bold tracking-wide"
+                                style={{
+                                  borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)',
+                                  color: 'var(--text-bright)',
+                                  backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 70%, transparent)',
+                                }}
+                              >
+                                {getProjectInitials(spotlightProject?.name)}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  ))}
-                </div>
+                  </article>
+                )}
+
+                {remainingProjects.length > 0 && (
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+                    {remainingProjects.map((project, index) => (
+                      <div
+                        key={project?._id || `${project?.name}-${index}`}
+                        data-reveal="left-soft"
+                      >
+                        <ProjectCard
+                          project={project}
+                          onCardClick={setSelectedProject}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             ) : (
               <div data-reveal-group data-reveal-stagger="0.08">
