@@ -5,7 +5,7 @@ import { FaCode, FaFilter, FaLayerGroup } from 'react-icons/fa';
 import { useTheme } from '../../context/ThemeContext';
 import { getIcon } from '../../../lib/iconLibrary';
 import useDevicePerformance from '../../hooks/useDevicePerformance';
-import { gsap, useGSAP, useSectionFx } from '../shared/gsapScroll';
+import { gsap, ScrollTrigger, useGSAP, useSectionFx } from '../shared/gsapScroll';
 
 const DEFAULT_ICON_COLOR = '22d3ee';
 
@@ -73,51 +73,75 @@ const TechStackCarousel = ({ data }) => {
   const [accentColor, setAccentColor] = useState(DEFAULT_ICON_COLOR);
   const [activeBand, setActiveBand] = useState('All');
   const [showAll, setShowAll] = useState(false);
+  const [hasEntered, setHasEntered] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Static parts of the section: panel tilt-in, parallax glows.
   useSectionFx(sectionRef, { reducedMotion: prefersReducedMotion });
 
-  // Skill cards re-cascade in 3D whenever the visible set changes.
+  // Scroll trigger to set hasEntered = true when the grid comes into view
   useGSAP(() => {
-    if (prefersReducedMotion) return;
+    if (prefersReducedMotion) {
+      setHasEntered(true);
+      return;
+    }
+    if (!gridRef.current) return;
+
+    ScrollTrigger.create({
+      trigger: gridRef.current,
+      start: 'top 90%',
+      once: true,
+      onEnter: () => setHasEntered(true),
+    });
+  }, { scope: sectionRef, dependencies: [prefersReducedMotion] });
+
+  // Skill cards re-cascade in 3D whenever the visible set changes or enters view.
+  useGSAP(() => {
+    if (prefersReducedMotion || !hasEntered) return;
     const cards = gridRef.current?.querySelectorAll('.skill-card');
     if (!cards?.length) return;
 
+    // We kill active tweens first to prevent overlaps during fast switching
+    gsap.killTweensOf(cards);
+
     // Refined hinge-up: a gentle lift with a subtle forward tilt (no deep
     // z-push), so the grid settles cleanly instead of lurching out of the page.
-    gsap.from(cards, {
+    gsap.fromTo(cards, {
       autoAlpha: 0,
       y: 44,
       rotateX: -10,
       transformOrigin: 'center bottom',
       transformPerspective: 900,
+    }, {
+      autoAlpha: 1,
+      y: 0,
+      rotateX: 0,
       duration: 0.6,
       ease: 'power3.out',
       stagger: { each: 0.045, from: 'start' },
-      clearProps: 'all',
-      scrollTrigger: {
-        trigger: gridRef.current,
-        start: 'top 90%',
-        once: true,
-      },
+      clearProps: 'transform,transformOrigin,transformPerspective',
     });
 
     cards.forEach((card) => {
       const bar = card.querySelector('.skill-bar');
       if (!bar) return;
-      gsap.from(bar, {
-        width: 0,
+      
+      const targetWidth = bar.getAttribute('data-level') || '100%';
+      
+      gsap.killTweensOf(bar);
+      gsap.fromTo(bar, {
+        width: 0
+      }, {
+        width: targetWidth,
         duration: 1,
         ease: 'power2.out',
-        clearProps: 'width',
-        scrollTrigger: {
-          trigger: card,
-          start: 'top 92%',
-          once: true,
-        },
       });
     });
-  }, { scope: sectionRef, dependencies: [activeBand, showAll, prefersReducedMotion] });
+  }, { scope: sectionRef, dependencies: [hasEntered, activeBand, showAll, prefersReducedMotion] });
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -250,11 +274,12 @@ const TechStackCarousel = ({ data }) => {
               const levelBand = getLevelBand(skill.level);
               const accent = LEVEL_META[levelBand].accent;
               const skillLevel = Number(skill.level) || 0;
+              const shouldBeHidden = isMounted && !prefersReducedMotion && !hasEntered;
 
               return (
                 <article
                   key={`${skill.name}-${index}`}
-                  className="skill-card glass-tile p-6 transition-transform duration-300 hover:-translate-y-1"
+                  className={`skill-card glass-tile p-6 transition-transform duration-300 hover:-translate-y-1 ${shouldBeHidden ? 'opacity-0' : ''}`}
                 >
                   <div className="mb-5 flex items-start justify-between gap-2">
                     <div
@@ -280,6 +305,7 @@ const TechStackCarousel = ({ data }) => {
                   <div className="h-1 w-full overflow-hidden rounded-full" style={{ backgroundColor: 'color-mix(in srgb, var(--border-secondary) 35%, transparent)' }}>
                     <div
                       className="skill-bar h-1 rounded-full"
+                      data-level={`${skillLevel}%`}
                       style={{
                         width: `${skillLevel}%`,
                         backgroundColor: accent,
