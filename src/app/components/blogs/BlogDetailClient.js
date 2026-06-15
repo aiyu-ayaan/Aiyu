@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo, memo, useCallback } from 'react';
+import React, { useEffect, useState, useMemo, memo, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import Script from 'next/script';
 import { motion } from 'framer-motion';
@@ -19,6 +19,8 @@ import {
   extractLinksFromContent,
 } from './blogUtils';
 import RouteBetaBadge from '../shared/RouteBetaBadge';
+import useDevicePerformance from '../../hooks/useDevicePerformance';
+import { useSectionFx } from '../shared/gsapScroll';
 import '../../styles/blog-detail.css';
 
 const SyntaxHighlighter = dynamic(
@@ -116,6 +118,11 @@ export default memo(function BlogDetailClient({ blog, config, adsConfig }) {
   const [showShareToast, setShowShareToast] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [activeId, setActiveId] = useState('');
+  
+  const containerRef = useRef(null);
+  const { prefersReducedMotion } = useDevicePerformance();
+
+  useSectionFx(containerRef, { reducedMotion: prefersReducedMotion });
 
   const sanitizedContent = useMemo(() => stripH1Content(blog?.content), [blog?.content]);
 
@@ -246,7 +253,7 @@ export default memo(function BlogDetailClient({ blog, config, adsConfig }) {
   }
 
   return (
-    <div className="blog-detail-container p-4 lg:p-8">
+    <div ref={containerRef} className="blog-detail-container p-4 lg:p-8">
       <div className="blog-detail-backdrop" />
 
       <div className="relative mx-auto w-full max-w-[95%] lg:max-w-[80%]">
@@ -272,8 +279,8 @@ export default memo(function BlogDetailClient({ blog, config, adsConfig }) {
 
         {<AdUnit adsConfig={adsConfig} positionKey="top" />}
 
-        <header className="mb-10 mt-6 text-center border-b pb-8" style={{ borderColor: 'var(--border-primary)' }}>
-          <div className="mb-3 flex flex-wrap items-center gap-2">
+        <header className="mb-10 mt-6 text-center border-b pb-8" style={{ borderColor: 'var(--border-primary)' }} data-reveal="tilt">
+          <div className="mb-3 flex flex-wrap items-center gap-2" data-reveal="rise">
             <p
               className="inline-flex rounded-full border px-3 py-1 text-xs uppercase tracking-[0.2em]"
               style={{
@@ -286,18 +293,18 @@ export default memo(function BlogDetailClient({ blog, config, adsConfig }) {
             <RouteBetaBadge />
           </div>
 
-          <h1 className="mb-4 text-4xl sm:text-5xl font-normal tracking-tight" style={{ color: 'var(--text-primary)' }}>
+          <h1 className="mb-4 text-4xl sm:text-5xl font-normal tracking-tight" style={{ color: 'var(--text-primary)' }} data-reveal="left">
             {blog.title}
           </h1>
 
-          <div className="mb-4 flex flex-wrap items-center justify-center gap-4 text-sm font-medium" style={{ color: 'var(--text-tertiary)' }}>
+          <div className="mb-4 flex flex-wrap items-center justify-center gap-4 text-sm font-medium" style={{ color: 'var(--text-tertiary)' }} data-reveal="rise">
             <span>{formatBlogDate(blog.date || blog.createdAt)}</span>
             <span>&bull;</span>
             <span>{getReadTime(sanitizedContent)}</span>
           </div>
 
           {tags.length > 0 && (
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2" data-reveal="rise">
               {tags.map((tag) => (
                 <span
                   key={`${blog?._id}-${tag}`}
@@ -317,6 +324,7 @@ export default memo(function BlogDetailClient({ blog, config, adsConfig }) {
 
         {!showPlaceholder && (
           <section
+            data-reveal="zoom"
             className="mb-6 overflow-hidden rounded-2xl border"
             style={{
               borderColor: 'color-mix(in srgb, var(--border-secondary) 74%, transparent)',
@@ -336,8 +344,8 @@ export default memo(function BlogDetailClient({ blog, config, adsConfig }) {
           </section>
         )}
 
-        <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px] items-start">
-          <article className="min-w-0 w-full lg:pr-8">
+        <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px] items-start" data-reveal-group data-reveal-stagger="0.08">
+          <article className="min-w-0 w-full lg:pr-8" data-reveal="tilt">
             <div
               className="prose prose-lg lg:prose-xl max-w-none mt-6"
               style={{
