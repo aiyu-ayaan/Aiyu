@@ -209,23 +209,23 @@ export default function Deployments({ data, config }) {
                     </h1>
                     <TypewriterEffect roles={roles} />
 
-                    <div className="mt-7 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                    <div className="mt-7 grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-3">
                         {statCards.map((item) => {
                             const Icon = item.icon;
                             return (
                                 <div
                                     key={item.label}
-                                    className="glass-tile p-3"
+                                    className="glass-tile p-5 sm:p-4"
                                     style={{
                                         borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)',
                                         backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 82%, transparent)',
                                     }}
                                 >
                                     <div
-                                        className="mb-2 inline-flex rounded-lg p-2"
+                                        className="mb-3 sm:mb-2 inline-flex rounded-lg p-2.5 sm:p-2"
                                         style={{ backgroundColor: `color-mix(in srgb, ${item.accent} 14%, transparent)` }}
                                     >
-                                        <Icon size={14} style={{ color: item.accent }} />
+                                        <Icon size={16} style={{ color: item.accent }} />
                                     </div>
                                     <p className="text-3xl font-semibold tracking-tight">{item.value}</p>
                                     <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
@@ -390,7 +390,7 @@ export default function Deployments({ data, config }) {
                                         >
                                             {/* Preview/Image Block */}
                                             <div
-                                                className="relative flex h-44 items-center justify-center overflow-hidden border-b"
+                                                className="relative flex h-52 sm:h-44 items-center justify-center overflow-hidden border-b"
                                                 style={{
                                                     borderColor: 'color-mix(in srgb, var(--border-secondary) 70%, transparent)',
                                                     backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 86%, transparent)',
@@ -440,9 +440,9 @@ export default function Deployments({ data, config }) {
                                                 )}
 
                                                 {/* Top-Left: Status Badge */}
-                                                <div className="absolute left-2.5 top-2.5">
+                                                <div className="absolute left-3 top-3 sm:left-2.5 sm:top-2.5">
                                                     <span
-                                                        className="rounded-full border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide"
+                                                        className="rounded-full border px-2.5 py-1 text-[10px] sm:px-2 sm:py-0.5 sm:text-[9px] font-semibold uppercase tracking-wide backdrop-blur-md"
                                                         style={{
                                                             backgroundColor: statusStyles.badge,
                                                             borderColor: statusStyles.border,
@@ -454,9 +454,9 @@ export default function Deployments({ data, config }) {
                                                 </div>
 
                                                 {/* Top-Right: Env Badge */}
-                                                <div className="absolute right-2.5 top-2.5">
+                                                <div className="absolute right-3 top-3 sm:right-2.5 sm:top-2.5">
                                                     <span
-                                                        className="rounded-full border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide"
+                                                        className="rounded-full border px-2.5 py-1 text-[10px] sm:px-2 sm:py-0.5 sm:text-[9px] font-semibold uppercase tracking-wide backdrop-blur-md"
                                                         style={{
                                                             borderColor: 'color-mix(in srgb, var(--accent-purple) 45%, var(--border-secondary))',
                                                             color: 'var(--accent-purple)',
@@ -469,10 +469,10 @@ export default function Deployments({ data, config }) {
                                             </div>
 
                                             {/* Body Area */}
-                                            <div className="flex flex-1 flex-col p-5">
-                                                <div className="mb-2">
+                                            <div className="flex flex-1 flex-col p-6 sm:p-5">
+                                                <div className="mb-2.5 sm:mb-2">
                                                     <h3
-                                                        className="text-xl font-semibold leading-tight tracking-tight"
+                                                        className="text-2xl sm:text-xl font-semibold leading-tight tracking-tight"
                                                         style={{
                                                             background: 'linear-gradient(to right, var(--accent-cyan), var(--accent-purple))',
                                                             WebkitBackgroundClip: 'text',
@@ -482,32 +482,32 @@ export default function Deployments({ data, config }) {
                                                     >
                                                         {deployment?.name}
                                                     </h3>
-                                                    <p className="mt-0.5 text-[9px] uppercase tracking-[0.2em]" style={{ color: 'var(--text-tertiary)' }}>
+                                                    <p className="mt-0.5 text-[10px] sm:text-[9px] uppercase tracking-[0.2em]" style={{ color: 'var(--text-tertiary)' }}>
                                                         {deployment?.appType || 'Application'}
                                                     </p>
                                                 </div>
 
-                                                <p className="mb-3 text-[11px] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                                                <p className="mb-4 sm:mb-3 text-sm sm:text-[11px] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
                                                     <span style={multiLineClampStyle}>
                                                         {deployment?.description}
                                                     </span>
                                                 </p>
 
                                                 {/* Hosting Info Row */}
-                                                <div className="mb-3 flex flex-wrap gap-x-3 gap-y-1 text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
+                                                <div className="mb-4 sm:mb-3 flex flex-wrap gap-x-3 gap-y-1 text-xs sm:text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
                                                     <span className="inline-flex items-center gap-1.5">
-                                                        <FaServer className="text-[10px]" style={{ color: 'var(--accent-orange)' }} />
+                                                        <FaServer className="text-[11px] sm:text-[10px]" style={{ color: 'var(--accent-orange)' }} />
                                                         <span>{deployment?.hostingProvider || 'Unknown Host'}</span>
                                                     </span>
                                                 </div>
 
                                                 {/* Tech Stack Row */}
                                                 {stackList.length > 0 && (
-                                                    <div className="mb-3 flex flex-wrap gap-1">
+                                                    <div className="mb-4 sm:mb-3 flex flex-wrap gap-1.5 sm:gap-1">
                                                         {previewStack.map((tech) => (
                                                             <span
                                                                 key={`${deployment?._id || deployment?.name}-${tech}`}
-                                                                className="rounded-md border px-1.5 py-0.5 text-[9px] font-medium"
+                                                                className="rounded-md border px-2.5 py-1 text-[11px] sm:px-1.5 sm:py-0.5 sm:text-[9px] font-medium"
                                                                 style={{
                                                                     borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
                                                                     color: 'var(--accent-cyan)',
@@ -519,7 +519,7 @@ export default function Deployments({ data, config }) {
                                                         ))}
                                                         {stackList.length > previewStack.length && (
                                                             <span
-                                                                className="rounded-md border px-1.5 py-0.5 text-[9px] font-medium"
+                                                                className="rounded-md border px-2.5 py-1 text-[11px] sm:px-1.5 sm:py-0.5 sm:text-[9px] font-medium"
                                                                 style={{
                                                                     borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
                                                                     color: 'var(--text-secondary)',
@@ -534,14 +534,14 @@ export default function Deployments({ data, config }) {
 
                                                 {/* Footer Actions */}
                                                 <div
-                                                    className="mt-auto flex items-center justify-between border-t pt-3 text-[11px]"
+                                                    className="mt-auto flex items-center justify-between border-t pt-4 text-xs sm:pt-3 sm:text-[11px]"
                                                     style={{
                                                         borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)',
                                                         color: 'var(--text-tertiary)',
                                                     }}
                                                 >
                                                     <span className="inline-flex items-center gap-1.5 transition-colors group-hover:text-[var(--accent-cyan)] font-medium">
-                                                        <FaExpand className="text-[10px]" />
+                                                        <FaExpand className="text-[11px] sm:text-[10px]" />
                                                         Open Details
                                                     </span>
 
@@ -550,13 +550,13 @@ export default function Deployments({ data, config }) {
                                                             href={deployment.hostedUrl}
                                                             target="_blank"
                                                             onClick={(event) => event.stopPropagation()}
-                                                            className="inline-flex items-center gap-1 font-semibold uppercase tracking-wider text-[9px] hover:underline"
+                                                            className="inline-flex items-center gap-1 font-semibold uppercase tracking-wider text-[10px] sm:text-[9px] hover:underline"
                                                             style={{ color: 'var(--accent-cyan)' }}
                                                         >
                                                             <span className="inline-flex items-center gap-1">
-                                                                <FaGlobe className="text-[9px]" />
+                                                                <FaGlobe className="text-[10px] sm:text-[9px]" />
                                                                 Launch App
-                                                                <FaArrowUpRightFromSquare className="text-[8px]" />
+                                                                <FaArrowUpRightFromSquare className="text-[9px] sm:text-[8px]" />
                                                             </span>
                                                         </Link>
                                                     )}
