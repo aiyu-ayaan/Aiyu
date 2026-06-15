@@ -235,8 +235,14 @@ html[data-perf="lite"] .shimmer {
 
 .hscroll-panel {
   flex: 0 0 auto;
-  width: min(85vw, 30rem);
+  width: 86%;
   scroll-snap-align: start;
+}
+
+@media (min-width: 640px) {
+  .hscroll-panel {
+    width: min(85vw, 30rem);
+  }
 }
 
 @media (min-width: 1024px) {
