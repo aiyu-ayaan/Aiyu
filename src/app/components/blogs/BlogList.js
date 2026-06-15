@@ -227,18 +227,12 @@ export default function BlogList({ initialBlogs, initialConfig, initialPaginatio
         <main>
           {filteredBlogs.length > 0 ? (
             <>
-              <div data-hscroll className="hscroll-viewport hscroll-stage mx-auto w-full max-w-[95%] lg:max-w-[80%]">
-                <div data-hscroll-track className="hscroll-track">
-                  {filteredBlogs.map((blog) => (
-                    <div
-                      key={blog?._id || blog?.slug}
-                      className="hscroll-panel"
-                      data-reveal="flip"
-                    >
-                      <BlogCard blog={blog} />
-                    </div>
-                  ))}
-                </div>
+              <div className="grid grid-cols-1 gap-6">
+                {filteredBlogs.map((blog) => (
+                  <div key={blog?._id || blog?.slug} data-reveal="left-soft">
+                    <BlogCard blog={blog} />
+                  </div>
+                ))}
               </div>
 
               {hasMore && <div ref={loadMoreRef} className="h-1" />}
