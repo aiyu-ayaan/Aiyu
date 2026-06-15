@@ -59,8 +59,8 @@ services:
     security_opt:
       - no-new-privileges:true
     read_only: true
-    mem_limit: ${APP_MEMORY_LIMIT:-384m}
-    mem_reservation: ${APP_MEMORY_RESERVATION:-192m}
+    mem_limit: ${APP_MEMORY_LIMIT:-512m}
+    mem_reservation: ${APP_MEMORY_RESERVATION:-256m}
     cpus: ${APP_CPUS:-1.0}
     healthcheck:
       test: ["CMD", "sh", "/app/healthcheck.sh"]

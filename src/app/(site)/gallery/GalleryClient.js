@@ -626,8 +626,7 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
                                 className="object-cover transition-transform duration-500 group-hover:scale-105"
                                 loading={globalIndex < 3 ? 'eager' : 'lazy'}
                                 priority={globalIndex < 2}
-                                placeholder="blur"
-                                blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN8/5+hHgAHggJ/PchI7wAAAABJRU5Erggg=="
+                                unoptimized
                                 onError={() => markImageBroken(imageKey)}
                               />
                             ) : (

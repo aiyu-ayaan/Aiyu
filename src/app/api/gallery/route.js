@@ -1,13 +1,17 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { toClient, toClientList, fromClient } from '@/lib/serialize';
-import { withAuth } from '@/middleware/auth';
+import { withAuth, checkRateLimit, getClientIP } from '@/middleware/auth';
 import { deleteThumbnail } from '@/utils/imageProcessing';
 import cache, { CACHE_KEYS, CACHE_TTL, createCacheDebugHeaders } from '@/lib/cache';
 import { createPublicCacheHeaders, RESPONSE_CACHE } from '@/lib/httpCache';
 
 // GET: Fetch all gallery items (Public)
-export async function GET() {
+export async function GET(request) {
+    const clientIP = getClientIP(request);
+    if (!checkRateLimit(`gallery:${clientIP}`, 60, 60000)) {
+        return NextResponse.json({ success: false, error: 'Rate limit exceeded' }, { status: 429 });
+    }
     try {
         const { value: images, meta } = await cache.getOrSetWithMeta(
             CACHE_KEYS.GALLERY,
