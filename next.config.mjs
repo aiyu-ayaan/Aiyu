@@ -10,10 +10,14 @@ const cdnHostname = cdnUrl ? (() => {
 })() : '';
 
 // Disable Next "standalone" output on Windows : NFT manifest generation
-// can fail on Windows paths (spaces/backslashes). Use standalone on
-// non-Windows hosts (e.g., Docker images/CI) but avoid it for local
-// Windows builds to prevent missing `middleware.js.nft.json` errors.
-const standaloneOutput = process.platform === 'win32' ? undefined : 'standalone';
+// can fail on Windows paths (spaces/backslashes). It is also disabled when
+// NEXT_DISABLE_STANDALONE=true, which CI uses for build validation: the default
+// Turbopack builder does not emit the standalone NFT trace
+// (`middleware.js.nft.json`), so a standalone build fails on Linux with ENOENT.
+// The Docker production image builds standalone with webpack instead.
+const disableStandalone =
+  process.platform === 'win32' || process.env.NEXT_DISABLE_STANDALONE === 'true';
+const standaloneOutput = disableStandalone ? undefined : 'standalone';
 
 const nextConfig = {
   // output: 'export' // Disabled to allow dynamic API routes

@@ -1,5 +1,33 @@
 # Changelog
 
+## [4.3.0](https://github.com/aiyu-ayaan/Aiyu/compare/v4.2.1...v4.3.0) (2026-06-15)
+
+### Features
+
+* feat(db): update GitHub delegate naming in migration and related files
+* feat(db): Postgres/Prisma infra, drop Mongoose, migration report (Stage 8)
+* feat(db): add idempotent Mongo->Postgres migration script (Stage 7)
+* feat(db): migrate admin import/export to Prisma (Stage 6)
+* feat(db): migrate cron runner, notifications & seed to Prisma (Stage 5)
+* feat(db): migrate admin CRUD routes to Prisma (Stage 4)
+* feat(db): migrate public read paths to Prisma (Stage 3)
+* feat(db): add serializer shim + port shared libs to Prisma (Stage 2)
+* feat(db): add Prisma + PostgreSQL schema and tooling (Stage 1)
+
+### Bug Fixes
+
+* fix(resume): update professional summary and project details
+* fix(docker): isolated Prisma CLI so migrate deploy finds its full dep tree
+* fix(docker): build container DATABASE_URL from POSTGRES_* with postgres host
+
+### Other Changes
+
+* Resolve merge conflict
+* perf(deploy): memory-aware PM2 worker default for small VPS (Stage 4)
+* perf(hero): cap three.js render loop to 30/48fps by tier (Stage 3)
+* perf(scripts): defer GA + AdSense to lazyOnload (Stage 2)
+* perf(client): defer lenis/gsap/framer-motion out of root bundle (Stage 1)
+
 ## [4.2.1](https://github.com/aiyu-ayaan/Aiyu/compare/v4.2.0...v4.2.1) (2026-06-13)
 
 ### Features

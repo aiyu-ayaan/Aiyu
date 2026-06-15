@@ -41,6 +41,13 @@ jobs:
         run: npm run lint
       
       - name: Build project
+        # CI only needs to verify the app compiles, not produce a deployable
+        # standalone bundle (that is the Docker image's job). Disable
+        # `output: 'standalone'` here: with the default Turbopack builder it does
+        # not emit the NFT trace (`middleware.js.nft.json`), so a standalone
+        # build fails on Linux with ENOENT. See next.config.mjs.
+        env:
+          NEXT_DISABLE_STANDALONE: 'true'
         run: npm run build
       
       - name: Build success summary
