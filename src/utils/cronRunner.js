@@ -1,20 +1,7 @@
-import dbConnect from '@/lib/db';
-import Cron from '@/models/Cron';
-import CronLog from '@/models/CronLog';
+import { prisma } from '@/lib/prisma';
+import { getSingleton, toClient, toClientList } from '@/lib/serialize';
 import { executeUnreferencedCleanup, executeWebPMigration } from '@/lib/storageAudit';
 import { sendNotification } from './notificationService';
-
-// Dynamic variables query models
-import Blog from '@/models/Blog';
-import Project from '@/models/Project';
-import Gallery from '@/models/Gallery';
-import Config from '@/models/Config';
-import About from '@/models/About';
-import Ads from '@/models/Ads';
-import Social from '@/models/Social';
-import Theme from '@/models/Theme';
-import ContactMessage from '@/models/ContactMessage';
-import Deployment from '@/models/Deployment';
 import { decrypt } from '@/lib/encryption';
 
 function parseCronField(field, min, max) {
@@ -150,12 +137,11 @@ export async function initCronRunner() {
     global.cronIntervalStarted = true;
 
     console.log('[CRON SERVICE] Initializing task scheduler...');
-    await dbConnect();
 
     // Fetch global default timezone
     let timeZone = 'UTC';
     try {
-        const config = await Config.findOne().lean();
+        const config = await getSingleton(prisma, 'config');
         if (config && config.defaultTimezone) {
             timeZone = config.defaultTimezone;
         }
@@ -165,46 +151,44 @@ export async function initCronRunner() {
 
     // Seed system cron jobs
     try {
-        const cleanupJob = await Cron.findOne({ action: 'clean_unreferenced' });
+        const cleanupJob = await prisma.cron.findFirst({ where: { action: 'clean_unreferenced' } });
         if (!cleanupJob) {
-            await Cron.create({
+            await prisma.cron.create({ data: {
                 name: 'Unreferenced Uploads Cleanup',
                 type: 'system',
                 schedule: '0 2 * * *', // Daily at 2:00 AM
                 enabled: true,
                 action: 'clean_unreferenced',
                 nextRun: getNextCronRun('0 2 * * *', new Date(), timeZone)
-            });
+            } });
             console.log('[CRON SERVICE] Seeded: Unreferenced Uploads Cleanup');
         }
 
-        const webpJob = await Cron.findOne({ action: 'migrate_webp' });
+        const webpJob = await prisma.cron.findFirst({ where: { action: 'migrate_webp' } });
         if (!webpJob) {
-            await Cron.create({
+            await prisma.cron.create({ data: {
                 name: 'WebP Image Migration',
                 type: 'system',
                 schedule: '0 3 * * *', // Daily at 3:00 AM
                 enabled: true,
                 action: 'migrate_webp',
                 nextRun: getNextCronRun('0 3 * * *', new Date(), timeZone)
-            });
+            } });
             console.log('[CRON SERVICE] Seeded: WebP Image Migration');
         }
 
         // Self-heal and recalculate missing or outdated nextRun timestamps
         const now = new Date();
-        const jobsToHeal = await Cron.find({
-            enabled: true,
-            $or: [
-                { nextRun: null },
-                { nextRun: { $exists: false } },
-                { nextRun: { $lt: now } }
-            ]
+        const jobsToHeal = await prisma.cron.findMany({
+            where: {
+                enabled: true,
+                OR: [{ nextRun: null }, { nextRun: { lt: now } }],
+            },
         });
         for (const job of jobsToHeal) {
-            job.nextRun = getNextCronRun(job.schedule, now, timeZone);
-            await job.save();
-            console.log(`[CRON SERVICE] Self-healed nextRun for task: ${job.name} -> ${job.nextRun}`);
+            const nextRun = getNextCronRun(job.schedule, now, timeZone);
+            await prisma.cron.update({ where: { id: job.id }, data: { nextRun } });
+            console.log(`[CRON SERVICE] Self-healed nextRun for task: ${job.name} -> ${nextRun}`);
         }
     } catch (err) {
         console.error('[CRON SERVICE] Failed to seed or self-heal system jobs:', err);
@@ -220,13 +204,12 @@ export async function initCronRunner() {
 
 async function runDueCronJobs() {
     try {
-        await dbConnect();
-        const activeJobs = await Cron.find({ enabled: true });
+        const activeJobs = await prisma.cron.findMany({ where: { enabled: true } });
         const now = new Date();
 
         let timeZone = 'UTC';
         try {
-            const config = await Config.findOne().lean();
+            const config = await getSingleton(prisma, 'config');
             if (config && config.defaultTimezone) {
                 timeZone = config.defaultTimezone;
             }
@@ -302,31 +285,38 @@ async function resolvePlaceholder(modelName, path, cachedData) {
         return getValueByPath(deviceInfo, path) ?? deviceInfo;
     }
 
+    const blogsQuery = async () => toClientList('blog', await prisma.blog.findMany({ orderBy: { createdAt: 'desc' } }));
+    const projectsQuery = async () => toClientList('project', await prisma.project.findMany({ orderBy: { displayOrder: 'asc' } }));
+    const galleryQuery = async () => toClientList('gallery', await prisma.gallery.findMany({ orderBy: { order: 'asc' } }));
+    const socialsQuery = async () => toClientList('social', await prisma.social.findMany());
+    const messagesQuery = async () => toClientList('contactMessage', await prisma.contactMessage.findMany({ orderBy: { createdAt: 'desc' } }));
+    const deploymentsQuery = async () => toClientList('deployment', await prisma.deployment.findMany({ orderBy: { displayOrder: 'asc' } }));
+    const cronsQuery = async () => toClientList('cron', await prisma.cron.findMany());
+
     const modelMapping = {
-        blogs: { model: Blog, query: () => Blog.find({}).sort({ createdAt: -1 }).lean() },
-        blog: { model: Blog, query: () => Blog.find({}).sort({ createdAt: -1 }).lean() },
-        projects: { model: Project, query: () => Project.find({}).sort({ order: 1 }).lean() },
-        project: { model: Project, query: () => Project.find({}).sort({ order: 1 }).lean() },
-        gallery: { model: Gallery, query: () => Gallery.find({}).sort({ order: 1 }).lean() },
-        config: { model: Config, query: () => Config.findOne({}).lean() },
-        about: { model: About, query: () => About.findOne({}).lean() },
-        ads: { model: Ads, query: () => Ads.findOne({}).lean() },
-        socials: { model: Social, query: () => Social.find({}).lean() },
-        social: { model: Social, query: () => Social.find({}).lean() },
-        theme: { model: Theme, query: () => Theme.findOne({}).lean() },
-        themes: { model: Theme, query: () => Theme.findOne({}).lean() },
-        messages: { model: ContactMessage, query: () => ContactMessage.find({}).sort({ createdAt: -1 }).lean() },
-        message: { model: ContactMessage, query: () => ContactMessage.find({}).sort({ createdAt: -1 }).lean() },
-        deployments: { model: Deployment, query: () => Deployment.find({}).sort({ order: 1 }).lean() },
-        deployment: { model: Deployment, query: () => Deployment.find({}).sort({ order: 1 }).lean() },
-        crons: { model: Cron, query: () => Cron.find({}).lean() },
-        cron: { model: Cron, query: () => Cron.find({}).lean() }
+        blogs: { query: blogsQuery },
+        blog: { query: blogsQuery },
+        projects: { query: projectsQuery },
+        project: { query: projectsQuery },
+        gallery: { query: galleryQuery },
+        config: { query: () => getSingleton(prisma, 'config') },
+        about: { query: () => getSingleton(prisma, 'about') },
+        ads: { query: () => getSingleton(prisma, 'ads') },
+        socials: { query: socialsQuery },
+        social: { query: socialsQuery },
+        theme: { query: async () => toClient('theme', await prisma.theme.findFirst()) },
+        themes: { query: async () => toClient('theme', await prisma.theme.findFirst()) },
+        messages: { query: messagesQuery },
+        message: { query: messagesQuery },
+        deployments: { query: deploymentsQuery },
+        deployment: { query: deploymentsQuery },
+        crons: { query: cronsQuery },
+        cron: { query: cronsQuery }
     };
 
     if (modelMapping[lowerModel]) {
         if (!cachedData[lowerModel]) {
             try {
-                await dbConnect();
                 cachedData[lowerModel] = await modelMapping[lowerModel].query();
             } catch (err) {
                 console.error(`[CRON TEMPLATE ERROR] Failed to fetch model data for ${lowerModel}:`, err);
@@ -455,8 +445,7 @@ export async function executeCronJob(job) {
                 
                 // Load global environment variables
                 try {
-                    const CronEnv = (await import('@/models/CronEnv')).default;
-                    const globalEnvDoc = await CronEnv.findOne({}).lean();
+                    const globalEnvDoc = await getSingleton(prisma, 'cronEnv');
                     if (globalEnvDoc && Array.isArray(globalEnvDoc.env)) {
                         for (const env of globalEnvDoc.env) {
                             if (env.key && env.key.trim()) {
@@ -585,7 +574,7 @@ export async function executeCronJob(job) {
         
         let timeZone = 'UTC';
         try {
-            const config = await Config.findOne().lean();
+            const config = await getSingleton(prisma, 'config');
             if (config && config.defaultTimezone) {
                 timeZone = config.defaultTimezone;
             }
@@ -594,14 +583,17 @@ export async function executeCronJob(job) {
         }
 
         const nextRun = getNextCronRun(job.schedule, ranAt, timeZone);
-        await Cron.findByIdAndUpdate(job._id, {
-            lastRun: ranAt,
-            lastRunStatus: status,
-            lastRunLog: logOutput,
-            nextRun
+        await prisma.cron.update({
+            where: { id: job.id },
+            data: {
+                lastRun: ranAt,
+                lastRunStatus: status,
+                lastRunLog: logOutput,
+                nextRun
+            }
         });
-        await CronLog.create({
-            cronId: job._id,
+        await prisma.cronLog.create({ data: {
+            cronId: job.id,
             cronName: job.name,
             action: job.action,
             status,
@@ -610,7 +602,7 @@ export async function executeCronJob(job) {
             log: logOutput,
             durationMs,
             ranAt
-        });
+        } });
         console.log(`[CRON SERVICE] Finished job: ${job.name} (${status})`);
 
         // Send Notification if linked & enabled

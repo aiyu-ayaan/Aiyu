@@ -28,7 +28,7 @@ jobs:
       - name: Create dummy .env file
         run: |
           cat > .env.local << 'EOF'
-          MONGODB_URI=mongodb://dummy:dummy@dummy:27017/dummy
+          DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy?schema=public
           NEXT_PUBLIC_N8N_WEBHOOK_URL=https://dummy-webhook.example.com
           NEXT_PUBLIC_AUTHOR_NAME=Portfolio Author
           ADMIN_USERNAME=dummy
@@ -41,6 +41,13 @@ jobs:
         run: npm run lint
       
       - name: Build project
+        # CI only needs to verify the app compiles, not produce a deployable
+        # standalone bundle (that is the Docker image's job). Disable
+        # `output: 'standalone'` here: with the default Turbopack builder it does
+        # not emit the NFT trace (`middleware.js.nft.json`), so a standalone
+        # build fails on Linux with ENOENT. See next.config.mjs.
+        env:
+          NEXT_DISABLE_STANDALONE: 'true'
         run: npm run build
       
       - name: Build success summary

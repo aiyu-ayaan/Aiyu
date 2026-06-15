@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/db';
-import Blog from '@/models/Blog';
-import Project from '@/models/Project';
-import Deployment from '@/models/Deployment';
+import { prisma } from '@/lib/prisma';
+import { getSingleton, toClientList } from '@/lib/serialize';
 import cache, { CACHE_TTL, createCacheDebugHeaders } from '@/lib/cache';
 import { createPublicCacheHeaders, RESPONSE_CACHE } from '@/lib/httpCache';
 import { getBlogSlug } from '@/lib/blogSlugs';
@@ -10,6 +8,12 @@ import { getDeploymentSlug, getProjectSlug } from '@/lib/contentSlugs';
 
 function escapeRegex(value) {
     return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// Escape LIKE/ILIKE wildcards so the user query is matched literally.
+function likePattern(value) {
+    const escaped = String(value).replace(/[\\%_]/g, (ch) => `\\${ch}`);
+    return `%${escaped}%`;
 }
 
 function getSearchCacheKey(query) {
@@ -39,59 +43,55 @@ export async function GET(request) {
         const { value: results, meta } = await cache.getOrSetWithMeta(
             getSearchCacheKey(query),
             async () => {
-                await dbConnect();
                 const regex = new RegExp(escapeRegex(query), 'i');
                 const nowIso = new Date().toISOString();
+                const pattern = likePattern(query);
 
-                const [blogs, projects, deployments, homeData, aboutData] = await Promise.all([
-                    Blog.find({
-                        $or: [
-                            { title: regex },
-                            { content: regex },
-                            { tags: regex }
-                        ],
-                        published: { $ne: false }
-                    }).sort({ createdAt: -1 }).limit(SEARCH_LIMITS.BLOGS).select('title content date slug _id').lean(),
+                const [blogRows, projectRows, deploymentRows, home, about] = await Promise.all([
+                    // Blogs: PostgreSQL full-text search over the weighted tsvector.
+                    prisma.$queryRaw`
+                        SELECT id, title, content, date, slug
+                        FROM "Blog"
+                        WHERE published = true
+                          AND "searchVector" @@ websearch_to_tsquery('english', ${query})
+                        ORDER BY ts_rank("searchVector", websearch_to_tsquery('english', ${query})) DESC,
+                                 "createdAt" DESC
+                        LIMIT ${SEARCH_LIMITS.BLOGS}
+                    `,
 
-                    Project.find({
-                        $or: [
-                            { name: regex },
-                            { description: regex },
-                            { techStack: regex }
-                        ]
-                    }).sort({ displayOrder: 1, year: -1 }).limit(SEARCH_LIMITS.PROJECTS).select('name slug description year _id').lean(),
+                    // Projects: case-insensitive match across name/description/techStack.
+                    prisma.$queryRaw`
+                        SELECT id, name, slug, description, year
+                        FROM "Project"
+                        WHERE name ILIKE ${pattern}
+                           OR description ILIKE ${pattern}
+                           OR array_to_string("techStack", ' ') ILIKE ${pattern}
+                        ORDER BY "displayOrder" ASC, year DESC
+                        LIMIT ${SEARCH_LIMITS.PROJECTS}
+                    `,
 
-                    Deployment.find({
-                        $or: [
-                            { name: regex },
-                            { description: regex },
-                            { techStack: regex },
-                            { hostingProvider: regex },
-                            { appType: regex },
-                            { environment: regex },
-                        ]
-                    }).sort({ displayOrder: 1, updatedAt: -1 }).limit(SEARCH_LIMITS.DEPLOYMENTS).select('name slug description hostingProvider environment _id').lean(),
+                    // Deployments: case-insensitive match across the searchable text columns.
+                    prisma.$queryRaw`
+                        SELECT id, name, slug, description, "hostingProvider", environment
+                        FROM "Deployment"
+                        WHERE name ILIKE ${pattern}
+                           OR description ILIKE ${pattern}
+                           OR array_to_string("techStack", ' ') ILIKE ${pattern}
+                           OR "hostingProvider" ILIKE ${pattern}
+                           OR "appType" ILIKE ${pattern}
+                           OR environment ILIKE ${pattern}
+                        ORDER BY "displayOrder" ASC, "updatedAt" DESC
+                        LIMIT ${SEARCH_LIMITS.DEPLOYMENTS}
+                    `,
 
-                    // Search Home (usually singleton, but using find in case of multiple or just 1)
-                    import('@/models/Home').then(mod => mod.default.find({
-                        $or: [
-                            { name: regex },
-                            { homeRoles: regex },
-                            { codeSnippets: regex }
-                        ]
-                    }).limit(SEARCH_LIMITS.HOME).lean()),
-
-                    // Search About (usually singleton)
-                    import('@/models/About').then(mod => mod.default.find({
-                        $or: [
-                            { name: regex },
-                            { professionalSummary: regex },
-                            { "experiences.company": regex },
-                            { "experiences.role": regex },
-                            { "skills.name": regex }
-                        ]
-                    }).limit(SEARCH_LIMITS.ABOUT).lean())
+                    // Home / About are singletons — fetch and filter in JS.
+                    getSingleton(prisma, 'home'),
+                    getSingleton(prisma, 'about'),
                 ]);
+
+                const blogs = toClientList('blog', blogRows);
+                const projects = toClientList('project', projectRows);
+                const deployments = toClientList('deployment', deploymentRows);
 
                 const formattedBlogs = blogs.map(blog => ({
                     type: 'blog',
@@ -116,6 +116,21 @@ export async function GET(request) {
                     path: `/apps/${getDeploymentSlug(deployment)}`,
                     date: nowIso
                 }));
+
+                const homeMatches = home && (
+                    regex.test(home.name || '')
+                    || (Array.isArray(home.homeRoles) && home.homeRoles.some((role) => regex.test(role)))
+                    || (Array.isArray(home.codeSnippets) && home.codeSnippets.some((snippet) => regex.test(snippet)))
+                );
+                const homeData = homeMatches ? [home] : [];
+
+                const aboutMatches = about && (
+                    regex.test(about.name || '')
+                    || regex.test(about.professionalSummary || '')
+                    || (Array.isArray(about.experiences) && about.experiences.some((exp) => regex.test(exp?.company || '') || regex.test(exp?.role || '')))
+                    || (Array.isArray(about.skills) && about.skills.some((skill) => regex.test(skill?.name || '')))
+                );
+                const aboutData = aboutMatches ? [about] : [];
 
                 const formattedHome = (homeData || []).map(h => ({
                     type: 'page',

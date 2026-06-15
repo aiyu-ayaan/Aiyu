@@ -56,25 +56,30 @@ const HomeMissionControl = ({ data }) => {
             const deck = scope.querySelector('.mc-deck');
             if (!cards.length || !deck) return;
 
-            const fanAngles = [-34, 0, 34];
+            // Gentler fan: smaller spread + lift, with a smoothed scrub (0.8) so
+            // the cards glide flat instead of snapping 1:1 to the scrollbar.
+            const fanAngles = [-22, 0, 22];
             gsap.fromTo(
                 cards,
                 {
                     rotateY: (index) => fanAngles[index % fanAngles.length],
-                    z: -140,
-                    autoAlpha: 0.35,
+                    z: -90,
+                    y: 36,
+                    autoAlpha: 0.4,
                     transformPerspective: 1200,
                 },
                 {
                     rotateY: 0,
                     z: 0,
+                    y: 0,
                     autoAlpha: 1,
-                    ease: 'none',
+                    ease: 'power1.out',
+                    stagger: 0.05,
                     scrollTrigger: {
                         trigger: deck,
-                        start: 'top 96%',
-                        end: 'center 55%',
-                        scrub: true,
+                        start: 'top 90%',
+                        end: 'center 60%',
+                        scrub: 0.8,
                     },
                 }
             );
@@ -92,7 +97,7 @@ const HomeMissionControl = ({ data }) => {
                 className="chapter-panel glass-panel relative mx-auto flex w-full max-w-[95%] flex-col justify-center overflow-hidden p-8 sm:p-12 lg:max-w-[80%] xl:p-16"
             >
                 <div className="relative mb-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-                    <div className="max-w-2xl">
+                    <div data-reveal="left" className="max-w-2xl">
                         <p className="eyebrow mb-3 flex items-center gap-2">
                             <span className="relative flex h-2 w-2">
                                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60" style={{ backgroundColor: 'var(--status-success)' }} />
@@ -103,7 +108,7 @@ const HomeMissionControl = ({ data }) => {
                         <h2 className="headline-section">{headline}</h2>
                     </div>
 
-                    <div className="glass-tile self-start px-5 py-3 lg:self-auto">
+                    <div data-reveal="right" className="glass-tile self-start px-5 py-3 lg:self-auto">
                         <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Local time</p>
                         <p className="text-base font-semibold tabular-nums" style={{ color: 'var(--text-primary)' }} suppressHydrationWarning>
                             {clock || '--:--:--'}

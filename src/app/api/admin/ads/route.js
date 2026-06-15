@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/db';
-import Ads from '@/models/Ads';
+import { prisma } from '@/lib/prisma';
+import { getSingleton, upsertSingleton } from '@/lib/serialize';
 import { getSession } from '@/lib/auth';
 import cache from '@/lib/cache';
 import { encrypt, decrypt } from '@/lib/encryption';
@@ -12,18 +12,10 @@ export async function GET() {
     }
 
     try {
-        await dbConnect();
-        let adsConfig = await Ads.findOne().select(
-            '+encryptedClientId ' +
-            '+placements.top.encryptedSlotId ' +
-            '+placements.middle.encryptedSlotId ' +
-            '+placements.bottom.encryptedSlotId ' +
-            '+placements.sidebar.encryptedSlotId ' +
-            '+placements.footer.encryptedSlotId'
-        ).lean();
-        
+        let adsConfig = await getSingleton(prisma, 'ads');
+
         if (!adsConfig) {
-            adsConfig = await Ads.create({});
+            adsConfig = await upsertSingleton(prisma, 'ads', {});
         }
 
         const placements = {};
@@ -60,9 +52,8 @@ export async function PUT(request) {
     }
 
     try {
-        await dbConnect();
         const body = await request.json();
-        
+
         const updateData = {
             adsenseEnabled: Boolean(body.adsenseEnabled),
             adsTxt: body.adsTxt !== undefined ? String(body.adsTxt) : '',
@@ -91,11 +82,7 @@ export async function PUT(request) {
             });
         }
 
-        const updatedAds = await Ads.findOneAndUpdate(
-            {}, 
-            { $set: updateData }, 
-            { new: true, upsert: true, runValidators: true }
-        );
+        await upsertSingleton(prisma, 'ads', updateData);
 
         await cache.invalidateAsync('db:ads');
 

@@ -1,5 +1,10 @@
-import mongoose from 'mongoose';
+import { prisma } from '@/lib/prisma';
+import { toClient, toClientList } from '@/lib/serialize';
 import { generateSlug } from '@/lib/seoHelper';
+
+// NOTE: The leading `_model` parameter is retained for backward compatibility
+// with existing call sites (which used to pass the Mongoose model). It is
+// ignored — all lookups go through the shared Prisma client.
 
 function getFallbackSlugBase(title, id) {
     const generated = generateSlug(title);
@@ -21,18 +26,19 @@ export function getBlogSlug(blog) {
     return getFallbackSlugBase(blog?.title, blog?._id);
 }
 
-export async function createUniqueBlogSlug(BlogModel, title, excludeId = null, fallbackId = null) {
+export async function createUniqueBlogSlug(_model, title, excludeId = null, fallbackId = null) {
     const baseSlug = getFallbackSlugBase(title, fallbackId);
     let candidate = baseSlug;
     let suffix = 2;
 
     while (true) {
-        const existing = await BlogModel.findOne({
-            slug: candidate,
-            ...(excludeId ? { _id: { $ne: excludeId } } : {}),
-        })
-            .select('_id')
-            .lean();
+        const existing = await prisma.blog.findFirst({
+            where: {
+                slug: candidate,
+                ...(excludeId ? { NOT: { id: excludeId } } : {}),
+            },
+            select: { id: true },
+        });
 
         if (!existing) {
             return candidate;
@@ -43,7 +49,7 @@ export async function createUniqueBlogSlug(BlogModel, title, excludeId = null, f
     }
 }
 
-export async function ensureBlogSlugForDocument(BlogModel, blog) {
+export async function ensureBlogSlugForDocument(_model, blog) {
     if (!blog?._id) {
         return blog;
     }
@@ -53,12 +59,12 @@ export async function ensureBlogSlugForDocument(BlogModel, blog) {
         return blog;
     }
 
-    const slug = await createUniqueBlogSlug(BlogModel, blog.title, blog._id, blog._id);
+    const slug = await createUniqueBlogSlug(null, blog.title, blog._id, blog._id);
 
-    await BlogModel.updateOne(
-        { _id: blog._id, $or: [{ slug: { $exists: false } }, { slug: '' }, { slug: null }] },
-        { $set: { slug } }
-    );
+    await prisma.blog.updateMany({
+        where: { id: blog._id, slug: '' },
+        data: { slug },
+    });
 
     return {
         ...blog,
@@ -66,32 +72,30 @@ export async function ensureBlogSlugForDocument(BlogModel, blog) {
     };
 }
 
-export async function backfillMissingBlogSlugs(BlogModel) {
-    const missingBlogs = await BlogModel.find({
-        $or: [{ slug: { $exists: false } }, { slug: '' }, { slug: null }],
-    })
-        .sort({ createdAt: 1, _id: 1 })
-        .select('_id title slug')
-        .lean();
+export async function backfillMissingBlogSlugs(_model) {
+    const missingBlogs = await prisma.blog.findMany({
+        where: { slug: '' },
+        orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+        select: { id: true, title: true, slug: true },
+    });
 
     if (missingBlogs.length === 0) {
         return;
     }
 
-    const existingSlugDocs = await BlogModel.find({
-        slug: { $exists: true, $nin: ['', null] },
-    })
-        .select('slug')
-        .lean();
+    const existingSlugRows = await prisma.blog.findMany({
+        where: { NOT: { slug: '' } },
+        select: { slug: true },
+    });
 
     const usedSlugs = new Set(
-        existingSlugDocs
+        existingSlugRows
             .map((entry) => (typeof entry?.slug === 'string' ? entry.slug.trim() : ''))
             .filter(Boolean)
     );
 
-    const operations = missingBlogs.map((blog) => {
-        const baseSlug = getFallbackSlugBase(blog.title, blog._id);
+    for (const blog of missingBlogs) {
+        const baseSlug = getFallbackSlugBase(blog.title, blog.id);
         let slug = baseSlug;
         let suffix = 2;
 
@@ -101,46 +105,34 @@ export async function backfillMissingBlogSlugs(BlogModel) {
         }
 
         usedSlugs.add(slug);
-
-        return {
-            updateOne: {
-                filter: { _id: blog._id },
-                update: { $set: { slug } },
-            },
-        };
-    });
-
-    if (operations.length > 0) {
-        await BlogModel.bulkWrite(operations, { ordered: true });
+        await prisma.blog.update({ where: { id: blog.id }, data: { slug } });
     }
 }
 
-export async function resolveBlogByIdentifier(BlogModel, identifier) {
+export async function resolveBlogByIdentifier(_model, identifier) {
     const normalizedIdentifier = String(identifier || '').trim();
     if (!normalizedIdentifier) {
         return null;
     }
 
-    let blog = await BlogModel.findOne({ slug: normalizedIdentifier }).lean();
-    if (blog) {
-        return blog;
+    const bySlug = await prisma.blog.findFirst({ where: { slug: normalizedIdentifier } });
+    if (bySlug) {
+        return toClient('blog', bySlug);
     }
 
-    if (mongoose.Types.ObjectId.isValid(normalizedIdentifier)) {
-        blog = await BlogModel.findById(normalizedIdentifier).lean();
-        if (blog) {
-            return ensureBlogSlugForDocument(BlogModel, blog);
-        }
+    const byId = await prisma.blog.findUnique({ where: { id: normalizedIdentifier } });
+    if (byId) {
+        return ensureBlogSlugForDocument(null, toClient('blog', byId));
     }
 
-    const sluglessBlogs = await BlogModel.find({
-        $or: [{ slug: { $exists: false } }, { slug: '' }, { slug: null }],
-    }).lean();
-
-    const matchedBlog = sluglessBlogs.find((entry) => getBlogSlug(entry) === normalizedIdentifier);
+    // Legacy rows without a stored slug: match on the derived fallback slug.
+    const sluglessBlogs = await prisma.blog.findMany({ where: { slug: '' } });
+    const matchedBlog = toClientList('blog', sluglessBlogs).find(
+        (entry) => getBlogSlug(entry) === normalizedIdentifier
+    );
     if (!matchedBlog) {
         return null;
     }
 
-    return ensureBlogSlugForDocument(BlogModel, matchedBlog);
+    return ensureBlogSlugForDocument(null, matchedBlog);
 }

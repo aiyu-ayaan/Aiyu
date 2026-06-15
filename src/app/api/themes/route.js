@@ -1,5 +1,5 @@
-import dbConnect from "@/lib/db";
-import Theme from "@/models/Theme";
+import { prisma } from "@/lib/prisma";
+import { toClient, toClientList } from "@/lib/serialize";
 import { getSession } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import { themePresets, legacyThemePresets, isPredefinedTheme } from "@/lib/themePresets";
@@ -14,8 +14,8 @@ export async function GET() {
         const { value: customThemes, meta } = await cache.getOrSetWithMeta(
             CACHE_KEY_THEMES_LIST,
             async () => {
-                await dbConnect();
-                return Theme.find({}).sort({ createdAt: -1 }).lean();
+                const rows = await prisma.theme.findMany({ orderBy: { createdAt: 'desc' } });
+                return toClientList('theme', rows);
             },
             CACHE_TTL.MEDIUM
         );
@@ -63,7 +63,6 @@ export async function POST(request) {
             );
         }
 
-        await dbConnect();
         const body = await request.json();
         const { name, description, variants } = body;
 
@@ -89,7 +88,7 @@ export async function POST(request) {
         }
 
         // Check if custom theme with this slug already exists
-        const existing = await Theme.findOne({ slug }).select('_id').lean();
+        const existing = await prisma.theme.findUnique({ where: { slug }, select: { id: true } });
         if (existing) {
             return NextResponse.json(
                 { success: false, error: "A theme with this name already exists" },
@@ -98,20 +97,22 @@ export async function POST(request) {
         }
 
         // Create new theme
-        const theme = await Theme.create({
-            name,
-            description: description || '',
-            slug,
-            isCustom: true,
-            isPredefined: false,
-            variants
+        const theme = await prisma.theme.create({
+            data: {
+                name,
+                description: description || '',
+                slug,
+                isCustom: true,
+                isPredefined: false,
+                variants,
+            },
         });
 
         await cache.invalidatePrefixAsync('db:themes');
         await cache.invalidatePrefixAsync('db:config');
 
         return NextResponse.json(
-            { success: true, data: theme },
+            { success: true, data: toClient('theme', theme) },
             { status: 201 }
         );
     } catch (error) {

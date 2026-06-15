@@ -1,7 +1,5 @@
 import { notFound, permanentRedirect } from 'next/navigation';
 import { cache } from 'react';
-import dbConnect from '@/lib/db';
-import DeploymentModel from '@/models/Deployment';
 import { getConfigData } from '@/lib/dataFetchers';
 import { getDeploymentSlug, resolveDeploymentByIdentifier } from '@/lib/contentSlugs';
 import { getSiteUrl } from '@/lib/siteUrl';
@@ -27,8 +25,7 @@ function isExternalHttpUrl(value) {
 }
 
 const getDeploymentByIdentifier = cache(async (identifier) => {
-    await dbConnect();
-    return resolveDeploymentByIdentifier(DeploymentModel, identifier);
+    return resolveDeploymentByIdentifier(null, identifier);
 });
 
 export async function generateMetadata({ params }) {

@@ -1,27 +1,27 @@
 services:
-  # MongoDB Database Service
-  mongodb:
-    image: mongo:7
-    container_name: aiyu-mongodb
+  # PostgreSQL Database Service
+  postgres:
+    image: postgres:17-alpine
+    container_name: aiyu-postgres
     restart: unless-stopped
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
-    # Port mapping commented out for security - app can access via internal network
-    # Uncomment if external MongoDB access is needed: 
+      POSTGRES_USER: ${POSTGRES_USER:-aiyu}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-aiyu}
+    # Port mapping commented out for security - app reaches it via the internal
+    # network. Uncomment if you need host access (e.g. Prisma Studio / pgAdmin):
     # ports:
-    #   - "27017:27017"
+    #   - "${POSTGRES_PORT:-5432}:5432"
     volumes:
-      - mongodb_data:/data/db
-      - mongodb_config:/data/configdb
+      - postgres_data:/var/lib/postgresql/data
     networks:
       - aiyu-network
-    mem_limit: ${MONGO_MEMORY_LIMIT:-512m}
-    mem_reservation: ${MONGO_MEMORY_RESERVATION:-256m}
-    cpus: ${MONGO_CPUS:-0.5}
+    mem_limit: ${POSTGRES_MEMORY_LIMIT:-512m}
+    mem_reservation: ${POSTGRES_MEMORY_RESERVATION:-256m}
+    cpus: ${POSTGRES_CPUS:-0.5}
     healthcheck:
-      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')", "--quiet" ]
-      interval: 60s
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-aiyu} -d ${POSTGRES_DB:-aiyu}"]
+      interval: 30s
       timeout: 5s
       retries: 5
       start_period: 10s
@@ -32,9 +32,9 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        # Only pass public variables as build args
-        # MONGODB_URI uses dummy value in Dockerfile to prevent credentials in image layers
-        # All sensitive credentials are provided at runtime via environment section below
+        # Only pass public variables as build args.
+        # DATABASE_URL uses a dummy value at build time (see Dockerfile) to keep
+        # credentials out of image layers; the real one is provided at runtime.
         - NEXT_PUBLIC_N8N_WEBHOOK_URL=${NEXT_PUBLIC_N8N_WEBHOOK_URL}
         - NEXT_PUBLIC_BASE_URL=${NEXT_PUBLIC_BASE_URL}
         - NEXT_PUBLIC_AUTHOR_NAME=${NEXT_PUBLIC_AUTHOR_NAME}
@@ -43,8 +43,15 @@ services:
     ports:
       - "${APP_PORT:-3000}:3000"
     environment:
-      # MongoDB connection
-      MONGODB_URI: ${MONGODB_URI}
+      # PostgreSQL connection. The in-container host MUST be the "postgres"
+      # service, never "localhost". We intentionally do NOT read $DATABASE_URL
+      # here: the .env used for host dev sets it to localhost, and Compose
+      # auto-loads .env, so honoring it would point the container at itself.
+      # The URL is built from the POSTGRES_* vars instead. To use an external
+      # managed database, set APP_DATABASE_URL.
+      DATABASE_URL: ${APP_DATABASE_URL:-postgresql://${POSTGRES_USER:-aiyu}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-aiyu}?schema=public}
+      # Run `prisma migrate deploy` from the container entrypoint before boot.
+      RUN_MIGRATIONS: "true"
       # N8N webhook URL
       NEXT_PUBLIC_N8N_WEBHOOK_URL: ${NEXT_PUBLIC_N8N_WEBHOOK_URL}
       # Base URL for SEO/OG tags
@@ -55,6 +62,7 @@ services:
       ADMIN_USERNAME: ${ADMIN_USERNAME}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
+      BLOG_API_KEY: ${BLOG_API_KEY}
 
       # Node environment
       NODE_ENV: production
@@ -101,7 +109,7 @@ services:
       retries: 3
       start_period: 40s
     depends_on:
-      mongodb:
+      postgres:
         condition: service_healthy
 
     networks:
@@ -111,11 +119,10 @@ services:
     image: nginx:alpine
     restart: unless-stopped
     ports:
+      # HTTP only — TLS is terminated upstream (Cloudflare tunnel/edge). No 443.
       - "${NGINX_HTTP_PORT:-80}:80"
-      - "${NGINX_HTTPS_PORT:-443}:443"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./certs:/etc/nginx/certs:ro
       - ./public:/srv/public:ro
       - uploads_data:/srv/uploads:ro
       - nginx_cache:/var/cache/nginx
@@ -133,9 +140,7 @@ services:
 
 # Named volumes for data persistence
 volumes:
-  mongodb_data:
-    driver: local
-  mongodb_config:
+  postgres_data:
     driver: local
   nextjs_cache:
     driver: local

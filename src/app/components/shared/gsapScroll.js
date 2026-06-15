@@ -11,9 +11,10 @@ if (typeof window !== 'undefined') {
     ScrollTrigger.config({ ignoreMobileResize: true });
 }
 
-// Horizontal entrance presets, applied to elements tagged with data-reveal="<preset>".
-// Elements slide in along the X axis with a soft fade + de-blur as they enter the
-// viewport — no 3D flips. Directions alternate (left/right) to give sections rhythm.
+// Entrance presets, applied to elements tagged with data-reveal="<preset>".
+// Elements fade + de-blur as they enter the viewport — no 3D flips. The `left`/`right`
+// presets glide content in from the side it sits on; pairing them (or using a
+// [data-reveal-auto] container) gives sections an alternating left↔right rhythm.
 // `html`/`body` set overflow-x: hidden, so the off-screen offsets never add a scrollbar.
 const REVEAL_PRESETS = {
     // Headings, subcopy, pills — gentle glide upwards.
@@ -28,67 +29,123 @@ const REVEAL_PRESETS = {
     zoom: { autoAlpha: 0, y: 24, scale: 0.97, filter: 'blur(8px)' },
     swing: { autoAlpha: 0, y: 44, x: -12, filter: 'blur(6px)' },
     'swing-right': { autoAlpha: 0, y: 44, x: 12, filter: 'blur(6px)' },
+    // True horizontal entrances — content slides in from the side, fully off-axis.
+    left: { autoAlpha: 0, x: -80, filter: 'blur(8px)' },
+    right: { autoAlpha: 0, x: 80, filter: 'blur(8px)' },
+    // Softer diagonal variants — slide sideways with a slight lift.
+    'left-soft': { autoAlpha: 0, x: -48, y: 16, filter: 'blur(6px)' },
+    'right-soft': { autoAlpha: 0, x: 48, y: 16, filter: 'blur(6px)' },
 };
+
+// Presets used by [data-reveal-auto] to alternate children from alternating sides.
+const AUTO_LEFT = REVEAL_PRESETS.left;
+const AUTO_RIGHT = REVEAL_PRESETS.right;
 
 const DEFAULT_REVEAL = 'rise';
 
 const getPreset = (el) => REVEAL_PRESETS[el.dataset.reveal] || REVEAL_PRESETS[DEFAULT_REVEAL];
 
 /**
- * Animate every [data-reveal] element inside scope with a 3D entrance driven
- * by ScrollTrigger. Elements inside a [data-reveal-group] container are
- * staggered together off a single trigger.
+ * Low-end / touch device tier, set pre-paint on <html data-perf="lite"> by the
+ * inline script in layout.js (reduced-motion / data-saver / slow network / weak
+ * touch hardware). On these devices we skip every scrubbed/pinned timeline and
+ * let content render statically — the scroll FX are what make low-end screens
+ * stutter or appear blank, so we treat lite exactly like reduced-motion.
+ */
+export function isLiteDevice() {
+    if (typeof document === 'undefined') return false;
+    return document.documentElement.getAttribute('data-perf') === 'lite';
+}
+
+/**
+ * Animate every [data-reveal] element inside scope with an entrance driven by
+ * ScrollTrigger. There are three ways to opt in, resolved in priority order so
+ * an element is only ever animated once:
+ *
+ *   1. [data-reveal-auto]   container whose direct children glide in from
+ *                           alternating sides (left, right, left, …). Add
+ *                           data-reveal-auto="right" to start from the right.
+ *                           Children needing a fixed side can still carry an
+ *                           explicit data-reveal and it wins.
+ *   2. [data-reveal-group]  container whose [data-reveal] children stagger
+ *                           together off a single trigger.
+ *   3. [data-reveal]        standalone element, animated on its own trigger.
  *
  * Optional attributes:
- *   data-reveal-delay="0.15"  per-element delay in seconds
- *   data-reveal-group         container whose [data-reveal] children stagger
+ *   data-reveal-delay="0.15"    per-element delay in seconds
+ *   data-reveal-stagger="0.09"  group / auto stagger between children
  */
 export function animateReveals(scope, { reducedMotion = false } = {}) {
     if (!scope) return;
 
-    const groups = Array.from(scope.querySelectorAll('[data-reveal-group]'));
-    const grouped = new Set();
+    // Elements already handled by a higher-priority container are skipped later.
+    const claimed = new Set();
 
-    groups.forEach((group) => {
-        const children = Array.from(group.querySelectorAll('[data-reveal]'));
-        if (children.length === 0) return;
-        children.forEach((child) => grouped.add(child));
-
-        if (reducedMotion) return;
-
-        const preset = getPreset(children[0]);
-        gsap.from(children, {
+    const reveal = (target, preset, { delay = 0, stagger = 0, trigger } = {}) => {
+        gsap.from(target, {
             ...preset,
-            duration: 0.8,
-            ease: 'power3.out',
-            clearProps: 'all',
-            stagger: Number(group.dataset.revealStagger) || 0.09,
-            scrollTrigger: {
-                trigger: group,
-                start: 'top 86%',
-                // Play once for a stable, distraction-free reading experience
-                once: true,
-            },
-        });
-    });
-
-    const singles = Array.from(scope.querySelectorAll('[data-reveal]')).filter((el) => !grouped.has(el));
-    if (reducedMotion) return;
-
-    singles.forEach((el) => {
-        gsap.from(el, {
-            ...getPreset(el),
             duration: 0.85,
             ease: 'power3.out',
             clearProps: 'all',
-            delay: Number(el.dataset.revealDelay) || 0,
+            delay,
+            stagger,
             scrollTrigger: {
-                trigger: el,
+                trigger: trigger || (Array.isArray(target) ? target[0] : target),
                 start: 'top 88%',
+                // Play once for a stable, distraction-free reading experience.
                 once: true,
             },
         });
+    };
+
+    // 1) Auto-alternating containers.
+    Array.from(scope.querySelectorAll('[data-reveal-auto]')).forEach((container) => {
+        const children = Array.from(container.children).filter((node) => node.nodeType === 1);
+        if (children.length === 0) return;
+
+        // Claim the children (and any nested data-reveal) so groups/singles skip them.
+        children.forEach((child) => {
+            claimed.add(child);
+            child.querySelectorAll?.('[data-reveal]').forEach((nested) => claimed.add(nested));
+        });
+
+        if (reducedMotion) return;
+
+        // data-reveal-auto="right" flips which side index 0 enters from.
+        const startRight = container.dataset.revealAuto === 'right';
+        const stagger = Number(container.dataset.revealStagger) || 0;
+
+        children.forEach((child, index) => {
+            const explicit = child.dataset.reveal ? REVEAL_PRESETS[child.dataset.reveal] : null;
+            const fromRight = startRight ? index % 2 === 0 : index % 2 === 1;
+            const preset = explicit || (fromRight ? AUTO_RIGHT : AUTO_LEFT);
+            reveal(child, preset, { delay: (Number(child.dataset.revealDelay) || 0) + index * stagger });
+        });
     });
+
+    // 2) Explicit stagger groups.
+    Array.from(scope.querySelectorAll('[data-reveal-group]')).forEach((group) => {
+        if (claimed.has(group)) return;
+        const children = Array.from(group.querySelectorAll('[data-reveal]')).filter((child) => !claimed.has(child));
+        if (children.length === 0) return;
+        children.forEach((child) => claimed.add(child));
+
+        if (reducedMotion) return;
+
+        reveal(children, getPreset(children[0]), {
+            stagger: Number(group.dataset.revealStagger) || 0.09,
+            trigger: group,
+        });
+    });
+
+    // 3) Standalone elements.
+    if (reducedMotion) return;
+
+    Array.from(scope.querySelectorAll('[data-reveal]'))
+        .filter((el) => !claimed.has(el))
+        .forEach((el) => {
+            reveal(el, getPreset(el), { delay: Number(el.dataset.revealDelay) || 0 });
+        });
 }
 
 /**
@@ -148,6 +205,49 @@ export function animateParallax(scope, { reducedMotion = false } = {}) {
 }
 
 /**
+ * Pinned horizontal scroll: a [data-hscroll] viewport is pinned while its inner
+ * [data-hscroll-track] translates sideways, so vertical scrolling drives the
+ * content horizontally. On reduced-motion / touch / coarse-pointer devices the
+ * pin is skipped and the viewport falls back to native horizontal scrolling
+ * (it ships scrollable by default; we only add `.is-pinned` when taking over).
+ */
+export function animateHorizontalScroll(scope, { reducedMotion = false } = {}) {
+    if (!scope) return;
+
+    // Pinned horizontal scroll is unreliable on touch / small screens — let those
+    // devices scroll the track natively instead.
+    const preferNative = reducedMotion
+        || (typeof window !== 'undefined'
+            && (window.matchMedia?.('(pointer: coarse)').matches || window.innerWidth < 768));
+
+    scope.querySelectorAll('[data-hscroll]').forEach((viewport) => {
+        const track = viewport.querySelector('[data-hscroll-track]');
+        if (!track) return;
+
+        const distance = () => Math.max(0, track.scrollWidth - viewport.offsetWidth);
+
+        // Not enough overflow to scroll, or device prefers native scroll: leave as-is.
+        if (preferNative || distance() <= 8) return;
+
+        viewport.classList.add('is-pinned');
+
+        gsap.to(track, {
+            x: () => -distance(),
+            ease: 'none',
+            scrollTrigger: {
+                trigger: viewport,
+                start: 'top top',
+                end: () => `+=${distance()}`,
+                pin: true,
+                scrub: 1,
+                anticipatePin: 1,
+                invalidateOnRefresh: true,
+            },
+        });
+    });
+}
+
+/**
  * Lazy-mounted sections change the document height after ScrollTrigger has
  * measured it; schedule a refresh once layout settles.
  */
@@ -167,12 +267,17 @@ export function useSectionFx(scopeRef, { reducedMotion = false, extra } = {}) {
             const scope = scopeRef.current;
             if (!scope) return;
 
-            animateReveals(scope, { reducedMotion });
-            animateCounters(scope, { reducedMotion });
-            animateParallax(scope, { reducedMotion });
+            // Lite devices get a static, fully-visible layout: no blur reveals,
+            // no parallax, no pinned horizontal scroll, no bespoke 3D timelines.
+            const reduced = reducedMotion || isLiteDevice();
+
+            animateReveals(scope, { reducedMotion: reduced });
+            animateCounters(scope, { reducedMotion: reduced });
+            animateParallax(scope, { reducedMotion: reduced });
+            animateHorizontalScroll(scope, { reducedMotion: reduced });
 
             if (typeof extra === 'function') {
-                extra({ gsap, ScrollTrigger, scope, reducedMotion });
+                extra({ gsap, ScrollTrigger, scope, reducedMotion: reduced });
             }
 
             refreshScrollTriggersSoon();

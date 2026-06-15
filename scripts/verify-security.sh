@@ -277,11 +277,11 @@ header "Network Security"
 CONNECTIONS=$(docker exec aiyu-app netstat -tn 2>/dev/null | grep ESTABLISHED | wc -l)
 echo "Active network connections: $CONNECTIONS"
 
-# Check if MongoDB port is exposed externally
-if docker ps --format '{{.Ports}}' | grep "27017->27017"; then
-    warn "MongoDB port 27017 is exposed externally - Consider removing this exposure"
+# Check if PostgreSQL port is exposed externally
+if docker ps --format '{{.Ports}}' | grep "5432->5432"; then
+    warn "PostgreSQL port 5432 is exposed externally - Consider removing this exposure"
 else
-    pass "MongoDB port is not exposed externally"
+    pass "PostgreSQL port is not exposed externally"
 fi
 
 ###############################################################################

@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
 import { withAuth } from '@/middleware/auth';
-import dbConnect from '@/lib/db';
-import Cron from '@/models/Cron';
-import Config from '@/models/Config';
+import { prisma } from '@/lib/prisma';
+import { getSingleton, toClient, toClientList } from '@/lib/serialize';
 import { getNextCronRun, initCronRunner } from '@/utils/cronRunner';
 import { encrypt, decrypt } from '@/lib/encryption';
 
@@ -27,28 +26,30 @@ function resolveTemplateMode(type, value) {
 
 // GET: Retrieve all cron jobs (Admin only)
 async function getCrons(request) {
-    await dbConnect();
     try {
         // Self-heal and recalculate missing or outdated nextRun timestamps
         const now = new Date();
-        const jobsToHeal = await Cron.find({
-            enabled: true,
-            $or: [
-                { nextRun: null },
-                { nextRun: { $exists: false } },
-                { nextRun: { $lt: now } }
-            ]
+        const jobsToHeal = await prisma.cron.findMany({
+            where: {
+                enabled: true,
+                OR: [
+                    { nextRun: null },
+                    { nextRun: { lt: now } },
+                ],
+            },
         });
-        
-        const config = await Config.findOne().lean();
+
+        const config = await getSingleton(prisma, 'config');
         const timeZone = config?.defaultTimezone || 'UTC';
 
         for (const job of jobsToHeal) {
-            job.nextRun = getNextCronRun(job.schedule, now, timeZone);
-            await job.save();
+            await prisma.cron.update({
+                where: { id: job.id },
+                data: { nextRun: getNextCronRun(job.schedule, now, timeZone) },
+            });
         }
 
-        const crons = await Cron.find({}).sort({ type: 1, name: 1 }).lean();
+        const crons = toClientList('cron', await prisma.cron.findMany({ orderBy: [{ type: 'asc' }, { name: 'asc' }] }));
         for (const cron of crons) {
             if (cron.webhookEnv && Array.isArray(cron.webhookEnv)) {
                 cron.webhookEnv = cron.webhookEnv.map(env => ({
@@ -67,7 +68,6 @@ async function getCrons(request) {
 
 // POST: Create a custom user-defined cron job (Admin only)
 async function createCron(request) {
-    await dbConnect();
     try {
         const body = await request.json();
         const { name, schedule, webhookUrl, webhookUrlType = 'fixed', webhookMethod = 'POST', webhookHeaders = [], webhookHeadersType = 'fixed', webhookBody = '', webhookBodyType = 'fixed', webhookEnv = [], notificationEnabled, notificationOn, retryEnabled = false, retryType = 'stable', retryCount = 3, retryDelay = 60 } = body;
@@ -82,7 +82,7 @@ async function createCron(request) {
             return NextResponse.json({ success: false, error: 'Invalid cron expression. Must have exactly 5 fields (minute hour day-of-month month day-of-week).' }, { status: 400 });
         }
 
-        const config = await Config.findOne().lean();
+        const config = await getSingleton(prisma, 'config');
         const timeZone = config?.defaultTimezone || 'UTC';
         const nextRun = getNextCronRun(schedule, new Date(), timeZone);
 
@@ -92,7 +92,7 @@ async function createCron(request) {
         }));
         const cleanHeaders = webhookHeaders || [];
 
-        const newCron = await Cron.create({
+        const newCron = await prisma.cron.create({ data: {
             name,
             type: 'user',
             schedule,
@@ -113,10 +113,10 @@ async function createCron(request) {
             retryType,
             retryCount,
             retryDelay
-        });
+        } });
 
         // Decrypt values back for direct UI response compatibility
-        const responseData = newCron.toObject();
+        const responseData = toClient('cron', newCron);
         if (responseData.webhookEnv && Array.isArray(responseData.webhookEnv)) {
             responseData.webhookEnv = responseData.webhookEnv.map(env => ({
                 key: env.key,

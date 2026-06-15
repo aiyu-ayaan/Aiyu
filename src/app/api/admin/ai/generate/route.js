@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
-import dbConnect from '@/lib/db';
-import Config from '@/models/Config';
-import AiLog from '@/models/AiLog';
+import { prisma } from '@/lib/prisma';
+import { getSingleton } from '@/lib/serialize';
 import { decrypt } from '@/lib/encryption';
 import { withAuth } from '@/middleware/auth';
 import convert from 'heic-convert';
@@ -10,10 +9,8 @@ import sharp from 'sharp';
 
 async function generateCaption(request) {
     try {
-        await dbConnect();
-
         // 1. Get Configuration & API Key
-        const config = await Config.findOne().select('+encryptedGeminiApiKey +encryptedGroqApiKey +encryptedOpenRouterApiKey').lean();
+        const config = await getSingleton(prisma, 'config', { withSecrets: true });
 
         if (!config?.ai?.enabled) {
             return NextResponse.json({ success: false, error: 'AI system is disabled.' }, { status: 403 });
@@ -178,14 +175,14 @@ async function generateCaption(request) {
 
         // 5. Log Telemetry
         try {
-            await AiLog.create({
+            await prisma.aiLog.create({ data: {
                 provider,
                 model: modelName,
                 mode: 'generate_caption', // Vision mode
                 prompt: prompt, // We don't log the base64 image string to DB, just text prompt
                 response: responseText.trim(),
                 ...usageData
-            });
+            } });
         } catch (logError) {
             console.error('[AI Telemetry Logging Error]:', logError);
         }

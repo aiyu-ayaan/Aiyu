@@ -1,11 +1,9 @@
 import { NextResponse } from 'next/server';
 import { withAuth } from '@/middleware/auth';
-import dbConnect from '@/lib/db';
-import CronLog from '@/models/CronLog';
+import { prisma } from '@/lib/prisma';
+import { toClientList } from '@/lib/serialize';
 
 async function getCronLogs(request) {
-    await dbConnect();
-
     try {
         const { searchParams } = new URL(request.url);
         const page = Math.max(parseInt(searchParams.get('page') || '1', 10), 1);
@@ -22,23 +20,23 @@ async function getCronLogs(request) {
             query.cronId = cronId;
         }
         if (search && search.trim()) {
-            const pattern = new RegExp(search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
-            query.$or = [
-                { cronName: pattern },
-                { url: pattern },
-                { log: pattern }
+            const term = search.trim();
+            query.OR = [
+                { cronName: { contains: term, mode: 'insensitive' } },
+                { url: { contains: term, mode: 'insensitive' } },
+                { log: { contains: term, mode: 'insensitive' } },
             ];
         }
 
         const skip = (page - 1) * limit;
         const [logs, total] = await Promise.all([
-            CronLog.find(query).sort({ ranAt: -1 }).skip(skip).limit(limit).lean(),
-            CronLog.countDocuments(query)
+            prisma.cronLog.findMany({ where: query, orderBy: { ranAt: 'desc' }, skip, take: limit }),
+            prisma.cronLog.count({ where: query }),
         ]);
 
         return NextResponse.json({
             success: true,
-            data: logs,
+            data: toClientList('cronLog', logs),
             pagination: {
                 page,
                 limit,

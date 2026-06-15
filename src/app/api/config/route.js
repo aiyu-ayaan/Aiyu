@@ -1,14 +1,17 @@
 import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/db';
-import Config from '@/models/Config';
+import { prisma } from '@/lib/prisma';
+import { getSingleton, upsertSingleton } from '@/lib/serialize';
 import { getSession } from '@/lib/auth';
-import cache, { CACHE_KEYS, CACHE_TTL, createCacheDebugHeaders } from '@/lib/cache';
+import cache, { CACHE_TTL, createCacheDebugHeaders } from '@/lib/cache';
 import { createPublicCacheHeaders, RESPONSE_CACHE } from '@/lib/httpCache';
 import { getSiteUrl } from '@/lib/siteUrl';
 
 const CACHE_KEY_CONFIG_PUBLIC_API = 'db:config:public:api';
 
-const PUBLIC_CONFIG_SELECT = [
+// Top-level config keys exposed publicly. Previously enforced by a Mongoose
+// `.select(...)`; now applied in JS because the json `data` blob is returned
+// whole. `favicon` is handled separately (only filename/mimeType are public).
+const PUBLIC_CONFIG_KEYS = [
     'siteTitle',
     'siteDescription',
     'logoText',
@@ -39,25 +42,33 @@ const PUBLIC_CONFIG_SELECT = [
     'activeThemeVariant',
     'allowThemeSwitching',
     'perPageThemes',
-    'favicon.filename',
-    'favicon.mimeType',
-].join(' ');
+];
 
-function sanitizePublicConfig(config) {
-    if (!config) return null;
+function sanitizePublicConfig(fullConfig) {
+    if (!fullConfig) return null;
 
-    const safeConfig = JSON.parse(JSON.stringify(config));
-    const hasCustomFavicon = Boolean(safeConfig?.favicon?.value || safeConfig?.favicon?.filename || safeConfig?.favicon?.mimeType);
+    const hasCustomFavicon = Boolean(
+        fullConfig?.favicon?.value || fullConfig?.favicon?.filename || fullConfig?.favicon?.mimeType
+    );
     const baseUrl = getSiteUrl();
 
-    if (safeConfig.favicon && typeof safeConfig.favicon === 'object') {
-        delete safeConfig.favicon.value;
+    const safeConfig = {};
+    for (const key of PUBLIC_CONFIG_KEYS) {
+        if (fullConfig[key] !== undefined) {
+            safeConfig[key] = fullConfig[key];
+        }
     }
+
+    if (fullConfig.favicon && typeof fullConfig.favicon === 'object') {
+        safeConfig.favicon = {
+            filename: fullConfig.favicon.filename || '',
+            mimeType: fullConfig.favicon.mimeType || '',
+        };
+    }
+
     if (typeof safeConfig?.ogImage === 'string' && safeConfig.ogImage.trim()) {
         safeConfig.ogImage = new URL(safeConfig.ogImage.trim(), baseUrl).toString();
     }
-    delete safeConfig.encryptedGithubToken;
-    delete safeConfig.encryptedGeminiApiKey;
 
     return {
         ...safeConfig,
@@ -70,10 +81,12 @@ export async function GET() {
 
     try {
         if (session) {
-            await dbConnect();
-            let config = await Config.findOne().lean();
+            // Admin view: full config document, minus the withheld secret columns
+            // (getSingleton omits Config secrets by default — matches the former
+            // Mongoose `select:false` behaviour).
+            let config = await getSingleton(prisma, 'config');
             if (!config) {
-                config = await Config.create({});
+                config = await upsertSingleton(prisma, 'config', {});
             }
             return NextResponse.json(config);
         }
@@ -81,8 +94,7 @@ export async function GET() {
         const { value: config, meta } = await cache.getOrSetWithMeta(
             CACHE_KEY_CONFIG_PUBLIC_API,
             async () => {
-                await dbConnect();
-                return Config.findOne().select(PUBLIC_CONFIG_SELECT).lean();
+                return getSingleton(prisma, 'config');
             },
             CACHE_TTL.MEDIUM
         );
@@ -118,16 +130,12 @@ async function updateConfig(request) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await dbConnect();
     try {
         const body = await request.json();
-        // Use $set to ensure partial updates don't overwrite other fields
-        // This is critical since different admin pages update different parts of the config
-        const config = await Config.findOneAndUpdate({}, { $set: body }, {
-            new: true,
-            upsert: true,
-            runValidators: true,
-        });
+        // Partial update: upsertSingleton merges into the existing document so
+        // different admin pages can patch different parts of the config without
+        // clobbering each other (equivalent to the former $set semantics).
+        const config = await upsertSingleton(prisma, 'config', body);
         await cache.invalidatePrefixAsync('db:config');
         await cache.invalidatePrefixAsync('db:themes');
         return NextResponse.json(config);

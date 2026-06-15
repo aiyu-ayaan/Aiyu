@@ -1,21 +1,7 @@
-import dbConnect from "@/lib/db";
+import { prisma } from "@/lib/prisma";
+import { getDelegate, fromClient } from "@/lib/serialize";
 import { getSession } from "@/lib/auth";
 import { NextResponse } from "next/server";
-import About from "@/models/About";
-import Blog from "@/models/Blog";
-import Config from "@/models/Config";
-import Gallery from "@/models/Gallery";
-import Header from "@/models/Header";
-import Home from "@/models/Home";
-import Project from "@/models/Project";
-import Deployment from "@/models/Deployment";
-import Social from "@/models/Social";
-import GitHub from "@/models/GitHub";
-import ContactMessage from "@/models/ContactMessage";
-import Theme from "@/models/Theme";
-import Cron from "@/models/Cron";
-import Ads from "@/models/Ads";
-import NotificationConfig from "@/models/NotificationConfig";
 import cache from "@/lib/cache";
 import AdmZip from "adm-zip";
 import { join } from "path";
@@ -132,7 +118,6 @@ async function parseImportPayload(request) {
 
 export async function POST(request) {
     try {
-        await dbConnect();
         const session = await getSession();
 
         if (!session) {
@@ -161,32 +146,34 @@ export async function POST(request) {
             return NextResponse.json({ success: false, error: "Invalid data format" }, { status: 400 });
         }
 
-        // List of models and their keys in the JSON
+        // Map each backup key to its registry model key.
         const models = [
-            { model: About, key: 'about' },
-            { model: Blog, key: 'blogs' },
-            { model: Config, key: 'config' },
-            { model: Gallery, key: 'gallery' },
-            { model: Header, key: 'header' },
-            { model: Home, key: 'home' },
-            { model: Project, key: 'projects' },
-            { model: Deployment, key: 'deployments' },
-            { model: Social, key: 'socials' },
-            { model: GitHub, key: 'github' },
-            { model: ContactMessage, key: 'contactMessages' },
-            { model: Theme, key: 'themes' },
-            { model: Cron, key: 'crons' },
-            { model: Ads, key: 'ads' },
-            { model: NotificationConfig, key: 'notificationConfig' },
+            { modelKey: 'about', key: 'about' },
+            { modelKey: 'blog', key: 'blogs' },
+            { modelKey: 'config', key: 'config' },
+            { modelKey: 'gallery', key: 'gallery' },
+            { modelKey: 'header', key: 'header' },
+            { modelKey: 'home', key: 'home' },
+            { modelKey: 'project', key: 'projects' },
+            { modelKey: 'deployment', key: 'deployments' },
+            { modelKey: 'social', key: 'socials' },
+            { modelKey: 'github', key: 'github' },
+            { modelKey: 'contactMessage', key: 'contactMessages' },
+            { modelKey: 'theme', key: 'themes' },
+            { modelKey: 'cron', key: 'crons' },
+            { modelKey: 'ads', key: 'ads' },
+            { modelKey: 'notificationConfig', key: 'notificationConfig' },
         ];
 
-        // Restore database collections
+        // Restore database collections (preserving original ids from the backup).
         const results = {};
-        for (const { model, key } of models) {
+        for (const { modelKey, key } of models) {
             if (jsonData[key] && Array.isArray(jsonData[key])) {
-                await model.deleteMany({});
+                const delegate = getDelegate(prisma, modelKey);
+                await delegate.deleteMany();
                 if (jsonData[key].length > 0) {
-                    await model.insertMany(jsonData[key]);
+                    const rows = jsonData[key].map((doc) => fromClient(modelKey, doc, { keepId: true }));
+                    await delegate.createMany({ data: rows });
                 }
                 results[key] = { count: jsonData[key].length, status: 'imported' };
             } else {

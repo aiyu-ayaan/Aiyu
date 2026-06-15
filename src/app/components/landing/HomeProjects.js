@@ -61,7 +61,7 @@ const HomeProjects = ({ data }) => {
         className="chapter-panel glass-panel relative mx-auto flex w-full max-w-[95%] flex-col justify-center p-8 sm:p-12 lg:max-w-[80%] xl:p-16"
       >
         <div className="mb-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <div data-reveal="rise" className="max-w-2xl">
+          <div data-reveal="left" className="max-w-2xl">
             <p className="eyebrow mb-3">Featured Work</p>
             <h2 className="headline-section">
               Latest projects.
@@ -70,12 +70,12 @@ const HomeProjects = ({ data }) => {
               Recent builds with production-focused architecture and clean user experience.
             </p>
           </div>
-          <Link href="/projects" data-reveal="flip-right" className="pill-ghost self-start lg:self-auto">
+          <Link href="/projects" data-reveal="right" className="pill-ghost self-start lg:self-auto">
             View All Projects <FaArrowRight size={12} />
           </Link>
         </div>
 
-        <div data-reveal-group className="mb-12 grid grid-cols-1 gap-4 sm:grid-cols-3 lg:gap-5" style={{ perspective: '1100px' }}>
+        <div data-reveal-group data-reveal-stagger="0.09" className="mb-12 grid grid-cols-1 gap-4 sm:grid-cols-3 lg:gap-5">
           {statCards.map((item) => {
             const Icon = item.icon;
             return (
@@ -100,9 +100,9 @@ const HomeProjects = ({ data }) => {
         </div>
 
         {latestProjects.length > 0 ? (
-          <div data-reveal-group data-reveal-stagger="0.12" className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3 xl:gap-7" style={{ perspective: '1300px' }}>
+          <div data-reveal-group data-reveal-stagger="0.11" className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3 xl:gap-7">
             {latestProjects.map((project, index) => (
-              <div key={project?._id || `${project?.name}-${index}`} data-reveal="tilt">
+              <div key={project?._id || `${project?.name}-${index}`} data-reveal="flip">
                 <ProjectCard project={project} onCardClick={setSelectedProject} />
               </div>
             ))}

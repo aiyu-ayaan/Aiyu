@@ -6,9 +6,11 @@ import { motion } from 'framer-motion';
 import RouteBetaBadge from '../../components/shared/RouteBetaBadge';
 
 const cardStyle = {
-  borderColor: 'color-mix(in srgb, var(--border-secondary) 74%, transparent)',
+  borderColor: 'var(--hairline)',
   background:
-    'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 93%, transparent), color-mix(in srgb, var(--bg-secondary) 93%, transparent))',
+    'linear-gradient(180deg, color-mix(in srgb, var(--bg-surface) 58%, transparent), color-mix(in srgb, var(--bg-secondary) 46%, transparent))',
+  boxShadow: 'var(--shadow-panel)',
+  backdropFilter: 'blur(28px) saturate(150%)',
 };
 
 export default function ContactPageClient({ location, status, email, hasResume, resumeHref }) {
@@ -55,7 +57,7 @@ export default function ContactPageClient({ location, status, email, hasResume, 
 
       <div className="relative mx-auto w-full max-w-[95%] lg:max-w-[80%]">
         <section
-          className="rounded-3xl border p-6 sm:p-8"
+          className="glass-panel p-6 sm:p-8"
           style={{
             ...cardStyle,
             boxShadow: '0 16px 36px var(--shadow-sm)',
@@ -75,12 +77,7 @@ export default function ContactPageClient({ location, status, email, hasResume, 
             <RouteBetaBadge />
           </div>
 
-          <h1
-            className="mb-3 bg-gradient-to-r bg-clip-text text-4xl font-bold text-transparent sm:text-5xl lg:text-6xl"
-            style={{
-              backgroundImage: 'linear-gradient(to right, var(--accent-cyan), var(--accent-purple), var(--accent-pink))',
-            }}
-          >
+          <h1 className="headline-section mb-3">
             Let&apos;s Talk
           </h1>
 
@@ -95,7 +92,7 @@ export default function ContactPageClient({ location, status, email, hasResume, 
               return (
                 <div
                   key={item.key}
-                  className="rounded-xl border p-3"
+                  className="glass-tile p-3"
                   style={{
                     borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)',
                     backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 82%, transparent)',
@@ -108,7 +105,7 @@ export default function ContactPageClient({ location, status, email, hasResume, 
                     <Icon size={14} style={{ color: item.accent }} />
                   </div>
                   <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{item.label}</p>
-                  <p className="text-base font-semibold sm:text-lg">{item.value}</p>
+                  <p className="text-lg font-semibold sm:text-xl">{item.value}</p>
                 </div>
               );
             })}
@@ -117,7 +114,7 @@ export default function ContactPageClient({ location, status, email, hasResume, 
 
         <section className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
           <div
-            className="rounded-2xl border p-5 lg:col-span-2"
+            className="glass-panel p-5 lg:col-span-2"
             style={{
               ...cardStyle,
               boxShadow: '0 12px 28px var(--shadow-sm)',
@@ -137,7 +134,7 @@ export default function ContactPageClient({ location, status, email, hasResume, 
               <motion.a
                 href={`mailto:${email}`}
                 whileHover={{ y: -3 }}
-                className="block rounded-2xl border p-4 transition-colors"
+                className="glass-tile block p-4 transition-colors"
                 style={{
                   borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)',
                   backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 82%, transparent)',
@@ -161,7 +158,7 @@ export default function ContactPageClient({ location, status, email, hasResume, 
                 target="_blank"
                 rel="noopener noreferrer"
                 whileHover={{ y: -3 }}
-                className="block rounded-2xl border p-4 transition-colors"
+                className="glass-tile block p-4 transition-colors"
                 style={{
                   borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)',
                   backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 82%, transparent)',

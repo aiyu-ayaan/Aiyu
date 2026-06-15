@@ -1,27 +1,22 @@
 services:
-  mongodb:
-    image: mongo:7
+  postgres:
+    image: postgres:17-alpine
     restart: unless-stopped
-    hostname: mongodb
+    hostname: postgres
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      POSTGRES_USER: ${POSTGRES_USER:-aiyu}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-aiyu}
     volumes:
-      - mongodb_data:/data/db
-      - mongodb_config:/data/configdb
+      - postgres_data:/var/lib/postgresql/data
     networks:
       - aiyu-network
-    mem_limit: ${MONGO_MEMORY_LIMIT:-512m}
-    mem_reservation: ${MONGO_MEMORY_RESERVATION:-256m}
-    cpus: ${MONGO_CPUS:-0.5}
+    mem_limit: ${POSTGRES_MEMORY_LIMIT:-512m}
+    mem_reservation: ${POSTGRES_MEMORY_RESERVATION:-256m}
+    cpus: ${POSTGRES_CPUS:-0.5}
     healthcheck:
-      test:
-        - CMD-SHELL
-        - >
-          mongosh --host 127.0.0.1 --port 27017
-          -u "$${MONGO_INITDB_ROOT_USERNAME}" -p "$${MONGO_INITDB_ROOT_PASSWORD}"
-          --authenticationDatabase admin --quiet --eval "db.adminCommand('ping').ok"
-      interval: 60s
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-aiyu} -d ${POSTGRES_DB:-aiyu}"]
+      interval: 30s
       timeout: 5s
       retries: 5
       start_period: 10s
@@ -32,7 +27,12 @@ services:
     expose:
       - "3000"
     environment:
-      MONGODB_URI: ${MONGODB_URI:-mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongodb:27017/aiyu?authSource=admin}
+      # In-container host MUST be the "postgres" service, never "localhost".
+      # Built from POSTGRES_* (not $DATABASE_URL, which host-dev .env sets to
+      # localhost and Compose auto-loads). Set APP_DATABASE_URL for an external DB.
+      DATABASE_URL: ${APP_DATABASE_URL:-postgresql://${POSTGRES_USER:-aiyu}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-aiyu}?schema=public}
+      # Apply pending Prisma migrations on container start (entrypoint).
+      RUN_MIGRATIONS: "true"
       NEXT_PUBLIC_N8N_WEBHOOK_URL: ${NEXT_PUBLIC_N8N_WEBHOOK_URL}
       NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL}
       SITE_URL: ${SITE_URL}
@@ -69,7 +69,7 @@ services:
       retries: 12
       start_period: 150s
     depends_on:
-      mongodb:
+      postgres:
         condition: service_healthy
     networks:
       - aiyu-network
@@ -78,11 +78,10 @@ services:
     image: nginx:alpine
     restart: unless-stopped
     ports:
+      # HTTP only — TLS is terminated upstream (Cloudflare tunnel/edge). No 443.
       - "${NGINX_HTTP_PORT:-80}:80"
-      - "${NGINX_HTTPS_PORT:-443}:443"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./certs:/etc/nginx/certs:ro
       - ./public:/srv/public:ro
       - uploads_data:/srv/uploads:ro
       - nginx_cache:/var/cache/nginx
@@ -99,9 +98,7 @@ services:
       start_period: 20s
 
 volumes:
-  mongodb_data:
-    driver: local
-  mongodb_config:
+  postgres_data:
     driver: local
   nextjs_cache:
     driver: local

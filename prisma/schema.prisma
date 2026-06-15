@@ -1,0 +1,292 @@
+// Prisma schema for Aiyu — migrated from MongoDB/Mongoose to PostgreSQL.
+//
+// Design (see docs/MIGRATION_REPORT.md):
+//   * Relational models  -> queried/filtered/sorted collections get real
+//     columns + indexes mirroring the former Mongoose indexes.
+//   * Json-blob models    -> deeply-nested singleton "config document"
+//     collections are stored as a single `data Json` column to preserve their
+//     exact shapes (strict:false, Maps, nested subdocs) with zero contract drift.
+//   * IDs are strings (cuid) so the old `_id` string contract is preserved by
+//     the serializer shim (lib/serialize.js maps id -> _id). Migration/import
+//     keep the original Mongo `_id`.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────── Relational ───────────────────────────────
+
+model Blog {
+  id                String   @id @default(cuid())
+  title             String
+  slug              String   @default("")
+  content           String
+  image             String?
+  imageAlt          String   @default("")
+  excerpt           String   @default("")
+  seoTitle          String   @default("")
+  seoDescription    String   @default("")
+  canonicalUrl      String   @default("")
+  keywords          String[] @default([])
+  socialTitle       String   @default("")
+  socialDescription String   @default("")
+  socialImage       String   @default("")
+  socialImageAlt    String   @default("")
+  noIndex           Boolean  @default(false)
+  tags              String[] @default([])
+  date              String
+  published         Boolean  @default(false)
+  isAutomated       Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @default(now()) @updatedAt
+
+  // Full-text search vector. Declared so Prisma owns the column (no drift);
+  // it is populated by a trigger and indexed with GIN via the raw-SQL portion
+  // of the init migration. Prisma Client never reads it (queried via $queryRaw).
+  searchVector Unsupported("tsvector")?
+
+  // NOTE: case-insensitive title uniqueness + the full-text search trigger/GIN
+  // index are added by the companion raw-SQL migration (see migrations).
+  @@index([published, createdAt])
+  @@index([createdAt])
+  @@index([slug])
+  @@index([updatedAt])
+}
+
+model Project {
+  id           String   @id @default(cuid())
+  name         String
+  slug         String   @default("")
+  techStack    String[] @default([])
+  year         String
+  status       String
+  projectType  String
+  description  String
+  codeLink     String?
+  blogLink     String?
+  image        String?
+  displayOrder Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @default(now()) @updatedAt
+
+  @@index([displayOrder, year])
+  @@index([updatedAt])
+  @@index([createdAt])
+  @@index([slug])
+}
+
+model Deployment {
+  id              String   @id @default(cuid())
+  name            String
+  slug            String   @default("")
+  techStack       String[] @default([])
+  status          String   @default("Live")
+  appType         String
+  environment     String   @default("Production")
+  hostingProvider String
+  description     String
+  hostedUrl       String?
+  blogLink        String?
+  image           String?
+  displayOrder    Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @default(now()) @updatedAt
+
+  @@index([displayOrder, updatedAt])
+  @@index([createdAt])
+  @@index([slug])
+}
+
+model Gallery {
+  id          String   @id @default(cuid())
+  src         String
+  thumbnail   String?
+  description String
+  width       Int
+  height      Int
+  isPinned    Boolean  @default(false)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  @@index([isPinned, order, createdAt])
+  @@index([createdAt])
+}
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([read, createdAt])
+  @@index([email])
+}
+
+model AiLog {
+  id           String   @id @default(cuid())
+  provider     String
+  model        String
+  mode         String
+  prompt       String?
+  response     String?
+  inputTokens  Int      @default(0)
+  outputTokens Int      @default(0)
+  totalTokens  Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @default(now()) @updatedAt
+
+  @@index([createdAt])
+  @@index([provider, createdAt])
+}
+
+model Cron {
+  id                  String    @id @default(cuid())
+  name                String
+  type                String    @default("user")
+  schedule            String    @default("0 0 * * *")
+  enabled             Boolean   @default(true)
+  action              String
+  webhookUrl          String?
+  webhookUrlType      String    @default("fixed")
+  webhookMethod       String    @default("POST")
+  webhookHeaders      Json      @default("[]")
+  webhookHeadersType  String    @default("fixed")
+  webhookBody         String?
+  webhookBodyType     String    @default("fixed")
+  webhookEnv          Json      @default("[]")
+  lastRun             DateTime?
+  lastRunStatus       String?
+  lastRunLog          String?
+  nextRun             DateTime?
+  notificationEnabled Boolean   @default(false)
+  notificationOn      String    @default("always")
+  retryEnabled        Boolean   @default(false)
+  retryType           String    @default("stable")
+  retryCount          Int       @default(3)
+  retryDelay          Int       @default(60)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @default(now()) @updatedAt
+
+  logs CronLog[]
+}
+
+model CronLog {
+  id         String   @id @default(cuid())
+  cronId     String
+  cron       Cron     @relation(fields: [cronId], references: [id], onDelete: Cascade)
+  cronName   String
+  action     String
+  status     String
+  method     String?
+  url        String?
+  log        String
+  durationMs Int      @default(0)
+  ranAt      DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+
+  @@index([cronId, ranAt])
+  @@index([status])
+  @@index([ranAt])
+}
+
+model Social {
+  id       String  @id @default(cuid())
+  name     String
+  url      String
+  iconName String
+  isHidden Boolean @default(false)
+
+  @@index([isHidden])
+}
+
+model Theme {
+  id           String   @id @default(cuid())
+  name         String
+  slug         String   @unique
+  description  String   @default("")
+  isCustom     Boolean  @default(true)
+  isPredefined Boolean  @default(false)
+  variants     Json
+  previewImage String   @default("")
+  author       String   @default("Admin")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @default(now()) @updatedAt
+
+  @@index([createdAt])
+  @@index([isCustom, createdAt])
+}
+
+// ──────────────────────────── Json-blob singletons ────────────────────────────
+// Stored as `data Json` to preserve the exact nested document shape. Secret
+// fields that were `select:false` in Mongoose are pulled into dedicated columns
+// so the serializer can withhold them by default (see lib/serialize.js).
+
+model Config {
+  id                        String   @id @default(cuid())
+  data                      Json     @default("{}")
+  encryptedGithubToken      String?
+  encryptedGeminiApiKey     String?
+  encryptedGroqApiKey       String?
+  encryptedOpenRouterApiKey String?
+  blogApiTokenHash          String?
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @default(now()) @updatedAt
+}
+
+model Ads {
+  id        String   @id @default(cuid())
+  data      Json     @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+}
+
+model About {
+  id        String   @id @default(cuid())
+  data      Json     @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+}
+
+model Home {
+  id        String   @id @default(cuid())
+  data      Json     @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+}
+
+model Header {
+  id        String   @id @default(cuid())
+  data      Json     @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+}
+
+model NotificationConfig {
+  id        String   @id @default(cuid())
+  data      Json     @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+}
+
+model GitHub {
+  id        String   @id @default(cuid())
+  data      Json     @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+}
+
+model CronEnv {
+  id        String   @id @default(cuid())
+  data      Json     @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+}

@@ -127,6 +127,32 @@ export default async function RootLayout({ children }) {
             `,
           }}
         />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var n = navigator, mm = window.matchMedia;
+                  var reduce = mm && mm('(prefers-reduced-motion: reduce)').matches;
+                  var conn = n.connection || {};
+                  var saveData = conn.saveData === true;
+                  var slowNet = /(^|-)2g$|(^|-)3g$|slow-2g/.test(conn.effectiveType || '');
+                  var cores = n.hardwareConcurrency || 8;
+                  var mem = n.deviceMemory || 8; // undefined on iOS/Safari -> treated as capable
+                  var coarse = mm && mm('(pointer: coarse)').matches;
+                  var narrow = window.innerWidth < 1024;
+                  // Weak hardware only counts as "lite" on small / touch screens, so
+                  // capable laptops with few cores still get the full experience.
+                  var weakHw = (cores <= 4 || mem <= 4) && (coarse || narrow);
+                  var lite = !!(reduce || saveData || slowNet || weakHw);
+                  document.documentElement.setAttribute('data-perf', lite ? 'lite' : 'full');
+                } catch (e) {
+                  document.documentElement.setAttribute('data-perf', 'full');
+                }
+              })();
+            `,
+          }}
+        />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
@@ -136,7 +162,7 @@ export default async function RootLayout({ children }) {
           <Script
             src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClientId}`}
             crossOrigin="anonymous"
-            strategy="afterInteractive"
+            strategy="lazyOnload"
           />
         )}
         <GoogleAnalytics gaId={gaId} />

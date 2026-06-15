@@ -1,14 +1,17 @@
-import dbConnect from "@/lib/db";
-import Theme from "@/models/Theme";
-import Config from "@/models/Config";
+import { prisma } from "@/lib/prisma";
+import { getSingleton, toClient } from "@/lib/serialize";
 import { getSession } from "@/lib/auth";
 import { NextResponse } from "next/server";
-import mongoose from "mongoose";
 import { isPredefinedTheme, getTheme } from "@/lib/themePresets";
 import cache, { CACHE_TTL, createCacheDebugHeaders } from "@/lib/cache";
 import { createPublicCacheHeaders, RESPONSE_CACHE } from "@/lib/httpCache";
 
 const CACHE_KEY_THEME_DETAIL_PREFIX = 'db:theme:detail:';
+
+// Match a custom theme by either its slug or its id.
+function themeByIdentifier(id) {
+    return prisma.theme.findFirst({ where: { OR: [{ slug: id }, { id }] } });
+}
 
 // GET /api/themes/[id] - Get specific theme
 export async function GET(_request, { params }) {
@@ -27,11 +30,7 @@ export async function GET(_request, { params }) {
         const { value: theme, meta } = await cache.getOrSetWithMeta(
             cacheKey,
             async () => {
-                await dbConnect();
-                const query = mongoose.Types.ObjectId.isValid(id)
-                    ? { $or: [{ slug: id }, { _id: id }] }
-                    : { slug: id };
-                return Theme.findOne(query).lean();
+                return toClient('theme', await themeByIdentifier(id));
             },
             CACHE_TTL.MEDIUM
         );
@@ -70,7 +69,6 @@ export async function PUT(request, { params }) {
             );
         }
 
-        await dbConnect();
         const { id } = await params;
 
         // Cannot update predefined themes
@@ -84,30 +82,25 @@ export async function PUT(request, { params }) {
         const body = await request.json();
         const { name, description, variants } = body;
 
-        // Find the theme
-        const query = mongoose.Types.ObjectId.isValid(id)
-            ? { $or: [{ slug: id }, { _id: id }] }
-            : { slug: id };
-        const theme = await Theme.findOne(query);
-
-        if (!theme) {
+        const existing = await themeByIdentifier(id);
+        if (!existing) {
             return NextResponse.json(
                 { success: false, error: "Theme not found" },
                 { status: 404 }
             );
         }
 
-        // Update fields
-        if (name) theme.name = name;
-        if (description !== undefined) theme.description = description;
-        if (variants) theme.variants = variants;
+        const data = {};
+        if (name) data.name = name;
+        if (description !== undefined) data.description = description;
+        if (variants) data.variants = variants;
 
-        await theme.save();
+        const theme = await prisma.theme.update({ where: { id: existing.id }, data });
         await cache.invalidatePrefixAsync('db:themes');
         await cache.invalidatePrefixAsync(CACHE_KEY_THEME_DETAIL_PREFIX);
         await cache.invalidatePrefixAsync('db:config');
 
-        return NextResponse.json({ success: true, data: theme });
+        return NextResponse.json({ success: true, data: toClient('theme', theme) });
     } catch (error) {
         console.error("Error updating theme:", error);
         return NextResponse.json(
@@ -129,7 +122,6 @@ export async function DELETE(_request, { params }) {
             );
         }
 
-        await dbConnect();
         const { id } = await params;
 
         // Cannot delete predefined themes
@@ -141,7 +133,7 @@ export async function DELETE(_request, { params }) {
         }
 
         // Check if this is the active theme
-        const config = await Config.findOne({}).select('activeTheme').lean();
+        const config = await getSingleton(prisma, 'config');
         if (config && config.activeTheme === id) {
             return NextResponse.json(
                 { success: false, error: "Cannot delete the active theme. Please activate another theme first." },
@@ -149,18 +141,15 @@ export async function DELETE(_request, { params }) {
             );
         }
 
-        // Find and delete the theme
-        const query = mongoose.Types.ObjectId.isValid(id)
-            ? { $or: [{ slug: id }, { _id: id }] }
-            : { slug: id };
-        const theme = await Theme.findOneAndDelete(query);
-
-        if (!theme) {
+        const existing = await themeByIdentifier(id);
+        if (!existing) {
             return NextResponse.json(
                 { success: false, error: "Theme not found" },
                 { status: 404 }
             );
         }
+
+        const theme = await prisma.theme.delete({ where: { id: existing.id } });
 
         await cache.invalidatePrefixAsync('db:themes');
         await cache.invalidatePrefixAsync(CACHE_KEY_THEME_DETAIL_PREFIX);
@@ -169,7 +158,7 @@ export async function DELETE(_request, { params }) {
         return NextResponse.json({
             success: true,
             message: "Theme deleted successfully",
-            data: theme
+            data: toClient('theme', theme)
         });
     } catch (error) {
         console.error("Error deleting theme:", error);

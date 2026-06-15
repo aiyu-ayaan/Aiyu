@@ -166,28 +166,29 @@ export default function BlogList({ initialBlogs, initialConfig, initialPaginatio
   }
 
   return (
-    <div className="w-full overflow-x-clip px-4 py-8 sm:px-6 lg:px-8 bg-transparent transition-colors duration-200">
-      <div className="mx-auto w-full max-w-[95%] lg:max-w-[80%] xl:max-w-7xl">
-        <header className="mb-12 text-center border-b pb-8" style={{ borderColor: 'var(--border-primary)' }}>
-          <h1 className="text-4xl sm:text-5xl font-normal tracking-tight mb-3" style={{ color: 'var(--text-primary)' }}>
+    <div className="w-full overflow-x-clip bg-transparent px-4 py-8 transition-colors duration-200 sm:px-6 lg:px-8">
+      <div className="mx-auto w-full max-w-[95%] lg:max-w-[80%]">
+        <header className="glass-panel mb-12 p-6 text-center sm:p-8">
+          <p className="eyebrow mb-4">Writing</p>
+          <h1 className="headline-section mb-3">
             {config?.blogsTitle || 'The Blogger'}
           </h1>
-          <p className="text-base sm:text-lg max-w-2xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
+          <p className="mx-auto max-w-2xl text-base sm:text-lg" style={{ color: 'var(--text-secondary)' }}>
             {config?.blogsSubtitle || 'Insights, stories and updates.'}
           </p>
         </header>
 
-        <div className="mb-12 flex flex-col sm:flex-row gap-3">
+        <div className="glass-panel mb-12 flex flex-col gap-3 p-4 sm:flex-row">
           <div className="flex-1 w-full">
             <input
               type="text"
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
               placeholder="Search posts..."
-              className="w-full rounded-md border py-2.5 px-4 text-sm outline-none transition-colors"
+              className="w-full rounded-md border px-4 py-2.5 text-sm outline-none transition-colors"
               style={{
-                backgroundColor: 'var(--bg-elevated)',
-                borderColor: 'var(--border-secondary)',
+                backgroundColor: 'var(--surface-tile)',
+                borderColor: 'var(--hairline)',
                 color: 'var(--text-primary)',
               }}
             />
@@ -196,10 +197,10 @@ export default function BlogList({ initialBlogs, initialConfig, initialPaginatio
             <select
               value={selectedTag}
               onChange={(event) => setSelectedTag(event.target.value)}
-              className="w-full sm:w-48 rounded-md border py-2.5 px-3 text-sm font-medium outline-none transition-colors appearance-none cursor-pointer"
+              className="w-full cursor-pointer appearance-none rounded-md border px-3 py-2.5 text-sm font-medium outline-none transition-colors sm:w-48"
               style={{
-                backgroundColor: 'var(--bg-elevated)',
-                borderColor: 'var(--border-secondary)',
+                backgroundColor: 'var(--surface-tile)',
+                borderColor: 'var(--hairline)',
                 color: 'var(--text-primary)',
               }}
             >
@@ -216,7 +217,7 @@ export default function BlogList({ initialBlogs, initialConfig, initialPaginatio
         <main>
           {filteredBlogs.length > 0 ? (
             <>
-              <div className="flex flex-col gap-0">
+              <div className="grid grid-cols-1 gap-6">
                 {filteredBlogs.map((blog) => (
                   <BlogCard key={blog?._id || blog?.slug} blog={blog} />
                 ))}

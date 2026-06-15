@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/db';
-import Deployment from '@/models/Deployment';
+import { prisma } from '@/lib/prisma';
+import { toClient, toClientList, fromClient } from '@/lib/serialize';
 import { getSession } from '@/lib/auth';
 import cache, { CACHE_KEYS, CACHE_TTL, createCacheDebugHeaders } from '@/lib/cache';
 import { createPublicCacheHeaders, RESPONSE_CACHE } from '@/lib/httpCache';
@@ -26,8 +26,7 @@ export async function GET() {
         const { value: deployments, meta } = await cache.getOrSetWithMeta(
             CACHE_KEYS.DEPLOYMENTS,
             async () => {
-                await dbConnect();
-                const allDeployments = await Deployment.find({}).lean();
+                const allDeployments = toClientList('deployment', await prisma.deployment.findMany());
                 return sortDeployments(allDeployments);
             },
             CACHE_TTL.MEDIUM
@@ -50,26 +49,24 @@ export async function POST(request) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await dbConnect();
-
     try {
         const body = await request.json();
         const payload = { ...body };
 
         if (!Number.isFinite(payload.displayOrder)) {
-            const maxOrderedDeployment = await Deployment.findOne({ displayOrder: { $type: 'number' } })
-                .sort({ displayOrder: -1 })
-                .select('displayOrder')
-                .lean();
+            const maxOrderedDeployment = await prisma.deployment.findFirst({
+                orderBy: { displayOrder: 'desc' },
+                select: { displayOrder: true },
+            });
 
             payload.displayOrder = Number.isFinite(maxOrderedDeployment?.displayOrder)
                 ? maxOrderedDeployment.displayOrder + 1
                 : 0;
         }
 
-        const deployment = await Deployment.create(payload);
+        const deployment = await prisma.deployment.create({ data: fromClient('deployment', payload, { keepId: false }) });
         await cache.invalidatePrefixAsync('db:deployments');
-        return NextResponse.json(deployment, { status: 201 });
+        return NextResponse.json(toClient('deployment', deployment), { status: 201 });
     } catch {
         return NextResponse.json({ error: 'Failed to create deployment' }, { status: 500 });
     }

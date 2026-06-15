@@ -1,7 +1,5 @@
-
-import dbConnect from "@/lib/db";
-import Blog from "@/models/Blog";
-import Config from "@/models/Config";
+import { prisma } from "@/lib/prisma";
+import { toClient, toClientList, fromClient, getSingleton } from "@/lib/serialize";
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import cache, { CACHE_KEYS, CACHE_TTL, createCacheDebugHeaders } from '@/lib/cache';
@@ -11,7 +9,6 @@ import crypto from 'crypto';
 import { revalidatePath } from 'next/cache';
 import { getSiteUrl } from '@/lib/siteUrl';
 
-const BLOG_LIST_SELECT = ['title', 'slug', 'content', 'excerpt', 'image', 'imageAlt', 'date', 'createdAt', 'updatedAt', 'published', 'tags', 'seoTitle', 'seoDescription', 'canonicalUrl', 'keywords', 'socialTitle', 'socialDescription', 'socialImage', 'socialImageAlt', 'noIndex'].join(' ');
 const DEFAULT_BLOG_PAGE_SIZE = 6;
 const MAX_BLOG_PAGE_SIZE = 24;
 
@@ -74,7 +71,7 @@ async function validateBearerBlogToken(request) {
     }
 
     const providedHash = crypto.createHash('sha256').update(rawToken.trim()).digest('hex');
-    const config = await Config.findOne().select('+blogApiTokenHash').lean();
+    const config = await getSingleton(prisma, 'config', { withSecrets: true });
     const storedHash = String(config?.blogApiTokenHash || '');
     if (!storedHash) return false;
 
@@ -94,7 +91,8 @@ function toPublicBlogList(blogs, maxLength = 500) {
 }
 
 function isDuplicateTitleError(error) {
-    return error?.code === 11000 && (error?.keyPattern?.title || error?.keyValue?.title);
+    // Prisma unique-constraint violation on the case-insensitive title index.
+    return error?.code === 'P2002';
 }
 
 function parsePagination(searchParams) {
@@ -132,18 +130,12 @@ export async function GET(request) {
     const session = shouldCheckSession ? await getSession() : null;
 
     try {
-        await dbConnect();
+        // Only show drafts if 'all' param is requested AND user is admin.
+        const isAdminAll = session && showAll === 'true';
+        const where = isAdminAll ? {} : { published: true };
 
-        let query = {};
-        // Only show drafts if 'all' param is requested AND user is admin
-        if (session && showAll === 'true') {
-            query = {};
-        } else {
-            query = { published: { $ne: false } };
-        }
-
-        if (session && showAll === 'true') {
-            const blogs = await Blog.find(query).sort({ createdAt: -1 }).lean();
+        if (isAdminAll) {
+            const blogs = toClientList('blog', await prisma.blog.findMany({ where, orderBy: { createdAt: 'desc' } }));
             return NextResponse.json(
                 { success: true, data: blogs },
                 {
@@ -162,12 +154,12 @@ export async function GET(request) {
             const [{ value: blogs, meta }, total] = await Promise.all([
                 cache.getOrSetWithMeta(
                     blogsCacheKey,
-                    async () => Blog.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit).select(BLOG_LIST_SELECT).lean(),
+                    async () => toClientList('blog', await prisma.blog.findMany({ where, orderBy: { createdAt: 'desc' }, skip, take: limit })),
                     CACHE_TTL.MEDIUM
                 ),
                 cache.getOrSet(
                     totalCacheKey,
-                    async () => Blog.countDocuments(query),
+                    async () => prisma.blog.count({ where }),
                     CACHE_TTL.MEDIUM
                 ),
             ]);
@@ -199,7 +191,7 @@ export async function GET(request) {
 
         const { value: blogs, meta } = await cache.getOrSetWithMeta(
             CACHE_KEYS.BLOGS_PUBLISHED,
-            async () => Blog.find(query).sort({ createdAt: -1 }).select(BLOG_LIST_SELECT).lean(),
+            async () => toClientList('blog', await prisma.blog.findMany({ where, orderBy: { createdAt: 'desc' } })),
             CACHE_TTL.MEDIUM
         );
 
@@ -229,8 +221,6 @@ export async function GET(request) {
 
 
 export async function POST(request) {
-    await dbConnect();
-
     // Security Check
     // 1. Check for API Key (External tools like n8n)
     const apiKey = request.headers.get('x-api-key');
@@ -250,7 +240,6 @@ export async function POST(request) {
     try {
         const rawBody = await request.json();
         const body = normalizeBlogPayload(rawBody);
-        console.log('POST /api/blogs - Body:', body);
 
         // Default date to now if not provided
         if (!body.date) {
@@ -267,10 +256,10 @@ export async function POST(request) {
             return NextResponse.json({ success: false, error: 'Title and content are required' }, { status: 400 });
         }
 
-        const existingTitle = await Blog.findOne({ title: body.title })
-            .collation({ locale: 'en', strength: 2 })
-            .select('_id')
-            .lean();
+        const existingTitle = await prisma.blog.findFirst({
+            where: { title: { equals: body.title, mode: 'insensitive' } },
+            select: { id: true },
+        });
 
         if (existingTitle) {
             return NextResponse.json(
@@ -282,17 +271,16 @@ export async function POST(request) {
         // Use provided published status or default to false (Draft)
         const blogData = {
             ...body,
-            slug: await createUniqueBlogSlug(Blog, body.title),
+            slug: await createUniqueBlogSlug(null, body.title),
             published: body.published !== undefined ? body.published : false,
             isAutomated: !isSessionValid
         };
 
-        const blog = await Blog.create(blogData);
-        console.log('POST /api/blogs - Created:', blog);
+        const blog = await prisma.blog.create({ data: fromClient('blog', blogData, { keepId: false }) });
         await cache.invalidatePrefixAsync('db:blogs');
         await cache.invalidatePrefixAsync('db:blog');
         revalidateBlogPublicPaths(blog?.slug);
-        return NextResponse.json({ success: true, data: blog }, { status: 201 });
+        return NextResponse.json({ success: true, data: toClient('blog', blog) }, { status: 201 });
     } catch (error) {
         if (isDuplicateTitleError(error)) {
             return NextResponse.json(

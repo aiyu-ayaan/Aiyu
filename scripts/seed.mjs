@@ -1,81 +1,68 @@
-import mongoose from 'mongoose';
-import dotenv from 'dotenv';
-import path from 'path';
-import { fileURLToPath } from 'url';
+// Standalone database seeder (PostgreSQL/Prisma).
+//
+// Run with Node's built-in env loader so DATABASE_URL is available:
+//   node --env-file=.env scripts/seed.mjs
+// (the `npm run db:seed` script already passes --env-file).
 
-// Load environment variables
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-dotenv.config({ path: path.resolve(__dirname, '../.env.local') });
+import { PrismaClient } from '@prisma/client';
 
-// Import Models (using relative paths)
-import Project from '../src/models/Project.js';
-import About from '../src/models/About.js';
-import Home from '../src/models/Home.js';
-import Header from '../src/models/Header.js';
-import Social from '../src/models/Social.js';
-// Config model might be needed if we want to seed defaults, but usually not strictly required for basic boot. 
-// Adding it just in case we want to clean it or set defaults.
-import Config from '../src/models/Config.js';
-
-// Import Data
 import projects from '../src/app/data/projectsData.js';
+import deployments from '../src/app/data/deploymentsData.js';
 import { name, roles, professionalSummary, skills, experiences, education, certifications } from '../src/app/data/aboutData.js';
 import { name as homeName, homeRoles, githubLink, codeSnippets } from '../src/app/data/homeScreenData.js';
 import { navLinks, contactLink } from '../src/app/data/headerData.js';
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/portfolio';
+const prisma = new PrismaClient();
+
+const PROJECT_COLUMNS = ['name', 'slug', 'techStack', 'year', 'status', 'projectType', 'description', 'codeLink', 'blogLink', 'image', 'displayOrder'];
+const DEPLOYMENT_COLUMNS = ['name', 'slug', 'techStack', 'status', 'appType', 'environment', 'hostingProvider', 'description', 'hostedUrl', 'blogLink', 'image', 'displayOrder'];
+const SOCIAL_COLUMNS = ['name', 'url', 'iconName', 'isHidden'];
+
+function pick(obj, columns) {
+    const out = {};
+    for (const key of columns) {
+        if (obj[key] !== undefined) {
+            out[key] = key === 'displayOrder' ? Number(obj[key]) || 0 : obj[key];
+        }
+    }
+    return out;
+}
 
 async function seed() {
     try {
-        console.log('Connecting to MongoDB...');
-        await mongoose.connect(MONGODB_URI);
-        console.log('Connected.');
-
-        // Clear existing data
         console.log('Clearing old data...');
-        await Project.deleteMany({});
-        await About.deleteMany({});
-        await Home.deleteMany({});
-        await Header.deleteMany({});
-        await Social.deleteMany({});
-        // We usually don't delete Config on every seed to preserve admin settings, 
-        // but for a fresh "migration" we might want to ensure defaults exist if missing.
-        // For now, let's leave Config alone or only insert if missing.
+        await prisma.project.deleteMany();
+        await prisma.deployment.deleteMany();
+        await prisma.about.deleteMany();
+        await prisma.home.deleteMany();
+        await prisma.header.deleteMany();
+        await prisma.social.deleteMany();
 
-        // Seed Projects
         console.log('Seeding Projects...');
-        await Project.insertMany(projects);
+        if (projects.length > 0) {
+            await prisma.project.createMany({ data: projects.map((p) => pick(p, PROJECT_COLUMNS)) });
+        }
 
-        // Seed About
+        if (deployments.length > 0) {
+            console.log('Seeding Deployments...');
+            await prisma.deployment.createMany({ data: deployments.map((d) => pick(d, DEPLOYMENT_COLUMNS)) });
+        }
+
         console.log('Seeding About...');
-        await About.create({
-            name,
-            roles,
-            professionalSummary,
-            skills,
-            experiences,
-            education,
-            certifications,
+        await prisma.about.create({
+            data: { data: { name, roles, professionalSummary, skills, experiences, education, certifications } },
         });
 
-        // Seed Home
         console.log('Seeding Home...');
-        await Home.create({
-            name: homeName,
-            homeRoles,
-            githubLink,
-            codeSnippets,
+        await prisma.home.create({
+            data: { data: { name: homeName, homeRoles, githubLink, codeSnippets } },
         });
 
-        // Seed Header
         console.log('Seeding Header...');
-        await Header.create({
-            navLinks,
-            contactLink,
+        await prisma.header.create({
+            data: { data: { navLinks, contactLink } },
         });
 
-        // Seed Socials
         console.log('Seeding Socials...');
         const socialDataFixed = [
             { name: 'GitHub', url: 'https://github.com/aiyu-ayaan', iconName: 'FaGithub' },
@@ -83,25 +70,30 @@ async function seed() {
             { name: 'Instagram', url: 'https://www.instagram.com/aiyu.dev_/', iconName: 'FaInstagram' },
             { name: 'Email', url: 'mailto:aiyu.ayaan@gmail.com', iconName: 'FaEnvelope' },
         ];
-        await Social.insertMany(socialDataFixed);
+        await prisma.social.createMany({ data: socialDataFixed.map((s) => pick(s, SOCIAL_COLUMNS)) });
 
-        // Ensure Config defaults
-        const existingConfig = await Config.findOne();
+        // Ensure Config defaults exist (preserve existing admin settings otherwise).
+        const existingConfig = await prisma.config.findFirst();
         if (!existingConfig) {
             console.log('Seeding default Config...');
-            await Config.create({
-                logoText: '< aiyu />',
-                siteTitle: 'Aiyu',
-                n8nWebhookUrl: '',
-                resume: { type: 'url', value: '' }
+            await prisma.config.create({
+                data: {
+                    data: {
+                        logoText: '< aiyu />',
+                        siteTitle: 'Aiyu',
+                        n8nWebhookUrl: '',
+                        resume: { type: 'url', value: '' },
+                    },
+                },
             });
         }
 
         console.log('Database seeded successfully.');
-        process.exit(0);
     } catch (error) {
         console.error('Error seeding database:', error);
-        process.exit(1);
+        process.exitCode = 1;
+    } finally {
+        await prisma.$disconnect();
     }
 }
 

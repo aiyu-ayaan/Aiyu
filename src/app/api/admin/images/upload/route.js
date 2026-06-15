@@ -1,12 +1,10 @@
 import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/db';
 import { getSession } from '@/lib/auth';
 import { checkRateLimit, getClientIP } from '@/middleware/auth';
 import { validateBearerBlogToken, validateExternalApiKey } from '@/lib/blogApiAuth';
 import { storeOptimizedImage } from '@/utils/uploadImage';
 
 async function uploadAdminImage(request) {
-    await dbConnect();
     const session = await getSession();
     const hasValidApiKey = validateExternalApiKey(request);
     const isBearerTokenValid = await validateBearerBlogToken(request);

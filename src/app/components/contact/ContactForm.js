@@ -4,8 +4,8 @@ import { useState } from 'react';
 import { AlertCircle, CheckCircle, Loader2, Send } from 'lucide-react';
 
 const inputStyle = {
-  backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 82%, transparent)',
-  borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
+  backgroundColor: 'var(--surface-tile)',
+  borderColor: 'var(--hairline)',
   color: 'var(--text-primary)',
 };
 
@@ -112,7 +112,7 @@ export default function ContactForm() {
             ? { borderColor: 'transparent', backgroundColor: 'var(--status-success)' }
             : {
                 borderColor: 'transparent',
-                background: 'linear-gradient(to right, var(--accent-cyan), var(--accent-purple))',
+                background: 'linear-gradient(180deg, color-mix(in srgb, var(--apple-blue) 92%, white), var(--apple-blue))',
               }
         }
       >

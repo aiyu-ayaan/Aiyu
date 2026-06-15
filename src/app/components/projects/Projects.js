@@ -21,9 +21,10 @@ import { ProjectsPageSkeleton } from '../shared/skeletons/PublicPageSkeletons';
 
 const heroCardStyle = {
   background:
-    'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 92%, transparent), color-mix(in srgb, var(--bg-secondary) 92%, transparent))',
-  border: '1px solid color-mix(in srgb, var(--border-secondary) 75%, transparent)',
-  boxShadow: '0 16px 36px var(--shadow-sm)',
+    'linear-gradient(180deg, color-mix(in srgb, var(--bg-surface) 58%, transparent), color-mix(in srgb, var(--bg-secondary) 46%, transparent))',
+  border: '1px solid var(--hairline)',
+  boxShadow: 'var(--shadow-panel)',
+  backdropFilter: 'blur(28px) saturate(150%)',
 };
 
 const toPascalCase = (value) => {
@@ -264,7 +265,7 @@ const Projects = ({ data, initialConfig = null }) => {
           initial={{ y: 22, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.6 }}
-          className="rounded-3xl p-6 sm:p-8"
+          className="glass-panel p-6 sm:p-8"
           style={heroCardStyle}
         >
           <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -282,11 +283,7 @@ const Projects = ({ data, initialConfig = null }) => {
 
           <>
             <h1
-              className="mb-1 pb-2 leading-tight bg-linear-to-r bg-clip-text text-4xl font-bold text-transparent sm:text-5xl lg:text-6xl"
-              style={{
-                backgroundImage:
-                  'linear-gradient(to right, var(--accent-cyan), var(--accent-purple), var(--accent-orange-bright))',
-              }}
+              className="headline-section mb-1 pb-2"
             >
               {config?.projectsTitle || 'Projects Portfolio'}
             </h1>
@@ -299,7 +296,7 @@ const Projects = ({ data, initialConfig = null }) => {
               return (
                 <div
                   key={item.label}
-                  className="rounded-xl border p-3"
+                  className="glass-tile p-3"
                   style={{
                     borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)',
                     backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 82%, transparent)',
@@ -311,7 +308,7 @@ const Projects = ({ data, initialConfig = null }) => {
                   >
                     <Icon size={14} style={{ color: item.accent }} />
                   </div>
-                  <p className="text-2xl font-bold">{item.value}</p>
+                  <p className="text-3xl font-semibold tracking-tight">{item.value}</p>
                   <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
                     {item.label}
                   </p>
@@ -325,7 +322,7 @@ const Projects = ({ data, initialConfig = null }) => {
           initial={{ y: 22, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.12 }}
-          className="mt-6 rounded-2xl border p-4 sm:p-5"
+          className="glass-panel mt-6 p-4 sm:p-5"
           style={{
             ...heroCardStyle,
             border: '1px solid color-mix(in srgb, var(--border-secondary) 72%, transparent)',
@@ -346,7 +343,7 @@ const Projects = ({ data, initialConfig = null }) => {
               <button
                 type="button"
                 onClick={() => setViewMode('grid')}
-                className="rounded-md px-3 py-1.5 text-xs font-semibold uppercase tracking-wide"
+                    className="rounded-md px-3 py-1.5 text-xs font-semibold uppercase tracking-wide"
                 style={{
                   color: viewMode === 'grid' ? 'var(--accent-cyan)' : 'var(--text-secondary)',
                   backgroundColor:
@@ -513,7 +510,7 @@ const Projects = ({ data, initialConfig = null }) => {
                 {spotlightProject && (
                   <motion.article
                     whileHover={{ y: -3 }}
-                    className="cursor-pointer rounded-2xl border p-5 sm:p-6"
+                    className="glass-panel cursor-pointer overflow-hidden p-5 sm:p-6"
                     style={heroCardStyle}
                     onClick={() => setSelectedProject(spotlightProject)}
                   >
@@ -529,7 +526,7 @@ const Projects = ({ data, initialConfig = null }) => {
                         >
                           Spotlight Project
                         </p>
-                        <h3 className="mb-2 text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+                          <h3 className="mb-3 text-3xl font-semibold tracking-tight" style={{ color: 'var(--text-bright)' }}>
                           {spotlightProject.name}
                         </h3>
                         <p className="mb-4 text-sm leading-relaxed sm:text-base" style={{ color: 'var(--text-secondary)' }}>
@@ -626,7 +623,7 @@ const Projects = ({ data, initialConfig = null }) => {
             )
           ) : (
             <div
-              className="rounded-2xl border p-10 text-center"
+              className="glass-panel p-10 text-center"
               style={{
                 ...heroCardStyle,
                 border: '1px solid color-mix(in srgb, var(--border-secondary) 72%, transparent)',

@@ -4,7 +4,7 @@ Operational guide for AI/dev agents working in this repository.
 
 ## 1. Project Snapshot
 
-- Stack: Next.js 16, React 19, Tailwind CSS 4, MongoDB (Mongoose), Framer Motion
+- Stack: Next.js 16, React 19, Tailwind CSS 4, PostgreSQL (Prisma ORM), Framer Motion
 - Public routes: `src/app/(site)`
 - Admin routes: `src/app/admin`
 - API routes: `src/app/api`

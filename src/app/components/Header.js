@@ -134,7 +134,7 @@ export default memo(function Header({ data, logoText, socialData, config }) {
       <header className={clsx("sticky top-0 z-50 px-3 pb-0 pt-3 sm:px-4 lg:px-6", isBlogsRoute && "hidden")}>
         <div
           className={clsx(
-            "relative mx-auto w-full max-w-[95%] rounded-[1.5rem] border transition-all duration-300 lg:max-w-[80%] xl:max-w-7xl",
+            "mx-auto w-full max-w-[95%] lg:max-w-[80%] rounded-2xl border transition-all duration-300 relative",
             !isTerminalOutputOpen && "overflow-hidden",
             scrolled ? "header-scrolled" : "header-normal",
             isTerminalOutputOpen && "terminal-output-open",
@@ -178,7 +178,7 @@ export default memo(function Header({ data, logoText, socialData, config }) {
            <nav
              className={clsx(
                "relative flex items-center gap-3 transition-[padding,min-height] duration-250",
-               scrolled ? "min-h-[58px] px-3 py-2 sm:px-4" : "min-h-[74px] px-3 py-3 sm:px-5"
+               scrolled ? "min-h-[60px] px-3 py-2 sm:px-4" : "min-h-[72px] px-3 py-3 sm:px-4"
              )}
              style={{
                willChange: scrolled ? 'auto' : 'auto',
@@ -202,7 +202,7 @@ export default memo(function Header({ data, logoText, socialData, config }) {
 
             <div className="hidden min-w-0 flex-1 justify-center px-2 md:flex">
               <div
-                className="flex max-w-full items-center gap-1 overflow-x-auto rounded-full border p-1.5"
+                className="flex max-w-full items-center gap-1 overflow-x-auto rounded-full border p-1"
                 style={{
                   borderColor: 'var(--hairline)',
                   backgroundColor: 'var(--surface-tile)',
@@ -215,7 +215,7 @@ export default memo(function Header({ data, logoText, socialData, config }) {
                       key={link.name}
                       href={link.href}
                       target={link.target}
-                      className="relative rounded-full px-4 py-2 text-sm font-medium transition-colors"
+                      className="relative rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors"
                       style={{ color: isActive ? 'var(--text-bright)' : 'var(--text-tertiary)' }}
                     >
                       {isActive && (
@@ -253,7 +253,7 @@ export default memo(function Header({ data, logoText, socialData, config }) {
               <button
                 type="button"
                 onClick={() => window.dispatchEvent(new CustomEvent('open-command-palette'))}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-full border transition-colors"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full border transition-colors"
                 style={{
                   borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)',
                   color: 'var(--text-primary)',

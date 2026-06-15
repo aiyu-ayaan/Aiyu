@@ -45,7 +45,7 @@ export default function Footer({ socialData, name, config, packageVersion }) {
                 }}
             />
 
-            <div className="glass-panel relative mx-auto w-full max-w-[95%] p-8 sm:p-12 lg:max-w-[80%] xl:max-w-7xl xl:p-16">
+            <div className="glass-panel relative mx-auto w-full max-w-[95%] p-8 sm:p-12 lg:max-w-[80%] xl:p-16">
                 <div className="grid grid-cols-1 gap-12 lg:grid-cols-[1.35fr_1fr_auto] lg:items-start">
                     <div>
                         <p className="eyebrow mb-3">Thanks for visiting</p>

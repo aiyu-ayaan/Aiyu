@@ -1,9 +1,8 @@
-import dbConnect from "@/lib/db";
-import Config from "@/models/Config";
+import { prisma } from "@/lib/prisma";
+import { getSingleton, upsertSingleton, toClient } from "@/lib/serialize";
 import { getSession } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import { isPredefinedTheme, getTheme } from "@/lib/themePresets";
-import Theme from "@/models/Theme";
 import cache, { CACHE_TTL, createCacheDebugHeaders } from "@/lib/cache";
 import { createPublicCacheHeaders, RESPONSE_CACHE } from "@/lib/httpCache";
 
@@ -15,17 +14,14 @@ export async function GET() {
         const { value: activeThemePayload, meta } = await cache.getOrSetWithMeta(
             CACHE_KEY_ACTIVE_THEME,
             async () => {
-                await dbConnect();
-
-                let config = await Config.findOne({}).lean();
+                let config = await getSingleton(prisma, 'config');
 
                 if (!config) {
-                    const createdConfig = await Config.create({
+                    config = await upsertSingleton(prisma, 'config', {
                         activeTheme: 'vs-code-dark',
                         activeThemeVariant: 'dark',
                         allowThemeSwitching: true,
                     });
-                    config = createdConfig.toObject();
                 }
 
                 const activeThemeSlug = config.activeTheme || 'vs-code-dark';
@@ -35,7 +31,7 @@ export async function GET() {
                 if (isPredefinedTheme(activeThemeSlug)) {
                     themeData = getTheme(activeThemeSlug);
                 } else {
-                    themeData = await Theme.findOne({ slug: activeThemeSlug }).lean();
+                    themeData = toClient('theme', await prisma.theme.findFirst({ where: { slug: activeThemeSlug } }));
                 }
 
                 if (!themeData) {
@@ -82,15 +78,11 @@ export async function PATCH(request) {
             );
         }
 
-        await dbConnect();
         const body = await request.json();
         const { themeSlug, variant, perPageThemes } = body;
 
-        // Get or create config
-        let config = await Config.findOne({});
-        if (!config) {
-            config = new Config({});
-        }
+        const config = (await getSingleton(prisma, 'config')) || {};
+        const patch = {};
 
         // Handle standard theme update
         if (themeSlug) {
@@ -99,7 +91,7 @@ export async function PATCH(request) {
             if (isPredefinedTheme(themeSlug)) {
                 themeExists = true;
             } else {
-                const customTheme = await Theme.findOne({ slug: themeSlug }).select('_id').lean();
+                const customTheme = await prisma.theme.findUnique({ where: { slug: themeSlug }, select: { id: true } });
                 themeExists = !!customTheme;
             }
 
@@ -109,7 +101,7 @@ export async function PATCH(request) {
                     { status: 404 }
                 );
             }
-            config.activeTheme = themeSlug;
+            patch.activeTheme = themeSlug;
         }
 
         if (variant) {
@@ -119,27 +111,23 @@ export async function PATCH(request) {
                     { status: 400 }
                 );
             }
-            config.activeThemeVariant = variant;
+            patch.activeThemeVariant = variant;
         }
 
-        // Handle per-page theme update
+        // Handle per-page theme update (merge with existing)
         if (perPageThemes) {
-            if (!config.perPageThemes) {
-                config.perPageThemes = { enabled: false, pages: {} };
-            }
-            // Ensure it's treated as a Mongoose object if needed, but simple assignment of properties works
-            // if we mark it modified.
-
+            const current = config.perPageThemes || { enabled: false, pages: {} };
+            const merged = { ...current };
             if (typeof perPageThemes.enabled === 'boolean') {
-                config.perPageThemes.enabled = perPageThemes.enabled;
+                merged.enabled = perPageThemes.enabled;
             }
             if (perPageThemes.pages) {
-                config.perPageThemes.pages = perPageThemes.pages;
+                merged.pages = perPageThemes.pages;
             }
-            config.markModified('perPageThemes');
+            patch.perPageThemes = merged;
         }
 
-        await config.save();
+        const updated = await upsertSingleton(prisma, 'config', patch);
         await cache.invalidatePrefixAsync('db:themes');
         await cache.invalidatePrefixAsync('db:config');
 
@@ -147,9 +135,9 @@ export async function PATCH(request) {
             success: true,
             message: "Active theme updated successfully",
             data: {
-                activeTheme: config.activeTheme,
-                activeThemeVariant: config.activeThemeVariant,
-                perPageThemes: config.perPageThemes
+                activeTheme: updated.activeTheme,
+                activeThemeVariant: updated.activeThemeVariant,
+                perPageThemes: updated.perPageThemes,
             }
         });
     } catch (error) {

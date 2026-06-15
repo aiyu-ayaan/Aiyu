@@ -1,12 +1,11 @@
 import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/db';
-import Config from '@/models/Config';
+import { prisma } from '@/lib/prisma';
+import { getSingleton } from '@/lib/serialize';
 import { decrypt } from '@/lib/encryption';
 
 export async function GET() {
-    await dbConnect();
-    const config = await Config.findOne().select('+encryptedGroqApiKey').lean();
-    const apiKey = decrypt(config.encryptedGroqApiKey);
+    const config = await getSingleton(prisma, 'config', { withSecrets: true });
+    const apiKey = decrypt(config?.encryptedGroqApiKey);
     
     if (!apiKey) return NextResponse.json({ error: 'No key decrypted' });
 

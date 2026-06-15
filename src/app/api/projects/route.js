@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/db';
-import Project from '@/models/Project';
+import { prisma } from '@/lib/prisma';
+import { toClient, toClientList, fromClient } from '@/lib/serialize';
 import { getSession } from '@/lib/auth';
 import cache, { CACHE_KEYS, CACHE_TTL, createCacheDebugHeaders } from '@/lib/cache';
 import { createPublicCacheHeaders, RESPONSE_CACHE } from '@/lib/httpCache';
@@ -30,8 +30,7 @@ export async function GET() {
         const { value: projects, meta } = await cache.getOrSetWithMeta(
             CACHE_KEYS.PROJECTS,
             async () => {
-                await dbConnect();
-                const allProjects = await Project.find({}).lean();
+                const allProjects = toClientList('project', await prisma.project.findMany());
                 return sortProjects(allProjects);
             },
             CACHE_TTL.MEDIUM
@@ -54,25 +53,24 @@ export async function POST(request) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await dbConnect();
     try {
         const body = await request.json();
         const payload = { ...body };
 
         if (!Number.isFinite(payload.displayOrder)) {
-            const maxOrderedProject = await Project.findOne({ displayOrder: { $type: 'number' } })
-                .sort({ displayOrder: -1 })
-                .select('displayOrder')
-                .lean();
+            const maxOrderedProject = await prisma.project.findFirst({
+                orderBy: { displayOrder: 'desc' },
+                select: { displayOrder: true },
+            });
 
             payload.displayOrder = Number.isFinite(maxOrderedProject?.displayOrder)
                 ? maxOrderedProject.displayOrder + 1
                 : 0;
         }
 
-        const project = await Project.create(payload);
+        const project = await prisma.project.create({ data: fromClient('project', payload, { keepId: false }) });
         await cache.invalidatePrefixAsync('db:projects');
-        return NextResponse.json(project, { status: 201 });
+        return NextResponse.json(toClient('project', project), { status: 201 });
     } catch (error) {
         return NextResponse.json({ error: 'Failed to create project' }, { status: 500 });
     }

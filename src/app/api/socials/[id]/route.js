@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/db';
-import Social from '@/models/Social';
+import { prisma } from '@/lib/prisma';
+import { toClient, fromClient } from '@/lib/serialize';
 import { getSession } from '@/lib/auth';
-import cache, { CACHE_KEYS, CACHE_TTL, createCacheDebugHeaders } from '@/lib/cache';
+import cache, { CACHE_TTL, createCacheDebugHeaders } from '@/lib/cache';
 import { createPublicCacheHeaders, RESPONSE_CACHE } from '@/lib/httpCache';
 
 export async function PUT(request, { params }) {
@@ -11,20 +11,19 @@ export async function PUT(request, { params }) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await dbConnect();
     try {
         const { id } = await params;
         const body = await request.json();
-        const social = await Social.findByIdAndUpdate(id, body, {
-            new: true,
-            runValidators: true,
+        const social = await prisma.social.update({
+            where: { id },
+            data: fromClient('social', body, { keepId: false }),
         });
-        if (!social) {
+        await cache.invalidatePrefixAsync('db:socials');
+        return NextResponse.json(toClient('social', social));
+    } catch (error) {
+        if (error?.code === 'P2025') {
             return NextResponse.json({ error: 'Social link not found' }, { status: 404 });
         }
-        await cache.invalidatePrefixAsync('db:socials');
-        return NextResponse.json(social);
-    } catch (error) {
         return NextResponse.json({ error: 'Failed to update social link' }, { status: 500 });
     }
 }
@@ -35,16 +34,15 @@ export async function DELETE(request, { params }) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await dbConnect();
     try {
         const { id } = await params;
-        const social = await Social.findByIdAndDelete(id);
-        if (!social) {
-            return NextResponse.json({ error: 'Social link not found' }, { status: 404 });
-        }
+        await prisma.social.delete({ where: { id } });
         await cache.invalidatePrefixAsync('db:socials');
         return NextResponse.json({ message: 'Social link deleted successfully' });
     } catch (error) {
+        if (error?.code === 'P2025') {
+            return NextResponse.json({ error: 'Social link not found' }, { status: 404 });
+        }
         return NextResponse.json({ error: 'Failed to delete social link' }, { status: 500 });
     }
 }
@@ -55,8 +53,7 @@ export async function GET(request, { params }) {
         const { value: social, meta } = await cache.getOrSetWithMeta(
             `db:socials:item:${id}`,
             async () => {
-                await dbConnect();
-                return Social.findById(id).lean();
+                return toClient('social', await prisma.social.findUnique({ where: { id } }));
             },
             CACHE_TTL.LONG
         );

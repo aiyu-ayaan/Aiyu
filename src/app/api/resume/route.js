@@ -1,11 +1,10 @@
 import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/db';
-import Config from '@/models/Config';
+import { prisma } from '@/lib/prisma';
+import { getSingleton } from '@/lib/serialize';
 
 export async function GET() {
-    await dbConnect();
     try {
-        const config = await Config.findOne().lean();
+        const config = await getSingleton(prisma, 'config');
 
         if (!config || !config.resume || config.resume.type !== 'file' || !config.resume.value) {
             return new NextResponse('Resume not found', { status: 404 });

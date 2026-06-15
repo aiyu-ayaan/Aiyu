@@ -36,7 +36,7 @@ const HomeBlogs = ({ blogs }) => {
         className="chapter-panel glass-panel relative mx-auto flex w-full max-w-[95%] flex-col justify-center p-8 sm:p-12 lg:max-w-[80%] xl:p-16"
       >
         <div className="mb-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <div data-reveal="rise" className="max-w-2xl">
+          <div data-reveal="left" className="max-w-2xl">
             <p className="eyebrow mb-3">Writing</p>
             <h2 className="headline-section">
               Recent writings.
@@ -46,12 +46,12 @@ const HomeBlogs = ({ blogs }) => {
             </p>
           </div>
 
-          <Link href="/blogs" data-reveal="flip-right" className="pill-ghost self-start lg:self-auto">
+          <Link href="/blogs" data-reveal="right" className="pill-ghost self-start lg:self-auto">
             View All Posts <FaArrowRight size={12} />
           </Link>
         </div>
 
-        <div data-reveal-group data-reveal-stagger="0.12" className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:gap-7" style={{ perspective: '1300px' }}>
+        <div data-reveal-auto data-reveal-stagger="0.1" className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:gap-7" style={{ perspective: '1300px' }}>
           {recentBlogs.map((blog, index) => {
             const previewText = String(blog?.content || '').replace(/[#[\]*`_]/g, '').trim();
             const displayText = previewText.length > 160 ? `${previewText.slice(0, 160)}...` : previewText;
@@ -60,7 +60,6 @@ const HomeBlogs = ({ blogs }) => {
             return (
               <article
                 key={blog?._id || `${blog?.title}-${index}`}
-                data-reveal="flip"
                 className="group glass-tile flex h-full flex-col p-7 transition-transform duration-300 hover:-translate-y-1"
               >
                 <div className="mb-5 flex items-center justify-between gap-2 text-xs" style={{ color: 'var(--text-muted)' }}>

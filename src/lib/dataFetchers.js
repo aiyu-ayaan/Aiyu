@@ -10,17 +10,9 @@
  * - Shared fetchers prevent duplicate queries between layout & page
  */
 
-import dbConnect from '@/lib/db';
+import { prisma } from '@/lib/prisma';
+import { getSingleton, toClientList } from '@/lib/serialize';
 import cache, { CACHE_KEYS, CACHE_TTL } from '@/lib/cache';
-import HomeModel from '@/models/Home';
-import AboutModel from '@/models/About';
-import ProjectModel from '@/models/Project';
-import DeploymentModel from '@/models/Deployment';
-import BlogModel from '@/models/Blog';
-import ConfigModel from '@/models/Config';
-import HeaderModel from '@/models/Header';
-import SocialModel from '@/models/Social';
-import GalleryModel from '@/models/Gallery';
 import { resolveBlogByIdentifier } from '@/lib/blogSlugs';
 import { getBlogSlug } from '@/lib/blogSlugs';
 import { getDeploymentSlug, getProjectSlug } from '@/lib/contentSlugs';
@@ -154,27 +146,36 @@ function serialize(data) {
     return JSON.parse(JSON.stringify(data));
 }
 
+// Prisma connects lazily and pools internally, so an explicit "ensure" step is
+// no longer required. Kept as a no-op so the existing call sites read unchanged.
 function createDbEnsurer() {
-    let connectionPromise = null;
-    return async () => {
-        if (!connectionPromise) {
-            connectionPromise = dbConnect();
-        }
-        await connectionPromise;
-    };
+    return async () => {};
 }
 
+// Public config field whitelist (top-level). Previously enforced by the Mongoose
+// `.select(CONFIG_PUBLIC_SELECT)`; applied here in JS since getSingleton returns
+// the full json `data` blob. `favicon.*` is handled separately below.
+const PUBLIC_CONFIG_KEYS = CONFIG_PUBLIC_SELECT.split(' ').filter((key) => key && !key.startsWith('favicon'));
+
 function sanitizeConfigForPublic(configData) {
-    const config = serialize(configData);
-    if (!config) return null;
+    const fullConfig = serialize(configData);
+    if (!fullConfig) return null;
 
-    const hasCustomFavicon = Boolean(config?.favicon?.value || config?.favicon?.filename || config?.favicon?.mimeType);
+    const hasCustomFavicon = Boolean(fullConfig?.favicon?.value || fullConfig?.favicon?.filename || fullConfig?.favicon?.mimeType);
 
-    if (config.favicon && typeof config.favicon === 'object') {
-        delete config.favicon.value;
+    const config = {};
+    for (const key of PUBLIC_CONFIG_KEYS) {
+        if (fullConfig[key] !== undefined) {
+            config[key] = fullConfig[key];
+        }
     }
-    delete config.encryptedGithubToken;
-    delete config.encryptedGeminiApiKey;
+
+    if (fullConfig.favicon && typeof fullConfig.favicon === 'object') {
+        config.favicon = {
+            filename: fullConfig.favicon.filename || '',
+            mimeType: fullConfig.favicon.mimeType || '',
+        };
+    }
 
     const baseUrl = getSiteUrl();
     const ogImageValue = typeof config?.ogImage === 'string' ? config.ogImage.trim() : '';
@@ -229,20 +230,16 @@ export async function getLayoutData() {
     try {
         const [headerData, socialData, configData, aboutData] = await Promise.all([
             cache.getOrSet(CACHE_KEYS.HEADER, async () => {
-                await ensureDb();
-                return HeaderModel.findOne().lean();
+                return getSingleton(prisma, 'header');
             }, CACHE_TTL.LONG),
             cache.getOrSet(CACHE_KEYS.SOCIALS, async () => {
-                await ensureDb();
-                return SocialModel.find().lean();
+                return toClientList('social', await prisma.social.findMany());
             }, CACHE_TTL.LONG),
             cache.getOrSet(CACHE_KEY_CONFIG_LAYOUT, async () => {
-                await ensureDb();
-                return ConfigModel.findOne().select(CONFIG_PUBLIC_SELECT).lean();
+                return getSingleton(prisma, 'config');
             }, CACHE_TTL.LONG),
             cache.getOrSet(CACHE_KEY_ABOUT_LAYOUT, async () => {
-                await ensureDb();
-                return AboutModel.findOne().select('name').lean();
+                return getSingleton(prisma, 'about');
             }, CACHE_TTL.LONG),
         ]);
 
@@ -283,31 +280,26 @@ export async function getHomePageData() {
     try {
         const [homeData, aboutData, projectsData, blogsData, configData] = await Promise.all([
             cache.getOrSet(CACHE_KEYS.HOME, async () => {
-                await ensureDb();
-                return HomeModel.findOne().lean();
+                return getSingleton(prisma, 'home');
             }, CACHE_TTL.LONG),
             cache.getOrSet(CACHE_KEY_ABOUT_HOME, async () => {
-                await ensureDb();
-                return AboutModel.findOne().select(HOME_ABOUT_SELECT).lean();
+                return getSingleton(prisma, 'about');
             }, CACHE_TTL.LONG),
             cache.getOrSet(
                 CACHE_KEY_PROJECTS_HOME,
                 async () => {
-                    await ensureDb();
-                    const projects = await ProjectModel.find().select(HOME_PROJECTS_SELECT).lean();
+                    const projects = toClientList('project', await prisma.project.findMany());
                     return sortProjects(projects);
                 },
                 CACHE_TTL.LONG
             ),
             cache.getOrSet(CACHE_KEYS.BLOGS_RECENT, async () => {
-                await ensureDb();
-                return BlogModel.find({ published: { $ne: false } }).sort({ createdAt: -1 }).limit(3).select(HOME_BLOGS_SELECT).lean();
+                return toClientList('blog', await prisma.blog.findMany({ where: { published: true }, orderBy: { createdAt: 'desc' }, take: 3 }));
             },
                 CACHE_TTL.MEDIUM
             ),
             cache.getOrSet(CACHE_KEY_CONFIG_PUBLIC, async () => {
-                await ensureDb();
-                return ConfigModel.findOne().select(CONFIG_PUBLIC_SELECT).lean();
+                return getSingleton(prisma, 'config');
             }, CACHE_TTL.LONG),
         ]);
 
@@ -345,8 +337,7 @@ export async function getConfigData() {
         const configData = await cache.getOrSet(
             CACHE_KEY_CONFIG_PUBLIC,
             async () => {
-                await ensureDb();
-                return ConfigModel.findOne().select(CONFIG_PUBLIC_SELECT).lean();
+                return getSingleton(prisma, 'config');
             },
             CACHE_TTL.LONG
         );
@@ -372,8 +363,7 @@ export async function getAboutData() {
         const aboutData = await cache.getOrSet(
             CACHE_KEYS.ABOUT,
             async () => {
-                await ensureDb();
-                return AboutModel.findOne().lean();
+                return getSingleton(prisma, 'about');
             },
             CACHE_TTL.LONG
         );
@@ -399,8 +389,7 @@ export async function getProjectsData() {
         const projectsData = await cache.getOrSet(
             CACHE_KEYS.PROJECTS,
             async () => {
-                await ensureDb();
-                    const projects = await ProjectModel.find().select(PROJECT_LIST_SELECT).lean();
+                const projects = toClientList('project', await prisma.project.findMany());
                 return sortProjects(projects);
             },
             CACHE_TTL.LONG
@@ -427,8 +416,7 @@ export async function getDeploymentsData() {
         const deploymentsData = await cache.getOrSet(
             CACHE_KEYS.DEPLOYMENTS,
             async () => {
-                await ensureDb();
-                    const deployments = await DeploymentModel.find().select(DEPLOYMENT_LIST_SELECT).lean();
+                const deployments = toClientList('deployment', await prisma.deployment.findMany());
                 return sortDeployments(deployments);
             },
             CACHE_TTL.LONG
@@ -457,8 +445,7 @@ export async function getBlogById(id) {
         const blog = await cache.getOrSet(
             cacheKey,
             async () => {
-                await ensureDb();
-                return resolveBlogByIdentifier(BlogModel, id);
+                return resolveBlogByIdentifier(null, id);
             },
             CACHE_TTL.MEDIUM
         );
@@ -487,8 +474,7 @@ export async function getPublishedBlogs() {
         const blogs = await cache.getOrSet(
             CACHE_KEYS.BLOGS_PUBLISHED,
             async () => {
-                await ensureDb();
-                return BlogModel.find({ published: { $ne: false } }).sort({ createdAt: -1 }).select(BLOG_LIST_SELECT).lean();
+                return toClientList('blog', await prisma.blog.findMany({ where: { published: true }, orderBy: { createdAt: 'desc' } }));
             },
             CACHE_TTL.MEDIUM
         );
@@ -518,7 +504,7 @@ export async function getPublishedBlogsPage(options = {}) {
     const limit = normalizePaginationValue(options?.limit, DEFAULT_BLOG_PAGE_SIZE, { min: 1, max: 24 });
     const skip = (page - 1) * limit;
     const ensureDb = createDbEnsurer();
-    const query = { published: { $ne: false } };
+    const query = { published: true };
     const pageCacheKey = `${CACHE_KEYS.BLOGS_PUBLISHED}:page:${page}:limit:${limit}`;
     const countCacheKey = `${CACHE_KEYS.BLOGS_PUBLISHED}:count`;
 
@@ -527,21 +513,14 @@ export async function getPublishedBlogsPage(options = {}) {
             cache.getOrSet(
                 pageCacheKey,
                 async () => {
-                    await ensureDb();
-                    return BlogModel.find(query)
-                        .sort({ createdAt: -1 })
-                        .skip(skip)
-                        .limit(limit)
-                        .select(BLOG_LIST_SELECT)
-                        .lean();
+                    return toClientList('blog', await prisma.blog.findMany({ where: query, orderBy: { createdAt: 'desc' }, skip, take: limit }));
                 },
                 CACHE_TTL.MEDIUM
             ),
             cache.getOrSet(
                 countCacheKey,
                 async () => {
-                    await ensureDb();
-                    return BlogModel.countDocuments(query);
+                    return prisma.blog.count({ where: query });
                 },
                 CACHE_TTL.MEDIUM
             ),
@@ -587,11 +566,11 @@ export async function getPublishedBlogSlugs() {
         const blogs = await cache.getOrSet(
             CACHE_KEY_BLOG_SLUGS,
             async () => {
-                await ensureDb();
-                return BlogModel.find({ published: { $ne: false } })
-                    .sort({ createdAt: -1 })
-                    .select('_id slug title')
-                    .lean();
+                return toClientList('blog', await prisma.blog.findMany({
+                    where: { published: true },
+                    orderBy: { createdAt: 'desc' },
+                    select: { id: true, slug: true, title: true },
+                }));
             },
             CACHE_TTL.MEDIUM
         );
@@ -617,11 +596,10 @@ export async function getProjectSlugs() {
         const projects = await cache.getOrSet(
             CACHE_KEY_PROJECT_SLUGS,
             async () => {
-                await ensureDb();
-                return ProjectModel.find({})
-                    .sort({ displayOrder: 1, updatedAt: -1, createdAt: -1 })
-                    .select('_id slug name')
-                    .lean();
+                return toClientList('project', await prisma.project.findMany({
+                    orderBy: [{ displayOrder: 'asc' }, { updatedAt: 'desc' }, { createdAt: 'desc' }],
+                    select: { id: true, slug: true, name: true },
+                }));
             },
             CACHE_TTL.LONG
         );
@@ -647,11 +625,10 @@ export async function getDeploymentSlugs() {
         const deployments = await cache.getOrSet(
             CACHE_KEY_DEPLOYMENT_SLUGS,
             async () => {
-                await ensureDb();
-                return DeploymentModel.find({})
-                    .sort({ displayOrder: 1, updatedAt: -1, createdAt: -1 })
-                    .select('_id slug name')
-                    .lean();
+                return toClientList('deployment', await prisma.deployment.findMany({
+                    orderBy: [{ displayOrder: 'asc' }, { updatedAt: 'desc' }, { createdAt: 'desc' }],
+                    select: { id: true, slug: true, name: true },
+                }));
             },
             CACHE_TTL.LONG
         );
@@ -680,8 +657,7 @@ export async function getGalleryData() {
         const galleryData = await cache.getOrSet(
             CACHE_KEYS.GALLERY,
             async () => {
-                await ensureDb();
-                return GalleryModel.find({}).sort({ isPinned: -1, order: 1, createdAt: -1 }).select(GALLERY_LIST_SELECT).lean();
+                return toClientList('gallery', await prisma.gallery.findMany({ orderBy: [{ isPinned: 'desc' }, { order: 'asc' }, { createdAt: 'desc' }] }));
             },
             CACHE_TTL.MEDIUM
         );

@@ -1,5 +1,4 @@
-import dbConnect from '@/lib/db';
-import Gallery from '@/models/Gallery';
+import { prisma } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
 import { withAuth } from '@/middleware/auth';
 import { generateThumbnailFromUrl } from '@/utils/imageProcessing';
@@ -14,34 +13,23 @@ import { generateThumbnailFromUrl } from '@/utils/imageProcessing';
  * - Limits database query size
  */
 async function migrateHandler(request) {
-    await dbConnect();
-
     try {
         // Check if batch processing is requested
         const url = new URL(request.url);
         const batchSize = parseInt(url.searchParams.get('batch') || '10', 10);
         const skipCount = parseInt(url.searchParams.get('skip') || '0', 10);
 
-        // Find images without thumbnails (with pagination for large datasets)
-        const imagesWithoutThumbnails = await Gallery.find({
-            $or: [
-                { thumbnail: { $exists: false } },
-                { thumbnail: null },
-                { thumbnail: '' }
-            ]
-        })
-        .skip(skipCount)
-        .limit(batchSize)
-        .lean() // Use lean() for better performance
-        .select('_id src'); // Only fetch required fields
+        const missingThumbnailWhere = { OR: [{ thumbnail: null }, { thumbnail: '' }] };
 
-        const totalCount = await Gallery.countDocuments({
-            $or: [
-                { thumbnail: { $exists: false } },
-                { thumbnail: null },
-                { thumbnail: '' }
-            ]
+        // Find images without thumbnails (with pagination for large datasets)
+        const imagesWithoutThumbnails = await prisma.gallery.findMany({
+            where: missingThumbnailWhere,
+            skip: skipCount,
+            take: batchSize,
+            select: { id: true, src: true },
         });
+
+        const totalCount = await prisma.gallery.count({ where: missingThumbnailWhere });
 
         console.log(`[MIGRATION] Processing batch: ${imagesWithoutThumbnails.length} images (${skipCount + 1}-${skipCount + imagesWithoutThumbnails.length} of ${totalCount})`);
 
@@ -57,26 +45,27 @@ async function migrateHandler(request) {
         for (let i = 0; i < imagesWithoutThumbnails.length; i++) {
             const image = imagesWithoutThumbnails[i];
             try {
-                console.log(`[MIGRATION] Processing ${i + 1}/${imagesWithoutThumbnails.length}: ${image._id}`);
-                
+                console.log(`[MIGRATION] Processing ${i + 1}/${imagesWithoutThumbnails.length}: ${image.id}`);
+
                 // Generate thumbnail
                 const thumbnailUrl = await generateThumbnailFromUrl(image.src);
-                
+
                 // Update the database
-                await Gallery.findByIdAndUpdate(image._id, {
-                    thumbnail: thumbnailUrl
+                await prisma.gallery.update({
+                    where: { id: image.id },
+                    data: { thumbnail: thumbnailUrl },
                 });
-                
+
                 results.success++;
-                console.log(`[MIGRATION] ✓ Generated thumbnail for ${image._id}`);
-                
+                console.log(`[MIGRATION] ✓ Generated thumbnail for ${image.id}`);
+
                 // Add small delay every 5 images to allow garbage collection
                 if ((i + 1) % 5 === 0) {
                     await new Promise(resolve => setTimeout(resolve, 100));
                 }
             } catch (error) {
                 results.failed++;
-                const errorMsg = `${image._id}: ${error.message}`;
+                const errorMsg = `${image.id}: ${error.message}`;
                 results.errors.push(errorMsg);
                 console.error(`[MIGRATION] ✗ Failed: ${errorMsg}`);
             }

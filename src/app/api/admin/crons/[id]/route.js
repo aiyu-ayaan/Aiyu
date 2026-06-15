@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
 import { withAuth } from '@/middleware/auth';
-import dbConnect from '@/lib/db';
-import Cron from '@/models/Cron';
-import Config from '@/models/Config';
+import { prisma } from '@/lib/prisma';
+import { getSingleton, toClient } from '@/lib/serialize';
 import { getNextCronRun } from '@/utils/cronRunner';
 import { encrypt, decrypt } from '@/lib/encryption';
 
@@ -22,91 +21,73 @@ function resolveTemplateMode(type, value) {
 
 // PUT: Update an existing cron job (Admin only)
 async function updateCron(request, { params }) {
-    await dbConnect();
     try {
         const { id } = await params;
         const body = await request.json();
         const { name, schedule, enabled, webhookUrl, webhookUrlType, webhookMethod, webhookHeaders, webhookHeadersType, webhookBody, webhookBodyType, webhookEnv, notificationEnabled, notificationOn, retryEnabled, retryType, retryCount, retryDelay } = body;
 
-        const config = await Config.findOne().lean();
+        const config = await getSingleton(prisma, 'config');
         const timeZone = config?.defaultTimezone || 'UTC';
 
-        const cronJob = await Cron.findById(id);
-        if (!cronJob) {
+        const existing = await prisma.cron.findUnique({ where: { id } });
+        if (!existing) {
             return NextResponse.json({ success: false, error: 'Cron job not found.' }, { status: 404 });
         }
 
+        const data = {};
+        let effectiveSchedule = existing.schedule;
+
         // Validate schedule format if changed
-        if (schedule && schedule !== cronJob.schedule) {
+        if (schedule && schedule !== existing.schedule) {
             const fields = schedule.trim().split(/\s+/);
             if (fields.length !== 5) {
                 return NextResponse.json({ success: false, error: 'Invalid cron expression. Must have exactly 5 fields.' }, { status: 400 });
             }
-            cronJob.schedule = schedule;
-            cronJob.nextRun = getNextCronRun(schedule, new Date(), timeZone);
+            data.schedule = schedule;
+            effectiveSchedule = schedule;
+            data.nextRun = getNextCronRun(schedule, new Date(), timeZone);
         }
 
-        if (name && cronJob.type === 'user') {
-            cronJob.name = name;
+        if (name && existing.type === 'user') {
+            data.name = name;
         }
 
         if (enabled !== undefined) {
-            cronJob.enabled = enabled;
-            if (enabled) {
-                cronJob.nextRun = getNextCronRun(cronJob.schedule, new Date(), timeZone);
-            } else {
-                cronJob.nextRun = null;
-            }
+            data.enabled = enabled;
+            data.nextRun = enabled ? getNextCronRun(effectiveSchedule, new Date(), timeZone) : null;
         }
 
-        if (notificationEnabled !== undefined) {
-            cronJob.notificationEnabled = notificationEnabled;
-        }
+        if (notificationEnabled !== undefined) data.notificationEnabled = notificationEnabled;
+        if (notificationOn !== undefined) data.notificationOn = notificationOn;
+        if (retryEnabled !== undefined) data.retryEnabled = retryEnabled;
+        if (retryType !== undefined) data.retryType = retryType;
+        if (retryCount !== undefined) data.retryCount = retryCount;
+        if (retryDelay !== undefined) data.retryDelay = retryDelay;
 
-        if (notificationOn !== undefined) {
-            cronJob.notificationOn = notificationOn;
-        }
-
-        if (retryEnabled !== undefined) {
-            cronJob.retryEnabled = retryEnabled;
-        }
-
-        if (retryType !== undefined) {
-            cronJob.retryType = retryType;
-        }
-
-        if (retryCount !== undefined) {
-            cronJob.retryCount = retryCount;
-        }
-
-        if (retryDelay !== undefined) {
-            cronJob.retryDelay = retryDelay;
-        }
-
-        if (cronJob.type === 'user') {
-            if (webhookUrl) cronJob.webhookUrl = webhookUrl;
+        if (existing.type === 'user') {
+            if (webhookUrl) data.webhookUrl = webhookUrl;
             if (webhookUrlType !== undefined || webhookUrl !== undefined) {
-                cronJob.webhookUrlType = resolveTemplateMode(webhookUrlType, webhookUrl ?? cronJob.webhookUrl);
+                data.webhookUrlType = resolveTemplateMode(webhookUrlType, webhookUrl ?? existing.webhookUrl);
             }
-            if (webhookMethod) cronJob.webhookMethod = webhookMethod;
-            if (webhookHeaders !== undefined) cronJob.webhookHeaders = webhookHeaders;
+            if (webhookMethod) data.webhookMethod = webhookMethod;
+            if (webhookHeaders !== undefined) data.webhookHeaders = webhookHeaders;
             if (webhookHeadersType !== undefined || webhookHeaders !== undefined) {
-                cronJob.webhookHeadersType = resolveTemplateMode(webhookHeadersType, webhookHeaders ?? cronJob.webhookHeaders);
+                data.webhookHeadersType = resolveTemplateMode(webhookHeadersType, webhookHeaders ?? existing.webhookHeaders);
             }
-            if (webhookBody !== undefined) cronJob.webhookBody = webhookBody;
+            if (webhookBody !== undefined) data.webhookBody = webhookBody;
             if (webhookBodyType !== undefined || webhookBody !== undefined) {
-                cronJob.webhookBodyType = resolveTemplateMode(webhookBodyType, webhookBody ?? cronJob.webhookBody);
+                data.webhookBodyType = resolveTemplateMode(webhookBodyType, webhookBody ?? existing.webhookBody);
             }
             if (webhookEnv !== undefined) {
-                cronJob.webhookEnv = (webhookEnv || []).map(env => ({
+                data.webhookEnv = (webhookEnv || []).map(env => ({
                     key: env.key,
                     value: env.value ? encrypt(env.value) : ''
                 }));
             }
         }
 
-        await cronJob.save();
-        const responseData = cronJob.toObject();
+        const updated = await prisma.cron.update({ where: { id }, data });
+        const responseData = toClient('cron', updated);
         if (responseData.webhookEnv && Array.isArray(responseData.webhookEnv)) {
             responseData.webhookEnv = responseData.webhookEnv.map(env => ({
                 key: env.key,
@@ -123,10 +104,9 @@ async function updateCron(request, { params }) {
 
 // DELETE: Delete a user-defined cron job (Admin only, System jobs are protected)
 async function deleteCron(request, { params }) {
-    await dbConnect();
     try {
         const { id } = await params;
-        const cronJob = await Cron.findById(id);
+        const cronJob = await prisma.cron.findUnique({ where: { id } });
 
         if (!cronJob) {
             return NextResponse.json({ success: false, error: 'Cron job not found.' }, { status: 404 });
@@ -136,7 +116,7 @@ async function deleteCron(request, { params }) {
             return NextResponse.json({ success: false, error: 'System defined tasks cannot be deleted.' }, { status: 403 });
         }
 
-        await Cron.findByIdAndDelete(id);
+        await prisma.cron.delete({ where: { id } });
         return NextResponse.json({ success: true, message: 'Cron job deleted successfully.' });
     } catch (error) {
         console.error('[API CRON DELETE ERROR]:', error);

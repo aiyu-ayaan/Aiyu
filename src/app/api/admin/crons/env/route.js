@@ -1,18 +1,17 @@
 import { NextResponse } from 'next/server';
 import { withAuth } from '@/middleware/auth';
-import dbConnect from '@/lib/db';
-import CronEnv from '@/models/CronEnv';
+import { prisma } from '@/lib/prisma';
+import { getSingleton, upsertSingleton } from '@/lib/serialize';
 import { encrypt, decrypt } from '@/lib/encryption';
 
 // GET: Retrieve global cron env secrets (Admin only)
 async function getCronEnv(request) {
-    await dbConnect();
     try {
-        let cronEnv = await CronEnv.findOne({});
+        let cronEnv = await getSingleton(prisma, 'cronEnv');
         if (!cronEnv) {
-            cronEnv = await CronEnv.create({ env: [] });
+            cronEnv = await upsertSingleton(prisma, 'cronEnv', { env: [] });
         }
-        
+
         // Decrypt values for admin view
         const envList = (cronEnv.env || []).map(item => ({
             key: item.key,
@@ -28,7 +27,6 @@ async function getCronEnv(request) {
 
 // POST: Save/Update global cron env secrets (Admin only)
 async function saveCronEnv(request) {
-    await dbConnect();
     try {
         const body = await request.json();
         const { env = [] } = body;
@@ -39,13 +37,7 @@ async function saveCronEnv(request) {
             value: item.value ? encrypt(item.value) : ''
         }));
 
-        let cronEnv = await CronEnv.findOne({});
-        if (!cronEnv) {
-            cronEnv = await CronEnv.create({ env: encryptedEnv });
-        } else {
-            cronEnv.env = encryptedEnv;
-            await cronEnv.save();
-        }
+        const cronEnv = await upsertSingleton(prisma, 'cronEnv', { env: encryptedEnv });
 
         // Decrypt values back for the response
         const decryptedList = (cronEnv.env || []).map(item => ({

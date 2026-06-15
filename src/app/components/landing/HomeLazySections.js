@@ -6,6 +6,7 @@ import ViewportLazySection from '../shared/ViewportLazySection';
 
 const TechStackCarousel = dynamic(() => import('./TechStackCarousel'), { loading: () => <div className="h-[720px]" /> });
 const HomeAbout = dynamic(() => import('./HomeAbout'), { loading: () => <div className="h-[720px]" /> });
+const HomeShowcaseScroll = dynamic(() => import('./HomeShowcaseScroll'), { loading: () => <div className="h-[720px]" /> });
 const HomeProjects = dynamic(() => import('./HomeProjects'), { loading: () => <div className="h-[760px]" /> });
 const HomeBlogs = dynamic(() => import('./HomeBlogs'), { loading: () => <div className="h-[720px]" /> });
 
@@ -20,6 +21,12 @@ export default function HomeLazySections({ aboutData, projectsData, blogsData })
 
       <ViewportLazySection id="home-about" placeholderHeight={720} rootMargin="420px 0px">
         <HomeAbout data={aboutData} />
+      </ViewportLazySection>
+
+      <Divider />
+
+      <ViewportLazySection id="home-showcase" placeholderHeight={720} rootMargin="420px 0px">
+        <HomeShowcaseScroll />
       </ViewportLazySection>
 
       <Divider />

@@ -1,31 +1,30 @@
 import { NextResponse } from 'next/server';
 import { withAuth } from '@/middleware/auth';
-import dbConnect from '@/lib/db';
-import sharp from 'sharp';
-import { readdir, readFile } from 'fs/promises';
+import { prisma } from '@/lib/prisma';
+import { getDelegate, toClientList } from '@/lib/serialize';
+import { readdir } from 'fs/promises';
 import { join } from 'path';
 import { executeWebPMigration } from '@/lib/storageAudit';
 
-// Import all 12 models for comprehensive search-and-replace
-import Home from '@/models/Home';
-import About from '@/models/About';
-import Blog from '@/models/Blog';
-import Project from '@/models/Project';
-import Deployment from '@/models/Deployment';
-import Gallery from '@/models/Gallery';
-import Config from '@/models/Config';
-import Header from '@/models/Header';
-import Social from '@/models/Social';
-import Theme from '@/models/Theme';
-import GitHub from '@/models/GitHub';
-import ContactMessage from '@/models/ContactMessage';
-
 const UPLOADS_DIRECTORY = join(process.cwd(), 'public', 'uploads');
-const MODELS = [Home, About, Blog, Project, Deployment, Gallery, Config, Header, Social, Theme, GitHub, ContactMessage];
+
+// All content models scanned for upload references (key -> display name).
+const PREVIEW_MODELS = [
+    { key: 'home', name: 'Home' },
+    { key: 'about', name: 'About' },
+    { key: 'blog', name: 'Blog' },
+    { key: 'project', name: 'Project' },
+    { key: 'deployment', name: 'Deployment' },
+    { key: 'gallery', name: 'Gallery' },
+    { key: 'config', name: 'Config' },
+    { key: 'header', name: 'Header' },
+    { key: 'social', name: 'Social' },
+    { key: 'theme', name: 'Theme' },
+    { key: 'github', name: 'GitHub' },
+    { key: 'contactMessage', name: 'ContactMessage' },
+];
 
 async function handleMigration(request) {
-    await dbConnect();
-
     try {
         const result = await executeWebPMigration();
         return NextResponse.json({
@@ -48,8 +47,6 @@ function getDocLabel(modelName, doc) {
 }
 
 async function handlePreview(request) {
-    await dbConnect();
-
     try {
         let filenames = [];
         try {
@@ -88,17 +85,16 @@ async function handlePreview(request) {
             }
 
             const references = [];
-            for (const Model of MODELS) {
-                const docs = await Model.find({});
+            for (const { key, name } of PREVIEW_MODELS) {
+                const docs = toClientList(key, await getDelegate(prisma, key).findMany());
                 for (const doc of docs) {
-                    const plainDoc = doc.toObject();
-                    const jsonStr = JSON.stringify(plainDoc);
+                    const jsonStr = JSON.stringify(doc);
 
                     if (jsonStr.includes(filename)) {
                         references.push({
-                            model: Model.modelName || 'Unknown',
-                            id: doc._id.toString(),
-                            label: getDocLabel(Model.modelName, plainDoc)
+                            model: name,
+                            id: String(doc._id),
+                            label: getDocLabel(name, doc)
                         });
                         totalReferences++;
                     }
