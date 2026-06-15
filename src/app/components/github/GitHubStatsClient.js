@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { FaGithub } from 'react-icons/fa';
 import {
@@ -22,6 +22,8 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import RouteBetaBadge from '../shared/RouteBetaBadge';
+import useDevicePerformance from '../../hooks/useDevicePerformance';
+import { useSectionFx, refreshScrollTriggersSoon } from '../shared/gsapScroll';
 
 const languageColors = {
   JavaScript: '#f1e05a',
@@ -127,6 +129,11 @@ export default function GitHubStatsClient({ data }) {
   const [repoType, setRepoType] = useState('all');
   const hasValidData = Boolean(data?.success);
 
+  const containerRef = useRef(null);
+  const { prefersReducedMotion } = useDevicePerformance();
+
+  useSectionFx(containerRef, { reducedMotion: prefersReducedMotion });
+
   const payload = data?.data || {};
   const profile = payload?.profile || {};
   const stats = payload?.stats || {};
@@ -163,6 +170,10 @@ export default function GitHubStatsClient({ data }) {
       return matchesSearch && matchesType;
     });
   }, [topRepos, repoSearch, repoType]);
+
+  useEffect(() => {
+    refreshScrollTriggersSoon();
+  }, [filteredRepos.length]);
 
   const visibleActivities = showAllActivities ? recentActivity : recentActivity.slice(0, 5);
 
@@ -231,11 +242,9 @@ export default function GitHubStatsClient({ data }) {
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 18 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.7, ease: 'easeOut' }}
-      className="relative min-h-screen overflow-hidden p-4 lg:p-8"
+    <div
+      ref={containerRef}
+      className="relative min-h-screen overflow-x-clip p-4 lg:p-8"
       style={{ color: 'var(--text-primary)' }}
     >
       <div className="pointer-events-none absolute -left-24 top-8 h-72 w-72 rounded-full blur-3xl" style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--accent-cyan) 30%, transparent), transparent 70%)' }} />
@@ -247,22 +256,23 @@ export default function GitHubStatsClient({ data }) {
           style={{
             borderColor: 'var(--hairline)',
           }}
+          data-reveal="tilt"
         >
           <div className="mb-3 flex flex-wrap items-center gap-2">
-            <p className="inline-flex rounded-full border px-3 py-1 text-xs uppercase tracking-[0.2em]" style={{ borderColor: 'color-mix(in srgb, var(--accent-cyan) 42%, var(--border-secondary))', color: 'var(--accent-cyan)' }}>
+            <p className="inline-flex rounded-full border px-3 py-1 text-xs uppercase tracking-[0.2em]" style={{ borderColor: 'color-mix(in srgb, var(--accent-cyan) 42%, var(--border-secondary))', color: 'var(--accent-cyan)' }} data-reveal="rise">
               Open Source Dashboard
             </p>
             <RouteBetaBadge />
           </div>
-          <h1 className="headline-section mb-3">
+          <h1 className="headline-section mb-3" data-reveal="left">
             GitHub Statistics
           </h1>
-          <p className="max-w-2xl text-base sm:text-lg" style={{ color: 'var(--text-secondary)' }}>
+          <p className="max-w-2xl text-base sm:text-lg" style={{ color: 'var(--text-secondary)' }} data-reveal="left-soft">
             A live view of repositories, contribution patterns, and recent development activity.
           </p>
 
           {sections.showProfile && (
-            <div className="glass-tile mt-6 p-5">
+            <div className="glass-tile mt-6 p-5" data-reveal="zoom">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                 {isOptimizableImage(profile.avatar) ? (
                   <Image
@@ -323,7 +333,7 @@ export default function GitHubStatsClient({ data }) {
         </section>
 
         {sections.showStats && (
-          <section className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
+          <section className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5" data-reveal="tilt">
             {statCards.map((item) => {
               const Icon = item.icon;
               return (
@@ -352,8 +362,9 @@ export default function GitHubStatsClient({ data }) {
             style={{
               borderColor: 'var(--hairline)',
             }}
+            data-reveal="tilt"
           >
-            <h2 className="mb-4 text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+            <h2 className="mb-4 text-2xl font-bold" style={{ color: 'var(--text-primary)' }} data-reveal="left">
               Top Repositories
             </h2>
             <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -401,59 +412,66 @@ export default function GitHubStatsClient({ data }) {
             </div>
 
             {filteredRepos.length > 0 ? (
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {filteredRepos.map((repo) => {
-                  const Wrapper = repo?.isPrivate ? 'div' : 'a';
-                  const wrapperProps = repo?.isPrivate
-                    ? {}
-                    : {
-                      href: repo?.url,
-                      target: '_blank',
-                      rel: 'noopener noreferrer',
-                    };
+              <div data-hscroll className="hscroll-viewport hscroll-stage mx-auto w-full max-w-[95%] lg:max-w-[80%]">
+                <div data-hscroll-track className="hscroll-track">
+                  {filteredRepos.map((repo) => {
+                    const Wrapper = repo?.isPrivate ? 'div' : 'a';
+                    const wrapperProps = repo?.isPrivate
+                      ? {}
+                      : {
+                        href: repo?.url,
+                        target: '_blank',
+                        rel: 'noopener noreferrer',
+                      };
 
-                  return (
-                    <Wrapper
-                      key={`${repo?.name}-${repo?.updated_at}`}
-                      {...wrapperProps}
-                      className="glass-tile p-4 transition-colors"
-                      style={{
-                        borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)',
-                        backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 82%, transparent)',
-                      }}
-                    >
-                      <div className="mb-2 flex items-start justify-between gap-2">
-                        <h3 className="truncate text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
-                          {repo?.name}
-                        </h3>
-                        {repo?.isPrivate ? (
-                          <span className="inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-wide" style={{ borderColor: 'color-mix(in srgb, #f59e0b 40%, transparent)', color: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.12)' }}>
-                            <Lock size={10} /> Private
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-wide" style={{ borderColor: 'color-mix(in srgb, #10b981 40%, transparent)', color: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.12)' }}>
-                            <Unlock size={10} /> Public
-                          </span>
-                        )}
+                    return (
+                      <div
+                        key={`${repo?.name}-${repo?.updated_at}`}
+                        className="hscroll-panel"
+                        data-reveal="flip"
+                      >
+                        <Wrapper
+                          {...wrapperProps}
+                          className="glass-tile block p-4 transition-colors h-full"
+                          style={{
+                            borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)',
+                            backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 82%, transparent)',
+                          }}
+                        >
+                          <div className="mb-2 flex items-start justify-between gap-2">
+                            <h3 className="truncate text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
+                              {repo?.name}
+                            </h3>
+                            {repo?.isPrivate ? (
+                              <span className="inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-wide" style={{ borderColor: 'color-mix(in srgb, #f59e0b 40%, transparent)', color: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.12)' }}>
+                                <Lock size={10} /> Private
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-wide" style={{ borderColor: 'color-mix(in srgb, #10b981 40%, transparent)', color: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.12)' }}>
+                                <Unlock size={10} /> Public
+                              </span>
+                            )}
+                          </div>
+
+                          <p className="mb-3 min-h-[40px] text-sm" style={{ color: 'var(--text-secondary)' }}>
+                            {repo?.description || 'No description provided.'}
+                          </p>
+
+                          <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm" style={{ color: 'var(--text-secondary)' }}>
+                            {repo?.language && (
+                              <span className="inline-flex items-center gap-1.5">
+                                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: languageColors[repo.language] || '#64748b' }} />
+                                {repo.language}
+                              </span>
+                            )}
+                            <span className="inline-flex items-center gap-1.5"><Star size={13} /> {repo?.stars || 0}</span>
+                            <span className="inline-flex items-center gap-1.5"><GitFork size={13} /> {repo?.forks || 0}</span>
+                          </div>
+                        </Wrapper>
                       </div>
-
-                      <p className="mb-3 min-h-[40px] text-sm" style={{ color: 'var(--text-secondary)' }}>
-                        {repo?.description || 'No description provided.'}
-                      </p>
-
-                      <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm" style={{ color: 'var(--text-secondary)' }}>
-                        {repo?.language && (
-                          <span className="inline-flex items-center gap-1.5">
-                            <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: languageColors[repo.language] || '#64748b' }} />
-                            {repo.language}
-                          </span>
-                        )}
-                        <span className="inline-flex items-center gap-1.5"><Star size={13} /> {repo?.stars || 0}</span>
-                        <span className="inline-flex items-center gap-1.5"><GitFork size={13} /> {repo?.forks || 0}</span>
-                      </div>
-                    </Wrapper>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
             ) : (
               <div className="rounded-xl border p-8 text-center" style={{ borderColor: 'color-mix(in srgb, var(--border-secondary) 72%, transparent)', backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 80%, transparent)' }}>
@@ -469,6 +487,7 @@ export default function GitHubStatsClient({ data }) {
             style={{
               borderColor: 'var(--hairline)',
             }}
+            data-reveal="tilt"
           >
             <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
@@ -518,6 +537,7 @@ export default function GitHubStatsClient({ data }) {
             style={{
               borderColor: 'var(--hairline)',
             }}
+            data-reveal="tilt"
           >
             <h2 className="mb-4 text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
               Activity Timeline
@@ -568,7 +588,7 @@ export default function GitHubStatsClient({ data }) {
         )}
 
         {sections.showRepoDistribution && (
-          <section className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2">
+          <section className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2" data-reveal="tilt">
             <div className="rounded-2xl border p-5" style={{ borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)', backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 82%, transparent)' }}>
               <h3 className="mb-3 inline-flex items-center gap-2 text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
                 <BarChart2 size={18} style={{ color: 'var(--accent-cyan)' }} /> Repository Visibility
@@ -659,6 +679,7 @@ export default function GitHubStatsClient({ data }) {
                 'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 94%, transparent), color-mix(in srgb, var(--bg-secondary) 94%, transparent))',
               borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
             }}
+            data-reveal="tilt"
           >
             <h2 className="mb-4 text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
               Most Used Languages
@@ -682,6 +703,6 @@ export default function GitHubStatsClient({ data }) {
           </section>
         )}
       </div>
-    </motion.div>
+    </div>
   );
 }
