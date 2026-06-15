@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import {
   FaArrowRight,
@@ -16,6 +16,8 @@ import Link from 'next/link';
 import TypewriterEffect from '../shared/TypewriterEffect';
 import Divider from '../landing/Divider';
 import RouteBetaBadge from '../shared/RouteBetaBadge';
+import useDevicePerformance from '../../hooks/useDevicePerformance';
+import { useSectionFx } from '../shared/gsapScroll';
 
 const cardStyle = {
   background:
@@ -58,6 +60,10 @@ const getSkillBand = (level = 0) => {
 
 const About = ({ data }) => {
   const [isSkillsExpanded, setIsSkillsExpanded] = useState(false);
+  const ref = useRef(null);
+  const { prefersReducedMotion } = useDevicePerformance();
+
+  useSectionFx(ref, { reducedMotion: prefersReducedMotion });
 
   const {
     name = 'Developer',
@@ -110,10 +116,8 @@ const About = ({ data }) => {
   ];
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
+    <div
+      ref={ref}
       className="relative min-h-screen overflow-hidden p-4 lg:p-8"
       style={{ color: 'var(--text-primary)' }}
     >
@@ -127,18 +131,16 @@ const About = ({ data }) => {
       />
 
       <div className="relative mx-auto w-full max-w-[95%] lg:max-w-[80%]">
-        <motion.section
+        <section
           id="summary"
-          initial={{ y: 24, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.65, ease: 'easeOut' }}
+          data-reveal="tilt"
           className="glass-panel overflow-hidden p-6 sm:p-8 lg:p-10"
           style={{
             ...cardStyle,
-            borderColor: 'color-mix(in srgb, var(--border-cyan) 48%, var(--border-secondary))',
+            borderColor: 'color-mix(in srgb, var(--accent-cyan) 48%, var(--border-secondary))',
           }}
         >
-          <div className="mb-5 flex flex-wrap items-center gap-2">
+          <div className="mb-5 flex flex-wrap items-center gap-2" data-reveal="rise">
             <div className="inline-flex rounded-full border px-3 py-1 text-xs uppercase tracking-[0.2em]"
               style={{
                 borderColor: 'color-mix(in srgb, var(--accent-cyan) 45%, var(--border-secondary))',
@@ -151,20 +153,23 @@ const About = ({ data }) => {
             <RouteBetaBadge />
           </div>
 
-          <h1 className="headline-section mb-3">
+          <h1 className="headline-section mb-3" data-reveal="left">
             {name}
           </h1>
 
-          <TypewriterEffect roles={safeRoles} />
+          <div data-reveal="rise">
+            <TypewriterEffect roles={safeRoles} />
+          </div>
 
           <p
+            data-reveal="left-soft"
             className="subcopy mt-6 max-w-4xl !text-base sm:!text-lg"
             style={{ color: 'var(--text-secondary)' }}
           >
             {professionalSummary}
           </p>
 
-          <div className="mt-8 flex flex-wrap items-center gap-3">
+          <div className="mt-8 flex flex-wrap items-center gap-3" data-reveal="rise">
             <Link
               href="#experience"
               className="pill-solid"
@@ -178,21 +183,19 @@ const About = ({ data }) => {
               Let&apos;s Connect
             </Link>
           </div>
-        </motion.section>
+        </section>
 
-        <motion.section
-          initial={{ y: 24, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.65, delay: 0.2, ease: 'easeOut' }}
+        <section
+          data-reveal-auto
+          data-reveal-stagger="0.08"
           className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4"
         >
           {statCards.map((item) => {
             const Icon = statIconMap[item.key];
             return (
-              <motion.div
+              <div
                 key={item.key}
-                whileHover={{ y: -4 }}
-                className="glass-tile p-4"
+                className="glass-tile p-4 transition-transform duration-300 hover:-translate-y-1"
                 style={{
                   ...cardStyle,
                   borderColor: 'color-mix(in srgb, var(--border-secondary) 80%, transparent)',
@@ -203,24 +206,21 @@ const About = ({ data }) => {
                 </div>
                 <p className="text-3xl font-semibold tracking-tight" style={{ color: 'var(--text-bright)' }}>{item.value}</p>
                 <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{item.label}</p>
-              </motion.div>
+              </div>
             );
           })}
-        </motion.section>
+        </section>
 
         <Divider />
 
-        <motion.section
+        <section
           id="profile"
-          initial={{ y: 24, opacity: 0 }}
-          whileInView={{ y: 0, opacity: 1 }}
-          viewport={{ once: true, amount: 0.15 }}
-          transition={{ duration: 0.65 }}
+          data-reveal="tilt"
         >
           <QuestProfile data={data} />
-        </motion.section>
+        </section>
 
-        <div className="sticky top-[76px] z-10 mt-6 overflow-x-auto pb-1">
+        <div className="sticky top-[76px] z-10 mt-6 overflow-x-auto pb-1" data-reveal="rise">
           <div
             className="inline-flex min-w-full gap-2 rounded-xl border p-2"
             style={{
@@ -247,12 +247,9 @@ const About = ({ data }) => {
 
         <Divider />
 
-        <motion.section
+        <section
           id="experience"
-          initial={{ y: 24, opacity: 0 }}
-          whileInView={{ y: 0, opacity: 1 }}
-          viewport={{ once: true, amount: 0.15 }}
-          transition={{ duration: 0.65 }}
+          data-reveal="tilt"
           className="mt-10"
         >
           <QuestMap 
@@ -261,17 +258,13 @@ const About = ({ data }) => {
             icon={FaLaptopCode} 
             zoneType="experience" 
           />
-        </motion.section>
+        </section>
 
         <Divider />
 
-        <motion.section
+        <section
           id="skills"
-          layout
-          initial={{ y: 24, opacity: 0 }}
-          whileInView={{ y: 0, opacity: 1 }}
-          viewport={{ once: true, amount: 0.15 }}
-          transition={{ duration: 0.65 }}
+          data-reveal="tilt"
           className="glass-panel p-6 sm:p-8"
           style={cardStyle}
         >
@@ -280,7 +273,7 @@ const About = ({ data }) => {
           </h2>
 
           {topSkills.length > 0 && (
-            <div className="mb-8 flex flex-wrap gap-2">
+            <div className="mb-8 flex flex-wrap gap-2" data-reveal="rise">
               {topSkills.map((skill) => (
                 <span
                   key={`tag-${skill.name}`}
@@ -297,14 +290,11 @@ const About = ({ data }) => {
             </div>
           )}
 
-          <div className="space-y-4">
+          <div className="space-y-4" data-reveal-group data-reveal-stagger="0.04">
             {visibleSkills.map((skill, index) => (
-              <motion.div
+              <div
                 key={skill.name}
-                initial={{ opacity: 0, y: 14 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.45 }}
-                transition={{ duration: 0.35, delay: index * 0.03 }}
+                data-reveal="rise"
               >
                 <div className="mb-2 flex items-center justify-between gap-3">
                   <span className="text-base font-medium" style={{ color: 'var(--text-secondary)' }}>
@@ -327,8 +317,8 @@ const About = ({ data }) => {
                     }}
                     initial={{ width: 0 }}
                     whileInView={{ width: `${skill.level || 0}%` }}
-                    viewport={{ once: true, amount: 0.8 }}
-                    transition={{ duration: 1.05, ease: 'easeOut', delay: 0.1 + index * 0.04 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 1.05, ease: 'easeOut', delay: 0.15 }}
                   >
                     <motion.span
                       className="absolute inset-y-0 right-0 w-6"
@@ -337,34 +327,30 @@ const About = ({ data }) => {
                       }}
                       initial={{ opacity: 0 }}
                       whileInView={{ opacity: 1 }}
-                      transition={{ duration: 0.35, delay: 0.7 + index * 0.04 }}
+                      transition={{ duration: 0.35, delay: 0.6 }}
                     />
                   </motion.div>
                 </div>
-              </motion.div>
+              </div>
             ))}
           </div>
 
           {skills.length > 8 && (
-            <motion.button
+            <button
               onClick={() => setIsSkillsExpanded((prev) => !prev)}
-              className="pill-ghost mt-8"
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
+              className="pill-ghost mt-8 transition-transform duration-200 hover:scale-[1.03]"
+              data-reveal="rise"
             >
               {isSkillsExpanded ? 'Show fewer skills' : 'Show all skills'}
-            </motion.button>
+            </button>
           )}
-        </motion.section>
+        </section>
 
         <Divider />
 
-        <motion.section
+        <section
           id="education"
-          initial={{ y: 24, opacity: 0 }}
-          whileInView={{ y: 0, opacity: 1 }}
-          viewport={{ once: true, amount: 0.15 }}
-          transition={{ duration: 0.65 }}
+          data-reveal="tilt"
           className="mt-10"
         >
           <QuestMap 
@@ -373,16 +359,13 @@ const About = ({ data }) => {
             icon={FaGraduationCap} 
             zoneType="education" 
           />
-        </motion.section>
+        </section>
 
         <Divider />
 
-        <motion.section
+        <section
           id="certifications"
-          initial={{ y: 24, opacity: 0 }}
-          whileInView={{ y: 0, opacity: 1 }}
-          viewport={{ once: true, amount: 0.15 }}
-          transition={{ duration: 0.65 }}
+          data-reveal="tilt"
           className="mt-10"
         >
           <QuestMap 
@@ -391,9 +374,9 @@ const About = ({ data }) => {
             icon={FaMedal} 
             zoneType="certification" 
           />
-        </motion.section>
+        </section>
       </div>
-    </motion.div>
+    </div>
   );
 };
 
