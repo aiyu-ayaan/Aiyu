@@ -106,10 +106,6 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
   useSectionFx(containerRef, { reducedMotion: prefersReducedMotion });
 
   useEffect(() => {
-    refreshScrollTriggersSoon();
-  }, [filteredImages.length]);
-
-  useEffect(() => {
     setHighResLoaded(false);
   }, [selectedImage]);
 
@@ -175,6 +171,10 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
       return matchesSearch && matchesOrientation;
     });
   }, [images, searchQuery, orientationFilter]);
+
+  useEffect(() => {
+    refreshScrollTriggersSoon();
+  }, [filteredImages.length]);
 
   const stats = useMemo(() => {
     const portrait = images.filter((item) => getOrientation(item) === 'portrait').length;

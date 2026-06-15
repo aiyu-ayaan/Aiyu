@@ -103,10 +103,6 @@ const Projects = ({ data, initialConfig = null }) => {
   useSectionFx(sectionRef, { reducedMotion: prefersReducedMotion });
 
   useEffect(() => {
-    refreshScrollTriggersSoon();
-  }, [filteredProjects.length, viewMode]);
-
-  useEffect(() => {
     if (initialConfig) {
       return;
     }
@@ -183,6 +179,10 @@ const Projects = ({ data, initialConfig = null }) => {
       })
       .sort(sortProjects);
   }, [projects, searchQuery, selectedTechStack, selectedProjectType, selectedStatus]);
+
+  useEffect(() => {
+    refreshScrollTriggersSoon();
+  }, [filteredProjects.length, viewMode]);
 
   const projectsByYear = useMemo(() => {
     return filteredProjects.reduce((accumulator, project) => {
