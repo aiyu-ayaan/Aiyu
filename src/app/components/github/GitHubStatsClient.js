@@ -432,7 +432,6 @@ export default function GitHubStatsClient({ data }) {
                       <div
                         key={`${repo?.name}-${repo?.updated_at}`}
                         className="hscroll-panel"
-                        data-reveal="flip"
                       >
                         <Wrapper
                           {...wrapperProps}
