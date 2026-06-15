@@ -19,7 +19,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { GalleryPageSkeleton } from '../../components/shared/skeletons/PublicPageSkeletons';
 import RouteBetaBadge from '../../components/shared/RouteBetaBadge';
 import useDevicePerformance from '../../hooks/useDevicePerformance';
-import { useSectionFx, refreshScrollTriggersSoon } from '../../components/shared/gsapScroll';
+import { refreshScrollTriggersSoon } from '../../components/shared/gsapScroll';
 
 const getImageInitials = (description) => {
   const words = String(description || '')
@@ -64,6 +64,18 @@ const getOrientation = (item) => {
   return width > height ? 'landscape' : 'portrait';
 };
 
+const getColumnCount = (viewportWidth, totalItems) => {
+  const safeTotal = Math.max(1, totalItems || 0);
+  let preferred = 4;
+
+  if (viewportWidth < 700) preferred = 1;
+  else if (viewportWidth < 1024) preferred = 2;
+  else if (viewportWidth < 1400) preferred = 3;
+
+  if (safeTotal <= 6 && preferred === 4) preferred = 3;
+
+  return Math.max(1, Math.min(preferred, safeTotal));
+};
 
 const GalleryClient = ({ initialImages, initialConfig }) => {
   const hasInitialData = initialImages !== undefined || initialConfig !== undefined;
@@ -80,6 +92,7 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
   const dragStartRef = useRef(null);
   const canPanViewer = viewerZoom >= 1.5;
   const [brokenImageIds, setBrokenImageIds] = useState(new Set());
+  const [viewportWidth, setViewportWidth] = useState(1280);
   const [headerInfo, setHeaderInfo] = useState(() => ({
     title: initialConfig?.galleryTitle || 'Gallery',
     subtitle: initialConfig?.gallerySubtitle || 'A visual journey through my lens.',
@@ -129,7 +142,12 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
     fetchData();
   }, [hasInitialData]);
 
-
+  useEffect(() => {
+    const updateViewportWidth = () => setViewportWidth(window.innerWidth);
+    updateViewportWidth();
+    window.addEventListener('resize', updateViewportWidth);
+    return () => window.removeEventListener('resize', updateViewportWidth);
+  }, []);
 
   const markImageBroken = useCallback((id) => {
     setBrokenImageIds((prev) => {
@@ -281,10 +299,37 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
     };
   }, [canPanViewer, navigateViewer, selectedImage, updateViewerZoom, viewerZoom]);
 
-  useSectionFx(containerRef, {
-    reducedMotion: prefersReducedMotion,
-    dependencies: [filteredImages],
-  });
+  const columnCount = useMemo(
+    () => getColumnCount(viewportWidth, filteredImages.length),
+    [viewportWidth, filteredImages.length]
+  );
+
+
+
+  const balancedColumns = useMemo(() => {
+    const columns = Array.from({ length: columnCount }, () => ({
+      height: 0,
+      items: [],
+    }));
+
+    filteredImages.forEach((image, globalIndex) => {
+      const width = Number(image?.width) || 4;
+      const height = Number(image?.height) || 3;
+      const normalizedHeight = Math.max(0.5, height / Math.max(width, 1));
+
+      let targetColumn = 0;
+      for (let index = 1; index < columns.length; index += 1) {
+        if (columns[index].height < columns[targetColumn].height) {
+          targetColumn = index;
+        }
+      }
+
+      columns[targetColumn].items.push({ image, globalIndex });
+      columns[targetColumn].height += normalizedHeight + 0.18;
+    });
+
+    return columns.map((column) => column.items);
+  }, [filteredImages, columnCount]);
 
   const getFileExtension = useCallback((srcUrl) => {
     const originalFilename = String(srcUrl || '').split('/').pop() || '';
@@ -407,7 +452,6 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
           style={{
             borderColor: 'var(--hairline)',
           }}
-          data-reveal="tilt"
         >
           <div className="mb-3 flex flex-wrap items-center gap-2">
             <p className="inline-flex rounded-full border px-3 py-1 text-xs uppercase tracking-[0.2em]" style={{ borderColor: 'color-mix(in srgb, var(--accent-cyan) 42%, var(--border-secondary))', color: 'var(--accent-cyan)' }}>
@@ -449,7 +493,6 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
           style={{
             borderColor: 'var(--hairline)',
           }}
-          data-reveal="tilt"
         >
           <div className="mb-4">
             <label htmlFor="gallery-search" className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
@@ -537,115 +580,121 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
 
         <section className="mt-8">
           {filteredImages.length > 0 ? (
-            <div className="columns-1 gap-5 sm:columns-2 md:columns-3 lg:columns-4 [column-fill:_auto]">
-              {filteredImages.map((image, globalIndex) => {
-                const imageKey = image?._id || `${image?.src}-${globalIndex}`;
-                const orientation = getOrientation(image);
-                const aspectRatio =
-                  Number(image?.width) > 0 && Number(image?.height) > 0
-                    ? `${image.width} / ${image.height}`
-                    : '4 / 3';
-                const srcToShow = image?.thumbnail || image?.src;
-                const showPlaceholder = !srcToShow || brokenImageIds.has(imageKey);
+            <div
+              className="grid gap-5"
+              style={{ gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))` }}
+            >
+              {balancedColumns.map((column, columnIndex) => (
+                <div key={`gallery-col-${columnIndex}`} className="flex flex-col gap-5">
+                  {column.map(({ image, globalIndex }) => {
+                    const imageKey = image?._id || `${image?.src}-${globalIndex}`;
+                    const orientation = getOrientation(image);
+                    const aspectRatio =
+                      Number(image?.width) > 0 && Number(image?.height) > 0
+                        ? `${image.width} / ${image.height}`
+                        : '4 / 3';
+                    const srcToShow = image?.thumbnail || image?.src;
+                    const showPlaceholder = !srcToShow || brokenImageIds.has(imageKey);
 
-                return (
-                  <div
-                    key={imageKey}
-                    className="break-inside-avoid mb-5 glass-tile overflow-hidden rounded-[1.625rem] border"
-                    style={{
-                      borderColor: 'var(--hairline)',
-                    }}
-                    data-reveal="left-soft"
-                  >
-                    <div
-                      role="button"
-                      tabIndex={0}
-                      className="group relative block w-full cursor-pointer"
-                      onClick={() => openLightbox(image)}
-                      onKeyDown={(event) => {
-                        if (event.key === 'Enter' || event.key === ' ') {
-                          event.preventDefault();
-                          openLightbox(image);
-                        }
-                      }}
-                    >
-                      <div className="relative w-full" style={{ aspectRatio }}>
-                        {!showPlaceholder ? (
-                          <Image
-                            src={srcToShow}
-                            alt={image?.description || 'Gallery image'}
-                            fill
-                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-                            className="object-cover transition-transform duration-500 group-hover:scale-105"
-                            loading={globalIndex < 4 ? 'eager' : 'lazy'}
-                            priority={globalIndex < 2}
-                            placeholder="blur"
-                            blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN8/5+hHgAHggJ/PchI7wAAAABJRU5Erggg=="
-                            onError={() => markImageBroken(imageKey)}
-                          />
-                        ) : (
-                          <div className="relative flex h-full w-full items-center justify-center overflow-hidden" style={{ backgroundImage: getPlaceholderGradient(image?.description || imageKey) }}>
-                            <div
-                              className="absolute inset-0"
-                              style={{
-                                backgroundImage:
-                                  'linear-gradient(color-mix(in srgb, var(--border-secondary) 24%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, var(--border-secondary) 24%, transparent) 1px, transparent 1px)',
-                                backgroundSize: '22px 22px',
-                                opacity: 0.35,
-                              }}
-                            />
-                            <div
-                              className="relative z-10 rounded-xl border px-3 py-1.5 text-sm font-bold"
-                              style={{
-                                borderColor: 'color-mix(in srgb, var(--border-secondary) 74%, transparent)',
-                                color: 'var(--text-bright)',
-                                backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 72%, transparent)',
-                              }}
-                            >
-                              {getImageInitials(image?.description)}
-                            </div>
-                          </div>
-                        )}
-
-                        <div className="absolute left-3 top-3 rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-wide"
-                          style={{
-                            borderColor: 'color-mix(in srgb, var(--border-secondary) 74%, transparent)',
-                            color: 'var(--text-secondary)',
-                            backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 80%, transparent)',
+                    return (
+                      <div
+                        key={imageKey}
+                        className="glass-tile overflow-hidden rounded-[1.625rem] border"
+                        style={{
+                          borderColor: 'var(--hairline)',
+                        }}
+                      >
+                        <div
+                          role="button"
+                          tabIndex={0}
+                          className="group relative block w-full cursor-pointer"
+                          onClick={() => openLightbox(image)}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter' || event.key === ' ') {
+                              event.preventDefault();
+                              openLightbox(image);
+                            }
                           }}
                         >
-                          {orientation}
-                        </div>
-
-                        <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/35 to-transparent opacity-100 transition-opacity duration-300 sm:opacity-0 sm:group-hover:opacity-100" />
-                        <div className="pointer-events-none absolute inset-x-0 bottom-0 p-3 opacity-100 transition-all duration-300 sm:translate-y-4 sm:opacity-0 sm:group-hover:translate-y-0 sm:group-hover:opacity-100">
-                          <p className="mb-3 text-left text-sm font-semibold leading-snug text-white drop-shadow line-clamp-2">
-                            {image?.description || 'Untitled visual'}
-                          </p>
-                          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-white/85">
-                            <span className="min-w-0">{formatDate(image?.createdAt)}</span>
-                            {image?.src && (
-                              <span
-                                role="button"
-                                tabIndex={0}
-                                onClick={(event) => handleDownload(event, image)}
-                                onKeyDown={(event) => {
-                                  if (event.key === 'Enter' || event.key === ' ') {
-                                    handleDownload(event, image);
-                                  }
-                                }}
-                                className="pointer-events-auto inline-flex shrink-0 items-center gap-1 rounded-full border border-white/25 bg-black/45 px-3 py-1 font-semibold hover:bg-white/20"
-                              >
-                                <Download size={12} /> Download
-                              </span>
+                          <div className="relative w-full" style={{ aspectRatio }}>
+                            {!showPlaceholder ? (
+                              <Image
+                                src={srcToShow}
+                                alt={image?.description || 'Gallery image'}
+                                fill
+                                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                className="object-cover transition-transform duration-500 group-hover:scale-105"
+                                loading={globalIndex < 3 ? 'eager' : 'lazy'}
+                                priority={globalIndex < 2}
+                                placeholder="blur"
+                                blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN8/5+hHgAHggJ/PchI7wAAAABJRU5Erggg=="
+                                onError={() => markImageBroken(imageKey)}
+                              />
+                            ) : (
+                              <div className="relative flex h-full w-full items-center justify-center overflow-hidden" style={{ backgroundImage: getPlaceholderGradient(image?.description || imageKey) }}>
+                                <div
+                                  className="absolute inset-0"
+                                  style={{
+                                    backgroundImage:
+                                      'linear-gradient(color-mix(in srgb, var(--border-secondary) 24%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, var(--border-secondary) 24%, transparent) 1px, transparent 1px)',
+                                    backgroundSize: '22px 22px',
+                                    opacity: 0.35,
+                                  }}
+                                />
+                                <div
+                                  className="relative z-10 rounded-xl border px-3 py-1.5 text-sm font-bold"
+                                  style={{
+                                    borderColor: 'color-mix(in srgb, var(--border-secondary) 74%, transparent)',
+                                    color: 'var(--text-bright)',
+                                    backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 72%, transparent)',
+                                  }}
+                                >
+                                  {getImageInitials(image?.description)}
+                                </div>
+                              </div>
                             )}
+
+                            <div className="absolute left-3 top-3 rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-wide"
+                              style={{
+                                borderColor: 'color-mix(in srgb, var(--border-secondary) 74%, transparent)',
+                                color: 'var(--text-secondary)',
+                                backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 80%, transparent)',
+                              }}
+                            >
+                              {orientation}
+                            </div>
+
+                            <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/35 to-transparent opacity-100 transition-opacity duration-300 sm:opacity-0 sm:group-hover:opacity-100" />
+                            <div className="pointer-events-none absolute inset-x-0 bottom-0 p-3 opacity-100 transition-all duration-300 sm:translate-y-4 sm:opacity-0 sm:group-hover:translate-y-0 sm:group-hover:opacity-100">
+                              <p className="mb-3 text-left text-sm font-semibold leading-snug text-white drop-shadow line-clamp-2">
+                                {image?.description || 'Untitled visual'}
+                              </p>
+                              <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-white/85">
+                                <span className="min-w-0">{formatDate(image?.createdAt)}</span>
+                                {image?.src && (
+                                  <span
+                                    role="button"
+                                    tabIndex={0}
+                                    onClick={(event) => handleDownload(event, image)}
+                                    onKeyDown={(event) => {
+                                      if (event.key === 'Enter' || event.key === ' ') {
+                                        handleDownload(event, image);
+                                      }
+                                    }}
+                                    className="pointer-events-auto inline-flex shrink-0 items-center gap-1 rounded-full border border-white/25 bg-black/45 px-3 py-1 font-semibold hover:bg-white/20"
+                                  >
+                                    <Download size={12} /> Download
+                                  </span>
+                                )}
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  </div>
-                );
-              })}
+                    );
+                  })}
+                </div>
+              ))}
             </div>
           ) : (
             <div
