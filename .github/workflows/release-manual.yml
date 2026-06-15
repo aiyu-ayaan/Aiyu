@@ -1,25 +1,18 @@
 name: Release PR + Deploy After Merge
 
-# Automated release flow driven by commit-message markers on master:
+# Automated release flow driven by a marker at the START of a commit subject on
+# master:
 #   !major  -> major bump (1.x.x -> 2.0.0)
 #   !feat   -> minor bump (x.1.x -> x.2.0)
 #   !fix    -> patch bump (x.x.1 -> x.x.2)
-# A push to master containing one of these markers opens (or updates) a release
-# PR with categorized release notes. Merging that release PR builds + pushes the
-# Docker image, deploys, and publishes a GitHub Release. Pushes without a marker
-# are skipped. `workflow_dispatch` is kept as a manual override.
+# A push to master whose commit subject begins with one of these markers opens
+# (or updates) a release PR with categorized release notes. Merging that release
+# PR builds + pushes the Docker image, deploys, and publishes a GitHub Release.
+# Pushes without a leading marker are skipped. Markers are matched only on the
+# subject line (not the body), so a commit that merely mentions a marker in its
+# description does not trigger a release.
 
 on:
-  workflow_dispatch:
-    inputs:
-      release_type:
-        description: Select release type (feat=minor, fix=patch, major=major)
-        required: true
-        type: choice
-        options:
-          - feat
-          - fix
-          - major
   push:
     branches:
       - master
@@ -34,9 +27,9 @@ permissions:
 jobs:
   determine-release:
     name: Determine Next Version
-    # Runs for manual dispatch and for every push to master. On a push it only
-    # proceeds when a commit contains a release marker (!major / !feat / !fix);
-    # otherwise should_release=false and every release-PR step is skipped.
+    # Runs on every push to master. Proceeds only when a pushed commit's SUBJECT
+    # starts with a release marker (!major / !feat / !fix); otherwise
+    # should_release=false and every release-PR step is skipped.
     runs-on: ubuntu-latest
     outputs:
       should_release: ${{ steps.bump.outputs.should_release }}
@@ -53,8 +46,6 @@ jobs:
       - name: Determine release type and next version
         id: bump
         env:
-          EVENT_NAME: ${{ github.event_name }}
-          DISPATCH_RELEASE_TYPE: ${{ github.event.inputs.release_type }}
           BEFORE_SHA: ${{ github.event.before }}
           AFTER_SHA: ${{ github.sha }}
           HEAD_COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
@@ -65,14 +56,16 @@ jobs:
           import re
           import subprocess
 
-          event_name = os.environ.get("EVENT_NAME", "").strip()
           allowed_types = {"feat", "fix", "major"}
 
-          # Highest precedence wins: major > feat > fix.
+          # A marker is honored ONLY at the start of a commit subject line (after
+          # optional leading whitespace). Matching the subject — not the body —
+          # prevents commits that merely document the markers from triggering a
+          # release. Highest precedence wins: major > feat > fix.
           MARKERS = [
-              ("major", re.compile(r"(?i)(?<!\w)!major(?!\w)")),
-              ("feat", re.compile(r"(?i)(?<!\w)!feat(?!\w)")),
-              ("fix", re.compile(r"(?i)(?<!\w)!fix(?!\w)")),
+              ("major", re.compile(r"^\s*!major(?!\w)", re.IGNORECASE)),
+              ("feat", re.compile(r"^\s*!feat(?!\w)", re.IGNORECASE)),
+              ("fix", re.compile(r"^\s*!fix(?!\w)", re.IGNORECASE)),
           ]
           # A merged release PR lands as "chore(master): release vX.Y.Z" — never
           # treat that commit as a trigger, so releases don't loop.
@@ -81,43 +74,34 @@ jobs:
               re.IGNORECASE,
           )
 
-          def detect(messages):
-              joined = "\n".join(messages)
+          def detect(subjects):
               for release_type, pattern in MARKERS:
-                  if pattern.search(joined):
+                  if any(pattern.match(subject) for subject in subjects):
                       return release_type
               return ""
 
-          release_type = ""
-          should_release = False
+          before = os.environ.get("BEFORE_SHA", "").strip()
+          after = os.environ.get("AFTER_SHA", "").strip()
+          subjects = []
+          try:
+              if before and set(before) != {"0"}:
+                  out = subprocess.check_output(
+                      ["git", "log", f"{before}..{after}", "--format=%s"],
+                      text=True,
+                  )
+                  subjects = [s for s in out.splitlines() if s.strip()]
+              if not subjects:
+                  out = subprocess.check_output(
+                      ["git", "log", "-1", "--format=%s"], text=True
+                  )
+                  subjects = [out.strip()]
+          except subprocess.CalledProcessError:
+              subjects = [os.environ.get("HEAD_COMMIT_MESSAGE", "").splitlines()[0]
+                          if os.environ.get("HEAD_COMMIT_MESSAGE") else ""]
 
-          if event_name == "workflow_dispatch":
-              release_type = os.environ.get("DISPATCH_RELEASE_TYPE", "").strip().lower()
-              if release_type not in allowed_types:
-                  raise SystemExit("Invalid release_type. Allowed values: feat, fix, major.")
-              should_release = True
-          else:
-              before = os.environ.get("BEFORE_SHA", "").strip()
-              after = os.environ.get("AFTER_SHA", "").strip()
-              messages = []
-              try:
-                  if before and set(before) != {"0"}:
-                      out = subprocess.check_output(
-                          ["git", "log", f"{before}..{after}", "--format=%B%x00"],
-                          text=True,
-                      )
-                      messages = [m for m in out.split("\x00") if m.strip()]
-                  if not messages:
-                      out = subprocess.check_output(
-                          ["git", "log", "-1", "--format=%B"], text=True
-                      )
-                      messages = [out]
-              except subprocess.CalledProcessError:
-                  messages = [os.environ.get("HEAD_COMMIT_MESSAGE", "")]
-
-              non_release = [m for m in messages if not RELEASE_COMMIT.match(m.strip())]
-              release_type = detect(non_release)
-              should_release = release_type in allowed_types
+          non_release = [s for s in subjects if not RELEASE_COMMIT.match(s.strip())]
+          release_type = detect(non_release)
+          should_release = release_type in allowed_types
 
           output_file = os.environ["GITHUB_OUTPUT"]
           if not should_release:
