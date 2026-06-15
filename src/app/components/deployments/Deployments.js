@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
@@ -19,6 +19,8 @@ import TypewriterEffect from '../shared/TypewriterEffect';
 import RouteBetaBadge from '../shared/RouteBetaBadge';
 import { getPlaceholderGradient, getProjectInitials } from '../projects/projectPlaceholder';
 import DeploymentDialog from './DeploymentDialog';
+import useDevicePerformance from '../../hooks/useDevicePerformance';
+import { useSectionFx, refreshScrollTriggersSoon } from '../shared/gsapScroll';
 
 const heroCardStyle = {
     background:
@@ -96,6 +98,11 @@ export default function Deployments({ data, config }) {
     const [selectedProvider, setSelectedProvider] = useState('All');
     const [selectedDeployment, setSelectedDeployment] = useState(null);
 
+    const containerRef = useRef(null);
+    const { prefersReducedMotion } = useDevicePerformance();
+
+    useSectionFx(containerRef, { reducedMotion: prefersReducedMotion });
+
     const siteLabel = config?.logoText || config?.siteTitle || 'Portfolio';
     const roles = [
         `Hosted apps, services, and environments currently online for ${siteLabel}`,
@@ -142,6 +149,10 @@ export default function Deployments({ data, config }) {
         });
     }, [deployments, searchQuery, selectedStatus, selectedType, selectedProvider]);
 
+    useEffect(() => {
+        refreshScrollTriggersSoon();
+    }, [filteredDeployments.length]);
+
     const liveCount = useMemo(() => deployments.filter((item) => normalizeStatus(item?.status) === 'Live').length, [deployments]);
     const providerCount = useMemo(() => new Set(deployments.map((item) => item?.hostingProvider).filter(Boolean)).size, [deployments]);
 
@@ -152,11 +163,9 @@ export default function Deployments({ data, config }) {
     ];
 
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 18 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, ease: 'easeOut' }}
-            className="relative min-h-screen overflow-hidden p-4 lg:p-8"
+        <div
+            ref={containerRef}
+            className="relative min-h-screen overflow-x-clip p-4 lg:p-8"
             style={{ color: 'var(--text-primary)' }}
         >
             <div
@@ -175,12 +184,10 @@ export default function Deployments({ data, config }) {
             />
 
             <div className="relative mx-auto w-full max-w-[95%] lg:max-w-[80%]">
-                <motion.section
-                    initial={{ y: 22, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={{ duration: 0.6 }}
+                <section
                     className="glass-panel p-6 sm:p-8"
                     style={heroCardStyle}
+                    data-reveal="tilt"
                 >
                     <div className="mb-3 flex flex-wrap items-center gap-2">
                         <p
@@ -197,6 +204,7 @@ export default function Deployments({ data, config }) {
 
                     <h1
                         className="headline-section mb-1 pb-2"
+                        data-reveal="left"
                     >
                         {heroTitle}
                     </h1>
@@ -228,14 +236,12 @@ export default function Deployments({ data, config }) {
                             );
                         })}
                     </div>
-                </motion.section>
+                </section>
 
-                <motion.section
-                    initial={{ y: 22, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={{ duration: 0.6, delay: 0.12 }}
+                <section
                     className="glass-panel mt-6 p-4 sm:p-5"
                     style={heroCardStyle}
+                    data-reveal="tilt"
                 >
                     <div className="mb-4 flex items-center gap-2 text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>
                         <FaFilter style={{ color: 'var(--accent-orange)' }} />
@@ -336,36 +342,31 @@ export default function Deployments({ data, config }) {
                             );
                         })}
                     </div>
-                </motion.section>
+                </section>
 
-                <motion.section
-                    initial={{ y: 22, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={{ duration: 0.6, delay: 0.2 }}
-                    className="mt-8"
-                >
+                <section className="mt-8">
                     {filteredDeployments.length > 0 ? (
-                        <div className="grid w-full grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                            {filteredDeployments.map((deployment, index) => {
-                                const statusStyles = getStatusStyles(deployment?.status);
-                                const stackList = Array.isArray(deployment?.techStack) ? deployment.techStack : [];
-                                const previewStack = stackList.slice(0, 3);
-                                const placeholderGradient = getPlaceholderGradient(deployment?.name);
+                        <div data-hscroll className="hscroll-viewport hscroll-stage mx-auto w-full max-w-[95%] lg:max-w-[80%]">
+                            <div data-hscroll-track className="hscroll-track">
+                                {filteredDeployments.map((deployment, index) => {
+                                    const statusStyles = getStatusStyles(deployment?.status);
+                                    const stackList = Array.isArray(deployment?.techStack) ? deployment.techStack : [];
+                                    const previewStack = stackList.slice(0, 3);
+                                    const placeholderGradient = getPlaceholderGradient(deployment?.name);
 
-                                return (
-                                    <motion.article
-                                        key={deployment?._id || `${deployment?.name}-${index}`}
-                                        layout
-                                        initial={{ opacity: 0, y: 16 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ duration: 0.35, ease: 'easeOut' }}
-                                        className="glass-tile group relative flex h-full w-full cursor-pointer flex-col overflow-hidden rounded-[1.625rem] border"
-                                        style={{
-                                            borderColor: 'color-mix(in srgb, var(--border-secondary) 74%, transparent)',
-                                        }}
-                                        onClick={() => setSelectedDeployment(deployment)}
-                                        whileHover={{ y: -5 }}
-                                    >
+                                    return (
+                                        <div
+                                            key={deployment?._id || `${deployment?.name}-${index}`}
+                                            className="hscroll-panel"
+                                            data-reveal="flip"
+                                        >
+                                            <article
+                                                className="glass-tile group relative flex h-full w-full cursor-pointer flex-col overflow-hidden rounded-[1.625rem] border transition-transform duration-300 hover:-translate-y-1"
+                                                style={{
+                                                    borderColor: 'color-mix(in srgb, var(--border-secondary) 74%, transparent)',
+                                                }}
+                                                onClick={() => setSelectedDeployment(deployment)}
+                                            >
                                         <div
                                             className="absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none"
                                             style={{
@@ -556,9 +557,11 @@ export default function Deployments({ data, config }) {
                                                 </div>
                                             </div>
                                         </div>
-                                    </motion.article>
-                                );
-                            })}
+                                            </article>
+                                        </div>
+                                    );
+                                })}
+                            </div>
                         </div>
                     ) : (
                         <div className="glass-panel p-10 text-center" style={heroCardStyle}>
@@ -570,10 +573,10 @@ export default function Deployments({ data, config }) {
                             </p>
                         </div>
                     )}
-                </motion.section>
+                </section>
             </div>
 
             <DeploymentDialog deployment={selectedDeployment} onClose={() => setSelectedDeployment(null)} />
-        </motion.div>
+        </div>
     );
 }
