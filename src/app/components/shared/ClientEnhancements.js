@@ -218,6 +218,10 @@ export default function ClientEnhancements() {
                 lenis.on('scroll', () => {
                     ScrollTrigger.update();
                 });
+                // Update ScrollTrigger on Lenis scroll
+                lenis.on('scroll', () => {
+                    ScrollTrigger.update();
+                });
 
                 // Sync GSAP ticker with Lenis frame rendering
                 tickerCallback = (time) => {
@@ -231,6 +235,7 @@ export default function ClientEnhancements() {
         })();
 
         return () => {
+            cancelled = true;
             cancelled = true;
             if (lenis) {
                 lenis.destroy();

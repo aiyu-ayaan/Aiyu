@@ -29,7 +29,7 @@ const nextConfig = {
   // Enhanced performance optimizations
   experimental: {
     optimizeCss: true,
-    optimizePackageImports: ['framer-motion', 'lucide-react', 'react-icons', 'simple-icons'],
+    optimizePackageImports: ['framer-motion', 'lucide-react', 'react-icons', 'simple-icons', 'lodash-es', 'date-fns-tz'],
     // Import backups can include many images and exceed the 10MB proxy clone default.
     proxyClientMaxBodySize: '999mb',
   },

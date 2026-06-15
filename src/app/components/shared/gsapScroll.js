@@ -197,7 +197,9 @@ export function animateCounters(scope, { reducedMotion = false } = {}) {
  * data-parallax="<speed>" (positive drifts down slower, negative floats up).
  */
 export function animateParallax(scope, { reducedMotion = false } = {}) {
-    if (!scope || reducedMotion) return;
+    // Scrubbed parallax does layout-free transform work on every scroll frame.
+    // It's purely decorative, so skip it on lite devices to protect scroll FPS.
+    if (!scope || reducedMotion || isLiteDevice()) return;
 
     scope.querySelectorAll('[data-parallax]').forEach((el) => {
         const speed = Number(el.dataset.parallax) || 0.2;

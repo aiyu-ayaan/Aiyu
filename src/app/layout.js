@@ -9,11 +9,19 @@ import Script from "next/script";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
+  display: "swap",
+  preload: true,
+  fallback: ["-apple-system", "BlinkMacSystemFont", "Segoe UI", "Helvetica Neue", "sans-serif"],
 });
 
+// Mono is only used for code/syntax accents (never the LCP element), so skip
+// preloading it — that frees a render-blocking font request on first paint.
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  display: "swap",
+  preload: false,
+  fallback: ["ui-monospace", "SFMono-Regular", "Menlo", "Consolas", "monospace"],
 });
 
 export async function generateMetadata() {
@@ -122,6 +130,27 @@ export default async function RootLayout({ children }) {
                 } catch (e) {
                   document.documentElement.setAttribute('data-theme', 'dark');
                   document.documentElement.style.backgroundColor = '#0d1117';
+                }
+
+                // Pre-paint performance tier. Set before first paint so CSS can
+                // drop expensive effects (backdrop-filter, infinite animations,
+                // blur reveals) on low-end / data-saver / reduced-motion devices
+                // with no FOUC or layout shift. Read by globals.css ([data-perf])
+                // and gsapScroll.js for animation level-of-detail.
+                try {
+                  var mm = window.matchMedia;
+                  var reduce = mm && mm('(prefers-reduced-motion: reduce)').matches;
+                  var coarse = mm && mm('(pointer: coarse)').matches;
+                  var conn = navigator.connection || {};
+                  var saveData = conn.saveData === true;
+                  var slowNet = conn.effectiveType ? (conn.effectiveType === '2g' || conn.effectiveType === '3g') : false;
+                  var cores = navigator.hardwareConcurrency || 8;
+                  var mem = navigator.deviceMemory || 8;
+                  var lowHw = (cores <= 4 || mem <= 4) && (coarse || window.innerWidth < 1024);
+                  var lite = !!(reduce || saveData || slowNet || lowHw);
+                  document.documentElement.setAttribute('data-perf', lite ? 'lite' : 'full');
+                } catch (e) {
+                  document.documentElement.setAttribute('data-perf', 'full');
                 }
               })();
             `,

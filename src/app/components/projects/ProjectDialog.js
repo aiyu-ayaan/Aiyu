@@ -1,6 +1,7 @@
 
 "use client";
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaCalendarDay, FaCodeBranch, FaExternalLinkAlt, FaLayerGroup, FaTimes, FaBook } from 'react-icons/fa';
@@ -24,6 +25,11 @@ const normalizeStatus = (status) => {
 };
 
 const ProjectDialog = ({ project, onClose }) => {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const stackList = Array.isArray(project?.techStack) ? project.techStack : [];
   const status = useMemo(() => normalizeStatus(project?.status), [project?.status]);
   const placeholderGradient = useMemo(() => getPlaceholderGradient(project?.name), [project?.name]);
@@ -44,29 +50,30 @@ const ProjectDialog = ({ project, onClose }) => {
     };
   }, [project]);
 
-  if (!project) return null;
+  if (!mounted) return null;
 
-  return (
+  return createPortal(
     <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[90] flex items-center justify-center px-4 py-6 backdrop-blur-md sm:py-10"
-        style={{
-          background:
-            'radial-gradient(circle at 25% 20%, color-mix(in srgb, var(--accent-cyan) 16%, transparent), transparent 44%), radial-gradient(circle at 75% 75%, color-mix(in srgb, var(--accent-purple) 18%, transparent), transparent 46%), var(--overlay-bg)',
-        }}
-        onClick={onClose}
-      >
+      {project && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[90] flex items-center justify-center px-4 py-6 backdrop-blur-md sm:py-10"
+          style={{
+            background:
+              'radial-gradient(circle at 25% 20%, color-mix(in srgb, var(--accent-cyan) 16%, transparent), transparent 44%), radial-gradient(circle at 75% 75%, color-mix(in srgb, var(--accent-purple) 18%, transparent), transparent 46%), var(--overlay-bg)',
+          }}
+          onClick={onClose}
+        >
         <motion.div
           initial={{ scale: 0.96, opacity: 0, y: 18 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.96, opacity: 0, y: 18 }}
           transition={{ duration: 0.22, ease: 'easeOut' }}
-          className="relative w-full max-w-5xl overflow-hidden rounded-3xl border shadow-2xl"
+          className="relative w-full max-w-5xl overflow-hidden rounded-3xl border shadow-2xl flex flex-col"
           style={{
-            maxHeight: '88vh',
+            maxHeight: 'min(88dvh, calc(100% - 2rem))',
             background:
               'linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 95%, transparent), color-mix(in srgb, var(--bg-secondary) 96%, transparent))',
             borderColor: 'color-mix(in srgb, var(--border-secondary) 80%, transparent)',
@@ -74,7 +81,7 @@ const ProjectDialog = ({ project, onClose }) => {
           onClick={(e) => e.stopPropagation()}
         >
           <div
-            className="h-1.5 w-full"
+            className="h-1.5 w-full shrink-0"
             style={{
               background:
                 'linear-gradient(90deg, var(--accent-cyan), var(--accent-purple), var(--accent-pink), var(--accent-cyan))',
@@ -95,7 +102,7 @@ const ProjectDialog = ({ project, onClose }) => {
             <FaTimes />
           </button>
 
-          <div className="hide-scrollbar overflow-y-auto" style={{ maxHeight: 'calc(88vh - 6px)' }}>
+          <div className="hide-scrollbar overflow-y-auto flex-1">
             <div className="grid grid-cols-1 gap-6 p-5 sm:p-7 lg:grid-cols-[1.2fr_1fr]">
               <div className="space-y-4">
                 <div
@@ -324,7 +331,7 @@ const ProjectDialog = ({ project, onClose }) => {
 
           {project?.codeLink && (
             <div
-              className="border-t px-5 py-3 text-xs sm:px-7"
+              className="border-t px-5 py-3 text-xs sm:px-7 shrink-0"
               style={{
                 borderColor: 'color-mix(in srgb, var(--border-secondary) 70%, transparent)',
                 color: 'var(--text-tertiary)',
@@ -336,7 +343,9 @@ const ProjectDialog = ({ project, onClose }) => {
           )}
         </motion.div>
       </motion.div>
-    </AnimatePresence>
+      )}
+    </AnimatePresence>,
+    document.body
   );
 };
 
