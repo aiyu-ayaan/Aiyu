@@ -3,16 +3,25 @@
 import { useEffect, useState } from "react";
 
 /**
- * Terminal-style boot screen shown once per browser session.
+ * Terminal-style boot screen shown only when this is the *only* open instance
+ * of the app — mirroring "Chrome doesn't re-show progress when an instance is
+ * already running":
  *
- * The pre-paint script in layout.js sets html[data-booted="1"] when the
- * sessionStorage flag is present, and globals.css hides #boot-screen instantly
- * in that case — so returning navigations/reloads within the same session skip
- * the overlay with no flash. A fresh session plays the sequence exactly once.
+ *   - No other tab/instance open      -> play the boot screen once.
+ *   - Another tab/instance is open    -> skip (new tab, duplicated tab, etc).
+ *   - Reload of the same tab          -> skip.
+ *   - /blogs and /blogs/[id]          -> always skip (blogs shouldn't wait).
  *
- * Everything here is plain React + CSS (the 3D wireframe is a CSS transform,
- * not three.js), so this stays out of the heavy animation bundle and adds no
- * measurable runtime cost. Honours prefers-reduced-motion and data-perf="lite".
+ * Presence is detected two ways:
+ *   1. A localStorage heartbeat ("aiyu:lastSeen"), read synchronously in the
+ *      pre-paint script in layout.js so the decision happens before first paint
+ *      (no flash, no "content then loader").
+ *   2. A BroadcastChannel ping/pong that catches a live tab even when it is
+ *      backgrounded (timers throttle in background tabs, message handlers don't).
+ *
+ * Pure React + CSS (the 3D wireframe is a CSS transform, not three.js), so it
+ * stays out of the heavy root bundle. Honours prefers-reduced-motion and
+ * data-perf="lite".
  */
 const BOOT_LINES = [
   "mounting kernel modules",
@@ -22,9 +31,19 @@ const BOOT_LINES = [
   "calibrating 3d scene",
 ];
 
+const HEARTBEAT_KEY = "aiyu:lastSeen";
+const HEARTBEAT_MS = 1500;
+
+// Critical styles so the overlay covers content on first paint even before the
+// CSS bundle loads (fixes the dev "content shows, then loader" flash).
+const COVER_STYLE = {
+  position: "fixed",
+  inset: 0,
+  zIndex: 9999,
+  background: "var(--bg-primary, #0d1117)",
+};
+
 export default function BootLoader() {
-  // `true` on the server and first client render so the overlay is in the SSR
-  // markup and covers the first paint. CSS hides it for already-booted sessions.
   const [visible, setVisible] = useState(true);
   const [exiting, setExiting] = useState(false);
   const [completedLines, setCompletedLines] = useState(0);
@@ -33,41 +52,94 @@ export default function BootLoader() {
   useEffect(() => {
     const root = document.documentElement;
 
-    // Already booted this session → drop instantly, never animate.
+    // --- presence heartbeat (always runs for the life of the tab) ---
+    const writeHeartbeat = () => {
+      try {
+        localStorage.setItem(HEARTBEAT_KEY, String(Date.now()));
+      } catch (e) {
+        /* private mode / storage disabled */
+      }
+    };
+    writeHeartbeat();
+    const heartbeatId = window.setInterval(writeHeartbeat, HEARTBEAT_MS);
+    const onVisibility = () => {
+      if (!document.hidden) writeHeartbeat();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
+    // --- cross-tab presence channel ---
+    let channel = null;
+    try {
+      channel = new BroadcastChannel("aiyu:boot");
+    } catch (e) {
+      channel = null;
+    }
+
+    let aborted = false;
+    let done = false;
+    let raf = 0;
+    let safety = 0;
+    let exitTimer = 0;
+
+    const teardownPresence = () => {
+      window.clearInterval(heartbeatId);
+      document.removeEventListener("visibilitychange", onVisibility);
+      if (channel) channel.close();
+    };
+
+    // Pre-paint already decided to skip (another instance alive, or a blog
+    // route). Keep answering pings so other tabs detect us, but never show.
     if (root.getAttribute("data-booted") === "1") {
+      if (channel) {
+        channel.onmessage = (event) => {
+          if (event.data === "ping") channel.postMessage("pong");
+        };
+      }
       setVisible(false);
-      return undefined;
+      return teardownPresence;
+    }
+
+    const finish = () => {
+      if (done || aborted) return;
+      done = true;
+      window.cancelAnimationFrame(raf);
+      window.clearTimeout(safety);
+      setExiting(true);
+      const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+      exitTimer = window.setTimeout(() => setVisible(false), reduceMotion ? 0 : 600);
+    };
+
+    // We believe we're the first instance. Confirm via a ping: a live tab (even
+    // backgrounded) pongs near-instantly, so we abort and hide.
+    if (channel) {
+      channel.onmessage = (event) => {
+        if (event.data === "ping") {
+          channel.postMessage("pong");
+          return;
+        }
+        if (event.data === "pong" && !aborted && !done) {
+          aborted = true;
+          window.cancelAnimationFrame(raf);
+          window.clearTimeout(safety);
+          root.setAttribute("data-booted", "1");
+          setVisible(false);
+        }
+      };
+      channel.postMessage("ping");
     }
 
     const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     const lite = root.getAttribute("data-perf") === "lite";
 
-    let raf = 0;
-    let safety = 0;
-    let exitTimer = 0;
-    let done = false;
-
-    const finish = () => {
-      if (done) return;
-      done = true;
-      cancelAnimationFrame(raf);
-      clearTimeout(safety);
-      try {
-        sessionStorage.setItem("aiyu:booted", "1");
-      } catch (e) {
-        /* private mode / storage disabled — overlay still tears down */
-      }
-      root.setAttribute("data-booted", "1");
-      setExiting(true);
-      exitTimer = window.setTimeout(() => setVisible(false), reduceMotion ? 0 : 600);
-    };
-
     if (reduceMotion) {
-      // Reduced motion: show the completed frame briefly, then leave.
       setCompletedLines(BOOT_LINES.length);
       setProgress(100);
-      exitTimer = window.setTimeout(finish, 320);
-      return () => clearTimeout(exitTimer);
+      safety = window.setTimeout(finish, 320);
+      return () => {
+        window.clearTimeout(safety);
+        window.clearTimeout(exitTimer);
+        teardownPresence();
+      };
     }
 
     const stepMs = lite ? 170 : 300;
@@ -75,6 +147,7 @@ export default function BootLoader() {
     const startedAt = performance.now();
 
     const tick = (now) => {
+      if (aborted) return;
       const elapsed = now - startedAt;
       setProgress(Math.min(100, Math.round((elapsed / totalMs) * 100)));
       setCompletedLines(Math.min(BOOT_LINES.length, Math.floor(elapsed / stepMs)));
@@ -82,16 +155,17 @@ export default function BootLoader() {
         finish();
         return;
       }
-      raf = requestAnimationFrame(tick);
+      raf = window.requestAnimationFrame(tick);
     };
-    raf = requestAnimationFrame(tick);
+    raf = window.requestAnimationFrame(tick);
     // Guard against requestAnimationFrame stalling (e.g. loaded in a background tab).
     safety = window.setTimeout(finish, totalMs + 4000);
 
     return () => {
-      cancelAnimationFrame(raf);
-      clearTimeout(safety);
-      clearTimeout(exitTimer);
+      window.cancelAnimationFrame(raf);
+      window.clearTimeout(safety);
+      window.clearTimeout(exitTimer);
+      teardownPresence();
     };
   }, []);
 
@@ -101,6 +175,7 @@ export default function BootLoader() {
     <div
       id="boot-screen"
       className={exiting ? "boot-screen boot-screen--exit" : "boot-screen"}
+      style={COVER_STYLE}
       role="status"
       aria-label="Loading interface"
     >

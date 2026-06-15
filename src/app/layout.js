@@ -159,9 +159,24 @@ export default async function RootLayout({ children }) {
             __html: `
               (function() {
                 try {
-                  if (sessionStorage.getItem('aiyu:booted') === '1') {
+                  var path = location.pathname || '';
+                  // Blogs are meant to load instantly — never boot-gate them.
+                  var skipRoute = path === '/blogs' || path.indexOf('/blogs/') === 0;
+                  // Cross-tab presence: another instance is "alive" if a heartbeat
+                  // was written very recently (covers reload + new tab / duplicate
+                  // while a foreground tab is open). Backgrounded tabs are caught
+                  // post-mount via BroadcastChannel.
+                  var last = parseInt(localStorage.getItem('aiyu:lastSeen') || '0', 10) || 0;
+                  var alive = (Date.now() - last) < 3000;
+                  if (skipRoute || alive) {
                     document.documentElement.setAttribute('data-booted', '1');
+                    // Hide before first paint without waiting for the CSS bundle.
+                    var s = document.createElement('style');
+                    s.textContent = '#boot-screen{display:none!important}';
+                    document.head.appendChild(s);
                   }
+                  // Mark our presence immediately so a tab opening right now sees us.
+                  localStorage.setItem('aiyu:lastSeen', String(Date.now()));
                 } catch (e) {}
               })();
             `,
