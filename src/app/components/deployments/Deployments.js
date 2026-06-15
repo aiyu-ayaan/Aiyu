@@ -348,7 +348,7 @@ export default function Deployments({ data, config }) {
                     </div>
                 </section>
 
-                <section className="mt-8">
+                <section className="mt-8" data-reveal="tilt">
                     {filteredDeployments.length > 0 ? (
                         <div data-hscroll className="hscroll-viewport hscroll-stage mx-auto w-full max-w-[95%] lg:max-w-[80%]">
                             <div data-hscroll-track className="hscroll-track">
@@ -362,7 +362,6 @@ export default function Deployments({ data, config }) {
                                         <div
                                             key={deployment?._id || `${deployment?.name}-${index}`}
                                             className="hscroll-panel"
-                                            data-reveal="flip"
                                         >
                                             <article
                                                 className="glass-tile group relative flex h-full w-full cursor-pointer flex-col overflow-hidden rounded-[1.625rem] border transition-transform duration-300 hover:-translate-y-1"
