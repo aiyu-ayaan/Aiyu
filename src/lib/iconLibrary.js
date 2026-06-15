@@ -18,7 +18,7 @@ import {
     SiSupabase, SiAppwrite,
     SiAwslambda, SiAmazonaws
 } from 'react-icons/si';
-import { FaJava, FaDatabase, FaCode, FaLaptopCode, FaMobileAlt, FaServer, FaCloud } from 'react-icons/fa';
+import { FaJava, FaDatabase, FaCode, FaLaptopCode, FaMobileAlt, FaServer, FaCloud, FaBrain, FaPaintBrush, FaRocket } from 'react-icons/fa';
 
 export const IconList = {
     // Development
@@ -62,7 +62,10 @@ export const IconList = {
     'Mobile': FaMobileAlt,
     'Server': FaServer,
     'Cloud': FaCloud,
-    'Database': FaDatabase
+    'Database': FaDatabase,
+    'Brain': FaBrain,
+    'PaintBrush': FaPaintBrush,
+    'Rocket': FaRocket
 };
 
 export const getIcon = (name) => {

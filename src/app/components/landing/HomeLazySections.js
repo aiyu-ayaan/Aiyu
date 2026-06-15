@@ -10,7 +10,7 @@ const HomeShowcaseScroll = dynamic(() => import('./HomeShowcaseScroll'), { loadi
 const HomeProjects = dynamic(() => import('./HomeProjects'), { loading: () => <div className="h-[760px]" /> });
 const HomeBlogs = dynamic(() => import('./HomeBlogs'), { loading: () => <div className="h-[720px]" /> });
 
-export default function HomeLazySections({ aboutData, projectsData, blogsData }) {
+export default function HomeLazySections({ aboutData, projectsData, blogsData, homeData }) {
   return (
     <>
       <ViewportLazySection id="home-tech" placeholderHeight={720} rootMargin="420px 0px">
@@ -26,7 +26,7 @@ export default function HomeLazySections({ aboutData, projectsData, blogsData })
       <Divider />
 
       <ViewportLazySection id="home-showcase" placeholderHeight={720} rootMargin="420px 0px">
-        <HomeShowcaseScroll />
+        <HomeShowcaseScroll data={homeData?.showcaseSection} />
       </ViewportLazySection>
 
       <Divider />

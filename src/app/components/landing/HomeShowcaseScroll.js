@@ -11,6 +11,7 @@ import {
 } from 'react-icons/fa';
 import useDevicePerformance from '../../hooks/useDevicePerformance';
 import { useSectionFx } from '../shared/gsapScroll';
+import { getIcon } from '../../../lib/iconLibrary';
 
 // Static focus-area panels — no data dependency so the rail always renders.
 const SHOWCASE_PANELS = [
@@ -58,12 +59,17 @@ const SHOWCASE_PANELS = [
   },
 ];
 
-const HomeShowcaseScroll = () => {
+const HomeShowcaseScroll = ({ data }) => {
   const sectionRef = useRef(null);
   const { prefersReducedMotion } = useDevicePerformance();
 
   // Provides reveals for the heading + the pinned horizontal track (data-hscroll).
   useSectionFx(sectionRef, { reducedMotion: prefersReducedMotion });
+
+  const eyebrow = data?.eyebrow || 'How I Work';
+  const headline = data?.headline || 'Focus areas, side to side.';
+  const description = data?.description || 'Keep scrolling — this rail moves sideways with you, then hands you back to the page.';
+  const panels = Array.isArray(data?.panels) && data.panels.length > 0 ? data.panels : SHOWCASE_PANELS;
 
   return (
     // No `perspective` here: a transformed ancestor would break ScrollTrigger's
@@ -77,10 +83,10 @@ const HomeShowcaseScroll = () => {
 
       <div className="mx-auto mb-10 flex w-full max-w-[95%] flex-col gap-6 lg:max-w-[80%] lg:flex-row lg:items-end lg:justify-between">
         <div data-reveal="left" className="max-w-2xl">
-          <p className="eyebrow mb-3">How I Work</p>
-          <h2 className="headline-section">Focus areas, side to side.</h2>
+          <p className="eyebrow mb-3">{eyebrow}</p>
+          <h2 className="headline-section">{headline}</h2>
           <p className="subcopy mt-4">
-            Keep scrolling — this rail moves sideways with you, then hands you back to the page.
+            {description}
           </p>
         </div>
         <div
@@ -95,8 +101,8 @@ const HomeShowcaseScroll = () => {
 
       <div data-hscroll className="hscroll-viewport hscroll-stage mx-auto w-full max-w-[95%] lg:max-w-[80%]">
         <div data-hscroll-track className="hscroll-track">
-          {SHOWCASE_PANELS.map((panel, index) => {
-            const Icon = panel.icon;
+          {panels.map((panel, index) => {
+            const Icon = typeof panel.icon === 'string' ? getIcon(panel.icon) : (panel.icon || FaLaptopCode);
             return (
               <article
                 key={panel.title}

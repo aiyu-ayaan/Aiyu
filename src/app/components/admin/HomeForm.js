@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Sparkles, Loader2, Wand2 } from 'lucide-react';
+import { Sparkles, Loader2, Wand2, Plus, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
+import { getIconNames } from '@/lib/iconLibrary';
 import Toast from './Toast';
 
 const HomeForm = () => {
@@ -17,6 +18,10 @@ const HomeForm = () => {
         statusFocus: '',
         statusLearning: '',
         statusAvailability: '',
+        showcaseEyebrow: '',
+        showcaseHeadline: '',
+        showcaseDescription: '',
+        showcasePanels: [],
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -49,6 +54,14 @@ const HomeForm = () => {
             if (res.ok) {
                 const data = await res.json();
                 if (data) {
+                    const dbPanels = data.showcaseSection?.panels || [];
+                    const panelsForEditing = dbPanels.length > 0
+                        ? dbPanels.map(p => ({
+                            ...p,
+                            tags: Array.isArray(p.tags) ? p.tags.join(', ') : (p.tags || '')
+                          }))
+                        : [];
+
                     setFormData({
                         ...data,
                         homeRoles: data.homeRoles ? data.homeRoles.join(', ') : '',
@@ -58,6 +71,10 @@ const HomeForm = () => {
                         statusFocus: data.statusSection?.focus || '',
                         statusLearning: data.statusSection?.learning || '',
                         statusAvailability: data.statusSection?.availability || '',
+                        showcaseEyebrow: data.showcaseSection?.eyebrow || 'How I Work',
+                        showcaseHeadline: data.showcaseSection?.headline || 'Focus areas, side to side.',
+                        showcaseDescription: data.showcaseSection?.description || 'Keep scrolling — this rail moves sideways with you, then hands you back to the page.',
+                        showcasePanels: panelsForEditing,
                     });
                 }
             }
@@ -119,6 +136,51 @@ const HomeForm = () => {
         setFormData((prev) => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
     };
 
+    const handleAddPanel = () => {
+        setFormData(prev => ({
+            ...prev,
+            showcasePanels: [
+                ...prev.showcasePanels,
+                {
+                    title: '',
+                    description: '',
+                    icon: 'Code',
+                    accent: 'var(--accent-cyan)',
+                    tags: ''
+                }
+            ]
+        }));
+    };
+
+    const handleRemovePanel = (index) => {
+        setFormData(prev => ({
+            ...prev,
+            showcasePanels: prev.showcasePanels.filter((_, idx) => idx !== index)
+        }));
+    };
+
+    const handlePanelChange = (index, field, value) => {
+        setFormData(prev => {
+            const updated = [...prev.showcasePanels];
+            updated[index] = { ...updated[index], [field]: value };
+            return { ...prev, showcasePanels: updated };
+        });
+    };
+
+    const handleMovePanel = (index, direction) => {
+        setFormData(prev => {
+            const panels = [...prev.showcasePanels];
+            const targetIndex = index + direction;
+            if (targetIndex < 0 || targetIndex >= panels.length) return prev;
+            
+            const temp = panels[index];
+            panels[index] = panels[targetIndex];
+            panels[targetIndex] = temp;
+            
+            return { ...prev, showcasePanels: panels };
+        });
+    };
+
     const showNotification = (success, message) => {
         setNotification({ success, message });
         setTimeout(() => setNotification(null), 3000);
@@ -128,6 +190,21 @@ const HomeForm = () => {
         e.preventDefault();
         setSaving(true);
         setError('');
+
+        const showcaseSection = {
+            eyebrow: formData.showcaseEyebrow.trim() || 'How I Work',
+            headline: formData.showcaseHeadline.trim() || 'Focus areas, side to side.',
+            description: formData.showcaseDescription.trim() || 'Keep scrolling — this rail moves sideways with you, then hands you back to the page.',
+            panels: formData.showcasePanels.map(p => ({
+                title: p.title.trim(),
+                description: p.description.trim(),
+                icon: p.icon || 'Code',
+                accent: p.accent || 'var(--accent-cyan)',
+                tags: typeof p.tags === 'string'
+                    ? p.tags.split(',').map(t => t.trim()).filter(t => t.length > 0)
+                    : (Array.isArray(p.tags) ? p.tags : [])
+            }))
+        };
 
         const payload = {
             ...formData,
@@ -140,12 +217,17 @@ const HomeForm = () => {
                 learning: formData.statusLearning.trim(),
                 availability: formData.statusAvailability.trim(),
             },
+            showcaseSection,
         };
         delete payload.statusEnabled;
         delete payload.statusHeadline;
         delete payload.statusFocus;
         delete payload.statusLearning;
         delete payload.statusAvailability;
+        delete payload.showcaseEyebrow;
+        delete payload.showcaseHeadline;
+        delete payload.showcaseDescription;
+        delete payload.showcasePanels;
 
         try {
             const response = await fetch('/api/home', {
@@ -407,6 +489,174 @@ const HomeForm = () => {
                             className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-pink-500/50 focus:ring-1 focus:ring-pink-500/50 outline-none transition-all placeholder:text-slate-600"
                         />
                     </div>
+                </div>
+            </div>
+
+            {/* Showcase Section */}
+            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 md:p-8 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
+
+                <h2 className="text-sm font-mono text-cyan-400 uppercase tracking-widest mb-8 flex items-center gap-4">
+                    Showcase Focus Areas
+                    <div className="h-px bg-cyan-500/20 flex-grow" />
+                </h2>
+
+                <div className="grid grid-cols-1 gap-6 mb-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Section Eyebrow</label>
+                            <input
+                                type="text"
+                                name="showcaseEyebrow"
+                                value={formData.showcaseEyebrow || ''}
+                                onChange={handleChange}
+                                placeholder="How I Work"
+                                className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-600 font-bold"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Section Headline</label>
+                            <input
+                                type="text"
+                                name="showcaseHeadline"
+                                value={formData.showcaseHeadline || ''}
+                                onChange={handleChange}
+                                placeholder="Focus areas, side to side."
+                                className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-600 font-bold"
+                            />
+                        </div>
+                    </div>
+                    <div>
+                        <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Section Description</label>
+                        <input
+                            type="text"
+                            name="showcaseDescription"
+                            value={formData.showcaseDescription || ''}
+                            onChange={handleChange}
+                            placeholder="Keep scrolling — this rail moves sideways with you, then hands you back to the page."
+                            className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-600 font-bold"
+                        />
+                    </div>
+                </div>
+
+                {/* Cards List */}
+                <div className="space-y-6">
+                    <div className="flex justify-between items-center">
+                        <h3 className="text-sm font-mono text-slate-400 uppercase tracking-wider">Focus Area Cards</h3>
+                        <button
+                            type="button"
+                            onClick={handleAddPanel}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg transition-all text-xs font-bold uppercase tracking-wider cursor-pointer"
+                        >
+                            <Plus className="w-3.5 h-3.5" />
+                            Add Card
+                        </button>
+                    </div>
+
+                    {formData.showcasePanels.length === 0 ? (
+                        <div className="text-center py-8 border border-dashed border-white/10 rounded-xl text-slate-500 font-mono text-xs">
+                            {"// No focus area cards configured. Falls back to default panels."}
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            {formData.showcasePanels.map((panel, index) => (
+                                <div key={index} className="p-5 bg-slate-950/40 border border-white/5 rounded-xl relative group/item">
+                                    <div className="absolute top-4 right-4 flex items-center gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleMovePanel(index, -1)}
+                                            disabled={index === 0}
+                                            className="p-1.5 bg-white/5 hover:bg-white/10 text-slate-400 rounded transition-all disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                                            title="Move Up"
+                                        >
+                                            <ArrowUp className="w-3.5 h-3.5" />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleMovePanel(index, 1)}
+                                            disabled={index === formData.showcasePanels.length - 1}
+                                            className="p-1.5 bg-white/5 hover:bg-white/10 text-slate-400 rounded transition-all disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                                            title="Move Down"
+                                        >
+                                            <ArrowDown className="w-3.5 h-3.5" />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRemovePanel(index)}
+                                            className="p-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded transition-all cursor-pointer"
+                                            title="Delete Card"
+                                        >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5 pr-24">
+                                        <div className="md:col-span-2">
+                                            <label className="block text-slate-500 mb-1 text-[10px] font-mono uppercase tracking-wider">Card Title</label>
+                                            <input
+                                                type="text"
+                                                value={panel.title}
+                                                onChange={(e) => handlePanelChange(index, 'title', e.target.value)}
+                                                placeholder="e.g. Product Engineering"
+                                                className="w-full bg-slate-950 border border-white/10 rounded-lg p-2.5 text-slate-200 focus:border-cyan-500/50 outline-none text-sm font-bold"
+                                                required
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-slate-500 mb-1 text-[10px] font-mono uppercase tracking-wider">Icon</label>
+                                            <select
+                                                value={panel.icon || 'Code'}
+                                                onChange={(e) => handlePanelChange(index, 'icon', e.target.value)}
+                                                className="w-full bg-slate-950 border border-white/10 rounded-lg p-2.5 text-slate-300 focus:border-cyan-500/50 outline-none text-sm cursor-pointer"
+                                            >
+                                                {getIconNames().map(name => (
+                                                    <option key={name} value={name}>{name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        <div className="md:col-span-3">
+                                            <label className="block text-slate-500 mb-1 text-[10px] font-mono uppercase tracking-wider">Card Description</label>
+                                            <textarea
+                                                value={panel.description}
+                                                onChange={(e) => handlePanelChange(index, 'description', e.target.value)}
+                                                placeholder="Describe this focus area..."
+                                                rows="2"
+                                                className="w-full bg-slate-950 border border-white/10 rounded-lg p-2.5 text-slate-300 focus:border-cyan-500/50 outline-none text-sm"
+                                                required
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-slate-500 mb-1 text-[10px] font-mono uppercase tracking-wider">Accent Color</label>
+                                            <select
+                                                value={panel.accent || 'var(--accent-cyan)'}
+                                                onChange={(e) => handlePanelChange(index, 'accent', e.target.value)}
+                                                className="w-full bg-slate-950 border border-white/10 rounded-lg p-2.5 text-slate-300 focus:border-cyan-500/50 outline-none text-sm cursor-pointer"
+                                            >
+                                                <option value="var(--accent-cyan)">Cyan</option>
+                                                <option value="var(--accent-purple)">Purple</option>
+                                                <option value="var(--accent-orange)">Orange</option>
+                                                <option value="var(--accent-pink)">Pink</option>
+                                            </select>
+                                        </div>
+
+                                        <div className="md:col-span-2">
+                                            <label className="block text-slate-500 mb-1 text-[10px] font-mono uppercase tracking-wider">Tags (comma-separated)</label>
+                                            <input
+                                                type="text"
+                                                value={panel.tags}
+                                                onChange={(e) => handlePanelChange(index, 'tags', e.target.value)}
+                                                placeholder="Next.js, React, Tailwind"
+                                                className="w-full bg-slate-950 border border-white/10 rounded-lg p-2.5 text-slate-300 focus:border-cyan-500/50 outline-none text-sm"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </div>
 

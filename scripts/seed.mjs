@@ -54,8 +54,57 @@ async function seed() {
         });
 
         console.log('Seeding Home...');
+        const defaultShowcase = {
+            eyebrow: 'How I Work',
+            headline: 'Focus areas, side to side.',
+            description: 'Keep scrolling — this rail moves sideways with you, then hands you back to the page.',
+            panels: [
+                {
+                    title: 'Product Engineering',
+                    description: 'Turning fuzzy ideas into shipped features, with a bias for the user’s real friction.',
+                    icon: 'Laptop',
+                    accent: 'var(--accent-cyan)',
+                    tags: ['Next.js', 'React', 'TypeScript']
+                },
+                {
+                    title: 'Backend & APIs',
+                    description: 'Pragmatic services and data models that stay readable as the surface area grows.',
+                    icon: 'Server',
+                    accent: 'var(--accent-purple)',
+                    tags: ['Node', 'REST', 'Mongo']
+                },
+                {
+                    title: 'Interface Craft',
+                    description: 'Responsive, accessible UI that feels calm on desktop and quick on mobile.',
+                    icon: 'Mobile',
+                    accent: 'var(--accent-orange)',
+                    tags: ['Tailwind', 'Motion', 'A11y']
+                },
+                {
+                    title: 'Design Systems',
+                    description: 'Tokens, glass surfaces, and reusable primitives that keep a product coherent.',
+                    icon: 'PaintBrush',
+                    accent: 'var(--accent-pink)',
+                    tags: ['Theming', 'Tokens', 'GSAP']
+                },
+                {
+                    title: 'Performance',
+                    description: 'Measuring before tuning — lazy boundaries, device tiers, and smooth 60fps scroll.',
+                    icon: 'Rocket',
+                    accent: 'var(--accent-cyan)',
+                    tags: ['Lighthouse', 'k6', 'LOD']
+                },
+                {
+                    title: 'AI & Automation',
+                    description: 'Wiring models and tooling into workflows so the boring parts run themselves.',
+                    icon: 'Brain',
+                    accent: 'var(--accent-purple)',
+                    tags: ['LLMs', 'Agents', 'Tooling']
+                }
+            ]
+        };
         await prisma.home.create({
-            data: { data: { name: homeName, homeRoles, githubLink, codeSnippets } },
+            data: { data: { name: homeName, homeRoles, githubLink, codeSnippets, showcaseSection: defaultShowcase } },
         });
 
         console.log('Seeding Header...');
