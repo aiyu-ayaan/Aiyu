@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Sparkles, Loader2, Wand2, Plus, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
-import { getIconNames } from '@/lib/iconLibrary';
+import { getIconNames, getIcon } from '@/lib/iconLibrary';
 import Toast from './Toast';
 
 const HomeForm = () => {
@@ -605,15 +605,28 @@ const HomeForm = () => {
 
                                         <div>
                                             <label className="block text-slate-500 mb-1 text-[10px] font-mono uppercase tracking-wider">Icon</label>
-                                            <select
-                                                value={panel.icon || 'Code'}
-                                                onChange={(e) => handlePanelChange(index, 'icon', e.target.value)}
-                                                className="w-full bg-slate-950 border border-white/10 rounded-lg p-2.5 text-slate-300 focus:border-cyan-500/50 outline-none text-sm cursor-pointer"
-                                            >
-                                                {getIconNames().map(name => (
-                                                    <option key={name} value={name}>{name}</option>
-                                                ))}
-                                            </select>
+                                            <div className="flex items-center gap-2">
+                                                {(() => {
+                                                    const IconComponent = getIcon(panel.icon);
+                                                    return (
+                                                        <span 
+                                                            className="inline-flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-lg border border-white/10 bg-slate-950/85"
+                                                            style={{ color: panel.accent || 'var(--accent-cyan)' }}
+                                                        >
+                                                            <IconComponent size={16} />
+                                                        </span>
+                                                    );
+                                                })()}
+                                                <select
+                                                    value={panel.icon || 'Code'}
+                                                    onChange={(e) => handlePanelChange(index, 'icon', e.target.value)}
+                                                    className="w-full bg-slate-950 border border-white/10 rounded-lg p-2 text-slate-300 focus:border-cyan-500/50 outline-none text-sm cursor-pointer"
+                                                >
+                                                    {getIconNames().map(name => (
+                                                        <option key={name} value={name}>{name}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
                                         </div>
 
                                         <div className="md:col-span-3">
