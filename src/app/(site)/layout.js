@@ -1,6 +1,7 @@
 import Header from "../components/Header";
 
 import Footer from "../components/Footer";
+import AnalyticsBeacon from "../components/shared/AnalyticsBeacon";
 import { getLayoutData } from "@/lib/dataFetchers";
 import { promises as fs } from 'fs';
 import path from 'path';
@@ -103,6 +104,7 @@ export default async function SiteLayout({ children }) {
                 </main>
                 <Footer socialData={serializedSocialData} name={serializedAboutData?.name} config={serializedConfigData} packageVersion={packageVersion} />
             </div>
+            <AnalyticsBeacon />
         </div>
     );
 }

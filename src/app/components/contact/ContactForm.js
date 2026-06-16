@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { AlertCircle, CheckCircle, Loader2, Send } from 'lucide-react';
+import { trackEvent } from '@/lib/track';
 
 const inputStyle = {
   backgroundColor: 'var(--surface-tile)',
@@ -39,6 +40,7 @@ export default function ContactForm() {
 
       if (res.ok) {
         setStatus('success');
+        trackEvent({ type: 'contact_submit', path: '/contact-us' });
         setFormData({ name: '', email: '', message: '' });
         setTimeout(() => setStatus('idle'), 3000);
       } else {

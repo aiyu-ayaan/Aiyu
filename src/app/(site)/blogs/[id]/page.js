@@ -1,4 +1,5 @@
 import BlogDetailClient from '../../../components/blogs/BlogDetailClient';
+import TrackView from '../../../components/shared/TrackView';
 import { cache } from 'react';
 import { notFound, permanentRedirect } from 'next/navigation';
 import { getBlogById, getConfigData } from '@/lib/dataFetchers';
@@ -139,6 +140,7 @@ export default async function BlogDetailPage({ params }) {
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(blogSchema) }}
             />
+            <TrackView entityType="blog" entityId={blog?._id} entitySlug={canonicalSlug} />
             <BlogDetailClient blog={blog} config={config} adsConfig={adsConfig} />
         </>
     );

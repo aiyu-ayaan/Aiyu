@@ -1,4 +1,5 @@
 import { notFound, permanentRedirect } from 'next/navigation';
+import TrackView from '../../../components/shared/TrackView';
 import { cache } from 'react';
 import { getConfigData } from '@/lib/dataFetchers';
 import { getProjectSlug, resolveProjectByIdentifier } from '@/lib/contentSlugs';
@@ -122,6 +123,7 @@ export default async function ProjectDetailsPage({ params }) {
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(projectSchema) }}
             />
+            <TrackView entityType="project" entityId={project?._id} entitySlug={canonicalSlug} />
             <main className="mx-auto w-full max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
             <article className="overflow-hidden rounded-2xl border border-white/10 bg-slate-900/60 shadow-2xl backdrop-blur">
                 {project?.image ? (
