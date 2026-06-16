@@ -50,6 +50,11 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'raw.githubusercontent.com',
       },
+      {
+        // Project poster images are served from GitHub Pages (e.g. aiyu-ayaan.github.io).
+        protocol: 'https',
+        hostname: '**.github.io',
+      },
       ...(cdnHostname ? [{
         protocol: 'https',
         hostname: cdnHostname,

@@ -1,4 +1,24 @@
 import { defineConfig, devices } from '@playwright/test';
+import fs from 'fs';
+import path from 'path';
+
+// Load .env into the test-runner process (Next loads it for the dev server, but
+// the Playwright process needs ADMIN_USERNAME/ADMIN_PASSWORD for the admin e2e).
+const envPath = path.resolve('.env');
+if (fs.existsSync(envPath)) {
+  for (const line of fs.readFileSync(envPath, 'utf8').split('\n')) {
+    const m = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
+    if (!m) continue;
+    let value = m[2] ? m[2].trim() : '';
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+    if (process.env[m[1]] === undefined) process.env[m[1]] = value;
+  }
+}
 
 const PORT = 3000;
 const baseURL = `http://localhost:${PORT}`;
