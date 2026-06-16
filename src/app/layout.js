@@ -191,8 +191,10 @@ export default async function RootLayout({ children }) {
                   var path = location.pathname || '';
                   // Blogs are meant to load instantly — never boot-gate them.
                   var skipRoute = path === '/blogs' || path.indexOf('/blogs/') === 0;
-                  // Skip boot screen during e2e tests (Playwright user agent contains 'Playwright').
-                  var testEnv = /Playwright/i.test(navigator.userAgent);
+                  // Skip boot screen during e2e tests. Playwright/WebDriver
+                  // automation sets navigator.webdriver = true in both headed
+                  // and headless modes (the UA does NOT contain 'Playwright').
+                  var testEnv = navigator.webdriver === true;
                   // Cross-tab presence: another instance is "alive" if a heartbeat
                   // was written very recently (covers reload + new tab / duplicate
                   // while a foreground tab is open). Backgrounded tabs are caught

@@ -24,6 +24,13 @@ permissions:
   attestations: write
   id-token: write
 
+# Serialize release runs on master so two quick pushes never build/deploy on top
+# of each other. cancel-in-progress is intentionally false: an in-flight Docker
+# push or SSH deploy must finish rather than be killed mid-way.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   determine-release:
     name: Determine Next Version

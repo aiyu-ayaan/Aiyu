@@ -1,0 +1,28 @@
+name: Setup Node & install dependencies
+description: >-
+  Shared setup for CI jobs — pins Node, restores the npm cache and installs
+  dependencies reproducibly. Assumes the repo is already checked out.
+
+inputs:
+  node-version:
+    description: Node.js version to install.
+    required: false
+    default: 20.x
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Node.js ${{ inputs.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: npm
+
+    - name: Install dependencies
+      shell: bash
+      # `npm ci` is faster and reproducible (installs straight from the
+      # lockfile). `--legacy-peer-deps` mirrors local installs: the dependency
+      # tree has peer conflicts that block a strict install. The repo's
+      # `postinstall` runs `prisma generate`, so the Prisma client is ready for
+      # build and e2e jobs after this step.
+      run: npm ci --legacy-peer-deps

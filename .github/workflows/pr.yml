@@ -1,30 +1,134 @@
-name: PR Build & Lint Check
+name: PR Checks
+
+# Quality gate for pull requests. Each check runs as its own job so they
+# execute in parallel and a failure points straight at the stage that broke
+# (lint vs unit vs e2e vs build). Pushes that supersede an in-flight run cancel
+# it via the concurrency group below, so only the latest commit burns minutes.
 
 on:
   pull_request:
     types: [opened, synchronize, reopened]
 
+concurrency:
+  group: pr-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  build-and-lint:
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
-    
-    strategy:
-      matrix:
-        node-version: [20.x]
-    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
-      - name: Setup Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
+
+      - name: Setup & install
+        uses: ./.github/actions/setup
+
+      - name: Run ESLint
+        run: npm run lint
+
+  unit:
+    name: Unit tests (vitest)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup & install
+        uses: ./.github/actions/setup
+
+      - name: Run unit tests
+        # vitest runs in jsdom and needs no database or running server.
+        run: npm run test
+
+  e2e:
+    name: E2E tests (playwright)
+    runs-on: ubuntu-latest
+
+    # Real Postgres so the e2e suite exercises actual data paths (seeded
+    # content, admin auth) instead of the app's empty-DB fallbacks.
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: aiyu
+          POSTGRES_PASSWORD: aiyu
+          POSTGRES_DB: aiyu
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U aiyu -d aiyu"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://aiyu:aiyu@localhost:5432/aiyu?schema=public
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup & install
+        uses: ./.github/actions/setup
+
+      - name: Create CI .env
+        # Both the Next dev server (started by playwright.config.js) and the
+        # Playwright runner read these. ADMIN_* must be set so the valid-login
+        # e2e runs instead of skipping; JWT_SECRET is long on purpose (the app
+        # rejects weak secrets).
+        run: |
+          cat > .env << 'EOF'
+          DATABASE_URL=postgresql://aiyu:aiyu@localhost:5432/aiyu?schema=public
+          NEXT_PUBLIC_N8N_WEBHOOK_URL=https://dummy-webhook.example.com
+          NEXT_PUBLIC_AUTHOR_NAME=Portfolio Author
+          NEXT_PUBLIC_BASE_URL=http://localhost:3000
+          ADMIN_USERNAME=aiyu
+          ADMIN_PASSWORD=ci-admin-password-1234
+          JWT_SECRET=ci-jwt-secret-0123456789abcdef0123456789abcdef0123456789abcdef
+          BLOG_API_KEY=ci-blog-api-key-0123456789
+          GITHUB_TOKEN=dummy-github-token
+          EOF
+
+      - name: Apply database schema
+        run: npx prisma migrate deploy
+
+      - name: Seed database
+        run: npm run db:seed
+
+      - name: Cache Playwright browsers
+        id: pw-cache
+        uses: actions/cache@v4
         with:
-          node-version: ${{ matrix.node-version }}
-          cache: 'npm'
-      
-      - name: Install dependencies
-        run: npm install --legacy-peer-deps
-      
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Install Playwright browser
+        # Only the chromium project is configured. `--with-deps` is cheap when
+        # the browser binary itself is restored from cache.
+        run: npx playwright install --with-deps chromium
+
+      - name: Run e2e tests
+        run: npm run test:ui
+
+      - name: Upload Playwright report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup & install
+        uses: ./.github/actions/setup
+
       - name: Create dummy .env file
         run: |
           cat > .env.local << 'EOF'
@@ -36,10 +140,7 @@ jobs:
           JWT_SECRET=dummy-jwt-secret-for-ci-build
           GITHUB_TOKEN=dummy-github-token
           EOF
-      
-      - name: Run ESLint
-        run: npm run lint
-      
+
       - name: Build project
         # CI only needs to verify the app compiles, not produce a deployable
         # standalone bundle (that is the Docker image's job). Disable
@@ -49,16 +150,3 @@ jobs:
         env:
           NEXT_DISABLE_STANDALONE: 'true'
         run: npm run build
-      
-      - name: Build success summary
-        if: success()
-        run: |
-          echo "✅ Build and lint checks passed!"
-          echo "The PR is ready for merge."
-      
-      - name: Build failure summary
-        if: failure()
-        run: |
-          echo "❌ Build or lint checks failed!"
-          echo "Please review the logs above and fix any issues."
-          exit 1
