@@ -21,6 +21,8 @@ function getStateBucket(name) {
     return state.get(name);
 }
 
+const MAX_TRACKED_CLIENTS_PER_BUCKET = 5000;
+
 function pruneExpiredRequests(requests, now, windowMs) {
     for (const [key, timestamps] of requests.entries()) {
         const freshTimestamps = timestamps.filter((timestamp) => now - timestamp < windowMs);
@@ -31,6 +33,16 @@ function pruneExpiredRequests(requests, now, windowMs) {
         }
 
         requests.set(key, freshTimestamps);
+    }
+
+    // Hard cap so a flood of distinct client identifiers (spoofed
+    // X-Forwarded-For values, botnets) can't grow this map without bound.
+    if (requests.size > MAX_TRACKED_CLIENTS_PER_BUCKET) {
+        const excess = requests.size - MAX_TRACKED_CLIENTS_PER_BUCKET;
+        const keys = requests.keys();
+        for (let i = 0; i < excess; i++) {
+            requests.delete(keys.next().value);
+        }
     }
 }
 

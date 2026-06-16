@@ -1,7 +1,10 @@
 import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 
-const secretKey = process.env.JWT_SECRET || 'your-secret-key';
+const secretKey = process.env.JWT_SECRET;
+if (!secretKey) {
+    throw new Error('JWT_SECRET environment variable must be set');
+}
 const key = new TextEncoder().encode(secretKey);
 
 export async function encrypt(payload) {
@@ -39,7 +42,12 @@ export async function login(formData) {
         const session = await encrypt({ user, expires });
 
         // Save the session in a cookie
-        (await cookies()).set('session', session, { expires, httpOnly: true });
+        (await cookies()).set('session', session, {
+            expires,
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+        });
         return true;
     }
 
@@ -48,7 +56,12 @@ export async function login(formData) {
 
 export async function logout() {
     // Destroy the session
-    (await cookies()).set('session', '', { expires: new Date(0) });
+    (await cookies()).set('session', '', {
+        expires: new Date(0),
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+    });
 }
 
 export async function getSession() {

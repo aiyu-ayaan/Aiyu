@@ -10,7 +10,6 @@ const CONTENT_TYPES = {
     jpeg: 'image/jpeg',
     gif: 'image/gif',
     webp: 'image/webp',
-    svg: 'image/svg+xml',
     pdf: 'application/pdf',
 };
 
@@ -61,6 +60,8 @@ export async function GET(request, { params }) {
                 'Content-Type': contentType,
                 'Content-Length': fileStats.size.toString(),
                 'Cache-Control': 'public, max-age=31536000, immutable',
+                'X-Content-Type-Options': 'nosniff',
+                'Content-Disposition': 'inline',
             },
         });
     } catch (error) {

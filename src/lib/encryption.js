@@ -1,7 +1,10 @@
 import crypto from 'crypto';
 
 const ALGORITHM = 'aes-256-cbc';
-const SECRET_KEY = process.env.JWT_SECRET || 'your-secret-key-at-least-32-characters'; // Callback to same secret as auth
+const SECRET_KEY = process.env.JWT_SECRET;
+if (!SECRET_KEY) {
+    throw new Error('JWT_SECRET environment variable must be set');
+}
 
 // Ensure key is 32 bytes
 const getKey = () => {

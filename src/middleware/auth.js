@@ -103,6 +103,20 @@ export function checkRateLimit(identifier, maxRequests = 10, windowMs = 60000) {
             const recent = times.filter(t => now - t < windowMs);
             if (recent.length === 0) {
                 rateLimitMap.delete(key);
+            } else {
+                rateLimitMap.set(key, recent);
+            }
+        }
+
+        // Hard cap: if still oversized after pruning stale entries (e.g. an
+        // attacker spraying requests from many distinct IPs/identifiers),
+        // drop the oldest entries so the map can't grow without bound.
+        const MAX_TRACKED_IDENTIFIERS = 5000;
+        if (rateLimitMap.size > MAX_TRACKED_IDENTIFIERS) {
+            const excess = rateLimitMap.size - MAX_TRACKED_IDENTIFIERS;
+            const keys = rateLimitMap.keys();
+            for (let i = 0; i < excess; i++) {
+                rateLimitMap.delete(keys.next().value);
             }
         }
     }
