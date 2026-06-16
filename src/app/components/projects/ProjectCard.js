@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 import React, { useMemo, useState } from 'react';
 import { FaCalendarDay, FaCodeBranch } from 'react-icons/fa';
 import TechStackDialog from './TechStackDialog';
@@ -68,12 +69,13 @@ const ProjectCard = ({ project, onCardClick = () => { } }) => {
         >
           <div className="relative h-56 overflow-hidden border-b sm:h-60" style={{ borderColor: 'var(--hairline)' }}>
             {project?.image ? (
-              <img
+              <Image
                 src={project.image}
                 alt={project?.name || 'Project'}
-                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                fill
+                sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                className="object-cover transition-transform duration-500 group-hover:scale-105"
                 loading="lazy"
-                decoding="async"
                 referrerPolicy="no-referrer"
               />
             ) : (

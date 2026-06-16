@@ -7,6 +7,7 @@ import { withAuth } from '@/middleware/auth';
 import convert from 'heic-convert';
 import sharp from 'sharp';
 import { fetchWithTimeout } from '@/lib/upstreamControl';
+import { MAX_FILE_SIZE } from '@/utils/fileValidation';
 
 async function generateCaption(request) {
     try {
@@ -33,6 +34,10 @@ async function generateCaption(request) {
 
         if (!file) {
             return NextResponse.json({ success: false, error: 'No image file provided.' }, { status: 400 });
+        }
+
+        if (file.size > MAX_FILE_SIZE) {
+            return NextResponse.json({ success: false, error: `File size must not exceed ${MAX_FILE_SIZE / 1024 / 1024}MB.` }, { status: 400 });
         }
 
         // 3. Prepare Image
