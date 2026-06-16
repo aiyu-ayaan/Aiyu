@@ -23,6 +23,7 @@
     "migrate:mongo": "node --env-file=.env scripts/migrate-mongodb-to-postgres.mjs",
     "perf:k6:public": "k6 run scripts/k6/public-routes.js",
     "security-check": "node scripts/security-check.mjs",
+    "seo:audit": "node scripts/seo-audit.mjs",
     "docker:build": "docker-compose build --no-cache",
     "docker:up": "docker-compose up -d",
     "docker:up:dev": "docker compose --env-file .env.production -f docker-compose-local.yml up -d --build",
