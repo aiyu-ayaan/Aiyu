@@ -13,9 +13,21 @@ function isZipBuffer(buffer) {
         && buffer[1] === 0x4b;
 }
 
+const MAX_DECOMPRESSED_BYTES = 500 * 1024 * 1024; // 500MB
+const MAX_ZIP_ENTRIES = 10000;
+
 function parseZipImport(fileBuffer) {
     const zip = new AdmZip(fileBuffer);
     const zipEntries = zip.getEntries();
+
+    if (zipEntries.length > MAX_ZIP_ENTRIES) {
+        throw new Error(`Backup contains too many files (${zipEntries.length} > ${MAX_ZIP_ENTRIES})`);
+    }
+
+    const totalUncompressedSize = zipEntries.reduce((sum, entry) => sum + (entry.header?.size || 0), 0);
+    if (totalUncompressedSize > MAX_DECOMPRESSED_BYTES) {
+        throw new Error("Backup archive's uncompressed size exceeds the 500MB limit");
+    }
 
     const dataEntry = zipEntries.find((entry) => !entry.isDirectory && /(^|\/)data\.json$/i.test(entry.entryName));
     if (!dataEntry) {

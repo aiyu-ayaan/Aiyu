@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { getSingleton } from '@/lib/serialize';
 import { decrypt } from '@/lib/encryption';
 import { withAuth } from '@/middleware/auth';
+import { fetchWithTimeout } from '@/lib/upstreamControl';
 
 async function generateText(request) {
     try {
@@ -163,7 +164,7 @@ Return ONLY a valid JSON object (NO markdown, NO backticks, NO explanation) with
                         headers['HTTP-Referer'] = 'https://aiyu.dev';
                         headers['X-Title'] = 'Aiyu Portfolio'; 
                     }
-                    const response = await fetch(endpoint, {
+                    const response = await fetchWithTimeout(endpoint, {
                         method: 'POST',
                         headers,
                         body: JSON.stringify({
@@ -173,7 +174,7 @@ Return ONLY a valid JSON object (NO markdown, NO backticks, NO explanation) with
                                 { role: 'user', content: finalPrompt }
                             ]
                         })
-                    });
+                    }, 30000);
                     if (!response.ok) {
                         throw new Error(`${currentProvider.toUpperCase()} Error: ${response.status} ${await response.text()}`);
                     }

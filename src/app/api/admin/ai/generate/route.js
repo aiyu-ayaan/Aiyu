@@ -6,6 +6,7 @@ import { decrypt } from '@/lib/encryption';
 import { withAuth } from '@/middleware/auth';
 import convert from 'heic-convert';
 import sharp from 'sharp';
+import { fetchWithTimeout } from '@/lib/upstreamControl';
 
 async function generateCaption(request) {
     try {
@@ -141,7 +142,7 @@ async function generateCaption(request) {
                 headers['X-Title'] = 'Aiyu Portfolio'; 
             }
 
-            const response = await fetch(endpoint, {
+            const response = await fetchWithTimeout(endpoint, {
                 method: 'POST',
                 headers,
                 body: JSON.stringify({
@@ -154,7 +155,7 @@ async function generateCaption(request) {
                         ]}
                     ]
                 })
-            });
+            }, 30000);
 
             if (!response.ok) {
                 const errorData = await response.text();
