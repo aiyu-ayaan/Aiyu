@@ -28,6 +28,8 @@ const DATE_FIELDS = {
   cronLog: ['ranAt', 'createdAt', 'updatedAt'],
   theme: ['createdAt', 'updatedAt'],
   social: [],
+  analyticsEvent: ['createdAt'],
+  analyticsDaily: ['createdAt', 'updatedAt'],
 };
 
 // Integer columns per model (coerced to Number on write).
@@ -38,6 +40,7 @@ const INT_FIELDS = {
   aiLog: ['inputTokens', 'outputTokens', 'totalTokens'],
   cron: ['retryCount', 'retryDelay'],
   cronLog: ['durationMs'],
+  analyticsDaily: ['views', 'uniques'],
 };
 
 // Whitelisted columns for relational models (used by fromClient on import/migrate).
@@ -79,6 +82,15 @@ const RELATIONAL_COLUMNS = {
     'previewImage', 'author', 'createdAt', 'updatedAt',
   ],
   social: ['name', 'url', 'iconName', 'isHidden'],
+  analyticsEvent: [
+    'type', 'path', 'entityType', 'entityId', 'entitySlug', 'referrer',
+    'referrerType', 'device', 'country', 'visitorHash', 'sessionId', 'isBot',
+    'meta', 'createdAt',
+  ],
+  analyticsDaily: [
+    'day', 'type', 'entityType', 'entityId', 'views', 'uniques',
+    'createdAt', 'updatedAt',
+  ],
 };
 
 // Columns dropped from relational rows when serializing to the client.
@@ -117,6 +129,8 @@ export const MODELS = {
   cronLog: { delegate: 'cronLog', kind: 'relational', singleton: false },
   theme: { delegate: 'theme', kind: 'relational', singleton: false },
   social: { delegate: 'social', kind: 'relational', singleton: false },
+  analyticsEvent: { delegate: 'analyticsEvent', kind: 'relational', singleton: false },
+  analyticsDaily: { delegate: 'analyticsDaily', kind: 'relational', singleton: false },
   // Json-blob singletons
   config: { delegate: 'config', kind: 'json', singleton: true, secrets: CONFIG_SECRETS, timestamps: false },
   ads: { delegate: 'ads', kind: 'json', singleton: true, timestamps: true },

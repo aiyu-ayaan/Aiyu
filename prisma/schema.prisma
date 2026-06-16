@@ -198,6 +198,51 @@ model CronLog {
   @@index([ranAt])
 }
 
+// ──────────────────────────── Analytics ────────────────────────────
+// Self-hosted, first-party analytics. `AnalyticsEvent` is the raw append-only
+// log; `AnalyticsDaily` is a pre-aggregated rollup upserted on each event so
+// the dashboard reads O(days) instead of scanning the full event log. Both are
+// plain relational models so they ride through export/import like every table.
+
+model AnalyticsEvent {
+  id           String   @id @default(cuid())
+  type         String // pageview | entity_view | contact_submit | outbound_click
+  path         String   @default("")
+  entityType   String? // blog | project | app | gallery
+  entityId     String?
+  entitySlug   String?
+  referrer     String   @default("") // normalized host only, no query/PII
+  referrerType String   @default("direct") // direct | internal | search | social | external
+  device       String   @default("desktop") // mobile | tablet | desktop | bot
+  country      String? // from edge/proxy header when available
+  visitorHash  String   @default("") // salted SHA-256(IP+UA+day) — rotates daily
+  sessionId    String   @default("")
+  isBot        Boolean  @default(false)
+  meta         Json?    @default("{}") // small extra context (e.g. click target)
+  createdAt    DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([type, createdAt])
+  @@index([entityType, entityId])
+  @@index([referrerType, createdAt])
+}
+
+model AnalyticsDaily {
+  id         String   @id @default(cuid())
+  day        String // YYYY-MM-DD (UTC) bucket
+  type       String
+  entityType String   @default("")
+  entityId   String   @default("")
+  views      Int      @default(0)
+  uniques    Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+
+  @@unique([day, type, entityType, entityId])
+  @@index([day])
+  @@index([type, day])
+}
+
 model Social {
   id       String  @id @default(cuid())
   name     String
