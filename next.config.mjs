@@ -141,8 +141,16 @@ const nextConfig = {
 
   async headers() {
     const headers = [];
+    // Public HTML: browsers always revalidate (max-age=0) so visitors never
+    // see stale pages, but the CDN may cache for 5 min and serve stale for up
+    // to a day while it refreshes in the background. This lets Googlebot fetch
+    // cached HTML instead of paying a 1-4s dynamic render every crawl, which
+    // is what was throttling crawl budget ("Discovered - currently not
+    // indexed"). NOTE: Cloudflare does not cache HTML from these headers alone
+    // — a Cache Rule (Eligible for cache / "Cache Everything" on the HTML
+    // routes) is required for cf-cache-status to flip from DYNAMIC to HIT.
     const publicHtmlCacheValue = isProduction
-      ? 'public, max-age=0, s-maxage=0, must-revalidate'
+      ? 'public, max-age=0, s-maxage=300, stale-while-revalidate=86400'
       : 'no-store';
 
     // Security headers (CSP + HSTS) for all HTML routes
