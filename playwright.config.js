@@ -46,5 +46,6 @@ export default defineConfig({
     timeout: 120_000,
     reuseExistingServer: !process.env.CI,
     stdout: 'pipe',
+    env: { NEXT_DISABLE_PROGRESS_BAR: '1' },
   },
 });
