@@ -48,6 +48,8 @@ export async function GET(request) {
             crons,
             ads,
             notificationConfig,
+            analyticsEvents: toClientList('analyticsEvent', await prisma.analyticsEvent.findMany()),
+            analyticsDaily: toClientList('analyticsDaily', await prisma.analyticsDaily.findMany()),
             exportedAt: new Date().toISOString(),
         };
 

@@ -175,6 +175,8 @@ export async function POST(request) {
             { modelKey: 'cron', key: 'crons' },
             { modelKey: 'ads', key: 'ads' },
             { modelKey: 'notificationConfig', key: 'notificationConfig' },
+            { modelKey: 'analyticsEvent', key: 'analyticsEvents' },
+            { modelKey: 'analyticsDaily', key: 'analyticsDaily' },
         ];
 
         // Restore database collections (preserving original ids from the backup).

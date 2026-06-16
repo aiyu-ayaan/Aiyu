@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { FaDownload, FaUpload, FaDatabase, FaExclamationTriangle, FaCheckCircle, FaServer, FaTrash } from 'react-icons/fa';
+import { FaDownload, FaUpload, FaDatabase, FaExclamationTriangle, FaCheckCircle, FaServer, FaTrash, FaChartLine } from 'react-icons/fa';
 
 export default function DatabaseManager() {
     const [isLoading, setIsLoading] = useState(false);
@@ -106,6 +106,30 @@ export default function DatabaseManager() {
         }
     };
 
+    const handleResetAnalytics = async () => {
+        if (!window.confirm('WARNING: THIS WILL PERMANENTLY DELETE ALL ANALYTICS DATA. CONFIRM PROTOCOL?')) {
+            return;
+        }
+
+        try {
+            setIsLoading(true);
+            setMessage({ type: 'info', text: 'PURGING_ANALYTICS_DATA...' });
+
+            const response = await fetch('/api/admin/analytics', { method: 'DELETE' });
+            const result = await response.json();
+
+            if (!response.ok || !result?.success) {
+                throw new Error(result?.error || 'ANALYTICS_RESET_FAILED');
+            }
+
+            setMessage({ type: 'success', text: 'ANALYTICS_DATA_PURGED_SUCCESSFULLY' });
+        } catch (error) {
+            setMessage({ type: 'error', text: error.message });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const handlePurgeCache = async () => {
         if (!window.confirm('WARNING: THIS WILL PURGE ALL IN-MEMORY CACHES. CONFIRM PROTOCOL?')) {
             return;
@@ -165,7 +189,7 @@ export default function DatabaseManager() {
                 </motion.div>
             )}
 
-            <div className="grid md:grid-cols-3 gap-8">
+            <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-8">
                 {/* Export Section */}
                 <motion.div
                     initial={{ opacity: 0, x: -20 }}
@@ -292,6 +316,48 @@ export default function DatabaseManager() {
                                 <>
                                     <FaTrash className="group-hover/btn:scale-110 transition-transform" />
                                     PURGE_ALL_CACHES
+                                </>
+                            )}
+                        </button>
+                    </div>
+                </motion.div>
+
+                {/* Reset Analytics Section */}
+                <motion.div
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="bg-slate-900/50 backdrop-blur-xl p-4 md:p-8 rounded-2xl border border-white/10 relative overflow-hidden group"
+                >
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
+
+                    <div className="relative z-10">
+                        <div className="flex items-center gap-3 mb-6">
+                            <FaChartLine className="text-purple-500/70" size={20} />
+                            <h2 className="text-sm font-mono text-purple-500/70 uppercase tracking-widest">Analytics Reset</h2>
+                        </div>
+
+                        <div className="bg-red-500/5 border border-red-500/10 p-4 rounded-lg mb-6 flex gap-3 items-start">
+                            <FaExclamationTriangle className="text-red-500 mt-0.5 shrink-0" size={14} />
+                            <p className="text-red-400/80 text-xs leading-relaxed font-mono">
+                                CRITICAL WARNING: This permanently deletes all recorded analytics events and rollups. Backups include analytics data.
+                            </p>
+                        </div>
+
+                        <p className="text-slate-400 mb-8 text-sm leading-relaxed">
+                            Purge all first-party analytics (page views, content views, clicks, conversions). Other site data is untouched.
+                        </p>
+
+                        <button
+                            onClick={handleResetAnalytics}
+                            disabled={isLoading}
+                            className="w-full bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/20 hover:border-purple-500/40 text-purple-400 font-bold py-4 px-4 rounded-xl transition-all flex items-center justify-center gap-3 uppercase tracking-wider text-sm disabled:opacity-50 disabled:cursor-not-allowed group/btn"
+                        >
+                            {isLoading ? (
+                                <span className="animate-pulse">PURGING...</span>
+                            ) : (
+                                <>
+                                    <FaTrash className="group-hover/btn:scale-110 transition-transform" />
+                                    RESET_ANALYTICS
                                 </>
                             )}
                         </button>
