@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
     FaChartLine, FaEye, FaUsers, FaPaperPlane, FaUpRightFromSquare,
-    FaArrowPointer, FaRobot, FaArrowsRotate, FaExclamationTriangle,
+    FaArrowPointer, FaRobot, FaArrowsRotate, FaTriangleExclamation,
 } from 'react-icons/fa6';
 import { LineChart, BarList, DonutSplit } from './charts';
 
@@ -118,7 +118,7 @@ export default function AnalyticsDashboard() {
 
             {error && (
                 <div className="p-4 rounded-xl mb-6 flex items-center gap-3 border bg-red-500/10 text-red-400 border-red-500/20">
-                    <FaExclamationTriangle />
+                    <FaTriangleExclamation />
                     <span className="font-mono text-sm tracking-wide">{error}</span>
                 </div>
             )}
@@ -208,7 +208,7 @@ export default function AnalyticsDashboard() {
             <div className="bg-slate-900/50 backdrop-blur-xl p-6 rounded-2xl border border-red-500/15">
                 <div className="flex flex-wrap items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
-                        <FaExclamationTriangle className="text-red-500/70" />
+                        <FaTriangleExclamation className="text-red-500/70" />
                         <div>
                             <h2 className="text-sm font-mono text-red-400/80 uppercase tracking-widest">Reset Analytics</h2>
                             <p className="text-slate-500 text-xs mt-1">Permanently delete all recorded events and rollups. This cannot be undone.</p>
