@@ -4,6 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "playwright test",
+    "test:ui:headed": "playwright test --headed",
+    "test:all": "vitest run && playwright test",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
@@ -76,12 +81,18 @@
     "@eslint/eslintrc": "^3",
     "@eslint/js": "^9.39.4",
     "@tailwindcss/postcss": "^4",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
+    "@vitejs/plugin-react": "^6.0.2",
     "eslint": "^9.39.4",
     "eslint-config-next": "16.2.6",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.6.0",
+    "jsdom": "^29.1.1",
     "playwright": "^1.51.1",
-    "tailwindcss": "^4"
+    "tailwindcss": "^4",
+    "vitest": "^2.1.9"
   }
 }
