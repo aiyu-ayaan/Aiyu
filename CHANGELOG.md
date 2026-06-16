@@ -1,5 +1,43 @@
 # Changelog
 
+## [4.4.0](https://github.com/aiyu-ayaan/Aiyu/compare/v4.3.2...v4.4.0) (2026-06-16)
+
+### Features
+
+* : New minor release is done which include first party analytics screen, also include test script for unit and ui-testing.On the bugs front this closes #215
+* Wire analytics into backup/export, import & database reset
+* /admin/analytics dashboard + command-center card
+* Admin read API + SVG chart components
+* Client beacon + entity/CTA tracking hooks
+* Tracking engine + public ingestion API
+* Prisma models + migration + serialize registry
+
+### Bug Fixes
+
+* Use FaTriangleExclamation (fa6) on dashboard
+* Bound zip-import size and add timeouts to AI provider fallback
+* Remove weak JWT secret fallback, harden session cookies, cap rate-limit memory
+* Patch high/moderate npm vulnerabilities
+* Update memory limits and cache TTL, enhance image loading in gallery
+
+### Other Changes
+
+* Update vitest to version 4.1.9 and add postcss override; enhance JSX handling in vitest config
+* Update PR workflow to include lint, unit, and e2e tests; remove deprecated release workflow
+* Disable boot loader animation during e2e tests
+* Disable Next.js progress bar during e2e testing
+* Document test suite commands and update stack badges
+* Public smoke, navigation, theme and admin-auth flows
+* Add playwright config with auto-started dev server
+* Component tests for ThemeToggle and TicTacToe
+* Unit tests for file validation, seo, cache and theme utils
+* Add vitest harness with jsdom + react testing library
+* Implementation plan for full test suite
+* Spec for full unit + UI test suite
+* Use next/image for project cards, cap AI-caption upload size
+* Update various screenshot images for improved visuals
+* Merge branch 'master' of https://github.com/aiyu-ayaan/Aiyu
+
 ## [4.3.2](https://github.com/aiyu-ayaan/Aiyu/compare/v4.3.1...v4.3.2) (2026-06-15)
 
 ### Features
