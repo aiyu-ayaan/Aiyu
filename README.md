@@ -2,8 +2,8 @@
 
 [![Status](https://badge.aiyu.co.in/badge/stable)](https://github.com/aiyu-ayaan/Aiyu)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Next.js](https://img.shields.io/badge/Next.js-15.0-black?logo=next.js)](https://nextjs.org/)
-[![React](https://img.shields.io/badge/React-19.0-blue?logo=react)](https://reactjs.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19-blue?logo=react)](https://reactjs.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-336791?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Prisma](https://img.shields.io/badge/Prisma-ORM-2D3748?logo=prisma)](https://www.prisma.io/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker)](https://www.docker.com/)
@@ -137,12 +137,35 @@ dev database). pgAdmin is available at `http://localhost:5050`.
 
 ---
 
+## 🧪 Running Tests
+
+Unit & component tests (Vitest + Testing Library):
+
+```bash
+npm test          # run once
+npm run test:watch
+```
+
+UI / end-to-end tests (Playwright — auto-starts the dev server with real clicks):
+
+```bash
+npm run test:ui          # headless
+npm run test:ui:headed   # watch the browser
+```
+
+Run everything: `npm run test:all`.
+
+The admin e2e reads `ADMIN_USERNAME` / `ADMIN_PASSWORD` from `.env` (same as the
+screenshot script); the valid-login test is skipped if `ADMIN_PASSWORD` is unset.
+
+---
+
 ## 🛠️ The Tech Stack
 
 - **Core**: Next.js 16 (App Router), React 19, Tailwind CSS 4, Framer Motion
 - **Database**: PostgreSQL 17 with Prisma ORM (Postgres full-text search for blogs)
 - **Image Processing**: Sharp (with HEIC support)
-- **Authentication**: JWT (`jose`), bcrypt hashing
+- **Authentication**: JWT (`jose`), AES-256 encrypted secrets storage
 - **Security Protocols**: Non-root execution, Capability dropping, `noexec /tmp` directory, rate limiting, and secure headers.
 - **Testing & Tooling**: Playwright, ESLint
 
