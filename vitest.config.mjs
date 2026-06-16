@@ -1,5 +1,6 @@
 import { defineConfig } from 'vitest/config';
 import { transformWithOxc } from 'vite';
+import { fileURLToPath } from 'node:url';
 
 // This project writes JSX inside .js files. Vite 8's built-in `vite:oxc`
 // transform derives the parser language from the file extension and excludes
@@ -25,6 +26,13 @@ const jsxInJs = {
 
 export default defineConfig({
   plugins: [jsxInJs],
+  // Mirror the `@/` -> `src/` path alias used by Next.js/jsconfig so modules
+  // importing via the alias are resolvable under Vitest.
+  resolve: {
+    alias: {
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+    },
+  },
   // Native .jsx/.tsx files use the automatic React runtime.
   oxc: { jsx: { runtime: 'automatic', importSource: 'react' } },
   optimizeDeps: {
