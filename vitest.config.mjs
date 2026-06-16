@@ -1,8 +1,19 @@
 import { defineConfig } from 'vitest/config';
-import react from '@vitejs/plugin-react';
 
 export default defineConfig({
-  plugins: [react()],
+  // This project writes JSX inside .js files. Tell esbuild to parse src/*.js as JSX
+  // (with the automatic runtime) so components and tests transform correctly.
+  esbuild: {
+    loader: 'jsx',
+    include: /src\/.*\.jsx?$/,
+    exclude: [],
+    jsx: 'automatic',
+  },
+  optimizeDeps: {
+    esbuildOptions: {
+      loader: { '.js': 'jsx' },
+    },
+  },
   // Avoid loading the project's Tailwind v4 PostCSS config during tests.
   css: { postcss: { plugins: [] } },
   test: {
