@@ -6,6 +6,7 @@ import {
   getDeploymentSlug,
   getProjectSlug,
 } from '@/lib/contentSlugs';
+import { getSeoConfig, applySitemapOverrides } from '@/lib/seoConfig';
 
 const IS_PRODUCTION_BUILD = process.env.NEXT_PHASE === 'phase-production-build';
 const ALLOW_DB_DURING_BUILD = process.env.ALLOW_DB_DURING_BUILD === 'true';
@@ -204,7 +205,17 @@ export default async function sitemap() {
       priority: 0.74,
     }));
 
-    return normalizeSitemapRoutes([...staticRoutesWithRealtimeCollections, ...blogRoutes, ...projectRoutes, ...appRoutes]);
+    const generated = normalizeSitemapRoutes([...staticRoutesWithRealtimeCollections, ...blogRoutes, ...projectRoutes, ...appRoutes]);
+
+    // Apply admin sitemap overrides (extra URLs + path exclusions). Failure here
+    // must never break the sitemap, so fall back to the generated list.
+    try {
+      const { sitemap: sitemapCfg } = await getSeoConfig();
+      return applySitemapOverrides(generated, sitemapCfg, baseUrl);
+    } catch (overrideError) {
+      console.warn('[sitemap] override apply failed, using generated routes:', overrideError.message);
+      return generated;
+    }
   } catch (error) {
     console.error('Error generating sitemap:', error);
     console.warn('Database unavailable during sitemap generation. Returning static routes only.');

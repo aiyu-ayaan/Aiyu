@@ -32,7 +32,6 @@ export const DEFAULT_SEO_CONFIG = {
             { userAgent: 'Googlebot', allow: ['/'], disallow: [...DEFAULT_DISALLOW], crawlDelay: 0 },
         ],
         extraSitemaps: [],
-        customAppend: '',
     },
     sitemap: {
         extraUrls: [],       // [{ url, changeFrequency, priority }]
@@ -43,6 +42,51 @@ export const DEFAULT_SEO_CONFIG = {
         enabled: false,
     },
 };
+
+/** Canonicalize a URL or path to `origin + pathname` (no trailing slash). */
+function canonicalize(value, baseUrl) {
+    try {
+        const u = new URL(value, baseUrl);
+        return `${u.origin}${u.pathname.replace(/\/+$/, '') || ''}`;
+    } catch {
+        return String(value || '').replace(/\/+$/, '');
+    }
+}
+
+/**
+ * Apply admin sitemap overrides to the code-generated route list:
+ *   - drop routes whose canonical URL matches any `excludePaths` entry
+ *   - append `extraUrls` entries (deduped against existing routes)
+ * Pure function so it can be unit-tested without a DB.
+ */
+export function applySitemapOverrides(routes = [], sitemapCfg = {}, baseUrl = '') {
+    const excludeSet = new Set((sitemapCfg.excludePaths || []).map((p) => canonicalize(p, baseUrl)));
+    const seen = new Set();
+    const out = [];
+
+    for (const route of routes) {
+        if (!route?.url) continue;
+        const key = canonicalize(route.url, baseUrl);
+        if (excludeSet.has(key) || seen.has(key)) continue;
+        seen.add(key);
+        out.push(route);
+    }
+
+    for (const extra of sitemapCfg.extraUrls || []) {
+        if (!extra?.url) continue;
+        const key = canonicalize(extra.url, baseUrl);
+        if (excludeSet.has(key) || seen.has(key)) continue;
+        seen.add(key);
+        out.push({
+            url: key,
+            lastModified: new Date(),
+            changeFrequency: extra.changeFrequency || 'monthly',
+            priority: typeof extra.priority === 'number' ? extra.priority : 0.5,
+        });
+    }
+
+    return out;
+}
 
 const CACHE_KEY = 'db:seoconfig:singleton';
 const CACHE_TTL = 60_000;
@@ -58,7 +102,6 @@ export function mergeSeoConfig(stored = {}) {
                 ? data.robots.rules
                 : DEFAULT_SEO_CONFIG.robots.rules,
             extraSitemaps: Array.isArray(data.robots?.extraSitemaps) ? data.robots.extraSitemaps : [],
-            customAppend: typeof data.robots?.customAppend === 'string' ? data.robots.customAppend : '',
         },
         sitemap: {
             ...DEFAULT_SEO_CONFIG.sitemap,
