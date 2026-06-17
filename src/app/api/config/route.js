@@ -138,6 +138,8 @@ async function updateConfig(request) {
         const config = await upsertSingleton(prisma, 'config', body);
         await cache.invalidatePrefixAsync('db:config');
         await cache.invalidatePrefixAsync('db:themes');
+        // Switching the active resume profile changes the generated PDF.
+        await cache.invalidatePrefixAsync('db:resume');
         return NextResponse.json(config);
     } catch (error) {
         console.error('Config update error:', error);
