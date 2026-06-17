@@ -5,7 +5,7 @@ import Link from 'next/link';
 import {
     FaHouse, FaUser, FaBriefcase, FaPenNib, FaImages,
     FaHeading, FaShareNodes, FaEnvelope,
-    FaPalette, FaGithub, FaSliders, FaDatabase, FaRightFromBracket, FaArrowRight, FaTerminal, FaRobot, FaServer, FaHardDrive, FaCode, FaGoogle, FaClock, FaBell, FaChartLine, FaMagnifyingGlass
+    FaPalette, FaGithub, FaSliders, FaDatabase, FaRightFromBracket, FaArrowRight, FaTerminal, FaRobot, FaServer, FaHardDrive, FaCode, FaGoogle, FaClock, FaBell, FaChartLine, FaMagnifyingGlass, FaShieldHalved, FaGauge
 } from "react-icons/fa6";
 
 export default function AdminDashboard() {
@@ -45,6 +45,8 @@ export default function AdminDashboard() {
             { label: 'Terminal', description: 'CLI Appearance', icon: <FaTerminal />, color: 'from-amber-500/10 to-amber-500/5', textColor: 'text-amber-400', path: '/admin/terminal' },
             { label: 'Analytics', description: 'Traffic & Insights', icon: <FaChartLine />, color: 'from-cyan-500/10 to-cyan-500/5', textColor: 'text-cyan-400', path: '/admin/analytics' },
             { label: 'SEO & Crawl', description: 'Search & Sitemap', icon: <FaMagnifyingGlass />, color: 'from-lime-500/10 to-lime-500/5', textColor: 'text-lime-400', path: '/admin/seo' },
+            { label: 'Security', description: 'Sessions & Audit Log', icon: <FaShieldHalved />, color: 'from-rose-500/10 to-rose-500/5', textColor: 'text-rose-400', path: '/admin/security' },
+            { label: 'Server Health', description: 'Resources & Uptime', icon: <FaGauge />, color: 'from-emerald-500/10 to-emerald-500/5', textColor: 'text-emerald-400', path: '/admin/health' },
             { label: 'Database', description: 'Backups & JSON', icon: <FaDatabase />, color: 'from-yellow-500/10 to-yellow-500/5', textColor: 'text-yellow-400', path: '/admin/database' },
             { label: 'Resources', description: 'Storage & Cleanup', icon: <FaHardDrive />, color: 'from-cyan-500/10 to-cyan-500/5', textColor: 'text-cyan-400', path: '/admin/resources' },
             { label: 'AI Core', description: 'Neural Settings', icon: <FaRobot />, color: 'from-cyan-500/10 to-cyan-500/5', textColor: 'text-cyan-400', path: '/admin/ai' },
