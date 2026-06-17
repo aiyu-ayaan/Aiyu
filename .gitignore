@@ -48,6 +48,10 @@ next-env.d.ts
 /public/uploads/*
 !/public/uploads/.gitkeep
 
+# Resume is DB-backed (admin upload -> config.resume -> /api/resume).
+# Keep static copies out of the repo so they never get baked into the image.
+/public/resume.pdf
+
 # wiki folder
 /wiki
 /Aiyu.wiki

@@ -1,3 +1,8 @@
+# Resume is DB-backed (config.resume) and served via /api/resume.
+# Never bake a static copy into the image — it would override the DB
+# version on every container rebuild.
+public/resume.pdf
+
 # Dependencies
 node_modules
 npm-debug.log*
