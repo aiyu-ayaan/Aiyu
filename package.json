@@ -43,6 +43,7 @@
     "@google/generative-ai": "^0.24.1",
     "@gsap/react": "^2.1.2",
     "@prisma/client": "^6.19.3",
+    "@react-pdf/renderer": "^4.5.1",
     "@tailwindcss/typography": "^0.5.19",
     "adm-zip": "^0.5.17",
     "archiver": "^7.0.1",

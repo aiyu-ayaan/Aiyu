@@ -415,6 +415,16 @@ model NotificationConfig {
   updatedAt DateTime @default(now()) @updatedAt
 }
 
+// Resume Tailoring Hub: one master CV schema + N job-specific profiles that
+// hide items/bullets and override the tagline/summary. The /api/resume route
+// renders the active (or requested) profile to a PDF via @react-pdf/renderer.
+model ResumeBuilder {
+  id        String   @id @default(cuid())
+  data      Json     @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+}
+
 model GitHub {
   id        String   @id @default(cuid())
   data      Json     @default("{}")
