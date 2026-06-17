@@ -30,6 +30,7 @@ const DATE_FIELDS = {
   social: [],
   analyticsEvent: ['createdAt'],
   analyticsDaily: ['createdAt', 'updatedAt'],
+  indexingLog: ['createdAt'],
 };
 
 // Integer columns per model (coerced to Number on write).
@@ -91,6 +92,7 @@ const RELATIONAL_COLUMNS = {
     'day', 'type', 'entityType', 'entityId', 'views', 'uniques',
     'createdAt', 'updatedAt',
   ],
+  indexingLog: ['url', 'type', 'status', 'response', 'createdAt'],
 };
 
 // Columns dropped from relational rows when serializing to the client.
@@ -106,6 +108,9 @@ const CONFIG_SECRETS = [
   'encryptedOpenRouterApiKey',
   'blogApiTokenHash',
 ];
+
+// Secret column (withheld by default) for the SeoConfig json-blob model.
+const SEO_SECRETS = ['encryptedGoogleServiceAccount'];
 
 /**
  * @typedef {Object} ModelDef
@@ -131,8 +136,10 @@ export const MODELS = {
   social: { delegate: 'social', kind: 'relational', singleton: false },
   analyticsEvent: { delegate: 'analyticsEvent', kind: 'relational', singleton: false },
   analyticsDaily: { delegate: 'analyticsDaily', kind: 'relational', singleton: false },
+  indexingLog: { delegate: 'indexingLog', kind: 'relational', singleton: false },
   // Json-blob singletons
   config: { delegate: 'config', kind: 'json', singleton: true, secrets: CONFIG_SECRETS, timestamps: false },
+  seoConfig: { delegate: 'seoConfig', kind: 'json', singleton: true, secrets: SEO_SECRETS, timestamps: false },
   ads: { delegate: 'ads', kind: 'json', singleton: true, timestamps: true },
   about: { delegate: 'about', kind: 'json', singleton: true, timestamps: false },
   home: { delegate: 'home', kind: 'json', singleton: true, timestamps: false },

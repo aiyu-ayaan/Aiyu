@@ -137,6 +137,33 @@ async function seed() {
             });
         }
 
+        // Ensure SeoConfig defaults exist (robots rules mirror the original
+        // hardcoded robots.js so generated output is unchanged on first run).
+        const existingSeo = await prisma.seoConfig.findFirst();
+        if (!existingSeo) {
+            console.log('Seeding default SeoConfig...');
+            const DEFAULT_DISALLOW = [
+                '/admin', '/api/admin', '/api/auth/login', '/api/auth/logout',
+                '/api/config', '/*.json$', '/*?', '/blog/', '/deployments/',
+            ];
+            await prisma.seoConfig.create({
+                data: {
+                    data: {
+                        robots: {
+                            rules: [
+                                { userAgent: '*', allow: ['/'], disallow: DEFAULT_DISALLOW, crawlDelay: 1 },
+                                { userAgent: 'Googlebot', allow: ['/'], disallow: DEFAULT_DISALLOW, crawlDelay: 0 },
+                            ],
+                            extraSitemaps: [],
+                            customAppend: '',
+                        },
+                        sitemap: { extraUrls: [], excludePaths: [], defaultPriorities: {} },
+                        indexing: { enabled: false },
+                    },
+                },
+            });
+        }
+
         console.log('Database seeded successfully.');
     } catch (error) {
         console.error('Error seeding database:', error);

@@ -294,6 +294,31 @@ model Ads {
   updatedAt DateTime @default(now()) @updatedAt
 }
 
+// SEO & Crawl dashboard config. Json-blob singleton like `Config`/`GitHub`:
+// `data` holds robots rules, sitemap overrides, and indexing settings. The
+// Google service-account JSON is a secret, stored encrypted in a dedicated
+// column withheld by the serializer (see lib/serialize.js CONFIG-style secrets).
+model SeoConfig {
+  id                            String   @id @default(cuid())
+  data                          Json     @default("{}")
+  encryptedGoogleServiceAccount String?
+  createdAt                     DateTime @default(now())
+  updatedAt                     DateTime @default(now()) @updatedAt
+}
+
+// Audit trail of Google Indexing API pings. Relational so it rides through
+// export/import and stays out of the SeoConfig blob.
+model IndexingLog {
+  id        String   @id @default(cuid())
+  url       String
+  type      String // URL_UPDATED | URL_DELETED
+  status    String // success | error
+  response  String   @default("")
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
 model About {
   id        String   @id @default(cuid())
   data      Json     @default("{}")
