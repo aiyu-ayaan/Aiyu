@@ -73,8 +73,19 @@ export default function AnalyticsDashboard() {
 
     const kpis = data?.kpis || {};
     const devices = (data?.devices || []).map((d) => ({ label: d.type, value: d.views, color: DEVICE_COLORS[d.type] || '#64748b' }));
-    const referrers = (data?.referrers || []).map((r) => ({ label: REFERRER_LABELS[r.type] || r.type, value: r.views }));
-    const topPages = (data?.topPages || []).map((p) => ({ label: p.path, value: p.views }));
+    const referrers = (data?.referrers || []).map((r) => ({
+        label: REFERRER_LABELS[r.type] || r.type,
+        value: r.views,
+        title: r.title,
+        description: r.description,
+    }));
+    const topPages = (data?.topPages || []).map((p) => ({
+        label: p.path,
+        value: p.views,
+        title: p.title,
+        image: p.image,
+        description: p.description,
+    }));
     const topEntities = data?.topEntities || {};
 
     return (

@@ -83,7 +83,93 @@ export async function GET(request) {
             orderBy: { _count: { path: 'desc' } },
             take: 8,
         });
-        const topPages = topPagesRaw.map((r) => ({ path: r.path, views: r._count._all }));
+        const topPagesBase = topPagesRaw.map((r) => ({ path: r.path, views: r._count._all }));
+
+        const topPages = [];
+        for (const p of topPagesBase) {
+            let title = '';
+            let image = '';
+            let description = '';
+
+            if (p.path === '/') {
+                title = 'Home Page';
+                description = 'Landing screen featuring profile overview, recent blogs, and featured projects.';
+            } else if (p.path === '/blogs') {
+                title = 'Blogs Listing Page';
+                description = 'Chronological feed of all published articles and tech writings.';
+            } else if (p.path === '/projects') {
+                title = 'Projects Portfolio';
+                description = 'Showcase of developer projects, open-source libraries, and contributions.';
+            } else if (p.path === '/apps' || p.path === '/live-deployments') {
+                title = 'Apps & Live Deployments';
+                description = 'Directory of active cloud deployments, live websites, and server environments.';
+            } else if (p.path === '/gallery') {
+                title = 'Visual Gallery';
+                description = 'Curated collection of photography, design works, and visual assets.';
+            } else if (p.path === '/about-me') {
+                title = 'About Me';
+                description = 'Summary of professional experience, skills, and certifications.';
+            } else if (p.path === '/contact-us') {
+                title = 'Contact Info';
+                description = 'Get in touch form and professional email/location details.';
+            } else if (p.path === '/github') {
+                title = 'GitHub Stats';
+                description = 'Aggregated open-source contribution metrics and repository statistics.';
+            } else if (p.path.startsWith('/blogs/')) {
+                const slug = p.path.replace(/^\/blogs\//, '');
+                const blog = await prisma.blog.findFirst({
+                    where: { slug },
+                    select: { title: true, image: true, excerpt: true },
+                });
+                if (blog) {
+                    title = blog.title;
+                    image = blog.image;
+                    description = blog.excerpt;
+                } else {
+                    title = 'Blog Article';
+                    description = 'A published article on this site.';
+                }
+            } else if (p.path.startsWith('/projects/')) {
+                const slug = p.path.replace(/^\/projects\//, '');
+                const project = await prisma.project.findFirst({
+                    where: { slug },
+                    select: { name: true, image: true, description: true },
+                });
+                if (project) {
+                    title = project.name;
+                    image = project.image;
+                    description = project.description;
+                } else {
+                    title = 'Project Details';
+                    description = 'A showcase project description.';
+                }
+            } else if (p.path.startsWith('/apps/')) {
+                const slug = p.path.replace(/^\/apps\//, '');
+                const deployment = await prisma.deployment.findFirst({
+                    where: { slug },
+                    select: { name: true, image: true, description: true },
+                });
+                if (deployment) {
+                    title = deployment.name;
+                    image = deployment.image;
+                    description = deployment.description;
+                } else {
+                    title = 'App Details';
+                    description = 'Deployment details for a live application.';
+                }
+            } else {
+                title = `Page: ${p.path}`;
+                description = 'A public page on this website.';
+            }
+
+            topPages.push({
+                path: p.path,
+                views: p.views,
+                title,
+                image,
+                description,
+            });
+        }
 
         // ── Top entities per type (raw, humans only) ──
         const entityRaw = await prisma.analyticsEvent.groupBy({
@@ -191,8 +277,42 @@ export async function GET(request) {
             }),
         ]);
 
+        const REFERRER_PREVIEWS = {
+            direct: {
+                title: 'Direct Traffic',
+                description: 'Visitors who typed the URL directly, opened a bookmark, or clicked a link in offline applications (e.g. email, chat apps, PDFs).',
+            },
+            internal: {
+                title: 'Internal Navigation',
+                description: 'Transitions and page navigations occurring within this website.',
+            },
+            search: {
+                title: 'Search Engines',
+                description: 'Traffic originating from search engine results (Google, Bing, Yahoo, DuckDuckGo, Baidu, Yandex, etc.).',
+            },
+            social: {
+                title: 'Social Media & Dev Platforms',
+                description: 'Traffic originating from social media feeds, profile links, or developer networks (GitHub, LinkedIn, Twitter/X, Instagram, YouTube, Reddit, Medium, Hacker News).',
+            },
+            external: {
+                title: 'External Websites',
+                description: 'Referrals from other independent domains that do not fall under search engines or social media networks.',
+            },
+        };
+
         const referrers = referrerRaw
-            .map((r) => ({ type: r.referrerType, views: r._count._all }))
+            .map((r) => {
+                const preview = REFERRER_PREVIEWS[r.referrerType] || {
+                    title: r.referrerType,
+                    description: 'Traffic originating from this referrer source.',
+                };
+                return {
+                    type: r.referrerType,
+                    views: r._count._all,
+                    title: preview.title,
+                    description: preview.description,
+                };
+            })
             .sort((a, b) => b.views - a.views);
         const devices = deviceRaw
             .map((r) => ({ type: r.device, views: r._count._all }))
