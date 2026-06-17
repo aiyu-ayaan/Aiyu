@@ -51,6 +51,15 @@ describe('resolveProfile', () => {
     expect(sectionKeys(model)).not.toContain('education');
   });
 
+  it('hides a whole section listed in hidden.sections (incl. summary)', () => {
+    const data = createDefaultResumeData();
+    data.profiles[0].hidden.sections = ['summary', 'skills'];
+    const model = resolveProfile(data, 'profile-default');
+    expect(sectionKeys(model)).not.toContain('summary');
+    expect(sectionKeys(model)).not.toContain('skills');
+    expect(sectionKeys(model)).toContain('experience');
+  });
+
   it('applies tagline and summary overrides', () => {
     const data = createDefaultResumeData();
     data.profiles[0].tagline = 'AI Engineer';

@@ -188,7 +188,7 @@ export function createDefaultResumeData() {
     tagline: '',
     summary: '',
     sectionOrder: [...DEFAULT_SECTION_ORDER],
-    hidden: { items: [], bullets: [] },
+    hidden: { sections: [], items: [], bullets: [] },
   };
 
   return {
@@ -206,7 +206,7 @@ export function createProfile(name = 'New Profile') {
     tagline: '',
     summary: '',
     sectionOrder: [...DEFAULT_SECTION_ORDER],
-    hidden: { items: [], bullets: [] },
+    hidden: { sections: [], items: [], bullets: [] },
   };
 }
 
@@ -254,6 +254,7 @@ export function normalizeResumeData(input) {
     summary: asString(p?.summary),
     sectionOrder: sanitizeOrder(p?.sectionOrder),
     hidden: {
+      sections: asArray(p?.hidden?.sections).filter((x) => typeof x === 'string'),
       items: asArray(p?.hidden?.items).filter((x) => typeof x === 'string'),
       bullets: asArray(p?.hidden?.bullets).filter((x) => typeof x === 'string'),
     },

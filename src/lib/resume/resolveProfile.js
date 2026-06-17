@@ -28,9 +28,10 @@ export function resolveProfile(rawData, profileId) {
     profiles.find((p) => p.id === defaultProfileId) ||
     profiles[0];
 
+  const hiddenSections = new Set(profile.hidden.sections);
   const hiddenItems = new Set(profile.hidden.items);
   const hiddenBullets = new Set(profile.hidden.bullets);
-  const order = sanitizeOrder(profile.sectionOrder);
+  const order = sanitizeOrder(profile.sectionOrder).filter((key) => !hiddenSections.has(key));
 
   const basics = { ...schema.basics };
   const tagline = profile.tagline.trim() || basics.title || '';

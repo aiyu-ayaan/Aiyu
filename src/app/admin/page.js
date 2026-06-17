@@ -5,7 +5,7 @@ import Link from 'next/link';
 import {
     FaHouse, FaUser, FaBriefcase, FaPenNib, FaImages,
     FaHeading, FaShareNodes, FaEnvelope,
-    FaPalette, FaGithub, FaSliders, FaDatabase, FaRightFromBracket, FaArrowRight, FaTerminal, FaRobot, FaServer, FaHardDrive, FaCode, FaGoogle, FaClock, FaBell, FaChartLine, FaMagnifyingGlass, FaShieldHalved, FaGauge
+    FaPalette, FaGithub, FaSliders, FaDatabase, FaRightFromBracket, FaArrowRight, FaTerminal, FaRobot, FaServer, FaHardDrive, FaCode, FaGoogle, FaClock, FaBell, FaChartLine, FaMagnifyingGlass, FaShieldHalved, FaGauge, FaFileLines
 } from "react-icons/fa6";
 
 export default function AdminDashboard() {
@@ -28,6 +28,7 @@ export default function AdminDashboard() {
             { label: 'Apps', description: 'Hosted Apps & Services', icon: <FaServer />, color: 'from-cyan-500/10 to-cyan-500/5', textColor: 'text-cyan-400', path: '/admin/apps' },
             { label: 'Blogs', description: 'Articles & Posts', icon: <FaPenNib />, color: 'from-teal-500/10 to-teal-500/5', textColor: 'text-teal-400', path: '/admin/blogs' },
             { label: 'Gallery', description: 'Photos & Certs', icon: <FaImages />, color: 'from-indigo-500/10 to-indigo-500/5', textColor: 'text-indigo-400', path: '/admin/gallery' },
+            { label: 'Resume Hub', description: 'Tailored CVs & PDFs', icon: <FaFileLines />, color: 'from-amber-500/10 to-amber-500/5', textColor: 'text-amber-400', path: '/admin/resume' },
         ],
         secondary: [
             { label: 'Header', description: 'Nav & Logo', icon: <FaHeading />, color: 'from-orange-500/10 to-orange-500/5', textColor: 'text-orange-400', path: '/admin/header' },
