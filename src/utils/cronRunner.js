@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { getSingleton, toClient, toClientList } from '@/lib/serialize';
 import { executeUnreferencedCleanup, executeWebPMigration } from '@/lib/storageAudit';
+import { runUptimeChecks } from '@/lib/uptime';
 import { sendNotification } from './notificationService';
 import { decrypt } from '@/lib/encryption';
 
@@ -175,6 +176,19 @@ export async function initCronRunner() {
                 nextRun: getNextCronRun('0 3 * * *', new Date(), timeZone)
             } });
             console.log('[CRON SERVICE] Seeded: WebP Image Migration');
+        }
+
+        const uptimeJob = await prisma.cron.findFirst({ where: { action: 'uptime_check' } });
+        if (!uptimeJob) {
+            await prisma.cron.create({ data: {
+                name: 'Endpoint Uptime Check',
+                type: 'system',
+                schedule: '*/15 * * * *', // Every 15 minutes
+                enabled: true,
+                action: 'uptime_check',
+                nextRun: getNextCronRun('*/15 * * * *', new Date(), timeZone)
+            } });
+            console.log('[CRON SERVICE] Seeded: Endpoint Uptime Check');
         }
 
         // Self-heal and recalculate missing or outdated nextRun timestamps
@@ -439,6 +453,17 @@ export async function executeCronJob(job) {
                             `Migrated: ${migrationResult.migratedCount} images.\n` +
                             `Space saved: ${migrationResult.reclaimedString}.\n` +
                             `Details: ${JSON.stringify(migrationResult.details, null, 2)}`;
+            } else if (job.action === 'uptime_check') {
+                const results = await runUptimeChecks();
+                const down = results.filter((r) => r.status === 'down');
+                attemptLogOutput = `Uptime check completed in ${Date.now() - attemptStartTime}ms.\n` +
+                            `Pinged ${results.length} endpoint(s); ${down.length} down.\n` +
+                            (down.length
+                                ? `Down:\n${down.map((d) => `  - ${d.label || d.target}: ${d.error || `HTTP ${d.statusCode}`}`).join('\n')}`
+                                : 'All endpoints healthy.');
+                if (down.length > 0) {
+                    attemptStatus = 'failure';
+                }
             } else if (job.action === 'webhook') {
                 const cachedData = {};
                 cachedData.env = {};
