@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { trackEntityView } from '@/lib/track';
 import {
   ArrowLeft,
   CalendarDays,
@@ -106,6 +107,15 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
 
   useEffect(() => {
     setHighResLoaded(false);
+    if (selectedImage) {
+      trackEntityView({
+        entityType: 'gallery',
+        entityId: selectedImage._id || selectedImage.id || selectedImage.src,
+        entitySlug: selectedImage.description
+          ? selectedImage.description.slice(0, 50).toLowerCase().replace(/[^a-z0-9]+/g, '-')
+          : 'gallery-item',
+      });
+    }
   }, [selectedImage]);
 
   useEffect(() => {

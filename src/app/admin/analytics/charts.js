@@ -18,6 +18,7 @@ function niceMax(value) {
 
 /** Dual-series area + line chart (views + uniques) over time. */
 export function LineChart({ data = [], height = 220 }) {
+    const [hoveredIdx, setHoveredIdx] = React.useState(null);
     const W = 760;
     const H = height;
     const pad = { top: 16, right: 16, bottom: 28, left: 36 };
@@ -44,8 +45,23 @@ export function LineChart({ data = [], height = 220 }) {
         return <div className="text-slate-500 text-sm font-mono py-12 text-center">NO_DATA</div>;
     }
 
+    const sliceWidth = innerW / Math.max(1, n - 1);
+    const hoveredData = hoveredIdx !== null ? data[hoveredIdx] : null;
+    let tx = 0, ty = 0;
+    const tooltipW = 140;
+    const tooltipH = 75;
+    if (hoveredIdx !== null && hoveredData) {
+        tx = x(hoveredIdx) - tooltipW / 2;
+        if (tx < pad.left) tx = pad.left;
+        if (tx + tooltipW > W - pad.right) tx = W - pad.right - tooltipW;
+        ty = y(hoveredData.views) - tooltipH - 12;
+        if (ty < pad.top + 8) {
+            ty = pad.top + 8;
+        }
+    }
+
     return (
-        <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" role="img" aria-label="Traffic over time">
+        <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto select-none" role="img" aria-label="Traffic over time">
             <defs>
                 <linearGradient id="aiyuArea" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor={CYAN} stopOpacity="0.30" />
@@ -69,6 +85,119 @@ export function LineChart({ data = [], height = 220 }) {
                     {d.day.slice(5)}
                 </text>
             ) : null)}
+
+            {/* Hover guideline and circles */}
+            {hoveredIdx !== null && hoveredData && (
+                <>
+                    <line
+                        x1={x(hoveredIdx)}
+                        y1={pad.top}
+                        x2={x(hoveredIdx)}
+                        y2={pad.top + innerH}
+                        stroke="rgba(34, 211, 238, 0.35)"
+                        strokeWidth="1.5"
+                        strokeDasharray="3 3"
+                        pointerEvents="none"
+                    />
+                    <circle
+                        cx={x(hoveredIdx)}
+                        cy={y(hoveredData.views)}
+                        r="5.5"
+                        fill="#0f172a"
+                        stroke={CYAN}
+                        strokeWidth="2.5"
+                        pointerEvents="none"
+                    />
+                    <circle
+                        cx={x(hoveredIdx)}
+                        cy={y(hoveredData.uniques)}
+                        r="5.5"
+                        fill="#0f172a"
+                        stroke="#a78bfa"
+                        strokeWidth="2.5"
+                        pointerEvents="none"
+                    />
+                </>
+            )}
+
+            {/* Hover interaction rects overlay */}
+            {data.map((d, i) => {
+                const xStart = n <= 1 ? pad.left : x(i) - sliceWidth / 2;
+                return (
+                    <rect
+                        key={i}
+                        x={xStart}
+                        y={pad.top}
+                        width={sliceWidth}
+                        height={innerH}
+                        fill="transparent"
+                        onMouseEnter={() => setHoveredIdx(i)}
+                        onMouseMove={() => setHoveredIdx(i)}
+                        onMouseLeave={() => setHoveredIdx(null)}
+                        style={{ cursor: 'pointer' }}
+                    />
+                );
+            })}
+
+            {/* Tooltip Card */}
+            {hoveredIdx !== null && hoveredData && (
+                <g transform={`translate(${tx}, ${ty})`} pointerEvents="none">
+                    <rect
+                        width={tooltipW}
+                        height={tooltipH}
+                        rx="8"
+                        fill="#0f172a"
+                        fillOpacity="0.95"
+                        stroke="rgba(255, 255, 255, 0.15)"
+                        strokeWidth="1.5"
+                        style={{ filter: 'drop-shadow(0 10px 15px rgba(0, 0, 0, 0.5))' }}
+                    />
+                    <text
+                        x="12"
+                        y="20"
+                        fill="#94a3b8"
+                        style={{ fontSize: 10, fontFamily: 'monospace', fontWeight: 600 }}
+                    >
+                        {hoveredData.day}
+                    </text>
+                    <circle cx="16" cy="38" r="3" fill={CYAN} />
+                    <text
+                        x="26"
+                        y="41"
+                        fill="#cbd5e1"
+                        style={{ fontSize: 10, fontFamily: 'monospace' }}
+                    >
+                        Views:
+                    </text>
+                    <text
+                        x={tooltipW - 12}
+                        y="41"
+                        fill={CYAN}
+                        textAnchor="end"
+                        style={{ fontSize: 11, fontFamily: 'monospace', fontWeight: 'bold' }}
+                    >
+                        {hoveredData.views.toLocaleString()}
+                    </text>
+                    <circle cx="16" cy="56" r="3" fill="#a78bfa" />
+                    <text
+                        x="26"
+                        y="59"
+                        fill="#cbd5e1"
+                        style={{ fontSize: 10, fontFamily: 'monospace' }}
+                    >
+                        Visitors:
+                    </text>
+                    <text
+                        x={tooltipW - 12}
+                        y="59"
+                        fill="#a78bfa"
+                        textAnchor="end"
+                        style={{ fontSize: 11, fontFamily: 'monospace', fontWeight: 'bold' }}
+                    >
+                        {hoveredData.uniques.toLocaleString()}
+                    </text>
+                </g>
+            )}
         </svg>
     );
 }

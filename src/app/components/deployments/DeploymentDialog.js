@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
 import { FaArrowUpRightFromSquare, FaGlobe, FaShieldHalved, FaScrewdriverWrench, FaXmark } from 'react-icons/fa6';
 import { getPlaceholderGradient, getProjectInitials } from '../projects/projectPlaceholder';
+import { trackEntityView } from '@/lib/track';
 
 const normalizeStatus = (status) => {
     const safeStatus = String(status || '').trim().toLowerCase();
@@ -23,6 +24,16 @@ export default function DeploymentDialog({ deployment, onClose }) {
     useEffect(() => {
         setMounted(true);
     }, []);
+
+    useEffect(() => {
+        if (deployment) {
+            trackEntityView({
+                entityType: 'app',
+                entityId: deployment._id || deployment.id,
+                entitySlug: deployment.slug || deployment.name,
+            });
+        }
+    }, [deployment]);
 
     useEffect(() => {
         if (!deployment) return undefined;

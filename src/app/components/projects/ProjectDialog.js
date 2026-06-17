@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaCalendarDay, FaCodeBranch, FaExternalLinkAlt, FaLayerGroup, FaTimes, FaBook } from 'react-icons/fa';
 import { getPlaceholderGradient, getProjectInitials } from './projectPlaceholder';
+import { trackEntityView } from '@/lib/track';
 
 const isOptimizableImage = (src) =>
   typeof src === 'string' && (src.startsWith('/') || src.startsWith('https://'));
@@ -29,6 +30,16 @@ const ProjectDialog = ({ project, onClose }) => {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (project) {
+      trackEntityView({
+        entityType: 'project',
+        entityId: project._id || project.id,
+        entitySlug: project.slug || project.name,
+      });
+    }
+  }, [project]);
 
   const stackList = Array.isArray(project?.techStack) ? project.techStack : [];
   const status = useMemo(() => normalizeStatus(project?.status), [project?.status]);
