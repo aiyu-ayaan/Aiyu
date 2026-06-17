@@ -105,6 +105,75 @@ export async function GET(request) {
             topEntities[k] = topEntities[k].slice(0, 6);
         }
 
+        // ── Fetch metadata for top entities to power hover previews ──
+        if (topEntities.blog?.length) {
+            const ids = topEntities.blog.map((b) => b.id).filter(Boolean);
+            const blogs = await prisma.blog.findMany({
+                where: { id: { in: ids } },
+                select: { id: true, title: true, image: true, excerpt: true },
+            });
+            const blogMap = new Map(blogs.map((b) => [b.id, b]));
+            for (const item of topEntities.blog) {
+                const details = blogMap.get(item.id);
+                if (details) {
+                    item.title = details.title;
+                    item.image = details.image;
+                    item.description = details.excerpt;
+                }
+            }
+        }
+
+        if (topEntities.project?.length) {
+            const ids = topEntities.project.map((p) => p.id).filter(Boolean);
+            const projects = await prisma.project.findMany({
+                where: { id: { in: ids } },
+                select: { id: true, name: true, image: true, description: true },
+            });
+            const projectMap = new Map(projects.map((p) => [p.id, p]));
+            for (const item of topEntities.project) {
+                const details = projectMap.get(item.id);
+                if (details) {
+                    item.title = details.name;
+                    item.image = details.image;
+                    item.description = details.description;
+                }
+            }
+        }
+
+        if (topEntities.app?.length) {
+            const ids = topEntities.app.map((a) => a.id).filter(Boolean);
+            const deployments = await prisma.deployment.findMany({
+                where: { id: { in: ids } },
+                select: { id: true, name: true, image: true, description: true },
+            });
+            const deploymentMap = new Map(deployments.map((d) => [d.id, d]));
+            for (const item of topEntities.app) {
+                const details = deploymentMap.get(item.id);
+                if (details) {
+                    item.title = details.name;
+                    item.image = details.image;
+                    item.description = details.description;
+                }
+            }
+        }
+
+        if (topEntities.gallery?.length) {
+            const ids = topEntities.gallery.map((g) => g.id).filter(Boolean);
+            const gallery = await prisma.gallery.findMany({
+                where: { id: { in: ids } },
+                select: { id: true, src: true, thumbnail: true, description: true },
+            });
+            const galleryMap = new Map(gallery.map((g) => [g.id, g]));
+            for (const item of topEntities.gallery) {
+                const details = galleryMap.get(item.id);
+                if (details) {
+                    item.title = details.description ? details.description.slice(0, 30) : 'Gallery Item';
+                    item.image = details.thumbnail || details.src;
+                    item.description = details.description;
+                }
+            }
+        }
+
         // ── Referrer + device breakdowns (raw, humans only) ──
         const [referrerRaw, deviceRaw, botCount] = await Promise.all([
             prisma.analyticsEvent.groupBy({

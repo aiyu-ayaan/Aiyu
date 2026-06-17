@@ -204,6 +204,7 @@ export function LineChart({ data = [], height = 220 }) {
 
 /** Horizontal ranked bar list. items: [{ label, value, sub? }]. */
 export function BarList({ items = [], accent = CYAN, emptyLabel = 'NO_DATA' }) {
+    const [hoveredIdx, setHoveredIdx] = React.useState(null);
     const max = Math.max(1, ...items.map((i) => i.value));
     if (!items.length) {
         return <div className="text-slate-600 text-xs font-mono py-6 text-center">{emptyLabel}</div>;
@@ -211,8 +212,13 @@ export function BarList({ items = [], accent = CYAN, emptyLabel = 'NO_DATA' }) {
     return (
         <div className="space-y-2.5">
             {items.map((it, idx) => (
-                <div key={`${it.label}-${idx}`} className="relative">
-                    <div className="relative h-7 rounded-md overflow-hidden bg-white/[0.03] border border-white/5">
+                <div
+                    key={`${it.label}-${idx}`}
+                    className="relative"
+                    onMouseEnter={() => setHoveredIdx(idx)}
+                    onMouseLeave={() => setHoveredIdx(null)}
+                >
+                    <div className="relative h-7 rounded-md overflow-hidden bg-white/[0.03] border border-white/5 hover:border-white/10 transition-colors">
                         <div
                             className="absolute inset-y-0 left-0 rounded-md transition-all"
                             style={{ width: `${Math.max(4, (it.value / max) * 100)}%`, background: `${accent}1f`, borderRight: `2px solid ${accent}` }}
@@ -222,6 +228,29 @@ export function BarList({ items = [], accent = CYAN, emptyLabel = 'NO_DATA' }) {
                             <span className="text-xs text-slate-400 font-mono tabular-nums shrink-0">{it.value.toLocaleString()}</span>
                         </div>
                     </div>
+
+                    {/* Preview Hover Popover */}
+                    {hoveredIdx === idx && (it.image || it.title || it.description) && (
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 z-50 w-72 p-3 bg-slate-950/95 border border-white/10 rounded-xl shadow-2xl backdrop-blur-md flex gap-3 pointer-events-none transition-all">
+                            {it.image && (
+                                <div className="w-16 h-16 shrink-0 rounded-md overflow-hidden bg-slate-800 border border-white/5 relative">
+                                    <img
+                                        src={it.image}
+                                        alt={it.title || 'Preview'}
+                                        className="w-full h-full object-cover"
+                                    />
+                                </div>
+                            )}
+                            <div className="min-w-0 flex-1">
+                                <h4 className="text-xs font-bold text-white truncate">{it.title || it.label}</h4>
+                                <p className="text-[10px] text-slate-400 mt-1 line-clamp-3 leading-relaxed">
+                                    {it.description || 'No description available.'}
+                                </p>
+                            </div>
+                            {/* A small arrow pointer at the bottom of the popover */}
+                            <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-950/95" />
+                        </div>
+                    )}
                 </div>
             ))}
         </div>

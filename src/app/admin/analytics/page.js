@@ -194,7 +194,13 @@ export default function AnalyticsDashboard() {
             {/* Top content per entity type */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                 {Object.keys(ENTITY_META).map((type) => {
-                    const items = (topEntities[type] || []).map((e) => ({ label: e.slug, value: e.views }));
+                    const items = (topEntities[type] || []).map((e) => ({
+                        label: e.slug,
+                        value: e.views,
+                        title: e.title,
+                        image: e.image,
+                        description: e.description,
+                    }));
                     return (
                         <div key={type} className="bg-slate-900/50 backdrop-blur-xl p-6 rounded-2xl border border-white/10">
                             <h2 className="text-sm font-mono text-cyan-400 uppercase tracking-widest mb-4">{ENTITY_META[type].label}</h2>
