@@ -198,6 +198,74 @@ model CronLog {
   @@index([ranAt])
 }
 
+// ──────────────────────────── Observability ────────────────────────────
+// Admin security + server-health subsystem. All relational so they ride
+// through export/import like every other table.
+
+// DB-backed admin sessions. The login JWT carries a `jti` that maps to one of
+// these rows; `getSession()` rejects the token if the row is missing, revoked,
+// or expired — which is what makes per-device remote logout possible (a
+// stateless JWT alone cannot be individually revoked).
+model Session {
+  id         String    @id @default(cuid())
+  jti        String    @unique
+  label      String    @default("")
+  ipAddress  String    @default("")
+  userAgent  String    @default("")
+  lastSeenAt DateTime  @default(now())
+  revokedAt  DateTime?
+  expiresAt  DateTime
+  createdAt  DateTime  @default(now())
+
+  @@index([revokedAt, expiresAt])
+  @@index([createdAt])
+}
+
+// Append-only audit trail of critical admin actions (logins, revokes,
+// destructive mutations). Read-only from the dashboard.
+model AuditLog {
+  id        String   @id @default(cuid())
+  action    String // LOGIN_SUCCESS | LOGIN_FAILED | LOGOUT | SESSION_REVOKED | DB_EXPORT | DB_IMPORT | ...
+  category  String   @default("system") // auth | content | system | security
+  details   String   @default("")
+  ipAddress String   @default("")
+  userAgent String   @default("")
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([action, createdAt])
+  @@index([category, createdAt])
+}
+
+// Custom endpoints to monitor in the Uptime Pinger, in addition to the
+// hostedUrl of every Deployment.
+model UptimeTarget {
+  id        String   @id @default(cuid())
+  label     String
+  url       String
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@index([enabled, createdAt])
+}
+
+// History of uptime pings (written on-demand from the dashboard and by the
+// scheduled `uptime_check` system cron).
+model UptimeCheck {
+  id         String   @id @default(cuid())
+  target     String
+  label      String   @default("")
+  source     String   @default("deployment") // deployment | custom
+  status     String // up | down
+  statusCode Int      @default(0)
+  latencyMs  Int      @default(0)
+  error      String   @default("")
+  checkedAt  DateTime @default(now())
+
+  @@index([target, checkedAt])
+  @@index([checkedAt])
+}
+
 // ──────────────────────────── Analytics ────────────────────────────
 // Self-hosted, first-party analytics. `AnalyticsEvent` is the raw append-only
 // log; `AnalyticsDaily` is a pre-aggregated rollup upserted on each event so

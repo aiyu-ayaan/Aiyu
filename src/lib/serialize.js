@@ -31,6 +31,10 @@ const DATE_FIELDS = {
   analyticsEvent: ['createdAt'],
   analyticsDaily: ['createdAt', 'updatedAt'],
   indexingLog: ['createdAt'],
+  session: ['lastSeenAt', 'revokedAt', 'expiresAt', 'createdAt'],
+  auditLog: ['createdAt'],
+  uptimeTarget: ['createdAt'],
+  uptimeCheck: ['checkedAt'],
 };
 
 // Integer columns per model (coerced to Number on write).
@@ -42,6 +46,7 @@ const INT_FIELDS = {
   cron: ['retryCount', 'retryDelay'],
   cronLog: ['durationMs'],
   analyticsDaily: ['views', 'uniques'],
+  uptimeCheck: ['statusCode', 'latencyMs'],
 };
 
 // Whitelisted columns for relational models (used by fromClient on import/migrate).
@@ -93,6 +98,10 @@ const RELATIONAL_COLUMNS = {
     'createdAt', 'updatedAt',
   ],
   indexingLog: ['url', 'type', 'status', 'response', 'createdAt'],
+  session: ['jti', 'label', 'ipAddress', 'userAgent', 'lastSeenAt', 'revokedAt', 'expiresAt', 'createdAt'],
+  auditLog: ['action', 'category', 'details', 'ipAddress', 'userAgent', 'createdAt'],
+  uptimeTarget: ['label', 'url', 'enabled', 'createdAt'],
+  uptimeCheck: ['target', 'label', 'source', 'status', 'statusCode', 'latencyMs', 'error', 'checkedAt'],
 };
 
 // Columns dropped from relational rows when serializing to the client.
@@ -137,6 +146,10 @@ export const MODELS = {
   analyticsEvent: { delegate: 'analyticsEvent', kind: 'relational', singleton: false },
   analyticsDaily: { delegate: 'analyticsDaily', kind: 'relational', singleton: false },
   indexingLog: { delegate: 'indexingLog', kind: 'relational', singleton: false },
+  session: { delegate: 'session', kind: 'relational', singleton: false },
+  auditLog: { delegate: 'auditLog', kind: 'relational', singleton: false },
+  uptimeTarget: { delegate: 'uptimeTarget', kind: 'relational', singleton: false },
+  uptimeCheck: { delegate: 'uptimeCheck', kind: 'relational', singleton: false },
   // Json-blob singletons
   config: { delegate: 'config', kind: 'json', singleton: true, secrets: CONFIG_SECRETS, timestamps: false },
   seoConfig: { delegate: 'seoConfig', kind: 'json', singleton: true, secrets: SEO_SECRETS, timestamps: false },
