@@ -34,7 +34,8 @@
     "emergency:cleanup": "bash scripts/emergency-cleanup.sh",
     "screenshots:install": "npx playwright install chromium",
     "screenshots:capture": "node scripts/capture-screenshots.mjs",
-    "resume:texlive": "node scripts/build-texlive-cache.mjs"
+    "resume:texlive": "node scripts/build-texlive-cache.mjs",
+    "resume:texlive:nodocker": "node scripts/build-texlive-cache-nodocker.mjs"
   },
   "dependencies": {
     "@codemirror/language": "^6.12.3",
