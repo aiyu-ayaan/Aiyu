@@ -2,7 +2,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 
 export const runtime = 'nodejs';
-export const dynamic = 'force-static';
+export const dynamic = 'force-dynamic';
 
 /**
  * Serve vendored TeX Live files to the in-browser SwiftLaTeX engine.
