@@ -1,12 +1,14 @@
 /**
- * Resume Tailoring Hub — data model, defaults, and normalization.
+ * Resume Hub — data model, defaults, and normalization.
  *
- * The ResumeBuilder singleton holds ONE master CV `schema` plus N tailored
- * `profiles`. A profile never copies content; it only HIDES items/bullets and
- * overrides the tagline/summary/section-order. New content therefore appears in
- * every profile by default, and a fresh profile is the full CV which you trim
- * per role. See resolveProfile.js for how a profile collapses to a render model.
+ * The ResumeBuilder singleton holds ONE master CV `schema` (a read-only data
+ * store the editor's Insert panel reads from) plus a `latex` block of N named
+ * LaTeX documents. Each document is full `.tex` source compiled in the admin's
+ * browser; one document is `liveDocumentId` and is served at /api/resume after
+ * being published. See defaultTemplate.js for the seeded `main.tex`.
  */
+
+import { buildDefaultTemplate } from './defaultTemplate';
 
 // Section keys in their canonical identity. `summary` is a single text block;
 // the rest are item lists. Order here is irrelevant — DEFAULT_SECTION_ORDER and
@@ -182,32 +184,50 @@ export function createDefaultResumeData() {
     certifications: [],
   };
 
-  const defaultProfile = {
-    id: 'profile-default',
-    name: 'Default',
-    tagline: '',
-    summary: '',
-    sectionOrder: [...DEFAULT_SECTION_ORDER],
-    hidden: { sections: [], items: [], bullets: [] },
-  };
-
   return {
     schema,
-    profiles: [defaultProfile],
-    defaultProfileId: defaultProfile.id,
+    latex: createDefaultLatex(schema),
   };
 }
 
-/** A blank profile (full CV) ready to be trimmed. */
-export function createProfile(name = 'New Profile') {
+/** A LaTeX document: full `.tex` source (one or more files) + a published PDF. */
+export function createLatexDocument(name = 'Untitled', schema = {}, id) {
   return {
-    id: genId('profile'),
-    name,
-    tagline: '',
-    summary: '',
-    sectionOrder: [...DEFAULT_SECTION_ORDER],
-    hidden: { sections: [], items: [], bullets: [] },
+    id: id || genId('doc'),
+    name: name || 'Untitled',
+    files: [{ name: 'main.tex', content: buildDefaultTemplate(schema) }],
+    entry: 'main.tex',
+    pdf: null,
+    updatedAt: new Date().toISOString(),
   };
+}
+
+/** Clone a document's source into a new, unpublished document ("Copy of X"). */
+export function duplicateLatexDocument(doc) {
+  const files = asArray(doc?.files).map((f) => ({ name: asString(f?.name) || 'main.tex', content: asString(f?.content) }));
+  return {
+    id: genId('doc'),
+    name: `Copy of ${asString(doc?.name) || 'Untitled'}`,
+    files: files.length ? files : [{ name: 'main.tex', content: '' }],
+    entry: asString(doc?.entry) || 'main.tex',
+    pdf: null,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+/** The `latex` block with a single seeded "Default" document. */
+export function createDefaultLatex(schema = {}) {
+  const doc = createLatexDocument('Default', schema, 'doc-default');
+  return { documents: [doc], liveDocumentId: doc.id };
+}
+
+/** Filesystem-safe PDF filename from a display name. */
+export function resumeFilename(name) {
+  const slug = String(name ?? '')
+    .trim()
+    .replace(/[^a-zA-Z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  return `${slug || 'resume'}.pdf`;
 }
 
 const asArray = (v) => (Array.isArray(v) ? v : []);
@@ -247,27 +267,45 @@ export function normalizeResumeData(input) {
     certifications: asArray(rawSchema.certifications).map((i) => normItem(i, 'cert', false)),
   };
 
-  let profiles = asArray(input.profiles).map((p) => ({
-    id: asString(p?.id) || genId('profile'),
-    name: asString(p?.name) || 'Untitled',
-    tagline: asString(p?.tagline),
-    summary: asString(p?.summary),
-    sectionOrder: sanitizeOrder(p?.sectionOrder),
-    hidden: {
-      sections: asArray(p?.hidden?.sections).filter((x) => typeof x === 'string'),
-      items: asArray(p?.hidden?.items).filter((x) => typeof x === 'string'),
-      bullets: asArray(p?.hidden?.bullets).filter((x) => typeof x === 'string'),
-    },
-  }));
+  return { schema, latex: normalizeLatex(input.latex, schema) };
+}
 
-  if (profiles.length === 0) profiles = [createProfile('Default')];
+/** Coerce one stored document into a valid, fully-id'd LaTeX document. */
+function normalizeDocument(doc, schema) {
+  const files = asArray(doc?.files)
+    .map((f) => ({ name: asString(f?.name) || 'main.tex', content: asString(f?.content) }))
+    .filter((f) => f.name);
+  const safeFiles = files.length ? files : [{ name: 'main.tex', content: buildDefaultTemplate(schema) }];
 
-  let defaultProfileId = asString(input.defaultProfileId);
-  if (!profiles.some((p) => p.id === defaultProfileId)) {
-    defaultProfileId = profiles[0].id;
-  }
+  let entry = asString(doc?.entry);
+  if (!safeFiles.some((f) => f.name === entry)) entry = safeFiles[0].name;
 
-  return { schema, profiles, defaultProfileId };
+  const rawPdf = doc?.pdf;
+  const pdf =
+    rawPdf && typeof rawPdf === 'object' && typeof rawPdf.data === 'string'
+      ? { data: rawPdf.data, filename: asString(rawPdf.filename) || 'resume.pdf', compiledAt: asString(rawPdf.compiledAt) }
+      : null;
+
+  return {
+    id: asString(doc?.id) || genId('doc'),
+    name: asString(doc?.name) || 'Untitled',
+    files: safeFiles,
+    entry,
+    pdf,
+    updatedAt: asString(doc?.updatedAt) || new Date().toISOString(),
+  };
+}
+
+/** Coerce the stored `latex` block; guarantees ≥1 document and a valid live id. */
+export function normalizeLatex(rawLatex, schema) {
+  const raw = rawLatex && typeof rawLatex === 'object' ? rawLatex : {};
+  let documents = asArray(raw.documents).map((d) => normalizeDocument(d, schema));
+  if (documents.length === 0) documents = createDefaultLatex(schema).documents;
+
+  let liveDocumentId = asString(raw.liveDocumentId);
+  if (!documents.some((d) => d.id === liveDocumentId)) liveDocumentId = documents[0].id;
+
+  return { documents, liveDocumentId };
 }
 
 /** Keep only known section keys, dedupe, and append any missing ones so no
