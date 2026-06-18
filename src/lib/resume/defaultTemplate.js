@@ -10,7 +10,7 @@
  * to maximise first-compile success against the SwiftLaTeX package CDN.
  */
 
-import { escapeLatex, experienceSnippet, projectSnippet, dateRange } from './latexSnippets';
+import { escapeLatex, experienceSnippet, projectSnippet, dateRange } from './latexSnippets.js';
 
 const PREAMBLE = String.raw`\documentclass[letterpaper,11pt]{article}
 

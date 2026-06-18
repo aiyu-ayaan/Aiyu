@@ -139,7 +139,7 @@ async function seed() {
                         logoText: '< aiyu />',
                         siteTitle: 'Aiyu',
                         n8nWebhookUrl: '',
-                        resume: { type: 'generated', value: { profileId: 'profile-default' } },
+                        resume: { type: 'latex', value: { documentId: 'doc-default' } },
                     },
                 },
             });

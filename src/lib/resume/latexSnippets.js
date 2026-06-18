@@ -70,7 +70,8 @@ export function experienceSnippet(exp = {}) {
   const location = escapeLatex(exp.location || '');
   const dates = escapeLatex(exp.duration || dateRange(exp.start, exp.end));
   const heading = `\\resumeExperience{${role}}{${dates}}{${company}}{${location}}`;
-  const list = itemList(exp.bullets);
+  const bullets = exp.bullets != null ? exp.bullets : exp.description;
+  const list = itemList(bullets);
   return list ? `${heading}\n${list}` : heading;
 }
 

@@ -8,7 +8,7 @@
  * being published. See defaultTemplate.js for the seeded `main.tex`.
  */
 
-import { buildDefaultTemplate } from './defaultTemplate';
+import { buildDefaultTemplate } from './defaultTemplate.js';
 
 // Section keys in their canonical identity. `summary` is a single text block;
 // the rest are item lists. Order here is irrelevant — DEFAULT_SECTION_ORDER and

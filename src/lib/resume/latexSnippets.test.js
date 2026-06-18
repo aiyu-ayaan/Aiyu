@@ -61,7 +61,11 @@ describe('experienceSnippet', () => {
     const out = experienceSnippet({ title: 'Dev', organisation: 'Co', duration: '2020-2021' });
     expect(out).toContain('\\resumeExperience{Dev}{2020-2021}{Co}{}');
   });
-  it('omits the list when there are no bullets', () => {
+  it('falls back to an About-style description paragraph as a bullet', () => {
+    const out = experienceSnippet({ company: 'Co', role: 'Dev', duration: '2024', description: 'Did things.' });
+    expect(out).toContain('\\resumeItem{Did things.}');
+  });
+  it('omits the list when there are no bullets or description', () => {
     const out = experienceSnippet({ role: 'Dev', company: 'Co' });
     expect(out).not.toContain('resumeItemListStart');
   });
