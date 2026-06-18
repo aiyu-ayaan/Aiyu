@@ -26,11 +26,6 @@ const nextConfig = {
   allowedDevOrigins: ['192.168.31.54', '192.168.1.102'],
   assetPrefix: isProduction && cdnUrl ? cdnUrl : undefined,
 
-  // @react-pdf/renderer pulls in Node-only deps (fontkit, yoga) that must not be
-  // bundled by Next; keep it external so server-side PDF rendering works in the
-  // standalone/read-only container.
-  serverExternalPackages: ['@react-pdf/renderer'],
-
   // Enhanced performance optimizations
   experimental: {
     optimizeCss: true,

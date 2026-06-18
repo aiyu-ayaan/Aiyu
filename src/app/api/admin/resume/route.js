@@ -8,9 +8,10 @@ import { normalizeResumeData, createDefaultResumeData } from '@/lib/resume/schem
 export const runtime = 'nodejs';
 
 /**
- * Admin CRUD for the Resume Tailoring Hub document (master schema + profiles).
+ * Admin CRUD for the Resume Hub document (master `schema` + `latex` documents).
  * Always returns a normalized, fully-id'd document so the editor never has to
- * defend against partial/legacy shapes.
+ * defend against partial/legacy shapes. PUT persists `.tex` sources (and any
+ * already-published PDF the client echoes back); publishing is a separate route.
  */
 export async function GET() {
     const session = await getSession();
