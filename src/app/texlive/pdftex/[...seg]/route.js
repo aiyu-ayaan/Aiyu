@@ -35,11 +35,18 @@ export async function GET(_request, { params }) {
       headers: {
         'Content-Type': 'application/octet-stream',
         fileid: name,
+        pkid: name,
+        'Access-Control-Expose-Headers': 'fileid, pkid',
         'Cache-Control': 'public, max-age=31536000, immutable',
       },
     });
   } catch {
-    // Not vendored — tell the worker it doesn't exist.
-    return new Response('File not found', { status: 301 });
+    // Not vendored — tell the worker it doesn't exist. Prevent caching of 301 errors.
+    return new Response('File not found', {
+      status: 301,
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+      },
+    });
   }
 }
