@@ -1,0 +1,42 @@
+name pdftex
+category TLCore
+revision 78401
+shortdesc A TeX extension for direct creation of PDF
+longdesc An extension of TeX which can directly generate PDF documents
+longdesc as well as DVI output. All current free TeX distributions
+longdesc including TeX Live, MacTeX and MiKTeX include pdfTeX (Plain
+longdesc TeX) and pdfLaTeX (LaTeX), among many other formats based on
+longdesc the pdfTeX engine. This package contains the official
+longdesc documentation of pdfTeX.
+depend cm
+depend dehyph
+depend etex
+depend hyph-utf8
+depend hyphen-base
+depend knuth-lib
+depend kpathsea
+depend pdftex.ARCH
+depend plain
+depend tex-ini-files
+execute AddFormat name=etex engine=pdftex patterns=language.def           options="-translate-file=cp227.tcx *etex.ini"           fmttriggers=cm,dehyph,etex,hyph-utf8,hyphen-base,knuth-lib,plain
+execute AddFormat name=pdfetex engine=pdftex patterns=language.def           options="-translate-file=cp227.tcx *pdfetex.ini"           fmttriggers=cm,dehyph,etex,hyph-utf8,hyphen-base,knuth-lib,plain,tex-ini-files
+execute AddFormat name=pdftex engine=pdftex patterns=language.def           options="-translate-file=cp227.tcx *pdfetex.ini"           fmttriggers=cm,dehyph,etex,hyph-utf8,hyphen-base,knuth-lib,plain,tex-ini-files
+execute addMap dummy-space.map
+runfiles size=68
+ texmf-dist/fonts/map/dvips/dummy-space/dummy-space.map
+ texmf-dist/fonts/tfm/public/pdftex/dummy-space.tfm
+ texmf-dist/fonts/tfm/public/pdftex/pdftexspace.tfm
+ texmf-dist/fonts/type1/public/pdftex/dummy-space.pfb
+ texmf-dist/fonts/type1/public/pdftex/pdftexspace.pfb
+ texmf-dist/fonts/type1/public/pdftex/pdftexspace.ps
+ texmf-dist/scripts/simpdftex/simpdftex
+ texmf-dist/tex/generic/config/pdftex-dvi.tex
+ texmf-dist/tex/generic/pdftex/glyphtounicode.tex
+ texmf-dist/tex/generic/pdftex/pdfcolor.tex
+catalogue-contact-bugs https://mailman.ntg.nl/mailman/listinfo/ntg-pdftex
+catalogue-contact-home http://www.pdftex.org
+catalogue-contact-repository https://tug.org/svn/pdftex/branches/stable
+catalogue-contact-support https://lists.tug.org/pdftex
+catalogue-ctan /systems/doc/pdftex
+catalogue-license gpl
+catalogue-topics engine documentation

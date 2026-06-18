@@ -1,0 +1,29 @@
+name l3packages
+category Package
+revision 76637
+shortdesc High-level LaTeX3 concepts
+relocated 1
+longdesc This collection deals with higher-level ideas such as the
+longdesc Designer Interface, as part of LaTeX3 developments. The
+longdesc packages here have over time migrated into the LaTeX kernel:
+longdesc the material here is retained to support older files. The
+longdesc appropriate LaTeX kernel releases incorporating the ideas from
+longdesc the packages here are l3keys2e 2022-06-01 xfp 2022-06-01 xparse
+longdesc 2020-10-01 xtemplate 2024-06-01
+depend l3kernel
+runfiles size=64
+ RELOC/tex/latex/l3packages/l3keys2e/l3keys2e.sty
+ RELOC/tex/latex/l3packages/xfp/xfp.sty
+ RELOC/tex/latex/l3packages/xparse/xparse-2018-04-12.sty
+ RELOC/tex/latex/l3packages/xparse/xparse-2020-10-01.sty
+ RELOC/tex/latex/l3packages/xparse/xparse-generic.tex
+ RELOC/tex/latex/l3packages/xparse/xparse.ltx
+ RELOC/tex/latex/l3packages/xparse/xparse.sty
+ RELOC/tex/latex/l3packages/xtemplate/xtemplate-2023-10-10.sty
+ RELOC/tex/latex/l3packages/xtemplate/xtemplate.sty
+catalogue-also l3kernel l3experimental
+catalogue-contact-bugs https://github.com/latex3/latex3/issues
+catalogue-contact-home https://www.latex-project.org
+catalogue-ctan /macros/latex/contrib/l3packages
+catalogue-license lppl1.3c
+catalogue-topics macro-supp latex3

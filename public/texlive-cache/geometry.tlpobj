@@ -1,0 +1,28 @@
+name geometry
+category Package
+revision 78315
+shortdesc Flexible and complete interface to document dimensions
+relocated 1
+longdesc The package provides an easy and flexible user interface to
+longdesc customize page layout, implementing auto-centering and
+longdesc auto-balancing mechanisms so that the users have only to give
+longdesc the least description for the page layout. For example, if you
+longdesc want to set each margin 2cm without header space, what you need
+longdesc is just \usepackage[margin=2cm,nohead]{geometry}. The package
+longdesc knows about all the standard paper sizes, so that the user need
+longdesc not know what the nominal 'real' dimensions of the paper are,
+longdesc just its standard name (such as a4, letter, etc.). An important
+longdesc feature is the package's ability to communicate the paper size
+longdesc it's set up to the output (whether via DVI \specials or via
+longdesc direct interaction with pdf(La)TeX).
+depend graphics
+depend iftex
+runfiles size=11
+ RELOC/tex/latex/geometry/geometry.sty
+catalogue-also vmargin typearea geometry-de
+catalogue-contact-bugs https://github.com/LaTeX-Package-Repositories/geometry/issues
+catalogue-contact-repository https://github.com/LaTeX-Package-Repositories/geometry
+catalogue-ctan /macros/latex/contrib/geometry
+catalogue-license lppl1.3c
+catalogue-topics geometry tagged-pdf
+catalogue-version 6.0

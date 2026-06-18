@@ -1,0 +1,27 @@
+name marvosym
+category Package
+revision 77682
+shortdesc Martin Vogel's Symbols (marvosym) font
+relocated 1
+longdesc Martin Vogel's Symbol font (marvosym) contains the Euro
+longdesc currency symbol as defined by the European commission, along
+longdesc with symbols for structural engineering; symbols for steel
+longdesc cross-sections; astronomy signs (sun, moon, planets); the 12
+longdesc signs of the zodiac; scissor symbols; CE sign and others. The
+longdesc package contains both the original TrueType font and the
+longdesc derived Type 1 font, together with support files for TeX
+longdesc (LaTeX).
+execute addMap marvosym.map
+runfiles size=51
+ RELOC/fonts/afm/public/marvosym/marvosym.afm
+ RELOC/fonts/map/dvips/marvosym/marvosym.map
+ RELOC/fonts/tfm/public/marvosym/umvs.tfm
+ RELOC/fonts/truetype/public/marvosym/marvosym.ttf
+ RELOC/fonts/type1/public/marvosym/marvosym.pfb
+ RELOC/tex/latex/marvosym/marvosym.sty
+ RELOC/tex/latex/marvosym/umvs.fd
+catalogue-contact-home http://www.marvosym.de
+catalogue-ctan /fonts/marvosym
+catalogue-license ofl
+catalogue-topics font font-mf font-ttf font-symbol font-supp tagged-pdf-partially
+catalogue-version 2.2a

@@ -1,0 +1,69 @@
+name tools
+category Package
+revision 79234
+catalogue latex-tools
+shortdesc The LaTeX standard tools bundle
+relocated 1
+longdesc A collection of (variously) simple tools provided as part of
+longdesc the LaTeX required tools distribution, comprising the packages:
+longdesc afterpage, array, bm, calc, dcolumn, delarray, enumerate,
+longdesc fileerr, fontsmpl, ftnright, hhline, indentfirst, layout,
+longdesc longtable, multicol, rawfonts, shellesc, showkeys, somedefs,
+longdesc tabularx, theorem, trace, varioref, verbatim, xr, and xspace.
+runfiles size=154
+ RELOC/tex/latex/tools/.tex
+ RELOC/tex/latex/tools/afterpage.sty
+ RELOC/tex/latex/tools/array-2016-10-06.sty
+ RELOC/tex/latex/tools/array-2020-02-10.sty
+ RELOC/tex/latex/tools/array-2023-11-01.sty
+ RELOC/tex/latex/tools/array-2024-06-01.sty
+ RELOC/tex/latex/tools/array.sty
+ RELOC/tex/latex/tools/bm.sty
+ RELOC/tex/latex/tools/calc.sty
+ RELOC/tex/latex/tools/dcolumn.sty
+ RELOC/tex/latex/tools/delarray.sty
+ RELOC/tex/latex/tools/e.tex
+ RELOC/tex/latex/tools/enumerate.sty
+ RELOC/tex/latex/tools/fontsmpl.sty
+ RELOC/tex/latex/tools/fontsmpl.tex
+ RELOC/tex/latex/tools/ftnright.sty
+ RELOC/tex/latex/tools/h.tex
+ RELOC/tex/latex/tools/hhline.sty
+ RELOC/tex/latex/tools/indentfirst.sty
+ RELOC/tex/latex/tools/l3sys-query.sty
+ RELOC/tex/latex/tools/layout.sty
+ RELOC/tex/latex/tools/longtable-2020-01-07.sty
+ RELOC/tex/latex/tools/longtable.sty
+ RELOC/tex/latex/tools/multicol-2017-04-11.sty
+ RELOC/tex/latex/tools/multicol-2019-10-01.sty
+ RELOC/tex/latex/tools/multicol-2024-05-23.sty
+ RELOC/tex/latex/tools/multicol.sty
+ RELOC/tex/latex/tools/q.tex
+ RELOC/tex/latex/tools/r.tex
+ RELOC/tex/latex/tools/rawfonts.sty
+ RELOC/tex/latex/tools/s.tex
+ RELOC/tex/latex/tools/shellesc.sty
+ RELOC/tex/latex/tools/showkeys-2014-10-28.sty
+ RELOC/tex/latex/tools/showkeys.sty
+ RELOC/tex/latex/tools/somedefs.sty
+ RELOC/tex/latex/tools/tabularx.sty
+ RELOC/tex/latex/tools/thb.sty
+ RELOC/tex/latex/tools/thc.sty
+ RELOC/tex/latex/tools/thcb.sty
+ RELOC/tex/latex/tools/theorem.sty
+ RELOC/tex/latex/tools/thm.sty
+ RELOC/tex/latex/tools/thmb.sty
+ RELOC/tex/latex/tools/thp.sty
+ RELOC/tex/latex/tools/trace.sty
+ RELOC/tex/latex/tools/varioref-2016-02-16.sty
+ RELOC/tex/latex/tools/varioref-2019-10-01.sty
+ RELOC/tex/latex/tools/varioref.sty
+ RELOC/tex/latex/tools/verbatim.sty
+ RELOC/tex/latex/tools/verbtest.tex
+ RELOC/tex/latex/tools/x.tex
+ RELOC/tex/latex/tools/xr-2023-07-04.sty
+ RELOC/tex/latex/tools/xr.sty
+ RELOC/tex/latex/tools/xspace.sty
+catalogue-ctan /macros/latex/required/tools
+catalogue-license lppl1.3c
+catalogue-topics collection

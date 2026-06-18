@@ -1,0 +1,26 @@
+name xcolor
+category Package
+revision 77682
+shortdesc Driver-independent color extensions for LaTeX and pdfLaTeX
+relocated 1
+longdesc The package starts from the basic facilities of the color
+longdesc package, and provides easy driver-independent access to several
+longdesc kinds of color tints, shades, tones, and mixes of arbitrary
+longdesc colors. It allows a user to select a document-wide target color
+longdesc model and offers complete tools for conversion between eight
+longdesc color models. Additionally, there is a command for alternating
+longdesc row colors plus repeated non-aligned material (like horizontal
+longdesc lines) in tables. Colors can be mixed like
+longdesc \color{red!30!green!40!blue}.
+runfiles size=34
+ RELOC/dvips/xcolor/xcolor.pro
+ RELOC/tex/latex/xcolor/svgnam.def
+ RELOC/tex/latex/xcolor/x11nam.def
+ RELOC/tex/latex/xcolor/xcolor-2022-06-12.sty
+ RELOC/tex/latex/xcolor/xcolor.sty
+catalogue-contact-bugs https://github.com/latex3/xcolor/issues
+catalogue-contact-home https://github.com/latex3/xcolor
+catalogue-ctan /macros/latex/contrib/xcolor
+catalogue-license lppl1.3c
+catalogue-topics colour tagged-pdf
+catalogue-version 3.02

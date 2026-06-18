@@ -1,0 +1,54 @@
+name fontawesome5
+category Package
+revision 77682
+shortdesc Font Awesome 5 with LaTeX support
+relocated 1
+longdesc This package provides LaTeX support for the included "Font
+longdesc Awesome 5 Free" icon set. These icons were designed by Fort
+longdesc Awesome and released under the SIL OFL 1.1 license. The
+longdesc commercial "Pro" version is also supported, if it is installed
+longdesc and XeLaTeX or LuaLaTeX is used.
+execute addMap fontawesome5.map
+runfiles size=331
+ RELOC/fonts/enc/dvips/fontawesome5/fa5brands0.enc
+ RELOC/fonts/enc/dvips/fontawesome5/fa5brands1.enc
+ RELOC/fonts/enc/dvips/fontawesome5/fa5free0.enc
+ RELOC/fonts/enc/dvips/fontawesome5/fa5free1.enc
+ RELOC/fonts/enc/dvips/fontawesome5/fa5free2.enc
+ RELOC/fonts/enc/dvips/fontawesome5/fa5free3.enc
+ RELOC/fonts/map/dvips/fontawesome5/fontawesome5.map
+ RELOC/fonts/opentype/public/fontawesome5/FontAwesome5Brands-Regular-400.otf
+ RELOC/fonts/opentype/public/fontawesome5/FontAwesome5Free-Regular-400.otf
+ RELOC/fonts/opentype/public/fontawesome5/FontAwesome5Free-Solid-900.otf
+ RELOC/fonts/tfm/public/fontawesome5/fa5brands0.tfm
+ RELOC/fonts/tfm/public/fontawesome5/fa5brands1.tfm
+ RELOC/fonts/tfm/public/fontawesome5/fa5free0regular.tfm
+ RELOC/fonts/tfm/public/fontawesome5/fa5free0solid.tfm
+ RELOC/fonts/tfm/public/fontawesome5/fa5free1regular.tfm
+ RELOC/fonts/tfm/public/fontawesome5/fa5free1solid.tfm
+ RELOC/fonts/tfm/public/fontawesome5/fa5free2regular.tfm
+ RELOC/fonts/tfm/public/fontawesome5/fa5free2solid.tfm
+ RELOC/fonts/tfm/public/fontawesome5/fa5free3regular.tfm
+ RELOC/fonts/tfm/public/fontawesome5/fa5free3solid.tfm
+ RELOC/fonts/type1/public/fontawesome5/FontAwesome5Brands-Regular.pfb
+ RELOC/fonts/type1/public/fontawesome5/FontAwesome5Free-Regular.pfb
+ RELOC/fonts/type1/public/fontawesome5/FontAwesome5Free-Solid.pfb
+ RELOC/tex/latex/fontawesome5/fontawesome5-generic-helper.sty
+ RELOC/tex/latex/fontawesome5/fontawesome5-mapping.def
+ RELOC/tex/latex/fontawesome5/fontawesome5-utex-helper.sty
+ RELOC/tex/latex/fontawesome5/fontawesome5.lua
+ RELOC/tex/latex/fontawesome5/fontawesome5.sty
+ RELOC/tex/latex/fontawesome5/tufontawesomebrands.fd
+ RELOC/tex/latex/fontawesome5/tufontawesomefree.fd
+ RELOC/tex/latex/fontawesome5/tufontawesomepro.fd
+ RELOC/tex/latex/fontawesome5/ufontawesomebrands0.fd
+ RELOC/tex/latex/fontawesome5/ufontawesomebrands1.fd
+ RELOC/tex/latex/fontawesome5/ufontawesomefree0.fd
+ RELOC/tex/latex/fontawesome5/ufontawesomefree1.fd
+ RELOC/tex/latex/fontawesome5/ufontawesomefree2.fd
+ RELOC/tex/latex/fontawesome5/ufontawesomefree3.fd
+catalogue-also fontawesome
+catalogue-ctan /fonts/fontawesome5
+catalogue-license ofl lppl1.3c
+catalogue-topics font font-supp-symbol font-symbol font-otf font-type1 tagged-pdf-partially
+catalogue-version 5.15.4

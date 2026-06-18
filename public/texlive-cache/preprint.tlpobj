@@ -1,0 +1,22 @@
+name preprint
+category Package
+revision 30447
+shortdesc A bundle of packages provided "as is"
+relocated 1
+longdesc The bundle comprises: authblk, which permits footnote style
+longdesc author/affiliation input in the \author command, balance, to
+longdesc balance the end of \twocolumn pages, figcaps, to send figure
+longdesc captions, etc., to end document, fullpage, to set narrow page
+longdesc margins and set a fixed page style, and sublabel, which permits
+longdesc counters to be subnumbered.
+runfiles size=9
+ RELOC/tex/latex/preprint/authblk.sty
+ RELOC/tex/latex/preprint/balance.sty
+ RELOC/tex/latex/preprint/figcaps.sty
+ RELOC/tex/latex/preprint/fullpage.sty
+ RELOC/tex/latex/preprint/sublabel.sty
+catalogue-ctan /macros/latex/contrib/preprint
+catalogue-date 2016-06-24 19:18:15 +0200
+catalogue-license collection
+catalogue-topics collection
+catalogue-version 2011

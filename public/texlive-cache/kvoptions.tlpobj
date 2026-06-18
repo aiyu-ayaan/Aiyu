@@ -1,0 +1,16 @@
+name kvoptions
+category Package
+revision 77682
+shortdesc Key value format for package options
+relocated 1
+longdesc This package offers support for package authors who want to use
+longdesc options in key-value format for their package options.
+runfiles size=10
+ RELOC/tex/latex/kvoptions/kvoptions-patch.sty
+ RELOC/tex/latex/kvoptions/kvoptions.sty
+catalogue-contact-bugs https://github.com/ho-tex/kvoptions/issues
+catalogue-contact-repository https://github.com/ho-tex/kvoptions
+catalogue-ctan /macros/latex/contrib/kvoptions
+catalogue-license lppl1.3
+catalogue-topics keyval tagged-pdf
+catalogue-version 3.15

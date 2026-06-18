@@ -1,0 +1,40 @@
+name graphics
+category Package
+revision 79234
+catalogue latex-graphics
+shortdesc The LaTeX standard graphics bundle
+relocated 1
+longdesc This is a collection of LaTeX packages for: producing colour
+longdesc including graphics (eg PostScript) files rotation and scaling
+longdesc of text in LaTeX documents. It comprises the packages color,
+longdesc graphics, graphicx, trig, epsfig, keyval, and lscape.
+depend epstopdf-pkg
+depend graphics-cfg
+depend graphics-def
+runfiles size=36
+ RELOC/tex/latex/graphics/color.sty
+ RELOC/tex/latex/graphics/dvipdf.def
+ RELOC/tex/latex/graphics/dvipsnam.def
+ RELOC/tex/latex/graphics/dvipsone.def
+ RELOC/tex/latex/graphics/dviwin.def
+ RELOC/tex/latex/graphics/emtex.def
+ RELOC/tex/latex/graphics/epsfig.sty
+ RELOC/tex/latex/graphics/graphics-2017-06-25.sty
+ RELOC/tex/latex/graphics/graphics.sty
+ RELOC/tex/latex/graphics/graphicx.sty
+ RELOC/tex/latex/graphics/keyval.sty
+ RELOC/tex/latex/graphics/lscape.sty
+ RELOC/tex/latex/graphics/mathcolor.ltx
+ RELOC/tex/latex/graphics/pctex32.def
+ RELOC/tex/latex/graphics/pctexhp.def
+ RELOC/tex/latex/graphics/pctexps.def
+ RELOC/tex/latex/graphics/pctexwin.def
+ RELOC/tex/latex/graphics/rotating.sty
+ RELOC/tex/latex/graphics/tcidvi.def
+ RELOC/tex/latex/graphics/trig.sty
+ RELOC/tex/latex/graphics/truetex.def
+catalogue-contact-bugs https://www.latex-project.org/bugs/
+catalogue-contact-home https://www.latex-project.org/
+catalogue-ctan /macros/latex/required/graphics
+catalogue-license lppl1.3c
+catalogue-topics collection graphics

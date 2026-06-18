@@ -1,0 +1,72 @@
+name hyperref
+category Package
+revision 78811
+shortdesc Extensive support for hypertext in LaTeX
+relocated 1
+longdesc The hyperref package is used to handle cross-referencing
+longdesc commands in LaTeX to produce hypertext links in the document.
+longdesc The package provides backends for the \special set defined for
+longdesc HyperTeX DVI processors; for embedded pdfmark commands for
+longdesc processing by Acrobat Distiller (dvips and Y&Y's dvipsone); for
+longdesc Y&Y's dviwindo; for PDF control within pdfTeX and dvipdfm; for
+longdesc TeX4ht; and for VTeX's pdf and HTML backends. The package is
+longdesc distributed with the backref and nameref packages, which make
+longdesc use of the facilities of hyperref. The package depends on the
+longdesc author's kvoptions, ltxcmds and refcount packages.
+depend atbegshi
+depend auxhook
+depend bitset
+depend etexcmds
+depend gettitlestring
+depend hycolor
+depend iftex
+depend infwarerr
+depend intcalc
+depend kvdefinekeys
+depend kvoptions
+depend kvsetkeys
+depend letltxmacro
+depend ltxcmds
+depend pdfescape
+depend pdftexcmds
+depend refcount
+depend rerunfilecheck
+depend stringenc
+depend url
+depend zapfding
+runfiles size=200
+ RELOC/tex/latex/hyperref/backref.sty
+ RELOC/tex/latex/hyperref/hdvipdfm.def
+ RELOC/tex/latex/hyperref/hdvips.def
+ RELOC/tex/latex/hyperref/hdvipson.def
+ RELOC/tex/latex/hyperref/hdviwind.def
+ RELOC/tex/latex/hyperref/hluatex.def
+ RELOC/tex/latex/hyperref/hpdftex.def
+ RELOC/tex/latex/hyperref/htex4ht.cfg
+ RELOC/tex/latex/hyperref/htex4ht.def
+ RELOC/tex/latex/hyperref/htexture.def
+ RELOC/tex/latex/hyperref/hvtex.def
+ RELOC/tex/latex/hyperref/hvtexhtm.def
+ RELOC/tex/latex/hyperref/hvtexmrk.def
+ RELOC/tex/latex/hyperref/hxetex.def
+ RELOC/tex/latex/hyperref/hyperref-patches.sty
+ RELOC/tex/latex/hyperref/hyperref.sty
+ RELOC/tex/latex/hyperref/hypertex.def
+ RELOC/tex/latex/hyperref/minitoc-hyper.sty
+ RELOC/tex/latex/hyperref/nameref.sty
+ RELOC/tex/latex/hyperref/nohyperref.sty
+ RELOC/tex/latex/hyperref/ntheorem-hyper.sty
+ RELOC/tex/latex/hyperref/pd1enc.def
+ RELOC/tex/latex/hyperref/pdfmark.def
+ RELOC/tex/latex/hyperref/psdextra.def
+ RELOC/tex/latex/hyperref/puarenc.def
+ RELOC/tex/latex/hyperref/puenc-extra.def
+ RELOC/tex/latex/hyperref/puenc.def
+ RELOC/tex/latex/hyperref/puvnenc.def
+ RELOC/tex/latex/hyperref/xr-hyper.sty
+catalogue-contact-bugs https://github.com/latex3/hyperref/issues
+catalogue-contact-home https://github.com/latex3/hyperref
+catalogue-ctan /macros/latex/contrib/hyperref
+catalogue-license lppl1.3
+catalogue-topics hyper pdf-feat adobe-distiller form-fillin etex tagged-pdf-partially
+catalogue-version 7.01q
