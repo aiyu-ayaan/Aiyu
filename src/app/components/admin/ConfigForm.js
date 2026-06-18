@@ -16,11 +16,6 @@ const ConfigForm = () => {
             filename: '',
             mimeType: ''
         },
-        resume: {
-            type: 'url',
-            value: '',
-            filename: '',
-        },
         projectsTitle: '',
         projectsSubtitle: '',
         blogsTitle: '',
@@ -107,11 +102,6 @@ const ConfigForm = () => {
                             filename: data.favicon?.filename || '',
                             mimeType: data.favicon?.mimeType || ''
                         },
-                        resume: {
-                            type: data.resume?.type || 'url',
-                            value: data.resume?.value || '',
-                            filename: data.resume?.filename || '',
-                        },
                         projectsTitle: data.projectsTitle || 'Projects Portfolio',
                         projectsSubtitle: data.projectsSubtitle || 'A collection of my work',
                         blogsTitle: data.blogsTitle || 'Latest Insights',
@@ -136,45 +126,6 @@ const ConfigForm = () => {
     const showNotification = (success, message) => {
         setNotification({ success, message });
         setTimeout(() => setNotification(null), 3000);
-    };
-
-    // Resume Handlers
-    const handleResumeTypeChange = (type) => {
-        setFormData(prev => ({
-            ...prev,
-            resume: { ...prev.resume, type }
-        }));
-    };
-
-    const handleResumeValueChange = (value) => {
-        setFormData(prev => ({
-            ...prev,
-            resume: { ...prev.resume, value }
-        }));
-    };
-
-    const handleFileUpload = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            if (file.size > 5 * 1024 * 1024) { // 5MB limit
-                setError("File size too large. Max 5MB.");
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setFormData(prev => ({
-                    ...prev,
-                    resume: {
-                        ...prev.resume,
-                        type: 'file',
-                        value: reader.result, // Base64 string
-                        filename: file.name
-                    }
-                }));
-            };
-            reader.readAsDataURL(file);
-        }
     };
 
     const handleFaviconUpload = (e) => {
@@ -575,94 +526,27 @@ const ConfigForm = () => {
                 </div>
             </div>
 
-            {/* Resume Section */}
+            {/* Resume moved to the dedicated Tailoring Hub */}
             <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 md:p-8 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
+                <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
 
-                <h2 className="text-sm font-mono text-blue-500/70 uppercase tracking-widest mb-8 flex items-center gap-4">
+                <h2 className="text-sm font-mono text-amber-400/70 uppercase tracking-widest mb-6 flex items-center gap-4">
                     Resume / CV
-                    <div className="h-px bg-blue-500/10 flex-grow" />
+                    <div className="h-px bg-amber-500/10 flex-grow" />
                 </h2>
 
-                <div className="flex flex-col md:flex-row gap-4 mb-8">
-                    <label className={`flex items-center gap-3 cursor-pointer p-4 rounded-xl border transition-all w-full
-                        ${formData.resume.type === 'url' ? 'bg-blue-500/10 border-blue-500/40 text-blue-300' : 'bg-slate-950/50 border-white/10 text-slate-400'}
-                    `}>
-                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center
-                             ${formData.resume.type === 'url' ? 'border-blue-400' : 'border-slate-600'}
-                        `}>
-                            {formData.resume.type === 'url' && <div className="w-2 h-2 rounded-full bg-blue-400" />}
-                        </div>
-                        <input
-                            type="radio"
-                            name="resumeType"
-                            checked={formData.resume.type === 'url'}
-                            onChange={() => handleResumeTypeChange('url')}
-                            className="hidden"
-                        />
-                        <span className="font-mono text-xs uppercase tracking-wider font-bold">External URL Link</span>
-                    </label>
+                <p className="text-sm text-slate-400 mb-5 max-w-2xl">
+                    Resume upload has moved. Your CV is now built and tailored per role in the
+                    <span className="text-amber-300"> Resume &amp; PDF Tailoring Hub</span>, which generates a
+                    print-ready PDF on demand and wires it into the site&apos;s resume link automatically.
+                </p>
 
-                    <label className={`flex items-center gap-3 cursor-pointer p-4 rounded-xl border transition-all w-full
-                        ${formData.resume.type === 'file' ? 'bg-blue-500/10 border-blue-500/40 text-blue-300' : 'bg-slate-950/50 border-white/10 text-slate-400'}
-                    `}>
-                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center
-                             ${formData.resume.type === 'file' ? 'border-blue-400' : 'border-slate-600'}
-                        `}>
-                            {formData.resume.type === 'file' && <div className="w-2 h-2 rounded-full bg-blue-400" />}
-                        </div>
-                        <input
-                            type="radio"
-                            name="resumeType"
-                            checked={formData.resume.type === 'file'}
-                            onChange={() => handleResumeTypeChange('file')}
-                            className="hidden"
-                        />
-                        <span className="font-mono text-xs uppercase tracking-wider font-bold">Direct File Upload</span>
-                    </label>
-                </div>
-
-                {formData.resume.type === 'url' ? (
-                    <div>
-                        <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Resume URL Asset</label>
-                        <input
-                            type="url"
-                            value={formData.resume.value}
-                            onChange={(e) => handleResumeValueChange(e.target.value)}
-                            placeholder="https://example.com/my-resume.pdf"
-                            className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 outline-none transition-all placeholder:text-slate-700 font-mono"
-                        />
-                    </div>
-                ) : (
-                    <div>
-                        <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Upload PDF Asset</label>
-                        <div className="flex items-center gap-4">
-                            <label className="cursor-pointer bg-slate-950/50 border border-white/10 hover:border-blue-500/50 text-slate-300 px-4 py-3 rounded-lg transition-all flex items-center gap-3 w-full">
-                                <span className="bg-blue-500/10 text-blue-400 px-2 py-1 rounded text-xs font-bold uppercase">Choose File</span>
-                                <span className="text-sm truncate opacity-60 hover:opacity-100 transition-opacity">
-                                    {formData.resume.filename || "Select PDF document..."}
-                                </span>
-                                <input
-                                    type="file"
-                                    accept=".pdf,.doc,.docx"
-                                    onChange={handleFileUpload}
-                                    className="hidden"
-                                />
-                            </label>
-                            {formData.resume.value && formData.resume.type === 'file' && formData.resume.value.startsWith('data:') && (
-                                <a href={formData.resume.value} download={formData.resume.filename || 'resume.pdf'} className="flex items-center gap-2 px-4 py-2 bg-[#0a0a0a] border border-white/10 rounded-lg text-xs text-blue-400 hover:text-blue-300 hover:border-blue-500/30 transition-all uppercase tracking-wider font-bold whitespace-nowrap">
-                                    Download Existing
-                                </a>
-                            )}
-                        </div>
-                        {formData.resume.filename && (
-                            <div className="mt-3 text-xs text-blue-400 flex items-center gap-1 font-mono">
-                                <span>[SECURE] Asset ready for upload:</span>
-                                <span>{formData.resume.filename}</span>
-                            </div>
-                        )}
-                    </div>
-                )}
+                <a
+                    href="/admin/resume"
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 hover:bg-amber-500/20 transition-all text-xs font-mono uppercase tracking-wider font-bold"
+                >
+                    Open Resume Hub →
+                </a>
             </div>
 
             {/* Sticky Action Footer */}

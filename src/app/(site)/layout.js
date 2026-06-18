@@ -48,7 +48,7 @@ export default async function SiteLayout({ children }) {
         if (hasResume) {
             const newResumeLink = {
                 name: '_resume',
-                href: resumeType === 'file' ? '/api/resume' : serializedConfigData.resume.value,
+                href: resumeType === 'url' ? serializedConfigData.resume.value : '/api/resume',
                 target: '_blank'
             };
 

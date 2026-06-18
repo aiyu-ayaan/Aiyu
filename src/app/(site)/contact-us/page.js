@@ -58,7 +58,7 @@ export default async function ContactPage() {
 
     if (config?.resume?.value) {
         hasResume = true;
-        resumeHref = config.resume.type === 'file' ? '/api/resume' : config.resume.value;
+        resumeHref = config.resume.type === 'url' ? config.resume.value : '/api/resume';
     }
 
     return (

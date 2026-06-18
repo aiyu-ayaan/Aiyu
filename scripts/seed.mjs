@@ -11,6 +11,7 @@ import deployments from '../src/app/data/deploymentsData.js';
 import { name, roles, professionalSummary, skills, experiences, education, certifications } from '../src/app/data/aboutData.js';
 import { name as homeName, homeRoles, githubLink, codeSnippets } from '../src/app/data/homeScreenData.js';
 import { navLinks, contactLink } from '../src/app/data/headerData.js';
+import { createDefaultResumeData } from '../src/lib/resume/schema.js';
 
 const prisma = new PrismaClient();
 
@@ -121,6 +122,13 @@ async function seed() {
         ];
         await prisma.social.createMany({ data: socialDataFixed.map((s) => pick(s, SOCIAL_COLUMNS)) });
 
+        // Ensure the ResumeBuilder singleton exists (master CV + default profile).
+        const existingResume = await prisma.resumeBuilder.findFirst();
+        if (!existingResume) {
+            console.log('Seeding ResumeBuilder...');
+            await prisma.resumeBuilder.create({ data: { data: createDefaultResumeData() } });
+        }
+
         // Ensure Config defaults exist (preserve existing admin settings otherwise).
         const existingConfig = await prisma.config.findFirst();
         if (!existingConfig) {
@@ -131,7 +139,7 @@ async function seed() {
                         logoText: '< aiyu />',
                         siteTitle: 'Aiyu',
                         n8nWebhookUrl: '',
-                        resume: { type: 'url', value: '' },
+                        resume: { type: 'generated', value: { profileId: 'profile-default' } },
                     },
                 },
             });
