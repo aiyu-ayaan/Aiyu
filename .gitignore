@@ -64,3 +64,4 @@ k6-*.json
 # certificates
 /certs/*
 !/certs/.gitkeep.devserver.log
+.texlive-build/

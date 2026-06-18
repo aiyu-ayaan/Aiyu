@@ -46,6 +46,13 @@ export async function getEngine() {
     if (!Ctor) throw new Error('PdfTeXEngine unavailable after load');
     const engine = new Ctor();
     await engine.loadEngine();
+    // Serve TeX files from our own origin (vendored cache) instead of the dead
+    // SwiftLaTeX CDN. The /texlive route attaches the `fileid` header the worker
+    // needs. setTexliveEndpoint closes the worker on some builds, so do it before
+    // any compile and re-init lazily if needed.
+    if (typeof engine.setTexliveEndpoint === 'function') {
+      engine.setTexliveEndpoint(`${window.location.origin}/texlive/`);
+    }
     return engine;
   })().catch((err) => {
     enginePromise = null; // allow a retry on failure

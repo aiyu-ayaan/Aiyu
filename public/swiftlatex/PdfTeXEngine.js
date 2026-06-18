@@ -234,7 +234,8 @@ var PdfTeXEngine = /** @class */ (function () {
     PdfTeXEngine.prototype.setTexliveEndpoint = function (url) {
         if (this.latexWorker !== undefined) {
             this.latexWorker.postMessage({ 'cmd': 'settexliveurl', 'url': url });
-            this.latexWorker = undefined;
+            // NOTE: upstream nulls the worker here, which breaks every subsequent
+            // call. Keep the worker alive — we only change the endpoint.
         }
     };
     PdfTeXEngine.prototype.closeWorker = function () {

@@ -26,6 +26,13 @@ const nextConfig = {
   allowedDevOrigins: ['192.168.31.54', '192.168.1.102'],
   assetPrefix: isProduction && cdnUrl ? cdnUrl : undefined,
 
+  // Ensure the vendored TeX Live cache (served by /texlive/pdftex via fs) is
+  // traced into the standalone build so the in-browser resume compiler works in
+  // the production container.
+  outputFileTracingIncludes: {
+    '/texlive/pdftex/[...seg]': ['./public/texlive-cache/**/*'],
+  },
+
   // Enhanced performance optimizations
   experimental: {
     optimizeCss: true,

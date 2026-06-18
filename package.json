@@ -33,7 +33,8 @@
     "docker:verify": "bash scripts/verify-security.sh",
     "emergency:cleanup": "bash scripts/emergency-cleanup.sh",
     "screenshots:install": "npx playwright install chromium",
-    "screenshots:capture": "node scripts/capture-screenshots.mjs"
+    "screenshots:capture": "node scripts/capture-screenshots.mjs",
+    "resume:texlive": "node scripts/build-texlive-cache.mjs"
   },
   "dependencies": {
     "@codemirror/language": "^6.12.3",
