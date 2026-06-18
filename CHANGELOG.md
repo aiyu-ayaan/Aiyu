@@ -1,5 +1,34 @@
 # Changelog
 
+## [4.5.0](https://github.com/aiyu-ayaan/Aiyu/compare/v4.4.0...v4.5.0) (2026-06-18)
+
+### Features
+
+* : feat version release done
+* Add Security and Server Health nav cards to command center
+* Server metrics, uptime monitor + AI error analyzer
+* Session manager + audit log dashboard
+* DB-backed sessions + audit/uptime models, auth refactor
+* Admin SEO & Crawl dashboard UI + nav card
+* Google Indexing API integration
+* Meta audit + live crawl libs, API routes, shared CLI
+* Add SeoConfig + IndexingLog models, serializer registry, seed
+* Add hover popovers for top pages and referrers
+* Add hover preview popovers with thumbnails and descriptions for top content
+
+### Bug Fixes
+
+* Configure github.com for next/image remote patterns
+* Change pgAdmin default email domain to resolve validation failure
+* Make traffic line chart interactive and track entity views
+
+### Other Changes
+
+* Read robots/sitemap from DB SeoConfig with code fallback
+* Update k6 load test script configuration
+* Allow CDN caching of public HTML to fix crawl budget
+* Add sitemap crawl audit script
+
 ## [4.4.0](https://github.com/aiyu-ayaan/Aiyu/compare/v4.3.2...v4.4.0) (2026-06-16)
 
 ### Features
