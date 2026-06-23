@@ -1,5 +1,5 @@
 "use client";
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import Link from 'next/link';
 import {
     FaMagnifyingGlass, FaArrowsRotate, FaTriangleExclamation, FaCircleCheck,
@@ -75,8 +75,10 @@ function AuditGroup({ title, records }) {
     );
 }
 
-function MetaCheckerTab({ audit, loading, onRefresh }) {
+function MetaCheckerTab({ audit, loading, onRefresh, onFixAll, fixingState }) {
     const s = audit?.summary || {};
+    const hasFixableIssues = (s.warnings || 0) + (s.errors || 0) > 0;
+
     return (
         <div>
             <div className="flex flex-wrap gap-3 mb-6">
@@ -84,9 +86,22 @@ function MetaCheckerTab({ audit, loading, onRefresh }) {
                 <StatPill label="Clean" value={s.ok} accent="text-emerald-400" />
                 <StatPill label="Warnings" value={s.warnings} accent="text-amber-400" />
                 <StatPill label="Errors" value={s.errors} accent="text-red-400" />
-                <button onClick={onRefresh} className="px-4 rounded-xl bg-slate-900/60 border border-white/10 text-slate-300 hover:text-cyan-300 flex items-center gap-2 font-mono text-sm">
+                <button 
+                    onClick={onRefresh} 
+                    disabled={loading || fixingState === 'running'}
+                    className="px-4 rounded-xl bg-slate-900/60 border border-white/10 text-slate-300 hover:text-cyan-300 disabled:opacity-50 flex items-center gap-2 font-mono text-sm"
+                >
                     <FaArrowsRotate className={loading ? 'animate-spin' : ''} /> RESCAN
                 </button>
+                {hasFixableIssues && (
+                    <button
+                        onClick={onFixAll}
+                        disabled={loading || fixingState === 'running'}
+                        className="px-4 py-3 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 hover:bg-cyan-500/20 disabled:opacity-50 flex items-center gap-2 font-mono text-sm transition-colors"
+                    >
+                        <FaRobot className={fixingState === 'running' ? 'animate-spin' : ''} /> FIX WARNINGS WITH AI
+                    </button>
+                )}
             </div>
             {loading && !audit ? <p className="text-slate-500 font-mono text-sm">Scanning…</p> : (
                 <>
@@ -364,7 +379,104 @@ export default function SeoDashboard() {
     const [error, setError] = useState(null);
     const [notice, setNotice] = useState(null);
 
+    const [fixingState, setFixingState] = useState(null); // 'running', 'paused', 'completed'
+    const [fixingProgress, setFixingProgress] = useState({ current: 0, total: 0, currentName: '' });
+    const stopFixingRef = useRef(false);
+
     const flash = (msg) => { setNotice(msg); setTimeout(() => setNotice(null), 4000); };
+
+    const fixAllWithAi = async () => {
+        if (!audit) return;
+        setFixingState('running');
+        stopFixingRef.current = false;
+        setError(null);
+
+        const itemsToFix = [];
+        const groups = audit.groups || {};
+
+        const isFixable = (issues) => {
+            return (issues || []).some(i => ['seoDescription', 'description', 'imageAlt', 'siteTitle'].includes(i.field));
+        };
+
+        if (groups.blogs) {
+            groups.blogs.forEach(b => {
+                if (isFixable(b.issues)) {
+                    itemsToFix.push({ type: 'blog', id: b.id, name: b.title });
+                }
+            });
+        }
+        if (groups.projects) {
+            groups.projects.forEach(p => {
+                if (isFixable(p.issues)) {
+                    itemsToFix.push({ type: 'project', id: p.id, name: p.title });
+                }
+            });
+        }
+        if (groups.apps) {
+            groups.apps.forEach(a => {
+                if (isFixable(a.issues)) {
+                    itemsToFix.push({ type: 'app', id: a.id, name: a.title });
+                }
+            });
+        }
+        if (groups.static) {
+            groups.static.forEach(s => {
+                if (isFixable(s.issues)) {
+                    itemsToFix.push({ type: 'static', id: s.id, name: `Static Config: ${s.title}` });
+                }
+            });
+        }
+
+        if (itemsToFix.length === 0) {
+            flash('No fixable SEO warnings found.');
+            setFixingState(null);
+            return;
+        }
+
+        let fixedCount = 0;
+        setFixingProgress({ current: 0, total: itemsToFix.length, currentName: '' });
+
+        for (let i = 0; i < itemsToFix.length; i++) {
+            if (stopFixingRef.current) {
+                setFixingState('paused');
+                flash('AI fixing paused.');
+                loadAudit();
+                return;
+            }
+
+            const item = itemsToFix[i];
+            setFixingProgress({ current: i + 1, total: itemsToFix.length, currentName: item.name });
+
+            try {
+                const res = await fetch('/api/admin/seo/fix', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type: item.type, id: item.id })
+                });
+
+                const data = await res.json();
+                if (!res.ok || !data.success) {
+                    throw new Error(data.error || 'Failed to apply AI fix.');
+                }
+                fixedCount++;
+            } catch (err) {
+                console.error(`Error fixing ${item.name}:`, err);
+                setError(`AI fixing interrupted at "${item.name}": ${err.message}`);
+                setFixingState(null);
+                loadAudit();
+                return;
+            }
+        }
+
+        setFixingState('completed');
+        flash(`AI SEO Auto-Fix completed! Fixed ${fixedCount} item(s).`);
+        loadAudit();
+        setTimeout(() => setFixingState(null), 5000);
+    };
+
+    const handleStopFixing = () => {
+        stopFixingRef.current = true;
+    };
 
     const loadAudit = useCallback(async () => {
         setLoadingAudit(true);
@@ -490,7 +602,59 @@ export default function SeoDashboard() {
                 </div>
             )}
 
-            {tab === 'audit' && <MetaCheckerTab audit={audit} loading={loadingAudit} onRefresh={loadAudit} />}
+            {fixingState && (
+                <Panel className="p-5 mb-6 border-cyan-500/20 bg-slate-900/60">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                            <FaRobot className={`text-cyan-400 text-2xl ${fixingState === 'running' ? 'animate-pulse' : ''}`} />
+                            <div>
+                                <h3 className="text-sm font-bold text-white font-mono uppercase tracking-wide">
+                                    {fixingState === 'running' ? 'AI SEO Auto-Fix Running...' : 'AI SEO Auto-Fix Paused'}
+                                </h3>
+                                <p className="text-xs text-slate-400 mt-0.5">
+                                    {fixingState === 'running' 
+                                        ? `Fixing "${fixingProgress.currentName}" (${fixingProgress.current} of ${fixingProgress.total})`
+                                        : `Progress: ${fixingProgress.current} of ${fixingProgress.total} items processed.`
+                                    }
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            {fixingState === 'running' ? (
+                                <button
+                                    onClick={handleStopFixing}
+                                    className="px-4 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-300 hover:bg-amber-500/20 font-mono text-xs uppercase font-bold tracking-wider"
+                                >
+                                    Pause Fixing
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={fixAllWithAi}
+                                    className="px-4 py-2 rounded-lg bg-cyan-500/20 border border-cyan-500/30 text-cyan-200 hover:bg-cyan-500/30 font-mono text-xs uppercase font-bold tracking-wider"
+                                >
+                                    Resume Fixing
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                    <div className="w-full bg-slate-950 rounded-full h-1.5 mt-4 overflow-hidden border border-white/5">
+                        <div 
+                            className="bg-gradient-to-r from-cyan-500 to-indigo-500 h-full transition-all duration-300"
+                            style={{ width: `${(fixingProgress.current / fixingProgress.total) * 100}%` }}
+                        />
+                    </div>
+                </Panel>
+            )}
+
+            {tab === 'audit' && (
+                <MetaCheckerTab 
+                    audit={audit} 
+                    loading={loadingAudit} 
+                    onRefresh={loadAudit} 
+                    onFixAll={fixAllWithAi}
+                    fixingState={fixingState}
+                />
+            )}
             {tab === 'crawl' && <CrawlTab crawl={crawl} crawling={crawling} onRun={runCrawl} />}
             {tab === 'robots' && <RobotsSitemapTab form={form} setForm={setForm} onSave={saveConfig} saving={saving} siteSitemapUrl={siteSitemapUrl} />}
             {tab === 'indexing' && (
