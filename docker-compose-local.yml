@@ -3,7 +3,6 @@ services:
   postgres:
     image: postgres:17-alpine
     container_name: aiyu-postgres
-    restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-aiyu}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -39,7 +38,6 @@ services:
         - NEXT_PUBLIC_BASE_URL=${NEXT_PUBLIC_BASE_URL}
         - NEXT_PUBLIC_AUTHOR_NAME=${NEXT_PUBLIC_AUTHOR_NAME}
     container_name: aiyu-app
-    restart: unless-stopped
     ports:
       - "${APP_PORT:-3000}:3000"
     environment:
@@ -117,7 +115,6 @@ services:
 
   nginx:
     image: nginx:alpine
-    restart: unless-stopped
     ports:
       # HTTP only — TLS is terminated upstream (Cloudflare tunnel/edge). No 443.
       - "${NGINX_HTTP_PORT:-80}:80"

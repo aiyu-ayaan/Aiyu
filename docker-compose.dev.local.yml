@@ -16,7 +16,6 @@ services:
   postgres:
     image: postgres:17-alpine
     container_name: aiyu-postgres
-    restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-aiyu}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-aiyu}
@@ -37,7 +36,6 @@ services:
   pgadmin:
     image: dpage/pgadmin4:latest
     container_name: aiyu-pgadmin
-    restart: unless-stopped
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@aiyu.org}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-aiyu}
