@@ -9,6 +9,147 @@ import sharp from 'sharp';
 import { fetchWithTimeout } from '@/lib/upstreamControl';
 import { MAX_FILE_SIZE } from '@/utils/fileValidation';
 
+// Vercel AI Gateway caller with request-scoped BYOK for Vision
+async function callVisionVercelAiGateway({ gatewayUrl, gatewayApiKey, providerType, modelId, apiKey, systemInstruction, prompt, mimeType, base64Image }) {
+    const baseUrl = gatewayUrl || 'https://ai-gateway.vercel.sh/v1';
+    const endpoint = `${baseUrl.replace(/\/$/, '')}/chat/completions`;
+
+    const headers = {
+        'Content-Type': 'application/json',
+    };
+    if (gatewayApiKey) {
+        headers['Authorization'] = `Bearer ${gatewayApiKey}`;
+    } else if (process.env.AI_GATEWAY_API_KEY) {
+        headers['Authorization'] = `Bearer ${process.env.AI_GATEWAY_API_KEY}`;
+    }
+
+    const body = {
+        model: `${providerType === 'google' ? 'google' : providerType}/${modelId}`,
+        messages: [
+            { role: 'system', content: systemInstruction },
+            { role: 'user', content: [
+                { type: 'text', text: prompt },
+                { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64Image}` } }
+            ]}
+        ],
+        providerOptions: {
+            gateway: {
+                byok: {
+                    [providerType === 'google' ? 'google' : providerType]: [{ apiKey }]
+                }
+            }
+        }
+    };
+
+    console.log(`[AI Gateway Vision] Routing vision request to ${providerType}/${modelId} via ${endpoint}...`);
+    const response = await fetchWithTimeout(endpoint, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body)
+    }, 45000);
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`AI Gateway Error (${response.status}): ${errorText}`);
+    }
+
+    const data = await response.json();
+    const text = data.choices?.[0]?.message?.content || '';
+    const usage = data.usage ? {
+        inputTokens: data.usage.prompt_tokens || 0,
+        outputTokens: data.usage.completion_tokens || 0,
+        totalTokens: data.usage.total_tokens || 0
+    } : { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
+
+    return { text, usage };
+}
+
+// Direct provider API caller for Vision (fallback)
+async function callVisionDirectProvider({ providerType, modelId, apiKey, systemInstruction, prompt, mimeType, base64Image }) {
+    if (providerType === 'google') {
+        const ai = new GoogleGenAI({ apiKey });
+        
+        let finalModel = modelId;
+        if (!finalModel || finalModel.includes('1.5-flash')) {
+            finalModel = 'gemini-2.0-flash-lite';
+        }
+
+        const parts = [
+            { text: prompt },
+            {
+                inlineData: {
+                    mimeType: mimeType,
+                    data: base64Image
+                }
+            }
+        ];
+
+        console.log(`[AI Direct Vision] Calling Google Gemini API directly for model ${finalModel}...`);
+        const result = await ai.models.generateContent({
+            model: finalModel,
+            config: { systemInstruction },
+            contents: parts
+        });
+
+        const text = typeof result.text === 'function' ? result.text() : (result.text || JSON.stringify(result));
+        const usage = result.usageMetadata ? {
+            inputTokens: result.usageMetadata.promptTokenCount || 0,
+            outputTokens: result.usageMetadata.candidatesTokenCount || 0,
+            totalTokens: result.usageMetadata.totalTokenCount || 0
+        } : { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
+        return { text, usage };
+    }
+
+    let endpoint = '';
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+    };
+
+    if (providerType === 'openai') {
+        endpoint = 'https://api.openai.com/v1/chat/completions';
+    } else if (providerType === 'groq') {
+        endpoint = 'https://api.groq.com/openai/v1/chat/completions';
+    } else if (providerType === 'openrouter') {
+        endpoint = 'https://openrouter.ai/api/v1/chat/completions';
+        headers['HTTP-Referer'] = 'https://aiyu.dev';
+        headers['X-Title'] = 'Aiyu Portfolio';
+    } else {
+        throw new Error(`Unsupported provider type: ${providerType}`);
+    }
+
+    console.log(`[AI Direct Vision] Calling provider ${providerType} directly for model ${modelId}...`);
+    const response = await fetchWithTimeout(endpoint, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+            model: modelId,
+            messages: [
+                { role: 'system', content: systemInstruction },
+                { role: 'user', content: [
+                    { type: 'text', text: prompt },
+                    { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64Image}` } }
+                ]}
+            ]
+        })
+    }, 45000);
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Direct API Error (${response.status}): ${errorText}`);
+    }
+
+    const data = await response.json();
+    const text = data.choices?.[0]?.message?.content || '';
+    const usage = data.usage ? {
+        inputTokens: data.usage.prompt_tokens || 0,
+        outputTokens: data.usage.completion_tokens || 0,
+        totalTokens: data.usage.total_tokens || 0
+    } : { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
+
+    return { text, usage };
+}
+
 async function generateCaption(request) {
     try {
         // 1. Get Configuration & API Key
@@ -17,15 +158,6 @@ async function generateCaption(request) {
         if (!config?.ai?.enabled) {
             return NextResponse.json({ success: false, error: 'AI system is disabled.' }, { status: 403 });
         }
-
-        // Force Gemini for image captioning regardless of global AI provider setting
-        const provider = 'gemini';
-        let apiKey;
-
-        if (!config.encryptedGeminiApiKey) {
-            return NextResponse.json({ success: false, error: 'Gemini API Key is missing. It is compulsory for image tasks.' }, { status: 500 });
-        }
-        apiKey = decrypt(config.encryptedGeminiApiKey);
 
         // 2. Parse Request
         const formData = await request.formData();
@@ -76,114 +208,121 @@ async function generateCaption(request) {
         const base64Image = buffer.toString('base64');
         const systemInstruction = config.ai.systemInstruction || "You are a helpful assistant.";
 
-        // 4. Call Selected Provider
-        let responseText = '';
-        let modelName = config.ai.models?.gemini || config.ai.model;
-        let usageData = { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
+        // 4. Call Selected Provider with strict fallback sequence
+        const imagePriority = config.ai.imagePriority || [];
+        const configuredModels = config.ai.models || [];
+        const configuredProviders = config.ai.providers || [];
 
-        if (provider === 'gemini') {
-            const ai = new GoogleGenAI({ apiKey });
-            
-            if (!modelName || modelName.includes('1.5-flash')) {
-                modelName = 'gemini-2.0-flash-lite';
+        // Map imagePriority to the configured model objects
+        let modelsToTry = imagePriority
+            .map(id => configuredModels.find(m => m.id === id))
+            .filter(Boolean);
+
+        // Fallback to legacy gemini model if priority list is empty
+        if (modelsToTry.length === 0) {
+            const geminiProvider = configuredProviders.find(p => p.type === 'google');
+            if (geminiProvider) {
+                modelsToTry.push({
+                    id: 'legacy-gemini',
+                    modelId: config.ai.model || 'gemini-1.5-flash',
+                    providerId: geminiProvider.id,
+                    isFree: false
+                });
+            }
+        }
+
+        if (modelsToTry.length === 0) {
+            return NextResponse.json({ success: false, error: 'No AI vision models configured for captioning.' }, { status: 403 });
+        }
+
+        const gatewayUrl = config.ai.gatewayUrl || process.env.AI_GATEWAY_URL || '';
+        const gatewayApiKey = config.ai.gatewayApiKey ? decrypt(config.ai.gatewayApiKey) : (process.env.AI_GATEWAY_API_KEY || '');
+        const useGateway = !!gatewayUrl || !!gatewayApiKey || !!process.env.AI_GATEWAY_API_KEY;
+
+        let responseText = '';
+        let usageData = { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
+        let finalProviderUsed = '';
+        let finalModelUsed = '';
+        let lastError = null;
+
+        for (const currentModel of modelsToTry) {
+            const provider = configuredProviders.find(p => p.id === currentModel.providerId);
+            if (!provider || !provider.apiKey) {
+                console.warn(`[AI Vision] Skipping model ${currentModel.modelId}: Linked provider is missing API key.`);
+                continue;
             }
 
-            const parts = [
-                { text: prompt },
-                {
-                    inlineData: {
-                        mimeType: mimeType,
-                        data: base64Image
-                    }
-                }
-            ];
+            const decryptedKey = decrypt(provider.apiKey);
+            if (!decryptedKey) {
+                console.warn(`[AI Vision] Skipping model ${currentModel.modelId}: Decryption of provider key failed.`);
+                continue;
+            }
 
-            const generateWithFallback = async (currentModel) => {
-                try {
-                    return await ai.models.generateContent({
-                        model: currentModel,
-                        config: { systemInstruction },
-                        contents: parts
-                    });
-                } catch (error) {
-                    if (error.message.includes('404') || error.message.includes('not found')) {
-                        console.warn(`[AI Warning] Model ${currentModel} not found, trying fallback...`);
-                        const fallbackName = 'gemini-2.0-flash-lite';
-                        return await ai.models.generateContent({
-                            model: fallbackName,
-                            config: { systemInstruction },
-                            contents: parts
+            try {
+                let result;
+                
+                // Route through Vercel AI Gateway if configured and provider is supported (not openrouter)
+                if (useGateway && provider.type !== 'openrouter') {
+                    try {
+                        result = await callVisionVercelAiGateway({
+                            gatewayUrl,
+                            gatewayApiKey,
+                            providerType: provider.type,
+                            modelId: currentModel.modelId,
+                            apiKey: decryptedKey,
+                            systemInstruction,
+                            prompt,
+                            mimeType,
+                            base64Image
+                        });
+                    } catch (gatewayErr) {
+                        console.warn(`[AI Gateway Vision Fallback] Gateway failed for ${provider.type}/${currentModel.modelId}. Trying direct call... Error:`, gatewayErr.message);
+                        // Fallback to direct call
+                        result = await callVisionDirectProvider({
+                            providerType: provider.type,
+                            modelId: currentModel.modelId,
+                            apiKey: decryptedKey,
+                            systemInstruction,
+                            prompt,
+                            mimeType,
+                            base64Image
                         });
                     }
-                    throw error;
+                } else {
+                    // Call direct provider
+                    result = await callVisionDirectProvider({
+                        providerType: provider.type,
+                        modelId: currentModel.modelId,
+                        apiKey: decryptedKey,
+                        systemInstruction,
+                        prompt,
+                        mimeType,
+                        base64Image
+                    });
                 }
-            };
 
-            const result = await generateWithFallback(modelName);
-            responseText = typeof result.text === 'function' ? result.text() : (result.text || JSON.stringify(result));
-            
-            if (result.usageMetadata) {
-                 usageData = {
-                     inputTokens: result.usageMetadata.promptTokenCount || 0,
-                     outputTokens: result.usageMetadata.candidatesTokenCount || 0,
-                     totalTokens: result.usageMetadata.totalTokenCount || 0
-                 };
+                if (result && result.text) {
+                    responseText = result.text;
+                    usageData = result.usage;
+                    finalProviderUsed = provider.type;
+                    finalModelUsed = currentModel.modelId;
+                    break; // SUCCESS! Break the failover loop
+                }
+            } catch (e) {
+                console.error(`[AI Vision Fallback] Model ${currentModel.modelId} failed:`, e.message);
+                lastError = e;
             }
+        }
 
-        } else if (provider === 'groq' || provider === 'openrouter') {
-            const endpoint = provider === 'groq' ? 'https://api.groq.com/openai/v1/chat/completions' : 'https://openrouter.ai/api/v1/chat/completions';
-            
-            if (provider === 'groq' && (!modelName || !modelName.includes('vision'))) {
-                modelName = 'llama-3.2-90b-vision-preview'; // Fallback to vision compatible model for Groq
-            }
-
-            const headers = {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`
-            };
-
-            if (provider === 'openrouter') {
-                headers['HTTP-Referer'] = 'https://aiyu.dev';
-                headers['X-Title'] = 'Aiyu Portfolio'; 
-            }
-
-            const response = await fetchWithTimeout(endpoint, {
-                method: 'POST',
-                headers,
-                body: JSON.stringify({
-                    model: modelName,
-                    messages: [
-                        { role: 'system', content: systemInstruction },
-                        { role: 'user', content: [
-                            { type: 'text', text: prompt },
-                            { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64Image}` } }
-                        ]}
-                    ]
-                })
-            }, 30000);
-
-            if (!response.ok) {
-                const errorData = await response.text();
-                throw new Error(`${provider.toUpperCase()} Vision API Error: ${response.status} ${errorData}`);
-            }
-
-            const data = await response.json();
-            responseText = data.choices?.[0]?.message?.content || '';
-            
-            if (data.usage) {
-                usageData = {
-                    inputTokens: data.usage.prompt_tokens || 0,
-                    outputTokens: data.usage.completion_tokens || 0,
-                    totalTokens: data.usage.total_tokens || 0
-                };
-            }
+        if (!responseText) {
+             throw new Error(`All configured AI vision fallback mechanisms failed. Last API error: ${lastError?.message || 'Unknown configuration issue.'}`);
         }
 
         // 5. Log Telemetry
         try {
             await prisma.aiLog.create({ data: {
-                provider,
-                model: modelName,
+                provider: finalProviderUsed,
+                model: finalModelUsed,
                 mode: 'generate_caption', // Vision mode
                 prompt: prompt, // We don't log the base64 image string to DB, just text prompt
                 response: responseText.trim(),
