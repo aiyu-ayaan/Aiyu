@@ -522,7 +522,7 @@ export default function AiConfigPage() {
     }
 
     return (
-        <div className="p-4 md:p-8 max-w-7xl mx-auto min-h-screen w-full flex flex-col bg-slate-950 text-slate-100 selection:bg-cyan-500/30">
+        <div className="p-4 md:p-8 max-w-7xl mx-auto">
             {/* Header */}
             <div className="mb-8">
                 <Link
