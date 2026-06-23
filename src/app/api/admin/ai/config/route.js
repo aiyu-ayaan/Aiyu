@@ -5,51 +5,71 @@ import { withAuth } from '@/middleware/auth';
 import { encrypt, decrypt } from '@/lib/encryption';
 import cache from '@/lib/cache';
 
-// Helper to get key
-async function getDecryptedKeys() {
-    const config = await getSingleton(prisma, 'config', { withSecrets: true });
-    return {
-        gemini: config?.encryptedGeminiApiKey ? decrypt(config.encryptedGeminiApiKey) : null,
-        groq: config?.encryptedGroqApiKey ? decrypt(config.encryptedGroqApiKey) : null,
-        openrouter: config?.encryptedOpenRouterApiKey ? decrypt(config.encryptedOpenRouterApiKey) : null
+// Helper to generate unique provider names
+function generateProviderName(type, existingProviders, excludeId = null) {
+    const baseNames = {
+        google: 'Google API',
+        openai: 'OpenAI API',
+        groq: 'Groq API',
+        openrouter: 'OpenRouter API'
     };
+    const base = baseNames[type] || 'AI API';
+    let candidate = base;
+    let counter = 1;
+    const existingNames = new Set(
+        existingProviders
+            .filter(p => p.id !== excludeId)
+            .map(p => p.name)
+    );
+    while (existingNames.has(candidate)) {
+        candidate = `${base} ${counter}`;
+        counter++;
+    }
+    return candidate;
 }
 
 // GET: Fetch AI configuration
 async function getAiConfig(request) {
     try {
-        let config = await getSingleton(prisma, 'config');
+        let config = await getSingleton(prisma, 'config', { withSecrets: true });
 
         // Create default if doesn't exist
         if (!config) {
             config = await upsertSingleton(prisma, 'config', {});
         }
 
-        const keys = await getDecryptedKeys();
-
-        const aiConfig = config.ai || {
-            enabled: false,
-            provider: 'gemini',
-            model: 'gemini-1.5-flash',
-            enabledProviders: ['gemini'], // Defaults to Gemini only
-            systemInstruction: 'You are a helpful assistant for the portfolio admin.'
+        const aiConfig = config.ai || {};
+        
+        // Structure default new config format if fields are missing
+        const responseData = {
+            enabled: aiConfig.enabled ?? false,
+            systemInstruction: aiConfig.systemInstruction || 'You are a helpful assistant for the portfolio admin.',
+            gatewayUrl: aiConfig.gatewayUrl || '',
+            hasGatewayApiKey: !!aiConfig.gatewayApiKey,
+            providers: (aiConfig.providers || []).map(p => ({
+                id: p.id,
+                name: p.name,
+                type: p.type,
+                hasKey: !!p.apiKey
+            })),
+            models: aiConfig.models || [],
+            textPriority: aiConfig.textPriority || [],
+            imagePriority: aiConfig.imagePriority || []
         };
 
-        // Migrate old config if enabledProviders missing
-        if (!aiConfig.enabledProviders) {
-            aiConfig.enabledProviders = aiConfig.provider ? [aiConfig.provider] : ['gemini'];
-        }
+        // Legacy compatibility shims
+        responseData.provider = aiConfig.provider || 'gemini';
+        responseData.model = aiConfig.model || 'gemini-1.5-flash';
+        responseData.enabledProviders = aiConfig.enabledProviders || ['gemini'];
+        responseData.hasKey = {
+            gemini: !!config.encryptedGeminiApiKey,
+            groq: !!config.encryptedGroqApiKey,
+            openrouter: !!config.encryptedOpenRouterApiKey
+        };
 
         return NextResponse.json({
             success: true,
-            data: {
-                ...aiConfig,
-                hasKey: {
-                    gemini: !!keys.gemini,
-                    groq: !!keys.groq,
-                    openrouter: !!keys.openrouter
-                }
-            }
+            data: responseData
         });
     } catch (error) {
         console.error('[ERROR] Failed to fetch AI config:', error);
@@ -64,44 +84,110 @@ async function getAiConfig(request) {
 async function updateAiConfig(request) {
     try {
         const body = await request.json();
-        const { enabled, provider, model, models, enabledProviders, systemInstruction, keys } = body;
+        const { 
+            enabled, 
+            systemInstruction, 
+            gatewayUrl, 
+            gatewayApiKey, 
+            providers = [], 
+            models = [], 
+            textPriority = [], 
+            imagePriority = [] 
+        } = body;
 
-        const current = (await getSingleton(prisma, 'config', { withSecrets: true })) || {};
-        const ai = { ...(current.ai || {}) };
+        const currentConfig = (await getSingleton(prisma, 'config', { withSecrets: true })) || {};
+        const currentAi = currentConfig.ai || {};
 
-        if (enabled !== undefined) ai.enabled = enabled;
-        if (provider !== undefined) ai.provider = provider;
-        if (model !== undefined) ai.model = model;
-        if (models !== undefined) ai.models = models;
-        if (enabledProviders !== undefined) ai.enabledProviders = enabledProviders;
-        if (systemInstruction !== undefined) ai.systemInstruction = systemInstruction;
+        const nextAi = { ...currentAi };
 
-        const patch = { ai };
+        if (enabled !== undefined) nextAi.enabled = enabled;
+        if (systemInstruction !== undefined) nextAi.systemInstruction = systemInstruction;
+        if (gatewayUrl !== undefined) nextAi.gatewayUrl = gatewayUrl;
 
-        // Update API Keys if provided (stored in dedicated encrypted secret columns)
-        if (keys?.gemini !== undefined) {
-            patch.encryptedGeminiApiKey = keys.gemini ? encrypt(keys.gemini) : '';
+        // Update Vercel AI Gateway key if provided
+        if (gatewayApiKey !== undefined) {
+            if (gatewayApiKey === '') {
+                nextAi.gatewayApiKey = null;
+            } else if (gatewayApiKey !== '•••• •••• •••• ••••') {
+                nextAi.gatewayApiKey = encrypt(gatewayApiKey);
+            }
         }
-        if (keys?.groq !== undefined) {
-            patch.encryptedGroqApiKey = keys.groq ? encrypt(keys.groq) : '';
+
+        // Process providers & secure keys
+        const updatedProviders = [];
+        const existingProviders = currentAi.providers || [];
+
+        for (const provider of providers) {
+            const existing = existingProviders.find(p => p.id === provider.id);
+            let finalApiKey = existing?.apiKey || null;
+
+            // Update API key if a new one is sent
+            if (provider.apiKey !== undefined && provider.apiKey !== '' && provider.apiKey !== '•••• •••• •••• ••••') {
+                finalApiKey = encrypt(provider.apiKey);
+            } else if (provider.apiKey === '') {
+                finalApiKey = null;
+            }
+
+            // Determine name (manual or autogenerated)
+            let name = provider.name;
+            if (!name || name.trim() === '') {
+                name = generateProviderName(provider.type, updatedProviders.concat(existingProviders), provider.id);
+            }
+
+            updatedProviders.push({
+                id: provider.id,
+                name: name.trim(),
+                type: provider.type,
+                apiKey: finalApiKey
+            });
         }
-        if (keys?.openrouter !== undefined) {
-            patch.encryptedOpenRouterApiKey = keys.openrouter ? encrypt(keys.openrouter) : '';
+
+        nextAi.providers = updatedProviders;
+        nextAi.models = models;
+        nextAi.textPriority = textPriority;
+        nextAi.imagePriority = imagePriority;
+
+        // Keep legacy properties in sync for backward compatibility (pick first corresponding provider if any)
+        const geminiProvider = updatedProviders.find(p => p.type === 'google');
+        const groqProvider = updatedProviders.find(p => p.type === 'groq');
+        const openrouterProvider = updatedProviders.find(p => p.type === 'openrouter');
+
+        const patch = { ai: nextAi };
+
+        // Legacy encrypted keys sync
+        if (geminiProvider?.apiKey) {
+            patch.encryptedGeminiApiKey = geminiProvider.apiKey;
+        }
+        if (groqProvider?.apiKey) {
+            patch.encryptedGroqApiKey = groqProvider.apiKey;
+        }
+        if (openrouterProvider?.apiKey) {
+            patch.encryptedOpenRouterApiKey = openrouterProvider.apiKey;
         }
 
         const updated = await upsertSingleton(prisma, 'config', patch, { withSecrets: true });
         cache.invalidatePrefix('db:config');
 
+        const serializedAi = updated.ai || {};
+        const responseData = {
+            enabled: serializedAi.enabled ?? false,
+            systemInstruction: serializedAi.systemInstruction || '',
+            gatewayUrl: serializedAi.gatewayUrl || '',
+            hasGatewayApiKey: !!serializedAi.gatewayApiKey,
+            providers: (serializedAi.providers || []).map(p => ({
+                id: p.id,
+                name: p.name,
+                type: p.type,
+                hasKey: !!p.apiKey
+            })),
+            models: serializedAi.models || [],
+            textPriority: serializedAi.textPriority || [],
+            imagePriority: serializedAi.imagePriority || []
+        };
+
         return NextResponse.json({
             success: true,
-            data: {
-                ...updated.ai,
-                hasKey: {
-                    gemini: !!updated.encryptedGeminiApiKey,
-                    groq: !!updated.encryptedGroqApiKey,
-                    openrouter: !!updated.encryptedOpenRouterApiKey
-                }
-            }
+            data: responseData
         });
 
     } catch (error) {

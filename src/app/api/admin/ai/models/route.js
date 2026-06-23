@@ -4,6 +4,30 @@ import { getSingleton } from '@/lib/serialize';
 import { decrypt } from '@/lib/encryption';
 import { withAuth } from '@/middleware/auth';
 
+async function fetchOpenAiModels(apiKey) {
+    if (!apiKey) return [];
+    try {
+        const res = await fetch('https://api.openai.com/v1/models', {
+            headers: { 'Authorization': `Bearer ${apiKey}` }
+        });
+        if (res.ok) {
+            const data = await res.json();
+            return data.data
+                .filter(m => m.id.startsWith('gpt-') || m.id.startsWith('o1') || m.id.startsWith('o3'))
+                .map(m => ({
+                    id: m.id,
+                    name: m.id,
+                    desc: 'OpenAI GPT Model',
+                    provider: 'openai',
+                    isFree: false
+                }));
+        }
+    } catch (e) {
+        console.error('[OpenAI Models Fetch Error]:', e);
+    }
+    return [];
+}
+
 async function fetchGeminiModels(apiKey) {
     if (!apiKey) return [];
     try {
@@ -12,12 +36,17 @@ async function fetchGeminiModels(apiKey) {
             const data = await res.json();
             return data.models
                 .filter(m => m.name.includes('gemini') && m.supportedGenerationMethods.includes('generateContent'))
-                .map(m => ({
-                    id: m.name.replace('models/', ''),
-                    name: m.displayName || m.name.replace('models/', ''),
-                    desc: m.description || 'Google Gemini Model',
-                    provider: 'gemini'
-                }));
+                .map(m => {
+                    const id = m.name.replace('models/', '');
+                    const isFree = id.includes('flash') || id.includes('lite'); // Simple heuristic or default to true for flash
+                    return {
+                        id,
+                        name: isFree ? `[Free] ${m.displayName || id}` : (m.displayName || id),
+                        desc: m.description || 'Google Gemini Model',
+                        provider: 'google',
+                        isFree
+                    };
+                });
         }
     } catch (e) {
         console.error('[Gemini Models Fetch Error]:', e);
@@ -39,7 +68,8 @@ async function fetchGroqModels(apiKey) {
                     id: m.id,
                     name: `[Free] ${m.id}`,
                     desc: `Owned by ${m.owned_by}`,
-                    provider: 'groq'
+                    provider: 'groq',
+                    isFree: true
                 }));
         } else {
             console.error('[Groq Models Fetch Error]:', res.status, await res.text());
@@ -62,7 +92,8 @@ async function fetchOpenRouterModels(apiKey) {
                     id: m.id,
                     name: isFree ? `[Free] ${m.name || m.id}` : (m.name || m.id),
                     desc: m.description ? (m.description.substring(0, 100) + '...') : `Provider: ${isFree ? 'Free' : 'Paid'}`,
-                    provider: 'openrouter'
+                    provider: 'openrouter',
+                    isFree
                 };
             });
         }
@@ -75,29 +106,53 @@ async function fetchOpenRouterModels(apiKey) {
 async function getModels(request) {
     try {
         const { searchParams } = new URL(request.url);
-        const provider = searchParams.get('provider') || 'all';
+        const providerId = searchParams.get('providerId') || 'all';
 
         const config = await getSingleton(prisma, 'config', { withSecrets: true });
-
-        const keys = {
-            gemini: config?.encryptedGeminiApiKey ? decrypt(config.encryptedGeminiApiKey) : null,
-            groq: config?.encryptedGroqApiKey ? decrypt(config.encryptedGroqApiKey) : null,
-            openrouter: config?.encryptedOpenRouterApiKey ? decrypt(config.encryptedOpenRouterApiKey) : null,
-        };
+        const aiConfig = config?.ai || {};
+        const providers = aiConfig.providers || [];
 
         let models = [];
 
-        if (provider === 'all' || provider === 'gemini') {
-            const geminiModels = await fetchGeminiModels(keys.gemini);
-            models = [...models, ...geminiModels];
-        }
-        if (provider === 'all' || provider === 'groq') {
-            const groqModels = await fetchGroqModels(keys.groq);
-            models = [...models, ...groqModels];
-        }
-        if (provider === 'all' || provider === 'openrouter') {
-            const openRouterModels = await fetchOpenRouterModels(keys.openrouter);
-            models = [...models, ...openRouterModels];
+        if (providerId === 'all') {
+            // Fetch models for all configured providers
+            for (const p of providers) {
+                if (!p.apiKey) continue;
+                const apiKey = decrypt(p.apiKey);
+                let providerModels = [];
+
+                if (p.type === 'google') {
+                    providerModels = await fetchGeminiModels(apiKey);
+                } else if (p.type === 'openai') {
+                    providerModels = await fetchOpenAiModels(apiKey);
+                } else if (p.type === 'groq') {
+                    providerModels = await fetchGroqModels(apiKey);
+                } else if (p.type === 'openrouter') {
+                    providerModels = await fetchOpenRouterModels(apiKey);
+                }
+
+                // Add providerInstanceId so client knows which specific credentials this model uses
+                models = [...models, ...providerModels.map(m => ({ ...m, providerInstanceId: p.id }))];
+            }
+        } else {
+            // Fetch models for a single specific provider configuration
+            const p = providers.find(prov => prov.id === providerId);
+            if (p && p.apiKey) {
+                const apiKey = decrypt(p.apiKey);
+                let providerModels = [];
+
+                if (p.type === 'google') {
+                    providerModels = await fetchGeminiModels(apiKey);
+                } else if (p.type === 'openai') {
+                    providerModels = await fetchOpenAiModels(apiKey);
+                } else if (p.type === 'groq') {
+                    providerModels = await fetchGroqModels(apiKey);
+                } else if (p.type === 'openrouter') {
+                    providerModels = await fetchOpenRouterModels(apiKey);
+                }
+
+                models = providerModels.map(m => ({ ...m, providerInstanceId: p.id }));
+            }
         }
 
         return NextResponse.json({
