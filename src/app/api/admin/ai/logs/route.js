@@ -18,25 +18,31 @@ async function getAiLogs(request) {
             _count: { _all: true },
         });
 
-        const stats = {
-            gemini: { input: 0, output: 0, total: 0, requests: 0 },
-            groq: { input: 0, output: 0, total: 0, requests: 0 },
-            openrouter: { input: 0, output: 0, total: 0, requests: 0 },
-        };
+        const providerIds = [
+            'google', 'openai', 'groq', 'openrouter', 'anthropic', 'cohere', 
+            'perplexity', 'replicate', 'together', 'mistral', 'deepseek', 
+            'fireworks', 'xai', 'stabilityai', 'aws', 'azure'
+        ];
+
+        const stats = {};
+        providerIds.forEach(id => {
+            stats[id] = { input: 0, output: 0, total: 0, requests: 0 };
+        });
 
         let overallTotalTokens = 0;
 
         aggregation.forEach(item => {
-            const provider = String(item.provider || '').toLowerCase();
-            if (stats[provider] !== undefined) {
-                stats[provider] = {
-                    input: item._sum.inputTokens || 0,
-                    output: item._sum.outputTokens || 0,
-                    total: item._sum.totalTokens || 0,
-                    requests: item._count._all || 0
-                };
-                overallTotalTokens += stats[provider].total;
+            let provider = String(item.provider || '').toLowerCase();
+            if (provider === 'gemini') {
+                provider = 'google';
             }
+            if (stats[provider] !== undefined) {
+                stats[provider].input += item._sum.inputTokens || 0;
+                stats[provider].output += item._sum.outputTokens || 0;
+                stats[provider].total += item._sum.totalTokens || 0;
+                stats[provider].requests += item._count._all || 0;
+            }
+            overallTotalTokens += item._sum.totalTokens || 0;
         });
 
         return NextResponse.json({
