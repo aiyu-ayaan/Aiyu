@@ -6,6 +6,129 @@ import { decrypt } from '@/lib/encryption';
 import { withAuth } from '@/middleware/auth';
 import { fetchWithTimeout } from '@/lib/upstreamControl';
 
+// Vercel AI Gateway caller with request-scoped BYOK
+async function callVercelAiGateway({ gatewayUrl, gatewayApiKey, providerType, modelId, apiKey, systemInstruction, prompt }) {
+    const baseUrl = gatewayUrl || 'https://ai-gateway.vercel.sh/v1';
+    const endpoint = `${baseUrl.replace(/\/$/, '')}/chat/completions`;
+
+    const headers = {
+        'Content-Type': 'application/json',
+    };
+    if (gatewayApiKey) {
+        headers['Authorization'] = `Bearer ${gatewayApiKey}`;
+    } else if (process.env.AI_GATEWAY_API_KEY) {
+        headers['Authorization'] = `Bearer ${process.env.AI_GATEWAY_API_KEY}`;
+    }
+
+    const body = {
+        model: `${providerType === 'google' ? 'google' : providerType}/${modelId}`,
+        messages: [
+            { role: 'system', content: systemInstruction },
+            { role: 'user', content: prompt }
+        ],
+        providerOptions: {
+            gateway: {
+                byok: {
+                    [providerType === 'google' ? 'google' : providerType]: [{ apiKey }]
+                }
+            }
+        }
+    };
+
+    console.log(`[AI Gateway] Routing text request to ${providerType}/${modelId} via ${endpoint}...`);
+    const response = await fetchWithTimeout(endpoint, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body)
+    }, 30000);
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`AI Gateway Error (${response.status}): ${errorText}`);
+    }
+
+    const data = await response.json();
+    const text = data.choices?.[0]?.message?.content || '';
+    const usage = data.usage ? {
+        inputTokens: data.usage.prompt_tokens || 0,
+        outputTokens: data.usage.completion_tokens || 0,
+        totalTokens: data.usage.total_tokens || 0
+    } : { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
+
+    return { text, usage };
+}
+
+// Direct provider API caller (fallback)
+async function callDirectProvider({ providerType, modelId, apiKey, systemInstruction, prompt }) {
+    if (providerType === 'google') {
+        const ai = new GoogleGenAI({ apiKey });
+        
+        let finalModel = modelId;
+        if (!finalModel || finalModel.includes('1.5-flash')) {
+            finalModel = 'gemini-2.0-flash-lite';
+        }
+
+        const result = await ai.models.generateContent({
+            model: finalModel,
+            config: { systemInstruction },
+            contents: [{ text: prompt }]
+        });
+        const text = typeof result.text === 'function' ? result.text() : (result.text || JSON.stringify(result));
+        const usage = result.usageMetadata ? {
+            inputTokens: result.usageMetadata.promptTokenCount || 0,
+            outputTokens: result.usageMetadata.candidatesTokenCount || 0,
+            totalTokens: result.usageMetadata.totalTokenCount || 0
+        } : { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
+        return { text, usage };
+    }
+
+    let endpoint = '';
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+    };
+
+    if (providerType === 'openai') {
+        endpoint = 'https://api.openai.com/v1/chat/completions';
+    } else if (providerType === 'groq') {
+        endpoint = 'https://api.groq.com/openai/v1/chat/completions';
+    } else if (providerType === 'openrouter') {
+        endpoint = 'https://openrouter.ai/api/v1/chat/completions';
+        headers['HTTP-Referer'] = 'https://aiyu.dev';
+        headers['X-Title'] = 'Aiyu Portfolio';
+    } else {
+        throw new Error(`Unsupported provider type: ${providerType}`);
+    }
+
+    console.log(`[AI Direct] Calling provider ${providerType} directly for model ${modelId}...`);
+    const response = await fetchWithTimeout(endpoint, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+            model: modelId,
+            messages: [
+                { role: 'system', content: systemInstruction },
+                { role: 'user', content: prompt }
+            ]
+        })
+    }, 30000);
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Direct API Error (${response.status}): ${errorText}`);
+    }
+
+    const data = await response.json();
+    const text = data.choices?.[0]?.message?.content || '';
+    const usage = data.usage ? {
+        inputTokens: data.usage.prompt_tokens || 0,
+        outputTokens: data.usage.completion_tokens || 0,
+        totalTokens: data.usage.total_tokens || 0
+    } : { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
+
+    return { text, usage };
+}
+
 async function generateText(request) {
     try {
         // 1. Get Configuration & API Key
@@ -15,8 +138,6 @@ async function generateText(request) {
             return NextResponse.json({ success: false, error: 'AI system is disabled.' }, { status: 403 });
         }
 
-        // API keys are now securely decrypted and validated dynamically within the failover loop
-
         // 2. Parse Request
         const { prompt, mode, context } = await request.json();
 
@@ -25,7 +146,6 @@ async function generateText(request) {
         }
 
         // 3. Prepare AI Prompt
-        let modelName = config.ai.model || 'gemini-3-flash-preview';
         const systemInstruction = config.ai.systemInstruction || "You are a helpful assistant.";
 
         let finalPrompt = prompt;
@@ -106,12 +226,35 @@ Return ONLY a valid JSON object (NO markdown, NO backticks, NO explanation) with
         }
 
         // 4. Call Active Provider API with strict fallback sequence
-        const enabledProviders = config.ai.enabledProviders || ['gemini']; // Default
-        const order = ['groq', 'openrouter', 'gemini'].filter(p => enabledProviders.includes(p));
-        
-        if (order.length === 0) {
-            return NextResponse.json({ success: false, error: 'No AI providers enabled for text generation. Please check settings.' }, { status: 403 });
+        const textPriority = config.ai.textPriority || [];
+        const configuredModels = config.ai.models || [];
+        const configuredProviders = config.ai.providers || [];
+
+        // Map textPriority to the configured model objects
+        let modelsToTry = textPriority
+            .map(id => configuredModels.find(m => m.id === id))
+            .filter(Boolean);
+
+        // Fallback to legacy models if priority list is empty
+        if (modelsToTry.length === 0) {
+            const geminiProvider = configuredProviders.find(p => p.type === 'google');
+            if (geminiProvider) {
+                modelsToTry.push({
+                    id: 'legacy-gemini',
+                    modelId: config.ai.model || 'gemini-1.5-flash',
+                    providerId: geminiProvider.id,
+                    isFree: false
+                });
+            }
         }
+
+        if (modelsToTry.length === 0) {
+            return NextResponse.json({ success: false, error: 'No AI models configured in priority list. Please check settings.' }, { status: 403 });
+        }
+
+        const gatewayUrl = config.ai.gatewayUrl || process.env.AI_GATEWAY_URL || '';
+        const gatewayApiKey = config.ai.gatewayApiKey ? decrypt(config.ai.gatewayApiKey) : (process.env.AI_GATEWAY_API_KEY || '');
+        const useGateway = !!gatewayUrl || !!gatewayApiKey || !!process.env.AI_GATEWAY_API_KEY;
 
         let responseText = '';
         let usageData = { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
@@ -119,83 +262,65 @@ Return ONLY a valid JSON object (NO markdown, NO backticks, NO explanation) with
         let finalModelUsed = '';
         let lastError = null;
 
-        for (const currentProvider of order) {
+        for (const currentModel of modelsToTry) {
+            const provider = configuredProviders.find(p => p.id === currentModel.providerId);
+            if (!provider || !provider.apiKey) {
+                console.warn(`[AI Text] Skipping model ${currentModel.modelId}: Linked provider is missing API key.`);
+                continue;
+            }
+
+            const decryptedKey = decrypt(provider.apiKey);
+            if (!decryptedKey) {
+                console.warn(`[AI Text] Skipping model ${currentModel.modelId}: Decryption of provider key failed.`);
+                continue;
+            }
+
             try {
-                let currentApiKey;
-                if (currentProvider === 'gemini') currentApiKey = config.encryptedGeminiApiKey ? decrypt(config.encryptedGeminiApiKey) : null;
-                else if (currentProvider === 'groq') currentApiKey = config.encryptedGroqApiKey ? decrypt(config.encryptedGroqApiKey) : null;
-                else if (currentProvider === 'openrouter') currentApiKey = config.encryptedOpenRouterApiKey ? decrypt(config.encryptedOpenRouterApiKey) : null;
-
-                if (!currentApiKey) {
-                    console.warn(`[AI Text] ${currentProvider} skipped: No API Key configured.`);
-                    continue; // Skip silently
-                }
-
-                // Determine model
-                let currentModelName = config.ai?.models?.[currentProvider];
-                if (!currentModelName) {
-                    if (currentProvider === 'groq') currentModelName = 'llama-3.1-8b-instant';
-                    else if (currentProvider === 'openrouter') currentModelName = 'anthropic/claude-3-haiku';
-                    else if (currentProvider === 'gemini') currentModelName = 'gemini-1.5-flash';
-                }
-
-                if (currentProvider === 'gemini') {
-                    const ai = new GoogleGenAI({ apiKey: currentApiKey });
-                    const result = await ai.models.generateContent({
-                        model: currentModelName,
-                        config: { systemInstruction: finalSystemInstruction },
-                        contents: [{ text: finalPrompt }]
+                let result;
+                
+                // Route through Vercel AI Gateway if configured and provider is supported (not openrouter)
+                if (useGateway && provider.type !== 'openrouter') {
+                    try {
+                        result = await callVercelAiGateway({
+                            gatewayUrl,
+                            gatewayApiKey,
+                            providerType: provider.type,
+                            modelId: currentModel.modelId,
+                            apiKey: decryptedKey,
+                            systemInstruction: finalSystemInstruction,
+                            prompt: finalPrompt
+                        });
+                    } catch (gatewayErr) {
+                        console.warn(`[AI Gateway Fallback] Gateway failed for ${provider.type}/${currentModel.modelId}. Trying direct call... Error:`, gatewayErr.message);
+                        // Fallback to direct call
+                        result = await callDirectProvider({
+                            providerType: provider.type,
+                            modelId: currentModel.modelId,
+                            apiKey: decryptedKey,
+                            systemInstruction: finalSystemInstruction,
+                            prompt: finalPrompt
+                        });
+                    }
+                } else {
+                    // Call direct provider
+                    result = await callDirectProvider({
+                        providerType: provider.type,
+                        modelId: currentModel.modelId,
+                        apiKey: decryptedKey,
+                        systemInstruction: finalSystemInstruction,
+                        prompt: finalPrompt
                     });
-                    responseText = typeof result.text === 'function' ? result.text() : (result.text || JSON.stringify(result));
-                    if (result.usageMetadata) {
-                         usageData = {
-                             inputTokens: result.usageMetadata.promptTokenCount || 0,
-                             outputTokens: result.usageMetadata.candidatesTokenCount || 0,
-                             totalTokens: result.usageMetadata.totalTokenCount || 0
-                         };
-                    }
-                } else if (currentProvider === 'groq' || currentProvider === 'openrouter') {
-                    const endpoint = currentProvider === 'groq' ? 'https://api.groq.com/openai/v1/chat/completions' : 'https://openrouter.ai/api/v1/chat/completions';
-                    const headers = {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${currentApiKey}`
-                    };
-                    if (currentProvider === 'openrouter') {
-                        headers['HTTP-Referer'] = 'https://aiyu.dev';
-                        headers['X-Title'] = 'Aiyu Portfolio'; 
-                    }
-                    const response = await fetchWithTimeout(endpoint, {
-                        method: 'POST',
-                        headers,
-                        body: JSON.stringify({
-                            model: currentModelName,
-                            messages: [
-                                { role: 'system', content: finalSystemInstruction },
-                                { role: 'user', content: finalPrompt }
-                            ]
-                        })
-                    }, 30000);
-                    if (!response.ok) {
-                        throw new Error(`${currentProvider.toUpperCase()} Error: ${response.status} ${await response.text()}`);
-                    }
-                    const data = await response.json();
-                    responseText = data.choices?.[0]?.message?.content || '';
-                    if (data.usage) {
-                        usageData = {
-                            inputTokens: data.usage.prompt_tokens || 0,
-                            outputTokens: data.usage.completion_tokens || 0,
-                            totalTokens: data.usage.total_tokens || 0
-                        };
-                    }
                 }
 
-                if (responseText) {
-                    finalProviderUsed = currentProvider;
-                    finalModelUsed = currentModelName;
+                if (result && result.text) {
+                    responseText = result.text;
+                    usageData = result.usage;
+                    finalProviderUsed = provider.type;
+                    finalModelUsed = currentModel.modelId;
                     break; // SUCCESS! Break the failover loop
                 }
             } catch (e) {
-                console.error(`[AI Text Fallback] ${currentProvider} failed:`, e.message);
+                console.error(`[AI Text Fallback] Model ${currentModel.modelId} failed:`, e.message);
                 lastError = e;
             }
         }
