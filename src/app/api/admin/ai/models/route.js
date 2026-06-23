@@ -103,6 +103,53 @@ async function fetchOpenRouterModels(apiKey) {
     return [];
 }
 
+async function fetchOpenAiCompatibleModels(apiKey, url, providerName) {
+    if (!apiKey) return [];
+    try {
+        const res = await fetch(url, {
+            headers: { 'Authorization': `Bearer ${apiKey}` }
+        });
+        if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data.data)) {
+                return data.data.map(m => ({
+                    id: m.id,
+                    name: m.id,
+                    desc: `${providerName.toUpperCase()} Model`,
+                    provider: providerName,
+                    isFree: false
+                }));
+            }
+        }
+    } catch (e) {
+        console.error(`[${providerName} Models Fetch Error]:`, e);
+    }
+    return [];
+}
+
+async function fetchModelsForProvider(p, apiKey) {
+    if (p.type === 'google') {
+        return await fetchGeminiModels(apiKey);
+    } else if (p.type === 'openai') {
+        return await fetchOpenAiModels(apiKey);
+    } else if (p.type === 'groq') {
+        return await fetchGroqModels(apiKey);
+    } else if (p.type === 'openrouter') {
+        return await fetchOpenRouterModels(apiKey);
+    } else if (p.type === 'mistral') {
+        return await fetchOpenAiCompatibleModels(apiKey, 'https://api.mistral.ai/v1/models', 'mistral');
+    } else if (p.type === 'deepseek') {
+        return await fetchOpenAiCompatibleModels(apiKey, 'https://api.deepseek.com/v1/models', 'deepseek');
+    } else if (p.type === 'together') {
+        return await fetchOpenAiCompatibleModels(apiKey, 'https://api.together.xyz/v1/models', 'together');
+    } else if (p.type === 'fireworks') {
+        return await fetchOpenAiCompatibleModels(apiKey, 'https://api.fireworks.ai/inference/v1/models', 'fireworks');
+    } else if (p.type === 'xai') {
+        return await fetchOpenAiCompatibleModels(apiKey, 'https://api.x.ai/v1/models', 'xai');
+    }
+    return [];
+}
+
 async function getModels(request) {
     try {
         const { searchParams } = new URL(request.url);
@@ -119,17 +166,7 @@ async function getModels(request) {
             for (const p of providers) {
                 if (!p.apiKey) continue;
                 const apiKey = decrypt(p.apiKey);
-                let providerModels = [];
-
-                if (p.type === 'google') {
-                    providerModels = await fetchGeminiModels(apiKey);
-                } else if (p.type === 'openai') {
-                    providerModels = await fetchOpenAiModels(apiKey);
-                } else if (p.type === 'groq') {
-                    providerModels = await fetchGroqModels(apiKey);
-                } else if (p.type === 'openrouter') {
-                    providerModels = await fetchOpenRouterModels(apiKey);
-                }
+                const providerModels = await fetchModelsForProvider(p, apiKey);
 
                 // Add providerInstanceId so client knows which specific credentials this model uses
                 models = [...models, ...providerModels.map(m => ({ ...m, providerInstanceId: p.id }))];
@@ -139,17 +176,7 @@ async function getModels(request) {
             const p = providers.find(prov => prov.id === providerId);
             if (p && p.apiKey) {
                 const apiKey = decrypt(p.apiKey);
-                let providerModels = [];
-
-                if (p.type === 'google') {
-                    providerModels = await fetchGeminiModels(apiKey);
-                } else if (p.type === 'openai') {
-                    providerModels = await fetchOpenAiModels(apiKey);
-                } else if (p.type === 'groq') {
-                    providerModels = await fetchGroqModels(apiKey);
-                } else if (p.type === 'openrouter') {
-                    providerModels = await fetchOpenRouterModels(apiKey);
-                }
+                const providerModels = await fetchModelsForProvider(p, apiKey);
 
                 models = providerModels.map(m => ({ ...m, providerInstanceId: p.id }));
             }
@@ -169,5 +196,23 @@ async function getModels(request) {
     }
 }
 
+async function discoverModels(request) {
+    try {
+        const { type, apiKey } = await request.json();
+        if (!type || !apiKey) {
+            return NextResponse.json({ success: false, error: 'Type and API key are required.' }, { status: 400 });
+        }
+        const providerModels = await fetchModelsForProvider({ type }, apiKey);
+        return NextResponse.json({
+            success: true,
+            data: providerModels
+        });
+    } catch (e) {
+        console.error('[AI Models Discovery Error]:', e);
+        return NextResponse.json({ success: false, error: e.message }, { status: 500 });
+    }
+}
+
 export const GET = withAuth(getModels);
+export const POST = withAuth(discoverModels);
 export const runtime = 'nodejs';

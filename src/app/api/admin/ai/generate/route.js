@@ -9,10 +9,29 @@ import sharp from 'sharp';
 import { fetchWithTimeout } from '@/lib/upstreamControl';
 import { MAX_FILE_SIZE } from '@/utils/fileValidation';
 
+const GATEWAY_PROVIDER_SLUGS = {
+    google: 'google',
+    openai: 'openai',
+    groq: 'groq',
+    anthropic: 'anthropic',
+    cohere: 'cohere',
+    perplexity: 'perplexity',
+    replicate: 'replicate',
+    together: 'together',
+    mistral: 'mistral',
+    deepseek: 'deepseek',
+    fireworks: 'fireworks',
+    xai: 'xai',
+    stabilityai: 'stabilityai',
+    aws: 'bedrock',
+    azure: 'azure-openai'
+};
+
 // Vercel AI Gateway caller with request-scoped BYOK for Vision
 async function callVisionVercelAiGateway({ gatewayUrl, gatewayApiKey, providerType, modelId, apiKey, systemInstruction, prompt, mimeType, base64Image }) {
     const baseUrl = gatewayUrl || 'https://ai-gateway.vercel.sh/v1';
     const endpoint = `${baseUrl.replace(/\/$/, '')}/chat/completions`;
+    const gatewaySlug = GATEWAY_PROVIDER_SLUGS[providerType] || providerType;
 
     const headers = {
         'Content-Type': 'application/json',
@@ -24,7 +43,7 @@ async function callVisionVercelAiGateway({ gatewayUrl, gatewayApiKey, providerTy
     }
 
     const body = {
-        model: `${providerType === 'google' ? 'google' : providerType}/${modelId}`,
+        model: `${gatewaySlug}/${modelId}`,
         messages: [
             { role: 'system', content: systemInstruction },
             { role: 'user', content: [
@@ -35,13 +54,13 @@ async function callVisionVercelAiGateway({ gatewayUrl, gatewayApiKey, providerTy
         providerOptions: {
             gateway: {
                 byok: {
-                    [providerType === 'google' ? 'google' : providerType]: [{ apiKey }]
+                    [gatewaySlug]: [{ apiKey }]
                 }
             }
         }
     };
 
-    console.log(`[AI Gateway Vision] Routing vision request to ${providerType}/${modelId} via ${endpoint}...`);
+    console.log(`[AI Gateway Vision] Routing vision request to ${providerType} (${gatewaySlug})/${modelId} via ${endpoint}...`);
     const response = await fetchWithTimeout(endpoint, {
         method: 'POST',
         headers,
@@ -100,54 +119,113 @@ async function callVisionDirectProvider({ providerType, modelId, apiKey, systemI
         return { text, usage };
     }
 
-    let endpoint = '';
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
+    if (providerType === 'anthropic') {
+        const response = await fetchWithTimeout('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': apiKey,
+                'anthropic-version': '2023-06-01'
+            },
+            body: JSON.stringify({
+                model: modelId,
+                max_tokens: 4096,
+                system: systemInstruction,
+                messages: [
+                    {
+                        role: 'user',
+                        content: [
+                            {
+                                type: 'image',
+                                source: {
+                                    type: 'base64',
+                                    media_type: mimeType,
+                                    data: base64Image
+                                }
+                            },
+                            {
+                                type: 'text',
+                                text: prompt
+                            }
+                        ]
+                    }
+                ]
+            })
+        }, 45000);
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Direct Anthropic Vision API Error (${response.status}): ${errorText}`);
+        }
+
+        const data = await response.json();
+        const text = data.content?.[0]?.text || '';
+        const usage = data.usage ? {
+            inputTokens: data.usage.input_tokens || 0,
+            outputTokens: data.usage.output_tokens || 0,
+            totalTokens: (data.usage.input_tokens || 0) + (data.usage.output_tokens || 0)
+        } : { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
+
+        return { text, usage };
+    }
+
+    const OPENAI_COMPATIBLE_ENDPOINTS = {
+        openai: 'https://api.openai.com/v1/chat/completions',
+        groq: 'https://api.groq.com/openai/v1/chat/completions',
+        openrouter: 'https://openrouter.ai/api/v1/chat/completions',
+        deepseek: 'https://api.deepseek.com/v1/chat/completions',
+        perplexity: 'https://api.perplexity.ai/chat/completions',
+        mistral: 'https://api.mistral.ai/v1/chat/completions',
+        together: 'https://api.together.xyz/v1/chat/completions',
+        fireworks: 'https://api.fireworks.ai/inference/v1/chat/completions',
+        xai: 'https://api.x.ai/v1/chat/completions',
+        cohere: 'https://api.cohere.com/v2/chat/completions'
     };
 
-    if (providerType === 'openai') {
-        endpoint = 'https://api.openai.com/v1/chat/completions';
-    } else if (providerType === 'groq') {
-        endpoint = 'https://api.groq.com/openai/v1/chat/completions';
-    } else if (providerType === 'openrouter') {
-        endpoint = 'https://openrouter.ai/api/v1/chat/completions';
-        headers['HTTP-Referer'] = 'https://aiyu.dev';
-        headers['X-Title'] = 'Aiyu Portfolio';
-    } else {
-        throw new Error(`Unsupported provider type: ${providerType}`);
+    if (OPENAI_COMPATIBLE_ENDPOINTS[providerType]) {
+        const endpoint = OPENAI_COMPATIBLE_ENDPOINTS[providerType];
+        const headers = {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+        };
+        if (providerType === 'openrouter') {
+            headers['HTTP-Referer'] = 'https://aiyu.dev';
+            headers['X-Title'] = 'Aiyu Portfolio';
+        }
+
+        console.log(`[AI Direct Vision] Calling provider ${providerType} directly for model ${modelId}...`);
+        const response = await fetchWithTimeout(endpoint, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+                model: modelId,
+                messages: [
+                    { role: 'system', content: systemInstruction },
+                    { role: 'user', content: [
+                        { type: 'text', text: prompt },
+                        { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64Image}` } }
+                    ]}
+                ]
+            })
+        }, 45000);
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Direct API Error (${response.status}): ${errorText}`);
+        }
+
+        const data = await response.json();
+        const text = data.choices?.[0]?.message?.content || '';
+        const usage = data.usage ? {
+            inputTokens: data.usage.prompt_tokens || 0,
+            outputTokens: data.usage.completion_tokens || 0,
+            totalTokens: data.usage.total_tokens || 0
+        } : { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
+
+        return { text, usage };
     }
 
-    console.log(`[AI Direct Vision] Calling provider ${providerType} directly for model ${modelId}...`);
-    const response = await fetchWithTimeout(endpoint, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-            model: modelId,
-            messages: [
-                { role: 'system', content: systemInstruction },
-                { role: 'user', content: [
-                    { type: 'text', text: prompt },
-                    { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64Image}` } }
-                ]}
-            ]
-        })
-    }, 45000);
-
-    if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Direct API Error (${response.status}): ${errorText}`);
-    }
-
-    const data = await response.json();
-    const text = data.choices?.[0]?.message?.content || '';
-    const usage = data.usage ? {
-        inputTokens: data.usage.prompt_tokens || 0,
-        outputTokens: data.usage.completion_tokens || 0,
-        totalTokens: data.usage.total_tokens || 0
-    } : { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
-
-    return { text, usage };
+    throw new Error(`Direct vision calls to ${providerType} are not supported. This provider must be routed through Vercel AI Gateway.`);
 }
 
 async function generateCaption(request) {

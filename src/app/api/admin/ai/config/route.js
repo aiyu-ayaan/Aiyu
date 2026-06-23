@@ -11,7 +11,19 @@ function generateProviderName(type, existingProviders, excludeId = null) {
         google: 'Google API',
         openai: 'OpenAI API',
         groq: 'Groq API',
-        openrouter: 'OpenRouter API'
+        openrouter: 'OpenRouter API',
+        anthropic: 'Anthropic API',
+        cohere: 'Cohere API',
+        perplexity: 'Perplexity API',
+        replicate: 'Replicate API',
+        together: 'Together API',
+        mistral: 'Mistral API',
+        deepseek: 'DeepSeek API',
+        fireworks: 'Fireworks API',
+        xai: 'xAI API',
+        stabilityai: 'Stability API',
+        aws: 'AWS API',
+        azure: 'Azure API'
     };
     const base = baseNames[type] || 'AI API';
     let candidate = base;
@@ -40,21 +52,25 @@ async function getAiConfig(request) {
 
         const aiConfig = config.ai || {};
         
-        // Structure default new config format if fields are missing
+        const rawProviders = aiConfig.providers;
+        const rawModels = aiConfig.models;
+        const rawTextPriority = aiConfig.textPriority;
+        const rawImagePriority = aiConfig.imagePriority;
+
         const responseData = {
             enabled: aiConfig.enabled ?? false,
             systemInstruction: aiConfig.systemInstruction || 'You are a helpful assistant for the portfolio admin.',
             gatewayUrl: aiConfig.gatewayUrl || '',
             hasGatewayApiKey: !!aiConfig.gatewayApiKey,
-            providers: (aiConfig.providers || []).map(p => ({
+            providers: Array.isArray(rawProviders) ? rawProviders.map(p => ({
                 id: p.id,
                 name: p.name,
                 type: p.type,
                 hasKey: !!p.apiKey
-            })),
-            models: aiConfig.models || [],
-            textPriority: aiConfig.textPriority || [],
-            imagePriority: aiConfig.imagePriority || []
+            })) : [],
+            models: Array.isArray(rawModels) ? rawModels : [],
+            textPriority: Array.isArray(rawTextPriority) ? rawTextPriority : [],
+            imagePriority: Array.isArray(rawImagePriority) ? rawImagePriority : []
         };
 
         // Legacy compatibility shims
@@ -174,15 +190,15 @@ async function updateAiConfig(request) {
             systemInstruction: serializedAi.systemInstruction || '',
             gatewayUrl: serializedAi.gatewayUrl || '',
             hasGatewayApiKey: !!serializedAi.gatewayApiKey,
-            providers: (serializedAi.providers || []).map(p => ({
+            providers: Array.isArray(serializedAi.providers) ? (serializedAi.providers).map(p => ({
                 id: p.id,
                 name: p.name,
                 type: p.type,
                 hasKey: !!p.apiKey
-            })),
-            models: serializedAi.models || [],
-            textPriority: serializedAi.textPriority || [],
-            imagePriority: serializedAi.imagePriority || []
+            })) : [],
+            models: Array.isArray(serializedAi.models) ? serializedAi.models : [],
+            textPriority: Array.isArray(serializedAi.textPriority) ? serializedAi.textPriority : [],
+            imagePriority: Array.isArray(serializedAi.imagePriority) ? serializedAi.imagePriority : []
         };
 
         return NextResponse.json({

@@ -13,7 +13,19 @@ const PROVIDER_TYPES = [
     { id: 'google', name: 'Google Gemini', defaultModel: 'gemini-2.0-flash-lite' },
     { id: 'openai', name: 'OpenAI GPT', defaultModel: 'gpt-4o-mini' },
     { id: 'groq', name: 'Groq', defaultModel: 'llama-3.3-70b-versatile' },
-    { id: 'openrouter', name: 'OpenRouter', defaultModel: 'meta-llama/llama-3-8b-instruct:free' }
+    { id: 'openrouter', name: 'OpenRouter', defaultModel: 'meta-llama/llama-3-8b-instruct:free' },
+    { id: 'anthropic', name: 'Anthropic Claude', defaultModel: 'claude-3-5-sonnet-20241022' },
+    { id: 'cohere', name: 'Cohere', defaultModel: 'command-r-plus' },
+    { id: 'perplexity', name: 'Perplexity', defaultModel: 'sonar-reasoning' },
+    { id: 'replicate', name: 'Replicate', defaultModel: 'meta/llama-3.1-405b-instruct' },
+    { id: 'together', name: 'Together AI', defaultModel: 'meta-llama/Llama-3-70b-chat-hf' },
+    { id: 'mistral', name: 'Mistral AI', defaultModel: 'mistral-large-latest' },
+    { id: 'deepseek', name: 'DeepSeek', defaultModel: 'deepseek-chat' },
+    { id: 'fireworks', name: 'Fireworks AI', defaultModel: 'accounts/fireworks/models/llama-v3p1-70b-instruct' },
+    { id: 'xai', name: 'xAI Grok', defaultModel: 'grok-2-latest' },
+    { id: 'stabilityai', name: 'Stability AI', defaultModel: 'stable-diffusion-v1-6' },
+    { id: 'aws', name: 'AWS Bedrock', defaultModel: 'anthropic.claude-3-5-sonnet-20241022-v2:0' },
+    { id: 'azure', name: 'Azure OpenAI', defaultModel: 'gpt-4o' }
 ];
 
 const COMMON_MODELS = {
@@ -39,6 +51,51 @@ const COMMON_MODELS = {
         { id: 'google/gemini-2.5-flash:free', name: 'Gemini 2.5 Flash [Free]', isFree: true },
         { id: 'openrouter/auto', name: 'Auto Router', isFree: false },
         { id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', isFree: false }
+    ],
+    anthropic: [
+        { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet v2', isFree: false },
+        { id: 'claude-3-5-haiku-20241022', name: 'Claude 3.5 Haiku', isFree: false },
+        { id: 'claude-3-opus-20240229', name: 'Claude 3 Opus', isFree: false }
+    ],
+    cohere: [
+        { id: 'command-r-plus', name: 'Command R+', isFree: false },
+        { id: 'command-r', name: 'Command R', isFree: false }
+    ],
+    perplexity: [
+        { id: 'sonar-reasoning', name: 'Sonar Reasoning', isFree: false },
+        { id: 'sonar', name: 'Sonar', isFree: false }
+    ],
+    replicate: [
+        { id: 'meta/llama-3.1-405b-instruct', name: 'Llama 3.1 405b Instruct', isFree: false }
+    ],
+    together: [
+        { id: 'meta-llama/Llama-3-70b-chat-hf', name: 'Llama 3 70b Chat', isFree: false },
+        { id: 'mistralai/Mixtral-8x7B-Instruct-v0.1', name: 'Mixtral 8x7B Instruct', isFree: false }
+    ],
+    mistral: [
+        { id: 'mistral-large-latest', name: 'Mistral Large', isFree: false },
+        { id: 'mistral-small-latest', name: 'Mistral Small', isFree: false },
+        { id: 'codestral-latest', name: 'Codestral', isFree: false }
+    ],
+    deepseek: [
+        { id: 'deepseek-chat', name: 'DeepSeek Chat (V3)', isFree: false },
+        { id: 'deepseek-coder', name: 'DeepSeek Coder', isFree: false }
+    ],
+    fireworks: [
+        { id: 'accounts/fireworks/models/llama-v3p1-70b-instruct', name: 'Llama 3.1 70b Instruct', isFree: false }
+    ],
+    xai: [
+        { id: 'grok-2-latest', name: 'Grok 2', isFree: false },
+        { id: 'grok-beta', name: 'Grok Beta', isFree: false }
+    ],
+    stabilityai: [
+        { id: 'stable-diffusion-v1-6', name: 'Stable Diffusion 1.6', isFree: false }
+    ],
+    aws: [
+        { id: 'anthropic.claude-3-5-sonnet-20241022-v2:0', name: 'Claude 3.5 Sonnet (Bedrock)', isFree: false }
+    ],
+    azure: [
+        { id: 'gpt-4o', name: 'GPT-4o (Azure)', isFree: false }
     ]
 };
 
@@ -48,6 +105,7 @@ export default function AiConfigPage() {
         enabled: false,
         systemInstruction: '',
         gatewayUrl: '',
+        hasGatewayApiKey: false,
         providers: [],
         models: [],
         textPriority: [],
@@ -55,7 +113,8 @@ export default function AiConfigPage() {
     });
 
     const [gatewayApiKey, setGatewayApiKey] = useState('');
-    const [showGatewayKeyInput, setShowGatewayKeyInput] = useState(false);
+    const [showGatewayKeyInput, setShowGatewayKeyInput] = useState(true);
+    const [validatingProvider, setValidatingProvider] = useState(false);
 
     // Form states
     const [providerForm, setProviderForm] = useState({
@@ -104,10 +163,11 @@ export default function AiConfigPage() {
                     enabled: data.data.enabled || false,
                     systemInstruction: data.data.systemInstruction || '',
                     gatewayUrl: data.data.gatewayUrl || '',
-                    providers: data.data.providers || [],
-                    models: data.data.models || [],
-                    textPriority: data.data.textPriority || [],
-                    imagePriority: data.data.imagePriority || []
+                    hasGatewayApiKey: data.data.hasGatewayApiKey || false,
+                    providers: Array.isArray(data.data.providers) ? data.data.providers : [],
+                    models: Array.isArray(data.data.models) ? data.data.models : [],
+                    textPriority: Array.isArray(data.data.textPriority) ? data.data.textPriority : [],
+                    imagePriority: Array.isArray(data.data.imagePriority) ? data.data.imagePriority : []
                 });
                 setShowGatewayKeyInput(!data.data.hasGatewayApiKey);
 
@@ -115,7 +175,7 @@ export default function AiConfigPage() {
                 const savedProviders = data.data.providers || [];
                 savedProviders.forEach(p => {
                     if (p.hasKey) {
-                        fetchRemoteModels(p.id);
+                        fetchRemoteModels(p);
                     }
                 });
 
@@ -136,18 +196,28 @@ export default function AiConfigPage() {
         }
     };
 
-    const fetchRemoteModels = async (providerId) => {
-        setLoadingRemoteModels(prev => ({ ...prev, [providerId]: true }));
+    const fetchRemoteModels = async (provider) => {
+        const id = typeof provider === 'object' ? provider.id : provider;
+        setLoadingRemoteModels(prev => ({ ...prev, [id]: true }));
         try {
-            const res = await fetch(`/api/admin/ai/models?providerId=${providerId}`);
+            let res;
+            if (typeof provider === 'object' && provider.apiKey && provider.apiKey !== '•••• •••• •••• ••••') {
+                res = await fetch('/api/admin/ai/models', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type: provider.type, apiKey: provider.apiKey })
+                });
+            } else {
+                res = await fetch(`/api/admin/ai/models?providerId=${id}`);
+            }
             const data = await res.json();
             if (data.success) {
-                setRemoteModels(prev => ({ ...prev, [providerId]: data.data || [] }));
+                setRemoteModels(prev => ({ ...prev, [id]: data.data || [] }));
             }
         } catch (error) {
-            console.error(`Failed to fetch models for provider ${providerId}:`, error);
+            console.error(`Failed to fetch models for provider ${id}:`, error);
         } finally {
-            setLoadingRemoteModels(prev => ({ ...prev, [providerId]: false }));
+            setLoadingRemoteModels(prev => ({ ...prev, [id]: false }));
         }
     };
 
@@ -206,10 +276,11 @@ export default function AiConfigPage() {
                     enabled: data.data.enabled || false,
                     systemInstruction: data.data.systemInstruction || '',
                     gatewayUrl: data.data.gatewayUrl || '',
-                    providers: data.data.providers || [],
-                    models: data.data.models || [],
-                    textPriority: data.data.textPriority || [],
-                    imagePriority: data.data.imagePriority || []
+                    hasGatewayApiKey: data.data.hasGatewayApiKey || false,
+                    providers: Array.isArray(data.data.providers) ? data.data.providers : [],
+                    models: Array.isArray(data.data.models) ? data.data.models : [],
+                    textPriority: Array.isArray(data.data.textPriority) ? data.data.textPriority : [],
+                    imagePriority: Array.isArray(data.data.imagePriority) ? data.data.imagePriority : []
                 });
                 setGatewayApiKey('');
                 setShowGatewayKeyInput(!data.data.hasGatewayApiKey);
@@ -227,10 +298,31 @@ export default function AiConfigPage() {
     };
 
     // Form handlers
-    const addProvider = () => {
+    const addProvider = async () => {
         if (!providerForm.apiKey || !providerForm.apiKey.trim()) {
-            alert('API Key is required to add provider.');
+            showNotification(false, 'API Key is required to add provider.');
             return;
+        }
+
+        setValidatingProvider(true);
+        try {
+            // Call the validation endpoint
+            const res = await fetch('/api/admin/ai/validate-provider', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type: providerForm.type, apiKey: providerForm.apiKey })
+            });
+            const data = await res.json();
+            if (!data.success) {
+                showNotification(false, `API Key Validation Failed: ${data.error || 'Invalid API Key'}`);
+                return;
+            }
+        } catch (error) {
+            console.error('Validation error:', error);
+            showNotification(false, `API Key Validation Error: ${error.message}`);
+            return;
+        } finally {
+            setValidatingProvider(false);
         }
 
         const newId = 'provider_' + Math.random().toString(36).substring(2, 9);
@@ -252,6 +344,9 @@ export default function AiConfigPage() {
             };
         });
 
+        // Fetch remote models immediately for this validated provider!
+        fetchRemoteModels(newProvider);
+
         // Initialize model form link
         if (!modelForm.providerId) {
             setModelForm(prev => ({ ...prev, providerId: newId }));
@@ -264,7 +359,7 @@ export default function AiConfigPage() {
             apiKey: ''
         });
 
-        showNotification(true, 'Provider configuration added locally. Save update to commit.');
+        showNotification(true, 'Provider API Key Validated and Added! Save configuration to persist.');
     };
 
     const deleteProvider = (id) => {
@@ -294,7 +389,7 @@ export default function AiConfigPage() {
 
     const addModel = () => {
         if (!modelForm.providerId) {
-            alert('Please configure and select an AI provider first.');
+            showNotification(false, 'Please configure and select an AI provider first.');
             return;
         }
 
@@ -305,7 +400,7 @@ export default function AiConfigPage() {
         const modelIdValue = isCustom ? modelForm.customModelId : modelForm.modelId;
 
         if (!modelIdValue || !modelIdValue.trim()) {
-            alert('Model ID is required.');
+            showNotification(false, 'Model ID is required.');
             return;
         }
 
@@ -512,9 +607,10 @@ export default function AiConfigPage() {
                                         value={gatewayApiKey}
                                         onChange={(e) => setGatewayApiKey(e.target.value)}
                                         placeholder="Paste Vercel AI Gateway key..."
+                                        autoComplete="new-password"
                                         className="flex-1 bg-slate-950/80 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-cyan-500/50 outline-none text-sm font-mono placeholder:text-slate-700 transition-all"
                                     />
-                                    {config.gatewayApiKey && (
+                                    {config.hasGatewayApiKey && (
                                         <button
                                             type="button"
                                             onClick={() => {
@@ -609,6 +705,7 @@ export default function AiConfigPage() {
                                             value={providerForm.apiKey}
                                             onChange={(e) => setProviderForm({ ...providerForm, apiKey: e.target.value })}
                                             placeholder="Paste API Key here..."
+                                            autoComplete="new-password"
                                             className="w-full bg-slate-900 border border-white/10 rounded-lg p-2.5 text-sm text-slate-200 outline-none focus:border-indigo-500/50 font-mono placeholder:text-slate-700"
                                         />
                                     </div>
@@ -618,9 +715,18 @@ export default function AiConfigPage() {
                             <button
                                 type="button"
                                 onClick={addProvider}
-                                className="w-full mt-6 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold font-mono text-xs uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
+                                disabled={validatingProvider}
+                                className="w-full mt-6 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold font-mono text-xs uppercase tracking-wider transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                <Plus size={14} /> Add Provider Instance
+                                {validatingProvider ? (
+                                    <>
+                                        <Loader2 className="animate-spin" size={14} /> Validating...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Plus size={14} /> Add Provider Instance
+                                    </>
+                                )}
                             </button>
                         </div>
 
@@ -695,8 +801,8 @@ export default function AiConfigPage() {
                                                     providerId: pid,
                                                     modelId: defaultModelId
                                                 });
-                                                if (pid) {
-                                                    fetchRemoteModels(pid);
+                                                if (prov) {
+                                                    fetchRemoteModels(prov);
                                                 }
                                             }}
                                             className="w-full bg-slate-900 border border-white/10 rounded-lg p-2.5 text-sm text-slate-200 outline-none focus:border-violet-500/50"
