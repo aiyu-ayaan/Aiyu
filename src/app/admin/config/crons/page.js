@@ -582,13 +582,15 @@ export default function CronJobsPage() {
             return;
         }
 
+        const controller = new AbortController();
         const delayDebounceFn = setTimeout(async () => {
             setPreviewLoading(true);
             try {
                 const res = await fetch('/api/admin/crons/preview', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ template: formWebhookBody.trim() })
+                    body: JSON.stringify({ template: formWebhookBody.trim() }),
+                    signal: controller.signal
                 });
                 const data = await res.json();
                 if (data.success) {
@@ -597,13 +599,19 @@ export default function CronJobsPage() {
                     setPreviewOutput(`Evaluation Error: ${data.error}`);
                 }
             } catch (err) {
+                if (err.name === 'AbortError') return;
                 setPreviewOutput('Failed to evaluate dynamic preview.');
             } finally {
-                setPreviewLoading(false);
+                if (!controller.signal.aborted) setPreviewLoading(false);
             }
         }, 600); // 600ms debounce
 
-        return () => clearTimeout(delayDebounceFn);
+        // Abort the in-flight request when the input changes again or the modal
+        // closes, so superseded keystrokes don't keep heavy work running server-side.
+        return () => {
+            clearTimeout(delayDebounceFn);
+            controller.abort();
+        };
     }, [formWebhookBody, formWebhookBodyType, formWebhookMethod, showFormModal]);
 
     const triggerPreviewUpdate = async () => {
@@ -635,13 +643,15 @@ export default function CronJobsPage() {
             return;
         }
 
+        const controller = new AbortController();
         const delayDebounceFn = setTimeout(async () => {
             setPreviewLoading(true);
             try {
                 const res = await fetch('/api/admin/crons/preview', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ template: formWebhookUrl.trim() })
+                    body: JSON.stringify({ template: formWebhookUrl.trim() }),
+                    signal: controller.signal
                 });
                 const data = await res.json();
                 if (data.success) {
@@ -650,13 +660,17 @@ export default function CronJobsPage() {
                     setUrlPreviewOutput(`Evaluation Error: ${data.error}`);
                 }
             } catch (err) {
+                if (err.name === 'AbortError') return;
                 setUrlPreviewOutput('Failed to evaluate dynamic preview.');
             } finally {
-                setPreviewLoading(false);
+                if (!controller.signal.aborted) setPreviewLoading(false);
             }
         }, 600);
 
-        return () => clearTimeout(delayDebounceFn);
+        return () => {
+            clearTimeout(delayDebounceFn);
+            controller.abort();
+        };
     }, [formWebhookUrl, formWebhookUrlType, showFormModal]);
 
     const triggerUrlPreviewUpdate = async () => {
@@ -689,6 +703,7 @@ export default function CronJobsPage() {
             return;
         }
 
+        const controller = new AbortController();
         const delayDebounceFn = setTimeout(async () => {
             setPreviewLoading(true);
             try {
@@ -701,7 +716,8 @@ export default function CronJobsPage() {
                 const res = await fetch('/api/admin/crons/preview', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ template: headerRows })
+                    body: JSON.stringify({ template: headerRows }),
+                    signal: controller.signal
                 });
                 const data = await res.json();
                 if (data.success) {
@@ -712,14 +728,18 @@ export default function CronJobsPage() {
                     setHeadersPreviewOutput(`Evaluation Error: ${data.error}`);
                 }
             } catch (err) {
+                if (err.name === 'AbortError') return;
                 setHeadersPreviewRows([]);
                 setHeadersPreviewOutput('Failed to evaluate dynamic preview.');
             } finally {
-                setPreviewLoading(false);
+                if (!controller.signal.aborted) setPreviewLoading(false);
             }
         }, 600); // 600ms debounce
 
-        return () => clearTimeout(delayDebounceFn);
+        return () => {
+            clearTimeout(delayDebounceFn);
+            controller.abort();
+        };
     }, [formWebhookHeaders, formWebhookHeadersType, showFormModal]);
 
     const triggerHeadersPreviewUpdate = async () => {
