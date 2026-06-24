@@ -7,11 +7,21 @@
  */
 import { NextResponse } from 'next/server';
 import { recordEvent } from '@/lib/analytics';
+import { decrypt } from '@/lib/auth';
 import { getClientIdentifier, reserveRequestSlot } from '@/lib/trafficControl';
 
 const NO_CONTENT = () => new NextResponse(null, { status: 204 });
 
 export async function POST(request) {
+    // Don't pollute visitor analytics with the admin's own traffic. The httpOnly
+    // `session` cookie still rides along on the same-origin beacon, so a valid
+    // (signed, unexpired) token means this is us browsing — skip recording.
+    // Signature verification alone is enough here; no DB lookup on the hot path.
+    const sessionToken = request.cookies.get('session')?.value;
+    if (sessionToken && (await decrypt(sessionToken))) {
+        return NO_CONTENT();
+    }
+
     const clientId = getClientIdentifier(request);
     const slot = reserveRequestSlot('analytics-track', clientId, {
         maxRequests: Number.parseInt(process.env.ANALYTICS_RATE_LIMIT || '120', 10),
