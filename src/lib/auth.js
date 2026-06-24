@@ -12,6 +12,10 @@ const key = new TextEncoder().encode(secretKey);
 const SESSION_TTL_MS = 24 * 60 * 60 * 1000; // 24h
 // Only bump lastSeenAt at most once per minute to avoid a write on every request.
 const LAST_SEEN_THROTTLE_MS = 60 * 1000;
+// Inactive (revoked or expired) sessions are retained this long for the
+// security audit view, then purged by the `prune_sessions` system cron.
+export const SESSION_RETENTION_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+export const SESSION_RETENTION_DAYS = 7;
 
 export async function encrypt(payload) {
     return await new SignJWT(payload)
@@ -152,4 +156,23 @@ export async function revokeSession(sessionId) {
         data: { revokedAt: new Date() },
     });
     return result.count > 0 ? sessionId : null;
+}
+
+/**
+ * Permanently delete sessions that have been inactive (revoked or naturally
+ * expired) for longer than SESSION_RETENTION_MS. Active sessions are never
+ * touched. Returns the number of rows removed. Driven by the `prune_sessions`
+ * system cron, but safe to call ad-hoc.
+ */
+export async function pruneSessions(now = new Date()) {
+    const cutoff = new Date(now.getTime() - SESSION_RETENTION_MS);
+    const result = await prisma.session.deleteMany({
+        where: {
+            OR: [
+                { revokedAt: { not: null, lt: cutoff } },
+                { revokedAt: null, expiresAt: { lt: cutoff } },
+            ],
+        },
+    });
+    return result.count;
 }

@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { getSingleton } from '@/lib/serialize';
 import { executeUnreferencedCleanup, executeWebPMigration } from '@/lib/storageAudit';
 import { runUptimeChecks } from '@/lib/uptime';
+import { pruneSessions, SESSION_RETENTION_DAYS } from '@/lib/auth';
 import { sendNotification } from './notificationService';
 import { decrypt } from '@/lib/encryption';
 import { compileTemplate, EXECUTION_ROW_LIMIT } from './cronTemplate';
@@ -196,6 +197,19 @@ export async function initCronRunner() {
             console.log('[CRON SERVICE] Seeded: Endpoint Uptime Check');
         }
 
+        const pruneSessionsJob = await prisma.cron.findFirst({ where: { action: 'prune_sessions' } });
+        if (!pruneSessionsJob) {
+            await prisma.cron.create({ data: {
+                name: 'Expired Session Cleanup',
+                type: 'system',
+                schedule: '30 2 * * *', // Daily at 2:30 AM
+                enabled: true,
+                action: 'prune_sessions',
+                nextRun: getNextCronRun('30 2 * * *', new Date(), timeZone)
+            } });
+            console.log('[CRON SERVICE] Seeded: Expired Session Cleanup');
+        }
+
         // Self-heal and recalculate missing or outdated nextRun timestamps
         const now = new Date();
         const jobsToHeal = await prisma.cron.findMany({
@@ -316,6 +330,10 @@ export async function executeCronJob(job) {
                 if (down.length > 0) {
                     attemptStatus = 'failure';
                 }
+            } else if (job.action === 'prune_sessions') {
+                const deleted = await pruneSessions();
+                attemptLogOutput = `Session cleanup completed in ${Date.now() - attemptStartTime}ms.\n` +
+                            `Deleted ${deleted} inactive session(s) older than ${SESSION_RETENTION_DAYS} day(s).`;
             } else if (job.action === 'webhook') {
                 const cachedData = {};
                 cachedData.env = {};
