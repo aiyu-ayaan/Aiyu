@@ -1,7 +1,9 @@
 import { test, expect } from '@playwright/test';
 
-const USERNAME = process.env.ADMIN_USERNAME || 'aiyu';
-const PASSWORD = process.env.ADMIN_PASSWORD || '1501@AiyuLoveAnshu^2401!!';
+// No hardcoded credential fallbacks — the valid-login test below skips unless a
+// real ADMIN_PASSWORD is supplied via the environment (e.g. CI secrets).
+const USERNAME = process.env.ADMIN_USERNAME || 'admin';
+const PASSWORD = process.env.ADMIN_PASSWORD || '';
 
 test('rejects wrong credentials', async ({ page }) => {
   await page.goto('/admin/login');
