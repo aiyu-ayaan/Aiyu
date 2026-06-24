@@ -48,11 +48,29 @@ export async function GET(request) {
         const startDay = dayKey(start);
         const sinceFilter = { createdAt: { gte: start }, isBot: false };
 
+        // Previous equal-length window (immediately before `start`) for trend deltas.
+        const prevStart = new Date(start);
+        prevStart.setUTCDate(prevStart.getUTCDate() - days);
+        const prevStartDay = dayKey(prevStart);
+
         // ── Time-series + KPI totals from the rollup (site-wide buckets) ──
         const dailyRows = await prisma.analyticsDaily.findMany({
             where: { day: { gte: startDay }, entityType: '' },
             select: { day: true, type: true, views: true, uniques: true },
         });
+
+        // Previous-period totals (rollup, site-wide buckets) for delta computation.
+        const prevDailyRows = await prisma.analyticsDaily.findMany({
+            where: { day: { gte: prevStartDay, lt: startDay }, entityType: '' },
+            select: { type: true, views: true, uniques: true },
+        });
+        const prevTotals = { pageview: { views: 0, uniques: 0 }, entity_view: { views: 0 }, contact_submit: { views: 0 }, outbound_click: { views: 0 } };
+        for (const r of prevDailyRows) {
+            if (prevTotals[r.type]) {
+                prevTotals[r.type].views += r.views;
+                if (r.type === 'pageview') prevTotals.pageview.uniques += r.uniques;
+            }
+        }
 
         const seriesMap = new Map(); // day -> { views, uniques }
         const totals = { pageview: { views: 0, uniques: 0 }, entity_view: { views: 0 }, contact_submit: { views: 0 }, outbound_click: { views: 0 } };
@@ -260,8 +278,8 @@ export async function GET(request) {
             }
         }
 
-        // ── Referrer + device breakdowns (raw, humans only) ──
-        const [referrerRaw, deviceRaw, botCount] = await Promise.all([
+        // ── Referrer + device + country breakdowns (raw, humans only) ──
+        const [referrerRaw, deviceRaw, countryRaw, botCount] = await Promise.all([
             prisma.analyticsEvent.groupBy({
                 by: ['referrerType'],
                 where: { ...sinceFilter, type: 'pageview' },
@@ -271,6 +289,13 @@ export async function GET(request) {
                 by: ['device'],
                 where: { ...sinceFilter, type: 'pageview' },
                 _count: { _all: true },
+            }),
+            prisma.analyticsEvent.groupBy({
+                by: ['country'],
+                where: { ...sinceFilter, type: 'pageview', NOT: { country: null } },
+                _count: { _all: true },
+                orderBy: { _count: { country: 'desc' } },
+                take: 8,
             }),
             prisma.analyticsEvent.count({
                 where: { createdAt: { gte: start }, isBot: true, type: 'pageview' },
@@ -317,6 +342,9 @@ export async function GET(request) {
         const devices = deviceRaw
             .map((r) => ({ type: r.device, views: r._count._all }))
             .sort((a, b) => b.views - a.views);
+        const countries = countryRaw
+            .map((r) => ({ code: r.country, views: r._count._all }))
+            .sort((a, b) => b.views - a.views);
 
         return NextResponse.json({
             success: true,
@@ -329,11 +357,19 @@ export async function GET(request) {
                 outboundClicks: totals.outbound_click.views,
                 botViews: botCount,
             },
+            prevKpis: {
+                views: prevTotals.pageview.views,
+                uniques: prevTotals.pageview.uniques,
+                entityViews: prevTotals.entity_view.views,
+                contacts: prevTotals.contact_submit.views,
+                outboundClicks: prevTotals.outbound_click.views,
+            },
             series,
             topPages,
             topEntities,
             referrers,
             devices,
+            countries,
         });
     } catch (error) {
         console.error('[analytics] read error:', error);

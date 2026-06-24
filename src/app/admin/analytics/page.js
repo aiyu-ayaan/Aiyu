@@ -5,6 +5,8 @@ import { motion } from 'framer-motion';
 import {
     FaChartLine, FaEye, FaUsers, FaPaperPlane, FaUpRightFromSquare,
     FaArrowPointer, FaRobot, FaArrowsRotate, FaTriangleExclamation,
+    FaArrowTrendUp, FaArrowTrendDown, FaEarthAmericas, FaCalendarDay,
+    FaGaugeHigh, FaUserShield,
 } from 'react-icons/fa6';
 import { LineChart, BarList, DonutSplit } from './charts';
 
@@ -23,7 +25,48 @@ const ENTITY_META = {
     gallery: { label: 'Top Gallery', base: '/gallery/' },
 };
 
-function KpiCard({ icon, label, value, accent, sub }) {
+const RANGE_DAYS = { '7d': 7, '30d': 30, '90d': 90 };
+
+/** Percentage change of `cur` vs `prev`. Returns null when there's no baseline. */
+function pctDelta(cur = 0, prev = 0) {
+    if (!prev) return cur > 0 ? null : 0; // null = "new" (no prior data to compare)
+    return ((cur - prev) / prev) * 100;
+}
+
+/** Turn a 2-letter ISO country code into its flag emoji. */
+function flagEmoji(code = '') {
+    const cc = String(code).trim().toUpperCase();
+    if (cc.length !== 2 || !/^[A-Z]{2}$/.test(cc)) return '🏳️';
+    return String.fromCodePoint(...[...cc].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65));
+}
+
+let COUNTRY_NAMES;
+function countryName(code = '') {
+    const cc = String(code).trim().toUpperCase();
+    try {
+        COUNTRY_NAMES ||= new Intl.DisplayNames(['en'], { type: 'region' });
+        return COUNTRY_NAMES.of(cc) || cc;
+    } catch {
+        return cc;
+    }
+}
+
+function DeltaBadge({ delta }) {
+    if (delta === null || delta === undefined) {
+        return <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-300/80 border border-cyan-500/20">NEW</span>;
+    }
+    if (Math.abs(delta) < 0.05) {
+        return <span className="text-[10px] font-mono text-slate-500">—</span>;
+    }
+    const up = delta > 0;
+    return (
+        <span className={`text-[10px] font-mono inline-flex items-center gap-1 px-1.5 py-0.5 rounded border ${up ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
+            {up ? <FaArrowTrendUp /> : <FaArrowTrendDown />}{Math.abs(delta).toFixed(delta > -100 && delta < 1000 ? 1 : 0)}%
+        </span>
+    );
+}
+
+function KpiCard({ icon, label, value, accent, sub, delta }) {
     return (
         <div className="bg-slate-900/50 backdrop-blur-xl p-5 rounded-2xl border border-white/10 relative overflow-hidden">
             <div className="flex items-center justify-between mb-3">
@@ -31,7 +74,23 @@ function KpiCard({ icon, label, value, accent, sub }) {
                 <span className={accent}>{icon}</span>
             </div>
             <div className="text-3xl font-bold text-white tabular-nums">{(value ?? 0).toLocaleString()}</div>
-            {sub && <div className="text-xs text-slate-500 font-mono mt-1">{sub}</div>}
+            <div className="flex items-center gap-2 mt-1 min-h-[16px]">
+                {delta !== false && <DeltaBadge delta={delta} />}
+                {sub && <span className="text-xs text-slate-500 font-mono">{sub}</span>}
+            </div>
+        </div>
+    );
+}
+
+function InsightCard({ icon, label, value, sub, accent = 'text-cyan-400' }) {
+    return (
+        <div className="bg-slate-900/50 backdrop-blur-xl p-4 rounded-2xl border border-white/10 flex items-center gap-4">
+            <div className={`p-3 rounded-xl bg-white/[0.03] border border-white/5 text-xl ${accent}`}>{icon}</div>
+            <div className="min-w-0">
+                <div className="text-[11px] font-mono uppercase tracking-widest text-slate-500">{label}</div>
+                <div className="text-lg font-bold text-white truncate">{value}</div>
+                {sub && <div className="text-[11px] text-slate-500 font-mono truncate">{sub}</div>}
+            </div>
         </div>
     );
 }
@@ -72,7 +131,22 @@ export default function AnalyticsDashboard() {
     };
 
     const kpis = data?.kpis || {};
+    const prev = data?.prevKpis || {};
+    const series = data?.series || [];
     const devices = (data?.devices || []).map((d) => ({ label: d.type, value: d.views, color: DEVICE_COLORS[d.type] || '#64748b' }));
+    const countries = (data?.countries || []).map((c) => ({
+        label: `${flagEmoji(c.code)}  ${countryName(c.code)}`,
+        value: c.views,
+    }));
+
+    // ── Derived overview insights ──
+    const busiest = series.reduce((best, d) => (d.views > (best?.views ?? -1) ? d : best), null);
+    const activeDays = series.filter((d) => d.views > 0).length || 1;
+    const avgPerDay = Math.round((kpis.views || 0) / activeDays);
+    const totalTraffic = (kpis.views || 0) + (kpis.botViews || 0);
+    const humanShare = totalTraffic ? Math.round(((kpis.views || 0) / totalTraffic) * 100) : 0;
+    const topReferrer = (data?.referrers || [])[0];
+    const topCountry = (data?.countries || [])[0];
     const referrers = (data?.referrers || []).map((r) => ({
         label: REFERRER_LABELS[r.type] || r.type,
         value: r.views,
@@ -134,14 +208,48 @@ export default function AnalyticsDashboard() {
                 </div>
             )}
 
-            {/* KPI row */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
-                <KpiCard icon={<FaEye />} label="Views" value={kpis.views} accent="text-cyan-400" />
-                <KpiCard icon={<FaUsers />} label="Visitors" value={kpis.uniques} accent="text-violet-400" sub="unique / day" />
-                <KpiCard icon={<FaArrowPointer />} label="Content" value={kpis.entityViews} accent="text-teal-400" sub="entity views" />
-                <KpiCard icon={<FaPaperPlane />} label="Contacts" value={kpis.contacts} accent="text-emerald-400" />
-                <KpiCard icon={<FaUpRightFromSquare />} label="Clicks" value={kpis.outboundClicks} accent="text-amber-400" sub="outbound" />
-                <KpiCard icon={<FaRobot />} label="Bots" value={kpis.botViews} accent="text-slate-400" />
+            {/* KPI row — values with trend vs. previous equal-length period */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-4">
+                <KpiCard icon={<FaEye />} label="Views" value={kpis.views} accent="text-cyan-400" delta={pctDelta(kpis.views, prev.views)} />
+                <KpiCard icon={<FaUsers />} label="Visitors" value={kpis.uniques} accent="text-violet-400" delta={pctDelta(kpis.uniques, prev.uniques)} />
+                <KpiCard icon={<FaArrowPointer />} label="Content" value={kpis.entityViews} accent="text-teal-400" delta={pctDelta(kpis.entityViews, prev.entityViews)} />
+                <KpiCard icon={<FaPaperPlane />} label="Contacts" value={kpis.contacts} accent="text-emerald-400" delta={pctDelta(kpis.contacts, prev.contacts)} />
+                <KpiCard icon={<FaUpRightFromSquare />} label="Clicks" value={kpis.outboundClicks} accent="text-amber-400" delta={pctDelta(kpis.outboundClicks, prev.outboundClicks)} />
+                <KpiCard icon={<FaRobot />} label="Bots" value={kpis.botViews} accent="text-slate-400" delta={false} sub="excluded" />
+            </div>
+
+            <p className="text-[11px] text-slate-600 font-mono mb-6">▲▼ vs. previous {RANGE_DAYS[range]} days</p>
+
+            {/* Overview insights */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <InsightCard
+                    icon={<FaCalendarDay />}
+                    label="Busiest Day"
+                    value={busiest && busiest.views > 0 ? busiest.day.slice(5) : '—'}
+                    sub={busiest && busiest.views > 0 ? `${busiest.views.toLocaleString()} views` : 'No traffic yet'}
+                    accent="text-cyan-400"
+                />
+                <InsightCard
+                    icon={<FaGaugeHigh />}
+                    label="Avg Views / Active Day"
+                    value={avgPerDay.toLocaleString()}
+                    sub={`${activeDays} active day${activeDays === 1 ? '' : 's'}`}
+                    accent="text-violet-400"
+                />
+                <InsightCard
+                    icon={<FaUserShield />}
+                    label="Human Traffic"
+                    value={`${humanShare}%`}
+                    sub={`${(kpis.botViews || 0).toLocaleString()} bot views filtered`}
+                    accent="text-emerald-400"
+                />
+                <InsightCard
+                    icon={<FaEarthAmericas />}
+                    label="Top Source"
+                    value={topReferrer ? (REFERRER_LABELS[topReferrer.type] || topReferrer.type) : '—'}
+                    sub={topCountry ? `${flagEmoji(topCountry.code)} ${countryName(topCountry.code)} leads` : (topReferrer ? `${topReferrer.views.toLocaleString()} views` : 'No data')}
+                    accent="text-amber-400"
+                />
             </div>
 
             {/* Traffic chart */}
@@ -174,8 +282,15 @@ export default function AnalyticsDashboard() {
                     <DonutSplit segments={devices} />
                 </div>
                 <div className="bg-slate-900/50 backdrop-blur-xl p-6 rounded-2xl border border-white/10">
+                    <h2 className="text-sm font-mono text-cyan-400 uppercase tracking-widest mb-4 flex items-center gap-2"><FaEarthAmericas className="text-teal-400" /> Top Countries</h2>
+                    <BarList items={countries} accent="#34d399" emptyLabel="NO_GEO_DATA" />
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-6 mb-8">
+                <div className="bg-slate-900/50 backdrop-blur-xl p-6 rounded-2xl border border-white/10">
                     <h2 className="text-sm font-mono text-cyan-400 uppercase tracking-widest mb-4">Engagement</h2>
-                    <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
                         <div className="p-4 rounded-xl bg-white/[0.03] border border-white/5">
                             <div className="text-slate-500 font-mono text-xs uppercase mb-1">Click-through</div>
                             <div className="text-2xl font-bold text-white tabular-nums">
