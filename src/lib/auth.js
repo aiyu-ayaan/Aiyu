@@ -1,13 +1,11 @@
-import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 import { randomUUID, createHash, timingSafeEqual } from 'crypto';
 import { prisma } from '@/lib/prisma';
+import { encrypt, decrypt } from './jwt';
 
-const secretKey = process.env.JWT_SECRET;
-if (!secretKey) {
-    throw new Error('JWT_SECRET environment variable must be set');
-}
-const key = new TextEncoder().encode(secretKey);
+// Re-exported so existing `import { encrypt, decrypt } from '@/lib/auth'` call
+// sites keep working. The implementations live in the edge-safe `./jwt` module.
+export { encrypt, decrypt };
 
 const SESSION_TTL_MS = 24 * 60 * 60 * 1000; // 24h
 // Only bump lastSeenAt at most once per minute to avoid a write on every request.
@@ -26,25 +24,6 @@ function safeEqual(provided, expected) {
     const a = createHash('sha256').update(String(provided ?? '')).digest();
     const b = createHash('sha256').update(String(expected ?? '')).digest();
     return timingSafeEqual(a, b);
-}
-
-export async function encrypt(payload) {
-    return await new SignJWT(payload)
-        .setProtectedHeader({ alg: 'HS256' })
-        .setIssuedAt()
-        .setExpirationTime('24h')
-        .sign(key);
-}
-
-export async function decrypt(input) {
-    try {
-        const { payload } = await jwtVerify(input, key, {
-            algorithms: ['HS256'],
-        });
-        return payload;
-    } catch (error) {
-        return null;
-    }
 }
 
 /**
