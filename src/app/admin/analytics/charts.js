@@ -5,8 +5,16 @@
  * scale via `viewBox` so they stay responsive without a sizing library.
  */
 import React from 'react';
+import { WORLD_VIEWBOX, WORLD_PATHS, WORLD_NAMES } from './worldGeo';
 
 const CYAN = '#22d3ee';
+
+/** ISO-2 country code -> flag emoji (no data dependency). */
+function flag(code = '') {
+    const cc = String(code).trim().toUpperCase();
+    if (!/^[A-Z]{2}$/.test(cc)) return '🏳️';
+    return String.fromCodePoint(...[...cc].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65));
+}
 
 function niceMax(value) {
     if (value <= 5) return 5;
@@ -298,6 +306,105 @@ export function DonutSplit({ segments = [], size = 160 }) {
                     </div>
                 ))}
             </div>
+        </div>
+    );
+}
+
+/**
+ * Equirectangular world choropleth. `data`: [{ code (ISO-2), views }].
+ * Countries are shaded by traffic volume on a perceptual (sqrt) cyan ramp;
+ * hovering a country reveals a flag + name + views + share tooltip. Pure SVG,
+ * no mapping library — geometry comes from the committed `worldGeo` module.
+ */
+export function WorldMap({ data = [], height = 360 }) {
+    const wrapRef = React.useRef(null);
+    const [hover, setHover] = React.useState(null); // { code }
+    const [pos, setPos] = React.useState({ x: 0, y: 0, w: 0 });
+
+    const { values, total, max } = React.useMemo(() => {
+        const v = new Map();
+        let t = 0;
+        let m = 0;
+        for (const d of data) {
+            if (!d?.code) continue;
+            const cc = String(d.code).toUpperCase();
+            const n = d.views || 0;
+            v.set(cc, (v.get(cc) || 0) + n);
+            t += n;
+        }
+        for (const n of v.values()) m = Math.max(m, n);
+        return { values: v, total: t, max: m };
+    }, [data]);
+
+    const fillFor = (cc) => {
+        const n = values.get(cc) || 0;
+        if (!n || !max) return 'rgba(148,163,184,0.06)';
+        const t = Math.sqrt(n / max); // perceptual scaling
+        return `rgba(34,211,238,${(0.15 + t * 0.8).toFixed(3)})`;
+    };
+
+    const onMove = (e) => {
+        const r = wrapRef.current?.getBoundingClientRect();
+        if (r) setPos({ x: e.clientX - r.left, y: e.clientY - r.top, w: r.width });
+    };
+
+    const codes = Object.keys(WORLD_PATHS);
+    const hoveredViews = hover ? (values.get(hover.code) || 0) : 0;
+
+    return (
+        <div ref={wrapRef} className="relative w-full" onMouseMove={onMove}>
+            <svg
+                viewBox={WORLD_VIEWBOX}
+                className="w-full h-auto select-none"
+                style={{ maxHeight: height }}
+                role="img"
+                aria-label="Visitors by country"
+                onMouseLeave={() => setHover(null)}
+            >
+                <rect x="0" y="0" width="1000" height="500" fill="rgba(15,23,42,0.4)" rx="6" />
+                {codes.map((cc) => (
+                    <path
+                        key={cc}
+                        d={WORLD_PATHS[cc]}
+                        fill={fillFor(cc)}
+                        stroke={hover?.code === cc ? CYAN : 'rgba(148,163,184,0.18)'}
+                        strokeWidth={hover?.code === cc ? 0.9 : 0.4}
+                        vectorEffect="non-scaling-stroke"
+                        onMouseEnter={() => setHover({ code: cc })}
+                        style={{ cursor: values.get(cc) ? 'pointer' : 'default', transition: 'fill 120ms' }}
+                    />
+                ))}
+            </svg>
+
+            {/* Legend */}
+            <div className="absolute left-3 bottom-3 flex items-center gap-2 text-[10px] font-mono text-slate-400 bg-slate-950/60 px-2 py-1 rounded-md border border-white/5 backdrop-blur-sm">
+                <span>Low</span>
+                <span className="h-2 w-20 rounded-sm" style={{ background: 'linear-gradient(90deg, rgba(34,211,238,0.15), rgba(34,211,238,0.95))' }} />
+                <span>High</span>
+            </div>
+
+            {/* Tooltip */}
+            {hover && (
+                <div
+                    className="pointer-events-none absolute z-50 px-3 py-2 rounded-lg bg-slate-950/95 border border-white/10 shadow-2xl backdrop-blur-md text-xs"
+                    style={{
+                        left: Math.min(pos.x + 14, Math.max(pos.w - 150, 0)),
+                        top: Math.max(pos.y - 10, 0),
+                    }}
+                >
+                    <div className="flex items-center gap-2 font-semibold text-white">
+                        <span className="text-base leading-none">{flag(hover.code)}</span>
+                        <span className="truncate max-w-[160px]">{WORLD_NAMES[hover.code] || hover.code}</span>
+                    </div>
+                    <div className="mt-1 font-mono text-slate-300 tabular-nums">
+                        {hoveredViews.toLocaleString()} view{hoveredViews === 1 ? '' : 's'}
+                        {total > 0 && hoveredViews > 0 && (
+                            <span className="text-slate-500"> · {((hoveredViews / total) * 100).toFixed(1)}%</span>
+                        )}
+                    </div>
+                    {hoveredViews === 0 && <div className="text-[10px] text-slate-600 mt-0.5">No recorded visits</div>}
+                </div>
+            )}
         </div>
     );
 }

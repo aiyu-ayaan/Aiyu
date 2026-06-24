@@ -8,7 +8,7 @@ import {
     FaArrowTrendUp, FaArrowTrendDown, FaEarthAmericas, FaCalendarDay,
     FaGaugeHigh, FaUserShield,
 } from 'react-icons/fa6';
-import { LineChart, BarList, DonutSplit } from './charts';
+import { LineChart, BarList, DonutSplit, WorldMap } from './charts';
 
 const RANGES = [
     { key: '7d', label: '7D' },
@@ -134,10 +134,12 @@ export default function AnalyticsDashboard() {
     const prev = data?.prevKpis || {};
     const series = data?.series || [];
     const devices = (data?.devices || []).map((d) => ({ label: d.type, value: d.views, color: DEVICE_COLORS[d.type] || '#64748b' }));
-    const countries = (data?.countries || []).map((c) => ({
+    const geoCountries = data?.countries || [];
+    const countries = geoCountries.slice(0, 8).map((c) => ({
         label: `${flagEmoji(c.code)}  ${countryName(c.code)}`,
         value: c.views,
     }));
+    const countriesReached = geoCountries.length;
 
     // ── Derived overview insights ──
     const busiest = series.reduce((best, d) => (d.views > (best?.views ?? -1) ? d : best), null);
@@ -275,6 +277,29 @@ export default function AnalyticsDashboard() {
                     <BarList items={referrers} accent="#a78bfa" />
                 </div>
             </div>
+
+            {/* Visitor world map */}
+            <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-slate-900/50 backdrop-blur-xl p-4 md:p-6 rounded-2xl border border-white/10 mb-8"
+            >
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                    <h2 className="text-sm font-mono text-cyan-400 uppercase tracking-widest flex items-center gap-2">
+                        <FaEarthAmericas className="text-teal-400" /> Visitor Map
+                    </h2>
+                    <span className="text-xs text-slate-500 font-mono">
+                        {countriesReached} countr{countriesReached === 1 ? 'y' : 'ies'} reached
+                        {topCountry ? ` · ${flagEmoji(topCountry.code)} ${countryName(topCountry.code)} leads` : ''}
+                    </span>
+                </div>
+                <WorldMap data={geoCountries} />
+                {countriesReached === 0 && (
+                    <p className="text-[11px] text-slate-600 font-mono mt-3 text-center">
+                        NO_GEO_DATA — country is resolved from edge headers (Cloudflare/Vercel) or an IP fallback; local traffic shows as private.
+                    </p>
+                )}
+            </motion.div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                 <div className="bg-slate-900/50 backdrop-blur-xl p-6 rounded-2xl border border-white/10">
