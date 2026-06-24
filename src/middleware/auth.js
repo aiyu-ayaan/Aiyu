@@ -4,6 +4,7 @@
  */
 
 import { getSession } from '@/lib/auth';
+import { getClientIP } from '@/lib/clientIp';
 
 /**
  * Verifies if the request has a valid authentication token
@@ -124,23 +125,7 @@ export function checkRateLimit(identifier, maxRequests = 10, windowMs = 60000) {
     return true;
 }
 
-/**
- * Get client IP address from request
- * 
- * @param {Request} request - Next.js request object
- * @returns {string} - Client IP address
- */
-export function getClientIP(request) {
-    // Check various headers for IP (considering proxies)
-    const forwarded = request.headers.get('x-forwarded-for');
-    if (forwarded) {
-        return forwarded.split(',')[0].trim();
-    }
-
-    const real = request.headers.get('x-real-ip');
-    if (real) {
-        return real;
-    }
-
-    return request.headers.get('x-client-ip') || 'unknown';
-}
+// Re-exported from the dependency-free resolver so existing
+// `import { getClientIP } from '@/middleware/auth'` call sites keep working
+// while sharing a single, trusted-proxy-aware implementation with the edge proxy.
+export { getClientIP };

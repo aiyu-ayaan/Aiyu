@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { decrypt } from './lib/auth';
+import { getClientIP } from './lib/clientIp';
 
 const rateLimitStore = globalThis.__apiRateLimitStore || new Map();
 globalThis.__apiRateLimitStore = rateLimitStore;
@@ -13,15 +14,6 @@ const routeRateLimits = [
 
 const mutatingMethods = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 const defaultRateLimit = { prefix: 'default', maxRequests: 120, windowMs: 60 * 1000 };
-
-function getClientIP(request) {
-    const forwarded = request.headers.get('x-forwarded-for');
-    if (forwarded) {
-        return forwarded.split(',')[0].trim();
-    }
-
-    return request.headers.get('x-real-ip') || request.headers.get('x-client-ip') || 'unknown';
-}
 
 function getRateLimitConfig(pathname, method) {
     const normalizedMethod = String(method || 'GET').toUpperCase();
