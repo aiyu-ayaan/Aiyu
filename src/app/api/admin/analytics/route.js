@@ -295,7 +295,6 @@ export async function GET(request) {
                 where: { ...sinceFilter, type: 'pageview', NOT: { country: null } },
                 _count: { _all: true },
                 orderBy: { _count: { country: 'desc' } },
-                take: 8,
             }),
             prisma.analyticsEvent.count({
                 where: { createdAt: { gte: start }, isBot: true, type: 'pageview' },
@@ -343,7 +342,8 @@ export async function GET(request) {
             .map((r) => ({ type: r.device, views: r._count._all }))
             .sort((a, b) => b.views - a.views);
         const countries = countryRaw
-            .map((r) => ({ code: r.country, views: r._count._all }))
+            .map((r) => ({ code: String(r.country || '').trim().toUpperCase(), views: r._count._all }))
+            .filter((r) => r.code.length === 2)
             .sort((a, b) => b.views - a.views);
 
         return NextResponse.json({

@@ -24,13 +24,13 @@ function isPrivateOrLocal(ip) {
 
 /**
  * @param {string} ip
- * @returns {Promise<{ ip: string, city: string, country: string, label: string, local: boolean }>}
+ * @returns {Promise<{ ip: string, city: string, country: string, countryCode: string, label: string, local: boolean }>}
  */
 export async function lookupGeo(ip) {
     const clean = String(ip || '').trim();
 
     if (isPrivateOrLocal(clean)) {
-        return { ip: clean, city: '', country: '', label: 'Local / private', local: true };
+        return { ip: clean, city: '', country: '', countryCode: '', label: 'Local / private', local: true };
     }
 
     const cached = cache.get(clean);
@@ -38,7 +38,7 @@ export async function lookupGeo(ip) {
         return cached.value;
     }
 
-    let value = { ip: clean, city: '', country: '', label: 'Unknown', local: false };
+    let value = { ip: clean, city: '', country: '', countryCode: '', label: 'Unknown', local: false };
     try {
         const res = await fetchWithTimeout(
             `https://ipapi.co/${encodeURIComponent(clean)}/json/`,
@@ -50,8 +50,9 @@ export async function lookupGeo(ip) {
             if (!data.error) {
                 const city = data.city || '';
                 const country = data.country_name || data.country || '';
+                const countryCode = String(data.country_code || data.country || '').trim().toUpperCase();
                 const label = [city, country].filter(Boolean).join(', ') || 'Unknown';
-                value = { ip: clean, city, country, label, local: false };
+                value = { ip: clean, city, country, countryCode, label, local: false };
             }
         }
     } catch {
@@ -60,6 +61,22 @@ export async function lookupGeo(ip) {
 
     cache.set(clean, { value, expiresAt: Date.now() + CACHE_TTL_MS });
     return value;
+}
+
+/**
+ * Resolve just the ISO-3166-1 alpha-2 country code for an IP (e.g. "US"),
+ * reusing lookupGeo's cache. Returns '' for private/local/unknown IPs. Used by
+ * the analytics ingest path as a fallback when no edge country header is set —
+ * only the 2-letter code is ever persisted, never the IP.
+ */
+export async function lookupCountryCode(ip) {
+    try {
+        const geo = await lookupGeo(ip);
+        const cc = String(geo.countryCode || '').trim().toUpperCase();
+        return /^[A-Z]{2}$/.test(cc) ? cc : '';
+    } catch {
+        return '';
+    }
 }
 
 /**

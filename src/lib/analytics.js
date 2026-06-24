@@ -14,6 +14,7 @@
 import { createHash } from 'crypto';
 import { prisma } from '@/lib/prisma';
 import { getClientIdentifier } from '@/lib/trafficControl';
+import { lookupCountryCode } from '@/lib/geoip';
 
 export const EVENT_TYPES = ['pageview', 'entity_view', 'contact_submit', 'outbound_click'];
 export const ENTITY_TYPES = ['blog', 'project', 'app', 'gallery'];
@@ -114,7 +115,7 @@ export function buildEvent(payload = {}, request) {
     referrer: referrerHost,
     referrerType: classifyReferrer(referrerHost, selfHost),
     device: classifyDevice(userAgent),
-    country: country ? cleanString(country, 8) : null,
+    country: country ? cleanString(country, 8).toUpperCase() : null,
     visitorHash: visitorHash(ip, userAgent, day),
     sessionId: cleanString(payload.sessionId, 64),
     isBot: isBotUA(userAgent),
@@ -170,6 +171,14 @@ export async function recordEvent(payload, request) {
   try {
     const event = buildEvent(payload, request);
     const { _day, ...row } = event;
+
+    // No edge country header (local dev / non-CDN host): resolve the ISO-2
+    // country from the IP as a fallback. Cached per-IP; only the 2-letter code
+    // is persisted — the IP itself is never stored.
+    if (!row.country) {
+      const cc = await lookupCountryCode(getClientIdentifier(request));
+      if (cc) row.country = cc;
+    }
 
     // A visitor is "unique" for this day+type if no prior event shares the hash.
     const prior = await prisma.analyticsEvent.count({
