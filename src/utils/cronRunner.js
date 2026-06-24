@@ -1,9 +1,14 @@
 import { prisma } from '@/lib/prisma';
-import { getSingleton, toClient, toClientList } from '@/lib/serialize';
+import { getSingleton } from '@/lib/serialize';
 import { executeUnreferencedCleanup, executeWebPMigration } from '@/lib/storageAudit';
 import { runUptimeChecks } from '@/lib/uptime';
 import { sendNotification } from './notificationService';
 import { decrypt } from '@/lib/encryption';
+import { compileTemplate, EXECUTION_ROW_LIMIT } from './cronTemplate';
+
+// Execution-time template options: bounded row cap, no shared preview cache
+// (webhooks must see fresh data, not a sampled/cached snapshot).
+const EXEC_TEMPLATE_OPTS = { rowLimit: EXECUTION_ROW_LIMIT, useCache: false };
 
 function parseCronField(field, min, max) {
     if (field === '*') return Array.from({ length: max - min + 1 }, (_, i) => min + i);
@@ -244,159 +249,6 @@ async function runDueCronJobs() {
     }
 }
 
-function getValueByPath(obj, path) {
-    if (!path) return obj;
-    const cleanPath = path
-        .replace(/\[['"]?([^'"\]]+)['"]?\]/g, '.$1')
-        .replace(/^\./, '');
-    
-    const parts = cleanPath.split('.');
-    let current = obj;
-    for (const part of parts) {
-        if (current === null || current === undefined) return undefined;
-        current = current[part];
-    }
-    return current;
-}
-
-async function resolvePlaceholder(modelName, path, cachedData) {
-    const lowerModel = modelName.toLowerCase();
-    
-    if (lowerModel === 'time' || lowerModel === 'timestamp') {
-        return new Date().toISOString();
-    }
-    if (lowerModel === 'date') {
-        return new Date().toLocaleDateString();
-    }
-    if (lowerModel === 'env') {
-        return getValueByPath(cachedData.env || {}, path);
-    }
-    if (lowerModel === 'site') {
-        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || 'http://localhost:3000';
-        return getValueByPath({ url: siteUrl }, path) || siteUrl;
-    }
-    if (lowerModel === 'device') {
-        let osInfo = 'unknown';
-        let arch = 'unknown';
-        let nodeVersion = process.version;
-        let platform = process.platform;
-        try {
-            const os = await import('os');
-            osInfo = `${os.type()} ${os.release()}`;
-            arch = os.arch();
-        } catch (e) {
-            // Ignore dynamic OS import errors
-        }
-
-        const deviceInfo = {
-            platform,
-            os: osInfo,
-            arch,
-            nodeVersion,
-            environment: process.env.NODE_ENV || 'development'
-        };
-
-        return getValueByPath(deviceInfo, path) ?? deviceInfo;
-    }
-
-    const blogsQuery = async () => toClientList('blog', await prisma.blog.findMany({ orderBy: { createdAt: 'desc' } }));
-    const projectsQuery = async () => toClientList('project', await prisma.project.findMany({ orderBy: { displayOrder: 'asc' } }));
-    const galleryQuery = async () => toClientList('gallery', await prisma.gallery.findMany({ orderBy: { order: 'asc' } }));
-    const socialsQuery = async () => toClientList('social', await prisma.social.findMany());
-    const messagesQuery = async () => toClientList('contactMessage', await prisma.contactMessage.findMany({ orderBy: { createdAt: 'desc' } }));
-    const deploymentsQuery = async () => toClientList('deployment', await prisma.deployment.findMany({ orderBy: { displayOrder: 'asc' } }));
-    const cronsQuery = async () => toClientList('cron', await prisma.cron.findMany());
-
-    const modelMapping = {
-        blogs: { query: blogsQuery },
-        blog: { query: blogsQuery },
-        projects: { query: projectsQuery },
-        project: { query: projectsQuery },
-        gallery: { query: galleryQuery },
-        config: { query: () => getSingleton(prisma, 'config') },
-        about: { query: () => getSingleton(prisma, 'about') },
-        ads: { query: () => getSingleton(prisma, 'ads') },
-        socials: { query: socialsQuery },
-        social: { query: socialsQuery },
-        theme: { query: async () => toClient('theme', await prisma.theme.findFirst()) },
-        themes: { query: async () => toClient('theme', await prisma.theme.findFirst()) },
-        messages: { query: messagesQuery },
-        message: { query: messagesQuery },
-        deployments: { query: deploymentsQuery },
-        deployment: { query: deploymentsQuery },
-        crons: { query: cronsQuery },
-        cron: { query: cronsQuery }
-    };
-
-    if (modelMapping[lowerModel]) {
-        if (!cachedData[lowerModel]) {
-            try {
-                cachedData[lowerModel] = await modelMapping[lowerModel].query();
-            } catch (err) {
-                console.error(`[CRON TEMPLATE ERROR] Failed to fetch model data for ${lowerModel}:`, err);
-                cachedData[lowerModel] = null;
-            }
-        }
-        return getValueByPath(cachedData[lowerModel], path);
-    }
-
-    return `$${modelName}${path}`;
-}
-
-export async function compileTemplate(templateStr, cachedData) {
-    if (typeof templateStr !== 'string') return templateStr;
-    if (!templateStr.includes('$')) return templateStr;
-
-    const singlePlaceholderMatch = templateStr.match(/^\$([a-zA-Z0-9_]+)([\.\[\]'"\-a-zA-Z0-9_]*)$/);
-    if (singlePlaceholderMatch) {
-        return resolvePlaceholder(singlePlaceholderMatch[1], singlePlaceholderMatch[2], cachedData);
-    }
-
-    const regex = /\$([a-zA-Z0-9_]+)([\.\[\]'"\-a-zA-Z0-9_]*)/g;
-    let match;
-    let result = templateStr;
-    const matches = [];
-    while ((match = regex.exec(templateStr)) !== null) {
-        matches.push({
-            full: match[0],
-            model: match[1],
-            path: match[2],
-            index: match.index
-        });
-    }
-
-    for (let i = matches.length - 1; i >= 0; i--) {
-        const m = matches[i];
-        const val = await resolvePlaceholder(m.model, m.path, cachedData);
-        const replacement = typeof val === 'object' ? JSON.stringify(val) : String(val ?? '');
-        result = result.slice(0, m.index) + replacement + result.slice(m.index + m.full.length);
-    }
-
-    return result;
-}
-
-export async function compileTemplateObject(obj, cachedData) {
-    if (obj === null || obj === undefined) return obj;
-    if (typeof obj === 'string') {
-        return compileTemplate(obj, cachedData);
-    }
-    if (Array.isArray(obj)) {
-        const compiledArray = [];
-        for (const item of obj) {
-            compiledArray.push(await compileTemplateObject(item, cachedData));
-        }
-        return compiledArray;
-    }
-    if (typeof obj === 'object') {
-        const compiledObj = {};
-        for (const key of Object.keys(obj)) {
-            compiledObj[key] = await compileTemplateObject(obj[key], cachedData);
-        }
-        return compiledObj;
-    }
-    return obj;
-}
-
 function hasTemplateValue(value) {
     return typeof value === 'string' && value.includes('$');
 }
@@ -484,7 +336,7 @@ export async function executeCronJob(job) {
 
                 const shouldCompileUrl = job.webhookUrlType === 'expression' || hasTemplateValue(job.webhookUrl);
                 const compiledUrlValue = shouldCompileUrl
-                    ? await compileTemplate(job.webhookUrl, cachedData)
+                    ? await compileTemplate(job.webhookUrl, cachedData, EXEC_TEMPLATE_OPTS)
                     : job.webhookUrl;
                 const compiledUrl = valueToRequestString(compiledUrlValue);
                 const method = job.webhookMethod || 'POST';
@@ -501,7 +353,7 @@ export async function executeCronJob(job) {
                     for (const header of job.webhookHeaders) {
                         if (header.key && header.key.trim()) {
                             const headerKey = job.webhookHeadersType === 'expression' || hasTemplateValue(header.key)
-                                ? valueToRequestString(await compileTemplate(header.key.trim(), cachedData)).trim()
+                                ? valueToRequestString(await compileTemplate(header.key.trim(), cachedData, EXEC_TEMPLATE_OPTS)).trim()
                                 : header.key.trim();
 
                             if (!headerKey) continue;
@@ -511,7 +363,7 @@ export async function executeCronJob(job) {
                             ) || headerKey;
 
                             rawHeaders[normalKey] = job.webhookHeadersType === 'expression' || hasTemplateValue(header.value)
-                                ? valueToRequestString(await compileTemplate(header.value || '', cachedData))
+                                ? valueToRequestString(await compileTemplate(header.value || '', cachedData, EXEC_TEMPLATE_OPTS))
                                 : header.value || '';
                         }
                     }
@@ -526,7 +378,7 @@ export async function executeCronJob(job) {
                         if (job.webhookBodyType === 'fixed' && !hasTemplateValue(job.webhookBody)) {
                             bodyContent = job.webhookBody.trim();
                         } else {
-                            const compiledBody = await compileTemplate(job.webhookBody.trim(), cachedData);
+                            const compiledBody = await compileTemplate(job.webhookBody.trim(), cachedData, EXEC_TEMPLATE_OPTS);
                             bodyContent = typeof compiledBody === 'object' ? JSON.stringify(compiledBody) : String(compiledBody);
                             
                             if (typeof compiledBody === 'object' && !Object.keys(headers).some(k => k.toLowerCase() === 'content-type')) {
