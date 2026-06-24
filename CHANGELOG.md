@@ -1,5 +1,30 @@
 # Changelog
 
+## [4.5.1](https://github.com/aiyu-ayaan/Aiyu/compare/v4.5.0...v4.5.1) (2026-06-24)
+
+### Features
+
+* Add one-by-one AI SEO auto-fixing with pause and resume
+* Validate credentials and replace native alert dialogs with toasts
+* Redesign AI config dashboard to support 4 sections with draggable priorities
+* Integrate vercel ai gateway and request-scoped byok into vision/caption generation API
+* Integrate vercel ai gateway and request-scoped byok into text generation API
+* Update configuration and model api endpoints for multi-provider schema
+
+### Bug Fixes
+
+* : New fix release is done
+* Aggregate statistics for all providers and map gemini to google
+
+### Other Changes
+
+* Bump react-vertical-timeline-component from 3.6.0 to 4.0.0 (#224)
+* Bump @google/genai from 1.52.0 to 2.9.0 (#223)
+* Bump js-cookie from 3.0.7 to 3.0.8 (#222)
+* Bump @tailwindcss/postcss from 4.2.4 to 4.3.1 (#221)
+* Match dashboard background with the rest of admin panel
+* Refact: Docker file changes removing auto start
+
 ## [4.5.0](https://github.com/aiyu-ayaan/Aiyu/compare/v4.4.0...v4.5.0) (2026-06-18)
 
 ### Features
