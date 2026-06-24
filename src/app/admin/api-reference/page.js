@@ -88,8 +88,7 @@ export default function AdminApiReferencePage() {
     const createBlogHeaders = `Authorization: Bearer <YOUR_BLOG_API_TOKEN>
 Content-Type: application/json`;
     const uploadImageHeaders = `Content-Type: multipart/form-data
-Authorization: Bearer <YOUR_BLOG_API_TOKEN>
-# or x-api-key: <BLOG_API_KEY>`;
+Authorization: Bearer <YOUR_BLOG_API_TOKEN>`;
     const uploadImageRequest = `file=@cover-image.jpg
 name=blog-cover`;
     const uploadImageResponse = `{
@@ -99,8 +98,7 @@ name=blog-cover`;
     "thumbnailUrl": "/api/uploads/....-thumb.webp"
   }
 }`;
-    const systemPromptHeaders = `Authorization: Bearer <YOUR_BLOG_API_TOKEN>
-# or x-api-key: <BLOG_API_KEY>`;
+    const systemPromptHeaders = `Authorization: Bearer <YOUR_BLOG_API_TOKEN>`;
     const systemPromptResponse = `You are an AI assistant representing <name>.
 
 Your job is to answer using the latest website data from the portfolio database...

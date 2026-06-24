@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSingleton, toClientList } from '@/lib/serialize';
 import { getSession } from '@/lib/auth';
-import { validateBearerBlogToken, validateExternalApiKey } from '@/lib/blogApiAuth';
+import { validateBearerBlogToken } from '@/lib/blogApiAuth';
 
 function serialize(value) {
     return JSON.parse(JSON.stringify(value));
@@ -93,10 +93,9 @@ ${JSON.stringify(payload, null, 2)}`;
 export async function GET(request) {
     try {
         const session = await getSession();
-        const hasValidApiKey = validateExternalApiKey(request);
         const isBearerTokenValid = await validateBearerBlogToken(request);
 
-        if (!session && !hasValidApiKey && !isBearerTokenValid) {
+        if (!session && !isBearerTokenValid) {
             return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
         }
 

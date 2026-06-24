@@ -387,7 +387,7 @@ Layer 4: Database Security
 Layer 5: Cryptographic Security
 ├─ JWT Secret (64 chars)
 │  └─ Signs authentication tokens
-├─ Blog API Key (32 chars)
+├─ Blog API bearer token (SHA-256 hashed at rest)
 │  └─ Secures automated blog posting API
 ├─ MongoDB passwords
 │  └─ Strong random 32+ characters

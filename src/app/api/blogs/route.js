@@ -222,18 +222,14 @@ export async function GET(request) {
 
 export async function POST(request) {
     // Security Check
-    // 1. Check for API Key (External tools like n8n)
-    const apiKey = request.headers.get('x-api-key');
-    const validApiKey = process.env.BLOG_API_KEY || process.env.JWT_SECRET;
-
-    const isApiKeyValid = apiKey && validApiKey && apiKey === validApiKey;
+    // 1. Check for Bearer token (external tools like n8n)
     const isBearerTokenValid = await validateBearerBlogToken(request);
 
     // 2. Check for Session (Admin Panel)
     const session = await getSession();
     const isSessionValid = !!session;
 
-    if (!isApiKeyValid && !isSessionValid && !isBearerTokenValid) {
+    if (!isSessionValid && !isBearerTokenValid) {
         return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 

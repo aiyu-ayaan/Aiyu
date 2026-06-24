@@ -2,12 +2,6 @@ import crypto from 'crypto';
 import { prisma } from '@/lib/prisma';
 import { getSingleton } from '@/lib/serialize';
 
-export function validateExternalApiKey(request) {
-    const apiKey = request.headers.get('x-api-key');
-    const validApiKey = process.env.BLOG_API_KEY || process.env.JWT_SECRET;
-    return Boolean(apiKey && validApiKey && apiKey === validApiKey);
-}
-
 export async function validateBearerBlogToken(request) {
     const authHeader = request.headers.get('authorization') || '';
     const [scheme, rawToken] = authHeader.split(' ');

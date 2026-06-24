@@ -1,15 +1,14 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
 import { checkRateLimit, getClientIP } from '@/middleware/auth';
-import { validateBearerBlogToken, validateExternalApiKey } from '@/lib/blogApiAuth';
+import { validateBearerBlogToken } from '@/lib/blogApiAuth';
 import { storeOptimizedImage } from '@/utils/uploadImage';
 
 async function uploadAdminImage(request) {
     const session = await getSession();
-    const hasValidApiKey = validateExternalApiKey(request);
     const isBearerTokenValid = await validateBearerBlogToken(request);
 
-    if (!session && !hasValidApiKey && !isBearerTokenValid) {
+    if (!session && !isBearerTokenValid) {
         return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 

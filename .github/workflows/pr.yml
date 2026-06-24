@@ -86,7 +86,6 @@ jobs:
           ADMIN_USERNAME=aiyu
           ADMIN_PASSWORD=ci-admin-password-1234
           JWT_SECRET=ci-jwt-secret-0123456789abcdef0123456789abcdef0123456789abcdef
-          BLOG_API_KEY=ci-blog-api-key-0123456789
           GITHUB_TOKEN=dummy-github-token
           EOF
 
