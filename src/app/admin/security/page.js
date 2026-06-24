@@ -4,7 +4,7 @@ import Link from 'next/link';
 import {
     FaShieldHalved, FaArrowsRotate, FaDesktop, FaMobileScreen, FaTablet,
     FaLocationDot, FaRightFromBracket, FaSpinner, FaScroll, FaFilter,
-    FaTriangleExclamation,
+    FaTriangleExclamation, FaCircleInfo, FaTrashCan,
 } from 'react-icons/fa6';
 
 const TABS = [
@@ -68,6 +68,29 @@ function timeAgo(iso) {
     return `${Math.floor(h / 24)}d ago`;
 }
 
+/** Human "in Xd / Xh" until a future ISO timestamp; "soon" once it's due. */
+function timeUntil(iso) {
+    if (!iso) return '—';
+    const diff = new Date(iso).getTime() - Date.now();
+    if (diff <= 0) return 'soon';
+    const h = Math.floor(diff / 3_600_000);
+    if (h < 1) return '<1h';
+    if (h < 24) return `${h}h`;
+    return `${Math.floor(h / 24)}d`;
+}
+
+const SESSION_FILTERS = [
+    { key: 'all', label: 'All' },
+    { key: 'active', label: 'Active' },
+    { key: 'expired', label: 'Expired' },
+    { key: 'revoked', label: 'Revoked' },
+];
+
+const STATE_BADGE = {
+    expired: 'bg-amber-500/15 text-amber-300 border-amber-500/20',
+    revoked: 'bg-fuchsia-500/15 text-fuchsia-300 border-fuchsia-500/20',
+};
+
 const ACTION_STYLE = {
     LOGIN_SUCCESS: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
     LOGOUT: 'text-slate-300 bg-slate-500/10 border-slate-500/20',
@@ -83,7 +106,9 @@ function actionStyle(action) {
 
 function SessionsTab() {
     const [sessions, setSessions] = useState([]);
-    const [activeCount, setActiveCount] = useState(0);
+    const [counts, setCounts] = useState({ active: 0, expired: 0, revoked: 0 });
+    const [retentionDays, setRetentionDays] = useState(7);
+    const [filter, setFilter] = useState('all');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [revoking, setRevoking] = useState('');
@@ -96,7 +121,8 @@ function SessionsTab() {
             const data = await res.json();
             if (!data.success) throw new Error(data.error || 'Failed to load sessions');
             setSessions(data.sessions || []);
-            setActiveCount(data.activeCount || 0);
+            setCounts(data.counts || { active: 0, expired: 0, revoked: 0 });
+            if (data.retentionDays) setRetentionDays(data.retentionDays);
         } catch (e) {
             setError(e.message);
         } finally {
@@ -127,17 +153,51 @@ function SessionsTab() {
         }
     };
 
+    const visible = filter === 'all' ? sessions : sessions.filter((s) => s.state === filter);
+
     return (
         <div>
-            <div className="flex flex-wrap gap-3 mb-6">
-                <StatPill label="Active sessions" value={activeCount} accent="text-emerald-400" />
-                <StatPill label="Tracked total" value={sessions.length} accent="text-cyan-400" />
+            <div className="flex flex-wrap gap-3 mb-4">
+                <StatPill label="Active" value={counts.active} accent="text-emerald-400" />
+                <StatPill label="Expired" value={counts.expired} accent="text-amber-400" />
+                <StatPill label="Revoked" value={counts.revoked} accent="text-fuchsia-400" />
                 <button
                     onClick={load}
                     className="flex items-center gap-2 px-4 rounded-xl bg-slate-900/50 border border-white/10 text-slate-300 hover:text-white hover:border-cyan-500/30 transition-colors text-sm font-mono"
                 >
                     <FaArrowsRotate className={loading ? 'animate-spin' : ''} /> Refresh
                 </button>
+            </div>
+
+            {/* Retention policy notice */}
+            <div className="mb-5 px-4 py-3 rounded-xl border border-amber-500/15 bg-amber-500/[0.06] text-amber-200/80 text-xs flex items-start gap-2.5">
+                <FaCircleInfo className="mt-0.5 shrink-0 text-amber-400/80" />
+                <span>
+                    Expired and revoked sessions stay listed for reference and are{' '}
+                    <span className="font-semibold text-amber-200">automatically deleted {retentionDays} day{retentionDays === 1 ? '' : 's'} after they exit</span>.
+                    Active sessions are never auto-removed — revoke one to sign that device out immediately.
+                </span>
+            </div>
+
+            {/* State filter */}
+            <div className="flex items-center gap-2 mb-4 flex-wrap">
+                <FaFilter className="text-slate-500" />
+                {SESSION_FILTERS.map((f) => {
+                    const n = f.key === 'all' ? sessions.length : counts[f.key];
+                    return (
+                        <button
+                            key={f.key}
+                            onClick={() => setFilter(f.key)}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-mono uppercase tracking-wider border transition-colors ${
+                                filter === f.key
+                                    ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30'
+                                    : 'bg-slate-900/50 text-slate-400 border-white/10 hover:text-white'
+                            }`}
+                        >
+                            {f.label} <span className="opacity-60">{n}</span>
+                        </button>
+                    );
+                })}
             </div>
 
             {error && (
@@ -149,15 +209,17 @@ function SessionsTab() {
             <Panel className="p-2 sm:p-4">
                 {loading && sessions.length === 0 ? (
                     <div className="py-12 text-center text-slate-500"><FaSpinner className="animate-spin inline mr-2" /> Loading sessions…</div>
-                ) : sessions.length === 0 ? (
-                    <div className="py-12 text-center text-slate-500">No sessions recorded yet.</div>
+                ) : visible.length === 0 ? (
+                    <div className="py-12 text-center text-slate-500">
+                        {sessions.length === 0 ? 'No sessions recorded yet.' : `No ${filter} sessions.`}
+                    </div>
                 ) : (
                     <div className="space-y-2">
-                        {sessions.map((s) => (
+                        {visible.map((s) => (
                             <div
                                 key={s._id}
                                 className={`rounded-xl border p-4 flex flex-col sm:flex-row sm:items-center gap-4 ${
-                                    s.active ? 'border-white/5 bg-slate-950/40' : 'border-white/5 bg-slate-950/20 opacity-60'
+                                    s.active ? 'border-white/5 bg-slate-950/40' : 'border-white/5 bg-slate-950/20 opacity-70'
                                 }`}
                             >
                                 <div className={`text-xl shrink-0 ${s.active ? 'text-cyan-400' : 'text-slate-500'}`}>
@@ -167,12 +229,17 @@ function SessionsTab() {
                                     <div className="flex items-center gap-2 flex-wrap">
                                         <span className="text-slate-200 text-sm font-medium">{shortUA(s.userAgent)}</span>
                                         {s.current && <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/20">This device</span>}
-                                        {!s.active && <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded bg-slate-500/15 text-slate-400 border border-slate-500/20">{s.revokedAt ? 'Revoked' : 'Expired'}</span>}
+                                        {!s.active && <span className={`text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded border ${STATE_BADGE[s.state] || 'bg-slate-500/15 text-slate-400 border-slate-500/20'}`}>{s.state}</span>}
                                     </div>
                                     <div className="mt-1 flex items-center gap-3 flex-wrap text-xs text-slate-500 font-mono">
                                         <span className="flex items-center gap-1"><FaLocationDot className="text-slate-600" /> {s.geo?.label || s.ipAddress || 'Unknown'}</span>
                                         <span>{s.ipAddress || '—'}</span>
                                         <span>active {timeAgo(s.lastSeenAt)}</span>
+                                        {!s.active && s.deleteAt && (
+                                            <span className="flex items-center gap-1 text-slate-500" title={`Auto-deletes ${new Date(s.deleteAt).toLocaleString()}`}>
+                                                <FaTrashCan className="text-slate-600" /> auto-deletes in {timeUntil(s.deleteAt)}
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
                                 {s.active && (
