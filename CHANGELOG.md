@@ -1,5 +1,33 @@
 # Changelog
 
+## [4.5.2](https://github.com/aiyu-ayaan/Aiyu/compare/v4.5.1...v4.5.2) (2026-06-24)
+
+### Features
+
+* Add interactive visitor world map
+* Resolve visitor country everywhere for geo reporting
+* Split sessions by state with auto-expiry notice
+* Auto-prune inactive sessions after 7 days
+* Add trend deltas, overview insights & geo breakdown
+
+### Bug Fixes
+
+* : release v4.5.2
+* Fix! : release v4.5.2
+* Stop edge proxy failing open and restore agent-discovery
+* Constant-time admin credentials and global login backstop
+* Resolve client IP from trusted proxy headers
+* Exclude authenticated admin from visitor analytics
+
+### Other Changes
+
+* Remove hardcoded admin password fallback
+* Remove unused BLOG_API_KEY / x-api-key auth path
+* Merge branch 'master' of https://github.com/aiyu-ayaan/Aiyu
+* Abort superseded dynamic-variable preview requests
+* Make dynamic-variable preview cheap
+* Bound cron template data loading to prevent OOM
+
 ## [4.5.1](https://github.com/aiyu-ayaan/Aiyu/compare/v4.5.0...v4.5.1) (2026-06-24)
 
 ### Features
