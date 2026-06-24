@@ -1,6 +1,6 @@
 import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
-import { randomUUID } from 'crypto';
+import { randomUUID, createHash, timingSafeEqual } from 'crypto';
 import { prisma } from '@/lib/prisma';
 
 const secretKey = process.env.JWT_SECRET;
@@ -16,6 +16,17 @@ const LAST_SEEN_THROTTLE_MS = 60 * 1000;
 // security audit view, then purged by the `prune_sessions` system cron.
 export const SESSION_RETENTION_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 export const SESSION_RETENTION_DAYS = 7;
+
+/**
+ * Constant-time string comparison. Hashing both sides to a fixed 32-byte digest
+ * keeps `timingSafeEqual` happy (it requires equal-length buffers) and prevents
+ * the comparison time from leaking the secret's length or content.
+ */
+function safeEqual(provided, expected) {
+    const a = createHash('sha256').update(String(provided ?? '')).digest();
+    const b = createHash('sha256').update(String(expected ?? '')).digest();
+    return timingSafeEqual(a, b);
+}
 
 export async function encrypt(payload) {
     return await new SignJWT(payload)
@@ -53,10 +64,21 @@ export async function login(formData, meta = {}) {
     const username = formData.get('username');
     const password = formData.get('password');
 
-    if (
-        username === process.env.ADMIN_USERNAME &&
-        password === process.env.ADMIN_PASSWORD
-    ) {
+    const expectedUsername = process.env.ADMIN_USERNAME || '';
+    const expectedPassword = process.env.ADMIN_PASSWORD || '';
+
+    // Fail closed if admin credentials are not configured, so a blank submission
+    // can never match an unset (empty) env var.
+    if (!expectedUsername || !expectedPassword) {
+        return false;
+    }
+
+    // Evaluate both comparisons before branching (no `&&` short-circuit) so the
+    // response time does not reveal which field was wrong.
+    const usernameOk = safeEqual(username, expectedUsername);
+    const passwordOk = safeEqual(password, expectedPassword);
+
+    if (usernameOk && passwordOk) {
         const expires = new Date(Date.now() + SESSION_TTL_MS);
         const jti = randomUUID();
 
