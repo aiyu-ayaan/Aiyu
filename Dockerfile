@@ -109,7 +109,11 @@ COPY --chown=nextjs:nodejs scripts/healthcheck.sh /app/healthcheck.sh
 COPY --chown=nextjs:nodejs scripts/docker-entrypoint.sh /app/docker-entrypoint.sh
 
 # Create writable directories needed when running with read-only root fs.
-RUN mkdir -p /app/public/uploads \
+# Strip any CR characters first: when the build context comes from a Windows
+# checkout the .sh files can carry CRLF endings, which makes `sh` fail with
+# "set: Illegal option -" and the container exits immediately on start.
+RUN sed -i 's/\r$//' /app/healthcheck.sh /app/docker-entrypoint.sh \
+    && mkdir -p /app/public/uploads \
     && mkdir -p /app/.next/cache \
     && chmod +x /app/healthcheck.sh /app/docker-entrypoint.sh \
     && chown -R nextjs:nodejs /app/public/uploads /app/.next/cache

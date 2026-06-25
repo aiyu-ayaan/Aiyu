@@ -1,0 +1,5 @@
+# Shell scripts must use LF endings — they run inside Linux containers, and
+# CRLF makes `sh` fail ("set: Illegal option -"). Keeps Windows checkouts safe.
+*.sh text eol=lf
+scripts/docker-entrypoint.sh text eol=lf
+scripts/healthcheck.sh text eol=lf

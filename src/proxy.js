@@ -156,7 +156,18 @@ function getCanonicalUrl() {
 }
 
 function isLocalhost(hostname) {
-    return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
+    return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0' || hostname === '::1';
+}
+
+// The request's public host. In the standalone (Docker) server `request.nextUrl`
+// reflects the server bind address (HOSTNAME=0.0.0.0), NOT the host the client
+// asked for — so the canonical comparison must read the forwarded/Host header
+// instead. Using nextUrl.hostname here made every request look like "0.0.0.0",
+// which is neither localhost nor the canonical host, so the redirect fired on
+// every GET/HEAD and bounced the dockerized site to SITE_URL.
+function getRequestHostname(request) {
+    const forwarded = request.headers.get('x-forwarded-host') || request.headers.get('host') || '';
+    return forwarded.split(',')[0].trim().split(':')[0].toLowerCase();
 }
 
 function getCanonicalHostRedirect(request) {
@@ -166,11 +177,12 @@ function getCanonicalHostRedirect(request) {
     const canonicalUrl = getCanonicalUrl();
     if (!canonicalUrl) return null;
 
-    const currentUrl = request.nextUrl;
-    if (isLocalhost(currentUrl.hostname) || currentUrl.hostname === canonicalUrl.hostname) {
+    const requestHostname = getRequestHostname(request);
+    if (!requestHostname || isLocalhost(requestHostname) || requestHostname === canonicalUrl.hostname) {
         return null;
     }
 
+    const currentUrl = request.nextUrl;
     const redirectUrl = new URL(currentUrl.pathname + currentUrl.search, canonicalUrl.origin);
     return NextResponse.redirect(redirectUrl, 308);
 }
