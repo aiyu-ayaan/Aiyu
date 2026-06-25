@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.5.3](https://github.com/aiyu-ayaan/Aiyu/compare/v4.5.2...v4.5.3) (2026-06-25)
+
+### Bug Fixes
+
+* : release v4.5.3
+* Fix ! : New fix release pushed with resolving dockers issues
+
 ## [4.5.2](https://github.com/aiyu-ayaan/Aiyu/compare/v4.5.1...v4.5.2) (2026-06-24)
 
 ### Features
