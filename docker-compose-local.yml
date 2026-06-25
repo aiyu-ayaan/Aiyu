@@ -55,6 +55,7 @@ services:
       # Base URL for SEO/OG tags
       NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL}
       NEXT_PUBLIC_AUTHOR_NAME: ${NEXT_PUBLIC_AUTHOR_NAME}
+      CANONICAL_HOST_REDIRECT: "false"
 
       # Admin credentials
       ADMIN_USERNAME: ${ADMIN_USERNAME}
