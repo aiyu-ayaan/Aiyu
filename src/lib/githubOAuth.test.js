@@ -80,6 +80,20 @@ describe('getCallbackUrl', () => {
         expect(getCallbackUrl({ SITE_URL: 'ftp://example.com' })).toBeNull();
         expect(getCallbackUrl({ SITE_URL: 'not a url' })).toBeNull();
     });
+
+    it('GITHUB_OAUTH_CALLBACK_URL overrides the derived base verbatim', () => {
+        expect(getCallbackUrl({
+            GITHUB_OAUTH_CALLBACK_URL: 'http://localhost:3000/api/auth/github/callback',
+            SITE_URL: 'https://example.com',
+        })).toBe('http://localhost:3000/api/auth/github/callback');
+    });
+
+    it('ignores a non-http(s) override', () => {
+        expect(getCallbackUrl({
+            GITHUB_OAUTH_CALLBACK_URL: 'ftp://bad/callback',
+            SITE_URL: 'https://example.com',
+        })).toBeNull();
+    });
 });
 
 describe('buildAuthorizeUrl', () => {

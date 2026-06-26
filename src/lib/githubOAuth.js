@@ -40,11 +40,30 @@ export function isAllowedGithubId(candidateId, env = process.env) {
 }
 
 /**
- * Server-fixed callback URL derived from configured base (never request input,
- * so it cannot be used for an open redirect / host spoof). Returns null if no
- * valid http(s) base is configured.
+ * Server-fixed callback URL (never request input, so it cannot be used for an
+ * open redirect / host spoof). Must match the OAuth App's registered callback
+ * EXACTLY (scheme + host + port + path).
+ *
+ * Resolution order:
+ *   1. GITHUB_OAUTH_CALLBACK_URL — explicit override, used verbatim. Lets local
+ *      dev and production each point at their own registered callback without
+ *      touching SITE_URL (which is the production canonical host).
+ *   2. SITE_URL / NEXT_PUBLIC_BASE_URL + the callback path.
+ *
+ * Returns null if nothing valid (http/https) is configured.
  */
 export function getCallbackUrl(env = process.env) {
+    const explicit = (env.GITHUB_OAUTH_CALLBACK_URL || '').trim();
+    if (explicit) {
+        try {
+            const url = new URL(explicit);
+            if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
+            return url.toString();
+        } catch {
+            return null;
+        }
+    }
+
     const base = (env.SITE_URL || env.NEXT_PUBLIC_BASE_URL || '').replace(/\/+$/, '');
     if (!base) return null;
     try {
