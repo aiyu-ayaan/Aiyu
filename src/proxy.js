@@ -21,6 +21,7 @@ globalThis.__apiRateLimitStore = rateLimitStore;
 
 const routeRateLimits = [
     { prefix: '/api/auth/login', methods: ['POST'], maxRequests: 5, windowMs: 5 * 60 * 1000 },
+    { prefix: '/api/auth/github', methods: ['GET'], maxRequests: 10, windowMs: 5 * 60 * 1000 },
     { prefix: '/api/contact/message', methods: ['POST'], maxRequests: 15, windowMs: 5 * 60 * 1000 },
     { prefix: '/api/upload', methods: ['POST'], maxRequests: 60, windowMs: 60 * 1000 },
     { prefix: '/api/global-search', methods: ['GET'], maxRequests: 60, windowMs: 60 * 1000 },

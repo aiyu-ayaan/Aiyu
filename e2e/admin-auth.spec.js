@@ -26,3 +26,23 @@ test('logs in with valid credentials and reaches the dashboard', async ({ page }
   await expect(page).toHaveURL(/\/admin(\/|$)/, { timeout: 15_000 });
   await expect(page.locator('input[type="password"]')).toHaveCount(0);
 });
+
+// GitHub-login mode. These run only when the server under test was started with
+// GITHUB_AUTH_ENABLED=true; otherwise they skip so the default password-mode
+// suite is unaffected.
+const githubEnabled = process.env.GITHUB_AUTH_ENABLED === 'true';
+
+test('GitHub mode shows the GitHub button and hides the password form', async ({ page }) => {
+  test.skip(!githubEnabled, 'GitHub auth not enabled in env');
+
+  await page.goto('/admin/login');
+  await expect(page.getByRole('link', { name: /continue with github/i })).toBeVisible();
+  await expect(page.locator('input[type="password"]')).toHaveCount(0);
+});
+
+test('GitHub callback without a valid state bounces back to login with an error', async ({ page }) => {
+  test.skip(!githubEnabled, 'GitHub auth not enabled in env');
+
+  await page.goto('/api/auth/github/callback?code=abc&state=forged');
+  await expect(page).toHaveURL(/\/admin\/login\?error=/);
+});

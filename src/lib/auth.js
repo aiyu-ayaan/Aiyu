@@ -27,11 +27,43 @@ function safeEqual(provided, expected) {
 }
 
 /**
- * Authenticate the admin and, on success, open a DB-backed session.
+ * Open a DB-backed session and set the signed `session` cookie.
  *
  * The JWT carries an opaque `jti` that maps to the Session row. Statelessly
  * signed tokens cannot be revoked individually; the row is what lets us list
  * active devices and remotely log one out (see getSession / revokeSession).
+ *
+ * Shared by every successful auth path (password login and GitHub OAuth) so the
+ * cookie flags, TTL, and jti handling live in exactly one place.
+ *
+ * @param {{ user: object, meta?: { ipAddress?: string, userAgent?: string } }} args
+ * @returns {Promise<void>}
+ */
+export async function createSession({ user, meta = {} }) {
+    const expires = new Date(Date.now() + SESSION_TTL_MS);
+    const jti = randomUUID();
+
+    await prisma.session.create({
+        data: {
+            jti,
+            ipAddress: meta.ipAddress || '',
+            userAgent: meta.userAgent || '',
+            expiresAt: expires,
+        },
+    });
+
+    const session = await encrypt({ user, jti, expires });
+
+    (await cookies()).set('session', session, {
+        expires,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+    });
+}
+
+/**
+ * Authenticate the admin and, on success, open a DB-backed session.
  *
  * @param {FormData} formData
  * @param {{ ipAddress?: string, userAgent?: string }} [meta]
@@ -58,26 +90,7 @@ export async function login(formData, meta = {}) {
     const passwordOk = safeEqual(password, expectedPassword);
 
     if (usernameOk && passwordOk) {
-        const expires = new Date(Date.now() + SESSION_TTL_MS);
-        const jti = randomUUID();
-
-        await prisma.session.create({
-            data: {
-                jti,
-                ipAddress: meta.ipAddress || '',
-                userAgent: meta.userAgent || '',
-                expiresAt: expires,
-            },
-        });
-
-        const session = await encrypt({ user, jti, expires });
-
-        (await cookies()).set('session', session, {
-            expires,
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
-        });
+        await createSession({ user, meta });
         return true;
     }
 

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { login } from '@/lib/auth';
 import { checkRateLimit, getClientIP } from '@/middleware/auth';
 import { logAudit, AUDIT_CATEGORY } from '@/lib/audit';
+import { isGithubAuthEnabled } from '@/lib/githubOAuth';
 
 // Per-IP throttle: 5 attempts / 5 min. With trusted-proxy IP resolution the
 // key can no longer be spoofed via X-Forwarded-For.
@@ -16,6 +17,12 @@ const LOGIN_GLOBAL_WINDOW_MS = 600000;
 export async function POST(request) {
     const clientIP = getClientIP(request);
     const userAgent = request.headers.get('user-agent') || '';
+
+    // Either/or toggle: when GitHub login is enabled, the password path is
+    // turned off entirely so it cannot be used as a bypass.
+    if (isGithubAuthEnabled()) {
+        return NextResponse.json({ error: 'Password login is disabled.' }, { status: 403 });
+    }
 
     try {
         // Rate limiting: per-IP first, then a global backstop.
