@@ -39,6 +39,16 @@ export async function register() {
         return;
     }
 
+    // Auto-seed default data on first run (non-destructive — skips if DB is
+    // already populated). Must complete before cache warmup reads from DB.
+    try {
+        const { autoSeed } = await import('@/lib/seed');
+        await autoSeed();
+    } catch (error) {
+        // Never block server startup — log and continue.
+        console.warn(`[auto-seed] skipped: ${error?.message || 'unknown error'}`);
+    }
+
     setTimeout(() => {
         warmPublicDataCache().catch((error) => {
             console.warn(`[startup-cache] warmup skipped: ${error?.message || 'unknown error'}`);
