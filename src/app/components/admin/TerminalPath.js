@@ -613,6 +613,7 @@ export default function TerminalPath({ socialData, config, onOutputChange }) {
             {/* Output Overlay */}
             {output && (
                 <div
+                    data-lenis-prevent
                     className="absolute top-full left-0 mt-1 w-full rounded-md shadow-xl z-50 overflow-hidden"
                     style={{
                         backgroundColor: 'var(--bg-primary)',
