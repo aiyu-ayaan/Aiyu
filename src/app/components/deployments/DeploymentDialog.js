@@ -76,6 +76,7 @@ export default function DeploymentDialog({ deployment, onClose }) {
                     onClick={onClose}
                 >
                 <motion.div
+                    data-lenis-prevent
                     initial={{ scale: 0.96, opacity: 0, y: 16 }}
                     animate={{ scale: 1, opacity: 1, y: 0 }}
                     exit={{ scale: 0.96, opacity: 0, y: 16 }}

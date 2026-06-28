@@ -78,6 +78,7 @@ const ProjectDialog = ({ project, onClose }) => {
           onClick={onClose}
         >
         <motion.div
+          data-lenis-prevent
           initial={{ scale: 0.96, opacity: 0, y: 18 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.96, opacity: 0, y: 18 }}
