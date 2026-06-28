@@ -1,5 +1,24 @@
 # Changelog
 
+## [4.5.4](https://github.com/aiyu-ayaan/Aiyu/compare/v4.5.3...v4.5.4) (2026-06-28)
+
+### Features
+
+* Add auto-seed on first app startup via instrumentation hook
+* Allow GITHUB_OAUTH_CALLBACK_URL to override the derived callback
+* Add env-toggleable GitHub OAuth login restricted to a single user
+
+### Bug Fixes
+
+* : Fix release is done
+* Prevent Lenis scroll hijacking on projects, apps, and command palette overlays
+* Resolve scroll-hijacking bug in help output overlay
+* Resolve localhost redirect issues and prevent loops
+
+### Other Changes
+
+* Remove /api/seed endpoint
+
 ## [4.5.3](https://github.com/aiyu-ayaan/Aiyu/compare/v4.5.2...v4.5.3) (2026-06-25)
 
 ### Bug Fixes
