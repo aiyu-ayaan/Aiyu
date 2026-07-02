@@ -12,6 +12,10 @@ const SpaceBackground = dynamic(() => import("./SpaceBackground"), {
     ssr: false,
 });
 
+const V2BetaPopup = dynamic(() => import("./V2BetaPopup"), {
+    ssr: false,
+});
+
 const IDLE_ENHANCEMENT_DELAY_MS = 2200;
 
 function detectLowEndDevice() {
@@ -265,6 +269,8 @@ export default function ClientEnhancements() {
                 </div>
             )}
             {mountPalette && <CommandPalette />}
+
+            {pathname === '/' && <V2BetaPopup />}
 
             {/* Scroll to top button — CSS-only transitions (no framer-motion) so
                 this always-rendered root component stays out of the heavy
