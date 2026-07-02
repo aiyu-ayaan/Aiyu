@@ -1,5 +1,26 @@
 # Changelog
 
+## [4.5.5](https://github.com/aiyu-ayaan/Aiyu/compare/v4.5.4...v4.5.5) (2026-07-02)
+
+### Features
+
+* Give /v2 its own header and footer
+* Add /v2/about-me with editorial-depth chapters
+* Wire /v2 route with projects, blogs and scroll progress
+* Add tech-cloud, about and depth-deck showcase chapters
+* Add 3D hero, snapshot and mission-control chapters
+* Add 3D scroll engine for the /v2 experience
+
+### Bug Fixes
+
+* : Release is done with v2 pages
+
+### Other Changes
+
+* Add GSAP skills for ScrollTrigger, Timeline, and Utils
+* Redesign chapters with an editorial-depth language
+* Add GitHub OAuth env vars to app service
+
 ## [4.5.4](https://github.com/aiyu-ayaan/Aiyu/compare/v4.5.3...v4.5.4) (2026-06-28)
 
 ### Features
