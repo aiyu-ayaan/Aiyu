@@ -108,7 +108,7 @@ const V2About = ({ data }) => {
                 </div>
 
                 <div data-v2-group data-v2-stagger="0.08" className="mt-12 flex flex-wrap gap-x-10 gap-y-4 font-mono text-sm">
-                    <Link href="/about-me" data-v2="rise" className="underline-offset-4 hover:underline" style={{ color: 'var(--accent-cyan)' }}>
+                    <Link href="/v2/about-me" data-v2="rise" className="underline-offset-4 hover:underline" style={{ color: 'var(--accent-cyan)' }}>
                         → the full story
                     </Link>
                     <Link href="/projects" data-v2="rise" className="underline-offset-4 hover:underline" style={{ color: 'var(--accent-purple)' }}>

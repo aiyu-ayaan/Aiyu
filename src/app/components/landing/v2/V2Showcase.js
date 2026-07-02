@@ -139,8 +139,10 @@ const V2Showcase = ({ data }) => {
 
       cards.forEach((card, index) => {
         if (index === steps) return;
-        // Front card flies past the camera…
-        tl.to(card, { z: 460, y: -70, rotationX: -10, autoAlpha: 0, duration: 1 }, index);
+        // Front card flies past the camera; it fades within the first 40% of
+        // the step so its text never overlaps the card dollying in behind it.
+        tl.to(card, { z: 460, y: -70, rotationX: -10, duration: 1 }, index);
+        tl.to(card, { autoAlpha: 0, duration: 0.4 }, index);
         // …while every card behind it dollies forward one slot.
         cards.slice(index + 1).forEach((behind, offset) => {
           tl.to(behind, { ...slotProps(offset), duration: 1 }, index);
