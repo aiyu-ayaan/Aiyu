@@ -4,6 +4,7 @@ import React, { useMemo, useRef } from 'react';
 import Link from 'next/link';
 import useDevicePerformance from '../../../hooks/useDevicePerformance';
 import { useV2Fx } from './gsap3d';
+import V2ChapterHead from './V2ChapterHead';
 
 const BAND_ACCENTS = [
     'var(--accent-cyan)',
@@ -13,10 +14,10 @@ const BAND_ACCENTS = [
 ];
 
 /**
- * Tech stack chapter, v2: the skill chips hang as a 3D cloud. Each chip hinges
- * up from flat with a random-order cascade and carries its own resting depth
- * (translateZ), then the whole cloud sways gently around Y with scroll so the
- * depth separation stays visible. Static wrap-grid on lite / reduced-motion.
+ * Chapter 03 — Stack. Full-bleed 3D chip cloud floating over the open page:
+ * chips cascade in from flat in random order, each landing on its own resting
+ * depth, then the whole cloud yaws with scroll so the depths parallax. The
+ * top skills render bigger so hierarchy survives the drift.
  */
 const V2TechStack = ({ data }) => {
     const sectionRef = useRef(null);
@@ -39,8 +40,6 @@ const V2TechStack = ({ data }) => {
             const chips = scope.querySelectorAll('.v2-tech-chip');
             if (!cloud || !chips.length) return;
 
-            // Cascade in from flat, landing on a per-chip resting depth so the
-            // cloud isn't a single plane.
             gsap.fromTo(
                 chips,
                 {
@@ -67,14 +66,12 @@ const V2TechStack = ({ data }) => {
                 }
             );
 
-            // Scrubbed sway: the cloud yaws slightly as it crosses the viewport,
-            // letting the chip depths parallax against each other.
             gsap.fromTo(
                 cloud,
-                { rotationY: -7, rotationX: 3, transformPerspective: 1400 },
+                { rotationY: -8, rotationX: 4, transformPerspective: 1400 },
                 {
-                    rotationY: 7,
-                    rotationX: -3,
+                    rotationY: 8,
+                    rotationX: -4,
                     ease: 'none',
                     scrollTrigger: {
                         trigger: cloud,
@@ -90,58 +87,42 @@ const V2TechStack = ({ data }) => {
     if (skills.length === 0) return null;
 
     return (
-        <section ref={sectionRef} className="chapter-section" style={{ backgroundColor: 'transparent' }}>
-            <div
-                data-v2-depth="-0.35"
-                className="pointer-events-none absolute right-8 top-8 h-48 w-48 rounded-full blur-3xl"
-                style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--accent-cyan) 12%, transparent), transparent 70%)' }}
-            />
-
-            <div
-                data-v2="float"
-                className="chapter-panel glass-panel relative mx-auto flex w-full max-w-[95%] flex-col justify-center p-8 sm:p-12 lg:max-w-[80%] xl:p-16"
-            >
-                <div className="mb-12 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-                    <div data-v2="door-left" className="max-w-2xl">
-                        <p className="eyebrow mb-3">Tech Stack</p>
-                        <h2 className="headline-section">A toolbox with real depth.</h2>
-                        <p className="subcopy mt-4">
-                            {skills.length} skills, ranked by fluency — hanging in 3D and drifting as you scroll.
-                        </p>
-                    </div>
-                    <Link href="/about-me" data-v2="door-right" className="pill-ghost self-start lg:self-auto">
-                        Full Skill Breakdown
-                    </Link>
-                </div>
+        <section ref={sectionRef} className="relative overflow-hidden py-20 sm:py-28" style={{ borderTop: '1px solid var(--hairline)' }}>
+            <div className="mx-auto w-full max-w-7xl px-6 lg:px-10">
+                <V2ChapterHead
+                    index="03"
+                    eyebrow="Tech Stack"
+                    title="A toolbox with real depth."
+                    kicker={`${skills.length} skills ranked by fluency — floating in 3D, drifting as you scroll.`}
+                    accent="var(--accent-orange)"
+                />
 
                 <div style={{ perspective: '1400px' }}>
                     <div
-                        className="v2-tech-cloud flex flex-wrap items-center justify-center gap-3 sm:gap-4"
+                        className="v2-tech-cloud flex flex-wrap items-center justify-center gap-3 py-6 sm:gap-4"
                         style={{ transformStyle: 'preserve-3d' }}
                     >
                         {skills.map((skill, index) => {
                             const accent = BAND_ACCENTS[index % BAND_ACCENTS.length];
                             const level = Math.max(0, Math.min(100, Number(skill.level) || 0));
+                            const isTop = index < 6;
                             return (
                                 <span
                                     key={`${skill.name}-${index}`}
-                                    className="v2-tech-chip glass-tile inline-flex cursor-default items-center gap-2.5 px-4 py-2.5 text-sm font-semibold transition-colors duration-200"
+                                    className="v2-tech-chip inline-flex cursor-default items-center gap-2.5 rounded-full border font-mono font-semibold transition-colors duration-200"
                                     style={{
+                                        padding: isTop ? '0.8rem 1.4rem' : '0.55rem 1.05rem',
+                                        fontSize: isTop ? '1.05rem' : '0.82rem',
                                         color: 'var(--text-primary)',
-                                        borderColor: `color-mix(in srgb, ${accent} 28%, transparent)`,
-                                        fontSize: index < 6 ? '1rem' : undefined,
+                                        borderColor: `color-mix(in srgb, ${accent} ${isTop ? 55 : 30}%, transparent)`,
+                                        backgroundColor: `color-mix(in srgb, ${accent} ${isTop ? 10 : 5}%, var(--bg-secondary))`,
+                                        boxShadow: isTop ? `0 16px 40px -22px color-mix(in srgb, ${accent} 60%, transparent)` : undefined,
                                     }}
                                 >
                                     {skill.name}
                                     {level > 0 && (
-                                        <span
-                                            className="rounded-full px-2 py-0.5 text-[0.65rem] font-bold tabular-nums"
-                                            style={{
-                                                color: accent,
-                                                backgroundColor: `color-mix(in srgb, ${accent} 12%, transparent)`,
-                                            }}
-                                        >
-                                            {level}%
+                                        <span className="text-[0.65rem] font-bold tabular-nums" style={{ color: accent }}>
+                                            {level}
                                         </span>
                                     )}
                                 </span>
@@ -149,6 +130,12 @@ const V2TechStack = ({ data }) => {
                         })}
                     </div>
                 </div>
+
+                <p data-v2="rise" className="mt-10 text-center font-mono text-sm">
+                    <Link href="/about-me" className="underline-offset-4 hover:underline" style={{ color: 'var(--text-secondary)' }}>
+                        → full skill breakdown
+                    </Link>
+                </p>
             </div>
         </section>
     );

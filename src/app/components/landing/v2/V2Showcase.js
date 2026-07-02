@@ -68,10 +68,11 @@ const slotProps = (slot) => ({
 });
 
 /**
- * Showcase chapter, v2: instead of the v1 horizontal rail, the focus-area cards
- * are stacked in camera depth. The stage pins and each scroll step throws the
- * front card past the camera while the stack dollies forward one slot — a
- * card-deck fly-through. Lite / reduced-motion devices keep the plain grid.
+ * Chapter 05 — Focus areas as a pinned depth deck. The cards stack in camera
+ * depth; each scroll step throws the front card past the lens while the rest
+ * dolly forward one slot. Cards carry a giant ghost numeral and an accent
+ * edge instead of the site's glass-tile look. Lite / reduced-motion devices
+ * keep the plain grid.
  */
 const V2Showcase = ({ data }) => {
   const sectionRef = useRef(null);
@@ -150,78 +151,85 @@ const V2Showcase = ({ data }) => {
 
   return (
     // No perspective on this wrapper: a transformed ancestor would break the pin.
-    <section ref={sectionRef} className="chapter-section">
-      <div
-        data-v2-depth="-0.2"
-        className="pointer-events-none absolute -right-16 top-10 h-56 w-56 rounded-full blur-3xl"
-        style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--accent-purple) 11%, transparent), transparent 70%)' }}
-      />
-
-      <div className="v2-deck-pin mx-auto w-full max-w-[95%] lg:max-w-[80%]">
-        <div className="mb-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <div data-v2="door-left" className="max-w-2xl">
-            <p className="eyebrow mb-3">{eyebrow}</p>
-            <h2 className="headline-section">{headline}</h2>
-            <p className="subcopy mt-4">{description}</p>
-          </div>
-          <div
-            data-v2="door-right"
-            className="glass-tile inline-flex items-center gap-2.5 self-start px-4 py-2.5 lg:self-auto"
-            aria-hidden="true"
-          >
-            {panels.map((panel, index) => (
-              <span
-                key={panel.title}
-                className="v2-deck-dot h-2 w-2 rounded-full transition-all duration-200"
-                style={{
-                  backgroundColor: panel.accent || 'var(--accent-cyan)',
-                  opacity: index === 0 ? 1 : 0.3,
-                }}
-              />
-            ))}
+    <section ref={sectionRef} className="relative overflow-hidden py-20 sm:py-28" style={{ borderTop: '1px solid var(--hairline)' }}>
+      <div className="v2-deck-pin mx-auto w-full max-w-7xl px-6 lg:px-10">
+        <div className="relative mb-12">
+          <p data-v2="line" className="mb-4 font-mono text-xs font-semibold uppercase tracking-[0.35em]" style={{ color: 'var(--accent-cyan)' }}>
+            /05 — {eyebrow}
+          </p>
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <h2 data-v2="line" className="max-w-3xl text-4xl font-bold leading-[1.02] tracking-tight sm:text-6xl" style={{ color: 'var(--text-bright)' }}>
+                {headline}
+              </h2>
+              <p data-v2="rise" className="mt-4 max-w-2xl text-base leading-relaxed sm:text-lg" style={{ color: 'var(--text-tertiary)' }}>
+                {description}
+              </p>
+            </div>
+            <div data-v2="rise" className="flex items-center gap-2.5 pb-2" aria-hidden="true">
+              {panels.map((panel, index) => (
+                <span
+                  key={panel.title}
+                  className="v2-deck-dot h-2 w-2 rounded-full transition-all duration-200"
+                  style={{
+                    backgroundColor: panel.accent || 'var(--accent-cyan)',
+                    opacity: index === 0 ? 1 : 0.3,
+                  }}
+                />
+              ))}
+            </div>
           </div>
         </div>
 
         <div className="v2-deck-stage grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
           {panels.map((panel, index) => {
             const Icon = typeof panel.icon === 'string' ? getIcon(panel.icon) : (panel.icon || FaLaptopCode);
+            const accent = panel.accent || 'var(--accent-cyan)';
             return (
               <article
                 key={panel.title}
-                className="v2-deck-card glass-tile flex min-h-[22rem] flex-col p-8 sm:p-10"
-                style={{ backgroundColor: 'var(--bg-secondary)' }}
+                className="v2-deck-card relative flex min-h-[24rem] flex-col overflow-hidden rounded-3xl border p-8 sm:p-12"
+                style={{
+                  borderColor: 'var(--hairline)',
+                  backgroundColor: 'var(--bg-secondary)',
+                  backgroundImage: `radial-gradient(ellipse at 85% -10%, color-mix(in srgb, ${accent} 14%, transparent), transparent 55%)`,
+                }}
               >
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute -bottom-10 right-4 select-none text-[11rem] font-black leading-none"
+                  style={{
+                    color: 'transparent',
+                    WebkitTextStroke: `1.5px color-mix(in srgb, ${accent} 25%, transparent)`,
+                  }}
+                >
+                  {String(index + 1).padStart(2, '0')}
+                </span>
+                <span aria-hidden="true" className="absolute inset-x-0 top-0 h-[3px]" style={{ background: `linear-gradient(90deg, ${accent}, transparent 70%)` }} />
+
                 <div className="mb-8 flex items-start justify-between gap-3">
                   <span
                     className="inline-flex h-12 w-12 items-center justify-center rounded-2xl border"
-                    style={{ backgroundColor: `color-mix(in srgb, ${panel.accent} 12%, transparent)` }}
+                    style={{ borderColor: `color-mix(in srgb, ${accent} 35%, transparent)`, backgroundColor: `color-mix(in srgb, ${accent} 12%, transparent)` }}
                   >
-                    <Icon size={16} style={{ color: panel.accent }} />
+                    <Icon size={16} style={{ color: accent }} />
                   </span>
-                  <span className="text-sm font-semibold tabular-nums" style={{ color: 'var(--text-muted)' }}>
+                  <span className="font-mono text-xs tabular-nums" style={{ color: 'var(--text-muted)' }}>
                     {String(index + 1).padStart(2, '0')} / {String(panels.length).padStart(2, '0')}
                   </span>
                 </div>
 
-                <h3 className="mb-3 text-2xl font-semibold tracking-tight sm:text-3xl" style={{ color: 'var(--text-bright)' }}>
+                <h3 className="mb-4 max-w-md text-3xl font-bold tracking-tight sm:text-4xl" style={{ color: 'var(--text-bright)' }}>
                   {panel.title}
                 </h3>
-                <p className="max-w-xl text-sm leading-relaxed sm:text-base" style={{ color: 'var(--text-tertiary)' }}>
+                <p className="max-w-xl text-base leading-relaxed sm:text-lg" style={{ color: 'var(--text-tertiary)' }}>
                   {panel.description}
                 </p>
 
-                <div className="mt-auto flex flex-wrap gap-2 pt-8">
+                <div className="mt-auto flex flex-wrap gap-x-5 gap-y-2 pt-8 font-mono text-xs uppercase tracking-[0.15em]">
                   {panel.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="rounded-full border px-3 py-1 text-xs font-medium"
-                      style={{
-                        borderColor: 'var(--hairline)',
-                        color: 'var(--text-secondary)',
-                        backgroundColor: 'var(--surface-tile)',
-                      }}
-                    >
-                      {tag}
+                    <span key={tag} style={{ color: `color-mix(in srgb, ${accent} 75%, var(--text-secondary))` }}>
+                      #{tag}
                     </span>
                   ))}
                 </div>

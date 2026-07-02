@@ -1,39 +1,21 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from 'react';
-import { FaBullseye, FaGraduationCap, FaSatelliteDish } from 'react-icons/fa';
 import useDevicePerformance from '../../../hooks/useDevicePerformance';
 import { useV2Fx } from './gsap3d';
+import V2ChapterHead from './V2ChapterHead';
 
-const STATUS_CARDS = [
-    {
-        key: 'focus',
-        label: 'Current Focus',
-        icon: FaBullseye,
-        accent: 'var(--accent-cyan)',
-        fallback: 'Building delightful web experiences',
-    },
-    {
-        key: 'learning',
-        label: 'Now Learning',
-        icon: FaGraduationCap,
-        accent: 'var(--accent-purple)',
-        fallback: 'Exploring new tools and patterns',
-    },
-    {
-        key: 'availability',
-        label: 'Availability',
-        icon: FaSatelliteDish,
-        accent: 'var(--accent-orange)',
-        fallback: 'Open to collaborations',
-    },
+const STATUS_ROWS = [
+    { key: 'focus', flag: '--focus', accent: 'var(--accent-cyan)', fallback: 'Building delightful web experiences' },
+    { key: 'learning', flag: '--learning', accent: 'var(--accent-purple)', fallback: 'Exploring new tools and patterns' },
+    { key: 'availability', flag: '--availability', accent: 'var(--accent-orange)', fallback: 'Open to collaborations' },
 ];
 
 /**
- * Mission Control, v2: the three status cards start as an orbital carousel —
- * rotated around Y at different depths as if circling the viewer — and dock
- * flat into the grid as the section scrolls through. Same live data contract
- * as the v1 section (/admin/home statusSection).
+ * Chapter 02 — Mission Control as a HUD console. One wide terminal lies almost
+ * flat like a launch desk and stands upright as it scrolls in (scrubbed
+ * rotationX); the status rows then print in sequence with a blinking cursor.
+ * Same /admin/home statusSection contract as v1.
  */
 const V2MissionControl = ({ data }) => {
     const sectionRef = useRef(null);
@@ -53,105 +35,110 @@ const V2MissionControl = ({ data }) => {
         reducedMotion: prefersReducedMotion,
         extra: ({ gsap, scope, reducedMotion }) => {
             if (reducedMotion) return;
-            const cards = scope.querySelectorAll('.v2-mc-card');
-            const deck = scope.querySelector('.v2-mc-deck');
-            if (!cards.length || !deck) return;
+            const wrap = scope.querySelector('.v2-console-wrap');
+            const console3d = scope.querySelector('.v2-console');
+            const rows = scope.querySelectorAll('.v2-console-row');
+            if (!wrap || !console3d) return;
 
-            // Orbit-to-dock: each card arrives from a slice of a Y-axis orbit.
-            const orbit = [
-                { rotationY: 52, x: -140, z: -260 },
-                { rotationY: 0, x: 0, z: -380 },
-                { rotationY: -52, x: 140, z: -260 },
-            ];
+            // Trigger everything off the untransformed wrapper — using the
+            // rotating console itself would skew ScrollTrigger's measurements.
+            // The desk stands up: from lying back at 38° to facing the camera.
             gsap.fromTo(
-                cards,
+                console3d,
+                { rotationX: 38, z: -220, autoAlpha: 0.3, transformOrigin: '50% 100%', transformPerspective: 1300 },
                 {
-                    rotationY: (i) => orbit[i % orbit.length].rotationY,
-                    x: (i) => orbit[i % orbit.length].x,
-                    z: (i) => orbit[i % orbit.length].z,
-                    autoAlpha: 0.25,
-                    transformPerspective: 1200,
-                },
-                {
-                    rotationY: 0,
-                    x: 0,
+                    rotationX: 0,
                     z: 0,
                     autoAlpha: 1,
                     ease: 'power1.out',
-                    stagger: 0.06,
                     scrollTrigger: {
-                        trigger: deck,
-                        start: 'top 92%',
-                        end: 'center 58%',
-                        scrub: 0.8,
+                        trigger: wrap,
+                        start: 'top 95%',
+                        end: 'top 45%',
+                        scrub: 0.7,
                     },
                 }
             );
+
+            // Rows print once the console is mostly upright.
+            gsap.from(rows, {
+                autoAlpha: 0,
+                x: -18,
+                duration: 0.5,
+                ease: 'power2.out',
+                stagger: 0.16,
+                scrollTrigger: {
+                    trigger: wrap,
+                    start: 'top 72%',
+                    toggleActions: 'play none none reverse',
+                },
+            });
         },
     });
 
     if (data?.enabled === false) return null;
 
-    const headline = data?.headline || 'Mission Control';
-
     return (
-        <div ref={sectionRef} className="relative" style={{ perspective: '1400px' }}>
-            <div
-                data-v2="float"
-                data-v2-tilt
-                className="chapter-panel glass-panel relative mx-auto flex w-full max-w-[95%] flex-col justify-center overflow-hidden p-8 sm:p-12 lg:max-w-[80%] xl:p-16"
-            >
-                <div className="relative mb-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-                    <div data-v2="door-left" className="max-w-2xl">
-                        <p className="eyebrow mb-3 flex items-center gap-2">
-                            <span className="relative flex h-2 w-2">
-                                <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60" style={{ backgroundColor: 'var(--status-success)' }} />
-                                <span className="relative inline-flex h-2 w-2 rounded-full" style={{ backgroundColor: 'var(--status-success)' }} />
-                            </span>
-                            Live Status
-                        </p>
-                        <h2 className="headline-section">{headline}</h2>
-                    </div>
+        <section ref={sectionRef} className="relative overflow-hidden py-20 sm:py-28">
+            <div className="mx-auto w-full max-w-7xl px-6 lg:px-10">
+                <V2ChapterHead
+                    index="02"
+                    eyebrow="Live Status"
+                    title={data?.headline || 'Mission Control.'}
+                    accent="var(--accent-purple)"
+                />
 
-                    <div data-v2="door-right" className="glass-tile self-start px-5 py-3 lg:self-auto">
-                        <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Local time</p>
-                        <p className="text-base font-semibold tabular-nums" style={{ color: 'var(--text-primary)' }} suppressHydrationWarning>
-                            {clock || '--:--:--'}
-                        </p>
-                    </div>
-                </div>
+                <div className="v2-console-wrap" style={{ perspective: '1300px' }}>
+                    <div
+                        className="v2-console overflow-hidden rounded-2xl border font-mono text-sm sm:text-base"
+                        style={{
+                            borderColor: 'var(--hairline)',
+                            backgroundColor: 'color-mix(in srgb, var(--bg-secondary) 88%, transparent)',
+                            boxShadow: '0 40px 90px -50px color-mix(in srgb, var(--accent-purple) 35%, transparent)',
+                        }}
+                    >
+                        <div
+                            className="flex items-center justify-between border-b px-5 py-3.5"
+                            style={{ borderColor: 'var(--hairline)' }}
+                        >
+                            <div className="flex items-center gap-2" aria-hidden="true">
+                                <span className="h-3 w-3 rounded-full" style={{ backgroundColor: 'var(--status-error, #f87171)', opacity: 0.8 }} />
+                                <span className="h-3 w-3 rounded-full" style={{ backgroundColor: 'var(--accent-orange)', opacity: 0.8 }} />
+                                <span className="h-3 w-3 rounded-full" style={{ backgroundColor: 'var(--status-success)', opacity: 0.8 }} />
+                                <span className="ml-3 text-xs" style={{ color: 'var(--text-muted)' }}>aiyu@v2 — status</span>
+                            </div>
+                            <p className="text-xs tabular-nums" style={{ color: 'var(--text-tertiary)' }} suppressHydrationWarning>
+                                <span className="relative mr-2 inline-flex h-1.5 w-1.5 align-middle">
+                                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60" style={{ backgroundColor: 'var(--status-success)' }} />
+                                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full" style={{ backgroundColor: 'var(--status-success)' }} />
+                                </span>
+                                {clock || '--:--:--'} local
+                            </p>
+                        </div>
 
-                <div className="v2-mc-deck relative grid grid-cols-1 gap-5 md:grid-cols-3 lg:gap-6" style={{ perspective: '1200px' }}>
-                    {STATUS_CARDS.map((card) => {
-                        const Icon = card.icon;
-                        const value = data?.[card.key] || card.fallback;
-
-                        return (
-                            <div
-                                key={card.key}
-                                className="v2-mc-card glass-tile p-7 sm:p-8"
-                                style={{ transformStyle: 'preserve-3d' }}
-                            >
-                                <div className="mb-5 flex items-center justify-between">
-                                    <span
-                                        className="inline-flex h-10 w-10 items-center justify-center rounded-full"
-                                        style={{ backgroundColor: `color-mix(in srgb, ${card.accent} 12%, transparent)` }}
-                                    >
-                                        <Icon size={15} style={{ color: card.accent }} />
+                        <div className="px-5 py-6 sm:px-8 sm:py-8">
+                            <p className="v2-console-row mb-5" style={{ color: 'var(--text-muted)' }}>
+                                <span style={{ color: 'var(--status-success)' }}>$</span> status --live
+                            </p>
+                            {STATUS_ROWS.map((row) => (
+                                <div key={row.key} className="v2-console-row mb-4 flex flex-col gap-1 sm:flex-row sm:items-baseline sm:gap-4">
+                                    <span className="w-40 shrink-0 text-xs uppercase tracking-[0.2em] sm:text-sm" style={{ color: row.accent }}>
+                                        {row.flag}
                                     </span>
-                                    <span className="text-xs font-medium uppercase tracking-[0.12em]" style={{ color: 'var(--text-muted)' }}>
-                                        {card.label}
+                                    <span className="text-base font-medium sm:text-xl" style={{ color: 'var(--text-primary)' }}>
+                                        {data?.[row.key] || row.fallback}
                                     </span>
                                 </div>
-                                <p className="text-xl font-semibold leading-tight sm:text-2xl" style={{ color: 'var(--text-primary)' }}>
-                                    {value}
-                                </p>
-                            </div>
-                        );
-                    })}
+                            ))}
+                            <p className="v2-console-row mt-6" style={{ color: 'var(--text-muted)' }}>
+                                <span style={{ color: 'var(--status-success)' }}>$</span>{' '}
+                                <span className="inline-block h-4 w-2.5 translate-y-0.5 animate-pulse" style={{ backgroundColor: 'var(--text-secondary)' }} />
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
+        </section>
     );
 };
 

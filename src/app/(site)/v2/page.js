@@ -84,7 +84,7 @@ export default async function HomeV2() {
 
       <ViewportLazySection
         id="v2-snapshot"
-        className="relative z-20 px-4 pb-10 lg:px-8 lg:pb-12"
+        className="relative z-20"
         placeholderHeight={720}
         rootMargin="420px 0px"
         initialDelayMs={220}
@@ -99,7 +99,7 @@ export default async function HomeV2() {
       {serializedHomeData?.statusSection?.enabled !== false && (
         <ViewportLazySection
           id="v2-status"
-          className="relative z-20 px-4 pb-10 lg:px-8 lg:pb-12"
+          className="relative z-20"
           placeholderHeight={720}
           rootMargin="420px 0px"
         >
