@@ -1,4 +1,4 @@
-import AboutV2 from "../../../components/about/v2/AboutV2";
+import AboutV2 from "../../components/about/v2/AboutV2";
 import { getConfigData, getAboutData } from "@/lib/dataFetchers";
 import { getSiteUrl } from '@/lib/siteUrl';
 

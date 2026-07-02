@@ -1,9 +1,9 @@
-import V2Hero from "../../components/landing/v2/V2Hero";
-import V2Snapshot from "../../components/landing/v2/V2Snapshot";
-import V2MissionControl from "../../components/landing/v2/V2MissionControl";
-import V2LazySections from "../../components/landing/v2/V2LazySections";
-import V2ScrollProgress from "../../components/landing/v2/V2ScrollProgress";
-import ViewportLazySection from "../../components/shared/ViewportLazySection";
+import V2Hero from "../components/landing/v2/V2Hero";
+import V2Snapshot from "../components/landing/v2/V2Snapshot";
+import V2MissionControl from "../components/landing/v2/V2MissionControl";
+import V2LazySections from "../components/landing/v2/V2LazySections";
+import V2ScrollProgress from "../components/landing/v2/V2ScrollProgress";
+import ViewportLazySection from "../components/shared/ViewportLazySection";
 import { getHomePageData, getConfigData } from "@/lib/dataFetchers";
 import { generateWebsiteSchema, generatePersonSchema, generateOrganizationSchema } from "@/app/schema";
 import { getSiteUrl } from '@/lib/siteUrl';
