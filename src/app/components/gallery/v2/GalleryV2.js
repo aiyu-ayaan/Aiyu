@@ -7,6 +7,10 @@ import { trackEntityView } from '@/lib/track';
 import useDevicePerformance from '../../../hooks/useDevicePerformance';
 import { useV2Fx } from '../../landing/v2/gsap3d';
 
+import Lightbox from 'yet-another-react-lightbox';
+import 'yet-another-react-lightbox/styles.css';
+import Zoom from 'yet-another-react-lightbox/plugins/zoom';
+
 const formatDate = (dateValue) => {
     if (!dateValue) return '';
     const parsedDate = new Date(dateValue);
@@ -25,63 +29,6 @@ const GalleryV2 = ({ initialImages, initialConfig }) => {
     const images = useMemo(() => (Array.isArray(initialImages) ? initialImages : []), [initialImages]);
     const [brokenImageIds, setBrokenImageIds] = useState(() => new Set());
     const [selectedIndex, setSelectedIndex] = useState(-1);
-    const [viewerZoom, setViewerZoom] = useState(1);
-    const [viewerOffset, setViewerOffset] = useState({ x: 0, y: 0 });
-    const [isDraggingImage, setIsDraggingImage] = useState(false);
-    const dragStartRef = useRef(null);
-
-    const canPanViewer = viewerZoom > 1;
-
-    useEffect(() => {
-        setViewerZoom(1);
-        setViewerOffset({ x: 0, y: 0 });
-        setIsDraggingImage(false);
-        dragStartRef.current = null;
-    }, [selectedIndex]);
-
-    const updateViewerZoom = useCallback((nextZoom) => {
-        const normalizedZoom = Math.min(4, Math.max(1, nextZoom));
-        setViewerZoom(normalizedZoom);
-        if (normalizedZoom === 1) {
-            setViewerOffset({ x: 0, y: 0 });
-        }
-    }, []);
-
-    const handleViewerWheel = useCallback((event) => {
-        if (selectedIndex < 0) return;
-        event.preventDefault();
-        const direction = event.deltaY > 0 ? -1 : 1;
-        updateViewerZoom(viewerZoom + direction * 0.15);
-    }, [selectedIndex, updateViewerZoom, viewerZoom]);
-
-    const handleViewerPointerDown = useCallback((event) => {
-        if (!canPanViewer) return;
-        event.preventDefault();
-        event.currentTarget.setPointerCapture?.(event.pointerId);
-        setIsDraggingImage(true);
-        dragStartRef.current = {
-            pointerX: event.clientX,
-            pointerY: event.clientY,
-            offsetX: viewerOffset.x,
-            offsetY: viewerOffset.y,
-        };
-    }, [canPanViewer, viewerOffset.x, viewerOffset.y]);
-
-    const handleViewerPointerMove = useCallback((event) => {
-        if (!isDraggingImage || !dragStartRef.current) return;
-        const deltaX = event.clientX - dragStartRef.current.pointerX;
-        const deltaY = event.clientY - dragStartRef.current.pointerY;
-        setViewerOffset({
-            x: dragStartRef.current.offsetX + deltaX,
-            y: dragStartRef.current.offsetY + deltaY,
-        });
-    }, [isDraggingImage]);
-
-    const stopViewerDrag = useCallback((event) => {
-        event?.currentTarget?.releasePointerCapture?.(event.pointerId);
-        setIsDraggingImage(false);
-        dragStartRef.current = null;
-    }, []);
 
     const sectionRef = useRef(null);
     const { prefersReducedMotion } = useDevicePerformance();
@@ -117,38 +64,24 @@ const GalleryV2 = ({ initialImages, initialConfig }) => {
         }
     }, [visibleImages]);
 
-    const navigate = useCallback((direction) => {
-        setSelectedIndex((current) => {
-            if (current < 0 || visibleImages.length === 0) return current;
-            return (current + direction + visibleImages.length) % visibleImages.length;
-        });
-    }, [visibleImages.length]);
-
     useEffect(() => {
-        if (selectedIndex < 0) return undefined;
-
-        const handleKeydown = (event) => {
-            if (event.key === 'Escape') setSelectedIndex(-1);
-            else if (event.key === 'ArrowLeft') navigate(-1);
-            else if (event.key === 'ArrowRight') navigate(1);
-            else if (event.key === '+' || event.key === '=') {
-                updateViewerZoom(viewerZoom + 0.25);
-            } else if (event.key === '-' || event.key === '_') {
-                updateViewerZoom(viewerZoom - 0.25);
-            } else if (event.key === '0') {
-                updateViewerZoom(1);
-            }
-        };
-
-        document.body.style.overflow = 'hidden';
-        document.body.classList.add('lightbox-open');
-        window.addEventListener('keydown', handleKeydown);
-        return () => {
-            document.body.style.overflow = '';
+        if (selectedIndex >= 0) {
+            document.body.classList.add('lightbox-open');
+        } else {
             document.body.classList.remove('lightbox-open');
-            window.removeEventListener('keydown', handleKeydown);
+        }
+        return () => {
+            document.body.classList.remove('lightbox-open');
         };
-    }, [selectedIndex, navigate, updateViewerZoom, viewerZoom]);
+    }, [selectedIndex]);
+
+    const slides = useMemo(() => {
+        return visibleImages.map((image) => ({
+            src: image.src || image.thumbnail,
+            title: image.description || 'Untitled',
+            description: formatDate(image.createdAt),
+        }));
+    }, [visibleImages]);
 
     return (
         <div ref={sectionRef} className="relative overflow-hidden">
@@ -238,88 +171,50 @@ const GalleryV2 = ({ initialImages, initialConfig }) => {
                 )}
             </div>
 
-            {/* Bare-bones lightbox: the image, a caption, arrows. Nothing else. */}
-            {selectedImage && (
-                <div
-                    role="dialog"
-                    aria-modal="true"
-                    aria-label={selectedImage?.description || 'Photograph viewer'}
-                    className="fixed inset-0 z-[110] flex flex-col bg-black"
-                    onClick={(event) => {
-                        if (event.target === event.currentTarget) setSelectedIndex(-1);
+            {selectedIndex >= 0 && (
+                <Lightbox
+                    open={selectedIndex >= 0}
+                    index={selectedIndex}
+                    close={() => setSelectedIndex(-1)}
+                    slides={slides}
+                    plugins={[Zoom]}
+                    on={{
+                        view: ({ index }) => setSelectedIndex(index),
                     }}
-                >
-                    <div className="flex items-center justify-between px-4 py-3 font-mono text-xs text-white/70 sm:px-6">
-                        <button
-                            type="button"
-                            onClick={() => setSelectedIndex(-1)}
-                            className="inline-flex cursor-pointer items-center gap-2 py-2 pr-4 transition-colors hover:text-white"
-                            aria-label="Close viewer"
-                        >
-                            <FaArrowLeft aria-hidden="true" /> esc
-                        </button>
-                        <span suppressHydrationWarning>
-                            {String(selectedIndex + 1).padStart(3, '0')} / {String(visibleImages.length).padStart(3, '0')}
-                        </span>
-                    </div>
-
-                    <div
-                        className="relative min-h-0 flex-1 px-2 sm:px-16 overflow-hidden flex items-center justify-center"
-                        onClick={(event) => {
-                            if (event.target === event.currentTarget) setSelectedIndex(-1);
-                        }}
-                        onWheel={handleViewerWheel}
-                        onDoubleClick={() => updateViewerZoom(viewerZoom > 1 ? 1 : 2)}
-                        onPointerDown={handleViewerPointerDown}
-                        onPointerMove={handleViewerPointerMove}
-                        onPointerUp={stopViewerDrag}
-                        onPointerCancel={stopViewerDrag}
-                        onPointerLeave={stopViewerDrag}
-                        style={{
-                            cursor: canPanViewer ? (isDraggingImage ? 'grabbing' : 'grab') : 'zoom-in',
-                            touchAction: canPanViewer ? 'none' : 'pan-y',
-                        }}
-                    >
-                        {/* Plain <img> so the browser handles arbitrary sizes with object-contain. */}
-                        <img
-                            src={selectedImage.src || selectedImage.thumbnail}
-                            alt={selectedImage.description || 'Gallery photograph'}
-                            className="pointer-events-none absolute inset-0 h-full w-full object-contain origin-center transition-transform duration-200"
-                            draggable="false"
-                            style={{
-                                transform: `translate3d(${viewerOffset.x}px, ${viewerOffset.y}px, 0) scale(${viewerZoom})`,
-                            }}
-                        />
-
-                        {visibleImages.length > 1 && (
-                            <>
+                    render={{
+                        buttonClose: () => null,
+                        buttonZoomIn: () => null,
+                        buttonZoomOut: () => null,
+                        iconPrev: () => <FaChevronLeft />,
+                        iconNext: () => <FaChevronRight />,
+                        slideHeader: ({ slideIndex }) => (
+                            <div className="absolute top-0 left-0 right-0 z-[120] flex items-center justify-between px-4 py-3 font-mono text-xs text-white/70 sm:px-6">
                                 <button
                                     type="button"
-                                    onClick={() => navigate(-1)}
-                                    className="absolute left-2 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-black/50 text-white/80 transition-colors hover:text-white sm:left-4"
-                                    aria-label="Previous photograph"
+                                    onClick={() => setSelectedIndex(-1)}
+                                    className="inline-flex cursor-pointer items-center gap-2 py-2 pr-4 transition-colors hover:text-white"
+                                    aria-label="Close viewer"
                                 >
-                                    <FaChevronLeft />
+                                    <FaArrowLeft aria-hidden="true" /> esc
                                 </button>
-                                <button
-                                    type="button"
-                                    onClick={() => navigate(1)}
-                                    className="absolute right-2 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-black/50 text-white/80 transition-colors hover:text-white sm:right-4"
-                                    aria-label="Next photograph"
-                                >
-                                    <FaChevronRight />
-                                </button>
-                            </>
-                        )}
-                    </div>
-
-                    <div className="flex flex-wrap items-baseline justify-between gap-2 px-4 py-4 font-mono text-xs sm:px-6">
-                        <p className="min-w-0 flex-1 truncate text-white/85">{selectedImage?.description || 'Untitled'}</p>
-                        {formatDate(selectedImage?.createdAt) && (
-                            <p className="shrink-0 uppercase tracking-wider text-white/50">{formatDate(selectedImage?.createdAt)}</p>
-                        )}
-                    </div>
-                </div>
+                                <span suppressHydrationWarning>
+                                    {String(slideIndex + 1).padStart(3, '0')} / {String(slides.length).padStart(3, '0')}
+                                </span>
+                            </div>
+                        ),
+                        slideFooter: ({ slide }) => (
+                            <div className="absolute bottom-0 left-0 right-0 z-[120] flex flex-wrap items-baseline justify-between gap-2 px-4 py-4 font-mono text-xs text-white/85 sm:px-6 bg-gradient-to-t from-black/80 to-transparent">
+                                <p className="min-w-0 flex-1 truncate">{slide.title}</p>
+                                {slide.description && (
+                                    <p className="shrink-0 uppercase tracking-wider text-white/50">{slide.description}</p>
+                                )}
+                            </div>
+                        ),
+                    }}
+                    styles={{
+                        container: { backgroundColor: '#000000' },
+                    }}
+                />
             )}
         </div>
     );
