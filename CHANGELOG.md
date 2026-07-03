@@ -1,5 +1,46 @@
 # Changelog
 
+## [4.6.0](https://github.com/aiyu-ayaan/Aiyu/compare/v4.5.5...v4.6.0) (2026-07-03)
+
+### Features
+
+* : V2 pages are made succesfully
+* Add getPublicOrigin helper to resolve the client-facing origin
+* Browse the non-default version under a visible /v1 (or /v2) prefix
+* Enhance mobile menu functionality and add tests for navigation behavior
+* Add '/github' route to public pages and adjust cache TTL for development feat(V2Header): include 'github' link in V2 header navigation feat(VersionForm): clear cookie on version change to reflect new default immediately
+* Convert the GitHub page to the editorial-depth style
+* Add scroll-to-zoom and click-drag panning in V2 gallery details
+* Add direct click-and-drag panning and scroll zoom in classic gallery details
+* Redesign DeploymentDialog theme to follow V2 editorial style
+* Redesign ProjectDialog theme to follow V2 editorial style
+* Serve v2 at the classic URLs when it is default
+* Add /v2/contact-us in the editorial voice
+* Default site version switch at /admin/version
+* Mount the interactive terminal in the v2 header
+* Add /v2/blogs/[id] detail page and cover images
+* Link the new archive pages across the v2 shell
+* Add /v2/blogs as a zero-JS server-rendered index
+* Add /v2/apps hosted-services process table
+* Add /v2/gallery images-only photo wall
+* Add /v2/projects year-grouped archive
+
+### Bug Fixes
+
+* Redirect to the real host, not 0.0.0.0, after GitHub login
+* Make /v1 and /v2 explicit version switches so a stale cookie can never lock the site
+* Update GSAP animations to avoid "animating from 0 to 0" issue
+* Stop shards/meta/cue vanishing after a scroll round-trip
+
+### Other Changes
+
+* Use shared getPublicOrigin; fix admin gate 0.0.0.0 redirects
+* Sync folder renames from (site) to v1
+* Merge branch 'master' of https://github.com/aiyu-ayaan/Aiyu
+* Plain theme background and no terminal on reading pages
+* Cover blog detail, version switch, terminal header
+* Drop the entrance animation on photos
+
 ## [4.5.5](https://github.com/aiyu-ayaan/Aiyu/compare/v4.5.4...v4.5.5) (2026-07-02)
 
 ### Features
