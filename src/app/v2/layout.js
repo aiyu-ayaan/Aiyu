@@ -1,5 +1,6 @@
 import V2Header from "../components/landing/v2/V2Header";
 import V2Footer from "../components/landing/v2/V2Footer";
+import V2Backdrop from "../components/landing/v2/V2Backdrop";
 import AnalyticsBeacon from "../components/shared/AnalyticsBeacon";
 import { getLayoutData } from "@/lib/dataFetchers";
 import { promises as fs } from 'fs';
@@ -42,21 +43,7 @@ export default async function V2Layout({ children }) {
 
     return (
         <div className="relative" data-v2-shell="true">
-            <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
-                <div
-                    className="absolute inset-0"
-                    style={{
-                        background:
-                            'radial-gradient(circle at 50% -10%, color-mix(in srgb, var(--text-bright) 8%, transparent), transparent 34%), linear-gradient(180deg, color-mix(in srgb, var(--bg-tertiary) 78%, var(--bg-primary)), var(--bg-primary) 42%, color-mix(in srgb, var(--bg-secondary) 86%, var(--bg-primary)))',
-                    }}
-                />
-                <div
-                    className="absolute inset-x-0 top-0 h-px"
-                    style={{
-                        background: 'linear-gradient(90deg, transparent, color-mix(in srgb, var(--text-bright) 18%, transparent), transparent)',
-                    }}
-                />
-            </div>
+            <V2Backdrop />
 
             <div className="relative z-10">
                 <V2Header logoText={logoText} config={serializedConfigData} socialData={serializedSocialData} />

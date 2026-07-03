@@ -25,7 +25,9 @@ const NAV_LINKS = [
 const V2Header = ({ logoText = '< aiyu />', config, socialData }) => {
     const pathname = usePathname();
     // Reading surfaces stay quiet — no terminal row on the blog index/details.
-    const showTerminal = !pathname.startsWith('/v2/blogs');
+    // Blogs answer at /v2/blogs normally and at /blogs when v2 is the admin
+    // default (proxy rewrite keeps the classic URL), so match both.
+    const showTerminal = !pathname.startsWith('/v2/blogs') && !pathname.startsWith('/blogs');
 
     return (
         <header
