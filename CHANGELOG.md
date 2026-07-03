@@ -1,5 +1,27 @@
 # Changelog
 
+## [4.6.1](https://github.com/aiyu-ayaan/Aiyu/compare/v4.6.0...v4.6.1) (2026-07-03)
+
+### Features
+
+* Migrate custom lightbox to yet-another-react-lightbox
+* Migrate custom lightbox to yet-another-react-lightbox
+
+### Bug Fixes
+
+* : Next.js services error found in prod build
+* Hide default zoom buttons and fix slide counter index NaN
+* Remove V2 suffix from page metadata titles
+* Lock body scroll, hide scroll-to-top, and improve accessibility in lightbox
+* Toggle body class to hide scroll-to-top button in lightbox
+* Adjust stacking context and add scroll-to-top hiding rule
+* Hide floating scroll-to-top button when v2 footer is reached
+* Fix production hostname redirect and simplify version routing
+
+### Other Changes
+
+* Merge branch 'master' of https://github.com/aiyu-ayaan/Aiyu
+
 ## [4.6.0](https://github.com/aiyu-ayaan/Aiyu/compare/v4.5.5...v4.6.0) (2026-07-03)
 
 ### Features
