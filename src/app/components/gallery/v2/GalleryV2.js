@@ -178,16 +178,15 @@ const GalleryV2 = ({ initialImages, initialConfig }) => {
                     close={() => setSelectedIndex(-1)}
                     slides={slides}
                     plugins={[Zoom]}
+                    toolbar={{ buttons: [] }}
                     on={{
                         view: ({ index }) => setSelectedIndex(index),
                     }}
                     render={{
-                        buttonClose: () => null,
-                        buttonZoomIn: () => null,
-                        buttonZoomOut: () => null,
+                        buttonZoom: () => null,
                         iconPrev: () => <FaChevronLeft />,
                         iconNext: () => <FaChevronRight />,
-                        slideHeader: ({ slideIndex }) => (
+                        slideHeader: () => (
                             <div className="absolute top-0 left-0 right-0 z-[120] flex items-center justify-between px-4 py-3 font-mono text-xs text-white/70 sm:px-6">
                                 <button
                                     type="button"
@@ -198,7 +197,7 @@ const GalleryV2 = ({ initialImages, initialConfig }) => {
                                     <FaArrowLeft aria-hidden="true" /> esc
                                 </button>
                                 <span suppressHydrationWarning>
-                                    {String(slideIndex + 1).padStart(3, '0')} / {String(slides.length).padStart(3, '0')}
+                                    {String(selectedIndex + 1).padStart(3, '0')} / {String(slides.length).padStart(3, '0')}
                                 </span>
                             </div>
                         ),

@@ -595,16 +595,15 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
           close={() => setSelectedImage(null)}
           slides={slides}
           plugins={[Zoom]}
+          toolbar={{ buttons: [] }}
           on={{
             view: ({ index }) => setSelectedImage(filteredImages[index]),
           }}
           render={{
-            buttonClose: () => null,
-            buttonZoomIn: () => null,
-            buttonZoomOut: () => null,
+            buttonZoom: () => null,
             iconPrev: () => <ChevronLeft size={24} />,
             iconNext: () => <ChevronRight size={24} />,
-            slideHeader: ({ slideIndex }) => (
+            slideHeader: () => (
               <div className="absolute top-0 left-0 right-0 z-[120] flex h-16 items-center justify-between gap-3 border-b border-white/10 bg-black/95 px-3 sm:px-5">
                 <button
                   type="button"
@@ -619,7 +618,7 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
                 <div className="min-w-0 flex-1 px-2">
                   <p className="truncate text-sm font-semibold text-white">{selectedImage?.description || 'Untitled visual'}</p>
                   <p className="truncate text-xs text-white/55">
-                    {slideIndex >= 0 ? `${slideIndex + 1} of ${filteredImages.length}` : 'Gallery photo'}
+                    {selectedImageIndex >= 0 ? `${selectedImageIndex + 1} of ${filteredImages.length}` : 'Gallery photo'}
                   </p>
                 </div>
 
