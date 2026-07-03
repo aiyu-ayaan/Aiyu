@@ -265,7 +265,7 @@ const DeploymentsV2 = ({ data }) => {
                 )}
             </div>
 
-            <DeploymentDialog deployment={selectedDeployment} onClose={() => setSelectedDeployment(null)} />
+            <DeploymentDialog deployment={selectedDeployment} onClose={() => setSelectedDeployment(null)} isV2={true} />
         </div>
     );
 };
