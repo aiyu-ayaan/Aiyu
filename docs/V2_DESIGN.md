@@ -123,6 +123,9 @@ src/app/v2/
                               the v2 chrome (backHref="/v2/blogs")
   contact-us/page.js        — /v2/contact-us (shared ContactForm, editorial
                               shell in src/app/components/contact/v2/)
+  github/page.js            — /v2/github (open-source dossier: repo ledger,
+                              flat contribution heatmap, hairline meters —
+                              components in src/app/components/github/v2/)
 
 src/app/components/landing/v2/
   gsap3d.js                 — the 3D scroll engine (see above)
