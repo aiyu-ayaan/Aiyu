@@ -22,6 +22,10 @@ import RouteBetaBadge from '../../components/shared/RouteBetaBadge';
 import useDevicePerformance from '../../hooks/useDevicePerformance';
 import { refreshScrollTriggersSoon } from '../../components/shared/gsapScroll';
 
+import Lightbox from 'yet-another-react-lightbox';
+import 'yet-another-react-lightbox/styles.css';
+import Zoom from 'yet-another-react-lightbox/plugins/zoom';
+
 const getImageInitials = (description) => {
   const words = String(description || '')
     .trim()
@@ -83,15 +87,7 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
   const [images, setImages] = useState(Array.isArray(initialImages) ? initialImages : []);
   const [loading, setLoading] = useState(!hasInitialData);
   const [selectedImage, setSelectedImage] = useState(null);
-  const [modalImageError, setModalImageError] = useState(false);
-  const [highResLoaded, setHighResLoaded] = useState(false);
-  const [viewerZoom, setViewerZoom] = useState(1);
-  const [viewerOffset, setViewerOffset] = useState({ x: 0, y: 0 });
   const [showViewerInfo, setShowViewerInfo] = useState(false);
-  const [isSpacePanning, setIsSpacePanning] = useState(false);
-  const [isDraggingImage, setIsDraggingImage] = useState(false);
-  const dragStartRef = useRef(null);
-  const canPanViewer = viewerZoom > 1;
   const [brokenImageIds, setBrokenImageIds] = useState(new Set());
   const [viewportWidth, setViewportWidth] = useState(1280);
   const [headerInfo, setHeaderInfo] = useState(() => ({
@@ -106,9 +102,7 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
 
 
   useEffect(() => {
-    setHighResLoaded(false);
     if (selectedImage) {
-      document.body.style.overflow = 'hidden';
       document.body.classList.add('lightbox-open');
       trackEntityView({
         entityType: 'gallery',
@@ -119,7 +113,6 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
       });
     }
     return () => {
-      document.body.style.overflow = '';
       document.body.classList.remove('lightbox-open');
     };
   }, [selectedImage]);
@@ -218,102 +211,13 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
     return filteredImages.findIndex((image) => (image?._id || image?.src) === selectedKey);
   }, [filteredImages, selectedImage]);
 
-  const navigateViewer = useCallback((direction) => {
-    if (!selectedImage || filteredImages.length <= 1) return;
-    const currentIndex = selectedImageIndex >= 0 ? selectedImageIndex : 0;
-    const nextIndex = (currentIndex + direction + filteredImages.length) % filteredImages.length;
-    setModalImageError(false);
-    setViewerZoom(1);
-    setViewerOffset({ x: 0, y: 0 });
-    setSelectedImage(filteredImages[nextIndex]);
-  }, [filteredImages, selectedImage, selectedImageIndex]);
-
-  const updateViewerZoom = useCallback((nextZoom) => {
-    const normalizedZoom = Math.min(4, Math.max(1, nextZoom));
-    setViewerZoom(normalizedZoom);
-    if (normalizedZoom === 1) {
-      setViewerOffset({ x: 0, y: 0 });
-    }
-  }, []);
-
-  const handleViewerWheel = useCallback((event) => {
-    if (!selectedImage) return;
-    event.preventDefault();
-    const direction = event.deltaY > 0 ? -1 : 1;
-    updateViewerZoom(viewerZoom + direction * 0.15);
-  }, [selectedImage, updateViewerZoom, viewerZoom]);
-
-  const handleViewerPointerDown = useCallback((event) => {
-    if (!canPanViewer) return;
-    event.preventDefault();
-    event.currentTarget.setPointerCapture?.(event.pointerId);
-    setIsDraggingImage(true);
-    dragStartRef.current = {
-      pointerX: event.clientX,
-      pointerY: event.clientY,
-      offsetX: viewerOffset.x,
-      offsetY: viewerOffset.y,
-    };
-  }, [canPanViewer, viewerOffset.x, viewerOffset.y]);
-
-  const handleViewerPointerMove = useCallback((event) => {
-    if (!isDraggingImage || !dragStartRef.current) return;
-    const deltaX = event.clientX - dragStartRef.current.pointerX;
-    const deltaY = event.clientY - dragStartRef.current.pointerY;
-    setViewerOffset({
-      x: dragStartRef.current.offsetX + deltaX,
-      y: dragStartRef.current.offsetY + deltaY,
-    });
-  }, [isDraggingImage]);
-
-  const stopViewerDrag = useCallback((event) => {
-    event?.currentTarget?.releasePointerCapture?.(event.pointerId);
-    setIsDraggingImage(false);
-    dragStartRef.current = null;
-  }, []);
-
-  useEffect(() => {
-    const handleViewerKeydown = (event) => {
-      if (!selectedImage) return;
-
-      if (event.key === 'Escape') {
-        setSelectedImage(null);
-      } else if (event.code === 'Space' && !event.repeat) {
-        event.preventDefault();
-        event.stopPropagation();
-        if (canPanViewer) {
-          setIsSpacePanning(true);
-        }
-      } else if (event.key === 'ArrowLeft') {
-        navigateViewer(-1);
-      } else if (event.key === 'ArrowRight') {
-        navigateViewer(1);
-      } else if (event.key === '+' || event.key === '=') {
-        updateViewerZoom(viewerZoom + 0.25);
-      } else if (event.key === '-' || event.key === '_') {
-        updateViewerZoom(viewerZoom - 0.25);
-      } else if (event.key === '0') {
-        updateViewerZoom(1);
-      }
-    };
-
-    const handleViewerKeyup = (event) => {
-      if (event.code === 'Space') {
-        event.preventDefault();
-        event.stopPropagation();
-        setIsSpacePanning(false);
-        setIsDraggingImage(false);
-        dragStartRef.current = null;
-      }
-    };
-
-    window.addEventListener('keydown', handleViewerKeydown, true);
-    window.addEventListener('keyup', handleViewerKeyup, true);
-    return () => {
-      window.removeEventListener('keydown', handleViewerKeydown, true);
-      window.removeEventListener('keyup', handleViewerKeyup, true);
-    };
-  }, [canPanViewer, navigateViewer, selectedImage, updateViewerZoom, viewerZoom]);
+  const slides = useMemo(() => {
+    return filteredImages.map((image) => ({
+      src: image.src,
+      title: image.description || 'Untitled visual',
+      description: formatDate(image.createdAt),
+    }));
+  }, [filteredImages]);
 
   const columnCount = useMemo(
     () => getColumnCount(viewportWidth, filteredImages.length),
@@ -394,53 +298,8 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
     }
   }, [getFileExtension]);
 
-  const handleBackgroundClick = useCallback((event) => {
-    if (viewerZoom > 1) return;
-
-    if (event.target === event.currentTarget) {
-      setSelectedImage(null);
-      return;
-    }
-
-    if (event.target.tagName === 'IMG' && selectedImage) {
-      const rect = event.target.getBoundingClientRect();
-      const clickX = event.clientX - rect.left;
-      const clickY = event.clientY - rect.top;
-
-      const imgWidth = event.target.naturalWidth || Number(selectedImage.width) || 4;
-      const imgHeight = event.target.naturalHeight || Number(selectedImage.height) || 3;
-      const imgAspect = imgWidth / imgHeight;
-      const containerAspect = rect.width / rect.height;
-
-      let actualWidth, actualHeight;
-      if (containerAspect > imgAspect) {
-        // Pillarbox
-        actualHeight = rect.height;
-        actualWidth = rect.height * imgAspect;
-      } else {
-        // Letterbox
-        actualWidth = rect.width;
-        actualHeight = rect.width / imgAspect;
-      }
-
-      const activeLeft = (rect.width - actualWidth) / 2;
-      const activeRight = activeLeft + actualWidth;
-      const activeTop = (rect.height - actualHeight) / 2;
-      const activeBottom = activeTop + actualHeight;
-
-      if (clickX < activeLeft || clickX > activeRight || clickY < activeTop || clickY > activeBottom) {
-        setSelectedImage(null);
-      }
-    }
-  }, [selectedImage, viewerZoom]);
-
   const openLightbox = (image) => {
-    setModalImageError(false);
-    setViewerZoom(1);
-    setViewerOffset({ x: 0, y: 0 });
     setShowViewerInfo(false);
-    setIsSpacePanning(false);
-    setIsDraggingImage(false);
     setSelectedImage(image);
   };
 
@@ -729,201 +588,66 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
         </section>
       </div>
 
-      <AnimatePresence>
-        {selectedImage && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            role="dialog"
-            aria-modal="true"
-            aria-label={selectedImage?.description || 'Photograph viewer'}
-            className="fixed inset-0 z-[110] flex flex-col bg-black text-white"
-          >
-            <div className="relative z-20 flex h-16 shrink-0 items-center justify-between gap-3 border-b border-white/10 bg-black/95 px-3 sm:px-5">
-              <button
-                type="button"
-                onClick={() => setSelectedImage(null)}
-                className="flex h-10 w-10 items-center justify-center rounded-full text-white transition-colors hover:bg-white/10"
-                aria-label="Back to gallery"
-                title="Back to gallery"
-              >
-                <ArrowLeft size={24} />
-              </button>
+      {selectedImage && selectedImageIndex >= 0 && (
+        <Lightbox
+          open={!!selectedImage}
+          index={selectedImageIndex}
+          close={() => setSelectedImage(null)}
+          slides={slides}
+          plugins={[Zoom]}
+          on={{
+            view: ({ index }) => setSelectedImage(filteredImages[index]),
+          }}
+          render={{
+            buttonClose: () => null,
+            buttonZoomIn: () => null,
+            buttonZoomOut: () => null,
+            iconPrev: () => <ChevronLeft size={24} />,
+            iconNext: () => <ChevronRight size={24} />,
+            slideHeader: ({ slideIndex }) => (
+              <div className="absolute top-0 left-0 right-0 z-[120] flex h-16 items-center justify-between gap-3 border-b border-white/10 bg-black/95 px-3 sm:px-5">
+                <button
+                  type="button"
+                  onClick={() => setSelectedImage(null)}
+                  className="flex h-10 w-10 items-center justify-center rounded-full text-white transition-colors hover:bg-white/10"
+                  aria-label="Back to gallery"
+                  title="Back to gallery"
+                >
+                  <ArrowLeft size={24} />
+                </button>
 
-              <div className="min-w-0 flex-1 px-2">
-                <p className="truncate text-sm font-semibold">{selectedImage?.description || 'Untitled visual'}</p>
-                <p className="truncate text-xs text-white/55">
-                  {selectedImageIndex >= 0 ? `${selectedImageIndex + 1} of ${filteredImages.length}` : 'Gallery photo'}
-                </p>
-              </div>
+                <div className="min-w-0 flex-1 px-2">
+                  <p className="truncate text-sm font-semibold text-white">{selectedImage?.description || 'Untitled visual'}</p>
+                  <p className="truncate text-xs text-white/55">
+                    {slideIndex >= 0 ? `${slideIndex + 1} of ${filteredImages.length}` : 'Gallery photo'}
+                  </p>
+                </div>
 
-              <div className="flex items-center gap-1 sm:gap-2">
-                <button
-                  type="button"
-                  onClick={() => updateViewerZoom(viewerZoom - 0.25)}
-                  disabled={viewerZoom <= 1}
-                  className="hidden h-10 w-10 items-center justify-center rounded-full text-white transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:text-white/30 sm:flex"
-                  aria-label="Zoom out"
-                  title="Zoom out"
-                >
-                  <Minus size={20} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => updateViewerZoom(viewerZoom + 0.25)}
-                  disabled={viewerZoom >= 4}
-                  className="hidden h-10 w-10 items-center justify-center rounded-full text-white transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:text-white/30 sm:flex"
-                  aria-label="Zoom in"
-                  title="Zoom in"
-                >
-                  <Plus size={20} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => updateViewerZoom(1)}
-                  className="hidden h-10 w-10 items-center justify-center rounded-full text-white transition-colors hover:bg-white/10 sm:flex"
-                  aria-label="Reset zoom"
-                  title={`Reset zoom (${Math.round(viewerZoom * 100)}%)`}
-                >
-                  <RotateCcw size={19} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowViewerInfo((prev) => !prev)}
-                  className={`flex h-10 w-10 items-center justify-center rounded-full text-white transition-colors hover:bg-white/10 ${showViewerInfo ? 'bg-white/10' : ''}`}
-                  aria-label="Toggle photo info"
-                  title="Info"
-                >
-                  <Info size={20} />
-                </button>
-                {selectedImage?.src && !showViewerInfo && (
+                <div className="flex items-center gap-1 sm:gap-2">
                   <button
                     type="button"
-                    onClick={(event) => handleDownload(event, selectedImage)}
-                    className="flex h-10 w-10 items-center justify-center rounded-full text-white transition-colors hover:bg-white/10"
-                    aria-label="Download full size"
-                    title="Download full size"
+                    onClick={() => setShowViewerInfo((prev) => !prev)}
+                    className={`flex h-10 w-10 items-center justify-center rounded-full text-white transition-colors hover:bg-white/10 ${showViewerInfo ? 'bg-white/10' : ''}`}
+                    aria-label="Toggle photo info"
+                    title="Info"
                   >
-                    <Download size={20} />
+                    <Info size={20} />
                   </button>
-                )}
-              </div>
-            </div>
-
-            <div className="relative flex min-h-0 flex-1">
-              <div className="relative min-w-0 flex-1 overflow-hidden bg-black">
-                {filteredImages.length > 1 && (
-                  <>
+                  {selectedImage?.src && !showViewerInfo && (
                     <button
                       type="button"
-                      onClick={() => navigateViewer(-1)}
-                      className="absolute left-3 top-1/2 z-20 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-white shadow-lg transition-colors hover:bg-white/15 md:flex"
-                      aria-label="Previous image"
-                      title="Previous image"
+                      onClick={(event) => handleDownload(event, selectedImage)}
+                      className="flex h-10 w-10 items-center justify-center rounded-full text-white transition-colors hover:bg-white/10"
+                      aria-label="Download full size"
+                      title="Download full size"
                     >
-                      <ChevronLeft size={30} />
+                      <Download size={20} />
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => navigateViewer(1)}
-                      className="absolute right-3 top-1/2 z-20 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-white shadow-lg transition-colors hover:bg-white/15 md:flex"
-                      aria-label="Next image"
-                      title="Next image"
-                    >
-                      <ChevronRight size={30} />
-                    </button>
-                  </>
-                )}
-
-                <div
-                  className="flex h-full w-full items-center justify-center overflow-hidden px-0 py-4 sm:px-8"
-                  onClick={handleBackgroundClick}
-                  onWheel={handleViewerWheel}
-                  onDoubleClick={() => updateViewerZoom(viewerZoom > 1 ? 1 : 2)}
-                  onPointerDown={handleViewerPointerDown}
-                  onPointerMove={handleViewerPointerMove}
-                  onPointerUp={stopViewerDrag}
-                  onPointerCancel={stopViewerDrag}
-                  onPointerLeave={stopViewerDrag}
-                  style={{
-                    cursor: canPanViewer ? (isDraggingImage ? 'grabbing' : 'grab') : 'zoom-in',
-                    touchAction: canPanViewer ? 'none' : 'pan-y',
-                  }}
-                >
-                  <motion.div
-                    key={selectedImage?._id || selectedImage?.src}
-                    initial={{ opacity: 0.2 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.2 }}
-                    className="pointer-events-auto relative h-full w-full origin-center transition-transform duration-200"
-                    style={{ transform: `translate3d(${viewerOffset.x}px, ${viewerOffset.y}px, 0) scale(${viewerZoom})` }}
-                  >
-                    {selectedImage?.src && !modalImageError ? (
-                      <>
-                        {/* Instant Low-Res Thumbnail (cached by browser) */}
-                        {(selectedImage.thumbnail || selectedImage.src) && (
-                          <img
-                            src={selectedImage.thumbnail || selectedImage.src}
-                            alt=""
-                            className="absolute inset-0"
-                            draggable="false"
-                            style={{
-                              width: '100%',
-                              height: '100%',
-                              objectFit: 'contain',
-                              filter: 'blur(8px)',
-                              opacity: highResLoaded ? 0 : 0.7,
-                              transition: 'opacity 0.4s ease-in-out',
-                            }}
-                          />
-                        )}
-
-                        {/* High-Resolution Main Image */}
-                        <img
-                          src={selectedImage.src}
-                          alt={selectedImage.description || 'Gallery view'}
-                          className="absolute inset-0"
-                          draggable="false"
-                          style={{
-                            width: '100%',
-                            height: '100%',
-                            objectFit: 'contain',
-                            opacity: highResLoaded ? 1 : 0,
-                            transition: 'opacity 0.4s ease-in-out',
-                          }}
-                          onLoad={() => setHighResLoaded(true)}
-                          onError={() => setModalImageError(true)}
-                        />
-                      </>
-                    ) : (
-                      <div className="relative flex h-full w-full items-center justify-center overflow-hidden" style={{ backgroundImage: getPlaceholderGradient(selectedImage?.description || selectedImage?._id) }}>
-                        <div
-                          className="absolute inset-0"
-                          style={{
-                            backgroundImage:
-                              'linear-gradient(color-mix(in srgb, var(--border-secondary) 24%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, var(--border-secondary) 24%, transparent) 1px, transparent 1px)',
-                            backgroundSize: '24px 24px',
-                            opacity: 0.35,
-                          }}
-                        />
-                        <div className="relative z-10 rounded-xl border border-white/20 bg-black/50 px-5 py-2 text-xl font-bold text-white">
-                          {getImageInitials(selectedImage?.description)}
-                        </div>
-                      </div>
-                    )}
-                  </motion.div>
-                </div>
-
-                <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-linear-to-t from-black/85 via-black/45 to-transparent px-4 py-4 lg:hidden">
-                  <p className="line-clamp-2 text-sm font-semibold text-white">{selectedImage?.description || 'Untitled visual'}</p>
-                  <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-white/75">
-                    <span className="inline-flex items-center gap-1.5"><CalendarDays size={13} /> {formatDate(selectedImage?.createdAt)}</span>
-                    <span>{Math.round(viewerZoom * 100)}%</span>
-                  </div>
+                  )}
                 </div>
               </div>
-
+            ),
+            controls: () => (
               <AnimatePresence>
                 {showViewerInfo && (
                   <motion.aside
@@ -931,7 +655,7 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: 28 }}
                     transition={{ duration: 0.2 }}
-                    className="hidden w-[360px] shrink-0 border-l border-white/10 bg-zinc-950 p-5 text-white lg:block"
+                    className="absolute right-0 top-16 bottom-0 z-[130] w-[360px] border-l border-white/10 bg-zinc-950/95 backdrop-blur-md p-5 text-white hidden lg:block"
                   >
                     <div className="mb-5 flex items-center justify-between">
                       <h2 className="text-base font-semibold">Info</h2>
@@ -958,7 +682,6 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
                           {selectedImage?.width && selectedImage?.height && (
                             <p>{selectedImage.width} x {selectedImage.height}</p>
                           )}
-                          <p>Zoom {Math.round(viewerZoom * 100)}%</p>
                         </div>
                       </section>
 
@@ -975,10 +698,13 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
                   </motion.aside>
                 )}
               </AnimatePresence>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            ),
+          }}
+          styles={{
+            container: { backgroundColor: '#000000' },
+          }}
+        />
+      )}
     </div>
   );
 };
