@@ -479,8 +479,11 @@ export async function proxy(request) {
     }
 
     // 5. Dynamic site versioning (V1 vs V2):
-    //    Serve whichever version is active at the clean URLs, collapse direct active
-    //    version prefix hits back to clean URLs, and preserve access to non-active version.
+    //    Clean URLs serve whichever version is active (cookie override, else the
+    //    admin default). Explicit /v1 or /v2 visits act as version switches:
+    //    they pin the site-version cookie and collapse to the clean URL, so
+    //    only one URL structure is ever public and either version can always
+    //    be reached again.
     if (request.method === 'GET' || request.method === 'HEAD') {
         const isV1Path = path === '/v1' || path.startsWith('/v1/');
         const isV2Path = path === '/v2' || path.startsWith('/v2/');
@@ -490,44 +493,42 @@ export async function proxy(request) {
         if (isV2Path) innerPath = path.slice('/v2'.length) || '/';
 
         if (isPublicPage(innerPath)) {
-            const activeVersion = await getActiveVersion(request);
-
-            // Direct request to the active version's prefix: redirect to the clean URL
-            if (isV1Path && activeVersion === 'v1') {
-                const strippedPath = path.slice('/v1'.length) || '/';
-                return NextResponse.redirect(
-                    new URL((request.nextUrl.basePath || '') + strippedPath + request.nextUrl.search, getPublicOrigin(request)),
+            // Explicit /v1 or /v2 visit: a version switch. Pin the choice in the
+            // cookie and collapse to the clean URL, which then serves that
+            // version via the rewrite below. Doing this for BOTH versions (not
+            // just the active one) is what lets /v2 rescue a browser stuck on a
+            // stale site-version=classic cookie, and vice versa.
+            if (isV1Path || isV2Path) {
+                const redirect = NextResponse.redirect(
+                    new URL((request.nextUrl.basePath || '') + innerPath + request.nextUrl.search, getPublicOrigin(request)),
                     307
                 );
-            }
-            if (isV2Path && activeVersion === 'v2') {
-                const strippedPath = path.slice('/v2'.length) || '/';
-                return NextResponse.redirect(
-                    new URL((request.nextUrl.basePath || '') + strippedPath + request.nextUrl.search, getPublicOrigin(request)),
-                    307
-                );
+                redirect.cookies.set('site-version', isV1Path ? 'classic' : 'v2', {
+                    path: '/',
+                    maxAge: 31536000,
+                });
+                return redirect;
             }
 
             // Clean URLs: rewrite to serve the active version
-            if (!isV1Path && !isV2Path) {
-                const rewriteTarget = getRewriteTarget(path, activeVersion);
-                const requestHeaders = new Headers(request.headers);
-                requestHeaders.set('x-is-rewrite', 'true');
+            const activeVersion = await getActiveVersion(request);
+            const rewriteTarget = getRewriteTarget(path, activeVersion);
+            const requestHeaders = new Headers(request.headers);
+            requestHeaders.set('x-is-rewrite', 'true');
 
-                const rewriteResponse = NextResponse.rewrite(
-                    new URL((request.nextUrl.basePath || '') + rewriteTarget + request.nextUrl.search, request.nextUrl.origin),
-                    {
-                        request: {
-                            headers: requestHeaders,
-                        }
+            const rewriteResponse = NextResponse.rewrite(
+                new URL((request.nextUrl.basePath || '') + rewriteTarget + request.nextUrl.search, request.nextUrl.origin),
+                {
+                    request: {
+                        headers: requestHeaders,
                     }
-                );
-                if (path === '/') {
-                    rewriteResponse.headers.set('Link', agentDiscoveryLinkHeader);
-                    rewriteResponse.headers.append('Vary', 'Accept');
                 }
-                return rewriteResponse;
+            );
+            if (path === '/') {
+                rewriteResponse.headers.set('Link', agentDiscoveryLinkHeader);
+                rewriteResponse.headers.append('Vary', 'Accept');
             }
+            return rewriteResponse;
         }
     }
 
