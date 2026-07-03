@@ -17,6 +17,18 @@ maintaining that work.
   only when `pathname === '/'`) points classic-home visitors at `/v2`.
   Dismissal is remembered in `localStorage` (`v2-beta-popup-dismissed`).
 
+## Default version switch (/admin/version)
+
+`defaultSiteVersion` on the config singleton (`'classic'` default, `'v2'`)
+decides which experience visitors land on. It's edited at `/admin/version`
+(`VersionForm` PUTs `/api/config`) and enforced server-side by
+`redirectToV2IfDefault()` in `src/lib/siteVersion.js`, called at the top of
+each classic page that has a v2 counterpart (`/`, `/about-me`, `/projects`,
+`/gallery`, `/apps`, `/blogs`, `/blogs/[id]`). The `site-version=classic`
+cookie — set by the v2 header's `[classic]` link — opts a visitor back out,
+so the classic site stays reachable and never bounce-loops; the home
+popup's "Try V2" clears that opt-out again.
+
 ## Design language
 
 Where the classic site uses `glass-panel` / `glass-tile` cards throughout,
@@ -98,11 +110,15 @@ src/app/v2/
   blogs/page.js             — /v2/blogs (server-only, zero client JS —
                               writing is meant to load fast, so no GSAP,
                               no filters, no client bundle on this page)
+  blogs/[id]/page.js        — /v2/blogs/[id]: shared BlogDetailClient under
+                              the v2 chrome (backHref="/v2/blogs")
 
 src/app/components/landing/v2/
   gsap3d.js                 — the 3D scroll engine (see above)
   V2ChapterHead.js          — shared numbered chapter header
-  V2Header.js / V2Footer.js — v2-only chrome
+  V2Header.js / V2Footer.js — v2-only chrome; the header mounts the same
+                              interactive TerminalPath as the classic
+                              header (hidden on /v2/blogs* reading pages)
   V2ScrollProgress.js       — fixed gradient beam, page-scroll scrubbed
   V2Hero.js, V2Snapshot.js, V2MissionControl.js, V2TechStack.js,
   V2About.js, V2Showcase.js, V2Projects.js, V2Blogs.js
@@ -117,9 +133,9 @@ src/app/components/projects/v2/ProjectsV2.js
   — /v2/projects: year-grouped ledger rows, mono "command strip" filters
     ($ grep search + bracketed status/type chips), shared ProjectDialog
 src/app/components/gallery/v2/GalleryV2.js
-  — /v2/gallery: images-only masonry wall (CSS columns), frames flip in
-    from depth, minimal lightbox (arrows/esc/click-out — no zoom, no info
-    panels, no download chrome)
+  — /v2/gallery: images-only masonry wall (CSS columns), no entrance
+    animation on the photos, minimal lightbox (arrows/esc/click-out — no
+    zoom, no info panels, no download chrome)
 src/app/components/deployments/v2/DeploymentsV2.js
   — /v2/apps: "process table" ledger — pulsing status light per service,
     provider/env/stack as mono annotations, shared DeploymentDialog
