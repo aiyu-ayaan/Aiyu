@@ -42,8 +42,9 @@ const getV2Preset = (el) => V2_PRESETS[el.dataset.v2] || V2_PRESETS.rise;
 
 function revealV2(target, preset, { delay = 0, stagger = 0, trigger } = {}) {
     const firstTarget = Array.isArray(target) ? target[0] : target;
-    gsap.from(target, {
-        ...preset,
+    
+    // Build explicit target state to avoid React's "animating from 0 to 0" issue.
+    const toVars = {
         duration: 1.1,
         ease: 'power3.out',
         clearProps: 'all',
@@ -54,7 +55,19 @@ function revealV2(target, preset, { delay = 0, stagger = 0, trigger } = {}) {
             start: 'top 88%',
             toggleActions: 'play none none reverse',
         },
-    });
+    };
+
+    if ('autoAlpha' in preset) toVars.autoAlpha = 1;
+    if ('z' in preset) toVars.z = 0;
+    if ('x' in preset) toVars.x = 0;
+    if ('y' in preset) toVars.y = 0;
+    if ('yPercent' in preset) toVars.yPercent = 0;
+    if ('rotationX' in preset) toVars.rotationX = 0;
+    if ('rotationY' in preset) toVars.rotationY = 0;
+    if ('scale' in preset) toVars.scale = 1;
+    if ('filter' in preset) toVars.filter = 'none';
+
+    gsap.fromTo(target, preset, toVars);
 }
 
 export function animateV2Reveals(scope, { reducedMotion = false } = {}) {

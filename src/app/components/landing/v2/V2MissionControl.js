@@ -61,18 +61,22 @@ const V2MissionControl = ({ data }) => {
             );
 
             // Rows print once the console is mostly upright.
-            gsap.from(rows, {
-                autoAlpha: 0,
-                x: -18,
-                duration: 0.5,
-                ease: 'power2.out',
-                stagger: 0.16,
-                scrollTrigger: {
-                    trigger: wrap,
-                    start: 'top 72%',
-                    toggleActions: 'play none none reverse',
-                },
-            });
+            gsap.fromTo(
+                rows,
+                { autoAlpha: 0, x: -18 },
+                {
+                    autoAlpha: 1,
+                    x: 0,
+                    duration: 0.5,
+                    ease: 'power2.out',
+                    stagger: 0.16,
+                    scrollTrigger: {
+                        trigger: wrap,
+                        start: 'top 72%',
+                        toggleActions: 'play none none reverse',
+                    },
+                }
+            );
         },
     });
 
