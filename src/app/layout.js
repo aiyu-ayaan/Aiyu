@@ -230,9 +230,9 @@ export default async function RootLayout({ children }) {
         )}
         <GoogleAnalytics gaId={gaId} />
         <ThemeProvider>
-          <ClientEnhancements />
-          <DynamicLiveCommitStream />
           <div className="relative z-0">
+            <ClientEnhancements />
+            <DynamicLiveCommitStream />
             {children}
           </div>
         </ThemeProvider>

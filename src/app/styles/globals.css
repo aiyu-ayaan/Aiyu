@@ -674,6 +674,13 @@ html.lenis body {
   pointer-events: none;
 }
 
+/* Hide scroll-to-top button when gallery lightbox is open */
+body.lightbox-open #scroll-to-top {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transform: translateY(20px) !important;
+}
+
 /* Gradient text animation */
 @keyframes gradient-x {
 
