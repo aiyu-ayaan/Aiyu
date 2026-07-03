@@ -98,7 +98,7 @@ const V2Blogs = ({ blogs }) => {
         </div>
 
         <p data-v2="rise" className="mt-12 font-mono text-sm">
-          <Link href="/blogs" className="underline-offset-4 hover:underline" style={{ color: 'var(--accent-purple)' }}>
+          <Link href="/v2/blogs" className="underline-offset-4 hover:underline" style={{ color: 'var(--accent-purple)' }}>
             → all posts
           </Link>
         </p>

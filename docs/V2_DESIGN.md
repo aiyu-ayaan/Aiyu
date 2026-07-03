@@ -1,8 +1,9 @@
 # V2 — Editorial-Depth Redesign
 
-`/v2` and `/v2/about-me` are a from-scratch redesign of the home and about
-pages: same sections, same data sources, different presentation. This
-document is the reference for extending or maintaining that work.
+The `/v2` route tree is a from-scratch redesign of the public pages — home,
+about, projects, gallery, apps, and blogs: same sections, same data sources,
+different presentation. This document is the reference for extending or
+maintaining that work.
 
 ## Why it's a separate route tree
 
@@ -91,6 +92,12 @@ src/app/v2/
   layout.js                 — V2Header + V2Footer, shares root providers
   page.js                   — /v2 (home)
   about-me/page.js          — /v2/about-me
+  projects/page.js          — /v2/projects (full archive)
+  gallery/page.js           — /v2/gallery (images only)
+  apps/page.js              — /v2/apps (service ledger)
+  blogs/page.js             — /v2/blogs (server-only, zero client JS —
+                              writing is meant to load fast, so no GSAP,
+                              no filters, no client bundle on this page)
 
 src/app/components/landing/v2/
   gsap3d.js                 — the 3D scroll engine (see above)
@@ -105,6 +112,17 @@ src/app/components/landing/v2/
 src/app/components/about/v2/
   AboutV2.js                — page shell, composes the chapters below
   V2AboutHero.js, V2CharacterSheet.js, V2Skills.js, V2Timeline.js
+
+src/app/components/projects/v2/ProjectsV2.js
+  — /v2/projects: year-grouped ledger rows, mono "command strip" filters
+    ($ grep search + bracketed status/type chips), shared ProjectDialog
+src/app/components/gallery/v2/GalleryV2.js
+  — /v2/gallery: images-only masonry wall (CSS columns), frames flip in
+    from depth, minimal lightbox (arrows/esc/click-out — no zoom, no info
+    panels, no download chrome)
+src/app/components/deployments/v2/DeploymentsV2.js
+  — /v2/apps: "process table" ledger — pulsing status light per service,
+    provider/env/stack as mono annotations, shared DeploymentDialog
 
 src/app/components/shared/V2BetaPopup.js
   — classic-home-only nudge toward /v2, gated in ClientEnhancements.js

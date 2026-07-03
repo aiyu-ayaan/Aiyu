@@ -8,9 +8,11 @@ import { getIconByName } from '@/lib/icons';
 const SITEMAP_LINKS = [
     { href: '/v2', label: 'v2 home' },
     { href: '/v2/about-me', label: 'v2 about' },
+    { href: '/v2/projects', label: 'v2 projects' },
+    { href: '/v2/gallery', label: 'v2 gallery' },
+    { href: '/v2/apps', label: 'v2 apps' },
+    { href: '/v2/blogs', label: 'v2 writing' },
     { href: '/', label: 'classic home' },
-    { href: '/projects', label: 'projects' },
-    { href: '/blogs', label: 'writing' },
     { href: '/contact-us', label: 'contact' },
 ];
 

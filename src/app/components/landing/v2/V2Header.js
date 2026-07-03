@@ -8,6 +8,10 @@ import ThemeToggle from '../../ThemeToggle';
 const NAV_LINKS = [
     { href: '/v2', label: 'home' },
     { href: '/v2/about-me', label: 'about' },
+    { href: '/v2/projects', label: 'projects' },
+    { href: '/v2/gallery', label: 'gallery' },
+    { href: '/v2/apps', label: 'apps' },
+    { href: '/v2/blogs', label: 'blogs' },
     { href: '/', label: 'classic' },
 ];
 
@@ -40,8 +44,11 @@ const V2Header = ({ logoText = '< aiyu />' }) => {
                     </span>
                 </Link>
 
-                <nav className="flex items-center gap-2 sm:gap-4" aria-label="V2 navigation">
-                    <div className="flex items-center gap-2 font-mono text-xs sm:gap-4 sm:text-sm">
+                <nav className="flex min-w-0 items-center gap-2 sm:gap-4" aria-label="V2 navigation">
+                    <div
+                        className="flex min-w-0 items-center gap-2 overflow-x-auto font-mono text-xs sm:gap-4 sm:text-sm"
+                        style={{ scrollbarWidth: 'none' }}
+                    >
                         {NAV_LINKS.map((link) => {
                             const active = pathname === link.href;
                             return (
