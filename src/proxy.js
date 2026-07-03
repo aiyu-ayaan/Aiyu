@@ -483,12 +483,8 @@ export async function proxy(request) {
     }
 
     // 5. Dynamic site versioning (V1 vs V2):
-    //    The admin-default version owns the clean URLs (served there via
-    //    rewrite; its own prefix collapses to the clean URL). The non-default
-    //    version is browsed VISIBLY under its /v1 or /v2 prefix — clean URLs
-    //    redirect a pinned visitor there. Visiting either prefix pins the
-    //    choice in the site-version cookie, so either version can always be
-    //    reached again (a stale cookie can never lock the site).
+    //    We can access specific version with /v1 or /v2 prefix, served directly.
+    //    The default version is served at clean URLs (no version prefix) via rewrite.
     if (request.method === 'GET' || request.method === 'HEAD') {
         const isV1Path = path === '/v1' || path.startsWith('/v1/');
         const isV2Path = path === '/v2' || path.startsWith('/v2/');
@@ -498,43 +494,14 @@ export async function proxy(request) {
         if (isV2Path) innerPath = path.slice('/v2'.length) || '/';
 
         if (isPublicPage(innerPath)) {
-            const defaultVersion = (await getDefaultSiteVersion(request)) === 'v2' ? 'v2' : 'v1';
-            const activeVersion = getCookieVersion(request) || defaultVersion;
-
-            // Explicit /v1 or /v2 visit: a version switch — pin it. The default
-            // version's prefix collapses to the clean URL it owns; the
-            // non-default version serves right here, keeping its prefix in the
-            // address bar.
+            // If explicit /v1 or /v2 path, serve it directly without redirecting.
             if (isV1Path || isV2Path) {
-                const pathVersion = isV1Path ? 'v1' : 'v2';
-                if (pathVersion === defaultVersion) {
-                    return pinVersionCookie(
-                        NextResponse.redirect(
-                            new URL((request.nextUrl.basePath || '') + innerPath + request.nextUrl.search, getPublicOrigin(request)),
-                            307
-                        ),
-                        pathVersion
-                    );
-                }
-                return pinVersionCookie(NextResponse.next(), pathVersion);
+                return NextResponse.next();
             }
 
-            // Clean URL, but the visitor is pinned to the non-default version:
-            // send them to its visible prefix. Pages without a counterpart in
-            // that version (e.g. /work-in-progress has no v2) fall through to
-            // the rewrite below, which serves the v1 page at the clean URL.
-            if (activeVersion !== defaultVersion && (activeVersion === 'v1' || isV2Page(path))) {
-                return NextResponse.redirect(
-                    new URL(
-                        (request.nextUrl.basePath || '') + `/${activeVersion}` + (path === '/' ? '' : path) + request.nextUrl.search,
-                        getPublicOrigin(request)
-                    ),
-                    307
-                );
-            }
-
-            // Clean URLs: rewrite to serve the active version
-            const rewriteTarget = getRewriteTarget(path, activeVersion);
+            // Clean URL: rewrite to serve the default version
+            const defaultVersion = (await getDefaultSiteVersion(request)) === 'v2' ? 'v2' : 'v1';
+            const rewriteTarget = getRewriteTarget(path, defaultVersion);
             const requestHeaders = new Headers(request.headers);
             requestHeaders.set('x-is-rewrite', 'true');
 
