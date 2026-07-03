@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { decrypt } from './lib/jwt';
 import { getClientIP } from './lib/clientIp';
+import { getPublicOrigin } from './lib/publicOrigin';
 
 // ────────────────────────────────────────────────────────────────────────────
 // Edge proxy. Runs on every non-static request (see `config.matcher`) and is
@@ -342,15 +343,6 @@ function getRewriteTarget(pathname, activeVersion) {
     return `/v1${pathname === '/' ? '' : pathname}`;
 }
 
-function getPublicOrigin(request) {
-    const proto = request.headers.get('x-forwarded-proto') || 'http';
-    const host = request.headers.get('x-forwarded-host') || request.headers.get('host');
-    if (host) {
-        return `${proto}://${host}`;
-    }
-    return request.nextUrl.origin;
-}
-
 async function getDefaultSiteVersion(request) {
     const now = Date.now();
     if (now < siteVersionCache.expiresAt) {
@@ -464,11 +456,13 @@ export async function proxy(request) {
         const isPublicPath = path === '/admin/login';
         const session = await decrypt(request.cookies.get('session')?.value);
 
+        // getPublicOrigin, not request.nextUrl: in the standalone (Docker)
+        // server nextUrl carries the 0.0.0.0 bind address.
         if (!isPublicPath && !session) {
-            return NextResponse.redirect(new URL('/admin/login', request.nextUrl));
+            return NextResponse.redirect(new URL('/admin/login', getPublicOrigin(request)));
         }
         if (isPublicPath && session) {
-            return NextResponse.redirect(new URL('/admin', request.nextUrl));
+            return NextResponse.redirect(new URL('/admin', getPublicOrigin(request)));
         }
 
         return NextResponse.next();
