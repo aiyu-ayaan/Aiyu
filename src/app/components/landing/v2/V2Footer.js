@@ -13,7 +13,7 @@ const SITEMAP_LINKS = [
     { href: '/v2/apps', label: 'v2 apps' },
     { href: '/v2/blogs', label: 'v2 writing' },
     { href: '/', label: 'classic home' },
-    { href: '/contact-us', label: 'contact' },
+    { href: '/v2/contact-us', label: 'contact' },
 ];
 
 /**

@@ -75,7 +75,7 @@ const V2Header = ({ logoText = '< aiyu />', config, socialData }) => {
                     <ThemeToggle compact />
 
                     <Link
-                        href="/contact-us"
+                        href="/v2/contact-us"
                         className="hidden whitespace-nowrap rounded-full border px-4 py-1.5 font-mono text-xs font-semibold transition-colors duration-200 sm:inline-block"
                         style={{
                             color: 'var(--accent-cyan)',
