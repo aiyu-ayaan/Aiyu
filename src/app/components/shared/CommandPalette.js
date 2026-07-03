@@ -157,14 +157,14 @@ export default function CommandPalette() {
         }
     };
 
-    // Prevent scroll when open
+    // Prevent scroll when open. Only touch body overflow while actually
+    // open — the palette mounts lazily, and writing "unset" on mount would
+    // clobber a scroll lock another overlay (header menus, dialogs) holds.
     useEffect(() => {
-        if (isOpen) {
-            document.body.style.overflow = "hidden";
-        } else {
-            document.body.style.overflow = "unset";
-        }
-        return () => { document.body.style.overflow = "unset"; };
+        if (!isOpen) return;
+        const previous = document.body.style.overflow;
+        document.body.style.overflow = "hidden";
+        return () => { document.body.style.overflow = previous; };
     }, [isOpen]);
 
     return (
