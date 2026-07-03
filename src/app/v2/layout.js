@@ -59,7 +59,7 @@ export default async function V2Layout({ children }) {
             </div>
 
             <div className="relative z-10">
-                <V2Header logoText={logoText} />
+                <V2Header logoText={logoText} config={serializedConfigData} socialData={serializedSocialData} />
                 <main className="min-h-screen">
                     {children}
                 </main>

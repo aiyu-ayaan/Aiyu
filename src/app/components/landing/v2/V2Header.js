@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import ThemeToggle from '../../ThemeToggle';
+import TerminalPath from '../../admin/TerminalPath';
 
 const NAV_LINKS = [
     { href: '/v2', label: 'home' },
@@ -16,13 +17,15 @@ const NAV_LINKS = [
 ];
 
 /**
- * V2 chrome: a hairline command bar. Mono wordmark with the current path as
- * a breadcrumb, bracketed nav links, theme toggle, and an accent contact
- * link — the same editorial-terminal language as the chapters below it.
+ * V2 chrome: a hairline command bar. Mono wordmark, bracketed nav links,
+ * theme toggle, an accent contact link — and the same interactive
+ * TerminalPath as the classic header on a second row, so `cd`, `ls`,
+ * `theme`, and friends keep working inside /v2.
  */
-const V2Header = ({ logoText = '< aiyu />' }) => {
+const V2Header = ({ logoText = '< aiyu />', config, socialData }) => {
     const pathname = usePathname();
-    const crumb = pathname === '/v2' ? '~/v2' : `~${pathname}`;
+    // Reading surfaces stay quiet — no terminal row on the blog index/details.
+    const showTerminal = !pathname.startsWith('/v2/blogs');
 
     return (
         <header
@@ -39,9 +42,6 @@ const V2Header = ({ logoText = '< aiyu />' }) => {
                     <span className="font-bold tracking-tight" style={{ color: 'var(--text-bright)' }}>
                         {logoText}
                     </span>
-                    <span className="hidden truncate text-xs md:inline" style={{ color: 'var(--text-muted)' }} suppressHydrationWarning>
-                        {crumb} <span style={{ color: 'var(--accent-cyan)' }}>git:(v2)</span>
-                    </span>
                 </Link>
 
                 <nav className="flex min-w-0 items-center gap-2 sm:gap-4" aria-label="V2 navigation">
@@ -55,6 +55,11 @@ const V2Header = ({ logoText = '< aiyu />' }) => {
                                 <Link
                                     key={link.href}
                                     href={link.href}
+                                    onClick={link.href === '/' ? () => {
+                                        // Opting out of v2: remember it so classic pages stop
+                                        // redirecting here when v2 is the admin default.
+                                        document.cookie = 'site-version=classic; path=/; max-age=31536000';
+                                    } : undefined}
                                     className="group whitespace-nowrap transition-colors duration-200"
                                     style={{ color: active ? 'var(--text-bright)' : 'var(--text-secondary)' }}
                                     aria-current={active ? 'page' : undefined}
@@ -82,6 +87,13 @@ const V2Header = ({ logoText = '< aiyu />' }) => {
                     </Link>
                 </nav>
             </div>
+
+            {/* Interactive terminal row — same component as the classic header. */}
+            {showTerminal && (
+                <div className="relative" style={{ borderTop: '1px solid var(--hairline)' }}>
+                    <TerminalPath socialData={socialData} config={config} />
+                </div>
+            )}
         </header>
     );
 };
