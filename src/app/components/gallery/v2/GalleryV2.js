@@ -141,9 +141,11 @@ const GalleryV2 = ({ initialImages, initialConfig }) => {
         };
 
         document.body.style.overflow = 'hidden';
+        document.body.classList.add('lightbox-open');
         window.addEventListener('keydown', handleKeydown);
         return () => {
             document.body.style.overflow = '';
+            document.body.classList.remove('lightbox-open');
             window.removeEventListener('keydown', handleKeydown);
         };
     }, [selectedIndex, navigate, updateViewerZoom, viewerZoom]);
