@@ -150,7 +150,7 @@ const V2Projects = ({ data }) => {
         </p>
       </div>
 
-      <ProjectDialog project={selectedProject} onClose={() => setSelectedProject(null)} />
+      <ProjectDialog project={selectedProject} onClose={() => setSelectedProject(null)} isV2={true} />
     </section>
   );
 };
