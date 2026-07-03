@@ -7,6 +7,7 @@ import {
     buildAuthorizeUrl,
     generateState,
 } from '@/lib/githubOAuth';
+import { getPublicOrigin } from '@/lib/publicOrigin';
 
 // One-time CSRF token cookie. sameSite must be 'lax' (not 'strict') so the
 // cookie survives the top-level redirect BACK from github.com to our callback;
@@ -26,7 +27,9 @@ export async function GET(request) {
 
     // Fail closed to the login page if misconfigured (missing client/secret/id/base).
     if (!isGithubAuthConfigured() || !getCallbackUrl()) {
-        return NextResponse.redirect(new URL('/admin/login?error=config', request.nextUrl));
+        // getPublicOrigin, not request.nextUrl: in the standalone (Docker)
+        // server nextUrl carries the 0.0.0.0 bind address.
+        return NextResponse.redirect(new URL('/admin/login?error=config', getPublicOrigin(request)));
     }
 
     const state = generateState();

@@ -8,6 +8,7 @@ import {
     fetchGithubUser,
 } from '@/lib/githubOAuth';
 import { createSession } from '@/lib/auth';
+import { getPublicOrigin } from '@/lib/publicOrigin';
 import { getClientIP } from '@/middleware/auth';
 import { logAudit, AUDIT_CATEGORY } from '@/lib/audit';
 
@@ -26,7 +27,10 @@ async function clearStateCookie() {
 
 async function loginRedirect(request, error) {
     await clearStateCookie();
-    const url = new URL('/admin/login', request.nextUrl);
+    // getPublicOrigin, not request.nextUrl: in the standalone (Docker) server
+    // nextUrl carries the 0.0.0.0 bind address and the browser would be
+    // redirected there instead of the real host.
+    const url = new URL('/admin/login', getPublicOrigin(request));
     if (error) url.searchParams.set('error', error);
     return NextResponse.redirect(url);
 }
@@ -113,5 +117,5 @@ export async function GET(request) {
 
     await clearStateCookie();
     // Fixed internal target — never a user-supplied redirect (no open redirect).
-    return NextResponse.redirect(new URL('/admin', request.nextUrl));
+    return NextResponse.redirect(new URL('/admin', getPublicOrigin(request)));
 }
