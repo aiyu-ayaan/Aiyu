@@ -27,6 +27,7 @@ const V2Header = ({ logoText = '< aiyu />', config, socialData }) => {
         { href: v2PublicPath(config, '/gallery'), label: 'gallery' },
         { href: v2PublicPath(config, '/apps'), label: 'apps' },
         { href: v2PublicPath(config, '/blogs'), label: 'blogs' },
+        { href: v2PublicPath(config, '/github'), label: 'github' },
         { href: '/', label: 'classic' },
     ];
 
@@ -56,7 +57,7 @@ const V2Header = ({ logoText = '< aiyu />', config, socialData }) => {
                             const active = pathname === link.href;
                             return (
                                 <Link
-                                    key={link.href}
+                                    key={link.label}
                                     href={link.href}
                                     onClick={link.label === 'classic' ? () => {
                                         // Opting out of v2: remember it so classic pages stop

@@ -321,10 +321,11 @@ const V2_PAGES = new Set([
     '/gallery',
     '/apps',
     '/blogs',
+    '/github',
     '/contact-us'
 ]);
 
-const SITE_VERSION_CACHE_TTL_MS = 30 * 1000;
+const SITE_VERSION_CACHE_TTL_MS = process.env.NODE_ENV === 'production' ? 30 * 1000 : 1000;
 let siteVersionCache = { value: 'classic', expiresAt: 0 };
 
 function getRewriteTarget(pathname, activeVersion) {
@@ -397,7 +398,43 @@ function markdownTokenEstimate(markdown) {
     return String(markdown.trim().split(/\s+/).filter(Boolean).length);
 }
 
+const PUBLIC_PAGE_PREFIXES = [
+    '/projects/',
+    '/gallery/',
+    '/apps/',
+    '/blogs/'
+];
+
+const PUBLIC_PAGE_EXACTS = new Set([
+    '/',
+    '/about-me',
+    '/projects',
+    '/gallery',
+    '/apps',
+    '/blogs',
+    '/contact-us',
+    '/github',
+    '/sitemap',
+    '/work-in-progress',
+    '/live-deployments'
+]);
+
+function isPublicPage(pathname) {
+    if (!pathname || pathname.includes('.')) {
+        return false;
+    }
+    if (PUBLIC_PAGE_EXACTS.has(pathname)) {
+        return true;
+    }
+    return PUBLIC_PAGE_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+}
+
 export async function proxy(request) {
+    // If this is an internal rewrite, bypass middleware execution to prevent infinite loops.
+    if (request.headers.get('x-is-rewrite') === 'true') {
+        return NextResponse.next();
+    }
+
     const path = request.nextUrl.pathname;
 
     // 1. API paths: rate limiting only (no markdown / canonical redirect).
@@ -445,37 +482,52 @@ export async function proxy(request) {
     //    Serve whichever version is active at the clean URLs, collapse direct active
     //    version prefix hits back to clean URLs, and preserve access to non-active version.
     if (request.method === 'GET' || request.method === 'HEAD') {
-        const activeVersion = await getActiveVersion(request);
         const isV1Path = path === '/v1' || path.startsWith('/v1/');
         const isV2Path = path === '/v2' || path.startsWith('/v2/');
 
-        // Direct request to the active version's prefix: redirect to the clean URL
-        if (isV1Path && activeVersion === 'v1') {
-            const strippedPath = path.slice('/v1'.length) || '/';
-            return NextResponse.redirect(
-                new URL((request.nextUrl.basePath || '') + strippedPath + request.nextUrl.search, getPublicOrigin(request)),
-                307
-            );
-        }
-        if (isV2Path && activeVersion === 'v2') {
-            const strippedPath = path.slice('/v2'.length) || '/';
-            return NextResponse.redirect(
-                new URL((request.nextUrl.basePath || '') + strippedPath + request.nextUrl.search, getPublicOrigin(request)),
-                307
-            );
-        }
+        let innerPath = path;
+        if (isV1Path) innerPath = path.slice('/v1'.length) || '/';
+        if (isV2Path) innerPath = path.slice('/v2'.length) || '/';
 
-        // Clean URLs: rewrite to serve the active version
-        if (!isV1Path && !isV2Path) {
-            const rewriteTarget = getRewriteTarget(path, activeVersion);
-            const rewriteResponse = NextResponse.rewrite(
-                new URL((request.nextUrl.basePath || '') + rewriteTarget + request.nextUrl.search, request.nextUrl.origin)
-            );
-            if (path === '/') {
-                rewriteResponse.headers.set('Link', agentDiscoveryLinkHeader);
-                rewriteResponse.headers.append('Vary', 'Accept');
+        if (isPublicPage(innerPath)) {
+            const activeVersion = await getActiveVersion(request);
+
+            // Direct request to the active version's prefix: redirect to the clean URL
+            if (isV1Path && activeVersion === 'v1') {
+                const strippedPath = path.slice('/v1'.length) || '/';
+                return NextResponse.redirect(
+                    new URL((request.nextUrl.basePath || '') + strippedPath + request.nextUrl.search, getPublicOrigin(request)),
+                    307
+                );
             }
-            return rewriteResponse;
+            if (isV2Path && activeVersion === 'v2') {
+                const strippedPath = path.slice('/v2'.length) || '/';
+                return NextResponse.redirect(
+                    new URL((request.nextUrl.basePath || '') + strippedPath + request.nextUrl.search, getPublicOrigin(request)),
+                    307
+                );
+            }
+
+            // Clean URLs: rewrite to serve the active version
+            if (!isV1Path && !isV2Path) {
+                const rewriteTarget = getRewriteTarget(path, activeVersion);
+                const requestHeaders = new Headers(request.headers);
+                requestHeaders.set('x-is-rewrite', 'true');
+
+                const rewriteResponse = NextResponse.rewrite(
+                    new URL((request.nextUrl.basePath || '') + rewriteTarget + request.nextUrl.search, request.nextUrl.origin),
+                    {
+                        request: {
+                            headers: requestHeaders,
+                        }
+                    }
+                );
+                if (path === '/') {
+                    rewriteResponse.headers.set('Link', agentDiscoveryLinkHeader);
+                    rewriteResponse.headers.append('Vary', 'Accept');
+                }
+                return rewriteResponse;
+            }
         }
     }
 

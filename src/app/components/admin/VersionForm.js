@@ -67,6 +67,9 @@ const VersionForm = () => {
             });
 
             if (response.ok) {
+                // Clear any per-visitor cookie override so this browser immediately
+                // reflects the new default on the next navigation.
+                document.cookie = 'site-version=; path=/; max-age=0';
                 showNotification(true, `Default version set to ${selected === 'v2' ? 'V2' : 'Classic'}`);
             } else {
                 const data = await response.json().catch(() => ({}));
