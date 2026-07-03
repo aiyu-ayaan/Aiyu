@@ -25,6 +25,63 @@ const GalleryV2 = ({ initialImages, initialConfig }) => {
     const images = useMemo(() => (Array.isArray(initialImages) ? initialImages : []), [initialImages]);
     const [brokenImageIds, setBrokenImageIds] = useState(() => new Set());
     const [selectedIndex, setSelectedIndex] = useState(-1);
+    const [viewerZoom, setViewerZoom] = useState(1);
+    const [viewerOffset, setViewerOffset] = useState({ x: 0, y: 0 });
+    const [isDraggingImage, setIsDraggingImage] = useState(false);
+    const dragStartRef = useRef(null);
+
+    const canPanViewer = viewerZoom > 1;
+
+    useEffect(() => {
+        setViewerZoom(1);
+        setViewerOffset({ x: 0, y: 0 });
+        setIsDraggingImage(false);
+        dragStartRef.current = null;
+    }, [selectedIndex]);
+
+    const updateViewerZoom = useCallback((nextZoom) => {
+        const normalizedZoom = Math.min(4, Math.max(1, nextZoom));
+        setViewerZoom(normalizedZoom);
+        if (normalizedZoom === 1) {
+            setViewerOffset({ x: 0, y: 0 });
+        }
+    }, []);
+
+    const handleViewerWheel = useCallback((event) => {
+        if (selectedIndex < 0) return;
+        event.preventDefault();
+        const direction = event.deltaY > 0 ? -1 : 1;
+        updateViewerZoom(viewerZoom + direction * 0.15);
+    }, [selectedIndex, updateViewerZoom, viewerZoom]);
+
+    const handleViewerPointerDown = useCallback((event) => {
+        if (!canPanViewer) return;
+        event.preventDefault();
+        event.currentTarget.setPointerCapture?.(event.pointerId);
+        setIsDraggingImage(true);
+        dragStartRef.current = {
+            pointerX: event.clientX,
+            pointerY: event.clientY,
+            offsetX: viewerOffset.x,
+            offsetY: viewerOffset.y,
+        };
+    }, [canPanViewer, viewerOffset.x, viewerOffset.y]);
+
+    const handleViewerPointerMove = useCallback((event) => {
+        if (!isDraggingImage || !dragStartRef.current) return;
+        const deltaX = event.clientX - dragStartRef.current.pointerX;
+        const deltaY = event.clientY - dragStartRef.current.pointerY;
+        setViewerOffset({
+            x: dragStartRef.current.offsetX + deltaX,
+            y: dragStartRef.current.offsetY + deltaY,
+        });
+    }, [isDraggingImage]);
+
+    const stopViewerDrag = useCallback((event) => {
+        event?.currentTarget?.releasePointerCapture?.(event.pointerId);
+        setIsDraggingImage(false);
+        dragStartRef.current = null;
+    }, []);
 
     const sectionRef = useRef(null);
     const { prefersReducedMotion } = useDevicePerformance();
@@ -74,6 +131,13 @@ const GalleryV2 = ({ initialImages, initialConfig }) => {
             if (event.key === 'Escape') setSelectedIndex(-1);
             else if (event.key === 'ArrowLeft') navigate(-1);
             else if (event.key === 'ArrowRight') navigate(1);
+            else if (event.key === '+' || event.key === '=') {
+                updateViewerZoom(viewerZoom + 0.25);
+            } else if (event.key === '-' || event.key === '_') {
+                updateViewerZoom(viewerZoom - 0.25);
+            } else if (event.key === '0') {
+                updateViewerZoom(1);
+            }
         };
 
         document.body.style.overflow = 'hidden';
@@ -82,7 +146,7 @@ const GalleryV2 = ({ initialImages, initialConfig }) => {
             document.body.style.overflow = '';
             window.removeEventListener('keydown', handleKeydown);
         };
-    }, [selectedIndex, navigate]);
+    }, [selectedIndex, navigate, updateViewerZoom, viewerZoom]);
 
     return (
         <div ref={sectionRef} className="relative overflow-hidden">
@@ -198,17 +262,31 @@ const GalleryV2 = ({ initialImages, initialConfig }) => {
                     </div>
 
                     <div
-                        className="relative min-h-0 flex-1 px-2 sm:px-16"
+                        className="relative min-h-0 flex-1 px-2 sm:px-16 overflow-hidden flex items-center justify-center"
                         onClick={(event) => {
                             if (event.target === event.currentTarget) setSelectedIndex(-1);
+                        }}
+                        onWheel={handleViewerWheel}
+                        onDoubleClick={() => updateViewerZoom(viewerZoom > 1 ? 1 : 2)}
+                        onPointerDown={handleViewerPointerDown}
+                        onPointerMove={handleViewerPointerMove}
+                        onPointerUp={stopViewerDrag}
+                        onPointerCancel={stopViewerDrag}
+                        onPointerLeave={stopViewerDrag}
+                        style={{
+                            cursor: canPanViewer ? (isDraggingImage ? 'grabbing' : 'grab') : 'zoom-in',
+                            touchAction: canPanViewer ? 'none' : 'pan-y',
                         }}
                     >
                         {/* Plain <img> so the browser handles arbitrary sizes with object-contain. */}
                         <img
                             src={selectedImage.src || selectedImage.thumbnail}
                             alt={selectedImage.description || 'Gallery photograph'}
-                            className="pointer-events-none absolute inset-0 h-full w-full object-contain"
+                            className="pointer-events-none absolute inset-0 h-full w-full object-contain origin-center transition-transform duration-200"
                             draggable="false"
+                            style={{
+                                transform: `translate3d(${viewerOffset.x}px, ${viewerOffset.y}px, 0) scale(${viewerZoom})`,
+                            }}
                         />
 
                         {visibleImages.length > 1 && (
