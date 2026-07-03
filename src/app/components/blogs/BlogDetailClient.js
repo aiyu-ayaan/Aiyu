@@ -113,7 +113,7 @@ const AdUnit = memo(({ adsConfig, positionKey }) => {
 
 AdUnit.displayName = 'AdUnit';
 
-export default memo(function BlogDetailClient({ blog, config, adsConfig }) {
+export default memo(function BlogDetailClient({ blog, config, adsConfig, backHref = '/blogs' }) {
   const [selectedImage, setSelectedImage] = useState(null);
   const [showShareToast, setShowShareToast] = useState(false);
   const [imageError, setImageError] = useState(false);
@@ -241,7 +241,7 @@ export default memo(function BlogDetailClient({ blog, config, adsConfig }) {
             This article might have been removed or is no longer available.
           </p>
           <Link
-            href="/blogs"
+            href={backHref}
             className="inline-flex items-center hover:underline gap-2 text-sm font-semibold"
             style={{ color: 'var(--accent-cyan)' }}
           >
@@ -259,7 +259,7 @@ export default memo(function BlogDetailClient({ blog, config, adsConfig }) {
       <div className="relative mx-auto w-full max-w-[95%] lg:max-w-[80%]">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <Link
-            href="/blogs"
+            href={backHref}
             className="inline-flex items-center hover:underline gap-2 text-sm font-semibold"
             style={{ color: 'var(--text-secondary)' }}
           >

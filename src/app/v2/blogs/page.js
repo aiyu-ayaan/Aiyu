@@ -92,8 +92,8 @@ export default async function BlogsV2Page() {
                             return (
                                 <Link
                                     key={blog?._id || blog?.slug || `${blog?.title}-${index}`}
-                                    href={getBlogPath(blog)}
-                                    className="group grid grid-cols-12 items-baseline gap-4 py-8 sm:py-10"
+                                    href={getBlogPath(blog).replace(/^\/blogs\//, '/v2/blogs/')}
+                                    className="group grid grid-cols-12 items-center gap-4 py-8 sm:py-10"
                                     style={{ borderBottom: '1px solid var(--hairline)' }}
                                 >
                                     <span className="col-span-12 font-mono text-xs sm:col-span-2 sm:text-sm" style={{ color: 'var(--text-muted)' }}>
@@ -103,7 +103,7 @@ export default async function BlogsV2Page() {
                                         </span>
                                     </span>
 
-                                    <span className="col-span-12 sm:col-span-9">
+                                    <span className="col-span-12 sm:col-span-6">
                                         <span
                                             className="block text-2xl font-bold leading-tight tracking-tight transition-transform duration-300 group-hover:translate-x-2 sm:text-4xl"
                                             style={{ color: 'var(--text-bright)' }}
@@ -119,6 +119,32 @@ export default async function BlogsV2Page() {
                                             </span>
                                         )}
                                     </span>
+
+                                    {blog?.image ? (
+                                        <span
+                                            className="relative col-span-12 block h-40 overflow-hidden rounded-xl border sm:col-span-3 sm:h-32"
+                                            style={{ borderColor: 'var(--hairline)' }}
+                                        >
+                                            {/* Plain <img>: blog covers can live on arbitrary hosts
+                                                outside next/image remotePatterns (same as v1 BlogCard). */}
+                                            <img
+                                                src={blog.image}
+                                                alt={blog?.imageAlt || blog?.title || 'Blog cover'}
+                                                className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+                                                loading="lazy"
+                                                decoding="async"
+                                                referrerPolicy="no-referrer"
+                                            />
+                                        </span>
+                                    ) : (
+                                        <span
+                                            aria-hidden="true"
+                                            className="hidden h-32 items-center justify-center rounded-xl border font-mono text-xs uppercase tracking-[0.25em] sm:col-span-3 sm:flex"
+                                            style={{ borderColor: 'var(--hairline)', color: 'var(--text-muted)', backgroundColor: `color-mix(in srgb, ${accent} 5%, transparent)` }}
+                                        >
+                                            ¶
+                                        </span>
+                                    )}
 
                                     <span
                                         className="col-span-1 hidden justify-self-end font-mono text-lg transition-transform duration-300 group-hover:translate-x-1.5 sm:block"
