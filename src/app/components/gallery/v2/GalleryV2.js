@@ -17,7 +17,7 @@ const formatDate = (dateValue) => {
 /**
  * /v2/gallery — nothing but the pictures. The v1 page wraps the grid in
  * stats, search, and orientation filters; here the photographs ARE the page:
- * a full-bleed masonry wall where frames surface from depth as you scroll,
+ * a full-bleed masonry wall with no entrance animation (photos just appear),
  * captioned only on hover, opening into a bare-bones lightbox (arrows, esc,
  * click-out — no chrome competing with the image).
  */
@@ -120,7 +120,7 @@ const GalleryV2 = ({ initialImages, initialConfig }) => {
                 </div>
 
                 {visibleImages.length > 0 ? (
-                    <div className="columns-1 gap-5 sm:columns-2 lg:columns-3" style={{ perspective: '1600px' }}>
+                    <div className="columns-1 gap-5 sm:columns-2 lg:columns-3">
                         {visibleImages.map((image, index) => {
                             const imageKey = image?._id || `${image?.src}-${index}`;
                             const aspectRatio =
@@ -130,7 +130,7 @@ const GalleryV2 = ({ initialImages, initialConfig }) => {
                             const dateLabel = formatDate(image?.createdAt);
 
                             return (
-                                <figure key={imageKey} data-v2="flip-x" className="mb-5 break-inside-avoid">
+                                <figure key={imageKey} className="mb-5 break-inside-avoid">
                                     <button
                                         type="button"
                                         onClick={() => openLightbox(index)}
