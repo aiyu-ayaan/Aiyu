@@ -108,6 +108,8 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
   useEffect(() => {
     setHighResLoaded(false);
     if (selectedImage) {
+      document.body.style.overflow = 'hidden';
+      document.body.classList.add('lightbox-open');
       trackEntityView({
         entityType: 'gallery',
         entityId: selectedImage._id || selectedImage.id || selectedImage.src,
@@ -116,6 +118,10 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
           : 'gallery-item',
       });
     }
+    return () => {
+      document.body.style.overflow = '';
+      document.body.classList.remove('lightbox-open');
+    };
   }, [selectedImage]);
 
   useEffect(() => {
@@ -729,7 +735,10 @@ const GalleryClient = ({ initialImages, initialConfig }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex flex-col bg-black text-white"
+            role="dialog"
+            aria-modal="true"
+            aria-label={selectedImage?.description || 'Photograph viewer'}
+            className="fixed inset-0 z-[110] flex flex-col bg-black text-white"
           >
             <div className="relative z-20 flex h-16 shrink-0 items-center justify-between gap-3 border-b border-white/10 bg-black/95 px-3 sm:px-5">
               <button
