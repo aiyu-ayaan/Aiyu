@@ -48,7 +48,7 @@ export async function generateMetadata({ params }) {
     const modifiedTime = toIsoString(blog?.updatedAt) || publishedTime;
 
     return {
-        title: `${baseName} | ${seoTitle} — V2`,
+        title: `${baseName} | ${seoTitle}`,
         description,
         keywords,
         robots: blog?.noIndex

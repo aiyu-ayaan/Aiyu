@@ -16,10 +16,10 @@ export async function generateMetadata() {
     const description = 'Every post as a plain editorial index — fast, server-rendered, no scripts. V2 edition.';
 
     return {
-        title: `${baseName} | Writing — V2`,
+        title: `${baseName} | Writing`,
         description,
         openGraph: {
-            title: `${baseName} | Writing — V2`,
+            title: `${baseName} | Writing`,
             description,
             url: `${baseUrl}${v2PublicPath(config, '/blogs')}`,
             type: 'website',

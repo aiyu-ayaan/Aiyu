@@ -12,10 +12,10 @@ export async function generateMetadata() {
     const description = "Let's collaborate on something amazing.";
 
     return {
-        title: `${baseName} | Contact — V2`,
+        title: `${baseName} | Contact`,
         description,
         openGraph: {
-            title: `${baseName} | Contact — V2`,
+            title: `${baseName} | Contact`,
             description,
             url: `${baseUrl}${v2PublicPath(config, '/contact-us')}`,
             type: 'website',

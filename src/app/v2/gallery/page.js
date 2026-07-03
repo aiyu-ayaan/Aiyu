@@ -12,10 +12,10 @@ export async function generateMetadata() {
     const description = 'A pure photo wall — the visual archive with nothing but the frames. V2 edition.';
 
     return {
-        title: `${baseName} | Gallery — V2`,
+        title: `${baseName} | Gallery`,
         description,
         openGraph: {
-            title: `${baseName} | Gallery — V2`,
+            title: `${baseName} | Gallery`,
             description,
             url: `${baseUrl}${v2PublicPath(config, '/gallery')}`,
             type: 'website',

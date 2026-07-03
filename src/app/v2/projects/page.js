@@ -12,10 +12,10 @@ export async function generateMetadata() {
     const description = 'The complete project archive, year by year — V2 edition.';
 
     return {
-        title: `${baseName} | Projects — V2`,
+        title: `${baseName} | Projects`,
         description,
         openGraph: {
-            title: `${baseName} | Projects — V2`,
+            title: `${baseName} | Projects`,
             description,
             url: `${baseUrl}${v2PublicPath(config, '/projects')}`,
             type: 'website',

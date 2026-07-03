@@ -12,10 +12,10 @@ export async function generateMetadata() {
   const description = 'Learn more about my background, skills, and experience.';
 
   return {
-    title: `${baseName} | About Me — V2`,
+    title: `${baseName} | About Me`,
     description,
     openGraph: {
-      title: `${baseName} | About Me — V2`,
+      title: `${baseName} | About Me`,
       description,
       url: `${baseUrl}${v2PublicPath(config, '/about-me')}`,
       type: 'website',

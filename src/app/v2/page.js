@@ -15,7 +15,7 @@ export async function generateMetadata() {
   const config = await getConfigData();
 
   const baseName = config?.siteTitle || config?.logoText || 'Portfolio';
-  const siteTitle = `${baseName} | ${config?.profession || 'Software Engineer'} Portfolio — V2`;
+  const siteTitle = `${baseName} | ${config?.profession || 'Software Engineer'} Portfolio`;
   const baseUrl = getSiteUrl();
   const siteDescription = config?.siteDescription || 'Professional portfolio showcasing projects, blogs, and expertise.';
 

@@ -12,10 +12,10 @@ export async function generateMetadata() {
     const description = 'Hosted apps and services as a live process table — V2 edition.';
 
     return {
-        title: `${baseName} | Apps — V2`,
+        title: `${baseName} | Apps`,
         description,
         openGraph: {
-            title: `${baseName} | Apps — V2`,
+            title: `${baseName} | Apps`,
             description,
             url: `${baseUrl}${v2PublicPath(config, '/apps')}`,
             type: 'website',

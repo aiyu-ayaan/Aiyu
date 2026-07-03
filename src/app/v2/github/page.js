@@ -12,10 +12,10 @@ export async function generateMetadata() {
     const description = 'Open source contributions, repositories, and GitHub statistics — V2 edition.';
 
     return {
-        title: `${baseName} | GitHub — V2`,
+        title: `${baseName} | GitHub`,
         description,
         openGraph: {
-            title: `${baseName} | GitHub — V2`,
+            title: `${baseName} | GitHub`,
             description,
             url: `${baseUrl}${v2PublicPath(config, '/github')}`,
             type: 'website',
