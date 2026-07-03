@@ -9,14 +9,14 @@ const VERSIONS = [
         name: 'Classic',
         path: '/',
         description: 'The original glass-panel experience. Header with mega menu, card grids, framer-motion reveals.',
-        routes: ['/', '/about-me', '/projects', '/gallery', '/apps', '/blogs'],
+        routes: ['/', '/about-me', '/projects', '/gallery', '/apps', '/blogs', '/contact-us'],
     },
     {
         id: 'v2',
         name: 'V2 — Editorial Depth',
         path: '/v2',
-        description: 'The 3D scroll redesign. Numbered chapters, hairline ledger rows, GSAP depth animations, terminal chrome.',
-        routes: ['/v2', '/v2/about-me', '/v2/projects', '/v2/gallery', '/v2/apps', '/v2/blogs'],
+        description: 'The 3D scroll redesign. Numbered chapters, hairline ledger rows, GSAP depth animations, terminal chrome. Served at the same URLs — no /v2 prefix in public links.',
+        routes: ['/', '/about-me', '/projects', '/gallery', '/apps', '/blogs', '/contact-us'],
     },
 ];
 
@@ -114,9 +114,10 @@ const VersionForm = () => {
 
             <div className="rounded-lg border border-white/5 bg-white/5 p-4 font-mono text-xs leading-relaxed text-slate-400">
                 <p className="mb-1 text-slate-300">How it behaves</p>
-                <p>→ Classic (default): nothing changes; /v2 stays reachable and the home popup keeps promoting it.</p>
-                <p>→ V2: visitors hitting /, /about-me, /projects, /gallery, /apps or /blogs are redirected to the /v2 pages.</p>
+                <p>→ Classic (default): nothing changes; the v2 experience stays reachable under /v2 and the home popup keeps promoting it.</p>
+                <p>→ V2: the classic URLs serve the v2 pages directly (URL rewrite — the address bar never shows /v2, and the sitemap keeps the same URL structure). Direct /v2 links redirect to the clean URLs.</p>
                 <p>→ Visitors can always opt back via the v2 header&apos;s [classic] link (remembered in a cookie).</p>
+                <p>→ Changes take effect within ~30 seconds (the proxy caches the flag briefly).</p>
                 <p className="mt-2">
                     Preview:{' '}
                     <Link href="/" target="_blank" className="text-cyan-400 hover:underline">classic</Link>

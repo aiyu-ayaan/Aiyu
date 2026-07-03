@@ -3,6 +3,7 @@ import { getConfigData, getPublishedBlogs } from '@/lib/dataFetchers';
 import { getSiteUrl } from '@/lib/siteUrl';
 import { getBlogPath } from '@/lib/publicPaths';
 import { getReadTime, stripMarkdown } from '../../components/blogs/blogUtils';
+import { v2PublicPath } from '@/lib/siteVersion';
 
 export const revalidate = 0;
 
@@ -20,11 +21,11 @@ export async function generateMetadata() {
         openGraph: {
             title: `${baseName} | Writing — V2`,
             description,
-            url: `${baseUrl}/v2/blogs`,
+            url: `${baseUrl}${v2PublicPath(config, '/blogs')}`,
             type: 'website',
         },
         alternates: {
-            canonical: `${baseUrl}/v2/blogs`,
+            canonical: `${baseUrl}${v2PublicPath(config, '/blogs')}`,
         },
     };
 }

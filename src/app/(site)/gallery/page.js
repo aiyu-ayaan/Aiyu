@@ -1,7 +1,6 @@
 import GalleryClient from './GalleryClient';
 import { getConfigData, getGalleryData } from '@/lib/dataFetchers';
 import { getSiteUrl } from '@/lib/siteUrl';
-import { redirectToV2IfDefault } from '@/lib/siteVersion';
 
 export const revalidate = 0;
 
@@ -55,8 +54,6 @@ export async function generateMetadata() {
 }
 
 export default async function GalleryPage() {
-    await redirectToV2IfDefault('/v2/gallery');
-
     const [images, config] = await Promise.all([getGalleryData(), getConfigData()]);
     return <GalleryClient initialImages={images} initialConfig={config} />;
 }

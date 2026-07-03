@@ -305,6 +305,59 @@ function getMarkdownPage(pathname) {
     return renderMarkdownPage(markdownPages[prefix], pathname);
 }
 
+// ──────────────────────────────────────────────────────────────────────────
+// Default site version (set at /admin/version). When it's 'v2', the v2 pages
+// are served AT the classic URLs via rewrite — the address bar, sitemap, and
+// canonical structure never change — and direct /v2 links collapse back to
+// the classic URLs so only one URL structure is ever public. The
+// site-version=classic cookie (set by the v2 header's [classic] link) opts a
+// visitor out. The flag is read from the public config API and cached in
+// module scope so it costs one self-fetch per TTL, not per request.
+// ──────────────────────────────────────────────────────────────────────────
+const V2_PAGE_MAP = new Map([
+    ['/', '/v2'],
+    ['/about-me', '/v2/about-me'],
+    ['/projects', '/v2/projects'],
+    ['/gallery', '/v2/gallery'],
+    ['/apps', '/v2/apps'],
+    ['/blogs', '/v2/blogs'],
+    ['/contact-us', '/v2/contact-us'],
+]);
+
+const SITE_VERSION_CACHE_TTL_MS = 30 * 1000;
+let siteVersionCache = { value: 'classic', expiresAt: 0 };
+
+function getClassicToV2Rewrite(pathname) {
+    if (V2_PAGE_MAP.has(pathname)) return V2_PAGE_MAP.get(pathname);
+    if (pathname.startsWith('/blogs/')) return `/v2${pathname}`;
+    return null;
+}
+
+async function getDefaultSiteVersion(request) {
+    const now = Date.now();
+    if (now < siteVersionCache.expiresAt) {
+        return siteVersionCache.value;
+    }
+
+    try {
+        const configUrl = new URL('/api/config', request.nextUrl.origin);
+        // Standalone/Docker binds on 0.0.0.0, which is not a fetchable host.
+        if (configUrl.hostname === '0.0.0.0') configUrl.hostname = '127.0.0.1';
+
+        const response = await fetch(configUrl, { headers: { accept: 'application/json' } });
+        const config = response.ok ? await response.json() : null;
+        siteVersionCache = {
+            value: config?.defaultSiteVersion === 'v2' ? 'v2' : 'classic',
+            expiresAt: now + SITE_VERSION_CACHE_TTL_MS,
+        };
+    } catch {
+        // Keep serving the last known value; retry sooner than a full TTL.
+        siteVersionCache = { value: siteVersionCache.value, expiresAt: now + 5000 };
+    }
+
+    return siteVersionCache.value;
+}
+
 function acceptsMarkdown(request) {
     const accept = request.headers.get('accept') || '';
     return accept
@@ -359,6 +412,35 @@ export async function proxy(request) {
                 'x-markdown-tokens': markdownTokenEstimate(markdown),
             },
         });
+    }
+
+    // 5. Admin-selected default version: transparently serve /v2 pages at the
+    //    classic URLs, and fold direct /v2 hits back to the classic URLs.
+    if (
+        (request.method === 'GET' || request.method === 'HEAD') &&
+        request.cookies.get('site-version')?.value !== 'classic'
+    ) {
+        const v2Target = getClassicToV2Rewrite(path);
+        const isV2Path = path === '/v2' || path.startsWith('/v2/');
+
+        if ((v2Target || isV2Path) && (await getDefaultSiteVersion(request)) === 'v2') {
+            if (isV2Path) {
+                const strippedPath = path.slice('/v2'.length) || '/';
+                return NextResponse.redirect(
+                    new URL(strippedPath + request.nextUrl.search, request.nextUrl),
+                    307
+                );
+            }
+
+            const rewriteResponse = NextResponse.rewrite(
+                new URL(v2Target + request.nextUrl.search, request.nextUrl)
+            );
+            if (path === '/') {
+                rewriteResponse.headers.set('Link', agentDiscoveryLinkHeader);
+                rewriteResponse.headers.append('Vary', 'Accept');
+            }
+            return rewriteResponse;
+        }
     }
 
     const response = NextResponse.next();

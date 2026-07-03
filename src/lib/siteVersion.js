@@ -1,25 +1,17 @@
-import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
-import { getConfigData } from './dataFetchers';
-
 export const SITE_VERSION_COOKIE = 'site-version';
 
 /**
- * Server-side gate for classic routes that have a /v2 counterpart. When the
- * admin sets `defaultSiteVersion: 'v2'` (see /admin/version), visitors land
- * on the v2 page instead — unless they have explicitly opted back into the
- * classic site (the `site-version=classic` cookie, set by the v2 header's
- * [classic] link), so the classic pages stay reachable and don't bounce.
+ * Public path for a v2 page, honoring the admin default (/admin/version).
  *
- * Call at the top of a classic page's server component:
- *   await redirectToV2IfDefault('/v2/projects');
+ * When `defaultSiteVersion` is 'v2' the proxy (src/proxy.js) serves the v2
+ * pages AT the classic URLs, so the public path drops the /v2 prefix — no
+ * second URL structure ever reaches metadata, canonicals, or the sitemap.
+ * When the default is 'classic', the v2 tree lives under /v2 as usual.
+ *
+ *   v2PublicPath(config, '/projects') → '/projects' or '/v2/projects'
+ *   v2PublicPath(config, '')          → '/'         or '/v2'
  */
-export async function redirectToV2IfDefault(v2Path) {
-    const config = await getConfigData();
-    if (config?.defaultSiteVersion !== 'v2') return;
-
-    const cookieStore = await cookies();
-    if (cookieStore.get(SITE_VERSION_COOKIE)?.value === 'classic') return;
-
-    redirect(v2Path);
+export function v2PublicPath(config, path = '') {
+    const prefix = config?.defaultSiteVersion === 'v2' ? '' : '/v2';
+    return `${prefix}${path}` || '/';
 }

@@ -20,14 +20,23 @@ maintaining that work.
 ## Default version switch (/admin/version)
 
 `defaultSiteVersion` on the config singleton (`'classic'` default, `'v2'`)
-decides which experience visitors land on. It's edited at `/admin/version`
-(`VersionForm` PUTs `/api/config`) and enforced server-side by
-`redirectToV2IfDefault()` in `src/lib/siteVersion.js`, called at the top of
-each classic page that has a v2 counterpart (`/`, `/about-me`, `/projects`,
-`/gallery`, `/apps`, `/blogs`, `/blogs/[id]`). The `site-version=classic`
-cookie — set by the v2 header's `[classic]` link — opts a visitor back out,
-so the classic site stays reachable and never bounce-loops; the home
-popup's "Try V2" clears that opt-out again.
+decides which experience visitors get. It's edited at `/admin/version`
+(`VersionForm` PUTs `/api/config`) and enforced in `src/proxy.js`: when the
+default is v2, the classic URLs (`/`, `/about-me`, `/projects`, `/gallery`,
+`/apps`, `/blogs`, `/blogs/[id]`, `/contact-us`) are **rewritten** to the
+matching `/v2` pages — the address bar, sitemap, and canonical URL
+structure never change — and direct `/v2/*` hits are redirected to the
+clean URLs so only one URL structure is ever public. The proxy reads the
+flag from the public config API with a ~30s module-scope cache.
+
+The v2 pages' metadata builds its `canonical`/`og:url` through
+`v2PublicPath()` (`src/lib/siteVersion.js`), so canonicals drop the `/v2`
+prefix automatically when v2 is the default.
+
+The `site-version=classic` cookie — set by the v2 header's `[classic]`
+link — opts a visitor back out (the proxy skips the rewrite), so the
+classic site stays reachable; the home popup's "Try V2" clears that
+opt-out again.
 
 ## Design language
 
@@ -112,6 +121,8 @@ src/app/v2/
                               no filters, no client bundle on this page)
   blogs/[id]/page.js        — /v2/blogs/[id]: shared BlogDetailClient under
                               the v2 chrome (backHref="/v2/blogs")
+  contact-us/page.js        — /v2/contact-us (shared ContactForm, editorial
+                              shell in src/app/components/contact/v2/)
 
 src/app/components/landing/v2/
   gsap3d.js                 — the 3D scroll engine (see above)

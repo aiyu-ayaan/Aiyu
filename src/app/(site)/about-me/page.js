@@ -1,7 +1,6 @@
 import About from "../../components/about/About";
 import { getConfigData, getAboutData } from "@/lib/dataFetchers";
 import { getSiteUrl } from '@/lib/siteUrl';
-import { redirectToV2IfDefault } from '@/lib/siteVersion';
 
 export const revalidate = 0;
 
@@ -46,8 +45,6 @@ export async function generateMetadata() {
   };
 }
 export default async function AboutPage() {
-    await redirectToV2IfDefault('/v2/about-me');
-
   const serializedAboutData = await getAboutData();
   return <About data={serializedAboutData} />;
 }

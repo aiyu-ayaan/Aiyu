@@ -6,6 +6,7 @@ import { getBlogById, getConfigData } from '@/lib/dataFetchers';
 import { getAdsData } from '@/lib/adsDataFetcher';
 import { generateBlogSchema } from '@/app/schema';
 import { getSafeCanonicalUrl, getSiteUrl } from '@/lib/siteUrl';
+import { v2PublicPath } from '@/lib/siteVersion';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -33,7 +34,7 @@ export async function generateMetadata({ params }) {
     const socialTitle = blog?.socialTitle || seoTitle;
     const socialDescription = blog?.socialDescription || description;
     const ogImage = blog?.socialImage || blog?.image || config?.ogImage || `${baseUrl}/og-image.png`;
-    const canonicalUrl = getSafeCanonicalUrl(blog?.canonicalUrl, `/v2/blogs/${canonicalSlug}`);
+    const canonicalUrl = getSafeCanonicalUrl(blog?.canonicalUrl, v2PublicPath(config, `/blogs/${canonicalSlug}`));
     const keywords = Array.isArray(blog?.keywords) && blog.keywords.length > 0 ? blog.keywords : blog?.tags;
 
     if (!blog) {
@@ -99,11 +100,11 @@ export default async function BlogDetailV2Page({ params }) {
 
     const canonicalSlug = blog?.slug || identifier;
     if (identifier !== canonicalSlug) {
-        permanentRedirect(`/v2/blogs/${canonicalSlug}`);
+        permanentRedirect(v2PublicPath(config, `/blogs/${canonicalSlug}`));
     }
 
     const baseUrl = getSiteUrl();
-    const canonicalUrl = getSafeCanonicalUrl(blog?.canonicalUrl, `/v2/blogs/${canonicalSlug}`);
+    const canonicalUrl = getSafeCanonicalUrl(blog?.canonicalUrl, v2PublicPath(config, `/blogs/${canonicalSlug}`));
     const fallbackDescription = blog?.content?.substring(0, 160) || 'Blog article';
     const description = blog?.seoDescription || blog?.excerpt || fallbackDescription;
     const blogSchema = generateBlogSchema(

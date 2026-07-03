@@ -1,6 +1,7 @@
 import AboutV2 from "../../components/about/v2/AboutV2";
 import { getConfigData, getAboutData } from "@/lib/dataFetchers";
 import { getSiteUrl } from '@/lib/siteUrl';
+import { v2PublicPath } from '@/lib/siteVersion';
 
 export const revalidate = 0;
 
@@ -16,11 +17,11 @@ export async function generateMetadata() {
     openGraph: {
       title: `${baseName} | About Me — V2`,
       description,
-      url: `${baseUrl}/v2/about-me`,
+      url: `${baseUrl}${v2PublicPath(config, '/about-me')}`,
       type: 'website',
     },
     alternates: {
-      canonical: `${baseUrl}/v2/about-me`,
+      canonical: `${baseUrl}${v2PublicPath(config, '/about-me')}`,
     },
   };
 }

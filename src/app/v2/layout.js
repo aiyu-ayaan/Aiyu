@@ -41,7 +41,7 @@ export default async function V2Layout({ children }) {
     const packageVersion = await getPackageVersion();
 
     return (
-        <div className="relative">
+        <div className="relative" data-v2-shell="true">
             <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
                 <div
                     className="absolute inset-0"

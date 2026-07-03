@@ -1,7 +1,6 @@
 import BlogList from '../../components/blogs/BlogList';
 import { getConfigData, getPublishedBlogs } from '@/lib/dataFetchers';
 import { getSiteUrl } from '@/lib/siteUrl';
-import { redirectToV2IfDefault } from '@/lib/siteVersion';
 
 export const revalidate = 0;
 
@@ -51,8 +50,6 @@ export async function generateMetadata() {
 }
 
 export default async function BlogsPage() {
-    await redirectToV2IfDefault('/v2/blogs');
-
     const [blogs, config] = await Promise.all([
         getPublishedBlogs(),
         getConfigData(),

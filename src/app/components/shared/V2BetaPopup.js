@@ -26,7 +26,12 @@ export default function V2BetaPopup() {
         }
         if (dismissed) return;
 
-        const timer = window.setTimeout(() => setVisible(true), SHOW_DELAY_MS);
+        const timer = window.setTimeout(() => {
+            // When v2 is the admin default, the proxy serves the v2 page AT "/"
+            // — don't promote v2 to someone already looking at it.
+            if (document.querySelector('[data-v2-shell]')) return;
+            setVisible(true);
+        }, SHOW_DELAY_MS);
         return () => window.clearTimeout(timer);
     }, []);
 
