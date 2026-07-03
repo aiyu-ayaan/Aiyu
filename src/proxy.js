@@ -306,13 +306,15 @@ function getMarkdownPage(pathname) {
 }
 
 // ──────────────────────────────────────────────────────────────────────────
-// Default site version (set at /admin/version). When it's 'v2', the v2 pages
-// are served AT the classic URLs via rewrite — the address bar, sitemap, and
-// canonical structure never change — and direct /v2 links collapse back to
-// the classic URLs so only one URL structure is ever public. The
-// site-version=classic cookie (set by the v2 header's [classic] link) opts a
-// visitor out. The flag is read from the public config API and cached in
-// module scope so it costs one self-fetch per TTL, not per request.
+// Default site version (set at /admin/version). The default version is
+// served AT the clean URLs via rewrite — the address bar, sitemap, and
+// canonical structure never change — and its own prefix collapses back to
+// the clean URLs. The NON-default version is browsed visibly under its /v1
+// or /v2 prefix; the site-version cookie (pinned whenever a prefix is
+// visited, or by the v2 header's [classic] link) redirects a pinned
+// visitor's clean-URL hits to that prefix. The flag is read from the public
+// config API and cached in module scope so it costs one self-fetch per TTL,
+// not per request.
 // ──────────────────────────────────────────────────────────────────────────
 const V2_PAGES = new Set([
     '/',
@@ -328,12 +330,13 @@ const V2_PAGES = new Set([
 const SITE_VERSION_CACHE_TTL_MS = process.env.NODE_ENV === 'production' ? 30 * 1000 : 1000;
 let siteVersionCache = { value: 'classic', expiresAt: 0 };
 
+function isV2Page(pathname) {
+    return V2_PAGES.has(pathname) || pathname.startsWith('/blogs/');
+}
+
 function getRewriteTarget(pathname, activeVersion) {
-    if (activeVersion === 'v2') {
-        const isV2 = V2_PAGES.has(pathname) || pathname.startsWith('/blogs/');
-        if (isV2) {
-            return `/v2${pathname === '/' ? '' : pathname}`;
-        }
+    if (activeVersion === 'v2' && isV2Page(pathname)) {
+        return `/v2${pathname === '/' ? '' : pathname}`;
     }
     // Fall back to v1 for classic/v1, or anything not in V2
     return `/v1${pathname === '/' ? '' : pathname}`;
@@ -374,7 +377,7 @@ async function getDefaultSiteVersion(request) {
     return siteVersionCache.value;
 }
 
-async function getActiveVersion(request) {
+function getCookieVersion(request) {
     const cookieVal = request.cookies.get('site-version')?.value;
     if (cookieVal === 'classic' || cookieVal === 'v1') {
         return 'v1';
@@ -382,8 +385,15 @@ async function getActiveVersion(request) {
     if (cookieVal === 'v2') {
         return 'v2';
     }
-    const defaultSiteVersion = await getDefaultSiteVersion(request);
-    return defaultSiteVersion === 'v2' ? 'v2' : 'v1';
+    return null;
+}
+
+function pinVersionCookie(response, version) {
+    response.cookies.set('site-version', version === 'v1' ? 'classic' : 'v2', {
+        path: '/',
+        maxAge: 31536000,
+    });
+    return response;
 }
 
 function acceptsMarkdown(request) {
@@ -479,11 +489,12 @@ export async function proxy(request) {
     }
 
     // 5. Dynamic site versioning (V1 vs V2):
-    //    Clean URLs serve whichever version is active (cookie override, else the
-    //    admin default). Explicit /v1 or /v2 visits act as version switches:
-    //    they pin the site-version cookie and collapse to the clean URL, so
-    //    only one URL structure is ever public and either version can always
-    //    be reached again.
+    //    The admin-default version owns the clean URLs (served there via
+    //    rewrite; its own prefix collapses to the clean URL). The non-default
+    //    version is browsed VISIBLY under its /v1 or /v2 prefix — clean URLs
+    //    redirect a pinned visitor there. Visiting either prefix pins the
+    //    choice in the site-version cookie, so either version can always be
+    //    reached again (a stale cookie can never lock the site).
     if (request.method === 'GET' || request.method === 'HEAD') {
         const isV1Path = path === '/v1' || path.startsWith('/v1/');
         const isV2Path = path === '/v2' || path.startsWith('/v2/');
@@ -493,25 +504,42 @@ export async function proxy(request) {
         if (isV2Path) innerPath = path.slice('/v2'.length) || '/';
 
         if (isPublicPage(innerPath)) {
-            // Explicit /v1 or /v2 visit: a version switch. Pin the choice in the
-            // cookie and collapse to the clean URL, which then serves that
-            // version via the rewrite below. Doing this for BOTH versions (not
-            // just the active one) is what lets /v2 rescue a browser stuck on a
-            // stale site-version=classic cookie, and vice versa.
+            const defaultVersion = (await getDefaultSiteVersion(request)) === 'v2' ? 'v2' : 'v1';
+            const activeVersion = getCookieVersion(request) || defaultVersion;
+
+            // Explicit /v1 or /v2 visit: a version switch — pin it. The default
+            // version's prefix collapses to the clean URL it owns; the
+            // non-default version serves right here, keeping its prefix in the
+            // address bar.
             if (isV1Path || isV2Path) {
-                const redirect = NextResponse.redirect(
-                    new URL((request.nextUrl.basePath || '') + innerPath + request.nextUrl.search, getPublicOrigin(request)),
+                const pathVersion = isV1Path ? 'v1' : 'v2';
+                if (pathVersion === defaultVersion) {
+                    return pinVersionCookie(
+                        NextResponse.redirect(
+                            new URL((request.nextUrl.basePath || '') + innerPath + request.nextUrl.search, getPublicOrigin(request)),
+                            307
+                        ),
+                        pathVersion
+                    );
+                }
+                return pinVersionCookie(NextResponse.next(), pathVersion);
+            }
+
+            // Clean URL, but the visitor is pinned to the non-default version:
+            // send them to its visible prefix. Pages without a counterpart in
+            // that version (e.g. /work-in-progress has no v2) fall through to
+            // the rewrite below, which serves the v1 page at the clean URL.
+            if (activeVersion !== defaultVersion && (activeVersion === 'v1' || isV2Page(path))) {
+                return NextResponse.redirect(
+                    new URL(
+                        (request.nextUrl.basePath || '') + `/${activeVersion}` + (path === '/' ? '' : path) + request.nextUrl.search,
+                        getPublicOrigin(request)
+                    ),
                     307
                 );
-                redirect.cookies.set('site-version', isV1Path ? 'classic' : 'v2', {
-                    path: '/',
-                    maxAge: 31536000,
-                });
-                return redirect;
             }
 
             // Clean URLs: rewrite to serve the active version
-            const activeVersion = await getActiveVersion(request);
             const rewriteTarget = getRewriteTarget(path, activeVersion);
             const requestHeaders = new Headers(request.headers);
             requestHeaders.set('x-is-rewrite', 'true');

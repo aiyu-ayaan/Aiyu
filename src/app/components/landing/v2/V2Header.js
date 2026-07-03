@@ -40,7 +40,9 @@ const V2Header = ({ logoText = '< aiyu />', config, socialData }) => {
         { href: v2PublicPath(config, '/apps'), label: 'apps' },
         { href: v2PublicPath(config, '/blogs'), label: 'blogs' },
         { href: v2PublicPath(config, '/github'), label: 'github' },
-        { href: '/', label: 'classic' },
+        // Explicit /v1 pins classic in the proxy; when classic is already the
+        // admin default the proxy collapses it back to the clean URL.
+        { href: '/v1', label: 'classic' },
     ];
 
     // Close on navigation so the overlay never lingers over a new page.
