@@ -203,7 +203,7 @@ const ProjectDialog = ({ project, onClose, isV2: propIsV2 }) => {
 
                   <div className="py-4 border-t" style={{ borderColor: 'var(--hairline)' }}>
                     <p className="mb-2 font-mono text-xs uppercase tracking-[0.2em]" style={{ color: 'var(--text-muted)' }}>
-                      // Description
+                    {"// Description"}
                     </p>
                     <p className="text-base leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
                       {project?.description || 'No project description provided.'}
@@ -239,7 +239,7 @@ const ProjectDialog = ({ project, onClose, isV2: propIsV2 }) => {
                   {stackList.length > 0 && (
                     <div className="mt-6">
                       <p className="mb-3 font-mono text-xs uppercase tracking-[0.2em]" style={{ color: 'var(--text-muted)' }}>
-                        // Technologies
+                        {"// Technologies"}
                       </p>
                       <div className="flex flex-wrap gap-2">
                         {stackList.map((tech) => (

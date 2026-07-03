@@ -5,16 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import ThemeToggle from '../../ThemeToggle';
 import TerminalPath from '../../admin/TerminalPath';
-
-const NAV_LINKS = [
-    { href: '/v2', label: 'home' },
-    { href: '/v2/about-me', label: 'about' },
-    { href: '/v2/projects', label: 'projects' },
-    { href: '/v2/gallery', label: 'gallery' },
-    { href: '/v2/apps', label: 'apps' },
-    { href: '/v2/blogs', label: 'blogs' },
-    { href: '/', label: 'classic' },
-];
+import { v2PublicPath } from '@/lib/siteVersion';
 
 /**
  * V2 chrome: a hairline command bar. Mono wordmark, bracketed nav links,
@@ -29,6 +20,16 @@ const V2Header = ({ logoText = '< aiyu />', config, socialData }) => {
     // default (proxy rewrite keeps the classic URL), so match both.
     const showTerminal = !pathname.startsWith('/v2/blogs') && !pathname.startsWith('/blogs');
 
+    const navLinks = [
+        { href: v2PublicPath(config, ''), label: 'home' },
+        { href: v2PublicPath(config, '/about-me'), label: 'about' },
+        { href: v2PublicPath(config, '/projects'), label: 'projects' },
+        { href: v2PublicPath(config, '/gallery'), label: 'gallery' },
+        { href: v2PublicPath(config, '/apps'), label: 'apps' },
+        { href: v2PublicPath(config, '/blogs'), label: 'blogs' },
+        { href: '/', label: 'classic' },
+    ];
+
     return (
         <header
             className="fixed inset-x-0 top-0 z-50"
@@ -40,7 +41,7 @@ const V2Header = ({ logoText = '< aiyu />', config, socialData }) => {
             }}
         >
             <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-3 px-4 py-3.5 sm:px-6 lg:px-10">
-                <Link href="/v2" className="flex min-w-0 items-baseline gap-3 font-mono text-sm">
+                <Link href={v2PublicPath(config, '')} className="flex min-w-0 items-baseline gap-3 font-mono text-sm">
                     <span className="font-bold tracking-tight" style={{ color: 'var(--text-bright)' }}>
                         {logoText}
                     </span>
@@ -51,13 +52,13 @@ const V2Header = ({ logoText = '< aiyu />', config, socialData }) => {
                         className="flex min-w-0 items-center gap-2 overflow-x-auto font-mono text-xs sm:gap-4 sm:text-sm"
                         style={{ scrollbarWidth: 'none' }}
                     >
-                        {NAV_LINKS.map((link) => {
+                        {navLinks.map((link) => {
                             const active = pathname === link.href;
                             return (
                                 <Link
                                     key={link.href}
                                     href={link.href}
-                                    onClick={link.href === '/' ? () => {
+                                    onClick={link.label === 'classic' ? () => {
                                         // Opting out of v2: remember it so classic pages stop
                                         // redirecting here when v2 is the admin default.
                                         document.cookie = 'site-version=classic; path=/; max-age=31536000';
@@ -77,7 +78,7 @@ const V2Header = ({ logoText = '< aiyu />', config, socialData }) => {
                     <ThemeToggle compact />
 
                     <Link
-                        href="/v2/contact-us"
+                        href={v2PublicPath(config, '/contact-us')}
                         className="hidden whitespace-nowrap rounded-full border px-4 py-1.5 font-mono text-xs font-semibold transition-colors duration-200 sm:inline-block"
                         style={{
                             color: 'var(--accent-cyan)',

@@ -314,23 +314,37 @@ function getMarkdownPage(pathname) {
 // visitor out. The flag is read from the public config API and cached in
 // module scope so it costs one self-fetch per TTL, not per request.
 // ──────────────────────────────────────────────────────────────────────────
-const V2_PAGE_MAP = new Map([
-    ['/', '/v2'],
-    ['/about-me', '/v2/about-me'],
-    ['/projects', '/v2/projects'],
-    ['/gallery', '/v2/gallery'],
-    ['/apps', '/v2/apps'],
-    ['/blogs', '/v2/blogs'],
-    ['/contact-us', '/v2/contact-us'],
+const V2_PAGES = new Set([
+    '/',
+    '/about-me',
+    '/projects',
+    '/gallery',
+    '/apps',
+    '/blogs',
+    '/contact-us'
 ]);
 
 const SITE_VERSION_CACHE_TTL_MS = 30 * 1000;
 let siteVersionCache = { value: 'classic', expiresAt: 0 };
 
-function getClassicToV2Rewrite(pathname) {
-    if (V2_PAGE_MAP.has(pathname)) return V2_PAGE_MAP.get(pathname);
-    if (pathname.startsWith('/blogs/')) return `/v2${pathname}`;
-    return null;
+function getRewriteTarget(pathname, activeVersion) {
+    if (activeVersion === 'v2') {
+        const isV2 = V2_PAGES.has(pathname) || pathname.startsWith('/blogs/');
+        if (isV2) {
+            return `/v2${pathname === '/' ? '' : pathname}`;
+        }
+    }
+    // Fall back to v1 for classic/v1, or anything not in V2
+    return `/v1${pathname === '/' ? '' : pathname}`;
+}
+
+function getPublicOrigin(request) {
+    const proto = request.headers.get('x-forwarded-proto') || 'http';
+    const host = request.headers.get('x-forwarded-host') || request.headers.get('host');
+    if (host) {
+        return `${proto}://${host}`;
+    }
+    return request.nextUrl.origin;
 }
 
 async function getDefaultSiteVersion(request) {
@@ -340,7 +354,8 @@ async function getDefaultSiteVersion(request) {
     }
 
     try {
-        const configUrl = new URL('/api/config', request.nextUrl.origin);
+        const basePath = request.nextUrl.basePath || '';
+        const configUrl = new URL(basePath + '/api/config', request.nextUrl.origin);
         // Standalone/Docker binds on 0.0.0.0, which is not a fetchable host.
         if (configUrl.hostname === '0.0.0.0') configUrl.hostname = '127.0.0.1';
 
@@ -356,6 +371,18 @@ async function getDefaultSiteVersion(request) {
     }
 
     return siteVersionCache.value;
+}
+
+async function getActiveVersion(request) {
+    const cookieVal = request.cookies.get('site-version')?.value;
+    if (cookieVal === 'classic' || cookieVal === 'v1') {
+        return 'v1';
+    }
+    if (cookieVal === 'v2') {
+        return 'v2';
+    }
+    const defaultSiteVersion = await getDefaultSiteVersion(request);
+    return defaultSiteVersion === 'v2' ? 'v2' : 'v1';
 }
 
 function acceptsMarkdown(request) {
@@ -414,26 +441,35 @@ export async function proxy(request) {
         });
     }
 
-    // 5. Admin-selected default version: transparently serve /v2 pages at the
-    //    classic URLs, and fold direct /v2 hits back to the classic URLs.
-    if (
-        (request.method === 'GET' || request.method === 'HEAD') &&
-        request.cookies.get('site-version')?.value !== 'classic'
-    ) {
-        const v2Target = getClassicToV2Rewrite(path);
+    // 5. Dynamic site versioning (V1 vs V2):
+    //    Serve whichever version is active at the clean URLs, collapse direct active
+    //    version prefix hits back to clean URLs, and preserve access to non-active version.
+    if (request.method === 'GET' || request.method === 'HEAD') {
+        const activeVersion = await getActiveVersion(request);
+        const isV1Path = path === '/v1' || path.startsWith('/v1/');
         const isV2Path = path === '/v2' || path.startsWith('/v2/');
 
-        if ((v2Target || isV2Path) && (await getDefaultSiteVersion(request)) === 'v2') {
-            if (isV2Path) {
-                const strippedPath = path.slice('/v2'.length) || '/';
-                return NextResponse.redirect(
-                    new URL(strippedPath + request.nextUrl.search, request.nextUrl),
-                    307
-                );
-            }
+        // Direct request to the active version's prefix: redirect to the clean URL
+        if (isV1Path && activeVersion === 'v1') {
+            const strippedPath = path.slice('/v1'.length) || '/';
+            return NextResponse.redirect(
+                new URL((request.nextUrl.basePath || '') + strippedPath + request.nextUrl.search, getPublicOrigin(request)),
+                307
+            );
+        }
+        if (isV2Path && activeVersion === 'v2') {
+            const strippedPath = path.slice('/v2'.length) || '/';
+            return NextResponse.redirect(
+                new URL((request.nextUrl.basePath || '') + strippedPath + request.nextUrl.search, getPublicOrigin(request)),
+                307
+            );
+        }
 
+        // Clean URLs: rewrite to serve the active version
+        if (!isV1Path && !isV2Path) {
+            const rewriteTarget = getRewriteTarget(path, activeVersion);
             const rewriteResponse = NextResponse.rewrite(
-                new URL(v2Target + request.nextUrl.search, request.nextUrl)
+                new URL((request.nextUrl.basePath || '') + rewriteTarget + request.nextUrl.search, request.nextUrl.origin)
             );
             if (path === '/') {
                 rewriteResponse.headers.set('Link', agentDiscoveryLinkHeader);
