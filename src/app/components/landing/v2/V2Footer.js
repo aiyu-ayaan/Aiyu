@@ -37,7 +37,7 @@ const V2Footer = ({ name, config, socialData, packageVersion }) => {
     };
 
     return (
-        <footer className="relative overflow-hidden" style={{ borderTop: '1px solid var(--hairline)' }}>
+        <footer id="site-footer" className="relative overflow-hidden" style={{ borderTop: '1px solid var(--hairline)' }}>
             <span
                 aria-hidden="true"
                 className="pointer-events-none absolute -bottom-10 right-2 select-none text-[8rem] font-black leading-none tracking-tighter sm:text-[13rem]"
