@@ -39,6 +39,11 @@ const V2Hero = ({ data }) => {
             if (!stage || !headline) return;
 
             // Entrance: headline lines pivot up, shards surface from depth.
+            // Targets are INNER wrappers (.v2-hero-*-in) — the fly-through
+            // below animates the outer elements, and sharing targets between
+            // a time-based intro and a scrubbed timeline makes the scrub
+            // capture/fight the intro's hidden start values (shards vanished
+            // after a scroll round-trip). Disjoint targets can't conflict.
             const intro = gsap.timeline({ defaults: { ease: 'power3.out' } });
             intro
                 .from(scope.querySelectorAll('.v2-hero-line'), {
@@ -50,16 +55,16 @@ const V2Hero = ({ data }) => {
                     duration: 1.1,
                     stagger: 0.12,
                 })
-                .from(meta, { autoAlpha: 0, y: 26, duration: 0.8 }, '-=0.6')
-                .from(shards, {
+                .from(scope.querySelector('.v2-hero-meta-in'), { autoAlpha: 0, y: 26, duration: 0.8 }, '-=0.6')
+                .from(scope.querySelectorAll('.v2-hero-shard-in'), {
                     autoAlpha: 0,
                     z: -360,
                     scale: 0.8,
+                    transformPerspective: 900,
                     duration: 1.2,
                     stagger: 0.08,
-                    clearProps: 'opacity,visibility',
                 }, '-=0.9')
-                .from(cue, { autoAlpha: 0, y: -14, duration: 0.6 }, '-=0.4');
+                .from(scope.querySelector('.v2-hero-cue-in'), { autoAlpha: 0, y: -14, duration: 0.6 }, '-=0.4');
 
             // Fly-through: pin the stage and dolly the camera as the user scrolls.
             const fly = gsap.timeline({
@@ -73,20 +78,38 @@ const V2Hero = ({ data }) => {
                     anticipatePin: 1,
                 },
             });
+            // fromTo (not .to): the scrubbed timeline renders once at creation,
+            // while the intro still has these elements at autoAlpha 0 — a .to
+            // would capture THAT as its start value and scrub back to invisible
+            // when the user returns to the top. Declare the resting state
+            // explicitly instead; immediateRender:false keeps the intro intact.
             fly
-                .to(headline, {
+                .fromTo(headline, { z: 0, rotationX: 0, autoAlpha: 1 }, {
                     z: 340,
                     rotationX: 14,
                     autoAlpha: 0,
                     transformOrigin: '50% 20%',
+                    immediateRender: false,
                 }, 0)
-                .to(meta, { z: 200, autoAlpha: 0 }, 0.05)
-                .to(shards, {
+                .fromTo(meta, { z: 0, y: 0, autoAlpha: 1 }, {
+                    z: 200,
+                    autoAlpha: 0,
+                    immediateRender: false,
+                }, 0.05)
+                .fromTo(shards, {
+                    z: (i) => DEPTH_SHARDS[i % DEPTH_SHARDS.length].z,
+                    autoAlpha: 1,
+                }, {
                     z: (i) => 520 + DEPTH_SHARDS[i % DEPTH_SHARDS.length].z * 2,
                     autoAlpha: 0,
                     stagger: 0.04,
+                    immediateRender: false,
                 }, 0)
-                .to(cue, { autoAlpha: 0, y: 30 }, 0);
+                .fromTo(cue, { y: 0, autoAlpha: 1 }, {
+                    autoAlpha: 0,
+                    y: 30,
+                    immediateRender: false,
+                }, 0);
 
             // Idle drift so the depth reads even before scrolling.
             shards.forEach((shard, index) => {
@@ -122,7 +145,7 @@ const V2Hero = ({ data }) => {
                             }}
                             aria-hidden="true"
                         >
-                            {shard.label}
+                            <span className="v2-hero-shard-in block">{shard.label}</span>
                         </div>
                     ))}
 
@@ -148,7 +171,8 @@ const V2Hero = ({ data }) => {
                         </h1>
                     </div>
 
-                    <div className="v2-hero-meta mt-8 flex flex-col items-center gap-6">
+                    <div className="v2-hero-meta mt-8">
+                        <div className="v2-hero-meta-in flex flex-col items-center gap-6">
                         <div className="text-lg font-medium sm:text-2xl" style={{ color: 'var(--text-secondary)' }}>
                             <TypewriterEffect roles={homeRoles || []} />
                         </div>
@@ -170,14 +194,17 @@ const V2Hero = ({ data }) => {
                                 Classic Home
                             </Link>
                         </div>
+                        </div>
                     </div>
 
                     <div
-                        className="v2-hero-cue absolute inset-x-0 -bottom-6 mx-auto flex w-max items-center gap-2 text-xs font-medium uppercase tracking-[0.2em]"
+                        className="v2-hero-cue absolute inset-x-0 -bottom-6 mx-auto w-max text-xs font-medium uppercase tracking-[0.2em]"
                         style={{ color: 'var(--text-muted)' }}
                         aria-hidden="true"
                     >
-                        Scroll to fly through <FaArrowDown size={10} />
+                        <span className="v2-hero-cue-in flex items-center gap-2">
+                            Scroll to fly through <FaArrowDown size={10} />
+                        </span>
                     </div>
                 </div>
             </div>
