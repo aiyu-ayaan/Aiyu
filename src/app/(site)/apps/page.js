@@ -1,6 +1,7 @@
 import Deployments from '../../components/deployments/Deployments';
 import { getConfigData, getDeploymentsData } from '@/lib/dataFetchers';
 import { getSiteUrl } from '@/lib/siteUrl';
+import { redirectToV2IfDefault } from '@/lib/siteVersion';
 
 export const revalidate = 0;
 
@@ -50,6 +51,8 @@ export async function generateMetadata() {
 }
 
 export default async function AppsPage() {
+    await redirectToV2IfDefault('/v2/apps');
+
     const [deployments, config] = await Promise.all([getDeploymentsData(), getConfigData()]);
 
     return <Deployments data={deployments} config={config} />;

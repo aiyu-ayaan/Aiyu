@@ -1,6 +1,7 @@
 import Projects from '../../components/projects/Projects';
 import { getConfigData, getProjectsData } from "@/lib/dataFetchers";
 import { getSiteUrl } from '@/lib/siteUrl';
+import { redirectToV2IfDefault } from '@/lib/siteVersion';
 
 export const revalidate = 0;
 
@@ -45,6 +46,8 @@ export async function generateMetadata() {
   };
 }
 export default async function ProjectsPage() {
+    await redirectToV2IfDefault('/v2/projects');
+
   const [serializedProjectsData, config] = await Promise.all([
     getProjectsData(),
     getConfigData(),

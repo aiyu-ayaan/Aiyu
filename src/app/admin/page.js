@@ -5,7 +5,7 @@ import Link from 'next/link';
 import {
     FaHouse, FaUser, FaBriefcase, FaPenNib, FaImages,
     FaHeading, FaShareNodes, FaEnvelope,
-    FaPalette, FaGithub, FaSliders, FaDatabase, FaRightFromBracket, FaArrowRight, FaTerminal, FaRobot, FaServer, FaHardDrive, FaCode, FaGoogle, FaClock, FaBell, FaChartLine, FaMagnifyingGlass, FaShieldHalved, FaGauge
+    FaPalette, FaGithub, FaSliders, FaDatabase, FaRightFromBracket, FaArrowRight, FaTerminal, FaRobot, FaServer, FaHardDrive, FaCode, FaGoogle, FaClock, FaBell, FaChartLine, FaMagnifyingGlass, FaShieldHalved, FaGauge, FaCodeBranch
 } from "react-icons/fa6";
 
 export default function AdminDashboard() {
@@ -39,6 +39,7 @@ export default function AdminDashboard() {
             { label: 'GitHub', description: 'Repo Stats', icon: <FaGithub />, color: 'from-gray-500/10 to-gray-500/5', textColor: 'text-gray-400', path: '/admin/github' },
 
             { label: 'Config', description: 'Site Settings', icon: <FaSliders />, color: 'from-slate-500/10 to-slate-500/5', textColor: 'text-slate-400', path: '/admin/config' },
+            { label: 'Version', description: 'Classic vs V2 Default', icon: <FaCodeBranch />, color: 'from-sky-500/10 to-sky-500/5', textColor: 'text-sky-400', path: '/admin/version' },
             { label: 'Cron Jobs', description: 'Task Scheduler', icon: <FaClock />, color: 'from-emerald-500/10 to-emerald-500/5', textColor: 'text-emerald-400', path: '/admin/config/crons' },
             { label: 'Notifications', description: 'Alert Channels & integrations', icon: <FaBell />, color: 'from-pink-500/10 to-pink-500/5', textColor: 'text-pink-400', path: '/admin/config/notification' },
             { label: 'Ads', description: 'Google AdSense', icon: <FaGoogle />, color: 'from-green-500/10 to-green-500/5', textColor: 'text-green-400', path: '/admin/ads' },

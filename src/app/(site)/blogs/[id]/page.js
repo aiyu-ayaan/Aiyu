@@ -6,6 +6,7 @@ import { getBlogById, getConfigData } from '@/lib/dataFetchers';
 import { getAdsData } from '@/lib/adsDataFetcher';
 import { generateBlogSchema } from '@/app/schema';
 import { getSafeCanonicalUrl, getSiteUrl } from '@/lib/siteUrl';
+import { redirectToV2IfDefault } from '@/lib/siteVersion';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -96,6 +97,8 @@ export async function generateMetadata({ params }) {
 
 export default async function BlogDetailPage({ params }) {
     const { id: identifier } = await params;
+    await redirectToV2IfDefault(`/v2/blogs/${identifier}`);
+
     const [blog, config, adsConfig] = await Promise.all([
         getBlogByIdentifier(identifier), 
         getConfigData(),

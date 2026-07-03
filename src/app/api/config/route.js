@@ -38,6 +38,7 @@ const PUBLIC_CONFIG_KEYS = [
     'projectsSubtitle',
     'galleryTitle',
     'gallerySubtitle',
+    'defaultSiteVersion',
     'activeTheme',
     'activeThemeVariant',
     'allowThemeSwitching',

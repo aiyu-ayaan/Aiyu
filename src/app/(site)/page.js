@@ -7,6 +7,7 @@ import WebMCPTools from "../components/agent/WebMCPTools";
 import { getHomePageData, getConfigData } from "@/lib/dataFetchers";
 import { generateWebsiteSchema, generatePersonSchema, generateOrganizationSchema } from "@/app/schema";
 import { getSiteUrl } from '@/lib/siteUrl';
+import { redirectToV2IfDefault } from '@/lib/siteVersion';
 
 const FuturisticResume = dynamic(() => import("../components/landing/FuturisticResume"), {
   loading: () => <div className="h-screen" />,
@@ -58,6 +59,8 @@ export async function generateMetadata() {
 }
 
 export default async function Home() {
+    await redirectToV2IfDefault('/v2');
+
   const {
     homeData: serializedHomeData,
     aboutData: serializedAboutData,

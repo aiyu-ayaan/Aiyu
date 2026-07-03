@@ -8,7 +8,7 @@ import { themePresets } from '../../../lib/themePresets';
 import { applyThemeColors } from '../../../utils/themeUtils';
 
 const SUGGESTIONS = ['about-me', 'blogs', 'projects', 'gallery', 'github', 'resume', 'contact-me', 'apps', 'admin'];
-const ADMIN_SUGGESTIONS = ['dashboard', 'home', 'about', 'projects', 'blogs', 'gallery', 'header', 'footer', 'contact', 'themes', 'github', 'config', 'terminal', 'database'];
+const ADMIN_SUGGESTIONS = ['dashboard', 'home', 'about', 'projects', 'blogs', 'gallery', 'header', 'footer', 'contact', 'themes', 'github', 'config', 'terminal', 'database', 'version'];
 const ALL_COMMANDS = ['cd', 'ls', 'pwd', 'clear', 'date', 'whoami', 'history', 'resume', 'email', 'socials', 'reboot', 'help', 'theme', 'echo', 'sysinfo', 'joke', 'projects', 'apps', 'app', 'ascii', 'roll', 'flip', 'magic8', 'disco'];
 
 const ASCII_ARTS = [
