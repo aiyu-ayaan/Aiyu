@@ -8,6 +8,7 @@ import ProjectDialog from '../../projects/ProjectDialog';
 import useDevicePerformance from '../../../hooks/useDevicePerformance';
 import { useV2Fx } from './gsap3d';
 import V2ChapterHead from './V2ChapterHead';
+import { v2PublicPath } from '@/lib/siteVersion';
 
 const ROW_ACCENTS = ['var(--accent-cyan)', 'var(--accent-purple)', 'var(--accent-orange)'];
 
@@ -26,7 +27,7 @@ const normalizeStatus = (status) => {
  * 3D on hover. Rows yaw in from alternating edges; clicking opens the shared
  * ProjectDialog so details behave like everywhere else on the site.
  */
-const V2Projects = ({ data }) => {
+const V2Projects = ({ data, config }) => {
   const [selectedProject, setSelectedProject] = useState(null);
   const sectionRef = useRef(null);
   const { prefersReducedMotion } = useDevicePerformance();
@@ -144,7 +145,7 @@ const V2Projects = ({ data }) => {
         )}
 
         <p data-v2="rise" className="mt-12 font-mono text-sm">
-          <Link href="/v2/projects" className="underline-offset-4 hover:underline" style={{ color: 'var(--accent-cyan)' }}>
+          <Link href={v2PublicPath(config, '/projects')} className="underline-offset-4 hover:underline" style={{ color: 'var(--accent-cyan)' }}>
             → the complete archive
           </Link>
         </p>

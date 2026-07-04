@@ -2,6 +2,8 @@
 
 import React, { useRef } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { getVersionedPath } from '@/lib/siteVersion';
 import { FaArrowRight, FaCodeBranch, FaCompass, FaRocket } from 'react-icons/fa';
 import useDevicePerformance from '../../hooks/useDevicePerformance';
 import { useSectionFx } from '../shared/gsapScroll';
@@ -28,6 +30,7 @@ const highlightItems = [
 ];
 
 const HomeAbout = ({ data }) => {
+  const pathname = usePathname();
   const { professionalSummary } = data || {};
   const sectionRef = useRef(null);
   const { prefersReducedMotion } = useDevicePerformance();
@@ -57,7 +60,7 @@ const HomeAbout = ({ data }) => {
               Intentional engineering with creative energy.
             </h2>
           </div>
-          <Link href="/about-me" data-reveal="right" className="pill-ghost self-start lg:self-auto">
+          <Link href={getVersionedPath(pathname, "/about-me")} data-reveal="right" className="pill-ghost self-start lg:self-auto">
             Full Story <FaArrowRight size={12} />
           </Link>
         </div>
@@ -88,10 +91,10 @@ const HomeAbout = ({ data }) => {
         </div>
 
         <div data-reveal-group data-reveal-stagger="0.07" className="mt-10 flex flex-wrap gap-3">
-          <Link href="/projects" data-reveal="rise" className="pill-ghost">
+          <Link href={getVersionedPath(pathname, "/projects")} data-reveal="rise" className="pill-ghost">
             View Projects
           </Link>
-          <Link href="/contact-us" data-reveal="rise" className="pill-solid">
+          <Link href={getVersionedPath(pathname, "/contact-us")} data-reveal="rise" className="pill-solid">
             Start a Conversation
           </Link>
         </div>

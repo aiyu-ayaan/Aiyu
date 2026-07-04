@@ -3,6 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { getVersionedPath } from '@/lib/siteVersion';
 import { motion } from 'framer-motion';
 import { FaArrowUp, FaGithub, FaPalette } from 'react-icons/fa';
 import { getIconByName } from '../../lib/icons';
@@ -207,7 +208,7 @@ export default function Footer({ socialData, name, config, packageVersion }) {
                         ].map(link => (
                             <Link
                                 key={link.name}
-                                href={link.href}
+                                href={getVersionedPath(pathname, link.href)}
                                 className="text-sm font-medium transition-colors hover:underline"
                                 style={{ color: 'var(--text-tertiary)' }}
                             >

@@ -1,4 +1,5 @@
 import { notFound, permanentRedirect } from 'next/navigation';
+import { headers } from 'next/headers';
 import TrackView from '../../../components/shared/TrackView';
 import { cache } from 'react';
 import { getConfigData } from '@/lib/dataFetchers';
@@ -90,9 +91,14 @@ export default async function ProjectDetailsPage({ params }) {
         notFound();
     }
 
+    const headersList = await headers();
+    const originalPath = headersList.get('x-original-path') || '';
+    const isV1Path = originalPath === '/v1' || originalPath.startsWith('/v1/');
+    const redirectPrefix = isV1Path ? '/v1' : '';
+
     const canonicalSlug = getProjectSlug(project);
     if (identifier !== canonicalSlug) {
-        permanentRedirect(`/projects/${canonicalSlug}`);
+        permanentRedirect(`${redirectPrefix}/projects/${canonicalSlug}`);
     }
 
     const baseUrl = getBaseUrl();

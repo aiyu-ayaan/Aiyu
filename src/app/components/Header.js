@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { getVersionedPath } from '@/lib/siteVersion';
 import { useEffect, useRef, useState, memo } from 'react';
 import clsx from 'clsx';
 import { motion, useScroll, useSpring, useTransform } from 'framer-motion';
@@ -185,7 +186,7 @@ export default memo(function Header({ data, logoText, socialData, config }) {
                backfaceVisibility: 'hidden',
              }}
           >
-            <Link href="/" className="min-w-0 flex-shrink-0">
+            <Link href={getVersionedPath(pathname, "/")} className="min-w-0 flex-shrink-0">
               <motion.div
                 className="inline-flex items-center gap-2 px-2 py-2"
                 whileHover={{ scale: 1.03 }}
@@ -209,11 +210,12 @@ export default memo(function Header({ data, logoText, socialData, config }) {
                 }}
               >
                 {visibleNavLinks.map((link) => {
-                  const isActive = isRouteMatch(pathname, link.href);
+                  const versionedHref = getVersionedPath(pathname, link.href);
+                  const isActive = isRouteMatch(pathname, versionedHref);
                   return (
                     <Link
                       key={link.name}
-                      href={link.href}
+                      href={versionedHref}
                       target={link.target}
                       className="relative rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors"
                       style={{ color: isActive ? 'var(--text-bright)' : 'var(--text-tertiary)' }}
@@ -273,7 +275,7 @@ export default memo(function Header({ data, logoText, socialData, config }) {
 
               <ThemeToggle />
 
-              <Link href={contactLink?.href || '/contact-us'}>
+              <Link href={getVersionedPath(pathname, contactLink?.href || '/contact-us')}>
                 <motion.button
                   className="hidden items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold xl:inline-flex"
                   style={{
@@ -385,28 +387,31 @@ export default memo(function Header({ data, logoText, socialData, config }) {
           </div>
 
           <div className="flex flex-col gap-2">
-            {visibleNavLinks.map((link, index) => (
-              <motion.div
-                key={link.name}
-                initial={{ opacity: 0, x: -18 }}
-                animate={{ opacity: isMenuOpen ? 1 : 0, x: isMenuOpen ? 0 : -18 }}
-                transition={{ delay: 0.04 * index }}
-              >
-                <Link
-                  href={link.href}
-                  target={link.target}
-                  onClick={() => setIsMenuOpen(false)}
-                  className="flex items-center justify-between rounded-xl border px-4 py-3 text-base font-medium"
-                  style={{
-                    borderColor: isRouteMatch(pathname, link.href)
-                      ? 'var(--hairline-strong)'
-                      : 'var(--hairline)',
-                    color: isRouteMatch(pathname, link.href) ? 'var(--text-bright)' : 'var(--text-secondary)',
-                    backgroundColor: isRouteMatch(pathname, link.href)
-                      ? 'color-mix(in srgb, var(--text-bright) 10%, transparent)'
-                      : 'var(--surface-tile)',
-                  }}
+            {visibleNavLinks.map((link, index) => {
+              const versionedHref = getVersionedPath(pathname, link.href);
+              const isActive = isRouteMatch(pathname, versionedHref);
+              return (
+                <motion.div
+                  key={link.name}
+                  initial={{ opacity: 0, x: -18 }}
+                  animate={{ opacity: isMenuOpen ? 1 : 0, x: isMenuOpen ? 0 : -18 }}
+                  transition={{ delay: 0.04 * index }}
                 >
+                  <Link
+                    href={versionedHref}
+                    target={link.target}
+                    onClick={() => setIsMenuOpen(false)}
+                    className="flex items-center justify-between rounded-xl border px-4 py-3 text-base font-medium"
+                    style={{
+                      borderColor: isActive
+                        ? 'var(--hairline-strong)'
+                        : 'var(--hairline)',
+                      color: isActive ? 'var(--text-bright)' : 'var(--text-secondary)',
+                      backgroundColor: isActive
+                        ? 'color-mix(in srgb, var(--text-bright) 10%, transparent)'
+                        : 'var(--surface-tile)',
+                    }}
+                  >
                   <span className="inline-flex items-center gap-2">
                     <span>{link.name}</span>
                     {link.beta === true && (
@@ -425,7 +430,8 @@ export default memo(function Header({ data, logoText, socialData, config }) {
                   <ArrowUpRight size={15} />
                 </Link>
               </motion.div>
-            ))}
+              );
+            })}
           </div>
 
           <div className="mt-auto space-y-4 pt-6">
@@ -436,7 +442,7 @@ export default memo(function Header({ data, logoText, socialData, config }) {
               <ThemeToggle />
             </div>
 
-            <Link href={contactLink?.href || '/contact-us'}>
+            <Link href={getVersionedPath(pathname, contactLink?.href || '/contact-us')}>
               <button
                 type="button"
                 className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold"

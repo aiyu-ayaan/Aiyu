@@ -2,6 +2,8 @@
 
 import React, { useRef } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { getVersionedPath } from '@/lib/siteVersion';
 import useDevicePerformance from '../../hooks/useDevicePerformance';
 import { useSectionFx } from '../shared/gsapScroll';
 
@@ -15,6 +17,7 @@ const quickLinks = [
 ];
 
 const HomeSnapshot = ({ stats = [], recentProjectNames = [], recentBlogTitles = [] }) => {
+    const pathname = usePathname();
     const scopeRef = useRef(null);
     const { prefersReducedMotion } = useDevicePerformance();
 
@@ -34,7 +37,7 @@ const HomeSnapshot = ({ stats = [], recentProjectNames = [], recentBlogTitles = 
                             Highlights across home, projects, and writing.
                         </h2>
                     </div>
-                    <Link href="/projects" data-reveal="right" className="pill-ghost self-start lg:self-auto">
+                    <Link href={getVersionedPath(pathname, "/projects")} data-reveal="right" className="pill-ghost self-start lg:self-auto">
                         Browse Full Projects
                     </Link>
                 </div>

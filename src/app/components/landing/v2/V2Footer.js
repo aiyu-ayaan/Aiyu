@@ -4,25 +4,20 @@ import React from 'react';
 import Link from 'next/link';
 import { FaArrowUp } from 'react-icons/fa';
 import { getIconByName } from '@/lib/icons';
+import { v2PublicPath } from '@/lib/siteVersion';
 
-const SITEMAP_LINKS = [
-    { href: '/v2', label: 'v2 home' },
-    { href: '/v2/about-me', label: 'v2 about' },
-    { href: '/v2/projects', label: 'v2 projects' },
-    { href: '/v2/gallery', label: 'v2 gallery' },
-    { href: '/v2/apps', label: 'v2 apps' },
-    { href: '/v2/blogs', label: 'v2 writing' },
-    { href: '/v2/github', label: 'v2 github' },
-    { href: '/', label: 'classic home' },
-    { href: '/v2/contact-us', label: 'contact' },
-];
-
-/**
- * V2 footer: a closing ledger. Ghost wordmark at depth, mono sitemap and
- * social columns over hairline rules, and a status line with the version —
- * ending the page in the same editorial-terminal voice.
- */
 const V2Footer = ({ name, config, socialData, packageVersion }) => {
+    const sitemapLinks = [
+        { href: v2PublicPath(config, ''), label: 'v2 home' },
+        { href: v2PublicPath(config, '/about-me'), label: 'v2 about' },
+        { href: v2PublicPath(config, '/projects'), label: 'v2 projects' },
+        { href: v2PublicPath(config, '/gallery'), label: 'v2 gallery' },
+        { href: v2PublicPath(config, '/apps'), label: 'v2 apps' },
+        { href: v2PublicPath(config, '/blogs'), label: 'v2 writing' },
+        { href: v2PublicPath(config, '/github'), label: 'v2 github' },
+        { href: '/v1', label: 'classic home' },
+        { href: v2PublicPath(config, '/contact-us'), label: 'contact' },
+    ];
     const socials = (socialData || [])
         .map((social) => ({ ...social, icon: getIconByName(social.iconName) }))
         .filter((social) => social.url && !social.isHidden && social.icon);
@@ -65,7 +60,7 @@ const V2Footer = ({ name, config, socialData, packageVersion }) => {
                             $ sitemap
                         </p>
                         <ul className="space-y-2 font-mono text-sm">
-                            {SITEMAP_LINKS.map((link) => (
+                            {sitemapLinks.map((link) => (
                                 <li key={link.href}>
                                     <Link
                                         href={link.href}

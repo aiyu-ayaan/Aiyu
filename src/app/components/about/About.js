@@ -13,6 +13,8 @@ import {
 import QuestProfile from './QuestProfile';
 import QuestMap from './QuestMap';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { getVersionedPath } from '@/lib/siteVersion';
 import TypewriterEffect from '../shared/TypewriterEffect';
 import Divider from '../landing/Divider';
 import RouteBetaBadge from '../shared/RouteBetaBadge';
@@ -59,6 +61,7 @@ const getSkillBand = (level = 0) => {
 };
 
 const About = ({ data }) => {
+  const pathname = usePathname();
   const [isSkillsExpanded, setIsSkillsExpanded] = useState(false);
   const ref = useRef(null);
   const { prefersReducedMotion } = useDevicePerformance();
@@ -177,7 +180,7 @@ const About = ({ data }) => {
               Explore Journey <FaArrowRight size={14} />
             </Link>
             <Link
-              href="/contact-us"
+              href={getVersionedPath(pathname, "/contact-us")}
               className="pill-ghost"
             >
               Let&apos;s Connect

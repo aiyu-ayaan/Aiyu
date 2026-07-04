@@ -11,7 +11,7 @@ const V2Blogs = dynamic(() => import('./V2Blogs'), { loading: () => <div classNa
 
 // The v2 chapters are full-bleed and draw their own hairline separators,
 // so no Divider elements between them.
-export default function V2LazySections({ aboutData, projectsData, blogsData, homeData }) {
+export default function V2LazySections({ aboutData, projectsData, blogsData, homeData, config }) {
   return (
     <>
       <ViewportLazySection id="v2-tech" placeholderHeight={720} rootMargin="420px 0px">
@@ -27,11 +27,11 @@ export default function V2LazySections({ aboutData, projectsData, blogsData, hom
       </ViewportLazySection>
 
       <ViewportLazySection id="v2-projects" placeholderHeight={760} rootMargin="420px 0px">
-        <V2Projects data={projectsData} />
+        <V2Projects data={projectsData} config={config} />
       </ViewportLazySection>
 
       <ViewportLazySection id="v2-blogs" placeholderHeight={720} rootMargin="420px 0px">
-        <V2Blogs blogs={blogsData} />
+        <V2Blogs blogs={blogsData} config={config} />
       </ViewportLazySection>
     </>
   );

@@ -43,7 +43,10 @@ const formatDate = (blog) => {
  * rows in the v2 editorial voice, sorted newest first.
  */
 export default async function BlogsV2Page() {
-    const blogs = await getPublishedBlogs();
+    const [blogs, config] = await Promise.all([
+        getPublishedBlogs(),
+        getConfigData(),
+    ]);
 
     const sortedBlogs = (Array.isArray(blogs) ? [...blogs] : []).sort(
         (a, b) => new Date(b?.date || b?.createdAt || 0) - new Date(a?.date || a?.createdAt || 0)
@@ -93,7 +96,7 @@ export default async function BlogsV2Page() {
                             return (
                                 <Link
                                     key={blog?._id || blog?.slug || `${blog?.title}-${index}`}
-                                    href={getBlogPath(blog).replace(/^\/blogs\//, '/v2/blogs/')}
+                                    href={v2PublicPath(config, getBlogPath(blog))}
                                     className="group grid grid-cols-12 items-center gap-4 py-8 sm:py-10"
                                     style={{ borderBottom: '1px solid var(--hairline)' }}
                                 >

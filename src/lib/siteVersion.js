@@ -15,3 +15,25 @@ export function v2PublicPath(config, path = '') {
     const prefix = config?.defaultSiteVersion === 'v2' ? '' : '/v2';
     return `${prefix}${path}` || '/';
 }
+
+/**
+ * Version-aware path prefixer for internal links.
+ * Preserves the /v1 prefix if the user is currently browsing classic pages.
+ */
+export function getVersionedPath(pathname, href) {
+    if (!href || typeof href !== 'string') return href;
+    if (!href.startsWith('/') || href.startsWith('//')) return href;
+
+    const isV1 = pathname && (pathname === '/v1' || pathname.startsWith('/v1/'));
+    if (isV1) {
+        // Do not prefix blog details as per existing rules
+        if (href.startsWith('/blogs/')) {
+            return href;
+        }
+        if (href.startsWith('/v1')) return href;
+        if (href === '/') return '/v1';
+        return `/v1${href}`;
+    }
+    return href;
+}
+

@@ -494,9 +494,26 @@ export async function proxy(request) {
         if (isV2Path) innerPath = path.slice('/v2'.length) || '/';
 
         if (isPublicPage(innerPath)) {
-            // If explicit /v1 or /v2 path, serve it directly without redirecting.
+            // If explicit /v1 or /v2 path:
             if (isV1Path || isV2Path) {
-                return NextResponse.next();
+                const defaultVersion = (await getDefaultSiteVersion(request)) === 'v2' ? 'v2' : 'v1';
+                const pathVersion = isV1Path ? 'v1' : 'v2';
+
+                // If they are accessing the default version's path prefix, redirect to clean URL
+                if (pathVersion === defaultVersion) {
+                    const search = request.nextUrl.search || '';
+                    const redirectUrl = new URL((request.nextUrl.basePath || '') + innerPath + search, getPublicOrigin(request));
+                    return NextResponse.redirect(redirectUrl, 308);
+                }
+
+                // Otherwise, serve it directly (non-default version)
+                const requestHeaders = new Headers(request.headers);
+                requestHeaders.set('x-original-path', path);
+                return NextResponse.next({
+                    request: {
+                        headers: requestHeaders,
+                    }
+                });
             }
 
             // Clean URL: rewrite to serve the default version
@@ -504,6 +521,7 @@ export async function proxy(request) {
             const rewriteTarget = getRewriteTarget(path, defaultVersion);
             const requestHeaders = new Headers(request.headers);
             requestHeaders.set('x-is-rewrite', 'true');
+            requestHeaders.set('x-original-path', path);
 
             const rewriteResponse = NextResponse.rewrite(
                 new URL((request.nextUrl.basePath || '') + rewriteTarget + request.nextUrl.search, request.nextUrl.origin),

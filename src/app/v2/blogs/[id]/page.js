@@ -132,7 +132,7 @@ export default async function BlogDetailV2Page({ params }) {
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(blogSchema) }}
             />
             <TrackView entityType="blog" entityId={blog?._id} entitySlug={canonicalSlug} />
-            <BlogDetailClient blog={blog} config={config} adsConfig={adsConfig} backHref="/v2/blogs" />
+            <BlogDetailClient blog={blog} config={config} adsConfig={adsConfig} backHref={v2PublicPath(config, '/blogs')} />
         </div>
     );
 }

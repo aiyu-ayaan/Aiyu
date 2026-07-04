@@ -8,6 +8,7 @@ import { getBlogPath } from '@/lib/publicPaths';
 import useDevicePerformance from '../../../hooks/useDevicePerformance';
 import { useV2Fx } from './gsap3d';
 import V2ChapterHead from './V2ChapterHead';
+import { v2PublicPath } from '@/lib/siteVersion';
 
 const ROW_ACCENTS = ['var(--accent-pink)', 'var(--accent-cyan)', 'var(--accent-purple)'];
 
@@ -17,7 +18,7 @@ const ROW_ACCENTS = ['var(--accent-pink)', 'var(--accent-cyan)', 'var(--accent-p
  * Rows hinge in from alternating edges and the title slides on hover.
  * Same content and links as the v1 section.
  */
-const V2Blogs = ({ blogs }) => {
+const V2Blogs = ({ blogs, config }) => {
   const sectionRef = useRef(null);
   const { prefersReducedMotion } = useDevicePerformance();
 
@@ -98,7 +99,7 @@ const V2Blogs = ({ blogs }) => {
         </div>
 
         <p data-v2="rise" className="mt-12 font-mono text-sm">
-          <Link href="/v2/blogs" className="underline-offset-4 hover:underline" style={{ color: 'var(--accent-purple)' }}>
+          <Link href={v2PublicPath(config, '/blogs')} className="underline-offset-4 hover:underline" style={{ color: 'var(--accent-purple)' }}>
             → all posts
           </Link>
         </p>

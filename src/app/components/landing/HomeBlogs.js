@@ -2,6 +2,8 @@
 
 import React, { useMemo, useRef } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { getVersionedPath } from '@/lib/siteVersion';
 import { FaArrowRight, FaCalendarAlt, FaPenNib } from 'react-icons/fa';
 import { getReadTime } from '../blogs/blogUtils';
 import { getBlogPath } from '@/lib/publicPaths';
@@ -9,6 +11,7 @@ import useDevicePerformance from '../../hooks/useDevicePerformance';
 import { useSectionFx } from '../shared/gsapScroll';
 
 const HomeBlogs = ({ blogs }) => {
+  const pathname = usePathname();
   const sectionRef = useRef(null);
   const { prefersReducedMotion } = useDevicePerformance();
 
@@ -46,7 +49,7 @@ const HomeBlogs = ({ blogs }) => {
             </p>
           </div>
 
-          <Link href="/blogs" data-reveal="right" className="pill-ghost self-start lg:self-auto">
+          <Link href={getVersionedPath(pathname, "/blogs")} data-reveal="right" className="pill-ghost self-start lg:self-auto">
             View All Posts <FaArrowRight size={12} />
           </Link>
         </div>

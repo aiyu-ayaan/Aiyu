@@ -270,7 +270,7 @@ export default function ClientEnhancements() {
             )}
             {mountPalette && <CommandPalette />}
 
-            {pathname === '/' && <V2BetaPopup />}
+            {(pathname === '/' || pathname === '/v1') && <V2BetaPopup />}
 
             {/* Scroll to top button — CSS-only transitions (no framer-motion) so
                 this always-rendered root component stays out of the heavy

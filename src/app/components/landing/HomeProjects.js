@@ -2,6 +2,8 @@
 
 import React, { useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { getVersionedPath } from '@/lib/siteVersion';
 import { FaArrowRight, FaBoxes, FaCheckCircle, FaTools } from 'react-icons/fa';
 import ProjectCard from '../projects/ProjectCard';
 import ProjectDialog from '../projects/ProjectDialog';
@@ -17,6 +19,7 @@ const normalizeStatus = (status) => {
 };
 
 const HomeProjects = ({ data }) => {
+  const pathname = usePathname();
   const [selectedProject, setSelectedProject] = useState(null);
   const sectionRef = useRef(null);
   const { prefersReducedMotion } = useDevicePerformance();
@@ -70,7 +73,7 @@ const HomeProjects = ({ data }) => {
               Recent builds with production-focused architecture and clean user experience.
             </p>
           </div>
-          <Link href="/projects" data-reveal="right" className="pill-ghost self-start lg:self-auto">
+          <Link href={getVersionedPath(pathname, "/projects")} data-reveal="right" className="pill-ghost self-start lg:self-auto">
             View All Projects <FaArrowRight size={12} />
           </Link>
         </div>

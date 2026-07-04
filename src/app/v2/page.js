@@ -113,6 +113,7 @@ export default async function HomeV2() {
         projectsData={serializedProjectsData}
         blogsData={serializedBlogsData}
         homeData={serializedHomeData}
+        config={serializedConfigData}
       />
     </div>
   );
