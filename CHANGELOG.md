@@ -1,5 +1,15 @@
 # Changelog
 
+## [4.6.2](https://github.com/aiyu-ayaan/Aiyu/compare/v4.6.1...v4.6.2) (2026-07-04)
+
+### Bug Fixes
+
+* : implement version-aware path handling across components and proxy
+
+### Other Changes
+
+* Update various screenshot assets
+
 ## [4.6.1](https://github.com/aiyu-ayaan/Aiyu/compare/v4.6.0...v4.6.1) (2026-07-03)
 
 ### Features
