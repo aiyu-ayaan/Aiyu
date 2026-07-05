@@ -42,6 +42,7 @@
     "@google/genai": "^2.9.0",
     "@google/generative-ai": "^0.24.1",
     "@gsap/react": "^2.1.2",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "@prisma/client": "^6.19.3",
     "@tailwindcss/typography": "^0.5.19",
     "adm-zip": "^0.5.17",
