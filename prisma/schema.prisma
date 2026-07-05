@@ -437,6 +437,12 @@ model CronEnv {
 model McpConfig {
   id        String   @id @default(cuid())
   data      Json     @default("{}")
+  // Bearer token that authorizes MCP write tools at /api/mcp. Stored as a
+  // SHA-256 hash (withheld by the serializer, like Config.blogApiTokenHash);
+  // last4 + updatedAt are non-secret display metadata.
+  mcpTokenHash      String?
+  mcpTokenLast4     String    @default("")
+  mcpTokenUpdatedAt DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 }
