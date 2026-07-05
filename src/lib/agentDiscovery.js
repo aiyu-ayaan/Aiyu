@@ -318,38 +318,6 @@ export function getAgentSkillsIndex() {
     };
 }
 
-export function getMcpServerCard() {
-    return {
-        serverInfo: {
-            name: 'aiyu',
-            version: '1.0.0',
-        },
-        transports: [
-            {
-                type: 'webmcp',
-                endpoint: toAbsoluteSiteUrl('/'),
-            },
-        ],
-        capabilities: {
-            tools: {
-                listChanged: false,
-                tools: [
-                    { name: 'aiyu.navigate' },
-                    { name: 'aiyu.search' },
-                    { name: 'aiyu.getPublicApiCatalog' },
-                ],
-            },
-            resources: {
-                subscribe: false,
-                listChanged: false,
-            },
-            prompts: {
-                listChanged: false,
-            },
-        },
-        links: {
-            apiCatalog: toAbsoluteSiteUrl('/.well-known/api-catalog'),
-            documentation: toAbsoluteSiteUrl('/docs/api'),
-        },
-    };
-}
+// The MCP server card is now admin-configurable and served from the DB-backed
+// singleton — see lib/mcpConfig.js (getMcpServerCard / buildMcpServerCard),
+// consumed by /.well-known/mcp/server-card.json.
