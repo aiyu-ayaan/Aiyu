@@ -32,6 +32,12 @@ describe('mergeMcpConfig', () => {
     it('respects an explicit disabled master switch', () => {
         expect(mergeMcpConfig({ enabled: false }).enabled).toBe(false);
     });
+
+    it('defaults write access to disabled (secure by default)', () => {
+        expect(mergeMcpConfig({}).write).toEqual({ enabled: false });
+        expect(mergeMcpConfig({ write: { enabled: 'yes' } }).write).toEqual({ enabled: false });
+        expect(mergeMcpConfig({ write: { enabled: true } }).write).toEqual({ enabled: true });
+    });
 });
 
 describe('buildMcpServerCard', () => {

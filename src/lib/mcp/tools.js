@@ -20,6 +20,11 @@ import {
     getBlogById,
 } from '@/lib/dataFetchers';
 import { getApiCatalog } from '@/lib/agentDiscovery';
+import { prisma } from '@/lib/prisma';
+import { toClient, fromClient } from '@/lib/serialize';
+import cache from '@/lib/cache';
+import { logAudit, AUDIT_CATEGORY } from '@/lib/audit';
+import { assertMcpWrite, getMcpAuth } from '@/lib/mcp/auth';
 
 const NO_ARGS = { type: 'object', properties: {}, additionalProperties: false };
 
@@ -151,6 +156,255 @@ export const RESOURCES = [
     { uri: 'aiyu://deployments', name: 'deployments', title: 'Deployments', description: 'Live deployments / hosted apps.', mimeType: 'application/json', read: async () => (await getDeploymentsData()) || [] },
     { uri: 'aiyu://api-catalog', name: 'api-catalog', title: 'API Catalog', description: 'Public REST API catalog.', mimeType: 'application/json', read: async () => getApiCatalog() },
 ];
+
+// ─────────────────────────── Write tools ───────────────────────────
+// Guarded mutations. Every handler re-asserts auth via assertMcpWrite() (bearer
+// token + admin write switch), validates + bounds its inputs, invalidates the
+// affected caches, and records an audit-log entry. They are only registered and
+// advertised when write access is enabled AND the request is authenticated
+// (see lib/mcp/server.js).
+
+function str(value, field, { required = false, max = 20000 } = {}) {
+    if (value === undefined || value === null) {
+        if (required) throw new Error(`Missing required field: ${field}`);
+        return undefined;
+    }
+    const s = String(value);
+    if (required && !s.trim()) throw new Error(`Field "${field}" must not be empty.`);
+    if (s.length > max) throw new Error(`Field "${field}" exceeds ${max} characters.`);
+    return s;
+}
+
+function strArray(value, field, { max = 60 } = {}) {
+    if (value === undefined || value === null) return undefined;
+    if (!Array.isArray(value)) throw new Error(`Field "${field}" must be an array of strings.`);
+    if (value.length > max) throw new Error(`Field "${field}" has too many items (max ${max}).`);
+    return value.map((v) => String(v).slice(0, 200));
+}
+
+function slugify(value) {
+    return String(value || '')
+        .toLowerCase().trim()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '')
+        .slice(0, 120);
+}
+
+async function auditWrite(action, details) {
+    const { ip, userAgent } = getMcpAuth();
+    await logAudit({ action, category: AUDIT_CATEGORY.CONTENT, details, ipAddress: ip, userAgent });
+}
+
+async function nextDisplayOrder(delegate) {
+    const row = await delegate.findFirst({ orderBy: { displayOrder: 'desc' }, select: { displayOrder: true } });
+    return Number.isFinite(row?.displayOrder) ? row.displayOrder + 1 : 0;
+}
+
+/** @type {McpTool[]} */
+export const WRITE_TOOLS = [
+    {
+        name: 'create_project',
+        title: 'Create Project',
+        description: 'Create a new portfolio project. Requires write authorization.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                name: { type: 'string' },
+                year: { type: 'string', description: 'e.g. "2025".' },
+                status: { type: 'string', description: 'e.g. "Completed", "In Progress".' },
+                projectType: { type: 'string' },
+                description: { type: 'string' },
+                techStack: { type: 'array', items: { type: 'string' } },
+                codeLink: { type: 'string' },
+                blogLink: { type: 'string' },
+                image: { type: 'string' },
+            },
+            required: ['name', 'year', 'status', 'projectType', 'description'],
+            additionalProperties: false,
+        },
+        annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+        handler: async (args = {}) => {
+            assertMcpWrite();
+            const payload = {
+                name: str(args.name, 'name', { required: true, max: 200 }),
+                year: str(args.year, 'year', { required: true, max: 40 }),
+                status: str(args.status, 'status', { required: true, max: 60 }),
+                projectType: str(args.projectType, 'projectType', { required: true, max: 60 }),
+                description: str(args.description, 'description', { required: true, max: 5000 }),
+            };
+            const techStack = strArray(args.techStack, 'techStack');
+            if (techStack) payload.techStack = techStack;
+            for (const k of ['codeLink', 'blogLink', 'image']) {
+                const v = str(args[k], k, { max: 1000 });
+                if (v) payload[k] = v;
+            }
+            payload.displayOrder = await nextDisplayOrder(prisma.project);
+            const created = await prisma.project.create({ data: fromClient('project', payload, { keepId: false }) });
+            await cache.invalidatePrefixAsync('db:projects');
+            const client = toClient('project', created);
+            await auditWrite('MCP_CREATE_PROJECT', `Created project "${payload.name}" (${client._id})`);
+            return { ok: true, project: client };
+        },
+    },
+    {
+        name: 'update_project',
+        title: 'Update Project',
+        description: 'Update fields of an existing project by id. Requires write authorization.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                id: { type: 'string' },
+                name: { type: 'string' },
+                year: { type: 'string' },
+                status: { type: 'string' },
+                projectType: { type: 'string' },
+                description: { type: 'string' },
+                techStack: { type: 'array', items: { type: 'string' } },
+                codeLink: { type: 'string' },
+                blogLink: { type: 'string' },
+                image: { type: 'string' },
+                displayOrder: { type: 'number' },
+            },
+            required: ['id'],
+            additionalProperties: false,
+        },
+        annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+        handler: async (args = {}) => {
+            assertMcpWrite();
+            const id = str(args.id, 'id', { required: true, max: 120 });
+            const existing = await prisma.project.findUnique({ where: { id } });
+            if (!existing) throw new Error('Project not found.');
+            const patch = {};
+            for (const k of ['name', 'year', 'status', 'projectType', 'description', 'codeLink', 'blogLink', 'image']) {
+                const v = str(args[k], k, { max: 5000 });
+                if (v !== undefined) patch[k] = v;
+            }
+            if (args.techStack !== undefined) patch.techStack = strArray(args.techStack, 'techStack') || [];
+            if (args.displayOrder !== undefined) {
+                const n = Number(args.displayOrder);
+                if (!Number.isFinite(n)) throw new Error('Field "displayOrder" must be a number.');
+                patch.displayOrder = n;
+            }
+            if (Object.keys(patch).length === 0) throw new Error('No updatable fields provided.');
+            const updated = await prisma.project.update({ where: { id }, data: fromClient('project', patch, { keepId: false }) });
+            await cache.invalidatePrefixAsync('db:projects');
+            await auditWrite('MCP_UPDATE_PROJECT', `Updated project ${id} [${Object.keys(patch).join(', ')}]`);
+            return { ok: true, project: toClient('project', updated) };
+        },
+    },
+    {
+        name: 'delete_project',
+        title: 'Delete Project',
+        description: 'Permanently delete a project by id. Destructive. Requires write authorization.',
+        inputSchema: {
+            type: 'object',
+            properties: { id: { type: 'string' } },
+            required: ['id'],
+            additionalProperties: false,
+        },
+        annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false },
+        handler: async (args = {}) => {
+            assertMcpWrite();
+            const id = str(args.id, 'id', { required: true, max: 120 });
+            const existing = await prisma.project.findUnique({ where: { id }, select: { id: true, name: true } });
+            if (!existing) throw new Error('Project not found.');
+            await prisma.project.delete({ where: { id } });
+            await cache.invalidatePrefixAsync('db:projects');
+            await auditWrite('MCP_DELETE_PROJECT', `Deleted project "${existing.name}" (${id})`);
+            return { ok: true, deletedId: id };
+        },
+    },
+    {
+        name: 'create_blog_post',
+        title: 'Create Blog Post',
+        description: 'Create a new blog post (defaults to an unpublished draft). Requires write authorization.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                title: { type: 'string' },
+                content: { type: 'string', description: 'Markdown body.' },
+                excerpt: { type: 'string' },
+                tags: { type: 'array', items: { type: 'string' } },
+                published: { type: 'boolean', description: 'Defaults to false (draft).' },
+                image: { type: 'string' },
+                imageAlt: { type: 'string' },
+            },
+            required: ['title', 'content'],
+            additionalProperties: false,
+        },
+        annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+        handler: async (args = {}) => {
+            assertMcpWrite();
+            const title = str(args.title, 'title', { required: true, max: 300 });
+            const payload = {
+                title,
+                content: str(args.content, 'content', { required: true, max: 100000 }),
+                excerpt: str(args.excerpt, 'excerpt', { max: 1000 }) || '',
+                date: new Date().toISOString().slice(0, 10),
+                published: args.published === true,
+                slug: slugify(title),
+            };
+            const tags = strArray(args.tags, 'tags');
+            if (tags) payload.tags = tags;
+            const image = str(args.image, 'image', { max: 1000 });
+            if (image) payload.image = image;
+            const imageAlt = str(args.imageAlt, 'imageAlt', { max: 300 });
+            if (imageAlt) payload.imageAlt = imageAlt;
+            const created = await prisma.blog.create({ data: fromClient('blog', payload, { keepId: false }) });
+            await cache.invalidatePrefixAsync('db:blogs');
+            const client = toClient('blog', created);
+            await auditWrite('MCP_CREATE_BLOG', `Created blog "${title}" (${client._id}) published=${payload.published}`);
+            return { ok: true, blog: { id: client._id, title: client.title, slug: client.slug, published: client.published } };
+        },
+    },
+    {
+        name: 'create_deployment',
+        title: 'Create Deployment',
+        description: 'Create a new live deployment / hosted app entry. Requires write authorization.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                name: { type: 'string' },
+                appType: { type: 'string' },
+                hostingProvider: { type: 'string' },
+                description: { type: 'string' },
+                status: { type: 'string', description: 'Defaults to "Live".' },
+                environment: { type: 'string', description: 'Defaults to "Production".' },
+                hostedUrl: { type: 'string' },
+                techStack: { type: 'array', items: { type: 'string' } },
+                image: { type: 'string' },
+            },
+            required: ['name', 'appType', 'hostingProvider', 'description'],
+            additionalProperties: false,
+        },
+        annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+        handler: async (args = {}) => {
+            assertMcpWrite();
+            const payload = {
+                name: str(args.name, 'name', { required: true, max: 200 }),
+                appType: str(args.appType, 'appType', { required: true, max: 80 }),
+                hostingProvider: str(args.hostingProvider, 'hostingProvider', { required: true, max: 120 }),
+                description: str(args.description, 'description', { required: true, max: 5000 }),
+                status: str(args.status, 'status', { max: 40 }) || 'Live',
+                environment: str(args.environment, 'environment', { max: 60 }) || 'Production',
+            };
+            const hostedUrl = str(args.hostedUrl, 'hostedUrl', { max: 500 });
+            if (hostedUrl) payload.hostedUrl = hostedUrl;
+            const techStack = strArray(args.techStack, 'techStack');
+            if (techStack) payload.techStack = techStack;
+            const image = str(args.image, 'image', { max: 1000 });
+            if (image) payload.image = image;
+            payload.displayOrder = await nextDisplayOrder(prisma.deployment);
+            const created = await prisma.deployment.create({ data: fromClient('deployment', payload, { keepId: false }) });
+            await cache.invalidatePrefixAsync('db:deployments');
+            const client = toClient('deployment', created);
+            await auditWrite('MCP_CREATE_DEPLOYMENT', `Created deployment "${payload.name}" (${client._id})`);
+            return { ok: true, deployment: client };
+        },
+    },
+];
+
+export const WRITE_TOOL_NAMES = new Set(WRITE_TOOLS.map((t) => t.name));
 
 /** @typedef {{ name:string, title:string, description:string, arguments:object[], get:(args:object)=>Promise<any> }} McpPrompt */
 

@@ -16,7 +16,8 @@ import {
     ListPromptsRequestSchema,
     GetPromptRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
-import { TOOLS, RESOURCES, PROMPTS } from '@/lib/mcp/tools';
+import { TOOLS, WRITE_TOOLS, RESOURCES, PROMPTS } from '@/lib/mcp/tools';
+import { getMcpAuth } from '@/lib/mcp/auth';
 
 function textResult(value) {
     const text = typeof value === 'string' ? value : JSON.stringify(value, null, 2);
@@ -43,19 +44,28 @@ export function buildMcpServer(config) {
 
     const server = new Server(serverInfo, options);
 
+    // Write tools are only wired in when the admin write switch is on; even then
+    // they are hidden from tools/list unless the current request is authenticated,
+    // and every write handler re-asserts auth (see lib/mcp/auth.js).
+    const writeEnabled = !!config.write?.enabled;
+    const callableTools = writeEnabled ? [...TOOLS, ...WRITE_TOOLS] : TOOLS;
+    const toWireTool = (t) => ({
+        name: t.name,
+        title: t.title,
+        description: t.description,
+        inputSchema: t.inputSchema,
+        ...(t.annotations ? { annotations: t.annotations } : {}),
+    });
+
     if (caps.tools.enabled) {
-        server.setRequestHandler(ListToolsRequestSchema, async () => ({
-            tools: TOOLS.map((t) => ({
-                name: t.name,
-                title: t.title,
-                description: t.description,
-                inputSchema: t.inputSchema,
-                ...(t.annotations ? { annotations: t.annotations } : {}),
-            })),
-        }));
+        server.setRequestHandler(ListToolsRequestSchema, async () => {
+            const visible = [...TOOLS];
+            if (writeEnabled && getMcpAuth().authed) visible.push(...WRITE_TOOLS);
+            return { tools: visible.map(toWireTool) };
+        });
 
         server.setRequestHandler(CallToolRequestSchema, async (request) => {
-            const tool = TOOLS.find((t) => t.name === request.params.name);
+            const tool = callableTools.find((t) => t.name === request.params.name);
             if (!tool) {
                 return { isError: true, content: [{ type: 'text', text: `Unknown tool: ${request.params.name}` }] };
             }

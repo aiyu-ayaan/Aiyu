@@ -18,6 +18,9 @@ import { randomUUID } from 'crypto';
 import { getMcpConfig } from '@/lib/mcpConfig';
 import { buildMcpServer } from '@/lib/mcp/server';
 import { HttpBridgeTransport } from '@/lib/mcp/httpTransport';
+import { verifyMcpToken, runWithMcpAuth } from '@/lib/mcp/auth';
+import { WRITE_TOOL_NAMES } from '@/lib/mcp/tools';
+import { getClientIP, checkRateLimit } from '@/middleware/auth';
 
 const CORS = {
     'Access-Control-Allow-Origin': '*',
@@ -77,6 +80,25 @@ export async function POST(request) {
     const requestedSessionId = request.headers.get('mcp-session-id') || undefined;
     const hasInitialize = messages.some((m) => m && m.method === 'initialize');
 
+    // Per-request auth: the bearer token is re-checked on every request so the
+    // session id alone can never authorize writes. Reads pay nothing when no
+    // Authorization header is present (verifyMcpToken short-circuits).
+    const ip = getClientIP(request);
+    const authContext = {
+        authed: await verifyMcpToken(request),
+        writeEnabled: !!config.write?.enabled,
+        ip,
+        userAgent: request.headers.get('user-agent') || '',
+    };
+
+    // Throttle write-tool calls per client IP (defense-in-depth on top of the token).
+    const invokesWrite = messages.some(
+        (m) => m && m.method === 'tools/call' && WRITE_TOOL_NAMES.has(m.params?.name),
+    );
+    if (invokesWrite && !checkRateLimit(`mcp-write:${ip}`, 20, 60_000)) {
+        return rpcError(messages[0]?.id ?? null, -32000, 'Rate limit exceeded for write operations. Try again shortly.', 429);
+    }
+
     let session;
     let sessionId = requestedSessionId;
     let ephemeral = false;
@@ -103,7 +125,9 @@ export async function POST(request) {
     try {
         responses = [];
         for (const message of messages) {
-            const response = await session.transport.dispatch(message);
+            // Run each dispatch inside the request's auth context so write tools
+            // (and the tools/list visibility filter) see the verified credentials.
+            const response = await runWithMcpAuth(authContext, () => session.transport.dispatch(message));
             if (response) responses.push(response);
         }
     } catch (error) {

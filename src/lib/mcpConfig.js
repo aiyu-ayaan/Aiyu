@@ -170,6 +170,7 @@ export function mergeMcpConfig(stored = {}) {
     const transports = ('transports' in data ? asArray(data.transports) : DEFAULT_MCP_CONFIG.transports).map(mergeTransport);
     const tools = ('tools' in data ? asArray(data.tools) : DEFAULT_MCP_CONFIG.tools).map(mergeTool);
     const links = ('links' in data ? asArray(data.links) : DEFAULT_MCP_CONFIG.links).map(mergeLink);
+    const write = asObject(data.write);
     return {
         enabled: data.enabled !== false,
         server: mergeServer(data.server),
@@ -179,6 +180,10 @@ export function mergeMcpConfig(stored = {}) {
         resources: asArray(data.resources).map(mergeResource),
         prompts: asArray(data.prompts).map(mergePrompt),
         links,
+        // Write access is OFF by default — writes require BOTH this switch and a
+        // valid bearer token (see lib/mcp/auth.js). tokenLast4/tokenUpdatedAt are
+        // display metadata surfaced by the admin config route from dedicated columns.
+        write: { enabled: write.enabled === true },
     };
 }
 
