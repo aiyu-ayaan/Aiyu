@@ -4,7 +4,7 @@ import Link from 'next/link';
 import {
     FaPlug, FaServer, FaScrewdriverWrench, FaFolderOpen, FaComment, FaLink,
     FaSliders, FaFloppyDisk, FaPlus, FaTrash, FaSpinner, FaTriangleExclamation,
-    FaCircleCheck, FaUpRightFromSquare, FaEyeSlash, FaEye,
+    FaCircleCheck, FaUpRightFromSquare, FaEyeSlash, FaEye, FaBook,
 } from 'react-icons/fa6';
 
 const TABS = [
@@ -358,6 +358,9 @@ export default function McpDashboard() {
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
+                        <a href="/docs/mcp" target="_blank" rel="noreferrer" className="px-3 py-2 rounded-xl bg-slate-900/60 border border-white/10 text-slate-300 hover:text-cyan-300 flex items-center gap-2 font-mono text-xs">
+                            <FaBook size={12} /> Documentation
+                        </a>
                         {cardUrl && (
                             <a href={cardUrl} target="_blank" rel="noreferrer" className="px-3 py-2 rounded-xl bg-slate-900/60 border border-white/10 text-slate-300 hover:text-cyan-300 flex items-center gap-2 font-mono text-xs">
                                 <FaUpRightFromSquare size={12} /> server-card.json
