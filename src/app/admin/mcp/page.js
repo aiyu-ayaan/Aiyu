@@ -5,6 +5,7 @@ import {
     FaPlug, FaServer, FaScrewdriverWrench, FaFolderOpen, FaComment, FaLink,
     FaSliders, FaFloppyDisk, FaPlus, FaTrash, FaSpinner, FaTriangleExclamation,
     FaCircleCheck, FaUpRightFromSquare, FaEyeSlash, FaEye, FaBook,
+    FaShieldHalved, FaKey, FaRotate, FaCopy,
 } from 'react-icons/fa6';
 
 const TABS = [
@@ -15,6 +16,7 @@ const TABS = [
     { key: 'resources', label: 'Resources', icon: <FaFolderOpen /> },
     { key: 'prompts', label: 'Prompts', icon: <FaComment /> },
     { key: 'links', label: 'Links', icon: <FaLink /> },
+    { key: 'security', label: 'Security', icon: <FaShieldHalved /> },
 ];
 
 const TRANSPORT_TYPES = ['webmcp', 'streamable-http', 'http', 'sse', 'stdio'];
@@ -296,6 +298,122 @@ function LinksTab({ config, patch }) {
     );
 }
 
+function SecurityTab({ config, patch, flash, setError }) {
+    const writeEnabled = !!config.write?.enabled;
+    const [status, setStatus] = useState(null);
+    const [busy, setBusy] = useState(false);
+    const [newToken, setNewToken] = useState('');
+    const [copied, setCopied] = useState(false);
+
+    const loadStatus = useCallback(async () => {
+        try {
+            const res = await fetch('/api/admin/mcp/token', { cache: 'no-store' });
+            const json = await res.json();
+            if (!res.ok || !json.success) throw new Error(json.error || 'TOKEN_STATUS_FAILED');
+            setStatus(json.data);
+        } catch (e) { setError(e.message); }
+    }, [setError]);
+
+    useEffect(() => { loadStatus(); }, [loadStatus]);
+
+    const generate = async () => {
+        setBusy(true); setError(null); setNewToken('');
+        try {
+            const res = await fetch('/api/admin/mcp/token', { method: 'POST' });
+            const json = await res.json();
+            if (!res.ok || !json.success) throw new Error(json.error || 'TOKEN_GEN_FAILED');
+            setNewToken(json.data.token);
+            flash('Write token generated — copy it now, it is shown only once.');
+            loadStatus();
+        } catch (e) { setError(e.message); } finally { setBusy(false); }
+    };
+
+    const revoke = async () => {
+        if (!window.confirm('Revoke the MCP write token? Clients using it will lose write access immediately.')) return;
+        setBusy(true); setError(null); setNewToken('');
+        try {
+            const res = await fetch('/api/admin/mcp/token', { method: 'DELETE' });
+            const json = await res.json();
+            if (!res.ok || !json.success) throw new Error(json.error || 'TOKEN_REVOKE_FAILED');
+            flash('Write token revoked.');
+            loadStatus();
+        } catch (e) { setError(e.message); } finally { setBusy(false); }
+    };
+
+    const copy = async () => {
+        try { await navigator.clipboard.writeText(newToken); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch { /* noop */ }
+    };
+
+    const hasToken = !!status?.hasToken;
+    const writeReady = writeEnabled && hasToken;
+
+    return (
+        <Panel className="p-5 space-y-5 max-w-3xl">
+            <div className="pb-4 border-b border-white/5">
+                <h3 className="text-sm font-bold text-white">Write Access</h3>
+                <p className="text-xs text-slate-500">Writes require BOTH the switch below and a valid bearer token. Both off by default.</p>
+            </div>
+
+            <div className="flex items-center justify-between gap-4">
+                <div>
+                    <p className="text-sm text-slate-200 font-mono">Enable write tools</p>
+                    <p className="text-xs text-slate-500">Advertises &amp; allows create/update/delete tools at <code className="text-cyan-400">/api/mcp</code>. Saved with the main SAVE button.</p>
+                </div>
+                <Toggle checked={writeEnabled} onChange={(v) => patch({ write: { ...(config.write || {}), enabled: v } })} label={writeEnabled ? 'ENABLED' : 'DISABLED'} />
+            </div>
+
+            <div className={`text-xs font-mono px-3 py-2 rounded-lg border ${writeReady ? 'text-emerald-300 border-emerald-500/20 bg-emerald-500/10' : 'text-amber-300 border-amber-500/20 bg-amber-500/10'}`}>
+                {writeReady
+                    ? 'Write access is ACTIVE — enabled and a token is set.'
+                    : writeEnabled
+                        ? 'Write is enabled but NO token is set — generate one below (writes stay blocked until then).'
+                        : 'Write is disabled. Enable it above and generate a token to allow writes.'}
+            </div>
+
+            <div className="pt-2 border-t border-white/5">
+                <div className="flex items-center gap-2 mb-2">
+                    <FaKey className="text-cyan-400" size={14} />
+                    <h4 className="text-sm font-mono uppercase tracking-widest text-cyan-400">Bearer Token</h4>
+                </div>
+                <p className="text-xs text-slate-500 mb-3">
+                    {hasToken
+                        ? <>A token is configured (ends <code className="text-slate-300">…{status?.last4}</code>{status?.updatedAt ? `, set ${new Date(status.updatedAt).toLocaleString()}` : ''}). Only its hash is stored.</>
+                        : 'No token configured. Generate one, then send it as an Authorization: Bearer header.'}
+                </p>
+
+                {newToken && (
+                    <div className="mb-3 p-3 rounded-lg border border-cyan-500/30 bg-slate-950/60">
+                        <p className="text-[11px] text-amber-300 font-mono mb-2">Copy this now — it will not be shown again.</p>
+                        <div className="flex items-center gap-2">
+                            <code className="flex-1 text-xs text-cyan-300 break-all font-mono">{newToken}</code>
+                            <button onClick={copy} className="shrink-0 px-2 py-1 rounded bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20 text-xs font-mono flex items-center gap-1">
+                                <FaCopy size={11} /> {copied ? 'COPIED' : 'COPY'}
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                <div className="flex gap-2">
+                    <button onClick={generate} disabled={busy} className="px-4 py-2 rounded-xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-200 hover:bg-cyan-500/25 disabled:opacity-50 flex items-center gap-2 font-mono text-sm">
+                        {busy ? <FaSpinner className="animate-spin" /> : <FaRotate />} {hasToken ? 'ROTATE TOKEN' : 'GENERATE TOKEN'}
+                    </button>
+                    {hasToken && (
+                        <button onClick={revoke} disabled={busy} className="px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-300 hover:bg-red-500/20 disabled:opacity-50 flex items-center gap-2 font-mono text-sm">
+                            <FaTrash size={12} /> REVOKE
+                        </button>
+                    )}
+                </div>
+            </div>
+
+            <div className="pt-3 border-t border-white/5 text-[11px] text-slate-500 font-mono leading-relaxed">
+                Usage: <code className="text-slate-300">POST /api/mcp</code> with header{' '}
+                <code className="text-slate-300">Authorization: Bearer &lt;token&gt;</code>. Read tools stay public; write tools
+                (create/update/delete) are hidden and rejected without a valid token. All writes are audited &amp; rate-limited.
+            </div>
+        </Panel>
+    );
+}
+
 // ─────────────────────────────── Page ───────────────────────────────
 
 export default function McpDashboard() {
@@ -410,6 +528,7 @@ export default function McpDashboard() {
                             {tab === 'resources' && <ResourcesTab config={config} patch={patch} />}
                             {tab === 'prompts' && <PromptsTab config={config} patch={patch} />}
                             {tab === 'links' && <LinksTab config={config} patch={patch} />}
+                            {tab === 'security' && <SecurityTab config={config} patch={patch} flash={flash} setError={setError} />}
                         </div>
 
                         {showPreview && (
