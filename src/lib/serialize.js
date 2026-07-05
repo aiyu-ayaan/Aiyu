@@ -160,6 +160,7 @@ export const MODELS = {
   notificationConfig: { delegate: 'notificationConfig', kind: 'json', singleton: true, timestamps: true },
   github: { delegate: 'gitHub', kind: 'json', singleton: true, timestamps: false },
   cronEnv: { delegate: 'cronEnv', kind: 'json', singleton: true, timestamps: true },
+  mcpConfig: { delegate: 'mcpConfig', kind: 'json', singleton: true, timestamps: true },
 };
 
 export function getDelegate(prisma, key) {

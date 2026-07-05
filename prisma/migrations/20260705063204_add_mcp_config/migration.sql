@@ -1,0 +1,9 @@
+-- CreateTable
+CREATE TABLE "McpConfig" (
+    "id" TEXT NOT NULL,
+    "data" JSONB NOT NULL DEFAULT '{}',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "McpConfig_pkey" PRIMARY KEY ("id")
+);

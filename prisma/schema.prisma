@@ -428,3 +428,15 @@ model CronEnv {
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 }
+
+// MCP server config. Json-blob singleton like `Config`/`SeoConfig`: `data` holds
+// the full Model Context Protocol server-card definition (server info, transports,
+// advertised capabilities, tools, resources, prompts, and links) that the admin
+// panel edits and `/.well-known/mcp/server-card.json` serves. Falls back to
+// DEFAULT_MCP_CONFIG when the row is missing (see lib/mcpConfig.js).
+model McpConfig {
+  id        String   @id @default(cuid())
+  data      Json     @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+}
