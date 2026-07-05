@@ -9,7 +9,7 @@ describe('mergeMcpConfig', () => {
         expect(merged.enabled).toBe(true);
         expect(merged.server.name).toBe('aiyu');
         expect(merged.tools).toHaveLength(DEFAULT_MCP_CONFIG.tools.length);
-        expect(merged.transports[0].type).toBe('webmcp');
+        expect(merged.transports.map((t) => t.type)).toEqual(DEFAULT_MCP_CONFIG.transports.map((t) => t.type));
     });
 
     it('normalizes malformed sections to safe shapes', () => {
@@ -38,7 +38,8 @@ describe('buildMcpServerCard', () => {
     it('builds the default card with resolved links and enabled tools', () => {
         const card = buildMcpServerCard({}, abs);
         expect(card.serverInfo.name).toBe('aiyu');
-        expect(card.transports[0]).toMatchObject({ type: 'webmcp', endpoint: 'https://x.com/' });
+        expect(card.transports.map((t) => t.type)).toContain('webmcp');
+        expect(card.transports).toContainEqual(expect.objectContaining({ type: 'streamable-http', endpoint: 'https://x.com/api/mcp' }));
         expect(card.capabilities.tools.tools.map((t) => t.name)).toEqual([
             'aiyu.navigate', 'aiyu.search', 'aiyu.getPublicApiCatalog',
         ]);

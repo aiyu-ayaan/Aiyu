@@ -31,6 +31,7 @@ export const DEFAULT_MCP_CONFIG = {
         instructions: '',
     },
     transports: [
+        { type: 'streamable-http', endpoint: '/api/mcp', description: 'Standard MCP StreamableHTTP endpoint (JSON-RPC over HTTP).' },
         { type: 'webmcp', endpoint: '/', description: 'Browser WebMCP tools registered on the live site.' },
     ],
     capabilities: {
@@ -71,6 +72,7 @@ export const DEFAULT_MCP_CONFIG = {
     links: [
         { name: 'apiCatalog', url: '/.well-known/api-catalog' },
         { name: 'documentation', url: '/docs/api' },
+        { name: 'mcpDocumentation', url: '/docs/mcp' },
     ],
 };
 
