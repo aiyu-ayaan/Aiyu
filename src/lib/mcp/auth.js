@@ -39,6 +39,9 @@ export async function verifyMcpToken(request) {
     const [scheme, token] = header.split(' ');
     if (!scheme || !token || scheme.toLowerCase() !== 'bearer') return false;
 
+    // Only the dedicated MCP write token authorizes the MCP server. The blog API
+    // token is intentionally NOT accepted here — access flows one way: the MCP
+    // token may be reused for the blog APIs, but not the reverse.
     const row = await prisma.mcpConfig.findFirst({ select: { mcpTokenHash: true } });
     const storedHash = row?.mcpTokenHash;
     if (!storedHash) return false;

@@ -273,6 +273,17 @@ Accept: application/json, text/event-stream`;
                     <section id="token" className="scroll-mt-24 rounded-2xl border border-white/10 bg-slate-900/60 p-6">
                         <h2 className="text-sm font-semibold uppercase tracking-widest text-slate-400 mb-4">API Token</h2>
 
+                        <div className="mb-5 rounded-lg border border-cyan-500/25 bg-cyan-500/5 p-4 text-sm text-slate-300">
+                            <p className="font-semibold text-cyan-300 mb-1">The MCP key works here too</p>
+                            <p>
+                                These endpoints accept <strong>either</strong> the blog API token below <strong>or</strong> the{' '}
+                                <Link href="/admin/mcp" className="text-cyan-400 hover:text-cyan-300 underline">MCP write token</Link>{' '}
+                                as their <code className="text-cyan-300">Authorization: Bearer &lt;token&gt;</code> header, so you can reuse a
+                                single MCP key for blog automation. Note this is <strong>one-way</strong>: the MCP token works on the blog APIs,
+                                but the blog token does <strong>not</strong> authorize the MCP server.
+                            </p>
+                        </div>
+
                         {loading ? (
                             <p className="text-slate-400 text-sm">Loading token status...</p>
                         ) : (
@@ -483,6 +494,7 @@ Accept: application/json, text/event-stream`;
                             <li>Image upload response returns the optimized URL in `data.url`.</li>
                             <li>The optional `name` form field helps control generated filename base.</li>
                             <li>System prompt endpoint returns `text/plain`, not JSON.</li>
+                            <li>The blog/content APIs also accept the MCP write token (from <Link href="/admin/mcp" className="text-cyan-400 hover:text-cyan-300 underline">/admin/mcp</Link>) as their Bearer token, so one MCP key covers blog automation too. This is one-way — the blog token does not authorize the MCP server.</li>
                         </ul>
                     </section>
                 </div>

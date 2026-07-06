@@ -1,11 +1,11 @@
 import { prisma } from "@/lib/prisma";
-import { toClient, toClientList, fromClient, getSingleton } from "@/lib/serialize";
+import { toClient, toClientList, fromClient } from "@/lib/serialize";
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import cache, { CACHE_KEYS, CACHE_TTL, createCacheDebugHeaders } from '@/lib/cache';
 import { createPublicCacheHeaders, RESPONSE_CACHE } from '@/lib/httpCache';
 import { createUniqueBlogSlug } from '@/lib/blogSlugs';
-import crypto from 'crypto';
+import { validateBearerBlogToken } from '@/lib/blogApiAuth';
 import { revalidatePath } from 'next/cache';
 import { getSiteUrl } from '@/lib/siteUrl';
 
@@ -61,25 +61,6 @@ function normalizeBlogPayload(body = {}) {
         noIndex: body.noIndex === true,
         published: body.published === true,
     };
-}
-
-async function validateBearerBlogToken(request) {
-    const authHeader = request.headers.get('authorization') || '';
-    const [scheme, rawToken] = authHeader.split(' ');
-    if (!scheme || !rawToken || scheme.toLowerCase() !== 'bearer') {
-        return false;
-    }
-
-    const providedHash = crypto.createHash('sha256').update(rawToken.trim()).digest('hex');
-    const config = await getSingleton(prisma, 'config', { withSecrets: true });
-    const storedHash = String(config?.blogApiTokenHash || '');
-    if (!storedHash) return false;
-
-    const storedBuffer = Buffer.from(storedHash, 'hex');
-    const providedBuffer = Buffer.from(providedHash, 'hex');
-    if (storedBuffer.length !== providedBuffer.length) return false;
-
-    return crypto.timingSafeEqual(storedBuffer, providedBuffer);
 }
 
 function toPublicBlogList(blogs, maxLength = 500) {
