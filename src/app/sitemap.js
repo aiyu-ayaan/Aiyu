@@ -7,6 +7,8 @@ import {
   getProjectSlug,
 } from '@/lib/contentSlugs';
 import { getSeoConfig, applySitemapOverrides } from '@/lib/seoConfig';
+import { getConfigData } from '@/lib/dataFetchers';
+import { v2PublicPath } from '@/lib/siteVersion';
 
 const IS_PRODUCTION_BUILD = process.env.NEXT_PHASE === 'phase-production-build';
 const ALLOW_DB_DURING_BUILD = process.env.ALLOW_DB_DURING_BUILD === 'true';
@@ -68,6 +70,7 @@ function createStaticRoutes(baseUrl, options = {}) {
   const projectsLastModified = options.projectsLastModified || now;
   const appsLastModified = options.appsLastModified || now;
   const blogsLastModified = options.blogsLastModified || now;
+  const aiPath = options.aiPath || '/ai';
 
   return [
     {
@@ -99,6 +102,12 @@ function createStaticRoutes(baseUrl, options = {}) {
       lastModified: blogsLastModified,
       changeFrequency: 'weekly',
       priority: 0.8,
+    },
+    {
+      url: `${baseUrl}${aiPath}`,
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.85,
     },
     {
       url: `${baseUrl}/gallery`,
@@ -153,7 +162,12 @@ function normalizeSitemapRoutes(routes = []) {
 export default async function sitemap() {
   const baseUrl = getSiteUrl();
 
-  const staticRoutes = normalizeSitemapRoutes(createStaticRoutes(baseUrl));
+  // Resolve the AI Hub's public path the same way its page canonical does, so
+  // the sitemap URL matches whichever site version is the active default.
+  const siteConfig = await getConfigData();
+  const aiPath = v2PublicPath(siteConfig, '/ai');
+
+  const staticRoutes = normalizeSitemapRoutes(createStaticRoutes(baseUrl, { aiPath }));
 
   if (SKIP_DB_DURING_BUILD) {
     console.warn('[sitemap] Database reads skipped during production build. Returning static routes only.');
@@ -179,6 +193,7 @@ export default async function sitemap() {
     const deployments = toClientList('deployment', deploymentRows);
 
     const staticRoutesWithRealtimeCollections = createStaticRoutes(baseUrl, {
+      aiPath,
       blogsLastModified: getLatestLastModified(blogs) || new Date(),
       projectsLastModified: getLatestLastModified(projects) || new Date(),
       appsLastModified: getLatestLastModified(deployments) || new Date(),

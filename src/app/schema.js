@@ -75,6 +75,65 @@ export function generateWebsiteSchema(siteUrl, siteTitle) {
     };
 }
 
+/**
+ * Structured data for the AI Hub (/ai). Returns an array of JSON-LD nodes: a
+ * WebPage with a Home → AI Hub breadcrumb, and — when the page has a `skills`
+ * section — an ItemList enumerating every skill (name, description, optional
+ * url) so search engines can surface the catalog as rich results.
+ */
+export function generateAiHubSchema({ siteUrl, url, title, description, sections }) {
+    const webPage = {
+        '@context': 'https://schema.org',
+        '@type': 'WebPage',
+        '@id': url,
+        url,
+        name: title,
+        description,
+        isPartOf: {
+            '@type': 'WebSite',
+            url: siteUrl,
+        },
+        breadcrumb: {
+            '@type': 'BreadcrumbList',
+            itemListElement: [
+                { '@type': 'ListItem', position: 1, name: 'Home', item: siteUrl },
+                { '@type': 'ListItem', position: 2, name: 'AI Hub', item: url },
+            ],
+        },
+    };
+
+    const schemas = [webPage];
+
+    const skillsSection = Array.isArray(sections)
+        ? sections.find((section) => section?.type === 'skills' && section?.enabled !== false)
+        : null;
+
+    const skillItems = [];
+    for (const category of skillsSection?.data?.categories || []) {
+        for (const item of category?.items || []) {
+            if (item?.name) skillItems.push(item);
+        }
+    }
+
+    if (skillItems.length > 0) {
+        schemas.push({
+            '@context': 'https://schema.org',
+            '@type': 'ItemList',
+            name: skillsSection?.title || 'AI skills & specializations',
+            numberOfItems: skillItems.length,
+            itemListElement: skillItems.map((item, index) => ({
+                '@type': 'ListItem',
+                position: index + 1,
+                name: item.name,
+                ...(item.description ? { description: item.description } : {}),
+                ...(item.url ? { url: item.url } : {}),
+            })),
+        });
+    }
+
+    return schemas;
+}
+
 export function generateOrganizationSchema(siteData, siteUrl) {
     return {
         '@context': 'https://schema.org',
