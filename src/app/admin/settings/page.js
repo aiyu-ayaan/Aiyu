@@ -75,7 +75,7 @@ export default function AdminSettingsPage() {
     };
 
     return (
-        <div className="p-5 md:p-8 max-w-4xl mx-auto pb-48">
+        <div className="p-5 md:p-8 max-w-4xl mx-auto pb-8">
             {/* Header */}
             <header className="mb-8">
                 <div className="flex items-center gap-3 mb-2">
@@ -155,10 +155,12 @@ export default function AdminSettingsPage() {
                 </div>
             )}
 
-            {/* Sticky save bar */}
-            {status === "ready" && (
-                <div className={`fixed bottom-0 inset-x-0 md:left-[264px] z-20 transition-transform duration-300 ${dirty ? "translate-y-0" : "translate-y-full"}`}>
-                    <div className="mx-auto max-w-4xl m-4 flex items-center gap-3 px-5 py-3 rounded-2xl border border-white/10 bg-slate-900/90 backdrop-blur-xl shadow-2xl">
+            {/* Sticky save bar — lives in the layout flow (sticky, not fixed), so
+                it floats while scrolling but settles below the last row at the
+                bottom and never hides content. */}
+            {status === "ready" && dirty && (
+                <div className="sticky bottom-4 z-20 mt-6">
+                    <div className="flex items-center gap-3 px-5 py-3 rounded-2xl border border-white/10 bg-slate-900/90 backdrop-blur-xl shadow-2xl">
                         <span className="text-sm text-slate-300">You have unsaved changes.</span>
                         <div className="ml-auto flex items-center gap-2">
                             <button
