@@ -41,6 +41,7 @@ export async function GET(request) {
             gallery: toClientList('gallery', await prisma.gallery.findMany()),
             header: toClientList('header', await prisma.header.findMany()),
             home: toClientList('home', await prisma.home.findMany()),
+            aiPage: toClientList('aiPage', await prisma.aiPage.findMany()),
             projects: toClientList('project', await prisma.project.findMany()),
             deployments: toClientList('deployment', await prisma.deployment.findMany()),
             socials: toClientList('social', await prisma.social.findMany()),

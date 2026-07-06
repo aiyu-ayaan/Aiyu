@@ -11,6 +11,7 @@ import deployments from '../src/app/data/deploymentsData.js';
 import { name, roles, professionalSummary, skills, experiences, education, certifications } from '../src/app/data/aboutData.js';
 import { name as homeName, homeRoles, githubLink, codeSnippets } from '../src/app/data/homeScreenData.js';
 import { navLinks, contactLink } from '../src/app/data/headerData.js';
+import { DEFAULT_AI_PAGE } from '../src/lib/aiPageDefaults.js';
 
 const prisma = new PrismaClient();
 
@@ -162,6 +163,13 @@ async function seed() {
                     },
                 },
             });
+        }
+
+        // Ensure the AI Hub singleton exists (preserve existing admin edits otherwise).
+        const existingAiPage = await prisma.aiPage.findFirst();
+        if (!existingAiPage) {
+            console.log('Seeding default AI Page...');
+            await prisma.aiPage.create({ data: { data: DEFAULT_AI_PAGE } });
         }
 
         console.log('Database seeded successfully.');

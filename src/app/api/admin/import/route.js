@@ -166,6 +166,7 @@ export async function POST(request) {
             { modelKey: 'gallery', key: 'gallery' },
             { modelKey: 'header', key: 'header' },
             { modelKey: 'home', key: 'home' },
+            { modelKey: 'aiPage', key: 'aiPage' },
             { modelKey: 'project', key: 'projects' },
             { modelKey: 'deployment', key: 'deployments' },
             { modelKey: 'social', key: 'socials' },

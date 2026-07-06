@@ -23,6 +23,7 @@ import {
     name as homeName, homeRoles, githubLink, codeSnippets,
 } from '@/app/data/homeScreenData';
 import { navLinks, contactLink } from '@/app/data/headerData';
+import { DEFAULT_AI_PAGE } from '@/lib/aiPageDefaults';
 
 // ─── Static seed data ───────────────────────────────────────────────
 
@@ -160,6 +161,10 @@ export async function autoSeed() {
     // ── Config (singleton) ──
     await upsertSingleton(prisma, 'config', DEFAULT_CONFIG);
     console.log('[auto-seed]   → Config');
+
+    // ── AI Page (singleton) ──
+    await upsertSingleton(prisma, 'aiPage', DEFAULT_AI_PAGE);
+    console.log('[auto-seed]   → AI Page');
 
     // ── SeoConfig (singleton, only if missing) ──
     const existingSeo = await prisma.seoConfig.findFirst();
