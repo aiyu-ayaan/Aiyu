@@ -4,9 +4,9 @@ import React, { useMemo, useState } from 'react';
 import AiSectionShell from './AiSectionShell';
 
 /**
- * Skills & specializations. Filterable category chips drive a grid of skill
- * meters; "all" shows everything. Meters fill on render so the section reads
- * as an instrument panel rather than a bullet list.
+ * AI skills & specializations — the skills the site's AI agents can reach for.
+ * Filterable category chips drive a grid; "all" shows everything. Each item is
+ * a `{ name, description }` pair rendered as a titled entry with a short blurb.
  */
 export default function AiSkills({ index, section }) {
     const categories = useMemo(
@@ -44,7 +44,7 @@ export default function AiSkills({ index, section }) {
                         </p>
                         <div className="space-y-5">
                             {(cat.items || []).map((item) => (
-                                <SkillMeter key={item.name} item={item} accent={cat.accent || section.accent} />
+                                <SkillEntry key={item.name} item={item} accent={cat.accent || section.accent} />
                             ))}
                         </div>
                     </div>
@@ -72,29 +72,23 @@ function FilterChip({ label, active, accent, onClick }) {
     );
 }
 
-function SkillMeter({ item, accent }) {
-    const level = Math.max(0, Math.min(100, Number(item.level) || 0));
+function SkillEntry({ item, accent }) {
     return (
-        <div>
-            <div className="mb-2 flex items-baseline justify-between">
+        <div className="flex gap-3">
+            <span
+                className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full"
+                style={{ background: accent }}
+                aria-hidden="true"
+            />
+            <div>
                 <span className="text-base" style={{ color: 'var(--text-secondary)' }}>
                     {item.name}
                 </span>
-                <span className="font-mono text-xs tabular-nums" style={{ color: 'var(--text-muted)' }}>
-                    {level}%
-                </span>
-            </div>
-            <div
-                className="h-1.5 w-full overflow-hidden rounded-full"
-                style={{ background: 'color-mix(in srgb, var(--text-muted) 22%, transparent)' }}
-            >
-                <div
-                    className="h-full rounded-full transition-[width] duration-700 ease-out"
-                    style={{
-                        width: `${level}%`,
-                        background: `linear-gradient(90deg, ${accent}, color-mix(in srgb, ${accent} 55%, transparent))`,
-                    }}
-                />
+                {item.description && (
+                    <p className="mt-1 text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>
+                        {item.description}
+                    </p>
+                )}
             </div>
         </div>
     );

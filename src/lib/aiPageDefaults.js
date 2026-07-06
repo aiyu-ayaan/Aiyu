@@ -45,43 +45,98 @@ export const DEFAULT_AI_PAGE = {
             id: 'skills',
             type: 'skills',
             enabled: true,
-            eyebrow: 'Skills',
-            title: 'Skills & specializations',
-            subtitle: 'Filter by category to see where the hours went.',
+            eyebrow: 'Agent skills',
+            title: 'AI skills & specializations',
+            subtitle: 'The skills my AI agents can reach for — filter by category to explore what each one does.',
             accent: AI_ACCENTS.purple,
             data: {
                 categories: [
                     {
-                        id: 'frameworks',
-                        label: 'Frameworks',
+                        id: 'motion',
+                        label: 'Motion & Animation',
                         accent: AI_ACCENTS.cyan,
                         items: [
-                            { name: 'Vercel AI SDK', level: 92 },
-                            { name: 'LangChain', level: 80 },
-                            { name: 'LlamaIndex', level: 68 },
-                            { name: 'Model Context Protocol', level: 85 },
+                            {
+                                name: 'GSAP Core',
+                                description:
+                                    'Framework-agnostic JavaScript animation — tweens, easing, stagger, and reduced-motion aware timelines.',
+                            },
+                            {
+                                name: 'GSAP for React',
+                                description:
+                                    'The useGSAP hook with refs, context, and automatic cleanup for animation inside React and Next.js.',
+                            },
+                            {
+                                name: 'ScrollTrigger',
+                                description:
+                                    'Scroll-linked animation: pinning, scrub, parallax, and trigger-driven reveals as the page moves.',
+                            },
                         ],
                     },
                     {
-                        id: 'models',
-                        label: 'Models',
+                        id: 'design',
+                        label: 'Design & Visualization',
                         accent: AI_ACCENTS.purple,
                         items: [
-                            { name: 'Gemini 2.0 Flash', level: 90 },
-                            { name: 'Claude 3.5 Sonnet', level: 88 },
-                            { name: 'GPT-4o', level: 82 },
-                            { name: 'Llama 3.1', level: 74 },
+                            {
+                                name: 'UI/UX Pro Max',
+                                description:
+                                    'Design intelligence across 67 styles, 96 palettes, and font pairings to plan, build, and review interfaces.',
+                            },
+                            {
+                                name: 'Data Viz',
+                                description:
+                                    'Accessible, system-consistent charts and dashboards that read cleanly in both light and dark mode.',
+                            },
+                            {
+                                name: 'Artifact Design',
+                                description:
+                                    'Design fundamentals for self-contained, theme-aware web artifacts hosted as shareable pages.',
+                            },
                         ],
                     },
                     {
-                        id: 'paradigms',
-                        label: 'Paradigms',
+                        id: 'engineering',
+                        label: 'Engineering & Performance',
                         accent: AI_ACCENTS.orange,
                         items: [
-                            { name: 'RAG Pipelines', level: 88 },
-                            { name: 'Multi-Agent Workflows', level: 80 },
-                            { name: 'Prompt Engineering', level: 94 },
-                            { name: 'Fine-Tuning', level: 62 },
+                            {
+                                name: 'Architecture Patterns',
+                                description:
+                                    'Structural guidance for organizing code, boundaries, and data flow as a project grows.',
+                            },
+                            {
+                                name: 'Web Performance',
+                                description:
+                                    'Bundle, render, and runtime optimization to keep pages fast across device tiers.',
+                            },
+                            {
+                                name: 'SQL Query Optimization',
+                                description:
+                                    'Reads and rewrites slow queries — indexing, joins, and query plans — for faster database access.',
+                            },
+                        ],
+                    },
+                    {
+                        id: 'workflow',
+                        label: 'Workflow & Review',
+                        accent: AI_ACCENTS.pink,
+                        items: [
+                            {
+                                name: 'Code Review',
+                                description:
+                                    'Reviews the working diff for correctness bugs and reuse, simplification, and efficiency cleanups.',
+                            },
+                            {
+                                name: 'Verify',
+                                description:
+                                    'Exercises a change end-to-end and observes real behavior before it ships — not just tests and typecheck.',
+                            },
+                            {
+                                name: 'Run',
+                                description:
+                                    'Launches and drives the app to confirm a change works in the real product, then captures the result.',
+                            },
                         ],
                     },
                 ],
