@@ -1,5 +1,59 @@
 # Changelog
 
+## [4.7.0](https://github.com/aiyu-ayaan/Aiyu/compare/v4.6.2...v4.7.0) (2026-07-06)
+
+### Features
+
+* : MCP server and new page is getting introduce i.e AI
+* Add server health metrics and usage meters to dashboard
+* Per-section stage settings with Beta/Alpha badges
+* Real dashboard overview replacing the nav mirror
+* V2 CMS shell with persistent sidebar drawer
+* Accept the MCP write token on the blog/content APIs
+* MCP tools + docs to read and edit /ai page sections
+* Persist AI page config in the backend and backups
+* Complete SEO for the /ai page
+* Optional link per agent skill
+* Admin skills editor edits name + description
+* Skills section lists agent skills by name + description
+* Dynamic, admin-editable AI Hub page (/ai) (#238)
+* Add /admin/ai-page visual editor
+* Add public /ai page in the v2 editorial system
+* Add /api/ai-page config endpoint
+* Add schema-driven data layer for the AI Hub page
+* Implement dynamic v2 nav, classic toggle, new-tab targets, and fix duplicate resume link
+* Redesign boot loader to the v2 editorial system
+* Never boot-gate blog and admin routes
+* Enhance mobile Table of Contents with drawer functionality and improved styling
+* Enhance TOC and heading handling, improve image processing with gamma correction
+* Add Security tab for write access + token management
+* Add secured write tools to the StreamableHTTP server
+* Add hashed write-token columns to McpConfig
+* Add MCP documentation endpoint and server implementation
+* Serve a standard MCP StreamableHTTP endpoint at /api/mcp
+* Add MCP Server admin panel + dashboard card
+* Add admin API route for MCP config
+* DB-backed MCP server card via mcpConfig lib
+* Add McpConfig singleton model + migration
+
+### Bug Fixes
+
+* Resolve broken sidebar favicon logo due to hydration mismatch
+* Sticky (not fixed) save bar so it never hides the last row
+* More bottom padding so save bar never hides last section
+* Robust sidebar brand favicon with fallback
+* Use _id for activity feed keys
+* Masonry dashboard layout to remove empty column gaps
+* Resolve incorrect redirect to nextjs/admin/login
+
+### Other Changes
+
+* Cover demand-driven row/column projection
+* Demand-driven fetch for $collection template variables
+* Add AI Hub skills API reference section
+* Dedupe pre-paint data-perf script
+* Add @modelcontextprotocol/sdk
+
 ## [4.6.2](https://github.com/aiyu-ayaan/Aiyu/compare/v4.6.1...v4.6.2) (2026-07-04)
 
 ### Bug Fixes
