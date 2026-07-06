@@ -55,6 +55,7 @@ Aiyu is a developer portfolio for projects, writing, live deployments, gallery e
 - GET /api/gallery
 - GET /api/deployments
 - GET /api/github/stats
+- GET /api/ai-page
 - POST /api/contact/message
 `;
 
@@ -84,6 +85,7 @@ This service exposes public portfolio APIs and protected admin APIs.
 - GET /api/gallery - Lists gallery items.
 - GET /api/deployments - Lists live deployments.
 - GET /api/github/stats - Returns configured GitHub statistics.
+- GET /api/ai-page - Returns the AI Hub (/ai) page configuration (ordered sections).
 - POST /api/contact/message - Submits a contact message.
 
 ## Protected Endpoints
@@ -254,6 +256,59 @@ To connect an external client like **Claude Desktop** directly to your portfolio
    }
    \`\`\`
 3. Alternatively, if your client supports remote HTTP/SSE servers, you can configure it to connect directly to your hosted \`/api/mcp/sse\` endpoint (once implemented) or fetch the \`server-card.json\` file for dynamic configuration.
+
+---
+
+## 4. Editing the AI Hub (\`/ai\`) Page over MCP
+
+The public **AI Hub** page is schema-driven: its entire content is an ordered array of *section* objects stored in the \`aiPage\` singleton and rendered by the frontend section registry. MCP exposes read tools (public) and write tools (guarded) so an authorized agent can define, add, and edit those sections without touching the admin UI.
+
+### The Section object
+
+Every section shares this shape:
+
+\`\`\`json
+{
+  "id": "skills",
+  "type": "skills",
+  "enabled": true,
+  "eyebrow": "Agent skills",
+  "title": "AI skills & specializations",
+  "subtitle": "Filter by category to explore what each one does.",
+  "accent": "var(--accent-purple)",
+  "data": { "categories": [ /* type-specific payload */ ] }
+}
+\`\`\`
+
+- **id** — stable unique identifier (used by get/update/delete/reorder).
+- **type** — the renderer. One of: \`hero\`, \`skills\`, \`recommendations\`, \`credits\`, \`stats\`, \`prompts\`.
+- **enabled** — when \`false\` the section is hidden from the public page.
+- **eyebrow / title / subtitle / accent** — the section shell heading + accent color.
+- **data** — the type-specific payload. For \`skills\` it is \`{ categories: [{ id, label, accent, items: [{ name, description, url? }] }] }\`.
+
+### Read tools (public, no auth)
+
+- **\`get_ai_page\`** — the full config: \`{ sectionTypes, sections }\`.
+- **\`list_ai_sections\`** — compact summaries: \`{ id, type, title, enabled, order }\` per section.
+- **\`get_ai_section\`** \`{ id }\` — one section including its full \`data\` payload. *This is the canonical "get section" call — read it first to learn a section's exact shape before editing.*
+
+Also available as an MCP **resource** at \`aiyu://ai-page\`, and over REST at \`GET /api/ai-page\`.
+
+### Write tools (require authorization)
+
+Writes require the MCP **write access** switch enabled in \`/admin/mcp\` **and** an \`Authorization: Bearer <token>\` header on every request (mint the token in \`/admin/mcp\`). Each write validates its input, re-persists the \`aiPage\` singleton, invalidates the page cache, and records an audit-log entry.
+
+- **\`create_ai_section\`** \`{ type, id?, title?, subtitle?, eyebrow?, accent?, enabled?, data?, index? }\` — add a section (\`type\` is required and must be a supported type; \`index\` sets an insertion position, otherwise appended).
+- **\`update_ai_section\`** \`{ id, title?, subtitle?, eyebrow?, accent?, enabled?, data? }\` — patch fields on an existing section; a supplied \`data\` **replaces** the payload wholesale.
+- **\`delete_ai_section\`** \`{ id }\` — remove a section (destructive).
+- **\`reorder_ai_sections\`** \`{ order }\` — \`order\` must be a permutation of every existing section id (each exactly once).
+
+### Typical editing flow
+
+1. \`list_ai_sections\` → find the section id you want.
+2. \`get_ai_section { id }\` → read its current \`data\` shape.
+3. \`update_ai_section { id, data }\` (or \`create_ai_section { type, data }\` to add a new one).
+4. Reload \`/ai\` — changes are live once the write invalidates the cache.
 `;
 }
 
@@ -297,6 +352,7 @@ export function getOpenApiDocument() {
             '/api/gallery': { get: publicJsonOperation('Public gallery list') },
             '/api/deployments': { get: publicJsonOperation('Live deployment list') },
             '/api/github/stats': { get: publicJsonOperation('GitHub statistics') },
+            '/api/ai-page': { get: publicJsonOperation('AI Hub page configuration (ordered sections)') },
             '/api/contact/message': {
                 post: {
                     summary: 'Submit a contact message',

@@ -21,10 +21,11 @@ import {
 } from '@/lib/dataFetchers';
 import { getApiCatalog } from '@/lib/agentDiscovery';
 import { prisma } from '@/lib/prisma';
-import { toClient, fromClient } from '@/lib/serialize';
-import cache from '@/lib/cache';
+import { toClient, fromClient, getSingleton, upsertSingleton } from '@/lib/serialize';
+import cache, { CACHE_KEYS } from '@/lib/cache';
 import { logAudit, AUDIT_CATEGORY } from '@/lib/audit';
 import { assertMcpWrite, getMcpAuth } from '@/lib/mcp/auth';
+import { DEFAULT_AI_PAGE, AI_SECTION_TYPES } from '@/lib/aiPageDefaults';
 
 const NO_ARGS = { type: 'object', properties: {}, additionalProperties: false };
 
@@ -68,6 +69,63 @@ async function searchPortfolio({ query } = {}) {
         }
     }
     return { query, count: results.length, results };
+}
+
+// ─────────────────────────── AI Hub page ───────────────────────────
+// The /ai page is schema-driven: its config is an ordered array of section
+// objects stored in the `aiPage` singleton. Each section has the shape:
+//   { id, type, enabled, eyebrow, title, subtitle, accent, data }
+// where `type` is one of AI_SECTION_TYPES and `data` is the type-specific
+// payload (e.g. skills → { categories:[{ id,label,accent,items:[{name,description,url?}] }] }).
+
+/** Load the stored AI-page config, falling back to the bundled defaults. */
+async function loadAiPageConfig() {
+    const stored = await getSingleton(prisma, 'aiPage');
+    if (!stored || !Array.isArray(stored.sections) || stored.sections.length === 0) {
+        return JSON.parse(JSON.stringify(DEFAULT_AI_PAGE));
+    }
+    return stored;
+}
+
+/** Persist a new `sections` array and invalidate the AI-page caches. */
+async function saveAiSections(sections) {
+    const saved = await upsertSingleton(prisma, 'aiPage', { sections });
+    await cache.invalidateAsync(CACHE_KEYS.AI_PAGE);
+    await cache.invalidateAsync(`${CACHE_KEYS.AI_PAGE}:stats`);
+    return saved;
+}
+
+/** Compact view of a section for listings. */
+function aiSectionSummary(section, index) {
+    return {
+        id: section?.id,
+        type: section?.type,
+        title: section?.title,
+        enabled: section?.enabled !== false,
+        order: index,
+    };
+}
+
+/** Validate a free-form section `data` payload (object, size-bounded). */
+function sectionData(value, field = 'data') {
+    if (value === undefined || value === null) return undefined;
+    if (typeof value !== 'object' || Array.isArray(value)) {
+        throw new Error(`Field "${field}" must be an object.`);
+    }
+    if (JSON.stringify(value).length > 100000) {
+        throw new Error(`Field "${field}" exceeds 100000 characters.`);
+    }
+    return value;
+}
+
+/** Generate a section id that does not collide with existing ones. */
+function uniqueSectionId(base, sections) {
+    const taken = new Set(sections.map((s) => s?.id).filter(Boolean));
+    const root = slugify(base) || 'section';
+    if (!taken.has(root)) return root;
+    let i = 2;
+    while (taken.has(`${root}-${i}`)) i += 1;
+    return `${root}-${i}`;
 }
 
 /** @typedef {{ name:string, title:string, description:string, inputSchema:object, annotations?:object, handler:(args:object)=>Promise<any> }} McpTool */
@@ -144,6 +202,50 @@ export const TOOLS = [
         annotations: { readOnlyHint: true, idempotentHint: true },
         handler: async () => getApiCatalog(),
     },
+    {
+        name: 'get_ai_page',
+        title: 'Get AI Hub Page',
+        description:
+            'Get the full AI Hub (/ai) configuration: the ordered array of section objects that drive the page. Falls back to bundled defaults if nothing is stored yet.',
+        inputSchema: NO_ARGS,
+        annotations: { readOnlyHint: true, idempotentHint: true },
+        handler: async () => {
+            const config = await loadAiPageConfig();
+            return { sectionTypes: AI_SECTION_TYPES, sections: config.sections || [] };
+        },
+    },
+    {
+        name: 'list_ai_sections',
+        title: 'List AI Hub Sections',
+        description:
+            'List the AI Hub (/ai) sections as compact summaries (id, type, title, enabled, order). Use get_ai_section for a full section.',
+        inputSchema: NO_ARGS,
+        annotations: { readOnlyHint: true, idempotentHint: true },
+        handler: async () => {
+            const config = await loadAiPageConfig();
+            return (config.sections || []).map(aiSectionSummary);
+        },
+    },
+    {
+        name: 'get_ai_section',
+        title: 'Get AI Hub Section',
+        description:
+            'Get one AI Hub (/ai) section by id, including its full type-specific `data` payload. Section shape: { id, type, enabled, eyebrow, title, subtitle, accent, data }.',
+        inputSchema: {
+            type: 'object',
+            properties: { id: { type: 'string', description: 'The section id (see list_ai_sections).' } },
+            required: ['id'],
+            additionalProperties: false,
+        },
+        annotations: { readOnlyHint: true, idempotentHint: true },
+        handler: async ({ id } = {}) => {
+            const wanted = String(id || '');
+            const config = await loadAiPageConfig();
+            const section = (config.sections || []).find((s) => s?.id === wanted);
+            if (!section) throw new Error(`AI Hub section not found: "${wanted}".`);
+            return section;
+        },
+    },
 ];
 
 /** @typedef {{ uri:string, name:string, title:string, description:string, mimeType:string, read:()=>Promise<any> }} McpResource */
@@ -155,6 +257,7 @@ export const RESOURCES = [
     { uri: 'aiyu://blogs', name: 'blogs', title: 'Blog Posts', description: 'Published blog post summaries.', mimeType: 'application/json', read: async () => ((await getPublishedBlogs()) || []).map(blogSummary) },
     { uri: 'aiyu://deployments', name: 'deployments', title: 'Deployments', description: 'Live deployments / hosted apps.', mimeType: 'application/json', read: async () => (await getDeploymentsData()) || [] },
     { uri: 'aiyu://api-catalog', name: 'api-catalog', title: 'API Catalog', description: 'Public REST API catalog.', mimeType: 'application/json', read: async () => getApiCatalog() },
+    { uri: 'aiyu://ai-page', name: 'ai-page', title: 'AI Hub Page Config', description: 'Schema-driven section config for the /ai page.', mimeType: 'application/json', read: async () => await loadAiPageConfig() },
 ];
 
 // ─────────────────────────── Write tools ───────────────────────────
@@ -400,6 +503,163 @@ export const WRITE_TOOLS = [
             const client = toClient('deployment', created);
             await auditWrite('MCP_CREATE_DEPLOYMENT', `Created deployment "${payload.name}" (${client._id})`);
             return { ok: true, deployment: client };
+        },
+    },
+    {
+        name: 'create_ai_section',
+        title: 'Create AI Hub Section',
+        description:
+            'Add a new section to the AI Hub (/ai) page. `type` must be one of the supported section types. Requires write authorization.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                type: { type: 'string', enum: [...AI_SECTION_TYPES], description: 'Section renderer type.' },
+                id: { type: 'string', description: 'Optional stable id; auto-generated from type if omitted.' },
+                title: { type: 'string' },
+                subtitle: { type: 'string' },
+                eyebrow: { type: 'string' },
+                accent: { type: 'string', description: 'CSS color, e.g. "var(--accent-cyan)".' },
+                enabled: { type: 'boolean', description: 'Defaults to true.' },
+                data: { type: 'object', description: 'Type-specific payload (e.g. skills → { categories: [...] }).' },
+                index: { type: 'number', description: 'Optional 0-based insertion position; appends by default.' },
+            },
+            required: ['type'],
+            additionalProperties: false,
+        },
+        annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+        handler: async (args = {}) => {
+            assertMcpWrite();
+            const type = str(args.type, 'type', { required: true, max: 40 });
+            if (!AI_SECTION_TYPES.includes(type)) {
+                throw new Error(`Unsupported section type "${type}". Allowed: ${AI_SECTION_TYPES.join(', ')}.`);
+            }
+            const config = await loadAiPageConfig();
+            const sections = [...(config.sections || [])];
+
+            const requestedId = str(args.id, 'id', { max: 120 });
+            const id = requestedId ? slugify(requestedId) : uniqueSectionId(type, sections);
+            if (sections.some((s) => s?.id === id)) throw new Error(`A section with id "${id}" already exists.`);
+
+            const section = {
+                id,
+                type,
+                enabled: args.enabled === undefined ? true : args.enabled === true,
+                eyebrow: str(args.eyebrow, 'eyebrow', { max: 200 }) || '',
+                title: str(args.title, 'title', { max: 300 }) || '',
+                subtitle: str(args.subtitle, 'subtitle', { max: 1000 }) || '',
+                accent: str(args.accent, 'accent', { max: 200 }) || 'var(--accent-cyan)',
+                data: sectionData(args.data) || {},
+            };
+
+            const at = Number.isFinite(Number(args.index))
+                ? Math.max(0, Math.min(sections.length, Number(args.index)))
+                : sections.length;
+            sections.splice(at, 0, section);
+
+            await saveAiSections(sections);
+            await auditWrite('MCP_CREATE_AI_SECTION', `Created AI section "${id}" (type=${type}) at ${at}`);
+            return { ok: true, section };
+        },
+    },
+    {
+        name: 'update_ai_section',
+        title: 'Update AI Hub Section',
+        description:
+            'Update fields of an existing AI Hub (/ai) section by id. Only the provided fields change; `data` replaces the section payload wholesale. Requires write authorization.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                id: { type: 'string' },
+                title: { type: 'string' },
+                subtitle: { type: 'string' },
+                eyebrow: { type: 'string' },
+                accent: { type: 'string' },
+                enabled: { type: 'boolean' },
+                data: { type: 'object', description: 'Replaces the section data payload entirely.' },
+            },
+            required: ['id'],
+            additionalProperties: false,
+        },
+        annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+        handler: async (args = {}) => {
+            assertMcpWrite();
+            const id = str(args.id, 'id', { required: true, max: 120 });
+            const config = await loadAiPageConfig();
+            const sections = [...(config.sections || [])];
+            const index = sections.findIndex((s) => s?.id === id);
+            if (index === -1) throw new Error(`AI Hub section not found: "${id}".`);
+
+            const patch = {};
+            for (const [field, max] of [['title', 300], ['subtitle', 1000], ['eyebrow', 200], ['accent', 200]]) {
+                const v = str(args[field], field, { max });
+                if (v !== undefined) patch[field] = v;
+            }
+            if (args.enabled !== undefined) patch.enabled = args.enabled === true;
+            if (args.data !== undefined) patch.data = sectionData(args.data);
+            if (Object.keys(patch).length === 0) throw new Error('No updatable fields provided.');
+
+            const next = { ...sections[index], ...patch };
+            sections[index] = next;
+
+            await saveAiSections(sections);
+            await auditWrite('MCP_UPDATE_AI_SECTION', `Updated AI section ${id} [${Object.keys(patch).join(', ')}]`);
+            return { ok: true, section: next };
+        },
+    },
+    {
+        name: 'delete_ai_section',
+        title: 'Delete AI Hub Section',
+        description: 'Permanently remove an AI Hub (/ai) section by id. Destructive. Requires write authorization.',
+        inputSchema: {
+            type: 'object',
+            properties: { id: { type: 'string' } },
+            required: ['id'],
+            additionalProperties: false,
+        },
+        annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false },
+        handler: async (args = {}) => {
+            assertMcpWrite();
+            const id = str(args.id, 'id', { required: true, max: 120 });
+            const config = await loadAiPageConfig();
+            const sections = (config.sections || []).filter((s) => s?.id !== id);
+            if (sections.length === (config.sections || []).length) {
+                throw new Error(`AI Hub section not found: "${id}".`);
+            }
+            await saveAiSections(sections);
+            await auditWrite('MCP_DELETE_AI_SECTION', `Deleted AI section "${id}"`);
+            return { ok: true, deletedId: id };
+        },
+    },
+    {
+        name: 'reorder_ai_sections',
+        title: 'Reorder AI Hub Sections',
+        description:
+            'Set the display order of AI Hub (/ai) sections. `order` must list every existing section id exactly once. Requires write authorization.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                order: { type: 'array', items: { type: 'string' }, description: 'Section ids in the desired order.' },
+            },
+            required: ['order'],
+            additionalProperties: false,
+        },
+        annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+        handler: async (args = {}) => {
+            assertMcpWrite();
+            const order = strArray(args.order, 'order');
+            if (!order || order.length === 0) throw new Error('Field "order" must be a non-empty array of ids.');
+            const config = await loadAiPageConfig();
+            const sections = config.sections || [];
+            const byId = new Map(sections.map((s) => [s?.id, s]));
+
+            if (order.length !== sections.length || new Set(order).size !== order.length || order.some((id) => !byId.has(id))) {
+                throw new Error('`order` must be a permutation of every existing section id (each exactly once).');
+            }
+
+            const reordered = order.map((id) => byId.get(id));
+            await saveAiSections(reordered);
+            await auditWrite('MCP_REORDER_AI_SECTIONS', `Reordered AI sections: ${order.join(', ')}`);
+            return { ok: true, order };
         },
     },
 ];
