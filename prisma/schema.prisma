@@ -446,3 +446,16 @@ model McpConfig {
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 }
+
+// Schema-driven config for the public AI Hub (/ai). Json-blob singleton like
+// `About`/`Home`: `data` holds a `sections` array where each entry is a
+// self-describing block ({ id, type, enabled, order, title, ... , data }).
+// New section types can ship without a migration — the frontend component
+// registry (see components/ai/v2/registry) maps `type` -> renderer, and the
+// admin editor (/admin/ai-page) reorders/toggles/edits the array in place.
+model AiPage {
+  id        String   @id @default(cuid())
+  data      Json     @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+}

@@ -164,6 +164,7 @@ export const MODELS = {
   github: { delegate: 'gitHub', kind: 'json', singleton: true, timestamps: false },
   cronEnv: { delegate: 'cronEnv', kind: 'json', singleton: true, timestamps: true },
   mcpConfig: { delegate: 'mcpConfig', kind: 'json', singleton: true, timestamps: true, secrets: MCP_SECRETS },
+  aiPage: { delegate: 'aiPage', kind: 'json', singleton: true, timestamps: true },
 };
 
 export function getDelegate(prisma, key) {

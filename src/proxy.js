@@ -325,7 +325,8 @@ const V2_PAGES = new Set([
     '/apps',
     '/blogs',
     '/github',
-    '/contact-us'
+    '/contact-us',
+    '/ai'
 ]);
 
 const SITE_VERSION_CACHE_TTL_MS = process.env.NODE_ENV === 'production' ? 30 * 1000 : 1000;
@@ -416,6 +417,7 @@ const PUBLIC_PAGE_EXACTS = new Set([
     '/blogs',
     '/contact-us',
     '/github',
+    '/ai',
     '/sitemap',
     '/work-in-progress',
     '/live-deployments'

@@ -184,6 +184,7 @@ export const CACHE_KEYS = {
     THEME: 'db:theme',
     GALLERY: 'db:gallery',
     GITHUB: 'db:github',
+    AI_PAGE: 'db:aiPage',
 };
 
 export const CACHE_TTL = {
