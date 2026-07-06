@@ -62,3 +62,50 @@ describe('cronTemplate bounded data loading', () => {
     expect(findManyMock).toHaveBeenCalledTimes(2);
   });
 });
+
+describe('cronTemplate demand-driven fetching', () => {
+  const lastArgs = () => findManyMock.mock.calls[findManyMock.mock.calls.length - 1][0] || {};
+
+  beforeEach(() => {
+    findManyMock.mockReset();
+    findManyMock.mockResolvedValue(makeBlogs(50));
+    clearTemplateCache();
+  });
+
+  it('shrinks `take` to the referenced row index', async () => {
+    await compileTemplate('$blogs.0.title', {}, { rowLimit: 500, useCache: false });
+    expect(lastArgs().take).toBe(1);
+
+    findManyMock.mockClear();
+    await compileTemplate('$blogs.2.title', {}, { rowLimit: 500, useCache: false });
+    expect(lastArgs().take).toBe(3);
+  });
+
+  it('projects a `select` down to the referenced columns', async () => {
+    await compileTemplate('$blogs.0.title', {}, { rowLimit: 500, useCache: false });
+    expect(lastArgs().select).toEqual({ id: true, title: true });
+  });
+
+  it('loads all columns for a whole-row reference', async () => {
+    await compileTemplate('$blogs.0', {}, { rowLimit: 500, useCache: false });
+    expect(lastArgs().take).toBe(1);
+    expect(lastArgs().select).toBeUndefined();
+  });
+
+  it('falls back to all columns for an unknown field', async () => {
+    await compileTemplate('$blogs.0.nope', {}, { rowLimit: 500, useCache: false });
+    expect(lastArgs().select).toBeUndefined();
+  });
+
+  it('needs the whole collection for a non-indexed path like .length', async () => {
+    await compileTemplate('$blogs.length', {}, { rowLimit: 7, useCache: false });
+    expect(lastArgs().take).toBe(7);
+    expect(lastArgs().select).toBeUndefined();
+  });
+
+  it('upgrades to the union of columns across mixed references', async () => {
+    await compileTemplate('a=$blogs.0.title b=$blogs.1.slug', {}, { rowLimit: 500, useCache: false });
+    expect(lastArgs().take).toBe(2);
+    expect(lastArgs().select).toEqual({ id: true, title: true, slug: true });
+  });
+});
