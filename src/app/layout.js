@@ -166,8 +166,11 @@ export default async function RootLayout({ children }) {
               (function() {
                 try {
                   var path = location.pathname || '';
-                  // Blogs are meant to load instantly — never boot-gate them.
-                  var skipRoute = path === '/blogs' || path.indexOf('/blogs/') === 0;
+                  // Blogs (any version prefix) and the admin panel are meant to
+                  // load instantly — never boot-gate them, not even first visit.
+                  var skipRoute =
+                    /^\\/(?:v1\\/|v2\\/)?blogs(?:\\/|$)/.test(path) ||
+                    /^\\/admin(?:\\/|$)/.test(path);
                   // Skip boot screen during e2e tests. Playwright/WebDriver
                   // automation sets navigator.webdriver = true in both headed
                   // and headless modes (the UA does NOT contain 'Playwright').

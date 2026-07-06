@@ -10,7 +10,8 @@ import { useEffect, useState } from "react";
  *   - No other tab/instance open      -> play the boot screen once.
  *   - Another tab/instance is open    -> skip (new tab, duplicated tab, etc).
  *   - Reload of the same tab          -> skip.
- *   - /blogs and /blogs/[id]          -> always skip (blogs shouldn't wait).
+ *   - Blog routes (/blogs, /blogs/[id], /v1|/v2 prefixed) -> always skip.
+ *   - Admin panel (/admin/*)          -> always skip (tools shouldn't wait).
  *
  * Presence is detected two ways:
  *   1. A localStorage heartbeat ("aiyu:lastSeen"), read synchronously in the
