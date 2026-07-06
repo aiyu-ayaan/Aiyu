@@ -5,6 +5,8 @@ import {
     FaArrowRight, FaArrowTrendUp, FaArrowTrendDown, FaPlus,
     FaEye, FaUsers, FaEnvelope, FaArrowUpRightFromSquare,
     FaClockRotateLeft, FaDesktop, FaGlobe, FaLink,
+    FaServer, FaMicrochip, FaMemory, FaHardDrive, FaDatabase,
+    FaCircleCheck, FaCircleXmark,
 } from "react-icons/fa6";
 import { ACCENT } from "@/app/components/admin/shell/navConfig";
 
@@ -42,6 +44,26 @@ function timeAgo(iso) {
     if (d < 3600) return `${Math.floor(d / 60)}m ago`;
     if (d < 86400) return `${Math.floor(d / 3600)}h ago`;
     return `${Math.floor(d / 86400)}d ago`;
+}
+function fmtBytes(bytes) {
+    if (bytes == null || Number.isNaN(bytes)) return "—";
+    const GB = 1024 ** 3, MB = 1024 ** 2, KB = 1024;
+    if (bytes >= GB) return `${(bytes / GB).toFixed(1)} GB`;
+    if (bytes >= MB) return `${(bytes / MB).toFixed(0)} MB`;
+    if (bytes >= KB) return `${(bytes / KB).toFixed(0)} KB`;
+    return `${bytes} B`;
+}
+function fmtUptime(seconds) {
+    if (!seconds) return "—";
+    const d = Math.floor(seconds / 86400);
+    const h = Math.floor((seconds % 86400) / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    return [d ? `${d}d` : "", h ? `${h}h` : "", `${m}m`].filter(Boolean).join(" ");
+}
+function meterColor(pct) {
+    if (pct >= 90) return "bg-red-500";
+    if (pct >= 70) return "bg-amber-500";
+    return "bg-emerald-500";
 }
 
 /* ── Building blocks ──────────────────────────────────────────────── */
@@ -149,11 +171,31 @@ function BarList({ rows, accent = "cyan", empty = "No data yet." }) {
     );
 }
 
+/** Compact horizontal usage meter for the Server Health widget. */
+function HealthMeter({ icon: Icon, label, percent, sub, accent }) {
+    const pct = Math.max(0, Math.min(100, Math.round(percent || 0)));
+    return (
+        <div className="px-4 py-3">
+            <div className="flex items-center justify-between mb-1.5">
+                <span className="flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-slate-400">
+                    <Icon className={accent} /> {label}
+                </span>
+                <span className="text-sm font-bold tabular-nums text-white">{pct}%</span>
+            </div>
+            <div className="h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                <div className={`h-full rounded-full transition-all duration-500 ${meterColor(pct)}`} style={{ width: `${pct}%` }} />
+            </div>
+            {sub && <div className="mt-1 text-[11px] font-mono text-slate-600">{sub}</div>}
+        </div>
+    );
+}
+
 /* ── Dashboard ────────────────────────────────────────────────────── */
 export default function AdminDashboard() {
     const [data, setData] = useState(null);
     const [status, setStatus] = useState("loading"); // loading | ready | error
     const [logs, setLogs] = useState(null);
+    const [health, setHealth] = useState(null); // { metrics, uptime } — best-effort
 
     useEffect(() => {
         let alive = true;
@@ -174,6 +216,24 @@ export default function AdminDashboard() {
             } catch { /* activity is best-effort */ }
         })();
         return () => { alive = false; };
+    }, []);
+
+    // Live server health — poll every 5s, matching the health dashboard.
+    useEffect(() => {
+        let alive = true;
+        const loadHealth = async () => {
+            try {
+                const [m, u] = await Promise.all([
+                    fetch("/api/admin/health/metrics", { cache: "no-store" }).then((r) => r.json()),
+                    fetch("/api/admin/health/uptime", { cache: "no-store" }).then((r) => r.json()).catch(() => null),
+                ]);
+                if (!alive || !m?.success) return;
+                setHealth({ metrics: m.metrics, uptime: u?.success ? u.targets : [] });
+            } catch { /* health is best-effort */ }
+        };
+        loadHealth();
+        const id = setInterval(loadHealth, 5000);
+        return () => { alive = false; clearInterval(id); };
     }, []);
 
     const greeting = (() => {
@@ -259,6 +319,51 @@ export default function AdminDashboard() {
             {/* Masonry of widgets — column-fill:balance packs by height so there
                 are no empty gaps between uneven cards. */}
             <div className="columns-1 md:columns-2 xl:columns-3 gap-6 [column-fill:_balance]">
+                <div className="mb-6 break-inside-avoid">
+                    <Card title="Server Health" icon={FaServer} action={
+                        <div className="flex items-center gap-3">
+                            {health && <span className="flex items-center gap-1.5 text-[11px] font-mono text-emerald-400"><span className="relative flex h-2 w-2"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" /><span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" /></span>Live</span>}
+                            <Link href="/admin/health" className="text-xs font-mono text-slate-500 hover:text-cyan-400">Details →</Link>
+                        </div>
+                    }>
+                        {health == null ? (
+                            <div className="p-5 space-y-4">{Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-8 rounded-lg bg-white/[0.03] animate-pulse" />)}</div>
+                        ) : (() => {
+                            const m = health.metrics;
+                            const up = health.uptime.filter((t) => t.latest?.status === "up").length;
+                            const down = health.uptime.filter((t) => t.latest?.status === "down").length;
+                            const dbUp = m.database?.status === "up";
+                            return (
+                                <div className="divide-y divide-white/5">
+                                    <HealthMeter icon={FaMicrochip} label="CPU" percent={m.cpu.percent} accent="text-cyan-400"
+                                        sub={`${m.cpu.cores} cores · load ${m.cpu.loadAvg.join(" / ")}`} />
+                                    <HealthMeter icon={FaMemory} label="Memory" percent={m.memory.usedPercent} accent="text-violet-400"
+                                        sub={`${fmtBytes(m.memory.used)} / ${fmtBytes(m.memory.total)}`} />
+                                    <HealthMeter icon={FaHardDrive} label="Disk" percent={m.disk?.usedPercent ?? 0} accent="text-amber-400"
+                                        sub={m.disk ? `${fmtBytes(m.disk.free)} free` : "unavailable"} />
+                                    <div className="grid grid-cols-3 divide-x divide-white/5">
+                                        <div className="px-4 py-3">
+                                            <div className="flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-widest text-slate-500 mb-1"><FaDatabase className={dbUp ? "text-emerald-400" : "text-red-400"} /> DB</div>
+                                            <div className={`text-sm font-bold tabular-nums ${dbUp ? "text-emerald-400" : "text-red-400"}`}>{dbUp ? `${m.database.latencyMs}ms` : "down"}</div>
+                                        </div>
+                                        <div className="px-4 py-3">
+                                            <div className="flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-widest text-slate-500 mb-1"><FaServer className="text-slate-400" /> Uptime</div>
+                                            <div className="text-sm font-bold tabular-nums text-white">{fmtUptime(m.process.uptimeSeconds)}</div>
+                                        </div>
+                                        <div className="px-4 py-3">
+                                            <div className="flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-widest text-slate-500 mb-1">Endpoints</div>
+                                            <div className="flex items-center gap-2 text-sm font-bold tabular-nums">
+                                                <span className="flex items-center gap-1 text-emerald-400"><FaCircleCheck className="text-[11px]" />{up}</span>
+                                                <span className="flex items-center gap-1 text-red-400"><FaCircleXmark className="text-[11px]" />{down}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })()}
+                    </Card>
+                </div>
+
                 <div className="mb-6 break-inside-avoid">
                     <Card title="Recent Activity" icon={FaClockRotateLeft} action={<Link href="/admin/security" className="text-xs font-mono text-slate-500 hover:text-cyan-400">Audit log →</Link>}>
                         {logs == null ? (
