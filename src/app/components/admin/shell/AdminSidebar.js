@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FaAnglesLeft, FaArrowUpRightFromSquare, FaRightFromBracket, FaXmark, FaGear } from "react-icons/fa6";
@@ -13,9 +13,16 @@ import { NAV_GROUPS, ACCENT, STAGE_META, SETTINGS_ITEM, findActiveItem } from ".
 const FAVICON_SOURCES = ["/api/favicon", "/favicon.ico"];
 
 function BrandMark() {
+    const [mounted, setMounted] = useState(false);
     const [stage, setStage] = useState(0);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
     const base = "relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl shadow-[0_0_20px_rgba(34,211,238,0.25)]";
-    if (stage >= FAVICON_SOURCES.length) {
+    
+    if (!mounted || stage >= FAVICON_SOURCES.length) {
         return (
             <span className={`${base} bg-gradient-to-br from-cyan-400 to-violet-500 text-slate-950 font-black text-lg`}>
                 A
