@@ -2,8 +2,8 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FaAnglesLeft, FaArrowUpRightFromSquare, FaRightFromBracket, FaXmark } from "react-icons/fa6";
-import { NAV_GROUPS, ACCENT, findActiveItem } from "./navConfig";
+import { FaAnglesLeft, FaArrowUpRightFromSquare, FaRightFromBracket, FaXmark, FaGear } from "react-icons/fa6";
+import { NAV_GROUPS, ACCENT, STAGE_META, SETTINGS_ITEM, findActiveItem } from "./navConfig";
 
 /**
  * Site brand mark. Steps through favicon sources — a custom favicon served at
@@ -42,9 +42,10 @@ function BrandMark() {
  * is resolved by longest-prefix match so deep routes (e.g. /admin/blogs/new)
  * still light up their parent section.
  */
-export default function AdminSidebar({ collapsed, onToggleCollapse, mobileOpen, onCloseMobile, onLogout }) {
+export default function AdminSidebar({ collapsed, onToggleCollapse, mobileOpen, onCloseMobile, onLogout, stages = {} }) {
     const pathname = usePathname();
     const active = findActiveItem(pathname);
+    const settingsActive = pathname === SETTINGS_ITEM.path;
 
     return (
         <>
@@ -99,6 +100,7 @@ export default function AdminSidebar({ collapsed, onToggleCollapse, mobileOpen, 
                                     const Icon = item.icon;
                                     const accent = ACCENT[item.accent] || ACCENT.slate;
                                     const isActive = active?.path === item.path;
+                                    const stage = STAGE_META[stages[item.path]];
                                     return (
                                         <li key={item.path}>
                                             <Link
@@ -121,11 +123,21 @@ export default function AdminSidebar({ collapsed, onToggleCollapse, mobileOpen, 
                                                         isActive ? "opacity-100" : "opacity-0",
                                                     ].join(" ")}
                                                 />
-                                                <Icon
-                                                    className={`shrink-0 text-[15px] transition-colors ${isActive ? accent.text : "text-slate-500 " + accent.ring}`}
-                                                />
+                                                <span className="relative shrink-0">
+                                                    <Icon
+                                                        className={`text-[15px] transition-colors ${isActive ? accent.text : "text-slate-500 " + accent.ring}`}
+                                                    />
+                                                    {collapsed && stage && (
+                                                        <span className={`absolute -top-1 -right-1 h-2 w-2 rounded-full ${stage.dot} ring-2 ring-slate-950`} />
+                                                    )}
+                                                </span>
                                                 {!collapsed && (
                                                     <span className="text-sm font-medium truncate">{item.label}</span>
+                                                )}
+                                                {!collapsed && stage && (
+                                                    <span className={`ml-auto shrink-0 rounded-md px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider ${stage.badge}`}>
+                                                        {stage.label}
+                                                    </span>
                                                 )}
                                             </Link>
                                         </li>
@@ -138,6 +150,19 @@ export default function AdminSidebar({ collapsed, onToggleCollapse, mobileOpen, 
 
                 {/* Footer actions */}
                 <div className="shrink-0 border-t border-white/5 p-3 space-y-1">
+                    <Link
+                        href={SETTINGS_ITEM.path}
+                        onClick={onCloseMobile}
+                        title={collapsed ? "Settings" : undefined}
+                        className={[
+                            "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors",
+                            collapsed ? "justify-center" : "",
+                            settingsActive ? "bg-white/[0.07] text-white" : "text-slate-400 hover:text-white hover:bg-white/[0.04]",
+                        ].join(" ")}
+                    >
+                        <FaGear className={`shrink-0 text-[14px] ${settingsActive ? "text-cyan-400" : ""}`} />
+                        {!collapsed && <span className="font-medium">Settings</span>}
+                    </Link>
                     <a
                         href="/"
                         target="_blank"

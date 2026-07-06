@@ -4,6 +4,7 @@ import {
     FaDatabase, FaTerminal, FaRobot, FaServer, FaHardDrive, FaCode,
     FaGoogle, FaClock, FaBell, FaChartLine, FaMagnifyingGlass,
     FaShieldHalved, FaGauge, FaCodeBranch, FaPlug, FaWandMagicSparkles,
+    FaGear,
 } from "react-icons/fa6";
 
 /**
@@ -88,8 +89,31 @@ export const NAV_GROUPS = [
     },
 ];
 
+/**
+ * The Settings destination lives in the sidebar footer (not the scrolling
+ * groups), but is still part of NAV_ITEMS so the breadcrumb and command
+ * palette can resolve it.
+ */
+export const SETTINGS_ITEM = {
+    label: "Settings",
+    description: "Section stages & preferences",
+    icon: FaGear,
+    path: "/admin/settings",
+    accent: "slate",
+    exact: true,
+};
+
 /** Flat list of every nav item, useful for search and breadcrumb lookups. */
-export const NAV_ITEMS = NAV_GROUPS.flatMap((g) => g.items);
+export const NAV_ITEMS = [...NAV_GROUPS.flatMap((g) => g.items), SETTINGS_ITEM];
+
+/**
+ * Release-stage labels an admin can pin to any section from Settings. Stored in
+ * the config singleton as `adminSectionStages` ({ [path]: "beta" | "alpha" }).
+ */
+export const STAGE_META = {
+    beta: { label: "Beta", badge: "text-sky-300 bg-sky-500/15 ring-1 ring-sky-400/30", dot: "bg-sky-400" },
+    alpha: { label: "Alpha", badge: "text-amber-300 bg-amber-500/15 ring-1 ring-amber-400/30", dot: "bg-amber-400" },
+};
 
 /**
  * Tailwind class fragments keyed by accent name. Kept as full literal strings

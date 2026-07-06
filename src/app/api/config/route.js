@@ -43,6 +43,9 @@ const PUBLIC_CONFIG_KEYS = [
     'activeThemeVariant',
     'allowThemeSwitching',
     'perPageThemes',
+    // Admin-only maturity labels (Beta/Alpha) pinned to admin sections. Not
+    // sensitive; surfaced here so the admin shell can render badges.
+    'adminSectionStages',
 ];
 
 function sanitizePublicConfig(fullConfig) {

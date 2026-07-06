@@ -21,6 +21,7 @@ export default function AdminShell({ children }) {
     const [collapsed, setCollapsed] = useState(false);
     const [mobileOpen, setMobileOpen] = useState(false);
     const [searchOpen, setSearchOpen] = useState(false);
+    const [stages, setStages] = useState({});
 
     // Restore persisted collapse preference.
     useEffect(() => {
@@ -39,6 +40,23 @@ export default function AdminShell({ children }) {
 
     // Close the mobile drawer whenever the route changes.
     useEffect(() => { setMobileOpen(false); }, [pathname]);
+
+    // Load admin-pinned section stages (Beta/Alpha badges) and keep them in
+    // sync when the Settings page saves via a broadcast event.
+    useEffect(() => {
+        if (isLogin) return;
+        let alive = true;
+        (async () => {
+            try {
+                const res = await fetch("/api/config", { cache: "no-store" });
+                const json = await res.json();
+                if (alive && json?.adminSectionStages) setStages(json.adminSectionStages);
+            } catch { /* badges are best-effort */ }
+        })();
+        const onChange = (e) => setStages(e.detail || {});
+        window.addEventListener("admin:stages-changed", onChange);
+        return () => { alive = false; window.removeEventListener("admin:stages-changed", onChange); };
+    }, [isLogin]);
 
     // Global command-palette shortcut.
     useEffect(() => {
@@ -72,6 +90,7 @@ export default function AdminShell({ children }) {
                 mobileOpen={mobileOpen}
                 onCloseMobile={() => setMobileOpen(false)}
                 onLogout={handleLogout}
+                stages={stages}
             />
 
             <div className={`flex min-h-screen flex-col transition-[padding] duration-300 ease-out ${collapsed ? "md:pl-[76px]" : "md:pl-[264px]"}`}>
