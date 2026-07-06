@@ -189,6 +189,12 @@ export default function AdminDashboard() {
     const devices = (data?.devices || []).slice(0, 4).map((d) => ({ label: d.type || "Unknown", value: d.views }));
     const countries = (data?.countries || []).slice(0, 5).map((c) => ({ label: c.code, value: c.views }));
     const referrers = (data?.referrers || []).slice(0, 5).map((r) => ({ label: r.title || r.type, value: r.views }));
+    const topContent = Object.values(data?.topEntities || {})
+        .flat()
+        .filter(Boolean)
+        .map((e) => ({ label: e.title || e.slug || e.path || `#${e.id}`, value: e.views }))
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 6);
 
     return (
         <div className="p-5 md:p-8 max-w-7xl mx-auto">
@@ -227,42 +233,34 @@ export default function AdminDashboard() {
                 ))}
             </div>
 
-            {/* Main grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Left: traffic + top pages */}
-                <div className="lg:col-span-2 space-y-6">
-                    <Card title="Traffic" icon={FaEye} action={<Link href="/admin/analytics" className="text-xs font-mono text-slate-500 hover:text-cyan-400">Details →</Link>}>
-                        {status === "loading" ? <div className="h-52 animate-pulse" /> : <TrafficChart series={data?.series?.slice(-30) || []} />}
-                    </Card>
-                    <Card title="Top Pages" icon={FaLink}>
-                        <BarList rows={topPages} accent="cyan" empty="No page views recorded yet." />
-                    </Card>
-                </div>
+            {/* Quick actions strip */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+                {QUICK_ACTIONS.map((act) => {
+                    const accent = ACCENT[act.accent] || ACCENT.slate;
+                    return (
+                        <Link key={act.href} href={act.href} className={`group flex items-center gap-3 p-4 rounded-xl border border-white/10 bg-slate-900/40 hover:bg-slate-900/70 transition-all ${accent.border}`}>
+                            <span className={`flex h-8 w-8 items-center justify-center rounded-lg ${accent.bgSoft} ${accent.text}`}>
+                                <FaPlus className="text-[12px]" />
+                            </span>
+                            <span className="text-sm font-semibold text-white truncate">{act.label}</span>
+                            <FaArrowRight className="ml-auto text-slate-600 group-hover:text-white text-xs transition-colors" />
+                        </Link>
+                    );
+                })}
+            </div>
 
-                {/* Right: quick actions + activity */}
-                <div className="space-y-6">
-                    <Card title="Quick Actions" icon={FaPlus}>
-                        <div className="p-3 grid grid-cols-1 gap-2">
-                            {QUICK_ACTIONS.map((act) => {
-                                const accent = ACCENT[act.accent] || ACCENT.slate;
-                                return (
-                                    <Link key={act.href} href={act.href} className={`group flex items-center gap-3 p-3 rounded-xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.05] transition-all ${accent.border}`}>
-                                        <span className={`flex h-8 w-8 items-center justify-center rounded-lg ${accent.bgSoft} ${accent.text}`}>
-                                            <FaPlus className="text-[12px]" />
-                                        </span>
-                                        <span className="text-sm font-semibold text-white">{act.label}</span>
-                                        <FaArrowRight className="ml-auto text-slate-600 group-hover:text-white text-xs transition-colors" />
-                                    </Link>
-                                );
-                            })}
-                        </div>
-                    </Card>
+            {/* Traffic (full width hero chart) */}
+            <div className="mb-6">
+                <Card title="Traffic" icon={FaEye} action={<Link href="/admin/analytics" className="text-xs font-mono text-slate-500 hover:text-cyan-400">Details →</Link>}>
+                    {status === "loading" ? <div className="h-52 animate-pulse" /> : <TrafficChart series={data?.series?.slice(-30) || []} />}
+                </Card>
+            </div>
 
-                    <Card
-                        title="Recent Activity"
-                        icon={FaClockRotateLeft}
-                        action={<Link href="/admin/security" className="text-xs font-mono text-slate-500 hover:text-cyan-400">Audit log →</Link>}
-                    >
+            {/* Masonry of widgets — column-fill:balance packs by height so there
+                are no empty gaps between uneven cards. */}
+            <div className="columns-1 md:columns-2 xl:columns-3 gap-6 [column-fill:_balance]">
+                <div className="mb-6 break-inside-avoid">
+                    <Card title="Recent Activity" icon={FaClockRotateLeft} action={<Link href="/admin/security" className="text-xs font-mono text-slate-500 hover:text-cyan-400">Audit log →</Link>}>
                         {logs == null ? (
                             <div className="p-5 space-y-3">{Array.from({ length: 5 }).map((_, i) => <div key={i} className="h-8 rounded-lg bg-white/[0.03] animate-pulse" />)}</div>
                         ) : logs.length === 0 ? (
@@ -286,13 +284,28 @@ export default function AdminDashboard() {
                         )}
                     </Card>
                 </div>
-            </div>
 
-            {/* Breakdown row */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-                <Card title="Devices" icon={FaDesktop}><BarList rows={devices} accent="violet" /></Card>
-                <Card title="Top Countries" icon={FaGlobe}><BarList rows={countries} accent="emerald" /></Card>
-                <Card title="Referrers" icon={FaLink}><BarList rows={referrers} accent="amber" /></Card>
+                <div className="mb-6 break-inside-avoid">
+                    <Card title="Top Pages" icon={FaLink}><BarList rows={topPages} accent="cyan" empty="No page views recorded yet." /></Card>
+                </div>
+
+                {topContent.length > 0 && (
+                    <div className="mb-6 break-inside-avoid">
+                        <Card title="Top Content" icon={FaEye}><BarList rows={topContent} accent="fuchsia" /></Card>
+                    </div>
+                )}
+
+                <div className="mb-6 break-inside-avoid">
+                    <Card title="Devices" icon={FaDesktop}><BarList rows={devices} accent="violet" /></Card>
+                </div>
+
+                <div className="mb-6 break-inside-avoid">
+                    <Card title="Top Countries" icon={FaGlobe}><BarList rows={countries} accent="emerald" /></Card>
+                </div>
+
+                <div className="mb-6 break-inside-avoid">
+                    <Card title="Referrers" icon={FaLink}><BarList rows={referrers} accent="amber" /></Card>
+                </div>
             </div>
         </div>
     );
