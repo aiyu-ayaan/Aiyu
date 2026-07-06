@@ -275,6 +275,7 @@ async function generateCaption(request) {
         try {
             console.log('[AI] Optimizing image for transmission...');
             buffer = await sharp(buffer)
+                .gamma() // Linear space resizing to prevent gamma/brightness shift
                 .resize(1024, 1024, { fit: 'inside', withoutEnlargement: true })
                 .jpeg({ quality: 80 })
                 .toBuffer();

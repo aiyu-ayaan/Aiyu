@@ -31,6 +31,14 @@ const SyntaxHighlighter = dynamic(
 const isOptimizableImage = (src) =>
   typeof src === 'string' && (src.startsWith('/') || src.startsWith('https://'));
 
+const getTextContent = (node) => {
+  if (!node) return '';
+  if (typeof node === 'string' || typeof node === 'number') return String(node);
+  if (Array.isArray(node)) return node.map(getTextContent).join('');
+  if (node.props && node.props.children) return getTextContent(node.props.children);
+  return '';
+};
+
 function stripH1Content(markdown = '') {
   if (typeof markdown !== 'string') return '';
 
@@ -44,18 +52,36 @@ function slugifyHeading(value = '') {
   return String(value)
     .toLowerCase()
     .trim()
+    .replace(/\r/g, '') // remove carriage returns
     .replace(/[^\p{L}\p{N}\s-]/gu, '')
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
     .slice(0, 80);
 }
 
+function cleanMarkdownHeading(text) {
+  return text
+    .replace(/\r/g, '')                      // remove carriage returns
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // [text](url) -> text
+    .replace(/<[^>]+>/g, '')                 // HTML tags -> remove
+    .replace(/[*_`~]/g, '')                 // formatting -> remove
+    .trim();
+}
+
 function extractToc(markdown = '') {
   if (typeof markdown !== 'string' || markdown.trim().length === 0) return [];
-  const lines = markdown.split('\n');
+  // Split lines and strip trailing carriage returns
+  const lines = markdown.split('\n').map((line) => line.replace(/\r$/, ''));
   const headings = [];
+  let inCodeBlock = false;
 
   for (const line of lines) {
+    if (line.trim().startsWith('```')) {
+      inCodeBlock = !inCodeBlock;
+      continue;
+    }
+    if (inCodeBlock) continue;
+
     const match = /^(#{2,3})\s+(.+?)\s*$/.exec(line);
     if (!match) continue;
     const level = match[1].length;
@@ -66,11 +92,12 @@ function extractToc(markdown = '') {
 
   const seen = new Map();
   return headings.map((h) => {
-    const base = slugifyHeading(h.text) || 'section';
+    const cleanText = cleanMarkdownHeading(h.text);
+    const base = slugifyHeading(cleanText) || 'section';
     const count = (seen.get(base) || 0) + 1;
     seen.set(base, count);
     const id = count === 1 ? base : `${base}-${count}`;
-    return { ...h, id };
+    return { ...h, id, cleanText };
   });
 }
 
@@ -158,10 +185,18 @@ export default memo(function BlogDetailClient({ blog, config, adsConfig, backHre
       const headingElements = toc.map(item => document.getElementById(item.id)).filter(Boolean);
       if (headingElements.length === 0) return;
 
+      // UX improvement: if scrolled to the bottom, highlight the last header
+      const isAtBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 100;
+      if (isAtBottom) {
+        setActiveId(headingElements[headingElements.length - 1].id);
+        return;
+      }
+
       let currentActiveId = headingElements[0].id;
       for (const el of headingElements) {
         const bounds = el.getBoundingClientRect();
-        if (bounds.top <= 200) {
+        // Offset 120px to account for sticky nav/header
+        if (bounds.top <= 120) {
           currentActiveId = el.id;
         } else {
           break;
@@ -179,6 +214,17 @@ export default memo(function BlogDetailClient({ blog, config, adsConfig, backHre
       window.removeEventListener('scroll', handleScroll);
     };
   }, [toc, hasToc]); // Note: excluding activeId to prevent re-binding observer
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[Diagnostic] TOC items count:', toc.length);
+      toc.forEach((item) => {
+        const el = document.getElementById(item.id);
+        console.log(`[Diagnostic] id: "${item.id}" -> cleanText: "${item.cleanText}", found in DOM: ${!!el}`);
+      });
+    }
+  }, [toc]);
 
   const handleShare = useCallback(async () => {
     if (typeof window === 'undefined') return;
@@ -220,7 +266,7 @@ export default memo(function BlogDetailClient({ blog, config, adsConfig, backHre
     }
   }, [blog?._id]);
 
-  // We use a ref to track paragraph count during the synchronous ReactMarkdown render pass
+  // We use refs to track paragraph count during the synchronous ReactMarkdown render pass
   const pCountRef = React.useRef(0);
   pCountRef.current = 0; // Reset before every render of the markdown
 
@@ -400,8 +446,13 @@ export default memo(function BlogDetailClient({ blog, config, adsConfig, backHre
                     </a>
                   ),
                   h2: ({ children, ...props }) => {
-                    const text = Array.isArray(children) ? children.join('') : String(children || '');
-                    const id = toc.find((entry) => entry.text === text)?.id || slugifyHeading(text);
+                    const text = getTextContent(children);
+                    const textSlug = slugifyHeading(text);
+                    const item = toc.find((entry) => slugifyHeading(entry.cleanText) === textSlug);
+                    const id = item?.id || textSlug;
+                    if (process.env.NODE_ENV === 'development') {
+                      console.log(`[H2 Render] text: "${text}", slug: "${textSlug}", final id: "${id}"`);
+                    }
                     return (
                       <h2 id={id} {...props}>
                         {children}
@@ -409,8 +460,13 @@ export default memo(function BlogDetailClient({ blog, config, adsConfig, backHre
                     );
                   },
                   h3: ({ children, ...props }) => {
-                    const text = Array.isArray(children) ? children.join('') : String(children || '');
-                    const id = toc.find((entry) => entry.text === text)?.id || slugifyHeading(text);
+                    const text = getTextContent(children);
+                    const textSlug = slugifyHeading(text);
+                    const item = toc.find((entry) => slugifyHeading(entry.cleanText) === textSlug);
+                    const id = item?.id || textSlug;
+                    if (process.env.NODE_ENV === 'development') {
+                      console.log(`[H3 Render] text: "${text}", slug: "${textSlug}", final id: "${id}"`);
+                    }
                     return (
                       <h3 id={id} {...props}>
                         {children}
@@ -510,7 +566,7 @@ export default memo(function BlogDetailClient({ blog, config, adsConfig, backHre
           </article>
 
           {hasToc ? (
-            <aside className="hidden min-w-0 lg:block sticky top-24 self-start max-h-[calc(100vh-8rem)] overflow-y-auto scrollbar-hide">
+            <aside className="hidden min-w-0 lg:block blog-toc-sidebar scrollbar-hide">
               <div className="pt-4 pb-12 pr-4">
                 <p className="mb-3 text-sm font-bold uppercase tracking-wider" style={{ color: 'var(--text-tertiary)' }}>
                   On this page

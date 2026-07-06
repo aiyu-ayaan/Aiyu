@@ -466,7 +466,7 @@ html {
   margin: 0;
   padding: 0;
   width: 100%;
-  overflow-x: hidden;
+  overflow-x: clip;
   /* Apply background to html to cover overscroll */
   background-color: #0d1117;
   /* Fallback */
@@ -481,7 +481,7 @@ body {
   margin: 0;
   padding: 0;
   width: 100%;
-  overflow-x: hidden;
+  overflow-x: clip;
   background-color: transparent;
   /* Keep transparent for SpaceBackground */
   color: var(--text-primary);

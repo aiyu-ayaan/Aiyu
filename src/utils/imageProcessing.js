@@ -71,11 +71,13 @@ export async function generateThumbnail(imageBuffer, originalFilename) {
 
         // Generate WebP thumbnail with optimized settings
         const thumbnailBuffer = await image
+            .gamma() // Linear space resizing to prevent gamma/brightness shift
             .resize(thumbnailWidth, thumbnailHeight, {
                 fit: 'inside',
                 withoutEnlargement: true,
                 kernel: sharp.kernel.lanczos3 // Better quality/performance balance
             })
+            .withMetadata() // Preserve ICC color profiles and metadata
             .webp({
                 quality: THUMBNAIL_QUALITY,
                 effort: 4, // Balance between compression and speed (0-6, default 4)
@@ -231,16 +233,19 @@ export async function processUploadedImage(buffer) {
 
         // Resize if huge (capped at 2500px to save space/bandwidth)
         if (isHuge) {
-            pipeline = pipeline.resize(2500, 2500, {
-                fit: 'inside',
-                withoutEnlargement: true
-            });
+            pipeline = pipeline
+                .gamma() // Linear space resizing to prevent gamma/brightness shift
+                .resize(2500, 2500, {
+                    fit: 'inside',
+                    withoutEnlargement: true
+                });
         }
 
         // Convert to WebP if HEIC, otherwise keep format or optimize if huge
         // For simplicity and consistency, we'll standardize on WebP for all processed images
         // as it offers better compression than JPEG/PNG
         const outputBuffer = await pipeline
+            .withMetadata() // Preserve ICC color profiles and metadata
             .webp({ quality: 85, effort: 4 })
             .toBuffer();
 
