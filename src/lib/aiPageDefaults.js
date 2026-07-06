@@ -60,16 +60,19 @@ export const DEFAULT_AI_PAGE = {
                                 name: 'GSAP Core',
                                 description:
                                     'Framework-agnostic JavaScript animation — tweens, easing, stagger, and reduced-motion aware timelines.',
+                                url: 'https://gsap.com/docs/v3/',
                             },
                             {
                                 name: 'GSAP for React',
                                 description:
                                     'The useGSAP hook with refs, context, and automatic cleanup for animation inside React and Next.js.',
+                                url: 'https://gsap.com/resources/React/',
                             },
                             {
                                 name: 'ScrollTrigger',
                                 description:
                                     'Scroll-linked animation: pinning, scrub, parallax, and trigger-driven reveals as the page moves.',
+                                url: 'https://gsap.com/docs/v3/Plugins/ScrollTrigger/',
                             },
                         ],
                     },

@@ -126,11 +126,16 @@ function SkillItems({ items, onChange }) {
                             onChange={(description) => update(i, { description })}
                             placeholder="What this skill does…"
                         />
+                        <TextInput
+                            value={item.url}
+                            onChange={(url) => update(i, { url })}
+                            placeholder="Link (optional) — https://"
+                        />
                     </div>
                     <RemoveButton onClick={() => onChange(list.filter((_, idx) => idx !== i))} />
                 </div>
             ))}
-            <AddButton label="Add skill" onClick={() => onChange([...list, { name: '', description: '' }])} />
+            <AddButton label="Add skill" onClick={() => onChange([...list, { name: '', description: '', url: '' }])} />
         </div>
     );
 }

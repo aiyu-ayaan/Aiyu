@@ -6,7 +6,8 @@ import AiSectionShell from './AiSectionShell';
 /**
  * AI skills & specializations — the skills the site's AI agents can reach for.
  * Filterable category chips drive a grid; "all" shows everything. Each item is
- * a `{ name, description }` pair rendered as a titled entry with a short blurb.
+ * a `{ name, description, url? }` record rendered as a titled entry with a short
+ * blurb; when `url` is set the name links out.
  */
 export default function AiSkills({ index, section }) {
     const categories = useMemo(
@@ -81,9 +82,21 @@ function SkillEntry({ item, accent }) {
                 aria-hidden="true"
             />
             <div>
-                <span className="text-base" style={{ color: 'var(--text-secondary)' }}>
-                    {item.name}
-                </span>
+                {item.url ? (
+                    <a
+                        href={item.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-base underline decoration-transparent underline-offset-4 transition-colors hover:decoration-current"
+                        style={{ color: accent }}
+                    >
+                        {item.name}
+                    </a>
+                ) : (
+                    <span className="text-base" style={{ color: 'var(--text-secondary)' }}>
+                        {item.name}
+                    </span>
+                )}
                 {item.description && (
                     <p className="mt-1 text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>
                         {item.description}
