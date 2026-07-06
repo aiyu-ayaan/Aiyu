@@ -96,7 +96,7 @@ function SkillsEditor({ data, set }) {
                             <AccentPicker value={cat.accent} onChange={(accent) => updateCat(i, { accent })} />
                         </Field>
                     </div>
-                    <Field label="Skills">
+                    <Field label="Skills" hint="Each skill shows as a name with a short description.">
                         <SkillItems items={cat.items} onChange={(items) => updateCat(i, { items })} />
                     </Field>
                 </ItemCard>
@@ -117,17 +117,20 @@ function SkillItems({ items, onChange }) {
     return (
         <div className="space-y-2">
             {list.map((item, i) => (
-                <div key={i} className="flex items-center gap-2">
-                    <div className="flex-1">
+                <div key={i} className="flex items-start gap-2 rounded-lg border border-white/5 bg-black/20 p-2">
+                    <div className="flex-1 space-y-2">
                         <TextInput value={item.name} onChange={(name) => update(i, { name })} placeholder="Skill name" />
-                    </div>
-                    <div className="w-24">
-                        <NumberInput value={Number(item.level)} onChange={(level) => update(i, { level })} />
+                        <TextArea
+                            value={item.description}
+                            rows={2}
+                            onChange={(description) => update(i, { description })}
+                            placeholder="What this skill does…"
+                        />
                     </div>
                     <RemoveButton onClick={() => onChange(list.filter((_, idx) => idx !== i))} />
                 </div>
             ))}
-            <AddButton label="Add skill" onClick={() => onChange([...list, { name: '', level: 70 }])} />
+            <AddButton label="Add skill" onClick={() => onChange([...list, { name: '', description: '' }])} />
         </div>
     );
 }
