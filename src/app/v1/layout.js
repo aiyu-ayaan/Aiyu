@@ -40,21 +40,30 @@ export default async function SiteLayout({ children }) {
 
     // Handle Resume Link Logic
     if (serializedHeaderData && serializedHeaderData.navLinks) {
-        const resumeLinkIndex = serializedHeaderData.navLinks.findIndex(link => link.name === '_resume');
+        const resumeLinkIndex = serializedHeaderData.navLinks.findIndex(link => 
+            link.name === '_resume' || 
+            link.name === 'resume' || 
+            link.href === '/api/resume' || 
+            link.href === '/resume.pdf'
+        );
 
         const hasResume = serializedConfigData?.resume?.value;
         const resumeType = serializedConfigData?.resume?.type;
 
         if (hasResume) {
+            const existingLink = resumeLinkIndex !== -1 ? serializedHeaderData.navLinks[resumeLinkIndex] : null;
             const newResumeLink = {
-                name: '_resume',
+                name: existingLink ? existingLink.name : '_resume',
                 href: resumeType === 'file' ? '/api/resume' : serializedConfigData.resume.value,
                 target: '_blank'
             };
 
             if (resumeLinkIndex !== -1) {
                 // Update existing link
-                serializedHeaderData.navLinks[resumeLinkIndex] = newResumeLink;
+                serializedHeaderData.navLinks[resumeLinkIndex] = {
+                    ...existingLink,
+                    ...newResumeLink
+                };
             } else {
                 // Add new link
                 serializedHeaderData.navLinks.push(newResumeLink);

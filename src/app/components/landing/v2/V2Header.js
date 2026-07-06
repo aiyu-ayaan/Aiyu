@@ -23,7 +23,7 @@ const rememberClassic = () => {
  * opens a full-screen terminal-styled overlay (`$ ls ./nav`) listing every
  * link plus the contact pill, which is otherwise unreachable on phones.
  */
-const V2Header = ({ logoText = '< aiyu />', config, socialData }) => {
+const V2Header = ({ logoText = '< aiyu />', data, config, socialData }) => {
     const pathname = usePathname();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const overflowRestoreRef = useRef({ body: null, html: null });
@@ -32,18 +32,43 @@ const V2Header = ({ logoText = '< aiyu />', config, socialData }) => {
     // default (proxy rewrite keeps the classic URL), so match both.
     const showTerminal = !pathname.startsWith('/v2/blogs') && !pathname.startsWith('/blogs');
 
-    const navLinks = [
-        { href: v2PublicPath(config, ''), label: 'home' },
-        { href: v2PublicPath(config, '/about-me'), label: 'about' },
-        { href: v2PublicPath(config, '/projects'), label: 'projects' },
-        { href: v2PublicPath(config, '/gallery'), label: 'gallery' },
-        { href: v2PublicPath(config, '/apps'), label: 'apps' },
-        { href: v2PublicPath(config, '/blogs'), label: 'blogs' },
-        { href: v2PublicPath(config, '/github'), label: 'github' },
-        // Explicit /v1 pins classic in the proxy; when classic is already the
-        // admin default the proxy collapses it back to the clean URL.
-        { href: '/v1', label: 'classic' },
-    ];
+    const getV2Href = (href) => {
+        if (!href || typeof href !== 'string') return href;
+        if (!href.startsWith('/') || href.startsWith('//')) return href;
+        if (href === '/v2' || href.startsWith('/v2/')) return href;
+        if (href === '/v1' || href.startsWith('/v1/')) return href;
+
+        const normalizedPath = href === '/' ? '' : href;
+        return v2PublicPath(config, normalizedPath);
+    };
+
+    const sourceLinks = (data && data.navLinks && data.navLinks.length > 0)
+        ? data.navLinks.filter(link => link.visible !== false).map(link => ({
+            href: getV2Href(link.href),
+            label: link.name,
+            beta: link.beta,
+            target: link.target
+        }))
+        : [
+            { href: getV2Href('/'), label: 'home' },
+            { href: getV2Href('/about-me'), label: 'about' },
+            { href: getV2Href('/projects'), label: 'projects' },
+            { href: getV2Href('/gallery'), label: 'gallery' },
+            { href: getV2Href('/apps'), label: 'apps' },
+            { href: getV2Href('/blogs'), label: 'blogs' },
+            { href: getV2Href('/github'), label: 'github' },
+        ];
+
+    const showClassic = data?.showClassic !== false;
+
+    const navLinks = [...sourceLinks];
+    if (showClassic) {
+        navLinks.push({ href: '/v1', label: 'classic' });
+    }
+
+    const contactLink = data?.contactLink || { name: 'contact --me', href: '/contact-us' };
+    const contactLabel = contactLink.name || 'contact --me';
+    const contactHref = getV2Href(contactLink.href || '/contact-us');
 
     // Close on navigation so the overlay never lingers over a new page.
     useEffect(() => {
@@ -114,6 +139,7 @@ const V2Header = ({ logoText = '< aiyu />', config, socialData }) => {
                                     <Link
                                         key={link.label}
                                         href={link.href}
+                                        target={link.target}
                                         onClick={link.label === 'classic' ? rememberClassic : undefined}
                                         className="group whitespace-nowrap transition-colors duration-200"
                                         style={{ color: active ? 'var(--text-bright)' : 'var(--text-secondary)' }}
@@ -121,6 +147,18 @@ const V2Header = ({ logoText = '< aiyu />', config, socialData }) => {
                                     >
                                         <span style={brackets(active)}>[</span>
                                         <span className="mx-1 underline-offset-4 group-hover:underline">{link.label}</span>
+                                        {link.beta === true && (
+                                            <span 
+                                                className="mr-1 rounded border px-1 py-0.5 text-[9px] font-mono uppercase tracking-wide"
+                                                style={{
+                                                    borderColor: 'color-mix(in srgb, var(--accent-orange) 55%, var(--border-secondary))',
+                                                    color: 'var(--accent-orange-bright)',
+                                                    backgroundColor: 'color-mix(in srgb, var(--accent-orange) 12%, transparent)'
+                                                }}
+                                            >
+                                                beta
+                                            </span>
+                                        )}
                                         <span style={brackets(active)}>]</span>
                                     </Link>
                                 );
@@ -130,7 +168,7 @@ const V2Header = ({ logoText = '< aiyu />', config, socialData }) => {
                         <ThemeToggle compact />
 
                         <Link
-                            href={v2PublicPath(config, '/contact-us')}
+                            href={contactHref}
                             className="hidden whitespace-nowrap rounded-full border px-4 py-1.5 font-mono text-xs font-semibold transition-colors duration-200 md:inline-block"
                             style={{
                                 color: 'var(--accent-cyan)',
@@ -138,7 +176,7 @@ const V2Header = ({ logoText = '< aiyu />', config, socialData }) => {
                                 backgroundColor: 'color-mix(in srgb, var(--accent-cyan) 8%, transparent)',
                             }}
                         >
-                            contact --me
+                            {contactLabel}
                         </Link>
 
                         <button
@@ -212,6 +250,7 @@ const V2Header = ({ logoText = '< aiyu />', config, socialData }) => {
                                 <li key={link.label}>
                                     <Link
                                         href={link.href}
+                                        target={link.target}
                                         onClick={() => {
                                             if (link.label === 'classic') rememberClassic();
                                             setIsMenuOpen(false);
@@ -228,6 +267,18 @@ const V2Header = ({ logoText = '< aiyu />', config, socialData }) => {
                                             {active ? '→' : ''}
                                         </span>
                                         {link.label}
+                                        {link.beta === true && (
+                                            <span 
+                                                className="ml-2 rounded border px-1.5 py-0.5 text-[10px] font-mono uppercase tracking-wide"
+                                                style={{
+                                                    borderColor: 'color-mix(in srgb, var(--accent-orange) 55%, var(--border-secondary))',
+                                                    color: 'var(--accent-orange-bright)',
+                                                    backgroundColor: 'color-mix(in srgb, var(--accent-orange) 12%, transparent)'
+                                                }}
+                                            >
+                                                beta
+                                            </span>
+                                        )}
                                     </Link>
                                 </li>
                             );
@@ -235,7 +286,7 @@ const V2Header = ({ logoText = '< aiyu />', config, socialData }) => {
                     </ul>
 
                     <Link
-                        href={v2PublicPath(config, '/contact-us')}
+                        href={contactHref}
                         onClick={() => setIsMenuOpen(false)}
                         className="mt-8 block rounded-full border px-4 py-3 text-center text-sm font-semibold transition-colors duration-200"
                         style={{
@@ -244,7 +295,7 @@ const V2Header = ({ logoText = '< aiyu />', config, socialData }) => {
                             backgroundColor: 'color-mix(in srgb, var(--accent-cyan) 8%, transparent)',
                         }}
                     >
-                        contact --me
+                        {contactLabel}
                     </Link>
                 </nav>
             </div>
