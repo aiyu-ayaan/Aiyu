@@ -353,8 +353,20 @@ async function getDefaultSiteVersion(request) {
     try {
         const basePath = request.nextUrl.basePath || '';
         const configUrl = new URL(basePath + '/api/config', request.nextUrl.origin);
-        // Standalone/Docker binds on 0.0.0.0, which is not a fetchable host.
-        if (configUrl.hostname === '0.0.0.0') configUrl.hostname = '127.0.0.1';
+        // Standalone/Docker: request.nextUrl reflects the server bind address
+        // (HOSTNAME=0.0.0.0), and its port/scheme cannot be trusted — the port
+        // may resolve from the public Host header (e.g. :80) and the scheme may
+        // be the https that Cloudflare terminated with. Any of those makes this
+        // loopback self-fetch throw, and the catch below then silently pins the
+        // whole site to the initial 'classic' value → every clean URL serves
+        // v1 no matter what /admin/version is set to. The server always listens
+        // on plain http at PORT on loopback, so normalize scheme+host+port to
+        // that. Local dev (hostname 'localhost') is left untouched.
+        if (configUrl.hostname === '0.0.0.0' || configUrl.hostname === '::') {
+            configUrl.protocol = 'http:';
+            configUrl.hostname = '127.0.0.1';
+            configUrl.port = process.env.PORT || '3000';
+        }
 
         const response = await fetch(configUrl, { headers: { accept: 'application/json' } });
         const config = response.ok ? await response.json() : null;
@@ -362,8 +374,11 @@ async function getDefaultSiteVersion(request) {
             value: config?.defaultSiteVersion === 'v2' ? 'v2' : 'classic',
             expiresAt: now + SITE_VERSION_CACHE_TTL_MS,
         };
-    } catch {
+    } catch (error) {
         // Keep serving the last known value; retry sooner than a full TTL.
+        // Surface the reason: a persistently failing self-fetch is what pins
+        // the site to v1, so make it visible in the container logs.
+        console.warn('[proxy] site-version self-fetch failed:', error?.message || error);
         siteVersionCache = { value: siteVersionCache.value, expiresAt: now + 5000 };
     }
 
