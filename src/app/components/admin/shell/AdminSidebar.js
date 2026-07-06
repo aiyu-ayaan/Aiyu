@@ -1,9 +1,38 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FaAnglesLeft, FaArrowUpRightFromSquare, FaRightFromBracket, FaXmark } from "react-icons/fa6";
 import { NAV_GROUPS, ACCENT, findActiveItem } from "./navConfig";
+
+/**
+ * Site brand mark. Steps through favicon sources — a custom favicon served at
+ * /api/favicon, then the static /favicon.ico — and if both fail, renders a
+ * gradient monogram so the brand is never a broken image.
+ */
+const FAVICON_SOURCES = ["/api/favicon", "/favicon.ico"];
+
+function BrandMark() {
+    const [stage, setStage] = useState(0);
+    const base = "relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl shadow-[0_0_20px_rgba(34,211,238,0.25)]";
+    if (stage >= FAVICON_SOURCES.length) {
+        return (
+            <span className={`${base} bg-gradient-to-br from-cyan-400 to-violet-500 text-slate-950 font-black text-lg`}>
+                A
+            </span>
+        );
+    }
+    return (
+        <span className={`${base} bg-slate-900 ring-1 ring-white/10`}>
+            <img
+                src={FAVICON_SOURCES[stage]}
+                alt="Site"
+                className="h-full w-full object-contain"
+                onError={() => setStage((s) => s + 1)}
+            />
+        </span>
+    );
+}
 
 /**
  * Persistent navigation drawer for the admin CMS.
@@ -38,15 +67,7 @@ export default function AdminSidebar({ collapsed, onToggleCollapse, mobileOpen, 
                 {/* Brand */}
                 <div className="flex items-center gap-3 h-16 px-4 border-b border-white/5 shrink-0">
                     <Link href="/admin" className="flex items-center gap-3 min-w-0" onClick={onCloseMobile}>
-                        <span className="relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-slate-900 ring-1 ring-white/10 shadow-[0_0_20px_rgba(34,211,238,0.25)]">
-                            {/* Site favicon (custom via /api/favicon, else the static /favicon.ico). */}
-                            <img
-                                src="/api/favicon"
-                                alt="Site"
-                                className="h-full w-full object-cover"
-                                onError={(e) => { e.currentTarget.src = "/favicon.ico"; }}
-                            />
-                        </span>
+                        <BrandMark />
                         {!collapsed && (
                             <span className="min-w-0">
                                 <span className="block text-sm font-bold text-white leading-tight truncate">Aiyu CMS</span>
