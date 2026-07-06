@@ -225,6 +225,18 @@ export function toClientList(key, rows, opts = {}) {
   return rows.map((row) => toClient(key, row, opts));
 }
 
+/**
+ * Selectable columns for a relational model, including the primary key.
+ * Used to build a Prisma `select` that pulls only referenced columns (e.g. the
+ * cron template engine projecting `$blogs.0.title` down to `{ id, title }` so
+ * heavy text columns like `blog.content` never enter the heap). Returns null
+ * for unknown or json-blob models, signalling "fetch all columns".
+ */
+export function getModelColumns(key) {
+  const cols = RELATIONAL_COLUMNS[key];
+  return cols ? ['id', ...cols] : null;
+}
+
 // ──────────────────────────── fromClient ────────────────────────────
 
 function coerceDate(value) {

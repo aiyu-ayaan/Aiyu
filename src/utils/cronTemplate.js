@@ -10,13 +10,24 @@
  * every collection placeholder, loading whole tables (incl. the heaviest text
  * columns: blog.content, contactMessage.message, cronLog.log, aiLog.*) into the
  * heap and JSON-stringifying them. The live preview re-ran this on every
- * keystroke, OOM-killing memory-capped containers. We now:
- *   1. cap every collection query with `take: rowLimit`, and
- *   2. share a short-TTL in-process cache across requests (opt-in) so the
+ * keystroke, OOM-killing memory-capped containers (the VPS runs a 256 MB heap).
+ * We now make every collection fetch DEMAND-DRIVEN:
+ *   1. cap every collection query with `take: rowLimit` (hard ceiling), and
+ *   2. shrink `take` further to the highest ROW INDEX the template references —
+ *      `$blogs.0.title` fetches 1 row, not `rowLimit`; and
+ *   3. project a Prisma `select` down to the COLUMNS the template references —
+ *      `$blogs.0.title` loads only `{ id, title }`, so the heavy `content`
+ *      column never enters the heap; and
+ *   4. share a short-TTL in-process cache across requests (opt-in) so the
  *      debounced preview keystrokes reuse data instead of re-querying.
+ *
+ * A whole-collection reference (`$blogs`) or a whole-row reference (`$blogs.0`)
+ * still loads all columns — you asked to dump everything — but stays bounded by
+ * `rowLimit`. Mixed references within one compile upgrade the fetch to the
+ * union of what every placeholder needs (see the per-model meta in cachedData).
  */
 import { prisma } from '@/lib/prisma';
-import { getSingleton, toClient, toClientList } from '@/lib/serialize';
+import { getModelColumns, getSingleton, toClient, toClientList } from '@/lib/serialize';
 
 const toInt = (value, fallback) => {
     const n = Number.parseInt(value, 10);
@@ -62,19 +73,58 @@ export function clearTemplateCache() {
     collectionCache.clear();
 }
 
-function getValueByPath(obj, path) {
-    if (!path) return obj;
+/** Normalize `[0]`, `['x']` bracket access into dot segments and split. */
+function pathParts(path) {
+    if (!path) return [];
     const cleanPath = path
         .replace(/\[['"]?([^'"\]]+)['"]?\]/g, '.$1')
         .replace(/^\./, '');
+    return cleanPath === '' ? [] : cleanPath.split('.');
+}
 
-    const parts = cleanPath.split('.');
+function getValueByPath(obj, path) {
+    if (!path) return obj;
     let current = obj;
-    for (const part of parts) {
+    for (const part of pathParts(path)) {
         if (current === null || current === undefined) return undefined;
         current = current[part];
     }
     return current;
+}
+
+/**
+ * From a placeholder path, work out how little of a collection we can fetch:
+ *   - `''`            (`$blogs`)         → whole collection, all columns
+ *   - `.length`/`.map`(`$blogs.length`) → whole collection, all columns
+ *   - `.0`            (`$blogs.0`)       → row 0, all columns (whole row)
+ *   - `.0.title`      (`$blogs.0.title`) → row 0, only the `title` column
+ *
+ * `index` null means "no numeric index ⇒ need the whole collection".
+ * `field` null means "need the whole row ⇒ all columns".
+ */
+function analyzeListPath(path) {
+    const parts = pathParts(path);
+    if (parts.length === 0) return { index: null, field: null };
+    if (!/^\d+$/.test(parts[0])) return { index: null, field: null };
+    const index = Number(parts[0]);
+    if (parts.length === 1) return { index, field: null };
+    return { index, field: parts[1] };
+}
+
+/** Build a Prisma `select` from referenced fields, or null to fetch all columns. */
+function buildSelect(key, fields) {
+    if (fields === null) return null;
+    const valid = getModelColumns(key);
+    if (!valid) return null;
+    const validSet = new Set(valid);
+    const select = { id: true };
+    for (const field of fields) {
+        // An unreferenced-yet-real or unknown field ⇒ fall back to all columns
+        // so resolution stays correct (getValueByPath simply yields undefined).
+        if (!validSet.has(field)) return null;
+        select[field] = true;
+    }
+    return select;
 }
 
 async function resolvePlaceholder(modelName, path, cachedData, options = {}) {
@@ -119,53 +169,28 @@ async function resolvePlaceholder(modelName, path, cachedData, options = {}) {
         return getValueByPath(deviceInfo, path) ?? deviceInfo;
     }
 
-    // Collection queries are bounded with `take: rowLimit` so a placeholder can
-    // never pull an entire table into memory.
-    const blogsQuery = async () => toClientList('blog', await prisma.blog.findMany({ orderBy: { createdAt: 'desc' }, take: rowLimit }));
-    const projectsQuery = async () => toClientList('project', await prisma.project.findMany({ orderBy: { displayOrder: 'asc' }, take: rowLimit }));
-    const galleryQuery = async () => toClientList('gallery', await prisma.gallery.findMany({ orderBy: { order: 'asc' }, take: rowLimit }));
-    const socialsQuery = async () => toClientList('social', await prisma.social.findMany({ take: rowLimit }));
-    const messagesQuery = async () => toClientList('contactMessage', await prisma.contactMessage.findMany({ orderBy: { createdAt: 'desc' }, take: rowLimit }));
-    const deploymentsQuery = async () => toClientList('deployment', await prisma.deployment.findMany({ orderBy: { displayOrder: 'asc' }, take: rowLimit }));
-    const cronsQuery = async () => toClientList('cron', await prisma.cron.findMany({ take: rowLimit }));
+    // List collections resolve to arrays. `key` is both the Prisma delegate and
+    // the serializer key; `orderBy` matches the public site's ordering.
+    const listModel = LIST_MODELS[lowerModel];
+    if (listModel) {
+        const value = await resolveList(listModel, path, cachedData, { rowLimit, useCache });
+        return getValueByPath(value, path);
+    }
 
-    const modelMapping = {
-        blogs: { query: blogsQuery },
-        blog: { query: blogsQuery },
-        projects: { query: projectsQuery },
-        project: { query: projectsQuery },
-        gallery: { query: galleryQuery },
-        config: { query: () => getSingleton(prisma, 'config') },
-        about: { query: () => getSingleton(prisma, 'about') },
-        ads: { query: () => getSingleton(prisma, 'ads') },
-        socials: { query: socialsQuery },
-        social: { query: socialsQuery },
-        theme: { query: async () => toClient('theme', await prisma.theme.findFirst()) },
-        themes: { query: async () => toClient('theme', await prisma.theme.findFirst()) },
-        messages: { query: messagesQuery },
-        message: { query: messagesQuery },
-        deployments: { query: deploymentsQuery },
-        deployment: { query: deploymentsQuery },
-        crons: { query: cronsQuery },
-        cron: { query: cronsQuery }
-    };
-
-    if (modelMapping[lowerModel]) {
+    // Singleton documents are a single small row — cache the whole thing.
+    const singleton = SINGLETON_MODELS[lowerModel];
+    if (singleton) {
         if (cachedData[lowerModel] === undefined) {
-            const cacheKey = `${lowerModel}:${rowLimit}`;
-            // Prefer the per-call cache, then the shared cross-request cache
-            // (preview only), then hit the DB.
+            const cacheKey = `${lowerModel}:singleton`;
             let value = useCache ? cacheGet(cacheKey) : undefined;
             if (value === undefined) {
                 try {
-                    value = await modelMapping[lowerModel].query();
+                    value = await singleton();
                 } catch (err) {
                     console.error(`[CRON TEMPLATE ERROR] Failed to fetch model data for ${lowerModel}:`, err);
                     value = null;
                 }
-                if (useCache && value !== null) {
-                    cacheSet(cacheKey, value);
-                }
+                if (useCache && value !== null) cacheSet(cacheKey, value);
             }
             cachedData[lowerModel] = value;
         }
@@ -173,6 +198,96 @@ async function resolvePlaceholder(modelName, path, cachedData, options = {}) {
     }
 
     return `$${modelName}${path}`;
+}
+
+// Registry of array-valued collections: Prisma delegate / serializer key + the
+// ordering the public site uses. Aliases (blog/blogs) share a `key` so they
+// resolve to one cached fetch.
+const LIST_MODELS = {
+    blogs: { key: 'blog', orderBy: { createdAt: 'desc' } },
+    blog: { key: 'blog', orderBy: { createdAt: 'desc' } },
+    projects: { key: 'project', orderBy: { displayOrder: 'asc' } },
+    project: { key: 'project', orderBy: { displayOrder: 'asc' } },
+    gallery: { key: 'gallery', orderBy: { order: 'asc' } },
+    socials: { key: 'social', orderBy: undefined },
+    social: { key: 'social', orderBy: undefined },
+    messages: { key: 'contactMessage', orderBy: { createdAt: 'desc' } },
+    message: { key: 'contactMessage', orderBy: { createdAt: 'desc' } },
+    deployments: { key: 'deployment', orderBy: { displayOrder: 'asc' } },
+    deployment: { key: 'deployment', orderBy: { displayOrder: 'asc' } },
+    crons: { key: 'cron', orderBy: undefined },
+    cron: { key: 'cron', orderBy: undefined }
+};
+
+const SINGLETON_MODELS = {
+    config: () => getSingleton(prisma, 'config'),
+    about: () => getSingleton(prisma, 'about'),
+    ads: () => getSingleton(prisma, 'ads'),
+    theme: async () => toClient('theme', await prisma.theme.findFirst()),
+    themes: async () => toClient('theme', await prisma.theme.findFirst())
+};
+
+/**
+ * Fetch just enough of a list collection to satisfy `path`, upgrading an
+ * already-cached fetch when a later placeholder in the same compile needs more
+ * rows or more columns. State lives on `cachedData.__lists[key]` so aliases and
+ * repeated fields within one template never re-query.
+ */
+async function resolveList(listModel, path, cachedData, { rowLimit, useCache }) {
+    const { key, orderBy } = listModel;
+    const lists = cachedData.__lists || (cachedData.__lists = {});
+    const need = analyzeListPath(path);
+
+    // Rows: bounded by the referenced index (whole collection ⇒ rowLimit).
+    const neededTake = need.index === null ? rowLimit : Math.min(rowLimit, need.index + 1);
+    // Columns: null (whole row) forces all columns; otherwise union the fields.
+    const neededAllCols = need.field === null;
+
+    const cached = lists[key];
+    let take = neededTake;
+    let fields; // Set<string> | null (null ⇒ all columns)
+    if (cached) {
+        take = Math.max(cached.take, neededTake);
+        if (cached.fields === null || neededAllCols) {
+            fields = null;
+        } else {
+            fields = new Set(cached.fields);
+            fields.add(need.field);
+        }
+        const grew = take > cached.take
+            || (cached.fields !== null && (neededAllCols || !cached.fields.has(need.field)));
+        if (!grew) return cached.value;
+    } else {
+        fields = neededAllCols ? null : new Set([need.field]);
+    }
+
+    const select = buildSelect(key, fields);
+    // If buildSelect fell back to all columns, remember that so we don't keep
+    // re-trying a projection on later references.
+    const effectiveFields = select === null ? null : fields;
+    const value = await fetchList(key, { orderBy, take, select, useCache });
+
+    lists[key] = { value, take, fields: effectiveFields };
+    return value;
+}
+
+async function fetchList(key, { orderBy, take, select, useCache }) {
+    const cacheKey = `${key}:${take}:${select === null ? '*' : Object.keys(select).sort().join(',')}`;
+    let value = useCache ? cacheGet(cacheKey) : undefined;
+    if (value !== undefined) return value;
+
+    try {
+        const args = { take };
+        if (orderBy) args.orderBy = orderBy;
+        if (select) args.select = select;
+        value = toClientList(key, await prisma[key].findMany(args));
+    } catch (err) {
+        console.error(`[CRON TEMPLATE ERROR] Failed to fetch collection ${key}:`, err);
+        value = [];
+    }
+
+    if (useCache) cacheSet(cacheKey, value);
+    return value;
 }
 
 export async function compileTemplate(templateStr, cachedData, options = {}) {
