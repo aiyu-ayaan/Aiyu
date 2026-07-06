@@ -5,7 +5,7 @@ import Link from 'next/link';
 import {
     FaHouse, FaUser, FaBriefcase, FaPenNib, FaImages,
     FaHeading, FaShareNodes, FaEnvelope,
-    FaPalette, FaGithub, FaSliders, FaDatabase, FaRightFromBracket, FaArrowRight, FaTerminal, FaRobot, FaServer, FaHardDrive, FaCode, FaGoogle, FaClock, FaBell, FaChartLine, FaMagnifyingGlass, FaShieldHalved, FaGauge, FaCodeBranch
+    FaPalette, FaGithub, FaSliders, FaDatabase, FaRightFromBracket, FaArrowRight, FaTerminal, FaRobot, FaServer, FaHardDrive, FaCode, FaGoogle, FaClock, FaBell, FaChartLine, FaMagnifyingGlass, FaShieldHalved, FaGauge, FaCodeBranch, FaPlug, FaWandMagicSparkles
 } from "react-icons/fa6";
 
 export default function AdminDashboard() {
@@ -28,6 +28,7 @@ export default function AdminDashboard() {
             { label: 'Apps', description: 'Hosted Apps & Services', icon: <FaServer />, color: 'from-cyan-500/10 to-cyan-500/5', textColor: 'text-cyan-400', path: '/admin/apps' },
             { label: 'Blogs', description: 'Articles & Posts', icon: <FaPenNib />, color: 'from-teal-500/10 to-teal-500/5', textColor: 'text-teal-400', path: '/admin/blogs' },
             { label: 'Gallery', description: 'Photos & Certs', icon: <FaImages />, color: 'from-indigo-500/10 to-indigo-500/5', textColor: 'text-indigo-400', path: '/admin/gallery' },
+            { label: 'AI Hub', description: 'The /ai showcase page', icon: <FaWandMagicSparkles />, color: 'from-fuchsia-500/10 to-fuchsia-500/5', textColor: 'text-fuchsia-400', path: '/admin/ai-page' },
         ],
         secondary: [
             { label: 'Header', description: 'Nav & Logo', icon: <FaHeading />, color: 'from-orange-500/10 to-orange-500/5', textColor: 'text-orange-400', path: '/admin/header' },
@@ -51,6 +52,7 @@ export default function AdminDashboard() {
             { label: 'Database', description: 'Backups & JSON', icon: <FaDatabase />, color: 'from-yellow-500/10 to-yellow-500/5', textColor: 'text-yellow-400', path: '/admin/database' },
             { label: 'Resources', description: 'Storage & Cleanup', icon: <FaHardDrive />, color: 'from-cyan-500/10 to-cyan-500/5', textColor: 'text-cyan-400', path: '/admin/resources' },
             { label: 'AI Core', description: 'Neural Settings', icon: <FaRobot />, color: 'from-cyan-500/10 to-cyan-500/5', textColor: 'text-cyan-400', path: '/admin/ai' },
+            { label: 'MCP Server', description: 'Model Context Protocol', icon: <FaPlug />, color: 'from-indigo-500/10 to-indigo-500/5', textColor: 'text-indigo-400', path: '/admin/mcp' },
             { label: 'API Reference', description: 'Docs & Tokens', icon: <FaCode />, color: 'from-fuchsia-500/10 to-fuchsia-500/5', textColor: 'text-fuchsia-400', path: '/admin/api-reference' },
         ]
     };

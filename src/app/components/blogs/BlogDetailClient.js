@@ -3,11 +3,11 @@
 import React, { useEffect, useState, useMemo, memo, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import Script from 'next/script';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import dynamic from 'next/dynamic';
-import { FaArrowLeft, FaCalendarAlt, FaClock, FaShareAlt, FaTag, FaBolt } from 'react-icons/fa';
+import { FaArrowLeft, FaCalendarAlt, FaClock, FaShareAlt, FaTag, FaBolt, FaListUl, FaTimes } from 'react-icons/fa';
 import { IoCheckmark } from 'react-icons/io5';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import LinkPreview from './LinkPreview';
@@ -31,6 +31,14 @@ const SyntaxHighlighter = dynamic(
 const isOptimizableImage = (src) =>
   typeof src === 'string' && (src.startsWith('/') || src.startsWith('https://'));
 
+const getTextContent = (node) => {
+  if (!node) return '';
+  if (typeof node === 'string' || typeof node === 'number') return String(node);
+  if (Array.isArray(node)) return node.map(getTextContent).join('');
+  if (node.props && node.props.children) return getTextContent(node.props.children);
+  return '';
+};
+
 function stripH1Content(markdown = '') {
   if (typeof markdown !== 'string') return '';
 
@@ -44,18 +52,36 @@ function slugifyHeading(value = '') {
   return String(value)
     .toLowerCase()
     .trim()
+    .replace(/\r/g, '') // remove carriage returns
     .replace(/[^\p{L}\p{N}\s-]/gu, '')
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
     .slice(0, 80);
 }
 
+function cleanMarkdownHeading(text) {
+  return text
+    .replace(/\r/g, '')                      // remove carriage returns
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // [text](url) -> text
+    .replace(/<[^>]+>/g, '')                 // HTML tags -> remove
+    .replace(/[*_`~]/g, '')                 // formatting -> remove
+    .trim();
+}
+
 function extractToc(markdown = '') {
   if (typeof markdown !== 'string' || markdown.trim().length === 0) return [];
-  const lines = markdown.split('\n');
+  // Split lines and strip trailing carriage returns
+  const lines = markdown.split('\n').map((line) => line.replace(/\r$/, ''));
   const headings = [];
+  let inCodeBlock = false;
 
   for (const line of lines) {
+    if (line.trim().startsWith('```')) {
+      inCodeBlock = !inCodeBlock;
+      continue;
+    }
+    if (inCodeBlock) continue;
+
     const match = /^(#{2,3})\s+(.+?)\s*$/.exec(line);
     if (!match) continue;
     const level = match[1].length;
@@ -66,11 +92,12 @@ function extractToc(markdown = '') {
 
   const seen = new Map();
   return headings.map((h) => {
-    const base = slugifyHeading(h.text) || 'section';
+    const cleanText = cleanMarkdownHeading(h.text);
+    const base = slugifyHeading(cleanText) || 'section';
     const count = (seen.get(base) || 0) + 1;
     seen.set(base, count);
     const id = count === 1 ? base : `${base}-${count}`;
-    return { ...h, id };
+    return { ...h, id, cleanText };
   });
 }
 
@@ -118,6 +145,19 @@ export default memo(function BlogDetailClient({ blog, config, adsConfig, backHre
   const [showShareToast, setShowShareToast] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [activeId, setActiveId] = useState('');
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    if (isMobileDrawerOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isMobileDrawerOpen]);
   
   const containerRef = useRef(null);
   const { prefersReducedMotion } = useDevicePerformance();
@@ -158,10 +198,18 @@ export default memo(function BlogDetailClient({ blog, config, adsConfig, backHre
       const headingElements = toc.map(item => document.getElementById(item.id)).filter(Boolean);
       if (headingElements.length === 0) return;
 
+      // UX improvement: if scrolled to the bottom, highlight the last header
+      const isAtBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 100;
+      if (isAtBottom) {
+        setActiveId(headingElements[headingElements.length - 1].id);
+        return;
+      }
+
       let currentActiveId = headingElements[0].id;
       for (const el of headingElements) {
         const bounds = el.getBoundingClientRect();
-        if (bounds.top <= 200) {
+        // Offset 120px to account for sticky nav/header
+        if (bounds.top <= 120) {
           currentActiveId = el.id;
         } else {
           break;
@@ -179,6 +227,17 @@ export default memo(function BlogDetailClient({ blog, config, adsConfig, backHre
       window.removeEventListener('scroll', handleScroll);
     };
   }, [toc, hasToc]); // Note: excluding activeId to prevent re-binding observer
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[Diagnostic] TOC items count:', toc.length);
+      toc.forEach((item) => {
+        const el = document.getElementById(item.id);
+        console.log(`[Diagnostic] id: "${item.id}" -> cleanText: "${item.cleanText}", found in DOM: ${!!el}`);
+      });
+    }
+  }, [toc]);
 
   const handleShare = useCallback(async () => {
     if (typeof window === 'undefined') return;
@@ -220,7 +279,7 @@ export default memo(function BlogDetailClient({ blog, config, adsConfig, backHre
     }
   }, [blog?._id]);
 
-  // We use a ref to track paragraph count during the synchronous ReactMarkdown render pass
+  // We use refs to track paragraph count during the synchronous ReactMarkdown render pass
   const pCountRef = React.useRef(0);
   pCountRef.current = 0; // Reset before every render of the markdown
 
@@ -400,8 +459,13 @@ export default memo(function BlogDetailClient({ blog, config, adsConfig, backHre
                     </a>
                   ),
                   h2: ({ children, ...props }) => {
-                    const text = Array.isArray(children) ? children.join('') : String(children || '');
-                    const id = toc.find((entry) => entry.text === text)?.id || slugifyHeading(text);
+                    const text = getTextContent(children);
+                    const textSlug = slugifyHeading(text);
+                    const item = toc.find((entry) => slugifyHeading(entry.cleanText) === textSlug);
+                    const id = item?.id || textSlug;
+                    if (process.env.NODE_ENV === 'development') {
+                      console.log(`[H2 Render] text: "${text}", slug: "${textSlug}", final id: "${id}"`);
+                    }
                     return (
                       <h2 id={id} {...props}>
                         {children}
@@ -409,8 +473,13 @@ export default memo(function BlogDetailClient({ blog, config, adsConfig, backHre
                     );
                   },
                   h3: ({ children, ...props }) => {
-                    const text = Array.isArray(children) ? children.join('') : String(children || '');
-                    const id = toc.find((entry) => entry.text === text)?.id || slugifyHeading(text);
+                    const text = getTextContent(children);
+                    const textSlug = slugifyHeading(text);
+                    const item = toc.find((entry) => slugifyHeading(entry.cleanText) === textSlug);
+                    const id = item?.id || textSlug;
+                    if (process.env.NODE_ENV === 'development') {
+                      console.log(`[H3 Render] text: "${text}", slug: "${textSlug}", final id: "${id}"`);
+                    }
                     return (
                       <h3 id={id} {...props}>
                         {children}
@@ -510,34 +579,51 @@ export default memo(function BlogDetailClient({ blog, config, adsConfig, backHre
           </article>
 
           {hasToc ? (
-            <aside className="hidden min-w-0 lg:block sticky top-24 self-start max-h-[calc(100vh-8rem)] overflow-y-auto scrollbar-hide">
-              <div className="pt-4 pb-12 pr-4">
-                <p className="mb-3 text-sm font-bold uppercase tracking-wider" style={{ color: 'var(--text-tertiary)' }}>
-                  On this page
-                </p>
-                <nav className="space-y-2">
+            <aside className="hidden min-w-0 lg:block blog-toc-wrapper w-full">
+              <div className="blog-toc-sidebar scrollbar-hide">
+                {/* Collapsed indicators strip */}
+                <div className="toc-collapsed-indicators">
                   {toc.map((item) => {
                     const isActive = activeId === item.id;
                     return (
-                      <a
-                        key={item.id}
-                        href={`#${item.id}`}
-                        className={`block py-1.5 text-sm transition-colors ${isActive ? 'font-semibold' : 'hover:underline'}`}
-                        style={{
-                          color: isActive ? 'var(--accent-cyan)' : 'var(--text-secondary)',
-                          marginLeft: item.level === 3 ? 12 : 0,
-                          paddingLeft: isActive ? '8px' : '0',
-                          borderLeft: isActive ? '2px solid var(--accent-cyan)' : '0px solid transparent',
-                        }}
-                      >
-                        {item.text}
-                      </a>
+                      <div
+                        key={`ind-${item.id}`}
+                        className={`toc-indicator-dash ${isActive ? 'active' : ''}`}
+                        title={item.text}
+                      />
                     );
                   })}
-                </nav>
-                {<div className="mt-8">
-                    <AdUnit adsConfig={adsConfig} positionKey="sidebar" />
-                  </div>}
+                </div>
+
+                {/* Full Expanded TOC Panel */}
+                <div className="toc-expanded-panel">
+                  <p className="mb-3 text-sm font-bold uppercase tracking-wider" style={{ color: 'var(--text-tertiary)' }}>
+                    On this page
+                  </p>
+                  <nav className="space-y-2">
+                    {toc.map((item) => {
+                      const isActive = activeId === item.id;
+                      return (
+                        <a
+                          key={item.id}
+                          href={`#${item.id}`}
+                          className={`block py-1.5 text-sm transition-colors ${isActive ? 'font-semibold' : 'hover:underline'}`}
+                          style={{
+                            color: isActive ? 'var(--accent-cyan)' : 'var(--text-secondary)',
+                            marginLeft: item.level === 3 ? 12 : 0,
+                            paddingLeft: isActive ? '8px' : '0',
+                            borderLeft: isActive ? '2px solid var(--accent-cyan)' : '0px solid transparent',
+                          }}
+                        >
+                          {item.text}
+                        </a>
+                      );
+                    })}
+                  </nav>
+                  {<div className="mt-8">
+                      <AdUnit adsConfig={adsConfig} positionKey="sidebar" />
+                    </div>}
+                </div>
               </div>
             </aside>
           ) : null}
@@ -621,6 +707,93 @@ export default memo(function BlogDetailClient({ blog, config, adsConfig, backHre
           </motion.div>
         </motion.div>
       )}
+      {/* Floating Table of Contents button for Mobile */}
+      {hasToc && (
+        <motion.button
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.4, type: 'spring', stiffness: 260, damping: 20 }}
+          type="button"
+          onClick={() => setIsMobileDrawerOpen(true)}
+          className="fixed bottom-22 right-6 lg:hidden w-12 h-12 rounded-full cursor-pointer flex items-center justify-center z-[90] backdrop-blur-md border border-[rgba(255,255,255,0.08)] shadow-lg text-[var(--text-primary)] hover:scale-110 active:scale-95 transition-all duration-300"
+          style={{
+            backgroundColor: 'rgba(255, 255, 255, 0.05)',
+          }}
+          aria-label="Table of Contents"
+        >
+          <FaListUl className="w-5 h-5" />
+        </motion.button>
+      )}
+
+      {/* Mobile Table of Contents Drawer */}
+      <AnimatePresence>
+        {hasToc && isMobileDrawerOpen && (
+          <>
+            {/* Backdrop overlay */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 bg-black/60 z-[110] lg:hidden backdrop-blur-sm"
+              onClick={() => setIsMobileDrawerOpen(false)}
+            />
+
+            {/* Drawer container */}
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 220 }}
+              className="fixed bottom-0 left-0 right-0 max-h-[80vh] rounded-t-3xl p-6 z-[120] lg:hidden overflow-y-auto flex flex-col border-t"
+              style={{
+                backgroundColor: 'color-mix(in srgb, var(--bg-surface) 95%, transparent)',
+                borderColor: 'var(--border-secondary)',
+                backdropFilter: 'blur(20px)',
+                WebkitBackdropFilter: 'blur(20px)',
+              }}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between mb-5 pb-3 border-b border-[rgba(255,255,255,0.08)]">
+                <span className="text-base font-bold uppercase tracking-wider" style={{ color: 'var(--text-primary)' }}>
+                  On this page
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setIsMobileDrawerOpen(false)}
+                  className="p-1 rounded-full text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[rgba(255,255,255,0.05)] transition-colors"
+                  aria-label="Close"
+                >
+                  <FaTimes className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Navigation links */}
+              <nav className="space-y-3 pb-6">
+                {toc.map((item) => {
+                  const isActive = activeId === item.id;
+                  return (
+                    <a
+                      key={`mob-${item.id}`}
+                      href={`#${item.id}`}
+                      onClick={() => setIsMobileDrawerOpen(false)}
+                      className={`block py-2 text-base transition-colors ${isActive ? 'font-semibold' : ''}`}
+                      style={{
+                        color: isActive ? 'var(--accent-cyan)' : 'var(--text-secondary)',
+                        marginLeft: item.level === 3 ? 16 : 0,
+                        paddingLeft: isActive ? '10px' : '0',
+                        borderLeft: isActive ? '2px solid var(--accent-cyan)' : '0px solid transparent',
+                      }}
+                    >
+                      {item.text}
+                    </a>
+                  );
+                })}
+              </nav>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 });

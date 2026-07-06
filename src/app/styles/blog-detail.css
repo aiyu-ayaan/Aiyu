@@ -67,11 +67,13 @@ html {
 .blog-detail-container article .prose h2 {
   margin-top: 1.8em;
   margin-bottom: 0.7em;
+  scroll-margin-top: 100px;
 }
 
 .blog-detail-container article .prose h3 {
   margin-top: 1.4em;
   margin-bottom: 0.6em;
+  scroll-margin-top: 100px;
 }
 
 .blog-detail-container article .prose ul,
@@ -265,4 +267,97 @@ img {
     margin-top: 1.5rem;
     margin-bottom: 0.75rem;
   }
+}
+
+/* Sidebar sticky Table of Contents outer wrapper */
+.blog-toc-wrapper {
+  position: -webkit-sticky !important;
+  position: sticky !important;
+  top: 6rem !important; /* 96px */
+  align-self: start !important;
+  height: auto !important;
+  z-index: 40;
+}
+
+/* Sidebar sticky Table of Contents inner container */
+.blog-toc-sidebar {
+  position: absolute !important;
+  right: 0 !important;
+  top: 0 !important;
+  width: 44px !important; /* Collapsed width */
+  min-height: 48px;
+  max-height: calc(100vh - 8rem) !important;
+  transition: width 0.35s cubic-bezier(0.25, 0.8, 0.25, 1), background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease !important;
+  border-radius: 16px;
+  background-color: transparent;
+  border: 1px solid transparent;
+  padding: 6px !important;
+  overflow: hidden !important;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Hover state: expands to full panel */
+.blog-toc-sidebar:hover {
+  width: 320px !important; /* Expanded width */
+  background-color: color-mix(in srgb, var(--bg-surface) 96%, transparent) !important;
+  border: 1px solid var(--hairline) !important;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+/* Collapsed indicators list */
+.toc-collapsed-indicators {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 32px; /* Fixed width of the strip */
+  padding-top: 10px;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.25s ease, visibility 0.25s ease;
+  pointer-events: auto;
+}
+
+.blog-toc-sidebar:hover .toc-collapsed-indicators {
+  opacity: 0;
+  visibility: hidden;
+  height: 0;
+  overflow: hidden;
+  padding: 0;
+  pointer-events: none;
+}
+
+/* Dashes representation */
+.toc-indicator-dash {
+  width: 16px;
+  height: 3px;
+  background-color: color-mix(in srgb, var(--text-secondary) 30%, transparent);
+  border-radius: 9999px;
+  transition: background-color 0.3s ease, width 0.3s ease, height 0.3s ease;
+}
+
+.toc-indicator-dash.active {
+  background-color: var(--accent-cyan);
+  width: 24px;
+  height: 3px;
+}
+
+/* Full expanded panel content */
+.toc-expanded-panel {
+  opacity: 0;
+  visibility: hidden;
+  width: 308px; /* Fit inside the 320px container (accounting for padding) */
+  padding: 12px;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+  pointer-events: none;
+  overflow-y: auto;
+}
+
+.blog-toc-sidebar:hover .toc-expanded-panel {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
 }

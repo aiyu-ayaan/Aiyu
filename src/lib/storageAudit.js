@@ -351,13 +351,16 @@ export async function executeWebPMigration() {
             const quality = isThumbnail ? 80 : 85;
 
             if (!isThumbnail && (metadata.width > 2500 || metadata.height > 2500)) {
-                pipeline = pipeline.resize(2500, 2500, {
-                    fit: 'inside',
-                    withoutEnlargement: true
-                });
+                pipeline = pipeline
+                    .gamma() // Linear space resizing to prevent gamma/brightness shift
+                    .resize(2500, 2500, {
+                        fit: 'inside',
+                        withoutEnlargement: true
+                    });
             }
 
             const outputBuffer = await pipeline
+                .withMetadata() // Preserve ICC color profiles and metadata
                 .webp({ quality, effort: 4 })
                 .toBuffer();
 

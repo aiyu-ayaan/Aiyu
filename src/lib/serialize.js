@@ -121,6 +121,9 @@ const CONFIG_SECRETS = [
 // Secret column (withheld by default) for the SeoConfig json-blob model.
 const SEO_SECRETS = ['encryptedGoogleServiceAccount'];
 
+// Secret column (withheld by default) for the McpConfig json-blob model.
+const MCP_SECRETS = ['mcpTokenHash'];
+
 /**
  * @typedef {Object} ModelDef
  * @property {string} delegate  Prisma delegate name (prisma[delegate]).
@@ -160,6 +163,8 @@ export const MODELS = {
   notificationConfig: { delegate: 'notificationConfig', kind: 'json', singleton: true, timestamps: true },
   github: { delegate: 'gitHub', kind: 'json', singleton: true, timestamps: false },
   cronEnv: { delegate: 'cronEnv', kind: 'json', singleton: true, timestamps: true },
+  mcpConfig: { delegate: 'mcpConfig', kind: 'json', singleton: true, timestamps: true, secrets: MCP_SECRETS },
+  aiPage: { delegate: 'aiPage', kind: 'json', singleton: true, timestamps: true },
 };
 
 export function getDelegate(prisma, key) {

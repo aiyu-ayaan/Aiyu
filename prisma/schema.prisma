@@ -428,3 +428,34 @@ model CronEnv {
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 }
+
+// MCP server config. Json-blob singleton like `Config`/`SeoConfig`: `data` holds
+// the full Model Context Protocol server-card definition (server info, transports,
+// advertised capabilities, tools, resources, prompts, and links) that the admin
+// panel edits and `/.well-known/mcp/server-card.json` serves. Falls back to
+// DEFAULT_MCP_CONFIG when the row is missing (see lib/mcpConfig.js).
+model McpConfig {
+  id        String   @id @default(cuid())
+  data      Json     @default("{}")
+  // Bearer token that authorizes MCP write tools at /api/mcp. Stored as a
+  // SHA-256 hash (withheld by the serializer, like Config.blogApiTokenHash);
+  // last4 + updatedAt are non-secret display metadata.
+  mcpTokenHash      String?
+  mcpTokenLast4     String    @default("")
+  mcpTokenUpdatedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+}
+
+// Schema-driven config for the public AI Hub (/ai). Json-blob singleton like
+// `About`/`Home`: `data` holds a `sections` array where each entry is a
+// self-describing block ({ id, type, enabled, order, title, ... , data }).
+// New section types can ship without a migration — the frontend component
+// registry (see components/ai/v2/registry) maps `type` -> renderer, and the
+// admin editor (/admin/ai-page) reorders/toggles/edits the array in place.
+model AiPage {
+  id        String   @id @default(cuid())
+  data      Json     @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+}

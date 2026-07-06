@@ -18,6 +18,7 @@ import { getBlogSlug } from '@/lib/blogSlugs';
 import { getDeploymentSlug, getProjectSlug } from '@/lib/contentSlugs';
 import { getReadTime } from '@/app/components/blogs/blogUtils';
 import { getSiteUrl } from '@/lib/siteUrl';
+import { DEFAULT_AI_PAGE } from '@/lib/aiPageDefaults';
 
 const IS_PRODUCTION_BUILD = process.env.NEXT_PHASE === 'phase-production-build';
 const ALLOW_DB_DURING_BUILD = process.env.ALLOW_DB_DURING_BUILD === 'true';
@@ -667,5 +668,114 @@ export async function getGalleryData() {
     } catch (error) {
         warnFetcherFallback('getGalleryData', error);
         return [];
+    }
+}
+
+/**
+ * Normalize a stored AI-page singleton into a usable config. Falls back to the
+ * bundled defaults when the row is missing or malformed so the page always
+ * renders something coherent.
+ */
+function normalizeAiPageConfig(raw) {
+    const config = serialize(raw);
+    if (!config || !Array.isArray(config.sections) || config.sections.length === 0) {
+        return serialize(DEFAULT_AI_PAGE);
+    }
+    return config;
+}
+
+/**
+ * Compute live AI telemetry from the AiLog table. Cheap aggregates only —
+ * total calls, tokens, a 7-day window, the most-active model, and the top
+ * provider — so the `stats` section can prove the site runs real workflows.
+ * Returns zeroed metrics on any error rather than throwing.
+ */
+async function computeAiStats() {
+    try {
+        const since7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+        const [totals, recent, byModel, byProvider] = await Promise.all([
+            prisma.aiLog.aggregate({
+                _sum: { totalTokens: true, inputTokens: true, outputTokens: true },
+                _count: { _all: true },
+            }),
+            prisma.aiLog.aggregate({
+                _sum: { totalTokens: true },
+                _count: { _all: true },
+                where: { createdAt: { gte: since7d } },
+            }),
+            prisma.aiLog.groupBy({
+                by: ['model'],
+                _sum: { totalTokens: true },
+                _count: { _all: true },
+                orderBy: { _count: { model: 'desc' } },
+                take: 1,
+            }),
+            prisma.aiLog.groupBy({
+                by: ['provider'],
+                _count: { _all: true },
+                orderBy: { _count: { provider: 'desc' } },
+                take: 1,
+            }),
+        ]);
+
+        return {
+            totalCalls: totals._count?._all || 0,
+            totalTokens: totals._sum?.totalTokens || 0,
+            inputTokens: totals._sum?.inputTokens || 0,
+            outputTokens: totals._sum?.outputTokens || 0,
+            tokens7d: recent._sum?.totalTokens || 0,
+            calls7d: recent._count?._all || 0,
+            topModel: byModel[0]?.model || null,
+            topModelCalls: byModel[0]?._count?._all || 0,
+            topProvider: byProvider[0]?.provider || null,
+        };
+    } catch (error) {
+        warnFetcherFallback('computeAiStats', error);
+        return {
+            totalCalls: 0,
+            totalTokens: 0,
+            inputTokens: 0,
+            outputTokens: 0,
+            tokens7d: 0,
+            calls7d: 0,
+            topModel: null,
+            topModelCalls: 0,
+            topProvider: null,
+        };
+    }
+}
+
+/**
+ * Fetch the AI Hub config (schema-driven sections) plus live AiLog telemetry.
+ * The section config is cached; telemetry is computed fresh (short-lived cache)
+ * so the live dashboard stays current.
+ */
+export async function getAiPageData() {
+    if (SKIP_DB_DURING_BUILD) {
+        warnFetcherFallback('getAiPageData');
+        return { config: serialize(DEFAULT_AI_PAGE), stats: null };
+    }
+
+    const ensureDb = createDbEnsurer();
+
+    try {
+        const [config, stats] = await Promise.all([
+            cache.getOrSet(
+                CACHE_KEYS.AI_PAGE,
+                async () => normalizeAiPageConfig(await getSingleton(prisma, 'aiPage')),
+                CACHE_TTL.LONG
+            ),
+            cache.getOrSet(
+                `${CACHE_KEYS.AI_PAGE}:stats`,
+                async () => computeAiStats(),
+                CACHE_TTL.SHORT
+            ),
+        ]);
+
+        return { config: serialize(config), stats: serialize(stats) };
+    } catch (error) {
+        warnFetcherFallback('getAiPageData', error);
+        return { config: serialize(DEFAULT_AI_PAGE), stats: null };
     }
 }

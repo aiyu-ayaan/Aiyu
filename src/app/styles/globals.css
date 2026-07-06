@@ -466,7 +466,7 @@ html {
   margin: 0;
   padding: 0;
   width: 100%;
-  overflow-x: hidden;
+  overflow-x: clip;
   /* Apply background to html to cover overscroll */
   background-color: #0d1117;
   /* Fallback */
@@ -481,7 +481,7 @@ body {
   margin: 0;
   padding: 0;
   width: 100%;
-  overflow-x: hidden;
+  overflow-x: clip;
   background-color: transparent;
   /* Keep transparent for SpaceBackground */
   color: var(--text-primary);
@@ -872,7 +872,7 @@ body.lightbox-open #scroll-to-top {
 }
 
 /* ============================================================
-   Terminal boot loader (#boot-screen)
+   V2 editorial boot loader (#boot-screen)
    Shown once per session (see BootLoader.js + the pre-paint
    data-booted flag in layout.js). Returning sessions never see
    it: the rule below hides it before first paint, no flash.
@@ -885,22 +885,13 @@ html[data-booted="1"] #boot-screen {
   position: fixed;
   inset: 0;
   z-index: 9999;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: clamp(1.75rem, 5vw, 3rem);
-  padding: 1.5rem;
   overflow: hidden;
-  background:
-    radial-gradient(circle at 50% 28%, color-mix(in srgb, var(--accent-cyan) 9%, transparent), transparent 55%),
-    radial-gradient(circle at 80% 80%, color-mix(in srgb, var(--accent-purple) 8%, transparent), transparent 55%),
-    var(--bg-primary, #0d1117);
+  background: var(--bg-primary, #0d1117);
   animation: boot-screen-in 0.35s ease both;
 }
 
 .boot-screen--exit {
-  animation: boot-screen-out 0.6s ease forwards;
+  animation: boot-screen-out 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 @keyframes boot-screen-in {
@@ -908,213 +899,268 @@ html[data-booted="1"] #boot-screen {
   to { opacity: 1; }
 }
 
+/* Editorial exit: the whole stage lifts away like a turned page */
 @keyframes boot-screen-out {
-  from { opacity: 1; transform: scale(1); }
-  to { opacity: 0; transform: scale(1.03); visibility: hidden; }
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-2.5%); visibility: hidden; }
 }
 
-/* Ambient accent glows matching the hero */
-.boot-glow {
-  position: absolute;
-  width: 22rem;
-  height: 22rem;
-  border-radius: 9999px;
-  filter: blur(80px);
-  opacity: 0.45;
-  pointer-events: none;
-  animation: boot-glow-pulse 4s ease-in-out infinite;
-}
-
-.boot-glow--cyan {
-  top: 10%;
-  left: 16%;
-  background: color-mix(in srgb, var(--accent-cyan) 42%, transparent);
-}
-
-.boot-glow--purple {
-  bottom: 10%;
-  right: 14%;
-  background: color-mix(in srgb, var(--accent-purple) 42%, transparent);
-  animation-delay: -2s;
-}
-
-@keyframes boot-glow-pulse {
-  0%, 100% { opacity: 0.32; transform: scale(1); }
-  50% { opacity: 0.55; transform: scale(1.12); }
-}
-
-/* CSS-3D wireframe cube — echoes the hero's wireframe icosahedron */
-.boot-stage {
-  perspective: 760px;
-  display: grid;
-  place-items: center;
-  width: 96px;
-  height: 96px;
-}
-
-.boot-cube {
-  position: relative;
-  width: 84px;
-  height: 84px;
-  transform-style: preserve-3d;
-  animation: boot-cube-spin 7s linear infinite;
-}
-
-@keyframes boot-cube-spin {
-  from { transform: rotateX(-22deg) rotateY(0deg); }
-  to { transform: rotateX(-22deg) rotateY(360deg); }
-}
-
-.boot-cube__face {
+/* Backdrop: V2Backdrop's tinted depth gradient + top hairline */
+.boot2-backdrop {
   position: absolute;
   inset: 0;
-  border: 1px solid color-mix(in srgb, var(--accent-cyan) 72%, transparent);
-  background: color-mix(in srgb, var(--accent-cyan) 7%, transparent);
-  box-shadow: inset 0 0 20px -4px color-mix(in srgb, var(--accent-cyan) 55%, transparent);
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% -10%, color-mix(in srgb, var(--text-bright) 8%, transparent), transparent 34%),
+    linear-gradient(180deg, color-mix(in srgb, var(--bg-tertiary) 78%, var(--bg-primary)), var(--bg-primary) 42%, color-mix(in srgb, var(--bg-secondary) 86%, var(--bg-primary)));
 }
 
-/* purple-tinted faces for the cyan -> purple blend */
-.boot-cube__face--left,
-.boot-cube__face--back,
-.boot-cube__face--bottom {
-  border-color: color-mix(in srgb, var(--accent-purple) 72%, transparent);
-  background: color-mix(in srgb, var(--accent-purple) 7%, transparent);
-  box-shadow: inset 0 0 20px -4px color-mix(in srgb, var(--accent-purple) 55%, transparent);
+.boot2-backdrop::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--text-bright) 18%, transparent), transparent);
 }
 
-.boot-cube__face--front { transform: translateZ(42px); }
-.boot-cube__face--back { transform: rotateY(180deg) translateZ(42px); }
-.boot-cube__face--right { transform: rotateY(90deg) translateZ(42px); }
-.boot-cube__face--left { transform: rotateY(-90deg) translateZ(42px); }
-.boot-cube__face--top { transform: rotateX(90deg) translateZ(42px); }
-.boot-cube__face--bottom { transform: rotateX(-90deg) translateZ(42px); }
-
-/* Terminal window */
-.boot-terminal {
-  width: min(440px, 92vw);
-  border: 1px solid var(--hairline, rgba(255, 255, 255, 0.1));
-  border-radius: 14px;
-  overflow: hidden;
-  background: color-mix(in srgb, var(--bg-surface, #17171a) 90%, transparent);
-  box-shadow: 0 28px 70px -28px rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  font-family: var(--font-geist-mono), ui-monospace, "SFMono-Regular", Menlo, monospace;
+.boot2-frame {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  width: min(72rem, 100%);
+  margin-inline: auto;
+  padding: clamp(1.25rem, 3.5vw, 2.5rem) clamp(1.25rem, 5vw, 3rem);
 }
 
-.boot-terminal__bar {
+/* Top command-bar echo (V2Header) */
+.boot2-topbar {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.6rem 0.9rem;
-  border-bottom: 1px solid var(--hairline, rgba(255, 255, 255, 0.08));
-  background: color-mix(in srgb, var(--bg-elevated, #202024) 70%, transparent);
+  justify-content: space-between;
+  gap: 1rem;
+  font-family: var(--font-geist-mono), ui-monospace, "SFMono-Regular", Menlo, monospace;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--text-muted, #8e8e93);
 }
 
-.boot-dot {
-  width: 11px;
-  height: 11px;
+.boot2-topbar__id {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.boot2-beacon {
+  width: 7px;
+  height: 7px;
   border-radius: 9999px;
-  display: inline-block;
+  background: var(--status-success, #34d399);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--status-success, #34d399) 65%, transparent);
+  animation: boot2-beacon-pulse 1.8s ease-in-out infinite;
 }
 
-.boot-dot--r { background: #ff5f56; }
-.boot-dot--y { background: #ffbd2e; }
-.boot-dot--g { background: #27c93f; }
+@keyframes boot2-beacon-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
 
-.boot-terminal__title {
-  margin-left: 0.5rem;
+/* Center chapter */
+.boot2-body {
+  position: relative;
+}
+
+/* Ghost stroked percent numeral at depth (V2ChapterHead) */
+.boot2-ghost {
+  position: absolute;
+  right: -0.02em;
+  top: 50%;
+  transform: translateY(-58%);
+  pointer-events: none;
+  user-select: none;
+  font-size: clamp(9rem, 30vw, 22rem);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.06em;
+  font-variant-numeric: tabular-nums;
+  color: transparent;
+  -webkit-text-stroke: 1.5px color-mix(in srgb, var(--accent-cyan) 22%, transparent);
+  opacity: 0.8;
+}
+
+.boot2-ghost::after {
+  content: "%";
+  font-size: 0.32em;
+  font-weight: 700;
+  vertical-align: 0.16em;
+  letter-spacing: 0;
+  -webkit-text-stroke: 1px color-mix(in srgb, var(--accent-purple) 26%, transparent);
+}
+
+.boot2-eyebrow {
+  margin-bottom: 1rem;
+  font-family: var(--font-geist-mono), ui-monospace, "SFMono-Regular", Menlo, monospace;
   font-size: 0.72rem;
-  color: var(--text-tertiary, #a1a1a6);
+  font-weight: 600;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: var(--accent-cyan, #2997ff);
+  animation: boot2-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-.boot-terminal__body {
-  padding: 1rem 1.1rem 1.2rem;
-  font-size: 0.8rem;
-  line-height: 1.7;
-  color: var(--text-secondary, #d2d2d7);
+.boot2-title {
+  max-width: 12ch;
+  font-size: clamp(2.6rem, 8vw, 5.6rem);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1.02;
+  color: var(--text-bright, #ffffff);
+  animation: boot2-rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both;
 }
 
-.boot-line {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  animation: boot-line-in 0.25s ease both;
+.boot2-title__accent {
+  background-image: linear-gradient(120deg, var(--accent-cyan), var(--accent-purple) 55%, var(--accent-pink));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
-.boot-line--cmd { color: var(--text-primary, #e5e7eb); }
-
-@keyframes boot-line-in {
-  from { opacity: 0; transform: translateX(-6px); }
+@keyframes boot2-rise {
+  from { opacity: 0; transform: translateY(26px); }
   to { opacity: 1; transform: none; }
 }
 
-.boot-prompt {
-  margin-right: 0.4rem;
+/* Manifest: mono ledger rows replacing the v1 terminal window */
+.boot2-manifest {
+  margin-top: clamp(1.5rem, 3.5vw, 2.5rem);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-family: var(--font-geist-mono), ui-monospace, "SFMono-Regular", Menlo, monospace;
+  font-size: 0.78rem;
+  line-height: 1.6;
+  color: var(--text-tertiary, #a1a1a6);
+  list-style: none;
+  padding: 0;
+}
+
+.boot2-manifest__row {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  animation: boot2-row-in 0.3s ease both;
+}
+
+.boot2-manifest__row--live {
+  color: var(--text-secondary, #d2d2d7);
+}
+
+@keyframes boot2-row-in {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: none; }
+}
+
+.boot2-manifest__tag {
+  display: inline-block;
+  min-width: 2.6ch;
+  margin-right: 0.6ch;
   font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--status-success, #34d399);
+}
+
+.boot2-manifest__tag--live {
   color: var(--accent-cyan, #2997ff);
 }
 
-.boot-tag { color: var(--status-success, #34d399); }
-
-.boot-cursor {
+.boot2-cursor {
   display: inline-block;
   width: 0.55ch;
   color: var(--accent-cyan, #2997ff);
-  animation: boot-blink 1s steps(1) infinite;
+  animation: boot2-blink 1s steps(1) infinite;
 }
 
-@keyframes boot-blink {
+@keyframes boot2-blink {
   50% { opacity: 0; }
 }
 
-.boot-progress {
-  margin-top: 0.9rem;
-  height: 6px;
-  border-radius: 9999px;
-  overflow: hidden;
-  border: 1px solid var(--hairline, rgba(255, 255, 255, 0.08));
-  background: color-mix(in srgb, var(--bg-elevated, #202024) 90%, transparent);
+/* Bottom ledger: hairline progress + mono readout (V2Footer) */
+.boot2-ledger {
+  font-family: var(--font-geist-mono), ui-monospace, "SFMono-Regular", Menlo, monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted, #8e8e93);
 }
 
-.boot-progress__fill {
+.boot2-progress {
+  height: 2px;
+  overflow: hidden;
+  background: var(--hairline, rgba(255, 255, 255, 0.08));
+}
+
+.boot2-progress__fill {
   height: 100%;
-  border-radius: inherit;
-  background: linear-gradient(90deg, var(--accent-cyan, #2997ff), var(--accent-purple, #bf5af2));
-  box-shadow: 0 0 12px color-mix(in srgb, var(--accent-cyan) 60%, transparent);
+  background: linear-gradient(90deg, var(--accent-cyan, #2997ff), var(--accent-purple, #bf5af2), var(--accent-pink, #ff375f));
+  box-shadow: 0 0 14px color-mix(in srgb, var(--accent-cyan) 60%, transparent);
   transition: width 0.2s ease;
 }
 
-.boot-percent {
-  margin-top: 0.4rem;
-  text-align: right;
-  font-size: 0.7rem;
-  color: var(--text-tertiary, #a1a1a6);
+.boot2-ledger__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-top: 0.7rem;
 }
 
-/* Lite devices: drop the expensive blur and slow the motion */
-html[data-perf="lite"] .boot-glow {
-  filter: none;
-  opacity: 0.22;
+.boot2-ledger__row > span:first-child {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.boot2-ledger__pct {
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary, #d2d2d7);
+}
+
+/* Lite devices: drop glows/pulses, keep the editorial layout */
+html[data-perf="lite"] .boot2-beacon {
   animation: none;
+  box-shadow: none;
 }
 
-html[data-perf="lite"] .boot-terminal {
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
+html[data-perf="lite"] .boot2-progress__fill {
+  box-shadow: none;
 }
 
-html[data-perf="lite"] .boot-cube {
-  animation-duration: 11s;
+html[data-perf="lite"] .boot2-ghost {
+  opacity: 0.5;
+}
+
+@media (max-width: 640px) {
+  .boot2-ghost {
+    top: auto;
+    bottom: -18%;
+    transform: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .boot-screen,
   .boot-screen--exit,
-  .boot-glow,
-  .boot-cube,
-  .boot-cursor,
-  .boot-line {
+  .boot2-beacon,
+  .boot2-cursor,
+  .boot2-eyebrow,
+  .boot2-title,
+  .boot2-manifest__row {
     animation: none !important;
   }
 }
+

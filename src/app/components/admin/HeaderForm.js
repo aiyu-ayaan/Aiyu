@@ -33,6 +33,7 @@ const HeaderForm = () => {
     const [formData, setFormData] = useState({
         navLinks: [],
         contactLink: { name: '', href: '' },
+        showClassic: true,
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -71,6 +72,7 @@ const HeaderForm = () => {
                     setFormData({
                         ...data,
                         navLinks: ensureIds(data.navLinks || []),
+                        showClassic: data.showClassic !== false,
                     });
                 }
             }
@@ -160,7 +162,7 @@ const HeaderForm = () => {
     const handleAddNavLink = () => {
         setFormData({
             ...formData,
-            navLinks: [...formData.navLinks, { _id: `temp-${Date.now()}`, name: '', href: '', visible: true, beta: false }]
+            navLinks: [...formData.navLinks, { _id: `temp-${Date.now()}`, name: '', href: '', visible: true, beta: false, target: '' }]
         });
     };
 
@@ -264,6 +266,15 @@ const HeaderForm = () => {
                                                     className="w-5 h-5 rounded border-white/20 bg-slate-950/50 text-amber-500 focus:ring-amber-500 focus:ring-offset-0 focus:ring-offset-transparent transition-all cursor-pointer accent-amber-500"
                                                 />
                                             </div>
+                                            <div className="flex flex-col items-center gap-1">
+                                                <label className="block text-[10px] font-mono uppercase tracking-wider text-emerald-400">New Tab</label>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={link.target === '_blank'}
+                                                    onChange={(e) => handleNavLinkChange(index, 'target', e.target.checked ? '_blank' : '')}
+                                                    className="w-5 h-5 rounded border-white/20 bg-slate-950/50 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-0 focus:ring-offset-transparent transition-all cursor-pointer accent-emerald-500"
+                                                />
+                                            </div>
                                         </div>
                                     </div>
                                 </SortableItem>
@@ -303,6 +314,33 @@ const HeaderForm = () => {
                             onChange={(e) => handleContactLinkChange('href', e.target.value)}
                             className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-cyan-400 focus:border-cyan-500/50 outline-none text-sm font-mono placeholder:text-cyan-900/50"
                             placeholder="e.g. #contact"
+                        />
+                    </div>
+                </div>
+            </div>
+
+            {/* Display Settings Section */}
+            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 md:p-8 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-violet-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
+
+                <div className="flex justify-between items-center mb-8 relative z-10">
+                    <h2 className="text-sm font-mono text-violet-500/70 uppercase tracking-widest flex items-center gap-4">
+                        Display Settings
+                        <div className="h-px w-20 bg-violet-500/10" />
+                    </h2>
+                </div>
+
+                <div className="relative z-10 space-y-4">
+                    <div className="flex items-center justify-between p-4 bg-slate-950/30 rounded-xl border border-white/5 hover:border-violet-500/20 transition-all">
+                        <div>
+                            <h3 className="text-sm font-bold text-slate-200">Show Classic Option</h3>
+                            <p className="text-xs text-slate-500 mt-1">Display the [classic] navigation link on the V2 header to allow opting back into the original design.</p>
+                        </div>
+                        <input
+                            type="checkbox"
+                            checked={formData.showClassic !== false}
+                            onChange={(e) => setFormData({ ...formData, showClassic: e.target.checked })}
+                            className="w-5 h-5 rounded border-white/20 bg-slate-950/50 text-violet-500 focus:ring-violet-500 focus:ring-offset-0 focus:ring-offset-transparent transition-all cursor-pointer accent-violet-500"
                         />
                     </div>
                 </div>

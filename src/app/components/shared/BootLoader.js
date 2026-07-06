@@ -3,24 +3,29 @@
 import { useEffect, useState } from "react";
 
 /**
- * Terminal-style boot screen shown only when this is the *only* open instance
+ * V2 editorial boot screen shown only when this is the *only* open instance
  * of the app — mirroring "Chrome doesn't re-show progress when an instance is
  * already running":
  *
  *   - No other tab/instance open      -> play the boot screen once.
  *   - Another tab/instance is open    -> skip (new tab, duplicated tab, etc).
  *   - Reload of the same tab          -> skip.
- *   - /blogs and /blogs/[id]          -> always skip (blogs shouldn't wait).
+ *   - Blog routes (/blogs, /blogs/[id], /v1|/v2 prefixed) -> always skip.
+ *   - Admin panel (/admin/*)          -> always skip (tools shouldn't wait).
  *
  * Presence is detected two ways:
  *   1. A localStorage heartbeat ("aiyu:lastSeen"), read synchronously in the
  *      pre-paint script in layout.js so the decision happens before first paint
  *      (no flash, no "content then loader").
  *   2. A BroadcastChannel ping/pong that catches a live tab even when it is
- *      backgrounded (timers throttle in background tabs, message handlers don't).
+ *      backgrounded (timers throttle in background tabs, message handlers
+ *      don't — receiving a ping also refreshes the heartbeat, so a long-idle
+ *      background tab keeps the pre-paint fast path warm for the next tab).
  *
- * Pure React + CSS (the 3D wireframe is a CSS transform, not three.js), so it
- * stays out of the heavy root bundle. Honours prefers-reduced-motion and
+ * Design follows the v2 editorial system (V2ChapterHead / V2Backdrop): mono
+ * eyebrow, oversized headline with the hero gradient, a ghost stroked percent
+ * numeral at depth, and a ledger-style progress footer. Pure React + CSS, so
+ * it stays out of the heavy root bundle. Honours prefers-reduced-motion and
  * data-perf="lite".
  */
 const BOOT_LINES = [
@@ -28,7 +33,7 @@ const BOOT_LINES = [
   "initializing render pipeline",
   "loading projects · blogs · apps",
   "establishing secure session",
-  "calibrating 3d scene",
+  "calibrating depth stage",
 ];
 
 const HEARTBEAT_KEY = "aiyu:lastSeen";
@@ -66,6 +71,9 @@ export default function BootLoader() {
       if (!document.hidden) writeHeartbeat();
     };
     document.addEventListener("visibilitychange", onVisibility);
+    // Final stamp on the way out so a quick close-and-reopen still counts as
+    // the same running instance (matches the reload-skip window).
+    window.addEventListener("pagehide", writeHeartbeat);
 
     // --- cross-tab presence channel ---
     let channel = null;
@@ -84,16 +92,24 @@ export default function BootLoader() {
     const teardownPresence = () => {
       window.clearInterval(heartbeatId);
       document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pagehide", writeHeartbeat);
       if (channel) channel.close();
     };
 
-    // Pre-paint already decided to skip (another instance alive, or a blog
-    // route). Keep answering pings so other tabs detect us, but never show.
+    const answerPing = (event) => {
+      if (event.data !== "ping") return false;
+      // Message handlers fire even in throttled background tabs — refresh the
+      // heartbeat here so an idle tab still keeps the pre-paint skip warm.
+      writeHeartbeat();
+      channel.postMessage("pong");
+      return true;
+    };
+
+    // Pre-paint already decided to skip (another instance alive, or a blog /
+    // admin route). Keep answering pings so other tabs detect us, but never show.
     if (root.getAttribute("data-booted") === "1") {
       if (channel) {
-        channel.onmessage = (event) => {
-          if (event.data === "ping") channel.postMessage("pong");
-        };
+        channel.onmessage = answerPing;
       }
       setVisible(false);
       return teardownPresence;
@@ -106,23 +122,22 @@ export default function BootLoader() {
       window.clearTimeout(safety);
       setExiting(true);
       const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-      exitTimer = window.setTimeout(() => setVisible(false), reduceMotion ? 0 : 600);
+      exitTimer = window.setTimeout(() => setVisible(false), reduceMotion ? 0 : 700);
     };
 
     // We believe we're the first instance. Confirm via a ping: a live tab (even
-    // backgrounded) pongs near-instantly, so we abort and hide.
+    // backgrounded) pongs near-instantly, so we bow out with a quick fade
+    // (instead of a hard cut) before the sequence has really begun.
     if (channel) {
       channel.onmessage = (event) => {
-        if (event.data === "ping") {
-          channel.postMessage("pong");
-          return;
-        }
+        if (answerPing(event)) return;
         if (event.data === "pong" && !aborted && !done) {
           aborted = true;
           window.cancelAnimationFrame(raf);
           window.clearTimeout(safety);
           root.setAttribute("data-booted", "1");
-          setVisible(false);
+          setExiting(true);
+          exitTimer = window.setTimeout(() => setVisible(false), 180);
         }
       };
       channel.postMessage("ping");
@@ -171,6 +186,9 @@ export default function BootLoader() {
 
   if (!visible) return null;
 
+  const step = Math.min(completedLines + 1, BOOT_LINES.length);
+  const currentLine = BOOT_LINES[Math.min(completedLines, BOOT_LINES.length - 1)];
+
   return (
     <div
       id="boot-screen"
@@ -179,47 +197,56 @@ export default function BootLoader() {
       role="status"
       aria-label="Loading interface"
     >
-      <div className="boot-glow boot-glow--cyan" aria-hidden="true" />
-      <div className="boot-glow boot-glow--purple" aria-hidden="true" />
+      {/* v2 backdrop: depth gradient + top hairline, echoing V2Backdrop */}
+      <div className="boot2-backdrop" aria-hidden="true" />
 
-      {/* CSS-3D wireframe cube — echoes the hero's wireframe nebula */}
-      <div className="boot-stage" aria-hidden="true">
-        <div className="boot-cube">
-          <span className="boot-cube__face boot-cube__face--front" />
-          <span className="boot-cube__face boot-cube__face--back" />
-          <span className="boot-cube__face boot-cube__face--right" />
-          <span className="boot-cube__face boot-cube__face--left" />
-          <span className="boot-cube__face boot-cube__face--top" />
-          <span className="boot-cube__face boot-cube__face--bottom" />
-        </div>
-      </div>
+      <div className="boot2-frame">
+        <header className="boot2-topbar" aria-hidden="true">
+          <span className="boot2-topbar__id">
+            <span className="boot2-beacon" />
+            aiyu — portfolio
+          </span>
+          <span>/sys · boot</span>
+        </header>
 
-      <div className="boot-terminal">
-        <div className="boot-terminal__bar">
-          <span className="boot-dot boot-dot--r" aria-hidden="true" />
-          <span className="boot-dot boot-dot--y" aria-hidden="true" />
-          <span className="boot-dot boot-dot--g" aria-hidden="true" />
-          <span className="boot-terminal__title">aiyu@portfolio — ~/boot</span>
+        <div className="boot2-body">
+          {/* Ghost stroked percent numeral at depth, like V2ChapterHead */}
+          <span className="boot2-ghost" aria-hidden="true">
+            {progress}
+          </span>
+
+          <p className="boot2-eyebrow">/00 — boot sequence</p>
+          <h1 className="boot2-title">
+            Setting
+            <span className="boot2-title__accent"> the stage.</span>
+          </h1>
+
+          <ul className="boot2-manifest" aria-hidden="true">
+            {BOOT_LINES.slice(0, completedLines).map((label) => (
+              <li className="boot2-manifest__row" key={label}>
+                <span className="boot2-manifest__tag">ok</span> {label}
+              </li>
+            ))}
+            {completedLines < BOOT_LINES.length && (
+              <li className="boot2-manifest__row boot2-manifest__row--live" key="live">
+                <span className="boot2-manifest__tag boot2-manifest__tag--live">··</span> {currentLine}
+                <span className="boot2-cursor">_</span>
+              </li>
+            )}
+          </ul>
         </div>
-        <div className="boot-terminal__body">
-          <p className="boot-line boot-line--cmd">
-            <span className="boot-prompt">$</span> ./launch --portfolio
-          </p>
-          {BOOT_LINES.slice(0, completedLines).map((label) => (
-            <p className="boot-line" key={label}>
-              <span className="boot-tag">[ OK ]</span> {label}
-            </p>
-          ))}
-          <p className="boot-line boot-line--live">
-            <span className="boot-prompt">›</span>{" "}
-            {progress < 100 ? "booting interface" : "launching interface"}
-            <span className="boot-cursor">_</span>
-          </p>
-          <div className="boot-progress" aria-hidden="true">
-            <div className="boot-progress__fill" style={{ width: `${progress}%` }} />
+
+        <footer className="boot2-ledger" aria-hidden="true">
+          <div className="boot2-progress">
+            <div className="boot2-progress__fill" style={{ width: `${progress}%` }} />
           </div>
-          <p className="boot-percent">{progress}%</p>
-        </div>
+          <div className="boot2-ledger__row">
+            <span>
+              {String(step).padStart(2, "0")} / {String(BOOT_LINES.length).padStart(2, "0")} — {currentLine}
+            </span>
+            <span className="boot2-ledger__pct">{progress}%</span>
+          </div>
+        </footer>
       </div>
     </div>
   );
