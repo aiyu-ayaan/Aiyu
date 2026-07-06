@@ -139,29 +139,6 @@ export default async function RootLayout({ children }) {
                 // with no FOUC or layout shift. Read by globals.css ([data-perf])
                 // and gsapScroll.js for animation level-of-detail.
                 try {
-                  var mm = window.matchMedia;
-                  var reduce = mm && mm('(prefers-reduced-motion: reduce)').matches;
-                  var coarse = mm && mm('(pointer: coarse)').matches;
-                  var conn = navigator.connection || {};
-                  var saveData = conn.saveData === true;
-                  var slowNet = conn.effectiveType ? (conn.effectiveType === '2g' || conn.effectiveType === '3g') : false;
-                  var cores = navigator.hardwareConcurrency || 8;
-                  var mem = navigator.deviceMemory || 8;
-                  var lowHw = (cores <= 4 || mem <= 4) && (coarse || window.innerWidth < 1024);
-                  var lite = !!(reduce || saveData || slowNet || lowHw);
-                  document.documentElement.setAttribute('data-perf', lite ? 'lite' : 'full');
-                } catch (e) {
-                  document.documentElement.setAttribute('data-perf', 'full');
-                }
-              })();
-            `,
-          }}
-        />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                try {
                   var n = navigator, mm = window.matchMedia;
                   var reduce = mm && mm('(prefers-reduced-motion: reduce)').matches;
                   var conn = n.connection || {};
