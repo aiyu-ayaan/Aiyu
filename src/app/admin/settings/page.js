@@ -75,7 +75,7 @@ export default function AdminSettingsPage() {
     };
 
     return (
-        <div className="p-5 md:p-8 max-w-4xl mx-auto pb-40">
+        <div className="p-5 md:p-8 max-w-4xl mx-auto pb-48">
             {/* Header */}
             <header className="mb-8">
                 <div className="flex items-center gap-3 mb-2">
