@@ -98,7 +98,7 @@ export async function generateThumbnail(imageBuffer, originalFilename) {
         };
     } catch (error) {
         console.error('[ERROR] Failed to generate thumbnail:', error);
-        throw new Error('Failed to generate thumbnail');
+        throw new Error('Failed to generate thumbnail', { cause: error });
     }
 }
 
@@ -118,7 +118,7 @@ export async function saveThumbnail(buffer, filename) {
         return `/api/uploads/${filename}`;
     } catch (error) {
         console.error('[ERROR] Failed to save thumbnail:', error);
-        throw new Error('Failed to save thumbnail');
+        throw new Error('Failed to save thumbnail', { cause: error });
     }
 }
 
@@ -260,6 +260,6 @@ export async function processUploadedImage(buffer) {
 
     } catch (error) {
         console.error('[ERROR] Image processing failed:', error);
-        throw new Error('Failed to process image');
+        throw new Error('Failed to process image', { cause: error });
     }
 }

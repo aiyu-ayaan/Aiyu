@@ -109,15 +109,15 @@ async function fetchUserData(username, headers, trace) {
 
         if (error.status === 403) {
             if (error.body?.includes('API rate limit exceeded')) {
-                throw new Error('GitHub API rate limit exceeded. Please add a valid GITHUB_TOKEN.');
+                throw new Error('GitHub API rate limit exceeded. Please add a valid GITHUB_TOKEN.', { cause: error });
             }
-            throw new Error('GitHub API access forbidden.');
+            throw new Error('GitHub API access forbidden.', { cause: error });
         }
         if (error.status === 404) {
-            throw new Error(`GitHub user '${username}' not found.`);
+            throw new Error(`GitHub user '${username}' not found.`, { cause: error });
         }
 
-        throw new Error(`Failed to fetch user data (${error.status ?? 'unknown'})`);
+        throw new Error(`Failed to fetch user data (${error.status ?? 'unknown'})`, { cause: error });
     }
 }
 

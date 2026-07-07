@@ -38,20 +38,24 @@ describe('proxy version routing', () => {
         expect(res.headers.get('x-middleware-next')).toBe('1');
     });
 
-    it('serves an explicit /v1 visit at the /v1 prefix when classic is the default', async () => {
+    it('collapses an explicit /v1 visit to the clean root when classic is the default', async () => {
         const proxy = await loadProxy('classic');
         const res = await proxy(makeRequest('/v1'));
 
-        expect(res.headers.get('location')).toBeNull();
-        expect(res.headers.get('x-middleware-next')).toBe('1');
+        // /v1 IS the default version's prefix here, so it collapses back to the
+        // clean URL (the default version owns the clean URLs) via a 308 redirect.
+        expect(res.status).toBe(308);
+        expect(new URL(res.headers.get('location')).pathname).toBe('/');
     });
 
-    it('serves an explicit /v2 visit at the /v2 prefix when v2 is default', async () => {
+    it('collapses an explicit /v2 visit to the clean URL when v2 is default', async () => {
         const proxy = await loadProxy('v2');
         const res = await proxy(makeRequest('/v2/projects'));
 
-        expect(res.headers.get('location')).toBeNull();
-        expect(res.headers.get('x-middleware-next')).toBe('1');
+        // /v2 IS the default version's prefix here, so it collapses back to the
+        // clean URL (the default version owns the clean URLs) via a 308 redirect.
+        expect(res.status).toBe(308);
+        expect(new URL(res.headers.get('location')).pathname).toBe('/projects');
     });
 
     it('does not redirect clean URLs based on cookies (serves default version v2 at clean URLs)', async () => {

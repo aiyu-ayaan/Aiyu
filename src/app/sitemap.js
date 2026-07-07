@@ -138,7 +138,7 @@ function normalizeSitemapRoutes(routes = []) {
       return entries;
     }
 
-    let canonicalUrl = route.url;
+    let canonicalUrl;
     try {
       const parsedUrl = new URL(route.url);
       canonicalUrl = `${parsedUrl.origin}${parsedUrl.pathname.replace(/\/+$/, '') || ''}`;

@@ -48,7 +48,12 @@ export default [
     },
     settings: {
       react: {
-        version: "detect",
+        // Pin the React version instead of "detect". Detection calls the
+        // deprecated `context.getFilename()`, which ESLint 10 removed — under
+        // eslint@10 that path throws while loading the react rules ("… .getFilename
+        // is not a function"), failing the whole lint. An explicit version skips
+        // detection entirely and is faster; safe on eslint 9 too.
+        version: "19.2",
       },
       next: {
         rootDir: "./",

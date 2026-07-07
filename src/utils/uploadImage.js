@@ -58,7 +58,7 @@ export async function storeOptimizedImage(file, options = {}) {
     } catch (error) {
         console.error('[WARN] Image processing failed, falling back to original:', error);
         if (validation.detectedType === 'image/heic') {
-            throw new Error(`Failed to process HEIC image: ${error.message}`);
+            throw new Error(`Failed to process HEIC image: ${error.message}`, { cause: error });
         }
     }
 
