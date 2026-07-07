@@ -7,12 +7,6 @@ import ThemeToggle from '../../ThemeToggle';
 import TerminalPath from '../../admin/TerminalPath';
 import { v2PublicPath } from '@/lib/siteVersion';
 
-// Opting out of v2: remember it so classic pages stop redirecting here
-// when v2 is the admin default.
-const rememberClassic = () => {
-    document.cookie = 'site-version=classic; path=/; max-age=31536000';
-};
-
 /**
  * V2 chrome: a hairline command bar. Mono wordmark, bracketed nav links,
  * theme toggle, an accent contact link — and the same interactive
@@ -140,7 +134,6 @@ const V2Header = ({ logoText = '< aiyu />', data, config, socialData }) => {
                                         key={link.label}
                                         href={link.href}
                                         target={link.target}
-                                        onClick={link.label === 'classic' ? rememberClassic : undefined}
                                         className="group whitespace-nowrap transition-colors duration-200"
                                         style={{ color: active ? 'var(--text-bright)' : 'var(--text-secondary)' }}
                                         aria-current={active ? 'page' : undefined}
@@ -251,10 +244,7 @@ const V2Header = ({ logoText = '< aiyu />', data, config, socialData }) => {
                                     <Link
                                         href={link.href}
                                         target={link.target}
-                                        onClick={() => {
-                                            if (link.label === 'classic') rememberClassic();
-                                            setIsMenuOpen(false);
-                                        }}
+                                        onClick={() => setIsMenuOpen(false)}
                                         className="flex min-h-12 items-center gap-3 text-lg transition-colors duration-200"
                                         style={{ color: active ? 'var(--text-bright)' : 'var(--text-secondary)' }}
                                         aria-current={active ? 'page' : undefined}

@@ -22,10 +22,11 @@ const VERSIONS = [
 
 /**
  * Default site version switch. Saves `defaultSiteVersion` on the config
- * singleton; when set to `v2`, the classic routes with v2 counterparts
- * redirect visitors to /v2 (see src/lib/siteVersion.js). Visitors can still
- * opt back into classic via the v2 header's [classic] link, which sets the
- * `site-version=classic` cookie.
+ * singleton. The default version owns the clean URLs (served there by rewrite —
+ * the address bar never shows /v1 or /v2). The other version stays reachable by
+ * visiting its explicit /v1 or /v2 prefix. Routing is driven purely by the URL,
+ * not a cookie, so switching the default takes effect for every visitor within
+ * the proxy's short cache window (see src/proxy.js).
  */
 const VersionForm = () => {
     const [selected, setSelected] = useState('classic');
@@ -67,9 +68,6 @@ const VersionForm = () => {
             });
 
             if (response.ok) {
-                // Clear any per-visitor cookie override so this browser immediately
-                // reflects the new default on the next navigation.
-                document.cookie = 'site-version=; path=/; max-age=0';
                 showNotification(true, `Default version set to ${selected === 'v2' ? 'V2' : 'Classic'}`);
             } else {
                 const data = await response.json().catch(() => ({}));
@@ -117,9 +115,9 @@ const VersionForm = () => {
 
             <div className="rounded-lg border border-white/5 bg-white/5 p-4 font-mono text-xs leading-relaxed text-slate-400">
                 <p className="mb-1 text-slate-300">How it behaves</p>
-                <p>→ Classic (default): nothing changes; the v2 experience stays reachable under /v2 and the home popup keeps promoting it.</p>
-                <p>→ V2: the classic URLs serve the v2 pages directly (URL rewrite — the address bar never shows /v2, and the sitemap keeps the same URL structure). Direct /v2 links redirect to the clean URLs.</p>
-                <p>→ Visitors can always opt back via the v2 header&apos;s [classic] link (remembered in a cookie).</p>
+                <p>→ Classic (default): the classic (v1) pages serve at the clean URLs; the v2 experience stays reachable under /v2 and the home popup keeps promoting it.</p>
+                <p>→ V2 (default): the clean URLs serve the v2 pages directly (URL rewrite — the address bar never shows /v2, and the sitemap keeps the same URL structure). Direct /v2 links redirect to the clean URLs; classic (v1) stays reachable under /v1.</p>
+                <p>→ Whichever version is NOT the default is browsed under its visible /v1 or /v2 prefix — the version follows the URL, not a cookie.</p>
                 <p>→ Changes take effect within ~30 seconds (the proxy caches the flag briefly).</p>
                 <p className="mt-2">
                     Preview:{' '}

@@ -1,5 +1,3 @@
-export const SITE_VERSION_COOKIE = 'site-version';
-
 /**
  * Public path for a v2 page, honoring the admin default (/admin/version).
  *

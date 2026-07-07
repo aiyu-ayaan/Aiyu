@@ -96,11 +96,7 @@ export default function V2BetaPopup() {
                 <div className="flex items-center gap-3">
                     <Link
                         href="/v2"
-                        onClick={() => {
-                            // Clear any classic opt-out so v2-as-default kicks back in.
-                            document.cookie = 'site-version=v2; path=/; max-age=31536000';
-                            dismiss();
-                        }}
+                        onClick={dismiss}
                         className="pill-solid inline-flex items-center gap-2 !py-2 !text-sm"
                     >
                         Try V2 <FaArrowRight size={11} />

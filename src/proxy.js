@@ -307,15 +307,20 @@ function getMarkdownPage(pathname) {
 }
 
 // ──────────────────────────────────────────────────────────────────────────
-// Default site version (set at /admin/version). The default version is
-// served AT the clean URLs via rewrite — the address bar, sitemap, and
-// canonical structure never change — and its own prefix collapses back to
-// the clean URLs. The NON-default version is browsed visibly under its /v1
-// or /v2 prefix; the site-version cookie (pinned whenever a prefix is
-// visited, or by the v2 header's [classic] link) redirects a pinned
-// visitor's clean-URL hits to that prefix. The flag is read from the public
-// config API and cached in module scope so it costs one self-fetch per TTL,
-// not per request.
+// Default site version (set at /admin/version). Two rules, no cookies:
+//
+//   1. The default version OWNS the clean URLs. `/`, `/about-me`, `/blogs`,
+//      `/blogs/<id>`, … are served via rewrite from the default version's tree,
+//      so the address bar, sitemap, and canonical structure never carry a /v1
+//      or /v2 prefix. The default's OWN prefix collapses (308) back to the
+//      clean URL so there is only ever one public URL per page.
+//   2. The NON-default version is browsed VISIBLY under its /v1 or /v2 prefix.
+//      Navigating to /v1 or /v2 explicitly enters that specific version.
+//
+// The flag is read from the public config API and cached in module scope so it
+// costs one self-fetch per TTL, not per request. Version is a property of the
+// URL alone — deliberately NOT sticky in a cookie, so a stale cookie can never
+// lock a visitor onto a version the admin has switched away from.
 // ──────────────────────────────────────────────────────────────────────────
 const V2_PAGES = new Set([
     '/',
@@ -383,25 +388,6 @@ async function getDefaultSiteVersion(request) {
     }
 
     return siteVersionCache.value;
-}
-
-function getCookieVersion(request) {
-    const cookieVal = request.cookies.get('site-version')?.value;
-    if (cookieVal === 'classic' || cookieVal === 'v1') {
-        return 'v1';
-    }
-    if (cookieVal === 'v2') {
-        return 'v2';
-    }
-    return null;
-}
-
-function pinVersionCookie(response, version) {
-    response.cookies.set('site-version', version === 'v1' ? 'classic' : 'v2', {
-        path: '/',
-        maxAge: 31536000,
-    });
-    return response;
 }
 
 function acceptsMarkdown(request) {

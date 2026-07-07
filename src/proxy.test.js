@@ -58,6 +58,22 @@ describe('proxy version routing', () => {
         expect(new URL(res.headers.get('location')).pathname).toBe('/projects');
     });
 
+    it('never redirects to the internal upstream host (issue #243)', async () => {
+        // Behind Docker/nginx the Host header can arrive as the internal
+        // upstream name; the collapse redirect must not send the browser there.
+        const proxy = await loadProxy('v2');
+        const req = new NextRequest('http://localhost:3000/v2/projects', {
+            headers: { host: 'nextjs' },
+        });
+        const res = await proxy(req);
+
+        expect(res.status).toBe(308);
+        const location = new URL(res.headers.get('location'));
+        expect(location.hostname).not.toBe('nextjs');
+        expect(location.hostname).toContain('.');
+        expect(location.pathname).toBe('/projects');
+    });
+
     it('does not redirect clean URLs based on cookies (serves default version v2 at clean URLs)', async () => {
         const proxy = await loadProxy('v2');
         const res = await proxy(makeRequest('/about-me', { cookie: 'site-version=classic' }));

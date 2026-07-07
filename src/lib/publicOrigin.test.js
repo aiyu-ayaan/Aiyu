@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { getPublicOrigin } from '@/lib/publicOrigin';
 
 /** Minimal request stand-in matching the NextRequest surface the helper reads. */
@@ -11,6 +11,23 @@ function makeRequest({ headers = {}, origin = 'http://0.0.0.0:3000' } = {}) {
 }
 
 describe('getPublicOrigin', () => {
+    const originalSiteUrl = process.env.SITE_URL;
+    const originalBaseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+
+    beforeEach(() => {
+        // A configured canonical origin is the safety net when the request's
+        // host header is missing or an internal service name.
+        process.env.SITE_URL = 'https://me.aiyu.co.in';
+        delete process.env.NEXT_PUBLIC_BASE_URL;
+    });
+
+    afterEach(() => {
+        if (originalSiteUrl === undefined) delete process.env.SITE_URL;
+        else process.env.SITE_URL = originalSiteUrl;
+        if (originalBaseUrl === undefined) delete process.env.NEXT_PUBLIC_BASE_URL;
+        else process.env.NEXT_PUBLIC_BASE_URL = originalBaseUrl;
+    });
+
     it('prefers x-forwarded-proto + x-forwarded-host (reverse proxy)', () => {
         const request = makeRequest({
             headers: { 'x-forwarded-proto': 'https', 'x-forwarded-host': 'aiyu.example.com' },
@@ -33,14 +50,34 @@ describe('getPublicOrigin', () => {
         expect(getPublicOrigin(request)).toBe('https://aiyu.example.com');
     });
 
-    it('falls back to nextUrl.origin when no host headers exist at all', () => {
-        const request = makeRequest({ origin: 'http://localhost:3000' });
-        expect(getPublicOrigin(request)).toBe('http://localhost:3000');
+    it('accepts localhost and IP literal hosts as public', () => {
+        expect(getPublicOrigin(makeRequest({ headers: { host: 'localhost:3000' } }))).toBe('http://localhost:3000');
+        expect(getPublicOrigin(makeRequest({ headers: { host: '127.0.0.1:3000' } }))).toBe('http://127.0.0.1:3000');
+    });
+
+    // ── issue #243: the internal Docker/nginx upstream name must never leak ──
+    it('rejects a bare internal service host (nextjs) and uses the configured site URL', () => {
+        // Behind the reverse proxy the Host header can arrive as the upstream
+        // block name; echoing it would bounce the browser to http://nextjs/.
+        const request = makeRequest({ headers: { host: 'nextjs' } });
+        expect(getPublicOrigin(request)).toBe('https://me.aiyu.co.in');
+    });
+
+    it('rejects an internal x-forwarded-host too', () => {
+        const request = makeRequest({
+            headers: { 'x-forwarded-proto': 'https', 'x-forwarded-host': 'app' },
+        });
+        expect(getPublicOrigin(request)).toBe('https://me.aiyu.co.in');
+    });
+
+    it('falls back to the configured site URL when no host headers exist at all', () => {
+        // The standalone (Docker) server binds on 0.0.0.0, so nextUrl reflects
+        // that — never a usable public origin. Prefer the configured site URL.
+        const request = makeRequest({ origin: 'http://0.0.0.0:3000' });
+        expect(getPublicOrigin(request)).toBe('https://me.aiyu.co.in');
     });
 
     it('never returns the 0.0.0.0 bind address when a Host header is available', () => {
-        // The standalone (Docker) server binds on 0.0.0.0, so nextUrl reflects
-        // that — the real client-facing host only exists in the headers.
         const request = makeRequest({
             headers: { host: 'aiyu.example.com' },
             origin: 'http://0.0.0.0:3000',

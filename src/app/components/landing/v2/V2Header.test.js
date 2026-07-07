@@ -69,7 +69,9 @@ describe('V2Header mobile menu', () => {
         expect(document.getElementById('v2-mobile-menu')).toHaveAttribute('aria-hidden', 'true');
     });
 
-    it('remembers the classic opt-out cookie when classic is tapped in the overlay', async () => {
+    it('points classic at the /v1 prefix and closes the overlay when tapped', async () => {
+        // Version follows the URL, not a cookie: the classic switch simply
+        // navigates into the explicit /v1 tree (see src/proxy.js).
         const user = userEvent.setup();
         render(<V2Header />);
         await user.click(screen.getByRole('button', { name: /open navigation menu/i }));
@@ -78,9 +80,10 @@ describe('V2Header mobile menu', () => {
         const classicLink = Array.from(overlayNav.querySelectorAll('a')).find(
             (a) => a.textContent.includes('classic'),
         );
-        await user.click(classicLink);
+        expect(classicLink).toHaveAttribute('href', '/v1');
+        expect(document.cookie).not.toContain('site-version');
 
-        expect(document.cookie).toContain('site-version=classic');
+        await user.click(classicLink);
         expect(document.getElementById('v2-mobile-menu')).toHaveAttribute('aria-hidden', 'true');
     });
 

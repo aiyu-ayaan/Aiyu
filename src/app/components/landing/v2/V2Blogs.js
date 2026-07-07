@@ -51,7 +51,7 @@ const V2Blogs = ({ blogs, config }) => {
         <div style={{ borderTop: '1px solid var(--hairline)', perspective: '1600px' }}>
           {recentBlogs.map((blog, index) => {
             const accent = ROW_ACCENTS[index % ROW_ACCENTS.length];
-            const blogPath = getBlogPath(blog);
+            const blogPath = v2PublicPath(config, getBlogPath(blog));
             const previewText = String(blog?.content || '').replace(/[#[\]*`_]/g, '').trim();
             const displayText = previewText.length > 140 ? `${previewText.slice(0, 140)}...` : previewText;
             const dateLabel = new Date(blog?.date || blog?.createdAt).toLocaleDateString('en-US', {
