@@ -1,5 +1,15 @@
 # Changelog
 
+## [4.7.1](https://github.com/aiyu-ayaan/Aiyu/compare/v4.7.0...v4.7.1) (2026-07-06)
+
+### Bug Fixes
+
+* : Proxy normalize fetch URL for Docker and improve error logging
+
+### Other Changes
+
+* Merge branch 'master' of https://github.com/aiyu-ayaan/Aiyu
+
 ## [4.7.0](https://github.com/aiyu-ayaan/Aiyu/compare/v4.6.2...v4.7.0) (2026-07-06)
 
 ### Features
