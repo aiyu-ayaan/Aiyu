@@ -75,7 +75,7 @@
     "react-syntax-highlighter": "^16.1.1",
     "react-vertical-timeline-component": "^4.0.0",
     "remark-gfm": "^4.0.1",
-    "sharp": "^0.34.5",
+    "sharp": "^0.35.3",
     "simple-icons": "^16.25.0",
     "three": "^0.184.0",
     "yet-another-react-lightbox": "^3.32.0"
