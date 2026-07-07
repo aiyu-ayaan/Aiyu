@@ -94,13 +94,7 @@ export default function GalleryManager() {
     const handleFiles = (newFiles) => {
         const fileObjects = newFiles.map(file => {
             const isHeic = file.name.toLowerCase().endsWith('.heic') || file.type === 'image/heic';
-            let preview = null;
-
-            if (isHeic) {
-                preview = 'HEIC_PLACEHOLDER';
-            } else {
-                preview = URL.createObjectURL(file);
-            }
+            const preview = isHeic ? 'HEIC_PLACEHOLDER' : URL.createObjectURL(file);
 
             return {
                 id: Math.random().toString(36).substring(7),

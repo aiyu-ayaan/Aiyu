@@ -305,7 +305,7 @@ export async function executeCronJob(job) {
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         const attemptStartTime = Date.now();
         let attemptStatus = 'success';
-        let attemptLogOutput = '';
+        let attemptLogOutput;
 
         try {
             if (job.action === 'clean_unreferenced') {
