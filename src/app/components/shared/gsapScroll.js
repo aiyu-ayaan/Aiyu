@@ -48,9 +48,10 @@ const getPreset = (el) => REVEAL_PRESETS[el.dataset.reveal] || REVEAL_PRESETS[DE
 /**
  * Low-end / touch device tier, set pre-paint on <html data-perf="lite"> by the
  * inline script in layout.js (reduced-motion / data-saver / slow network / weak
- * touch hardware). On these devices we skip every scrubbed/pinned timeline and
- * let content render statically — the scroll FX are what make low-end screens
- * stutter or appear blank, so we treat lite exactly like reduced-motion.
+ * touch hardware). Reserved for genuinely heavy work — the WebGL/3D hero scenes
+ * (see gsap3d.js / FuturisticResume) skip it here. The lighter scroll FX
+ * (reveals, counters, parallax, pinned horizontal scroll) now run on every
+ * device and only bow out for an explicit prefers-reduced-motion request.
  */
 export function isLiteDevice() {
     if (typeof document === 'undefined') return false;
@@ -198,8 +199,9 @@ export function animateCounters(scope, { reducedMotion = false } = {}) {
  */
 export function animateParallax(scope, { reducedMotion = false } = {}) {
     // Scrubbed parallax does layout-free transform work on every scroll frame.
-    // It's purely decorative, so skip it on lite devices to protect scroll FPS.
-    if (!scope || reducedMotion || isLiteDevice()) return;
+    // Decorative, so it honours prefers-reduced-motion but otherwise runs on all
+    // devices along with the rest of the section FX.
+    if (!scope || reducedMotion) return;
 
     scope.querySelectorAll('[data-parallax]').forEach((el) => {
         const speed = Number(el.dataset.parallax) || 0.2;
@@ -277,9 +279,10 @@ export function useSectionFx(scopeRef, { reducedMotion = false, extra, dependenc
             const scope = scopeRef.current;
             if (!scope) return;
 
-            // Lite devices get a static, fully-visible layout: no blur reveals,
-            // no parallax, no pinned horizontal scroll, no bespoke 3D timelines.
-            const reduced = reducedMotion || isLiteDevice();
+            // Scroll FX run on every device (mobile included) so the page never
+            // renders as a flat, static wall. Only an explicit reduced-motion
+            // request opts out; heavy WebGL/3D scenes keep their own lite gate.
+            const reduced = reducedMotion;
 
             animateHorizontalScroll(scope, { reducedMotion: reduced });
             animateReveals(scope, { reducedMotion: reduced });
