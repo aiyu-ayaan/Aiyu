@@ -1,5 +1,15 @@
 # Changelog
 
+## [4.7.2](https://github.com/aiyu-ayaan/Aiyu/compare/v4.7.1...v4.7.2) (2026-07-07)
+
+### Bug Fixes
+
+* : run scroll animations on all devices, not just the "full" tier
+
+### Other Changes
+
+* Merge branch 'master' of https://github.com/aiyu-ayaan/Aiyu
+
 ## [4.7.1](https://github.com/aiyu-ayaan/Aiyu/compare/v4.7.0...v4.7.1) (2026-07-06)
 
 ### Bug Fixes
