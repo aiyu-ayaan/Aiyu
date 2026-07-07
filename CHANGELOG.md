@@ -1,5 +1,25 @@
 # Changelog
 
+## [4.7.3](https://github.com/aiyu-ayaan/Aiyu/compare/v4.7.2...v4.7.3) (2026-07-07)
+
+### Bug Fixes
+
+* (routing): prevent internal upstream host leaks in production redirects (#243)
+* Green the failing unit, e2e, and lint checks blocking the dependabot PRs (#242)
+* Satisfy @eslint/js 10 recommended rules (cause chains, dead assigns)
+* Pin react version so lint survives eslint 10
+
+### Other Changes
+
+* Merge branch 'origin/master' — resolve proxy.test.js conflict (keep #243 regression test)
+* Bump @eslint/js from 9.39.4 to 10.0.1 (#225)
+* Bump sharp from 0.34.5 to 0.35.3 (#234)
+* Bump eslint from 9.39.4 to 10.6.0 (#235)
+* Bump simple-icons from 16.18.0 to 16.25.0 (#236)
+* Bump tailwindcss from 4.3.1 to 4.3.2 (#237)
+* Target the header landmark, not the boot loader's header
+* Expect default-version prefix to collapse to clean URLs
+
 ## [4.7.2](https://github.com/aiyu-ayaan/Aiyu/compare/v4.7.1...v4.7.2) (2026-07-07)
 
 ### Bug Fixes
