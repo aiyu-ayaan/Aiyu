@@ -162,23 +162,15 @@ const V2Header = ({ logoText = '< aiyu />', data, config, socialData }) => {
                         <button
                             type="button"
                             onClick={() => window.dispatchEvent(new CustomEvent('open-command-palette'))}
-                            className="group flex items-center gap-1.5 whitespace-nowrap font-mono text-sm transition-colors duration-200"
-                            style={{ color: 'var(--text-secondary)' }}
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-full border transition-transform duration-200 hover:scale-[1.03] active:scale-95"
+                            style={{
+                                borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
+                                backgroundColor: 'color-mix(in srgb, var(--bg-surface) 92%, transparent)',
+                            }}
                             aria-label="Open search"
                             title="Search (Ctrl + K)"
                         >
-                            <span style={{ color: 'var(--text-muted)' }}>[</span>
-                            <span className="inline-flex items-center gap-1.5">
-                                <Search size={13} aria-hidden="true" />
-                                <span className="underline-offset-4 group-hover:underline">search</span>
-                            </span>
-                            <span style={{ color: 'var(--text-muted)' }}>]</span>
-                            <kbd
-                                className="ml-1 hidden rounded border px-1.5 py-0.5 text-[10px] font-medium lg:inline-block"
-                                style={{ borderColor: 'var(--hairline-strong)', color: 'var(--text-muted)' }}
-                            >
-                                ⌘K
-                            </kbd>
+                            <Search size={14} style={{ color: 'var(--accent-cyan)' }} aria-hidden="true" />
                         </button>
 
                         <ThemeToggle compact />
