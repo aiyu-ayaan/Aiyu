@@ -145,7 +145,7 @@ const ProjectDetailV2 = ({ project, backHref = '/projects' }) => {
                 {/* Spec table — one hairline row per attribute. */}
                 <div data-v2="rise" className="mb-16">
                     <h2 className="mb-2 font-mono text-xs font-semibold uppercase tracking-[0.3em]" style={{ color: 'var(--text-muted)' }}>
-                        // specs
+                        {'// specs'}
                     </h2>
                     <dl>
                         {specs.map(([label, value]) => (
@@ -164,7 +164,7 @@ const ProjectDetailV2 = ({ project, backHref = '/projects' }) => {
                 {stackList.length > 0 ? (
                     <div data-v2="rise">
                         <h2 className="mb-4 font-mono text-xs font-semibold uppercase tracking-[0.3em]" style={{ color: 'var(--text-muted)' }}>
-                            // stack
+                            {'// stack'}
                         </h2>
                         <div className="flex flex-wrap gap-2">
                             {stackList.map((tech) => (
