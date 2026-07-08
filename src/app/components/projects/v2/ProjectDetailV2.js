@@ -2,7 +2,6 @@
 
 import React, { useRef } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { FaArrowUpRightFromSquare, FaArrowLeftLong } from 'react-icons/fa6';
 import useDevicePerformance from '../../../hooks/useDevicePerformance';
 import { useV2Fx } from '../../landing/v2/gsap3d';
@@ -129,14 +128,12 @@ const ProjectDetailV2 = ({ project, backHref = '/projects' }) => {
                         className="mb-16 overflow-hidden rounded-2xl border"
                         style={{ borderColor: 'var(--hairline)' }}
                     >
-                        <Image
+                        <img
                             src={project.image}
                             alt={project?.name || 'Project image'}
-                            width={1200}
-                            height={630}
-                            sizes="(max-width: 1024px) 90vw, 960px"
-                            className="h-64 w-full object-cover sm:h-96"
+                            className="block h-auto w-full"
                             loading="eager"
+                            decoding="async"
                             referrerPolicy="no-referrer"
                         />
                     </div>

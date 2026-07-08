@@ -150,7 +150,7 @@ const AppDetailV2 = ({ deployment, backHref = '/apps' }) => {
                         <img
                             src={deployment.image}
                             alt={deployment?.name || 'App image'}
-                            className="h-64 w-full object-cover sm:h-96"
+                            className="block h-auto w-full"
                             loading="eager"
                             decoding="async"
                             referrerPolicy="no-referrer"
