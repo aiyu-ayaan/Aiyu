@@ -56,6 +56,10 @@ Aiyu is a developer portfolio for projects, writing, live deployments, gallery e
 - GET /api/deployments
 - GET /api/github/stats
 - GET /api/ai-page
+- GET /api/ai/skills
+- GET /api/ai/recommendations
+- GET /api/ai/credits
+- GET /api/ai/prompts
 - POST /api/contact/message
 `;
 
@@ -85,8 +89,23 @@ This service exposes public portfolio APIs and protected admin APIs.
 - GET /api/gallery - Lists gallery items.
 - GET /api/deployments - Lists live deployments.
 - GET /api/github/stats - Returns configured GitHub statistics.
-- GET /api/ai-page - Returns the AI Hub (/ai) page configuration (ordered sections).
+- GET /api/ai-page - Returns the whole AI Hub (/ai) page: ordered section skeleton with the four content sections hydrated.
+- GET /api/ai/skills - Skills grouped by category: { categories: [{ id, label, accent, items: [{ id, name, description, url? }] }] }.
+- GET /api/ai/recommendations - Recommended-stack cards: { cards: [{ id, name, url, rating, accent, blurb, tags }] }.
+- GET /api/ai/credits - Free credits / free tiers: { rows: [{ id, name, offer, url, noCard, freeApi, note }] }.
+- GET /api/ai/prompts - Prompt library: { items: [{ id, title, role, prompt }] }.
+- GET /api/ai/layout - The page skeleton (section order, shells, hero/stats) without hydrated content.
 - POST /api/contact/message - Submits a contact message.
+
+## AI Hub Content — Write Endpoints
+
+Each of the four AI Hub sections is independently CRUD-able. Writes (POST/PUT/DELETE) require an admin session cookie OR an Authorization: Bearer <token> header (the MCP write token or blog API token from /admin/mcp and /admin/api-reference). Reads above are public.
+
+- Skills: POST /api/ai/skills/categories, PUT|DELETE /api/ai/skills/categories/{id}; POST /api/ai/skills/items, PUT|DELETE /api/ai/skills/items/{id}.
+- Recommendations: POST /api/ai/recommendations, PUT|DELETE /api/ai/recommendations/{id}.
+- Credits: POST /api/ai/credits, PUT|DELETE /api/ai/credits/{id}.
+- Prompts: POST /api/ai/prompts, PUT|DELETE /api/ai/prompts/{id}.
+- Layout: PUT /api/ai/layout (section order/visibility/headings). POST /api/ai/seed backfills empty sections from defaults.
 
 ## Protected Endpoints
 
@@ -261,54 +280,32 @@ To connect an external client like **Claude Desktop** directly to your portfolio
 
 ## 4. Editing the AI Hub (\`/ai\`) Page over MCP
 
-The public **AI Hub** page is schema-driven: its entire content is an ordered array of *section* objects stored in the \`aiPage\` singleton and rendered by the frontend section registry. MCP exposes read tools (public) and write tools (guarded) so an authorized agent can define, add, and edit those sections without touching the admin UI.
-
-### The Section object
-
-Every section shares this shape:
-
-\`\`\`json
-{
-  "id": "skills",
-  "type": "skills",
-  "enabled": true,
-  "eyebrow": "Agent skills",
-  "title": "AI skills & specializations",
-  "subtitle": "Filter by category to explore what each one does.",
-  "accent": "var(--accent-purple)",
-  "data": { "categories": [ /* type-specific payload */ ] }
-}
-\`\`\`
-
-- **id** — stable unique identifier (used by get/update/delete/reorder).
-- **type** — the renderer. One of: \`hero\`, \`skills\`, \`recommendations\`, \`credits\`, \`stats\`, \`prompts\`.
-- **enabled** — when \`false\` the section is hidden from the public page.
-- **eyebrow / title / subtitle / accent** — the section shell heading + accent color.
-- **data** — the type-specific payload. For \`skills\` it is \`{ categories: [{ id, label, accent, items: [{ name, description, url? }] }] }\`.
+The public **AI Hub** page has four curated content sections — **Skills**, **Recommendations**, **Free Credits**, and **Prompt library** — each backed by its own relational table and independently CRUD-able. MCP exposes per-section read tools (public) and write tools (guarded), mirroring the REST surface under \`/api/ai/*\`. The page *skeleton* (section order, headings, hero/stats) lives in the \`aiPage\` singleton and is read via \`get_ai_page\`.
 
 ### Read tools (public, no auth)
 
-- **\`get_ai_page\`** — the full config: \`{ sectionTypes, sections }\`.
-- **\`list_ai_sections\`** — compact summaries: \`{ id, type, title, enabled, order }\` per section.
-- **\`get_ai_section\`** \`{ id }\` — one section including its full \`data\` payload. *This is the canonical "get section" call — read it first to learn a section's exact shape before editing.*
-
-Also available as an MCP **resource** at \`aiyu://ai-page\`, and over REST at \`GET /api/ai-page\`.
+- **\`get_ai_page\`** — the whole page: ordered section skeleton with the four content sections hydrated. Resource \`aiyu://ai-page\`, REST \`GET /api/ai-page\`.
+- **\`list_ai_skills\`** — \`{ categories: [{ id, label, accent, items: [{ id, name, description, url? }] }] }\`. Resource \`aiyu://ai-skills\`, REST \`GET /api/ai/skills\`.
+- **\`list_ai_recommendations\`** — \`{ cards: [{ id, name, url, rating, accent, blurb, tags }] }\`. Resource \`aiyu://ai-recommendations\`, REST \`GET /api/ai/recommendations\`.
+- **\`list_ai_credits\`** — \`{ rows: [{ id, name, offer, url, noCard, freeApi, note }] }\`. Resource \`aiyu://ai-credits\`, REST \`GET /api/ai/credits\`.
+- **\`list_ai_prompts\`** — \`{ items: [{ id, title, role, prompt }] }\`. Resource \`aiyu://ai-prompts\`, REST \`GET /api/ai/prompts\`.
 
 ### Write tools (require authorization)
 
-Writes require the MCP **write access** switch enabled in \`/admin/mcp\` **and** an \`Authorization: Bearer <token>\` header on every request (mint the token in \`/admin/mcp\`). Each write validates its input, re-persists the \`aiPage\` singleton, invalidates the page cache, and records an audit-log entry.
+Writes require the MCP **write access** switch enabled in \`/admin/mcp\` **and** an \`Authorization: Bearer <token>\` header on every request (mint the token in \`/admin/mcp\`). Each write validates its input, persists to the section's table, invalidates the page cache, and records an audit-log entry. Every field except \`id\` is optional on update; only supplied fields change.
 
-- **\`create_ai_section\`** \`{ type, id?, title?, subtitle?, eyebrow?, accent?, enabled?, data?, index? }\` — add a section (\`type\` is required and must be a supported type; \`index\` sets an insertion position, otherwise appended).
-- **\`update_ai_section\`** \`{ id, title?, subtitle?, eyebrow?, accent?, enabled?, data? }\` — patch fields on an existing section; a supplied \`data\` **replaces** the payload wholesale.
-- **\`delete_ai_section\`** \`{ id }\` — remove a section (destructive).
-- **\`reorder_ai_sections\`** \`{ order }\` — \`order\` must be a permutation of every existing section id (each exactly once).
+- **Skills** — \`create_ai_skill_category { label, accent? }\`, \`update_ai_skill_category { id, label?, accent? }\`, \`delete_ai_skill_category { id }\` (cascades its skills); \`create_ai_skill { categoryId, name, description?, url? }\`, \`update_ai_skill { id, categoryId?, name?, description?, url? }\`, \`delete_ai_skill { id }\`.
+- **Recommendations** — \`create_ai_recommendation { name, url?, rating?, accent?, blurb?, tags? }\`, \`update_ai_recommendation { id, … }\`, \`delete_ai_recommendation { id }\`.
+- **Free Credits** — \`create_ai_credit { name, offer?, url?, noCard?, freeApi?, note? }\`, \`update_ai_credit { id, … }\`, \`delete_ai_credit { id }\`.
+- **Prompts** — \`create_ai_prompt { title, prompt, role? }\`, \`update_ai_prompt { id, … }\`, \`delete_ai_prompt { id }\`.
 
 ### Typical editing flow
 
-1. \`list_ai_sections\` → find the section id you want.
-2. \`get_ai_section { id }\` → read its current \`data\` shape.
-3. \`update_ai_section { id, data }\` (or \`create_ai_section { type, data }\` to add a new one).
-4. Reload \`/ai\` — changes are live once the write invalidates the cache.
+1. \`list_ai_skills\` (or the section you want) → find the item \`id\`.
+2. \`update_ai_skill { id, description }\` — patch just the fields you want, or \`create_ai_skill { categoryId, name }\` to add one.
+3. Reload \`/ai\` — changes are live once the write invalidates the cache.
+
+> The old generic \`create/update/delete/reorder_ai_section\` tools and \`PUT /api/ai-page\` were removed in favor of these per-section endpoints. Section order/visibility is set with \`PUT /api/ai/layout\`.
 `;
 }
 
@@ -352,7 +349,11 @@ export function getOpenApiDocument() {
             '/api/gallery': { get: publicJsonOperation('Public gallery list') },
             '/api/deployments': { get: publicJsonOperation('Live deployment list') },
             '/api/github/stats': { get: publicJsonOperation('GitHub statistics') },
-            '/api/ai-page': { get: publicJsonOperation('AI Hub page configuration (ordered sections)') },
+            '/api/ai-page': { get: publicJsonOperation('AI Hub page (ordered sections, content hydrated)') },
+            '/api/ai/skills': { get: publicJsonOperation('AI skills grouped by category') },
+            '/api/ai/recommendations': { get: publicJsonOperation('Recommended AI stack cards') },
+            '/api/ai/credits': { get: publicJsonOperation('Free credits & free tiers') },
+            '/api/ai/prompts': { get: publicJsonOperation('Prompt library') },
             '/api/contact/message': {
                 post: {
                     summary: 'Submit a contact message',
@@ -499,6 +500,10 @@ Use this skill to discover and consume the Aiyu portfolio APIs.
 - GET /api/blogs
 - GET /api/gallery
 - GET /api/deployments
+- GET /api/ai/skills
+- GET /api/ai/recommendations
+- GET /api/ai/credits
+- GET /api/ai/prompts
 - POST /api/contact/message
 `,
     'aiyu-site-navigation': `# Aiyu Site Navigation
