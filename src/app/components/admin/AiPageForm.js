@@ -1,284 +1,171 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from 'react';
-import {
-    DndContext,
-    closestCenter,
-    KeyboardSensor,
-    PointerSensor,
-    useSensor,
-    useSensors,
-} from '@dnd-kit/core';
-import {
-    arrayMove,
-    SortableContext,
-    sortableKeyboardCoordinates,
-    verticalListSortingStrategy,
-    useSortable,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, ChevronDown, ChevronRight, Trash2, Loader2, Save, Plus, Eye, EyeOff } from 'lucide-react';
+import React, { useState } from 'react';
+import { Loader2, Sparkles } from 'lucide-react';
 import Toast from './Toast';
-import { Field, TextInput, TextArea, AccentPicker, newId } from './aiPage/fields';
-import SectionBodyEditor from './aiPage/SectionBodyEditor';
-import { DEFAULT_AI_PAGE, AI_SECTION_TYPES } from '@/lib/aiPageDefaults';
+import { postJson } from './aiSections/api';
+import SkillsManager from './aiSections/SkillsManager';
+import CardListManager from './aiSections/CardListManager';
+import LayoutManager from './aiSections/LayoutManager';
 
-const TYPE_LABELS = {
-    hero: 'Hero',
-    skills: 'Skills',
-    recommendations: 'Recommendations',
-    credits: 'Free Credits',
-    stats: 'Live Telemetry',
-    prompts: 'Prompt Library',
-};
+/**
+ * AI Hub editor. Card-based, live CRUD against the per-section REST APIs
+ * (/api/ai/*): the four content sections are managed independently, and a
+ * Layout tab controls section order/visibility/headings + hero/stats. There is
+ * no single "big save" for content — each add/edit/delete persists immediately.
+ */
 
-/** Deep clone (structuredClone with JSON fallback for older runtimes). */
-function clone(obj) {
-    if (typeof structuredClone === 'function') return structuredClone(obj);
-    return JSON.parse(JSON.stringify(obj));
-}
+const CONTENT_TABS = [
+    { id: 'skills', label: 'Skills' },
+    { id: 'recommendations', label: 'Recommendations' },
+    { id: 'credits', label: 'Free Credits' },
+    { id: 'prompts', label: 'Prompt Library' },
+];
+
+const RECOMMENDATION_FIELDS = [
+    { name: 'name', label: 'Name', type: 'text', placeholder: 'e.g. Groq Cloud' },
+    { name: 'url', label: 'URL', type: 'text', placeholder: 'https://' },
+    { name: 'rating', label: 'Rating (0–5)', type: 'number', min: 0, max: 5 },
+    { name: 'accent', label: 'Accent', type: 'accent' },
+    { name: 'blurb', label: 'Why I recommend it', type: 'textarea', rows: 3 },
+    { name: 'tags', label: 'Tags', type: 'tags', placeholder: 'e.g. low-latency' },
+];
+
+const CREDIT_FIELDS = [
+    { name: 'name', label: 'Name', type: 'text', placeholder: 'e.g. Google AI Studio' },
+    { name: 'offer', label: 'Offer', type: 'textarea', rows: 2 },
+    { name: 'url', label: 'URL', type: 'text', placeholder: 'https://' },
+    { name: 'freeApi', label: 'Free API key', type: 'switch' },
+    { name: 'noCard', label: 'No credit card', type: 'switch' },
+    { name: 'note', label: 'Note', type: 'text' },
+];
+
+const PROMPT_FIELDS = [
+    { name: 'title', label: 'Title', type: 'text', placeholder: 'e.g. TypeScript Agent Developer' },
+    { name: 'role', label: 'Role / tag', type: 'text', placeholder: 'e.g. Engineering' },
+    { name: 'prompt', label: 'Prompt', type: 'textarea', rows: 6 },
+];
 
 export default function AiPageForm() {
-    const [sections, setSections] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
+    const [tab, setTab] = useState('content');
+    const [contentTab, setContentTab] = useState('skills');
     const [notification, setNotification] = useState(null);
-    const [openId, setOpenId] = useState(null);
+    const [seeding, setSeeding] = useState(false);
 
-    const sensors = useSensors(
-        useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-        useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-    );
-
-    useEffect(() => {
-        (async () => {
-            try {
-                const res = await fetch('/api/ai-page');
-                const data = await res.json();
-                const loaded = Array.isArray(data?.sections) && data.sections.length
-                    ? data.sections
-                    : clone(DEFAULT_AI_PAGE.sections);
-                // Guarantee every section has a stable id for dnd keys.
-                setSections(loaded.map((s) => ({ ...s, id: s.id || newId('section') })));
-            } catch {
-                setSections(clone(DEFAULT_AI_PAGE.sections));
-                setNotification({ success: false, message: 'Could not load config — showing defaults.' });
-            } finally {
-                setLoading(false);
-            }
-        })();
-    }, []);
-
-    const templatesByType = useMemo(() => {
-        const map = {};
-        for (const s of DEFAULT_AI_PAGE.sections) map[s.type] = s;
-        return map;
-    }, []);
-
-    const updateSection = (id, patch) =>
-        setSections((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
-
-    const updateSectionData = (id, data) =>
-        setSections((prev) => prev.map((s) => (s.id === id ? { ...s, data } : s)));
-
-    const removeSection = (id) => setSections((prev) => prev.filter((s) => s.id !== id));
-
-    const addSection = (type) => {
-        const template = templatesByType[type] || { type, enabled: true, title: TYPE_LABELS[type], data: {} };
-        const next = { ...clone(template), id: newId(type), enabled: true };
-        setSections((prev) => [...prev, next]);
-        setOpenId(next.id);
+    const notify = (success, message) => {
+        setNotification({ success, message });
+        setTimeout(() => setNotification(null), 2600);
     };
 
-    const onDragEnd = (event) => {
-        const { active, over } = event;
-        if (!over || active.id === over.id) return;
-        setSections((prev) => {
-            const oldIndex = prev.findIndex((s) => s.id === active.id);
-            const newIndex = prev.findIndex((s) => s.id === over.id);
-            if (oldIndex === -1 || newIndex === -1) return prev;
-            return arrayMove(prev, oldIndex, newIndex);
-        });
-    };
-
-    const save = async () => {
-        setSaving(true);
-        setNotification(null);
+    const seedDefaults = async () => {
+        if (!confirm('Seed the four sections with the bundled defaults? This only fills sections that are currently empty.')) return;
+        setSeeding(true);
         try {
-            const res = await fetch('/api/ai-page', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sections }),
-            });
-            if (!res.ok) throw new Error('save failed');
-            setNotification({ success: true, message: 'AI Hub saved.' });
-        } catch {
-            setNotification({ success: false, message: 'Save failed. Check your session and try again.' });
+            const res = await postJson('/api/ai/seed', {});
+            const total = Object.values(res.seeded || {}).reduce((a, b) => a + b, 0);
+            notify(true, total > 0 ? `Seeded defaults (${total} items). Reopen a tab to see them.` : 'Nothing to seed — sections already have content.');
+        } catch (e) {
+            notify(false, e.message || 'Seed failed.');
         } finally {
-            setSaving(false);
+            setSeeding(false);
         }
     };
 
-    if (loading) {
-        return (
-            <div className="flex items-center gap-3 py-20 text-slate-400">
-                <Loader2 className="h-5 w-5 animate-spin" /> Loading AI Hub config…
-            </div>
-        );
-    }
-
     return (
         <div className="space-y-6">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-                <p className="font-mono text-xs text-slate-500">
-                    {sections.filter((s) => s.enabled !== false).length}/{sections.length} sections live · drag to reorder
-                </p>
-                <div className="flex items-center gap-3">
-                    <AddSectionMenu onAdd={addSection} />
-                    <button
-                        type="button"
-                        onClick={save}
-                        disabled={saving}
-                        className="flex items-center gap-2 rounded-xl border border-cyan-500/30 bg-cyan-500/15 px-5 py-2.5 font-mono text-xs uppercase tracking-wider text-cyan-300 transition-colors hover:bg-cyan-500/25 disabled:opacity-50"
-                    >
-                        {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                        Save
-                    </button>
+            {/* Top-level tabs */}
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/5 pb-3">
+                <div className="flex gap-2">
+                    <TopTab label="Content" active={tab === 'content'} onClick={() => setTab('content')} />
+                    <TopTab label="Layout" active={tab === 'layout'} onClick={() => setTab('layout')} />
                 </div>
+                <button
+                    type="button"
+                    onClick={seedDefaults}
+                    disabled={seeding}
+                    className="flex items-center gap-2 rounded-lg border border-purple-500/25 bg-purple-500/10 px-3.5 py-2 font-mono text-[0.7rem] uppercase tracking-wider text-purple-300 transition-colors hover:bg-purple-500/20 disabled:opacity-50"
+                    title="One-time backfill of empty sections from the bundled defaults"
+                >
+                    {seeding ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                    Seed defaults
+                </button>
             </div>
 
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-                <SortableContext items={sections.map((s) => s.id)} strategy={verticalListSortingStrategy}>
-                    <div className="space-y-3">
-                        {sections.map((section) => (
-                            <SortableSection
-                                key={section.id}
-                                section={section}
-                                open={openId === section.id}
-                                onToggleOpen={() => setOpenId(openId === section.id ? null : section.id)}
-                                onChange={(patch) => updateSection(section.id, patch)}
-                                onChangeData={(data) => updateSectionData(section.id, data)}
-                                onRemove={() => removeSection(section.id)}
-                            />
+            {tab === 'content' ? (
+                <div className="space-y-6">
+                    {/* Content section sub-tabs */}
+                    <div className="flex flex-wrap gap-2 font-mono text-xs">
+                        {CONTENT_TABS.map((t) => (
+                            <button
+                                key={t.id}
+                                type="button"
+                                onClick={() => setContentTab(t.id)}
+                                className={`rounded-full px-4 py-2 uppercase tracking-wider transition-colors ${
+                                    contentTab === t.id
+                                        ? 'border border-cyan-400/40 bg-cyan-500/15 text-cyan-200'
+                                        : 'border border-white/10 bg-white/[0.02] text-slate-400 hover:bg-white/5'
+                                }`}
+                            >
+                                {t.label}
+                            </button>
                         ))}
                     </div>
-                </SortableContext>
-            </DndContext>
+
+                    {/* Keep each manager mounted only when active so it (re)fetches fresh data. */}
+                    {contentTab === 'skills' && <SkillsManager notify={notify} />}
+                    {contentTab === 'recommendations' && (
+                        <CardListManager
+                            endpoint="/api/ai/recommendations"
+                            dataKey="cards"
+                            itemKey="recommendation"
+                            fields={RECOMMENDATION_FIELDS}
+                            titleField="name"
+                            blank={() => ({ name: '', url: '', rating: 5, accent: 'var(--accent-cyan)', blurb: '', tags: [] })}
+                            notify={notify}
+                        />
+                    )}
+                    {contentTab === 'credits' && (
+                        <CardListManager
+                            endpoint="/api/ai/credits"
+                            dataKey="rows"
+                            itemKey="credit"
+                            fields={CREDIT_FIELDS}
+                            titleField="name"
+                            blank={() => ({ name: '', offer: '', url: '', noCard: true, freeApi: true, note: '' })}
+                            notify={notify}
+                        />
+                    )}
+                    {contentTab === 'prompts' && (
+                        <CardListManager
+                            endpoint="/api/ai/prompts"
+                            dataKey="items"
+                            itemKey="prompt"
+                            fields={PROMPT_FIELDS}
+                            titleField="title"
+                            blank={() => ({ title: '', role: '', prompt: '' })}
+                            notify={notify}
+                        />
+                    )}
+                </div>
+            ) : (
+                <LayoutManager notify={notify} />
+            )}
 
             <Toast notification={notification} />
         </div>
     );
 }
 
-function AddSectionMenu({ onAdd }) {
-    const [open, setOpen] = useState(false);
+function TopTab({ label, active, onClick }) {
     return (
-        <div className="relative">
-            <button
-                type="button"
-                onClick={() => setOpen((v) => !v)}
-                className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 font-mono text-xs uppercase tracking-wider text-slate-300 transition-colors hover:bg-white/10"
-            >
-                <Plus className="h-4 w-4" /> Add section
-            </button>
-            {open && (
-                <div
-                    className="absolute right-0 z-20 mt-2 w-52 overflow-hidden rounded-xl border border-white/10 bg-[#0b0f19] shadow-2xl"
-                    onMouseLeave={() => setOpen(false)}
-                >
-                    {AI_SECTION_TYPES.map((type) => (
-                        <button
-                            key={type}
-                            type="button"
-                            onClick={() => {
-                                onAdd(type);
-                                setOpen(false);
-                            }}
-                            className="block w-full px-4 py-2.5 text-left text-sm text-slate-300 transition-colors hover:bg-cyan-500/10 hover:text-cyan-300"
-                        >
-                            {TYPE_LABELS[type] || type}
-                        </button>
-                    ))}
-                </div>
-            )}
-        </div>
-    );
-}
-
-function SortableSection({ section, open, onToggleOpen, onChange, onChangeData, onRemove }) {
-    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: section.id });
-    const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.6 : 1 };
-    const enabled = section.enabled !== false;
-
-    return (
-        <div
-            ref={setNodeRef}
-            style={style}
-            className={`rounded-2xl border bg-white/[0.02] transition-colors ${
-                enabled ? 'border-white/10' : 'border-white/5 opacity-60'
+        <button
+            type="button"
+            onClick={onClick}
+            className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
+                active ? 'bg-white/10 text-white' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
             }`}
         >
-            <div className="flex items-center gap-3 p-4">
-                <button
-                    type="button"
-                    {...attributes}
-                    {...listeners}
-                    className="cursor-grab touch-none text-slate-600 transition-colors hover:text-cyan-400 active:cursor-grabbing"
-                    title="Reorder"
-                >
-                    <GripVertical className="h-5 w-5" />
-                </button>
-
-                <button type="button" onClick={onToggleOpen} className="flex flex-1 items-center gap-3 text-left">
-                    {open ? <ChevronDown className="h-4 w-4 text-slate-500" /> : <ChevronRight className="h-4 w-4 text-slate-500" />}
-                    <span className="rounded-md bg-white/5 px-2 py-0.5 font-mono text-[0.65rem] uppercase tracking-wider text-slate-400">
-                        {TYPE_LABELS[section.type] || section.type}
-                    </span>
-                    <span className="text-sm font-semibold text-white">{section.title || 'Untitled section'}</span>
-                </button>
-
-                <button
-                    type="button"
-                    onClick={() => onChange({ enabled: !enabled })}
-                    className={`rounded-md p-2 transition-colors ${
-                        enabled ? 'text-cyan-400 hover:bg-cyan-500/10' : 'text-slate-600 hover:bg-white/5'
-                    }`}
-                    title={enabled ? 'Enabled — click to hide' : 'Hidden — click to show'}
-                >
-                    {enabled ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                </button>
-                <button
-                    type="button"
-                    onClick={onRemove}
-                    className="rounded-md p-2 text-slate-600 transition-colors hover:bg-red-500/10 hover:text-red-400"
-                    title="Delete section"
-                >
-                    <Trash2 className="h-4 w-4" />
-                </button>
-            </div>
-
-            {open && (
-                <div className="space-y-5 border-t border-white/5 p-5">
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <Field label="Eyebrow">
-                            <TextInput value={section.eyebrow} onChange={(eyebrow) => onChange({ eyebrow })} />
-                        </Field>
-                        <Field label="Accent">
-                            <AccentPicker value={section.accent} onChange={(accent) => onChange({ accent })} />
-                        </Field>
-                    </div>
-                    <Field label="Title">
-                        <TextInput value={section.title} onChange={(title) => onChange({ title })} />
-                    </Field>
-                    <Field label="Subtitle">
-                        <TextArea value={section.subtitle} rows={2} onChange={(subtitle) => onChange({ subtitle })} />
-                    </Field>
-
-                    <div className="border-t border-white/5 pt-4">
-                        <SectionBodyEditor type={section.type} data={section.data} onChange={onChangeData} />
-                    </div>
-                </div>
-            )}
-        </div>
+            {label}
+        </button>
     );
 }

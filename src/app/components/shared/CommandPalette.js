@@ -174,89 +174,130 @@ export default function CommandPalette() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh] px-4 backdrop-blur-sm bg-black/40"
+                    className="fixed inset-0 z-[100] flex items-start justify-center px-4 pt-[14vh] font-mono"
+                    style={{
+                        backgroundColor: 'color-mix(in srgb, var(--bg-primary) 55%, transparent)',
+                        backdropFilter: 'blur(10px) saturate(140%)',
+                        WebkitBackdropFilter: 'blur(10px) saturate(140%)',
+                    }}
                     onClick={(e) => {
                         if (e.target === e.currentTarget) setIsOpen(false);
                     }}
                 >
                     <motion.div
                         data-lenis-prevent
-                        initial={{ scale: 0.95, opacity: 0, y: -20 }}
+                        initial={{ scale: 0.98, opacity: 0, y: -16 }}
                         animate={{ scale: 1, opacity: 1, y: 0 }}
-                        exit={{ scale: 0.95, opacity: 0, y: -20 }}
+                        exit={{ scale: 0.98, opacity: 0, y: -16 }}
                         transition={{ type: "spring", duration: 0.3 }}
-                        className="w-full max-w-2xl flex flex-col overflow-hidden rounded-xl border border-gray-700 bg-[#0d1117] shadow-2xl ring-1 ring-white/10"
+                        className="flex w-full max-w-2xl flex-col overflow-hidden rounded-xl border shadow-2xl"
+                        style={{
+                            borderColor: 'var(--hairline-strong)',
+                            backgroundColor: 'color-mix(in srgb, var(--bg-surface) 96%, transparent)',
+                            boxShadow: '0 24px 60px -20px rgba(0, 0, 0, 0.55)',
+                        }}
                     >
-                        {/* Input Area */}
-                        <div className="flex items-center border-b border-gray-800 px-4 py-3">
-                            <Search className="mr-3 h-5 w-5 text-gray-400" />
+                        {/* Input Area — terminal-style prompt */}
+                        <div className="flex items-center gap-2.5 border-b px-4 py-3.5" style={{ borderColor: 'var(--hairline)' }}>
+                            <span aria-hidden="true" className="text-sm font-semibold" style={{ color: 'var(--accent-cyan)' }}>$</span>
+                            <Search size={15} style={{ color: 'var(--text-muted)' }} aria-hidden="true" />
                             <input
                                 autoFocus
                                 type="text"
-                                placeholder="Search pages, blogs, projects, apps..."
-                                className="flex-1 bg-transparent text-lg text-gray-200 placeholder-gray-500 focus:outline-none"
+                                placeholder="search pages, blogs, projects, apps…"
+                                className="flex-1 bg-transparent text-base placeholder:text-[color:var(--text-muted)] focus:outline-none"
+                                style={{ color: 'var(--text-bright)' }}
                                 value={query}
                                 onChange={(e) => setQuery(e.target.value)}
                                 onKeyDown={handleInputKeyDown}
                             />
                             <div className="flex items-center gap-2">
-                                {isSearching && <span className="text-xs text-gray-500 animate-pulse hidden sm:inline">Searching...</span>}
-                                <span className="hidden md:inline-block rounded border border-gray-700 bg-gray-800 px-1.5 py-0.5 text-xs text-gray-400">
-                                    Esc
-                                </span>
+                                {isSearching && (
+                                    <span className="hidden animate-pulse text-xs sm:inline" style={{ color: 'var(--accent-cyan)' }}>
+                                        searching…
+                                    </span>
+                                )}
+                                <kbd
+                                    className="hidden rounded border px-1.5 py-0.5 text-[11px] md:inline-block"
+                                    style={{ borderColor: 'var(--hairline-strong)', color: 'var(--text-muted)' }}
+                                >
+                                    esc
+                                </kbd>
                             </div>
                         </div>
 
                         {/* Results */}
-                        <div className="max-h-[60vh] overflow-y-auto p-2 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-700">
+                        <div className="max-h-[58vh] overflow-y-auto p-2">
                             {filteredItems.length === 0 ? (
-                                <div className="py-12 text-center text-sm text-gray-500">
-                                    {cleanQuery ? "No results found." : "Start typing to search..."}
+                                <div className="py-12 text-center text-sm" style={{ color: 'var(--text-muted)' }}>
+                                    {cleanQuery ? "// no results found" : "// start typing to search"}
                                 </div>
                             ) : (
                                 <>
-                                    <div className="mb-2 px-2 text-xs font-semibold uppercase text-gray-500">
-                                        Results
+                                    <div className="mb-1 px-3 pt-1 text-[11px] uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
+                                        results
                                     </div>
-                                    {filteredItems.map((item, index) => (
-                                        <motion.button
-                                            key={item.path || item.command}
-                                            layout
-                                            onClick={() => handleSelect(item)}
-                                            onMouseEnter={() => setActiveIndex(index)}
-                                            className={`flex w-full items-center justify-between rounded-lg px-3 py-3 transition-colors ${index === activeIndex
-                                                ? "bg-blue-600/10 text-blue-400"
-                                                : "text-gray-300 hover:bg-gray-800/50"
-                                                }`}
-                                        >
-                                            <div className="flex items-center gap-3 w-full overflow-hidden">
-                                                <div className={`flex h-8 w-8 min-w-8 items-center justify-center rounded-md ${index === activeIndex ? "bg-blue-600/20 text-blue-400" : "bg-gray-800 text-gray-400"
-                                                    }`}>
-                                                    {item.type === "command" ? <Terminal size={18} /> : item.icon}
+                                    {filteredItems.map((item, index) => {
+                                        const active = index === activeIndex;
+                                        return (
+                                            <motion.button
+                                                key={item.path || item.command}
+                                                layout
+                                                onClick={() => handleSelect(item)}
+                                                onMouseEnter={() => setActiveIndex(index)}
+                                                className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 transition-colors"
+                                                style={{
+                                                    backgroundColor: active
+                                                        ? 'color-mix(in srgb, var(--accent-cyan) 12%, transparent)'
+                                                        : 'transparent',
+                                                }}
+                                            >
+                                                <div className="flex w-full items-center gap-3 overflow-hidden">
+                                                    <div
+                                                        className="flex h-8 w-8 min-w-8 items-center justify-center rounded-md"
+                                                        style={{
+                                                            backgroundColor: active
+                                                                ? 'color-mix(in srgb, var(--accent-cyan) 18%, transparent)'
+                                                                : 'var(--surface-tile)',
+                                                            color: active ? 'var(--accent-cyan)' : 'var(--text-muted)',
+                                                        }}
+                                                    >
+                                                        {item.type === "command" ? <Terminal size={16} /> : item.icon}
+                                                    </div>
+                                                    <div className="flex w-full flex-col items-start gap-0.5 overflow-hidden">
+                                                        <span
+                                                            className="w-full truncate text-left text-sm font-medium"
+                                                            style={{ color: active ? 'var(--text-bright)' : 'var(--text-secondary)' }}
+                                                        >
+                                                            {item.title}
+                                                        </span>
+                                                        <span className="w-full truncate text-left text-xs" style={{ color: 'var(--text-muted)' }}>
+                                                            {item.description || item.path}
+                                                        </span>
+                                                    </div>
                                                 </div>
-                                                <div className="flex flex-col items-start gap-0.5 w-full overflow-hidden">
-                                                    <span className={`text-sm font-medium truncate w-full text-left ${index === activeIndex ? "text-blue-200" : "text-gray-200"}`}>
-                                                        {item.title}
-                                                    </span>
-                                                    <span className="text-xs text-gray-500 truncate w-full text-left">
-                                                        {item.description || item.path}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            {index === activeIndex && (
-                                                <ArrowRight size={16} className="text-blue-400 opacity-50 flex-shrink-0 ml-2" />
-                                            )}
-                                        </motion.button>
-                                    ))}
+                                                {active && (
+                                                    <ArrowRight size={15} className="ml-2 flex-shrink-0" style={{ color: 'var(--accent-cyan)' }} />
+                                                )}
+                                            </motion.button>
+                                        );
+                                    })}
                                 </>
                             )}
                         </div>
 
-                        {/* Footer - Hidden on mobile/tablet */}
-                        <div className="hidden lg:flex border-t border-gray-800 bg-gray-900/50 px-4 py-2 text-xs text-gray-500 justify-end">
+                        {/* Footer — bracketed key hints (desktop only) */}
+                        <div
+                            className="hidden items-center justify-between border-t px-4 py-2 text-[11px] lg:flex"
+                            style={{ borderColor: 'var(--hairline)', color: 'var(--text-muted)' }}
+                        >
+                            <span>
+                                <span style={{ color: 'var(--accent-cyan)' }}>$</span> aiyu search
+                            </span>
                             <div className="flex gap-4">
-                                <span>Use arrows to navigate</span>
-                                <span>Enter to select</span>
+                                <span><span style={{ color: 'var(--text-secondary)' }}>[↑↓]</span> navigate</span>
+                                <span><span style={{ color: 'var(--text-secondary)' }}>[↵]</span> select</span>
+                                <span><span style={{ color: 'var(--text-secondary)' }}>[esc]</span> close</span>
                             </div>
                         </div>
                     </motion.div>

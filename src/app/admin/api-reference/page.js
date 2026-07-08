@@ -57,7 +57,7 @@ const sections = [
     { id: 'create-blog', label: 'Create Blog Post' },
     { id: 'upload-image', label: 'Upload Image' },
     { id: 'system-prompt', label: 'System Prompt' },
-    { id: 'ai-hub-skills', label: 'AI Hub · Skills' },
+    { id: 'ai-hub-sections', label: 'AI Hub · Sections' },
     { id: 'examples', label: 'Examples' },
     { id: 'notes', label: 'Notes' },
 ];
@@ -132,45 +132,44 @@ Website database context (JSON, indentation 2)
     const systemPromptCurl = `curl -X GET "http://localhost:3000/api/admin/system-prompt" \\
   -H "Cookie: token=<admin_session_token>"`;
 
-    // ── AI Hub · Skills section ──
-    const skillsSectionShape = useMemo(() => ({
-        id: 'skills',
-        type: 'skills',
-        enabled: true,
-        eyebrow: 'Agent skills',
-        title: 'AI skills & specializations',
-        subtitle: 'Filter by category to explore what each one does.',
-        accent: 'var(--accent-purple)',
-        data: {
-            categories: [
-                {
-                    id: 'motion',
-                    label: 'Motion & Animation',
-                    accent: 'var(--accent-cyan)',
-                    items: [
-                        {
-                            name: 'GSAP Core',
-                            description: 'Framework-agnostic JavaScript animation — tweens, easing, stagger.',
-                            url: 'https://gsap.com/docs/v3/',
-                        },
-                    ],
-                },
-            ],
-        },
+    // ── AI Hub · Sections ──
+    const skillsShape = useMemo(() => ({
+        categories: [
+            {
+                id: 'cat_motion',
+                label: 'Motion & Animation',
+                accent: 'var(--accent-cyan)',
+                items: [
+                    {
+                        id: 'skill_gsap',
+                        name: 'GSAP Core',
+                        description: 'Framework-agnostic JavaScript animation — tweens, easing, stagger.',
+                        url: 'https://gsap.com/docs/v3/',
+                    },
+                ],
+            },
+        ],
     }), []);
-    const skillsData = skillsSectionShape.data;
-    const aiPageGetCurl = `curl "http://localhost:3000/api/ai-page"`;
+    const aiSkillsGetCurl = `curl "http://localhost:3000/api/ai/skills"`;
+    const createSkillCurl = `curl -X POST "http://localhost:3000/api/ai/skills/items" \\
+  -H "Authorization: Bearer YOUR_TOKEN" \\
+  -H "Content-Type: application/json" \\
+  -d '${JSON.stringify({ categoryId: 'cat_motion', name: 'ScrollTrigger', description: 'Scroll-linked animation: pinning, scrub, parallax.', url: 'https://gsap.com/docs/v3/Plugins/ScrollTrigger/' })}'`;
+    const createPromptCurl = `curl -X POST "http://localhost:3000/api/ai/prompts" \\
+  -H "Authorization: Bearer YOUR_TOKEN" \\
+  -H "Content-Type: application/json" \\
+  -d '${JSON.stringify({ title: 'Grounded RAG Answerer', role: 'Retrieval', prompt: 'Answer ONLY from the provided <context>…' })}'`;
     const mcpAccept = `Content-Type: application/json
 Accept: application/json, text/event-stream`;
-    const getSkillsCurl = `curl -X POST "http://localhost:3000/api/mcp" \\
+    const listSkillsCurl = `curl -X POST "http://localhost:3000/api/mcp" \\
   -H "Content-Type: application/json" \\
   -H "Accept: application/json, text/event-stream" \\
-  -d '${JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'get_ai_section', arguments: { id: 'skills' } } })}'`;
-    const updateSkillsCurl = `curl -X POST "http://localhost:3000/api/mcp" \\
+  -d '${JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'list_ai_skills', arguments: {} } })}'`;
+    const createSkillMcpCurl = `curl -X POST "http://localhost:3000/api/mcp" \\
   -H "Authorization: Bearer YOUR_MCP_TOKEN" \\
   -H "Content-Type: application/json" \\
   -H "Accept: application/json, text/event-stream" \\
-  -d '${JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'update_ai_section', arguments: { id: 'skills', data: skillsData } } })}'`;
+  -d '${JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'create_ai_skill', arguments: { categoryId: 'cat_motion', name: 'ScrollTrigger' } } })}'`;
 
     useEffect(() => {
         const handleScroll = () => {
@@ -396,76 +395,89 @@ Accept: application/json, text/event-stream`;
                         </div>
                     </section>
 
-                    <section id="ai-hub-skills" className="scroll-mt-24 rounded-2xl border border-white/10 bg-slate-900/60 p-6 space-y-5">
+                    <section id="ai-hub-sections" className="scroll-mt-24 rounded-2xl border border-white/10 bg-slate-900/60 p-6 space-y-5">
                         <div>
-                            <h2 className="text-sm font-semibold uppercase tracking-widest text-slate-400">AI Hub · Skills</h2>
+                            <h2 className="text-sm font-semibold uppercase tracking-widest text-slate-400">AI Hub · Sections</h2>
                             <p className="text-sm text-slate-300 mt-2">
-                                The <code className="text-cyan-300">/ai</code> page is schema-driven: an ordered array of <em>section</em>
-                                objects. The <code className="text-cyan-300">skills</code> section lists the AI skills your agents can use.
-                                Read it over public REST or the MCP read tools; edit it with the guarded MCP write tools.
+                                The four <code className="text-cyan-300">/ai</code> content sections — <strong>Skills</strong>,{' '}
+                                <strong>Recommendations</strong>, <strong>Free Credits</strong>, and <strong>Prompt library</strong> — are each
+                                independent, shareable data with their own REST + MCP CRUD. Reads are public; writes take an admin session or a
+                                bearer token.
                             </p>
                         </div>
 
                         <div className="rounded-lg border border-amber-500/25 bg-amber-500/5 p-3 text-xs text-amber-200/90">
-                            Writes go through the MCP endpoint and require <strong>write access</strong> enabled in{' '}
-                            <Link href="/admin/mcp" className="underline text-amber-200 hover:text-amber-100">/admin/mcp</Link>{' '}
-                            plus an <code>Authorization: Bearer &lt;token&gt;</code> header (generate the token there). Read tools are public.
-                        </div>
-
-                        <div>
-                            <p className="text-slate-300 text-sm mb-2">Read the whole page config (REST, public)</p>
-                            <code className="text-sm text-cyan-300 block mb-2">GET /api/ai-page</code>
-                            <ApiCodeBlock language="bash" code={aiPageGetCurl} />
-                        </div>
-
-                        <div>
-                            <p className="text-slate-300 text-sm mb-2">The <code>skills</code> section shape</p>
-                            <ApiCodeBlock language="json" code={JSON.stringify(skillsSectionShape, null, 2)} />
-                            <p className="text-xs text-slate-500 mt-2">
-                                Each category holds <code>items</code> of <code>{'{ name, description, url? }'}</code>. <code>url</code> is
-                                optional — when set, the skill name links out on the public page.
-                            </p>
+                            Write endpoints (POST/PUT/DELETE) accept <strong>either</strong> the admin session cookie{' '}
+                            <strong>or</strong> an <code>Authorization: Bearer &lt;token&gt;</code> header — the{' '}
+                            <Link href="/admin/mcp" className="underline text-amber-200 hover:text-amber-100">MCP write token</Link> or the blog
+                            API token above. Reads need no auth.
                         </div>
 
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                             <div className="rounded-lg border border-white/10 bg-black/20 p-3">
-                                <p className="text-xs font-mono uppercase tracking-widest text-cyan-400 mb-1">Read tools (public)</p>
+                                <p className="text-xs font-mono uppercase tracking-widest text-cyan-400 mb-1">Public reads (REST)</p>
                                 <ul className="list-disc pl-4 space-y-1 text-xs text-slate-400">
-                                    <li><code>get_ai_page</code> — full config</li>
-                                    <li><code>list_ai_sections</code> — id/type/title summaries</li>
-                                    <li><code>get_ai_section {'{ id }'}</code> — one section + data</li>
+                                    <li><code>GET /api/ai/skills</code></li>
+                                    <li><code>GET /api/ai/recommendations</code></li>
+                                    <li><code>GET /api/ai/credits</code></li>
+                                    <li><code>GET /api/ai/prompts</code></li>
+                                    <li><code>GET /api/ai-page</code> — whole page, hydrated</li>
                                 </ul>
                             </div>
                             <div className="rounded-lg border border-white/10 bg-black/20 p-3">
-                                <p className="text-xs font-mono uppercase tracking-widest text-fuchsia-400 mb-1">Write tools (token)</p>
+                                <p className="text-xs font-mono uppercase tracking-widest text-fuchsia-400 mb-1">Writes (session or token)</p>
                                 <ul className="list-disc pl-4 space-y-1 text-xs text-slate-400">
-                                    <li><code>create_ai_section {'{ type, data, … }'}</code></li>
-                                    <li><code>update_ai_section {'{ id, data, … }'}</code></li>
-                                    <li><code>delete_ai_section {'{ id }'}</code></li>
-                                    <li><code>reorder_ai_sections {'{ order }'}</code></li>
+                                    <li><code>POST /api/ai/skills/categories</code>, <code>…/categories/{'{id}'}</code></li>
+                                    <li><code>POST /api/ai/skills/items</code>, <code>…/items/{'{id}'}</code></li>
+                                    <li><code>POST|PUT|DELETE /api/ai/recommendations[/{'{id}'}]</code></li>
+                                    <li><code>POST|PUT|DELETE /api/ai/credits[/{'{id}'}]</code></li>
+                                    <li><code>POST|PUT|DELETE /api/ai/prompts[/{'{id}'}]</code></li>
                                 </ul>
                             </div>
                         </div>
 
                         <div>
+                            <p className="text-slate-300 text-sm mb-2">Read the skills section (REST, public)</p>
+                            <code className="text-sm text-cyan-300 block mb-2">GET /api/ai/skills</code>
+                            <ApiCodeBlock language="bash" code={aiSkillsGetCurl} />
+                            <p className="text-slate-300 text-sm mt-3 mb-2">Response shape</p>
+                            <ApiCodeBlock language="json" code={JSON.stringify(skillsShape, null, 2)} />
+                        </div>
+
+                        <div>
+                            <p className="text-slate-300 text-sm mb-2">Add a skill (REST write)</p>
+                            <code className="text-sm text-cyan-300 block mb-2">POST /api/ai/skills/items</code>
+                            <ApiCodeBlock language="bash" code={createSkillCurl} />
+                        </div>
+
+                        <div>
+                            <p className="text-slate-300 text-sm mb-2">Add a prompt (REST write)</p>
+                            <code className="text-sm text-cyan-300 block mb-2">POST /api/ai/prompts</code>
+                            <ApiCodeBlock language="bash" code={createPromptCurl} />
+                        </div>
+
+                        <div className="border-t border-white/5 pt-4">
+                            <p className="text-slate-300 text-sm mb-2">Same operations over MCP</p>
+                            <p className="text-xs text-slate-500 mb-3">
+                                Read tools (<code>list_ai_skills</code>, <code>list_ai_recommendations</code>, <code>list_ai_credits</code>,{' '}
+                                <code>list_ai_prompts</code>) are public. Write tools (<code>create/update/delete_ai_skill</code>,{' '}
+                                <code>…_ai_recommendation</code>, <code>…_ai_credit</code>, <code>…_ai_prompt</code>, plus skill categories) need the
+                                MCP write token.
+                            </p>
                             <p className="text-slate-300 text-sm mb-2">MCP request headers</p>
                             <ApiCodeBlock language="http" code={mcpAccept} />
                         </div>
 
                         <div>
-                            <p className="text-slate-300 text-sm mb-2">Get the skills section (MCP, no token)</p>
-                            <code className="text-sm text-cyan-300 block mb-2">POST /api/mcp → tools/call · get_ai_section</code>
-                            <ApiCodeBlock language="bash" code={getSkillsCurl} />
+                            <p className="text-slate-300 text-sm mb-2">List skills (MCP, no token)</p>
+                            <code className="text-sm text-cyan-300 block mb-2">POST /api/mcp → tools/call · list_ai_skills</code>
+                            <ApiCodeBlock language="bash" code={listSkillsCurl} />
                         </div>
 
                         <div>
-                            <p className="text-slate-300 text-sm mb-2">Update the skills section (MCP, requires token)</p>
-                            <code className="text-sm text-cyan-300 block mb-2">POST /api/mcp → tools/call · update_ai_section</code>
-                            <ApiCodeBlock language="bash" code={updateSkillsCurl} />
-                            <p className="text-xs text-slate-500 mt-2">
-                                <code>data</code> replaces the section payload wholesale — send the full <code>categories</code> array, not a diff.
-                                Read first with <code>get_ai_section</code>, edit, then send it back.
-                            </p>
+                            <p className="text-slate-300 text-sm mb-2">Add a skill (MCP, requires token)</p>
+                            <code className="text-sm text-cyan-300 block mb-2">POST /api/mcp → tools/call · create_ai_skill</code>
+                            <ApiCodeBlock language="bash" code={createSkillMcpCurl} />
                         </div>
                     </section>
 

@@ -337,8 +337,14 @@ const V2_PAGES = new Set([
 const SITE_VERSION_CACHE_TTL_MS = process.env.NODE_ENV === 'production' ? 30 * 1000 : 1000;
 let siteVersionCache = { value: 'classic', expiresAt: 0 };
 
+// Detail routes that also live under /v2 (e.g. /apps/<slug>, /projects/<slug>,
+// /blogs/<slug>). Their listing pages are in V2_PAGES; these prefixes let the
+// clean detail URLs rewrite to the v2 tree too, instead of falling through to
+// v1 and dropping the visitor out of the v2 shell.
+const V2_DETAIL_PREFIXES = ['/blogs/', '/apps/', '/projects/'];
+
 function isV2Page(pathname) {
-    return V2_PAGES.has(pathname) || pathname.startsWith('/blogs/');
+    return V2_PAGES.has(pathname) || V2_DETAIL_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 }
 
 function getRewriteTarget(pathname, activeVersion) {

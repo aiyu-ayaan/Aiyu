@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { Search } from 'lucide-react';
 import ThemeToggle from '../../ThemeToggle';
 import TerminalPath from '../../admin/TerminalPath';
 import { v2PublicPath } from '@/lib/siteVersion';
@@ -157,6 +158,20 @@ const V2Header = ({ logoText = '< aiyu />', data, config, socialData }) => {
                                 );
                             })}
                         </div>
+
+                        <button
+                            type="button"
+                            onClick={() => window.dispatchEvent(new CustomEvent('open-command-palette'))}
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-full border transition-transform duration-200 hover:scale-[1.03] active:scale-95"
+                            style={{
+                                borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
+                                backgroundColor: 'color-mix(in srgb, var(--bg-surface) 92%, transparent)',
+                            }}
+                            aria-label="Open search"
+                            title="Search (Ctrl + K)"
+                        >
+                            <Search size={14} style={{ color: 'var(--accent-cyan)' }} aria-hidden="true" />
+                        </button>
 
                         <ThemeToggle compact />
 

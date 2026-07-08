@@ -583,13 +583,16 @@ export async function GET(request) {
                     sections: config.sections || {
                         showProfile: true,
                         showStats: true,
+                        showMetrics: true,
                         showContributions: true,
                         showActivity: true,
                         showRepositories: true,
+                        showTopics: true,
                         showRepoDistribution: true,
                         showLanguages: true,
                         showLiveCommit: true,
-                        showRadarChart: true
+                        showRadarChart: true,
+                        showConnect: true
                     },
                     activityDistribution
                 };

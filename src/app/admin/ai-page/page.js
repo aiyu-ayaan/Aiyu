@@ -16,8 +16,10 @@ export default function EditAiPage() {
                     </Link>
                     <h1 className="mb-2 text-3xl font-bold tracking-tight text-white md:text-4xl">AI Hub</h1>
                     <p className="text-slate-400">
-                        Compose the public <span className="font-mono text-cyan-400">/ai</span> page — reorder, toggle, and edit
-                        each section. Live telemetry is pulled from AiLog automatically.
+                        Curate the public <span className="font-mono text-cyan-400">/ai</span> page as cards — add, edit, and
+                        remove skills, recommendations, free credits, and prompts. Each change saves live via the{' '}
+                        <span className="font-mono text-cyan-400">/api/ai/*</span> APIs. The Layout tab reorders and toggles
+                        sections; live telemetry comes from AiLog automatically.
                     </p>
                 </div>
 

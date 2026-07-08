@@ -19,6 +19,7 @@ import { getDeploymentSlug, getProjectSlug } from '@/lib/contentSlugs';
 import { getReadTime } from '@/app/components/blogs/blogUtils';
 import { getSiteUrl } from '@/lib/siteUrl';
 import { DEFAULT_AI_PAGE } from '@/lib/aiPageDefaults';
+import { hydrateAiSections } from '@/lib/aiSections';
 
 const IS_PRODUCTION_BUILD = process.env.NEXT_PHASE === 'phase-production-build';
 const ALLOW_DB_DURING_BUILD = process.env.ALLOW_DB_DURING_BUILD === 'true';
@@ -763,7 +764,7 @@ export async function getAiPageData() {
         const [config, stats] = await Promise.all([
             cache.getOrSet(
                 CACHE_KEYS.AI_PAGE,
-                async () => normalizeAiPageConfig(await getSingleton(prisma, 'aiPage')),
+                async () => hydrateAiSections(normalizeAiPageConfig(await getSingleton(prisma, 'aiPage'))),
                 CACHE_TTL.LONG
             ),
             cache.getOrSet(

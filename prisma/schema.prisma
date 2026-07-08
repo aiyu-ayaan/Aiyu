@@ -450,12 +450,92 @@ model McpConfig {
 // Schema-driven config for the public AI Hub (/ai). Json-blob singleton like
 // `About`/`Home`: `data` holds a `sections` array where each entry is a
 // self-describing block ({ id, type, enabled, order, title, ... , data }).
-// New section types can ship without a migration — the frontend component
-// registry (see components/ai/v2/registry) maps `type` -> renderer, and the
-// admin editor (/admin/ai-page) reorders/toggles/edits the array in place.
+// This is now the page *skeleton* only — section order, shells, and the
+// hero/stats payloads. The item content for the four curated sections
+// (skills, recommendations, credits, prompts) lives in the relational tables
+// below and is hydrated into the section `data` at read time (lib/aiSections).
 model AiPage {
   id        String   @id @default(cuid())
   data      Json     @default("{}")
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
+}
+
+// ───────────────────────── AI Hub section content ─────────────────────────
+// Relational, first-class content for the /ai sections so each is independently
+// CRUD-able over REST (/api/ai/*) and MCP, and shareable on its own. `id`s are
+// cuid strings (mapped to `_id` by lib/serialize). `displayOrder` drives render
+// order within a section, mirroring Project/Deployment.
+
+// A filter category on the Skills section (e.g. "Motion & Animation").
+model AiSkillCategory {
+  id           String    @id @default(cuid())
+  label        String
+  accent       String    @default("var(--accent-cyan)")
+  displayOrder Int       @default(0)
+  skills       AiSkill[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @default(now()) @updatedAt
+
+  @@index([displayOrder])
+}
+
+// A single skill under a category ({ name, description, url? }).
+model AiSkill {
+  id           String          @id @default(cuid())
+  categoryId   String
+  category     AiSkillCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  name         String
+  description  String          @default("")
+  url          String?
+  displayOrder Int             @default(0)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @default(now()) @updatedAt
+
+  @@index([categoryId, displayOrder])
+}
+
+// A recommended-stack card ("the stack I recommend").
+model AiRecommendation {
+  id           String   @id @default(cuid())
+  name         String
+  url          String   @default("")
+  rating       Int      @default(5)
+  accent       String   @default("var(--accent-cyan)")
+  blurb        String   @default("")
+  tags         String[] @default([])
+  displayOrder Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @default(now()) @updatedAt
+
+  @@index([displayOrder])
+}
+
+// A free-credits / free-tier ledger row.
+model AiCredit {
+  id           String   @id @default(cuid())
+  name         String
+  offer        String   @default("")
+  url          String   @default("")
+  noCard       Boolean  @default(true)
+  freeApi      Boolean  @default(true)
+  note         String   @default("")
+  displayOrder Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @default(now()) @updatedAt
+
+  @@index([displayOrder])
+}
+
+// A reusable system prompt in the prompt library.
+model AiPrompt {
+  id           String   @id @default(cuid())
+  title        String
+  role         String   @default("")
+  prompt       String
+  displayOrder Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @default(now()) @updatedAt
+
+  @@index([displayOrder])
 }
