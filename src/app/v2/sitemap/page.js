@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import SitemapV2 from '../../components/shared/v2/SitemapV2';
 import { getPublishedBlogSlugs, getProjectsData, getDeploymentsData, getConfigData } from '@/lib/dataFetchers';
 import { getSiteUrl } from '@/lib/siteUrl';
 import { getProjectSlug, getDeploymentSlug } from '@/lib/contentSlugs';
@@ -67,67 +67,5 @@ export default async function SitemapV2Page() {
 
     const totalEntries = columns.reduce((sum, column) => sum + column.items.length, 0);
 
-    return (
-        <div className="relative overflow-hidden">
-            <div className="mx-auto w-full max-w-7xl px-6 pb-24 pt-32 sm:pt-40 lg:px-10">
-                <div className="relative mb-14 sm:mb-20">
-                    <span
-                        aria-hidden="true"
-                        className="pointer-events-none absolute -top-10 right-0 select-none text-[7rem] font-black leading-none tracking-tighter sm:-top-16 sm:text-[13rem]"
-                        style={{
-                            color: 'transparent',
-                            WebkitTextStroke: '1.5px color-mix(in srgb, var(--accent-cyan) 20%, transparent)',
-                            opacity: 0.8,
-                        }}
-                    >
-                        ≡
-                    </span>
-
-                    <p className="mb-4 font-mono text-xs font-semibold uppercase tracking-[0.35em]" style={{ color: 'var(--accent-cyan)' }}>
-                        ~/sitemap — the index
-                    </p>
-                    <h1 className="max-w-4xl text-4xl font-bold leading-[1.02] tracking-tight sm:text-6xl lg:text-7xl" style={{ color: 'var(--text-bright)' }}>
-                        Everything, in one place.
-                    </h1>
-                    <p className="mt-5 max-w-2xl text-base leading-relaxed sm:text-lg" style={{ color: 'var(--text-tertiary)' }}>
-                        A complete overview of every public page on this site.
-                    </p>
-                    <p className="mt-8 font-mono text-sm" style={{ color: 'var(--text-muted)' }}>
-                        {totalEntries} entries · {columns.length} sections
-                    </p>
-                </div>
-
-                <div className="grid grid-cols-1 gap-x-10 gap-y-14 md:grid-cols-2">
-                    {columns.map((column) => (
-                        <section key={column.label}>
-                            <h2 className="mb-4 flex items-baseline gap-3 pb-3 font-mono text-sm font-semibold uppercase tracking-[0.3em]" style={{ color: 'var(--text-bright)', borderBottom: '1px solid var(--hairline)' }}>
-                                <span style={{ color: column.accent }}>{column.label}</span>
-                                <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                                    {column.items.length} {column.items.length === 1 ? 'entry' : 'entries'}
-                                </span>
-                            </h2>
-                            {column.items.length ? (
-                                <ul className="space-y-2 font-mono text-sm">
-                                    {column.items.map((item) => (
-                                        <li key={item.href}>
-                                            <Link
-                                                href={item.href}
-                                                className="inline-flex items-baseline gap-2 break-words underline-offset-4 transition-colors duration-200 hover:underline"
-                                                style={{ color: 'var(--text-secondary)' }}
-                                            >
-                                                <span style={{ color: column.accent }}>→</span>
-                                                {item.name}
-                                            </Link>
-                                        </li>
-                                    ))}
-                                </ul>
-                            ) : (
-                                <p className="font-mono text-sm" style={{ color: 'var(--text-tertiary)' }}>▸ nothing here yet…</p>
-                            )}
-                        </section>
-                    ))}
-                </div>
-            </div>
-        </div>
-    );
+    return <SitemapV2 columns={columns} totalEntries={totalEntries} />;
 }
