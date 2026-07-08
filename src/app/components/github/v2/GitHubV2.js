@@ -30,12 +30,15 @@ const LANGUAGE_COLORS = {
 const DEFAULT_SECTIONS = {
     showProfile: true,
     showStats: true,
+    showMetrics: true,
     showContributions: true,
     showActivity: true,
     showRepositories: true,
+    showTopics: true,
     showRepoDistribution: true,
     showLanguages: true,
     showRadarChart: true,
+    showConnect: true,
 };
 
 const REPO_FILTERS = [
@@ -183,6 +186,46 @@ const GitHubV2 = ({ data }) => {
     const publicPercent = effectiveTotalRepos > 0 ? Math.round((publicRepos / effectiveTotalRepos) * 100) : 0;
     const privatePercent = effectiveTotalRepos > 0 ? Math.max(0, 100 - publicPercent) : 0;
 
+    // Headline metrics — a stat board drawn from the same payload as the
+    // one-line telemetry, surfaced as a hairline grid of big numbers.
+    const metrics = useMemo(() => ([
+        { label: 'stars earned', value: Math.max(0, Number(stats.totalStars) || 0), color: 'var(--accent-cyan)' },
+        { label: 'forks', value: Math.max(0, Number(stats.totalForks) || 0), color: 'var(--accent-purple)' },
+        { label: 'followers', value: Math.max(0, Number(profile.followers ?? stats.followers) || 0), color: 'var(--accent-pink)' },
+        { label: 'contributions', value: Math.max(0, Number(stats.totalContributions) || 0), color: 'var(--status-success)' },
+        { label: 'source repos', value: Math.max(0, Number(stats.sourceRepos) || 0), color: 'var(--accent-cyan)' },
+        { label: 'forked repos', value: Math.max(0, Number(stats.forkedRepos) || 0), color: 'var(--accent-orange)' },
+        { label: 'longest streak', value: Math.max(0, Number(streaks.longest) || 0), color: 'var(--status-success)' },
+        { label: 'following', value: Math.max(0, Number(profile.following) || 0), color: 'var(--accent-purple)' },
+    ]), [stats, profile, streaks]);
+
+    // Distinct repo topics, aggregated across the visible top repositories.
+    const topics = useMemo(() => {
+        const seen = new Set();
+        topRepos.forEach((repo) => {
+            (Array.isArray(repo?.topics) ? repo.topics : []).forEach((topic) => {
+                if (typeof topic === 'string' && topic.trim()) seen.add(topic.trim());
+            });
+        });
+        return Array.from(seen);
+    }, [topRepos]);
+
+    // External profile links, in the order they read best in the ledger.
+    const connectLinks = useMemo(() => {
+        const links = [];
+        if (profile.username) {
+            links.push({ label: 'github', value: `@${profile.username}`, href: `https://github.com/${profile.username}` });
+        }
+        if (profile.twitter) {
+            links.push({ label: 'x / twitter', value: `@${profile.twitter}`, href: `https://x.com/${profile.twitter}` });
+        }
+        if (profile.blog) {
+            const blogHref = /^https?:\/\//i.test(profile.blog) ? profile.blog : `https://${profile.blog}`;
+            links.push({ label: 'website', value: profile.blog.replace(/^https?:\/\//i, ''), href: blogHref });
+        }
+        return links;
+    }, [profile]);
+
     if (!hasValidData) {
         return (
             <div className="relative overflow-hidden">
@@ -304,6 +347,39 @@ const GitHubV2 = ({ data }) => {
                     </div>
                 )}
 
+                {/* Headline metrics */}
+                {sections.showMetrics && (
+                    <section className="mb-20">
+                        <p data-v2="line" className="mb-6 font-mono text-xs font-semibold uppercase tracking-[0.3em]" style={{ color: 'var(--accent-cyan)' }}>
+                            $ gh stats --summary
+                        </p>
+                        <div
+                            data-v2="rise"
+                            className="grid grid-cols-2 sm:grid-cols-4"
+                            style={{ borderTop: '1px solid var(--hairline)', borderLeft: '1px solid var(--hairline)' }}
+                        >
+                            {metrics.map((metric) => (
+                                <div
+                                    key={metric.label}
+                                    className="px-4 py-6 sm:px-6 sm:py-8"
+                                    style={{ borderRight: '1px solid var(--hairline)', borderBottom: '1px solid var(--hairline)' }}
+                                >
+                                    <div
+                                        data-counter={metric.value}
+                                        className="text-3xl font-bold leading-none tracking-tight sm:text-5xl"
+                                        style={{ color: metric.color }}
+                                    >
+                                        {metric.value}
+                                    </div>
+                                    <div className="mt-3 font-mono text-[10px] uppercase tracking-[0.2em] sm:text-xs" style={{ color: 'var(--text-muted)' }}>
+                                        {metric.label}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+                )}
+
                 {/* Repositories ledger */}
                 {sections.showRepositories && (
                     <section className="mb-20">
@@ -354,7 +430,7 @@ const GitHubV2 = ({ data }) => {
                             </div>
                         </div>
 
-                        <p className="mb-2 font-mono text-xs" style={{ color: 'var(--text-muted)' }} aria-live="polite">
+                        <p data-v2="line" className="mb-2 font-mono text-xs" style={{ color: 'var(--text-muted)' }} aria-live="polite">
                             → {filteredRepos.length} of {topRepos.length} repositories
                         </p>
 
@@ -424,6 +500,27 @@ const GitHubV2 = ({ data }) => {
                                 $ gh repo list | grep &quot;{repoSearch.trim() || repoType}&quot; → no matches.
                             </p>
                         )}
+                    </section>
+                )}
+
+                {/* Topics / tech tags */}
+                {sections.showTopics && topics.length > 0 && (
+                    <section className="mb-20">
+                        <p data-v2="line" className="mb-6 font-mono text-xs font-semibold uppercase tracking-[0.3em]" style={{ color: 'var(--accent-purple)' }}>
+                            $ gh repo list --topics
+                        </p>
+                        <div data-v2="rise" className="flex flex-wrap gap-3 pt-6" style={{ borderTop: '1px solid var(--hairline)' }}>
+                            {topics.map((topic) => (
+                                <span
+                                    key={topic}
+                                    className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 font-mono text-xs sm:text-sm"
+                                    style={{ border: '1px solid var(--hairline)', color: 'var(--text-secondary)' }}
+                                >
+                                    <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: 'var(--accent-purple)' }} aria-hidden="true" />
+                                    {topic}
+                                </span>
+                            ))}
+                        </div>
                     </section>
                 )}
 
@@ -518,20 +615,20 @@ const GitHubV2 = ({ data }) => {
                                 <MeterRow label={`public (${publicRepos})`} value={publicPercent} color="var(--accent-cyan)" />
                                 <MeterRow label={`private (${privateRepos})`} value={privatePercent} color="var(--accent-orange)" />
                             </div>
+                        </section>
+                    )}
 
-                            {sections.showRadarChart && (
-                                <>
-                                    <p data-v2="line" className="mb-6 mt-14 font-mono text-xs font-semibold uppercase tracking-[0.3em]" style={{ color: 'var(--accent-pink)' }}>
-                                        $ activity --distribution
-                                    </p>
-                                    <div data-v2="rise" style={{ borderTop: '1px solid var(--hairline)' }}>
-                                        <MeterRow label="commits" value={activityDistribution.commits || 0} color="var(--accent-cyan)" />
-                                        <MeterRow label="pull requests" value={activityDistribution.pullRequests || 0} color="var(--accent-purple)" />
-                                        <MeterRow label="issues" value={activityDistribution.issues || 0} color="var(--accent-orange)" />
-                                        <MeterRow label="code review" value={activityDistribution.codeReview || 0} color="var(--accent-pink)" />
-                                    </div>
-                                </>
-                            )}
+                    {sections.showRadarChart && (
+                        <section>
+                            <p data-v2="line" className="mb-6 font-mono text-xs font-semibold uppercase tracking-[0.3em]" style={{ color: 'var(--accent-pink)' }}>
+                                $ activity --distribution
+                            </p>
+                            <div data-v2="rise" style={{ borderTop: '1px solid var(--hairline)' }}>
+                                <MeterRow label="commits" value={activityDistribution.commits || 0} color="var(--accent-cyan)" />
+                                <MeterRow label="pull requests" value={activityDistribution.pullRequests || 0} color="var(--accent-purple)" />
+                                <MeterRow label="issues" value={activityDistribution.issues || 0} color="var(--accent-orange)" />
+                                <MeterRow label="code review" value={activityDistribution.codeReview || 0} color="var(--accent-pink)" />
+                            </div>
                         </section>
                     )}
 
@@ -554,6 +651,38 @@ const GitHubV2 = ({ data }) => {
                         </section>
                     )}
                 </div>
+
+                {/* Connect — external profile links */}
+                {sections.showConnect && connectLinks.length > 0 && (
+                    <section className="mt-20">
+                        <p data-v2="line" className="mb-6 font-mono text-xs font-semibold uppercase tracking-[0.3em]" style={{ color: 'var(--accent-orange)' }}>
+                            $ gh profile --links
+                        </p>
+                        <div data-v2="rise" style={{ borderTop: '1px solid var(--hairline)' }}>
+                            {connectLinks.map((link) => (
+                                <a
+                                    key={link.label}
+                                    href={link.href}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="group grid grid-cols-12 items-baseline gap-4 py-5"
+                                    style={{ borderBottom: '1px solid var(--hairline)' }}
+                                >
+                                    <span className="col-span-4 font-mono text-xs uppercase tracking-[0.2em] sm:col-span-3" style={{ color: 'var(--text-muted)' }}>
+                                        {link.label}
+                                    </span>
+                                    <span
+                                        className="col-span-8 font-mono text-sm transition-transform duration-300 group-hover:translate-x-2 sm:col-span-9"
+                                        style={{ color: 'var(--accent-orange)' }}
+                                    >
+                                        {link.value}
+                                        <FaArrowUpRightFromSquare className="ml-2 inline h-3 w-3" aria-hidden="true" />
+                                    </span>
+                                </a>
+                            ))}
+                        </div>
+                    </section>
+                )}
             </div>
         </div>
     );
