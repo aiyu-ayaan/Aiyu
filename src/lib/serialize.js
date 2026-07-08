@@ -35,6 +35,11 @@ const DATE_FIELDS = {
   auditLog: ['createdAt'],
   uptimeTarget: ['createdAt'],
   uptimeCheck: ['checkedAt'],
+  aiSkillCategory: ['createdAt', 'updatedAt'],
+  aiSkill: ['createdAt', 'updatedAt'],
+  aiRecommendation: ['createdAt', 'updatedAt'],
+  aiCredit: ['createdAt', 'updatedAt'],
+  aiPrompt: ['createdAt', 'updatedAt'],
 };
 
 // Integer columns per model (coerced to Number on write).
@@ -47,6 +52,11 @@ const INT_FIELDS = {
   cronLog: ['durationMs'],
   analyticsDaily: ['views', 'uniques'],
   uptimeCheck: ['statusCode', 'latencyMs'],
+  aiSkillCategory: ['displayOrder'],
+  aiSkill: ['displayOrder'],
+  aiRecommendation: ['rating', 'displayOrder'],
+  aiCredit: ['displayOrder'],
+  aiPrompt: ['displayOrder'],
 };
 
 // Whitelisted columns for relational models (used by fromClient on import/migrate).
@@ -102,6 +112,11 @@ const RELATIONAL_COLUMNS = {
   auditLog: ['action', 'category', 'details', 'ipAddress', 'userAgent', 'createdAt'],
   uptimeTarget: ['label', 'url', 'enabled', 'createdAt'],
   uptimeCheck: ['target', 'label', 'source', 'status', 'statusCode', 'latencyMs', 'error', 'checkedAt'],
+  aiSkillCategory: ['label', 'accent', 'displayOrder', 'createdAt', 'updatedAt'],
+  aiSkill: ['categoryId', 'name', 'description', 'url', 'displayOrder', 'createdAt', 'updatedAt'],
+  aiRecommendation: ['name', 'url', 'rating', 'accent', 'blurb', 'tags', 'displayOrder', 'createdAt', 'updatedAt'],
+  aiCredit: ['name', 'offer', 'url', 'noCard', 'freeApi', 'note', 'displayOrder', 'createdAt', 'updatedAt'],
+  aiPrompt: ['title', 'role', 'prompt', 'displayOrder', 'createdAt', 'updatedAt'],
 };
 
 // Columns dropped from relational rows when serializing to the client.
@@ -153,6 +168,11 @@ export const MODELS = {
   auditLog: { delegate: 'auditLog', kind: 'relational', singleton: false },
   uptimeTarget: { delegate: 'uptimeTarget', kind: 'relational', singleton: false },
   uptimeCheck: { delegate: 'uptimeCheck', kind: 'relational', singleton: false },
+  aiSkillCategory: { delegate: 'aiSkillCategory', kind: 'relational', singleton: false },
+  aiSkill: { delegate: 'aiSkill', kind: 'relational', singleton: false },
+  aiRecommendation: { delegate: 'aiRecommendation', kind: 'relational', singleton: false },
+  aiCredit: { delegate: 'aiCredit', kind: 'relational', singleton: false },
+  aiPrompt: { delegate: 'aiPrompt', kind: 'relational', singleton: false },
   // Json-blob singletons
   config: { delegate: 'config', kind: 'json', singleton: true, secrets: CONFIG_SECRETS, timestamps: false },
   seoConfig: { delegate: 'seoConfig', kind: 'json', singleton: true, secrets: SEO_SECRETS, timestamps: false },
