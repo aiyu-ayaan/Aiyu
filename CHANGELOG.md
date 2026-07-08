@@ -1,5 +1,36 @@
 # Changelog
 
+## [4.7.4](https://github.com/aiyu-ayaan/Aiyu/compare/v4.7.3...v4.7.4) (2026-07-08)
+
+### Features
+
+* Add v2 reveal animations to the sitemap page
+* Migrate sitemap page to v2 and tidy footer links
+* Add v2 project detail page
+* Add v2 app detail page
+* Restyle command palette to match v2 design
+* Add [search] command-palette trigger
+* Add metrics and topics sections to GitHub stats and config pages
+* Rebuild /admin/ai-page as card-based live CRUD editor
+* Replace generic AI-section tools with per-section CRUD
+* Per-section REST CRUD under /api/ai
+* Add aiSections core lib + hydrate reads from tables
+* Add relational tables for AI section content
+
+### Bug Fixes
+
+* : MCP server updates and UI updates
+* Show full image with auto height on app/project pages
+* Escape `//` section labels as JSX string literals
+* Rewrite /apps/<id> and /projects/<id> to v2 tree
+
+### Other Changes
+
+* Merge branch 'feat/v2-header-search'
+* Use a search icon button, matching the theme toggle
+* Add idempotent AI-section backfill script
+* Document per-section REST + MCP APIs
+
 ## [4.7.3](https://github.com/aiyu-ayaan/Aiyu/compare/v4.7.2...v4.7.3) (2026-07-07)
 
 ### Bug Fixes
