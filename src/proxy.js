@@ -331,6 +331,7 @@ const V2_PAGES = new Set([
     '/blogs',
     '/github',
     '/contact-us',
+    '/sitemap',
     '/ai'
 ]);
 

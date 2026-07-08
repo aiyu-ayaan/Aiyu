@@ -8,13 +8,14 @@ import { v2PublicPath } from '@/lib/siteVersion';
 
 const V2Footer = ({ name, config, socialData, packageVersion }) => {
     const sitemapLinks = [
-        { href: v2PublicPath(config, ''), label: 'v2 home' },
-        { href: v2PublicPath(config, '/about-me'), label: 'v2 about' },
-        { href: v2PublicPath(config, '/projects'), label: 'v2 projects' },
-        { href: v2PublicPath(config, '/gallery'), label: 'v2 gallery' },
-        { href: v2PublicPath(config, '/apps'), label: 'v2 apps' },
-        { href: v2PublicPath(config, '/blogs'), label: 'v2 writing' },
-        { href: v2PublicPath(config, '/github'), label: 'v2 github' },
+        { href: v2PublicPath(config, ''), label: 'home' },
+        { href: v2PublicPath(config, '/about-me'), label: 'about' },
+        { href: v2PublicPath(config, '/projects'), label: 'projects' },
+        { href: v2PublicPath(config, '/gallery'), label: 'gallery' },
+        { href: v2PublicPath(config, '/apps'), label: 'apps' },
+        { href: v2PublicPath(config, '/blogs'), label: 'writing' },
+        { href: v2PublicPath(config, '/github'), label: 'github' },
+        { href: v2PublicPath(config, '/sitemap'), label: 'sitemap' },
         { href: '/v1', label: 'classic home' },
         { href: v2PublicPath(config, '/contact-us'), label: 'contact' },
     ];
