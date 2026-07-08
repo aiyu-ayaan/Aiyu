@@ -21,11 +21,21 @@ import {
 } from '@/lib/dataFetchers';
 import { getApiCatalog } from '@/lib/agentDiscovery';
 import { prisma } from '@/lib/prisma';
-import { toClient, fromClient, getSingleton, upsertSingleton } from '@/lib/serialize';
+import { toClient, fromClient, getSingleton } from '@/lib/serialize';
 import cache, { CACHE_KEYS } from '@/lib/cache';
 import { logAudit, AUDIT_CATEGORY } from '@/lib/audit';
 import { assertMcpWrite, getMcpAuth } from '@/lib/mcp/auth';
 import { DEFAULT_AI_PAGE, AI_SECTION_TYPES } from '@/lib/aiPageDefaults';
+import {
+    hydrateAiSections,
+    skillsData, recommendationsData, creditsData, promptsData,
+    listSkillCategories,
+    createSkillCategory, updateSkillCategory, deleteSkillCategory,
+    createSkill, updateSkill, deleteSkill,
+    createRecommendation, updateRecommendation, deleteRecommendation,
+    createCredit, updateCredit, deleteCredit,
+    createPrompt, updatePrompt, deletePrompt,
+} from '@/lib/aiSections';
 
 const NO_ARGS = { type: 'object', properties: {}, additionalProperties: false };
 
@@ -78,21 +88,17 @@ async function searchPortfolio({ query } = {}) {
 // where `type` is one of AI_SECTION_TYPES and `data` is the type-specific
 // payload (e.g. skills → { categories:[{ id,label,accent,items:[{name,description,url?}] }] }).
 
-/** Load the stored AI-page config, falling back to the bundled defaults. */
+/**
+ * Load the stored AI-page config (skeleton), falling back to the bundled
+ * defaults, then hydrate the four content sections from their relational
+ * tables so reads return real, editable content.
+ */
 async function loadAiPageConfig() {
     const stored = await getSingleton(prisma, 'aiPage');
-    if (!stored || !Array.isArray(stored.sections) || stored.sections.length === 0) {
-        return JSON.parse(JSON.stringify(DEFAULT_AI_PAGE));
-    }
-    return stored;
-}
-
-/** Persist a new `sections` array and invalidate the AI-page caches. */
-async function saveAiSections(sections) {
-    const saved = await upsertSingleton(prisma, 'aiPage', { sections });
-    await cache.invalidateAsync(CACHE_KEYS.AI_PAGE);
-    await cache.invalidateAsync(`${CACHE_KEYS.AI_PAGE}:stats`);
-    return saved;
+    const skeleton = !stored || !Array.isArray(stored.sections) || stored.sections.length === 0
+        ? JSON.parse(JSON.stringify(DEFAULT_AI_PAGE))
+        : stored;
+    return hydrateAiSections(skeleton);
 }
 
 /** Compact view of a section for listings. */
@@ -104,28 +110,6 @@ function aiSectionSummary(section, index) {
         enabled: section?.enabled !== false,
         order: index,
     };
-}
-
-/** Validate a free-form section `data` payload (object, size-bounded). */
-function sectionData(value, field = 'data') {
-    if (value === undefined || value === null) return undefined;
-    if (typeof value !== 'object' || Array.isArray(value)) {
-        throw new Error(`Field "${field}" must be an object.`);
-    }
-    if (JSON.stringify(value).length > 100000) {
-        throw new Error(`Field "${field}" exceeds 100000 characters.`);
-    }
-    return value;
-}
-
-/** Generate a section id that does not collide with existing ones. */
-function uniqueSectionId(base, sections) {
-    const taken = new Set(sections.map((s) => s?.id).filter(Boolean));
-    const root = slugify(base) || 'section';
-    if (!taken.has(root)) return root;
-    let i = 2;
-    while (taken.has(`${root}-${i}`)) i += 1;
-    return `${root}-${i}`;
 }
 
 /** @typedef {{ name:string, title:string, description:string, inputSchema:object, annotations?:object, handler:(args:object)=>Promise<any> }} McpTool */
@@ -246,6 +230,42 @@ export const TOOLS = [
             return section;
         },
     },
+    {
+        name: 'list_ai_skills',
+        title: 'List AI Skills',
+        description:
+            'List the AI Hub skills grouped by category: { categories: [{ id, label, accent, items: [{ id, name, description, url? }] }] }.',
+        inputSchema: NO_ARGS,
+        annotations: { readOnlyHint: true, idempotentHint: true },
+        handler: async () => skillsData(),
+    },
+    {
+        name: 'list_ai_recommendations',
+        title: 'List AI Recommendations',
+        description:
+            'List the recommended-stack cards: { cards: [{ id, name, url, rating, accent, blurb, tags }] }.',
+        inputSchema: NO_ARGS,
+        annotations: { readOnlyHint: true, idempotentHint: true },
+        handler: async () => recommendationsData(),
+    },
+    {
+        name: 'list_ai_credits',
+        title: 'List AI Free Credits',
+        description:
+            'List the free-credits / free-tier rows: { rows: [{ id, name, offer, url, noCard, freeApi, note }] }.',
+        inputSchema: NO_ARGS,
+        annotations: { readOnlyHint: true, idempotentHint: true },
+        handler: async () => creditsData(),
+    },
+    {
+        name: 'list_ai_prompts',
+        title: 'List AI Prompts',
+        description:
+            'List the prompt-library entries: { items: [{ id, title, role, prompt }] }.',
+        inputSchema: NO_ARGS,
+        annotations: { readOnlyHint: true, idempotentHint: true },
+        handler: async () => promptsData(),
+    },
 ];
 
 /** @typedef {{ uri:string, name:string, title:string, description:string, mimeType:string, read:()=>Promise<any> }} McpResource */
@@ -258,6 +278,10 @@ export const RESOURCES = [
     { uri: 'aiyu://deployments', name: 'deployments', title: 'Deployments', description: 'Live deployments / hosted apps.', mimeType: 'application/json', read: async () => (await getDeploymentsData()) || [] },
     { uri: 'aiyu://api-catalog', name: 'api-catalog', title: 'API Catalog', description: 'Public REST API catalog.', mimeType: 'application/json', read: async () => getApiCatalog() },
     { uri: 'aiyu://ai-page', name: 'ai-page', title: 'AI Hub Page Config', description: 'Schema-driven section config for the /ai page.', mimeType: 'application/json', read: async () => await loadAiPageConfig() },
+    { uri: 'aiyu://ai-skills', name: 'ai-skills', title: 'AI Skills', description: 'AI skills grouped by category.', mimeType: 'application/json', read: async () => skillsData() },
+    { uri: 'aiyu://ai-recommendations', name: 'ai-recommendations', title: 'AI Recommendations', description: 'Recommended AI stack cards.', mimeType: 'application/json', read: async () => recommendationsData() },
+    { uri: 'aiyu://ai-credits', name: 'ai-credits', title: 'AI Free Credits', description: 'Free credits & free-tier providers.', mimeType: 'application/json', read: async () => creditsData() },
+    { uri: 'aiyu://ai-prompts', name: 'ai-prompts', title: 'AI Prompt Library', description: 'Reusable system prompts.', mimeType: 'application/json', read: async () => promptsData() },
 ];
 
 // ─────────────────────────── Write tools ───────────────────────────
@@ -505,77 +529,44 @@ export const WRITE_TOOLS = [
             return { ok: true, deployment: client };
         },
     },
+    // ─────────────────── AI Hub content (per-section) ───────────────────
+    // Guarded CRUD over the four /ai content sections. Validation, ordering,
+    // and cache invalidation live in lib/aiSections; each tool just asserts
+    // write auth, delegates, and records an audit entry. Mirrors the public
+    // REST surface under /api/ai/*.
     {
-        name: 'create_ai_section',
-        title: 'Create AI Hub Section',
-        description:
-            'Add a new section to the AI Hub (/ai) page. `type` must be one of the supported section types. Requires write authorization.',
+        name: 'create_ai_skill_category',
+        title: 'Create AI Skill Category',
+        description: 'Add a skill filter category (e.g. "Motion & Animation"). Requires write authorization.',
         inputSchema: {
             type: 'object',
             properties: {
-                type: { type: 'string', enum: [...AI_SECTION_TYPES], description: 'Section renderer type.' },
-                id: { type: 'string', description: 'Optional stable id; auto-generated from type if omitted.' },
-                title: { type: 'string' },
-                subtitle: { type: 'string' },
-                eyebrow: { type: 'string' },
+                label: { type: 'string' },
                 accent: { type: 'string', description: 'CSS color, e.g. "var(--accent-cyan)".' },
-                enabled: { type: 'boolean', description: 'Defaults to true.' },
-                data: { type: 'object', description: 'Type-specific payload (e.g. skills → { categories: [...] }).' },
-                index: { type: 'number', description: 'Optional 0-based insertion position; appends by default.' },
+                displayOrder: { type: 'number' },
             },
-            required: ['type'],
+            required: ['label'],
             additionalProperties: false,
         },
         annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
         handler: async (args = {}) => {
             assertMcpWrite();
-            const type = str(args.type, 'type', { required: true, max: 40 });
-            if (!AI_SECTION_TYPES.includes(type)) {
-                throw new Error(`Unsupported section type "${type}". Allowed: ${AI_SECTION_TYPES.join(', ')}.`);
-            }
-            const config = await loadAiPageConfig();
-            const sections = [...(config.sections || [])];
-
-            const requestedId = str(args.id, 'id', { max: 120 });
-            const id = requestedId ? slugify(requestedId) : uniqueSectionId(type, sections);
-            if (sections.some((s) => s?.id === id)) throw new Error(`A section with id "${id}" already exists.`);
-
-            const section = {
-                id,
-                type,
-                enabled: args.enabled === undefined ? true : args.enabled === true,
-                eyebrow: str(args.eyebrow, 'eyebrow', { max: 200 }) || '',
-                title: str(args.title, 'title', { max: 300 }) || '',
-                subtitle: str(args.subtitle, 'subtitle', { max: 1000 }) || '',
-                accent: str(args.accent, 'accent', { max: 200 }) || 'var(--accent-cyan)',
-                data: sectionData(args.data) || {},
-            };
-
-            const at = Number.isFinite(Number(args.index))
-                ? Math.max(0, Math.min(sections.length, Number(args.index)))
-                : sections.length;
-            sections.splice(at, 0, section);
-
-            await saveAiSections(sections);
-            await auditWrite('MCP_CREATE_AI_SECTION', `Created AI section "${id}" (type=${type}) at ${at}`);
-            return { ok: true, section };
+            const category = await createSkillCategory(args);
+            await auditWrite('MCP_CREATE_AI_SKILL_CATEGORY', `Created AI skill category "${category.label}" (${category._id})`);
+            return { ok: true, category };
         },
     },
     {
-        name: 'update_ai_section',
-        title: 'Update AI Hub Section',
-        description:
-            'Update fields of an existing AI Hub (/ai) section by id. Only the provided fields change; `data` replaces the section payload wholesale. Requires write authorization.',
+        name: 'update_ai_skill_category',
+        title: 'Update AI Skill Category',
+        description: 'Update a skill category by id. Requires write authorization.',
         inputSchema: {
             type: 'object',
             properties: {
                 id: { type: 'string' },
-                title: { type: 'string' },
-                subtitle: { type: 'string' },
-                eyebrow: { type: 'string' },
+                label: { type: 'string' },
                 accent: { type: 'string' },
-                enabled: { type: 'boolean' },
-                data: { type: 'object', description: 'Replaces the section data payload entirely.' },
+                displayOrder: { type: 'number' },
             },
             required: ['id'],
             additionalProperties: false,
@@ -583,33 +574,16 @@ export const WRITE_TOOLS = [
         annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
         handler: async (args = {}) => {
             assertMcpWrite();
-            const id = str(args.id, 'id', { required: true, max: 120 });
-            const config = await loadAiPageConfig();
-            const sections = [...(config.sections || [])];
-            const index = sections.findIndex((s) => s?.id === id);
-            if (index === -1) throw new Error(`AI Hub section not found: "${id}".`);
-
-            const patch = {};
-            for (const [field, max] of [['title', 300], ['subtitle', 1000], ['eyebrow', 200], ['accent', 200]]) {
-                const v = str(args[field], field, { max });
-                if (v !== undefined) patch[field] = v;
-            }
-            if (args.enabled !== undefined) patch.enabled = args.enabled === true;
-            if (args.data !== undefined) patch.data = sectionData(args.data);
-            if (Object.keys(patch).length === 0) throw new Error('No updatable fields provided.');
-
-            const next = { ...sections[index], ...patch };
-            sections[index] = next;
-
-            await saveAiSections(sections);
-            await auditWrite('MCP_UPDATE_AI_SECTION', `Updated AI section ${id} [${Object.keys(patch).join(', ')}]`);
-            return { ok: true, section: next };
+            const { id, ...patch } = args;
+            const category = await updateSkillCategory(id, patch);
+            await auditWrite('MCP_UPDATE_AI_SKILL_CATEGORY', `Updated AI skill category ${id}`);
+            return { ok: true, category };
         },
     },
     {
-        name: 'delete_ai_section',
-        title: 'Delete AI Hub Section',
-        description: 'Permanently remove an AI Hub (/ai) section by id. Destructive. Requires write authorization.',
+        name: 'delete_ai_skill_category',
+        title: 'Delete AI Skill Category',
+        description: 'Delete a skill category and all its skills by id. Destructive. Requires write authorization.',
         inputSchema: {
             type: 'object',
             properties: { id: { type: 'string' } },
@@ -619,47 +593,287 @@ export const WRITE_TOOLS = [
         annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false },
         handler: async (args = {}) => {
             assertMcpWrite();
-            const id = str(args.id, 'id', { required: true, max: 120 });
-            const config = await loadAiPageConfig();
-            const sections = (config.sections || []).filter((s) => s?.id !== id);
-            if (sections.length === (config.sections || []).length) {
-                throw new Error(`AI Hub section not found: "${id}".`);
-            }
-            await saveAiSections(sections);
-            await auditWrite('MCP_DELETE_AI_SECTION', `Deleted AI section "${id}"`);
-            return { ok: true, deletedId: id };
+            const result = await deleteSkillCategory(args.id);
+            await auditWrite('MCP_DELETE_AI_SKILL_CATEGORY', `Deleted AI skill category ${args.id}`);
+            return { ok: true, ...result };
         },
     },
     {
-        name: 'reorder_ai_sections',
-        title: 'Reorder AI Hub Sections',
-        description:
-            'Set the display order of AI Hub (/ai) sections. `order` must list every existing section id exactly once. Requires write authorization.',
+        name: 'create_ai_skill',
+        title: 'Create AI Skill',
+        description: 'Add a skill to a category ({ categoryId, name, description?, url? }). Requires write authorization.',
         inputSchema: {
             type: 'object',
             properties: {
-                order: { type: 'array', items: { type: 'string' }, description: 'Section ids in the desired order.' },
+                categoryId: { type: 'string' },
+                name: { type: 'string' },
+                description: { type: 'string' },
+                url: { type: 'string' },
+                displayOrder: { type: 'number' },
             },
-            required: ['order'],
+            required: ['categoryId', 'name'],
+            additionalProperties: false,
+        },
+        annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+        handler: async (args = {}) => {
+            assertMcpWrite();
+            const skill = await createSkill(args);
+            await auditWrite('MCP_CREATE_AI_SKILL', `Created AI skill "${skill.name}" (${skill._id})`);
+            return { ok: true, skill };
+        },
+    },
+    {
+        name: 'update_ai_skill',
+        title: 'Update AI Skill',
+        description: 'Update a skill by id (fields: categoryId, name, description, url, displayOrder). Requires write authorization.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                id: { type: 'string' },
+                categoryId: { type: 'string' },
+                name: { type: 'string' },
+                description: { type: 'string' },
+                url: { type: 'string' },
+                displayOrder: { type: 'number' },
+            },
+            required: ['id'],
             additionalProperties: false,
         },
         annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
         handler: async (args = {}) => {
             assertMcpWrite();
-            const order = strArray(args.order, 'order');
-            if (!order || order.length === 0) throw new Error('Field "order" must be a non-empty array of ids.');
-            const config = await loadAiPageConfig();
-            const sections = config.sections || [];
-            const byId = new Map(sections.map((s) => [s?.id, s]));
-
-            if (order.length !== sections.length || new Set(order).size !== order.length || order.some((id) => !byId.has(id))) {
-                throw new Error('`order` must be a permutation of every existing section id (each exactly once).');
-            }
-
-            const reordered = order.map((id) => byId.get(id));
-            await saveAiSections(reordered);
-            await auditWrite('MCP_REORDER_AI_SECTIONS', `Reordered AI sections: ${order.join(', ')}`);
-            return { ok: true, order };
+            const { id, ...patch } = args;
+            const skill = await updateSkill(id, patch);
+            await auditWrite('MCP_UPDATE_AI_SKILL', `Updated AI skill ${id}`);
+            return { ok: true, skill };
+        },
+    },
+    {
+        name: 'delete_ai_skill',
+        title: 'Delete AI Skill',
+        description: 'Delete a skill by id. Destructive. Requires write authorization.',
+        inputSchema: {
+            type: 'object',
+            properties: { id: { type: 'string' } },
+            required: ['id'],
+            additionalProperties: false,
+        },
+        annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false },
+        handler: async (args = {}) => {
+            assertMcpWrite();
+            const result = await deleteSkill(args.id);
+            await auditWrite('MCP_DELETE_AI_SKILL', `Deleted AI skill ${args.id}`);
+            return { ok: true, ...result };
+        },
+    },
+    {
+        name: 'create_ai_recommendation',
+        title: 'Create AI Recommendation',
+        description: 'Add a recommended-stack card ({ name, url?, rating?, accent?, blurb?, tags? }). Requires write authorization.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                name: { type: 'string' },
+                url: { type: 'string' },
+                rating: { type: 'number', description: '0–5.' },
+                accent: { type: 'string' },
+                blurb: { type: 'string' },
+                tags: { type: 'array', items: { type: 'string' } },
+                displayOrder: { type: 'number' },
+            },
+            required: ['name'],
+            additionalProperties: false,
+        },
+        annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+        handler: async (args = {}) => {
+            assertMcpWrite();
+            const recommendation = await createRecommendation(args);
+            await auditWrite('MCP_CREATE_AI_RECOMMENDATION', `Created AI recommendation "${recommendation.name}" (${recommendation._id})`);
+            return { ok: true, recommendation };
+        },
+    },
+    {
+        name: 'update_ai_recommendation',
+        title: 'Update AI Recommendation',
+        description: 'Update a recommendation card by id. Requires write authorization.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                id: { type: 'string' },
+                name: { type: 'string' },
+                url: { type: 'string' },
+                rating: { type: 'number' },
+                accent: { type: 'string' },
+                blurb: { type: 'string' },
+                tags: { type: 'array', items: { type: 'string' } },
+                displayOrder: { type: 'number' },
+            },
+            required: ['id'],
+            additionalProperties: false,
+        },
+        annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+        handler: async (args = {}) => {
+            assertMcpWrite();
+            const { id, ...patch } = args;
+            const recommendation = await updateRecommendation(id, patch);
+            await auditWrite('MCP_UPDATE_AI_RECOMMENDATION', `Updated AI recommendation ${id}`);
+            return { ok: true, recommendation };
+        },
+    },
+    {
+        name: 'delete_ai_recommendation',
+        title: 'Delete AI Recommendation',
+        description: 'Delete a recommendation card by id. Destructive. Requires write authorization.',
+        inputSchema: {
+            type: 'object',
+            properties: { id: { type: 'string' } },
+            required: ['id'],
+            additionalProperties: false,
+        },
+        annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false },
+        handler: async (args = {}) => {
+            assertMcpWrite();
+            const result = await deleteRecommendation(args.id);
+            await auditWrite('MCP_DELETE_AI_RECOMMENDATION', `Deleted AI recommendation ${args.id}`);
+            return { ok: true, ...result };
+        },
+    },
+    {
+        name: 'create_ai_credit',
+        title: 'Create AI Free Credit',
+        description: 'Add a free-credits row ({ name, offer?, url?, noCard?, freeApi?, note? }). Requires write authorization.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                name: { type: 'string' },
+                offer: { type: 'string' },
+                url: { type: 'string' },
+                noCard: { type: 'boolean' },
+                freeApi: { type: 'boolean' },
+                note: { type: 'string' },
+                displayOrder: { type: 'number' },
+            },
+            required: ['name'],
+            additionalProperties: false,
+        },
+        annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+        handler: async (args = {}) => {
+            assertMcpWrite();
+            const credit = await createCredit(args);
+            await auditWrite('MCP_CREATE_AI_CREDIT', `Created AI credit "${credit.name}" (${credit._id})`);
+            return { ok: true, credit };
+        },
+    },
+    {
+        name: 'update_ai_credit',
+        title: 'Update AI Free Credit',
+        description: 'Update a free-credits row by id. Requires write authorization.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                id: { type: 'string' },
+                name: { type: 'string' },
+                offer: { type: 'string' },
+                url: { type: 'string' },
+                noCard: { type: 'boolean' },
+                freeApi: { type: 'boolean' },
+                note: { type: 'string' },
+                displayOrder: { type: 'number' },
+            },
+            required: ['id'],
+            additionalProperties: false,
+        },
+        annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+        handler: async (args = {}) => {
+            assertMcpWrite();
+            const { id, ...patch } = args;
+            const credit = await updateCredit(id, patch);
+            await auditWrite('MCP_UPDATE_AI_CREDIT', `Updated AI credit ${id}`);
+            return { ok: true, credit };
+        },
+    },
+    {
+        name: 'delete_ai_credit',
+        title: 'Delete AI Free Credit',
+        description: 'Delete a free-credits row by id. Destructive. Requires write authorization.',
+        inputSchema: {
+            type: 'object',
+            properties: { id: { type: 'string' } },
+            required: ['id'],
+            additionalProperties: false,
+        },
+        annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false },
+        handler: async (args = {}) => {
+            assertMcpWrite();
+            const result = await deleteCredit(args.id);
+            await auditWrite('MCP_DELETE_AI_CREDIT', `Deleted AI credit ${args.id}`);
+            return { ok: true, ...result };
+        },
+    },
+    {
+        name: 'create_ai_prompt',
+        title: 'Create AI Prompt',
+        description: 'Add a prompt-library entry ({ title, prompt, role? }). Requires write authorization.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                title: { type: 'string' },
+                role: { type: 'string' },
+                prompt: { type: 'string' },
+                displayOrder: { type: 'number' },
+            },
+            required: ['title', 'prompt'],
+            additionalProperties: false,
+        },
+        annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+        handler: async (args = {}) => {
+            assertMcpWrite();
+            const prompt = await createPrompt(args);
+            await auditWrite('MCP_CREATE_AI_PROMPT', `Created AI prompt "${prompt.title}" (${prompt._id})`);
+            return { ok: true, prompt };
+        },
+    },
+    {
+        name: 'update_ai_prompt',
+        title: 'Update AI Prompt',
+        description: 'Update a prompt-library entry by id. Requires write authorization.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                id: { type: 'string' },
+                title: { type: 'string' },
+                role: { type: 'string' },
+                prompt: { type: 'string' },
+                displayOrder: { type: 'number' },
+            },
+            required: ['id'],
+            additionalProperties: false,
+        },
+        annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+        handler: async (args = {}) => {
+            assertMcpWrite();
+            const { id, ...patch } = args;
+            const prompt = await updatePrompt(id, patch);
+            await auditWrite('MCP_UPDATE_AI_PROMPT', `Updated AI prompt ${id}`);
+            return { ok: true, prompt };
+        },
+    },
+    {
+        name: 'delete_ai_prompt',
+        title: 'Delete AI Prompt',
+        description: 'Delete a prompt-library entry by id. Destructive. Requires write authorization.',
+        inputSchema: {
+            type: 'object',
+            properties: { id: { type: 'string' } },
+            required: ['id'],
+            additionalProperties: false,
+        },
+        annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false },
+        handler: async (args = {}) => {
+            assertMcpWrite();
+            const result = await deletePrompt(args.id);
+            await auditWrite('MCP_DELETE_AI_PROMPT', `Deleted AI prompt ${args.id}`);
+            return { ok: true, ...result };
         },
     },
 ];
