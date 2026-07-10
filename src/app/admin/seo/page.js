@@ -262,7 +262,7 @@ function RobotsSitemapTab({ form, setForm, onSave, saving, siteSitemapUrl }) {
 
 // ─────────────────────────── Indexing tab ───────────────────────────
 
-function IndexingTab({ status, logs, urls, onSaveKey, onClearKey, onPing, savingKey, pinging }) {
+function IndexingTab({ status, logs, urls, indexing, onToggleAutoPing, onSaveKey, onClearKey, onPing, savingKey, pinging }) {
     const [keyInput, setKeyInput] = useState('');
     const [urlText, setUrlText] = useState('');
     const [type, setType] = useState('URL_UPDATED');
@@ -289,6 +289,19 @@ function IndexingTab({ status, logs, urls, onSaveKey, onClearKey, onPing, saving
                         <button onClick={onClearKey} disabled={savingKey} className="px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-300 hover:bg-red-500/20 disabled:opacity-50 font-mono text-sm flex items-center gap-2"><FaTrash size={12} /> CLEAR</button>
                     )}
                 </div>
+                <label className="flex items-start gap-3 pt-2 border-t border-white/5 cursor-pointer">
+                    <input
+                        type="checkbox"
+                        checked={indexing?.autoPing === true}
+                        onChange={(e) => onToggleAutoPing(e.target.checked)}
+                        disabled={savingKey || !status?.hasServiceAccount}
+                        className="mt-0.5 accent-cyan-500"
+                    />
+                    <span>
+                        <span className="block text-sm text-slate-200 font-mono">Auto-ping on content changes</span>
+                        <span className="block text-xs text-slate-500 mt-0.5">Notify Google automatically when blogs, projects, apps, or the header change.</span>
+                    </span>
+                </label>
             </Panel>
 
             <Panel className="p-5 space-y-4">
@@ -548,6 +561,20 @@ export default function SeoDashboard() {
         await saveKey('');
     };
 
+    const toggleAutoPing = async (autoPing) => {
+        setSavingKey(true); setError(null);
+        try {
+            const res = await fetch('/api/admin/seo/config', {
+                method: 'PUT', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ indexing: { ...(configData?.config?.indexing || {}), autoPing } }),
+            });
+            const json = await res.json();
+            if (!res.ok || !json.success) throw new Error(json.error || 'AUTO_PING_SAVE_FAILED');
+            setConfigData((d) => ({ ...d, config: json.config }));
+            flash(autoPing ? 'Auto-ping enabled.' : 'Auto-ping disabled.');
+        } catch (e) { setError(e.message); } finally { setSavingKey(false); }
+    };
+
     const ping = async (urls, type) => {
         if (!urls.length) { setError('No URLs to submit.'); return; }
         setPinging(true); setError(null);
@@ -667,6 +694,8 @@ export default function SeoDashboard() {
                     status={configData?.serviceAccount}
                     logs={configData?.logs}
                     urls={indexableUrls}
+                    indexing={configData?.config?.indexing}
+                    onToggleAutoPing={toggleAutoPing}
                     onSaveKey={saveKey}
                     onClearKey={clearKey}
                     onPing={ping}
