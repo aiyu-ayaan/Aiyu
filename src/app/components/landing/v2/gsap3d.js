@@ -1,5 +1,6 @@
 "use client";
 
+import { ScrambleTextPlugin } from 'gsap/ScrambleTextPlugin';
 import {
     gsap,
     ScrollTrigger,
@@ -8,6 +9,14 @@ import {
     animateCounters,
     refreshScrollTriggersSoon,
 } from '../../shared/gsapScroll';
+
+if (typeof window !== 'undefined') {
+    gsap.registerPlugin(ScrambleTextPlugin);
+}
+
+// Glyph pool for the decrypt effect — code punctuation and binary, not
+// letters, so mid-scramble text reads as machine noise rather than typos.
+export const SCRAMBLE_CHARS = '01<>[]{}/\\|#$_=+*';
 
 /**
  * V2 3D scroll engine. Same device-tier rules as the v1 engine (html[data-perf="lite"]
@@ -154,6 +163,39 @@ export function animateV2Tilt(scope, { reducedMotion = false } = {}) {
 }
 
 /**
+ * Decrypt reveal: elements tagged data-v2-scramble resolve from machine noise
+ * into their real text when they enter the viewport. The plain text is already
+ * in the DOM at SSR time (SEO/reduced-motion safe) — the scramble only runs as
+ * a client enhancement. Optional attrs:
+ *   data-v2-scramble="1.2"        duration in seconds (default 1)
+ *   data-v2-scramble-delay="0.2"  start delay in seconds
+ */
+export function animateV2Scramble(scope, { reducedMotion = false } = {}) {
+    if (!scope || reducedMotion) return;
+
+    scope.querySelectorAll('[data-v2-scramble]').forEach((el) => {
+        const text = el.textContent;
+        if (!text || !text.trim()) return;
+        gsap.to(el, {
+            duration: Number(el.dataset.v2Scramble) || 1,
+            delay: Number(el.dataset.v2ScrambleDelay) || 0,
+            scrambleText: {
+                text,
+                chars: SCRAMBLE_CHARS,
+                revealDelay: 0.15,
+                speed: 0.9,
+            },
+            ease: 'none',
+            scrollTrigger: {
+                trigger: el,
+                start: 'top 90%',
+                toggleActions: 'play none none none',
+            },
+        });
+    });
+}
+
+/**
  * One-call section setup for /v2. Mirrors useSectionFx but with the 3D language.
  * `extra` receives { gsap, ScrollTrigger, scope, reducedMotion } for bespoke
  * pinned timelines (hero, showcase deck, tech ring).
@@ -170,6 +212,7 @@ export function useV2Fx(scopeRef, { reducedMotion = false, extra, dependencies =
             animateCounters(scope, { reducedMotion: reduced });
             animateV2Depth(scope, { reducedMotion: reduced });
             animateV2Tilt(scope, { reducedMotion: reduced });
+            animateV2Scramble(scope, { reducedMotion: reduced });
 
             if (typeof extra === 'function') {
                 extra({ gsap, ScrollTrigger, scope, reducedMotion: reduced });

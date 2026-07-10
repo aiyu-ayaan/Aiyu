@@ -1242,3 +1242,173 @@ html[data-perf="lite"] .boot2-ghost {
   }
 }
 
+
+/* ============================================================
+   V2 terminal / CRT FX layer ("computer freak" landing skin)
+   Pure-CSS decorations layered under the GSAP choreography.
+   Every effect here is decorative, pointer-events: none, and
+   switched off wholesale on lite devices / reduced motion.
+   ============================================================ */
+
+/* Phosphor-grid backdrop: faint blueprint lines + vignette. */
+.v2-term-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--accent-cyan) 7%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--accent-cyan) 7%, transparent) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(ellipse 90% 80% at 50% 30%, black 20%, transparent 78%);
+  -webkit-mask-image: radial-gradient(ellipse 90% 80% at 50% 30%, black 20%, transparent 78%);
+}
+
+/* CRT scanlines: a repeating hairline raster, barely-there. */
+.v2-term-scanlines {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0px,
+    transparent 3px,
+    color-mix(in srgb, var(--text-bright) 2.5%, transparent) 3px,
+    color-mix(in srgb, var(--text-bright) 2.5%, transparent) 4px
+  );
+}
+
+/* One bright scanline sweeping down a console on loop. */
+.v2-term-sweep {
+  position: absolute;
+  inset-inline: 0;
+  top: -20%;
+  height: 18%;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    color-mix(in srgb, var(--accent-cyan) 6%, transparent) 45%,
+    color-mix(in srgb, var(--accent-cyan) 10%, transparent) 50%,
+    color-mix(in srgb, var(--accent-cyan) 6%, transparent) 55%,
+    transparent
+  );
+  animation: v2-term-sweep 7s linear infinite;
+}
+
+@keyframes v2-term-sweep {
+  from { transform: translateY(0); }
+  to { transform: translateY(720%); }
+}
+
+/* Blinking block caret, terminal-style (steps, not fade). */
+.v2-caret {
+  display: inline-block;
+  width: 0.6em;
+  height: 1.1em;
+  margin-left: 0.15em;
+  vertical-align: text-bottom;
+  background-color: var(--status-success);
+  animation: v2-caret-blink 1.06s steps(1) infinite;
+}
+
+@keyframes v2-caret-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+/* RGB-split glitch. Element needs data-text="<same text>";
+   the pseudo layers flicker in on a sparse cycle so the page
+   mostly rests and only occasionally "corrupts". */
+.v2-glitch {
+  position: relative;
+}
+
+.v2-glitch::before,
+.v2-glitch::after {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  background: inherit;
+  -webkit-background-clip: inherit;
+  background-clip: inherit;
+}
+
+.v2-glitch::before {
+  color: var(--accent-cyan);
+  animation: v2-glitch-a 6s infinite steps(1);
+}
+
+.v2-glitch::after {
+  color: var(--accent-pink);
+  animation: v2-glitch-b 6s infinite steps(1);
+}
+
+@keyframes v2-glitch-a {
+  0%, 91.5% { opacity: 0; }
+  92% { opacity: 0.85; transform: translate(-3px, 2px); clip-path: inset(12% 0 58% 0); }
+  92.6% { opacity: 0.85; transform: translate(3px, -1px); clip-path: inset(62% 0 8% 0); }
+  93.4% { opacity: 0.85; transform: translate(-2px, 0); clip-path: inset(38% 0 40% 0); }
+  94%, 100% { opacity: 0; }
+}
+
+@keyframes v2-glitch-b {
+  0%, 91.7% { opacity: 0; }
+  92.2% { opacity: 0.85; transform: translate(3px, -2px); clip-path: inset(55% 0 20% 0); }
+  93% { opacity: 0.85; transform: translate(-3px, 1px); clip-path: inset(8% 0 72% 0); }
+  93.8% { opacity: 0.85; transform: translate(2px, 0); clip-path: inset(30% 0 52% 0); }
+  94.4%, 100% { opacity: 0; }
+}
+
+/* Terminal window chrome shared by hero + consoles. */
+.v2-term-window {
+  border: 1px solid var(--hairline);
+  border-radius: 0.9rem;
+  background-color: color-mix(in srgb, var(--bg-secondary) 90%, transparent);
+  overflow: hidden;
+}
+
+.v2-term-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.7rem 1.1rem;
+  border-bottom: 1px solid var(--hairline);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--text-bright) 4%, transparent), transparent);
+}
+
+/* Mono HUD chip floating in the hero depth field. */
+.v2-hud-chip {
+  border: 1px solid var(--hairline);
+  border-radius: 0.45rem;
+  background-color: color-mix(in srgb, var(--bg-secondary) 82%, transparent);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  font-family: var(--font-mono, ui-monospace, monospace);
+}
+
+/* Kill all decorative FX on lite devices / reduced motion. */
+html[data-perf="lite"] .v2-term-grid,
+html[data-perf="lite"] .v2-term-scanlines,
+html[data-perf="lite"] .v2-term-sweep {
+  display: none;
+}
+
+html[data-perf="lite"] .v2-glitch::before,
+html[data-perf="lite"] .v2-glitch::after {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v2-term-sweep,
+  .v2-caret,
+  .v2-glitch::before,
+  .v2-glitch::after {
+    animation: none !important;
+  }
+
+  .v2-glitch::before,
+  .v2-glitch::after {
+    display: none;
+  }
+}

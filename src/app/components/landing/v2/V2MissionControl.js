@@ -21,15 +21,20 @@ const V2MissionControl = ({ data }) => {
     const sectionRef = useRef(null);
     const { prefersReducedMotion } = useDevicePerformance();
     const [clock, setClock] = useState('');
+    const [uptime, setUptime] = useState(0);
 
     useEffect(() => {
+        const startedAt = Date.now();
         const updateClock = () => {
             setClock(new Date().toLocaleTimeString('en-US', { hour12: false }));
+            setUptime(Math.floor((Date.now() - startedAt) / 1000));
         };
         updateClock();
         const interval = setInterval(updateClock, 1000);
         return () => clearInterval(interval);
     }, []);
+
+    const uptimeLabel = `${String(Math.floor(uptime / 60)).padStart(2, '0')}:${String(uptime % 60).padStart(2, '0')}`;
 
     useV2Fx(sectionRef, {
         reducedMotion: prefersReducedMotion,
@@ -94,7 +99,7 @@ const V2MissionControl = ({ data }) => {
 
                 <div className="v2-console-wrap" style={{ perspective: '1300px' }}>
                     <div
-                        className="v2-console overflow-hidden rounded-2xl border font-mono text-sm sm:text-base"
+                        className="v2-console relative overflow-hidden rounded-2xl border font-mono text-sm sm:text-base"
                         style={{
                             borderColor: 'var(--hairline)',
                             backgroundColor: 'color-mix(in srgb, var(--bg-secondary) 88%, transparent)',
@@ -109,14 +114,14 @@ const V2MissionControl = ({ data }) => {
                                 <span className="h-3 w-3 rounded-full" style={{ backgroundColor: 'var(--status-error, #f87171)', opacity: 0.8 }} />
                                 <span className="h-3 w-3 rounded-full" style={{ backgroundColor: 'var(--accent-orange)', opacity: 0.8 }} />
                                 <span className="h-3 w-3 rounded-full" style={{ backgroundColor: 'var(--status-success)', opacity: 0.8 }} />
-                                <span className="ml-3 text-xs" style={{ color: 'var(--text-muted)' }}>aiyu@v2 — status</span>
+                                <span className="ml-3 text-xs" style={{ color: 'var(--text-muted)' }}>root@mission-control:~# status --live</span>
                             </div>
                             <p className="text-xs tabular-nums" style={{ color: 'var(--text-tertiary)' }} suppressHydrationWarning>
                                 <span className="relative mr-2 inline-flex h-1.5 w-1.5 align-middle">
                                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60" style={{ backgroundColor: 'var(--status-success)' }} />
                                     <span className="relative inline-flex h-1.5 w-1.5 rounded-full" style={{ backgroundColor: 'var(--status-success)' }} />
                                 </span>
-                                {clock || '--:--:--'} local
+                                up {uptimeLabel} · {clock || '--:--:--'} local
                             </p>
                         </div>
 
@@ -129,16 +134,23 @@ const V2MissionControl = ({ data }) => {
                                     <span className="w-40 shrink-0 text-xs uppercase tracking-[0.2em] sm:text-sm" style={{ color: row.accent }}>
                                         {row.flag}
                                     </span>
-                                    <span className="text-base font-medium sm:text-xl" style={{ color: 'var(--text-primary)' }}>
+                                    <span
+                                        className="text-base font-medium sm:text-xl"
+                                        style={{ color: 'var(--text-primary)' }}
+                                        data-v2-scramble="1.1"
+                                    >
                                         {data?.[row.key] || row.fallback}
                                     </span>
                                 </div>
                             ))}
                             <p className="v2-console-row mt-6" style={{ color: 'var(--text-muted)' }}>
                                 <span style={{ color: 'var(--status-success)' }}>$</span>{' '}
-                                <span className="inline-block h-4 w-2.5 translate-y-0.5 animate-pulse" style={{ backgroundColor: 'var(--text-secondary)' }} />
+                                <span className="v2-caret" />
                             </p>
                         </div>
+
+                        {/* Looping bright scanline: the console reads as a live CRT. */}
+                        <div className="v2-term-sweep" aria-hidden="true" />
                     </div>
                 </div>
             </div>

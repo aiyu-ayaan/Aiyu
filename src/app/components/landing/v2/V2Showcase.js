@@ -157,7 +157,7 @@ const V2Showcase = ({ data }) => {
       <div className="v2-deck-pin mx-auto w-full max-w-7xl px-6 lg:px-10">
         <div className="relative mb-12">
           <p data-v2="line" className="mb-4 font-mono text-xs font-semibold uppercase tracking-[0.35em]" style={{ color: 'var(--accent-cyan)' }}>
-            /05 — {eyebrow}
+            <span data-v2-scramble="0.9">{`0x05 :: ${eyebrow}`}</span>
           </p>
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div>
@@ -209,15 +209,26 @@ const V2Showcase = ({ data }) => {
                 </span>
                 <span aria-hidden="true" className="absolute inset-x-0 top-0 h-[3px]" style={{ background: `linear-gradient(90deg, ${accent}, transparent 70%)` }} />
 
-                <div className="mb-8 flex items-start justify-between gap-3">
+                <div className="-mx-8 -mt-8 mb-8 flex items-center justify-between gap-3 border-b px-8 py-3 sm:-mx-12 sm:-mt-12 sm:px-12" style={{ borderColor: 'var(--hairline)' }}>
+                  <span className="flex items-center gap-1.5" aria-hidden="true">
+                    <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: 'var(--status-error, #f87171)', opacity: 0.75 }} />
+                    <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: 'var(--accent-orange)', opacity: 0.75 }} />
+                    <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: 'var(--status-success)', opacity: 0.75 }} />
+                    <span className="ml-3 font-mono text-xs" style={{ color: 'var(--text-muted)' }}>
+                      ./{panel.title.toLowerCase().replace(/[^a-z0-9]+/g, '_')}.sh
+                    </span>
+                  </span>
+                  <span className="font-mono text-xs tabular-nums" style={{ color: 'var(--text-muted)' }}>
+                    proc 0x{String(index + 1).padStart(2, '0')}/{String(panels.length).padStart(2, '0')}
+                  </span>
+                </div>
+
+                <div className="mb-8">
                   <span
                     className="inline-flex h-12 w-12 items-center justify-center rounded-2xl border"
                     style={{ borderColor: `color-mix(in srgb, ${accent} 35%, transparent)`, backgroundColor: `color-mix(in srgb, ${accent} 12%, transparent)` }}
                   >
                     <Icon size={16} style={{ color: accent }} />
-                  </span>
-                  <span className="font-mono text-xs tabular-nums" style={{ color: 'var(--text-muted)' }}>
-                    {String(index + 1).padStart(2, '0')} / {String(panels.length).padStart(2, '0')}
                   </span>
                 </div>
 

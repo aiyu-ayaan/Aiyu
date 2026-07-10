@@ -53,20 +53,30 @@ const V2Snapshot = ({ stats = [], recentProjectNames = [], recentBlogTitles = []
                             }}
                         >
                             <p
+                                aria-hidden="true"
+                                className="mb-3 font-mono text-[0.65rem] tracking-[0.2em]"
+                                style={{ color: 'var(--text-muted)' }}
+                            >
+                                reg[0x0{index + 1}]
+                            </p>
+                            <p
                                 className="text-6xl font-black leading-none tracking-tighter tabular-nums sm:text-8xl"
                                 style={{ color: 'var(--text-bright)' }}
                             >
                                 <span data-counter={item.value}>{item.value}</span>
+                                <span className="v2-caret ml-1 hidden sm:inline-block" style={{ width: '0.14em', height: '0.7em' }} aria-hidden="true" />
                             </p>
                             <p className="mt-4 font-mono text-[0.7rem] uppercase tracking-[0.25em]" style={{ color: item.accent }}>
-                                {item.label}
+                                ▸ {item.label}
                             </p>
                         </div>
                     ))}
                 </div>
 
                 <div data-v2-group data-v2-stagger="0.05" className="mt-12 flex flex-wrap items-center gap-x-6 gap-y-3 font-mono text-sm">
-                    <span data-v2="rise" style={{ color: 'var(--text-muted)' }}>jump to →</span>
+                    <span data-v2="rise" style={{ color: 'var(--text-muted)' }}>
+                        <span style={{ color: 'var(--status-success)' }}>$</span> cd ./
+                    </span>
                     {quickLinks.map((item) => (
                         <a
                             key={item.href}

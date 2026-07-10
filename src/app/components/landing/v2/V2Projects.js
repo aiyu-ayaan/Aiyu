@@ -60,6 +60,7 @@ const V2Projects = ({ data, config }) => {
         />
 
         <p data-v2="rise" className="-mt-8 mb-14 font-mono text-sm sm:-mt-12" style={{ color: 'var(--text-muted)' }}>
+          <span style={{ color: 'var(--status-success)' }}>$</span> ls ./work --stats →{' '}
           <span data-counter={projects.length}>{projects.length}</span> built ·{' '}
           <span data-counter={doneProjects}>{doneProjects}</span> shipped ·{' '}
           <span data-counter={uniqueStacks}>{uniqueStacks}</span> technologies

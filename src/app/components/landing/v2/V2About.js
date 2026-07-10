@@ -79,11 +79,17 @@ const V2About = ({ data }) => {
                     className="v2-about-quote mb-20 max-w-5xl text-2xl font-medium leading-snug tracking-tight sm:text-4xl lg:text-[2.75rem] lg:leading-[1.2]"
                     style={{ color: 'var(--text-bright)' }}
                 >
+                    <span aria-hidden="true" className="mb-4 block font-mono text-base sm:text-xl" style={{ color: 'var(--text-muted)' }}>
+                        {'/**'}
+                    </span>
                     {words.map((word, index) => (
                         <span key={`${word}-${index}`} className="v2-about-word">
                             {word}{' '}
                         </span>
                     ))}
+                    <span aria-hidden="true" className="mt-4 block font-mono text-base sm:text-xl" style={{ color: 'var(--text-muted)' }}>
+                        {'*/'}
+                    </span>
                 </blockquote>
 
                 <div style={{ borderTop: '1px solid var(--hairline)' }}>

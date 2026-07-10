@@ -93,7 +93,7 @@ const V2TechStack = ({ data }) => {
                     index="03"
                     eyebrow="Tech Stack"
                     title="A toolbox with real depth."
-                    kicker={`${skills.length} skills ranked by fluency — floating in 3D, drifting as you scroll.`}
+                    kicker={`$ pkg list --installed → ${skills.length} modules ranked by fluency, floating in 3D and drifting as you scroll.`}
                     accent="var(--accent-orange)"
                 />
 
@@ -109,9 +109,9 @@ const V2TechStack = ({ data }) => {
                             return (
                                 <span
                                     key={`${skill.name}-${index}`}
-                                    className="v2-tech-chip inline-flex cursor-default items-center gap-2.5 rounded-full border font-mono font-semibold transition-colors duration-200"
+                                    className="v2-tech-chip inline-flex cursor-default items-center rounded-md border font-mono font-semibold transition-colors duration-200"
                                     style={{
-                                        padding: isTop ? '0.8rem 1.4rem' : '0.55rem 1.05rem',
+                                        padding: isTop ? '0.8rem 1.2rem' : '0.55rem 0.9rem',
                                         fontSize: isTop ? '1.05rem' : '0.82rem',
                                         color: 'var(--text-primary)',
                                         borderColor: `color-mix(in srgb, ${accent} ${isTop ? 55 : 30}%, transparent)`,
@@ -119,12 +119,14 @@ const V2TechStack = ({ data }) => {
                                         boxShadow: isTop ? `0 16px 40px -22px color-mix(in srgb, ${accent} 60%, transparent)` : undefined,
                                     }}
                                 >
-                                    {skill.name}
+                                    <span aria-hidden="true" style={{ color: accent }}>[</span>
+                                    <span className="mx-1">{skill.name}</span>
                                     {level > 0 && (
-                                        <span className="text-[0.65rem] font-bold tabular-nums" style={{ color: accent }}>
-                                            {level}
+                                        <span className="text-[0.7em] font-bold tabular-nums" style={{ color: accent }}>
+                                            :{level}
                                         </span>
                                     )}
+                                    <span aria-hidden="true" style={{ color: accent }}>]</span>
                                 </span>
                             );
                         })}

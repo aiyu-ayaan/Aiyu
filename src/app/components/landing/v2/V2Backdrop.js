@@ -39,6 +39,9 @@ const V2Backdrop = () => {
                     background: 'linear-gradient(90deg, transparent, color-mix(in srgb, var(--text-bright) 18%, transparent), transparent)',
                 }}
             />
+            {/* Faint blueprint grid + raster lines: the terminal skin's paper. */}
+            <div className="v2-term-grid" style={{ opacity: 0.5 }} />
+            <div className="v2-term-scanlines" style={{ opacity: 0.6 }} />
         </div>
     );
 };

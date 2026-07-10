@@ -44,7 +44,7 @@ const V2Blogs = ({ blogs, config }) => {
           index="07"
           eyebrow="Writing"
           title="Notes from the workbench."
-          kicker="Practical notes, tutorials, and reflections from projects and day-to-day engineering."
+          kicker="$ cat ./notes/*.md — practical notes, tutorials, and reflections from projects and day-to-day engineering."
           accent="var(--accent-purple)"
         />
 

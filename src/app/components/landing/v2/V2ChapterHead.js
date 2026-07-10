@@ -27,7 +27,7 @@ const V2ChapterHead = ({ index, eyebrow, title, kicker, accent = 'var(--accent-c
             className="mb-4 font-mono text-xs font-semibold uppercase tracking-[0.35em]"
             style={{ color: accent }}
         >
-            /{index} — {eyebrow}
+            <span data-v2-scramble="0.9">{`0x${index} :: ${eyebrow}`}</span>
         </p>
         <h2
             data-v2="line"
