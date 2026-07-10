@@ -55,6 +55,37 @@ RUN DATABASE_URL="postgresql://dummy:dummy@dummy:5432/dummy?schema=public" \
     NEXT_TELEMETRY_DISABLED=1 \
     npm run build -- --webpack
 
+# Assemble the complete runtime tree in /out so the runner ships ONE layer.
+# Copying standalone and the Prisma packages as separate layers stored the
+# overlapping files twice; assembling here also lets us prune before copying.
+#
+# Pruning rationale:
+#   * The generated client (.prisma/client/index.js) loads exactly one runtime,
+#     runtime/library.js, plus the native libquery_engine-*.so.node next to it.
+#   * The *wasm-base64* files are the query engine for EVERY database
+#     (mysql/sqlite/sqlserver/cockroachdb/...) inlined as base64 for edge
+#     deployments — ~54MB never read by a Node server.
+#   * @prisma/engines is the dev-time engine downloader (schema engine +
+#     another copy of the query engine, ~36MB); the runtime never touches it.
+RUN mkdir -p /out/.next/static /out/public \
+    && cp -a .next/standalone/. /out/ \
+    && cp -a .next/static/. /out/.next/static/ \
+    && cp -a public/. /out/public/ \
+    && cp -a prisma /out/prisma \
+    && mkdir -p /out/node_modules/@prisma \
+    && rm -rf /out/node_modules/.prisma \
+              /out/node_modules/@prisma/client \
+              /out/node_modules/@prisma/engines \
+    && cp -a node_modules/.prisma /out/node_modules/.prisma \
+    && cp -a node_modules/@prisma/client /out/node_modules/@prisma/client \
+    && rm -f /out/node_modules/@prisma/client/runtime/*wasm-base64* \
+             /out/node_modules/@prisma/client/runtime/*.map \
+             /out/node_modules/@prisma/client/runtime/*.d.ts \
+             /out/node_modules/@prisma/client/runtime/*.d.mts \
+             /out/node_modules/@prisma/client/runtime/react-native.* \
+             /out/node_modules/.prisma/client/*.d.ts \
+             /out/node_modules/.prisma/client/query_engine_bg.wasm
+
 # Stage 2.5: Isolated Prisma CLI
 # Prisma 6.19's CLI loads @prisma/config, which pulls a large transitive
 # closure (effect, c12, and ~20 more). None of it is part of the Next.js
@@ -69,6 +100,20 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 RUN npm init -y >/dev/null 2>&1 \
     && npm install prisma@6.19.3 --no-audit --no-fund
+# Prune the CLI to what `migrate deploy` actually uses: it drives the schema
+# engine only, so drop the query engines/compilers for every database, the
+# embedded prisma-client generator sources, and Studio's web assets. effect is
+# required via CJS (`require("effect")` in @prisma/config), so its ESM build,
+# typings, and TS sources are dead weight too (fast-check must stay — the CJS
+# barrel loads it). Together ~75MB.
+RUN rm -rf node_modules/prisma/prisma-client \
+           node_modules/prisma/build/public \
+           node_modules/effect/dist/esm \
+           node_modules/effect/dist/dts \
+           node_modules/effect/src \
+    && rm -f node_modules/@prisma/engines/libquery_engine-* \
+             node_modules/prisma/build/query_engine_bg.* \
+             node_modules/prisma/build/query_compiler_bg.*
 
 # Stage 3: Runner
 FROM node:20-bookworm-slim AS runner
@@ -87,17 +132,10 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN groupadd --system --gid 1001 nodejs \
     && useradd --system --uid 1001 --gid nodejs --create-home nextjs
 
-# Copy necessary files from builder
-COPY --from=builder --chown=nextjs:nodejs /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-
-# Prisma schema/migrations + runtime client. The Next.js standalone trace is
-# unreliable for Prisma's engine, so copy the generated client (.prisma) and
-# the runtime @prisma packages explicitly. These serve queries at runtime.
-COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
+# The complete pruned runtime tree (standalone server + static assets + public
+# + prisma schema/migrations + generated Prisma client) assembled and pruned in
+# the builder. One COPY = one layer, with no duplicated Prisma artifacts.
+COPY --from=builder --chown=nextjs:nodejs /out ./
 
 # Self-contained Prisma CLI (with its full @prisma/config -> effect/c12 closure)
 # kept in its own directory so it can't shadow the app's runtime node_modules.
