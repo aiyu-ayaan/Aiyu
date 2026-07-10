@@ -40,6 +40,7 @@ export const DEFAULT_SEO_CONFIG = {
     },
     indexing: {
         enabled: false,
+        autoPing: false, // auto-notify Google when blogs/projects/apps/header change
     },
 };
 
