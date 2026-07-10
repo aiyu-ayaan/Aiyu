@@ -6,6 +6,7 @@ import cache from '@/lib/cache';
 import { createUniqueBlogSlug, resolveBlogByIdentifier } from '@/lib/blogSlugs';
 import { revalidatePath } from 'next/cache';
 import { getSiteUrl } from '@/lib/siteUrl';
+import { autoPing } from '@/lib/autoIndexing';
 
 function normalizeCanonicalUrl(value) {
     const raw = typeof value === 'string' ? value.trim() : '';
@@ -125,6 +126,13 @@ export async function PUT(request, { params }) {
         await cache.invalidatePrefixAsync('db:blog');
         revalidateBlogPublicPaths(existingBlog?.slug);
         revalidateBlogPublicPaths(blog?.slug);
+        if (blog?.slug) {
+            const isIndexable = blog.published && !blog.noIndex;
+            autoPing([`/blogs/${blog.slug}`, '/blogs'], isIndexable ? 'URL_UPDATED' : 'URL_DELETED');
+            if (existingBlog?.slug && existingBlog.slug !== blog.slug) {
+                autoPing([`/blogs/${existingBlog.slug}`], 'URL_DELETED');
+            }
+        }
         return NextResponse.json({ success: true, data: toClient('blog', blog) });
     } catch (error) {
         if (isDuplicateTitleError(error)) {
@@ -152,6 +160,10 @@ export async function DELETE(request, { params }) {
         await cache.invalidatePrefixAsync('db:blogs');
         await cache.invalidatePrefixAsync('db:blog');
         revalidateBlogPublicPaths(blog?.slug);
+        if (blog?.slug) {
+            autoPing([`/blogs/${blog.slug}`], 'URL_DELETED');
+            autoPing(['/blogs']);
+        }
         return NextResponse.json({ success: true, data: {} });
     } catch (error) {
         return NextResponse.json({ success: false, error: error.message }, { status: 400 });

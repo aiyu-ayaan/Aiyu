@@ -8,6 +8,7 @@ import { createUniqueBlogSlug } from '@/lib/blogSlugs';
 import { validateBearerBlogToken } from '@/lib/blogApiAuth';
 import { revalidatePath } from 'next/cache';
 import { getSiteUrl } from '@/lib/siteUrl';
+import { autoPing } from '@/lib/autoIndexing';
 
 const DEFAULT_BLOG_PAGE_SIZE = 6;
 const MAX_BLOG_PAGE_SIZE = 24;
@@ -257,6 +258,9 @@ export async function POST(request) {
         await cache.invalidatePrefixAsync('db:blogs');
         await cache.invalidatePrefixAsync('db:blog');
         revalidateBlogPublicPaths(blog?.slug);
+        if (blog?.published && !blog?.noIndex && blog?.slug) {
+            autoPing([`/blogs/${blog.slug}`, '/blogs']);
+        }
         return NextResponse.json({ success: true, data: toClient('blog', blog) }, { status: 201 });
     } catch (error) {
         if (isDuplicateTitleError(error)) {
