@@ -1,5 +1,34 @@
 # Changelog
 
+## [4.7.5](https://github.com/aiyu-ayaan/Aiyu/compare/v4.7.4...v4.7.5) (2026-07-10)
+
+### Features
+
+* Auto-ping toggle in the Indexing tab
+* Auto-ping section pages when header config changes
+* Auto-ping Google Indexing API on project and app changes
+* Auto-ping Google Indexing API on blog create/update/delete
+* Add auto-indexing lib gated by indexing.autoPing config
+* Route-change crossfade plus header and hero motion refinements
+* Premium interaction polish and accessibility prefs in design system
+* Soften 3D motion presets into a calmer, premium reveal language
+* Add gtag client helper for GA page views and events
+* Add dynamic breadcrumb structured data to all nav pages
+* Add AI Hub endpoint and enhance skills display with animations
+
+### Bug Fixes
+
+* : Fix release done
+* Surface Google error message on failed indexing log rows
+* Send GA page_view on every client-side route change
+* Fix : MCP server updates and UI updates
+
+### Other Changes
+
+* Cut image from 935MB to 592MB by pruning Prisma dead weight
+* Add design engineering and animation review skills based on Emil Kowalski's philosophy
+* Merge branch 'master' of https://github.com/aiyu-ayaan/Aiyu
+
 ## [4.7.4](https://github.com/aiyu-ayaan/Aiyu/compare/v4.7.3...v4.7.4) (2026-07-08)
 
 ### Features
