@@ -214,8 +214,9 @@ const V2Header = ({ logoText = '< aiyu />', data, config, socialData }) => {
             {/* Mobile overlay — terminal-styled directory listing of the nav. */}
             <div
                 id="v2-mobile-menu"
-                className="fixed inset-0 z-[60] flex flex-col overflow-y-auto overscroll-contain transition-[opacity,transform] duration-200 ease-out md:hidden"
+                className="fixed inset-0 z-[60] flex flex-col overflow-y-auto overscroll-contain transition-[opacity,transform] duration-300 md:hidden"
                 style={{
+                    transitionTimingFunction: 'cubic-bezier(0.32, 0.72, 0, 1)',
                     backgroundColor: 'color-mix(in srgb, var(--bg-primary) 94%, transparent)',
                     backdropFilter: 'blur(18px) saturate(140%)',
                     WebkitBackdropFilter: 'blur(18px) saturate(140%)',

@@ -44,26 +44,26 @@ const V2Hero = ({ data }) => {
             // a time-based intro and a scrubbed timeline makes the scrub
             // capture/fight the intro's hidden start values (shards vanished
             // after a scroll round-trip). Disjoint targets can't conflict.
-            const intro = gsap.timeline({ defaults: { ease: 'power3.out' } });
+            const intro = gsap.timeline({ defaults: { ease: 'expo.out' } });
             intro
                 .from(scope.querySelectorAll('.v2-hero-line'), {
                     autoAlpha: 0,
-                    rotationX: -80,
-                    yPercent: 70,
+                    rotationX: -46,
+                    yPercent: 52,
                     transformOrigin: '50% 100%',
                     transformPerspective: 900,
                     duration: 1.1,
-                    stagger: 0.12,
+                    stagger: 0.1,
                 })
-                .from(scope.querySelector('.v2-hero-meta-in'), { autoAlpha: 0, y: 26, duration: 0.8 }, '-=0.6')
+                .from(scope.querySelector('.v2-hero-meta-in'), { autoAlpha: 0, y: 22, duration: 0.9 }, '-=0.7')
                 .from(scope.querySelectorAll('.v2-hero-shard-in'), {
                     autoAlpha: 0,
-                    z: -360,
-                    scale: 0.8,
+                    z: -240,
+                    scale: 0.92,
                     transformPerspective: 900,
                     duration: 1.2,
                     stagger: 0.08,
-                }, '-=0.9')
+                }, '-=0.95')
                 .from(scope.querySelector('.v2-hero-cue-in'), { autoAlpha: 0, y: -14, duration: 0.6 }, '-=0.4');
 
             // Fly-through: pin the stage and dolly the camera as the user scrolls.

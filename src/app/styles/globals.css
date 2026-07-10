@@ -931,6 +931,25 @@ body.lightbox-open #scroll-to-top {
 }
 
 /* ============================================================
+   V2 route transition (src/app/v2/template.js)
+   Opacity-only crossfade on every client-side navigation. No
+   transform: it would create a containing block and break the
+   hero's pinned ScrollTrigger.
+   ============================================================ */
+.v2-page-enter {
+  animation: v2-page-enter 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes v2-page-enter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+html[data-perf="lite"] .v2-page-enter {
+  animation: none;
+}
+
+/* ============================================================
    V2 editorial boot loader (#boot-screen)
    Shown once per session (see BootLoader.js + the pre-paint
    data-booted flag in layout.js). Returning sessions never see
