@@ -24,19 +24,27 @@ import {
  *   data-v2-tilt                panel tilts backward around X as it leaves the viewport (scrub)
  */
 const V2_PRESETS = {
-    // Surfaces from deep behind the camera plane.
-    deep: { autoAlpha: 0, z: -420, y: 40, rotationX: 8, transformPerspective: 1200 },
+    // Surfaces from behind the camera plane — kept shallow so the settle
+    // reads as a graceful arrival, not a launch.
+    deep: { autoAlpha: 0, z: -240, y: 28, rotationX: 5, transformPerspective: 1200 },
     // Card lying face-up swings to face the camera.
-    'flip-x': { autoAlpha: 0, rotationX: -72, y: 64, z: -120, transformOrigin: '50% 100%', transformPerspective: 1100 },
+    'flip-x': { autoAlpha: 0, rotationX: -34, y: 44, z: -80, transformOrigin: '50% 100%', transformPerspective: 1100 },
     // Doors: swing in around a vertical hinge on their own edge.
-    'door-left': { autoAlpha: 0, rotationY: 58, x: -46, z: -90, transformOrigin: 'left center', transformPerspective: 1100 },
-    'door-right': { autoAlpha: 0, rotationY: -58, x: 46, z: -90, transformOrigin: 'right center', transformPerspective: 1100 },
+    'door-left': { autoAlpha: 0, rotationY: 28, x: -32, z: -60, transformOrigin: 'left center', transformPerspective: 1100 },
+    'door-right': { autoAlpha: 0, rotationY: -28, x: 32, z: -60, transformOrigin: 'right center', transformPerspective: 1100 },
     // Headline lines pivot up from below the baseline.
-    line: { autoAlpha: 0, rotationX: -88, yPercent: 60, transformOrigin: '50% 100%', transformPerspective: 900 },
+    line: { autoAlpha: 0, rotationX: -46, yPercent: 46, transformOrigin: '50% 100%', transformPerspective: 900 },
     // Oversized panels: gentle depth zoom, no rotation.
-    float: { autoAlpha: 0, z: -240, scale: 0.96, transformPerspective: 1400 },
-    rise: { autoAlpha: 0, y: 44, filter: 'blur(6px)' },
+    float: { autoAlpha: 0, z: -140, scale: 0.975, transformPerspective: 1400 },
+    rise: { autoAlpha: 0, y: 30, filter: 'blur(5px)' },
 };
+
+// expo.out is the closest tween ease to a critically damped spring: it covers
+// most of the distance immediately (respond fast), then settles without
+// overshoot (never distract). Every v2 reveal shares it so motion feels like
+// one material, not a collection of effects.
+const V2_EASE = 'expo.out';
+const V2_DURATION = 1.0;
 
 const getV2Preset = (el) => V2_PRESETS[el.dataset.v2] || V2_PRESETS.rise;
 
@@ -45,15 +53,18 @@ function revealV2(target, preset, { delay = 0, stagger = 0, trigger } = {}) {
     
     // Build explicit target state to avoid React's "animating from 0 to 0" issue.
     const toVars = {
-        duration: 1.1,
-        ease: 'power3.out',
+        duration: V2_DURATION,
+        ease: V2_EASE,
         clearProps: 'all',
         delay,
         stagger,
         scrollTrigger: {
             trigger: trigger || firstTarget,
-            start: 'top 88%',
-            toggleActions: 'play none none reverse',
+            start: 'top 90%',
+            // Reveal once and stay. Re-flipping content every time the user
+            // scrolls back up reads as the page performing, not responding —
+            // and reversing after clearProps caused a visible snap.
+            toggleActions: 'play none none none',
         },
     };
 
@@ -102,14 +113,16 @@ export function animateV2Depth(scope, { reducedMotion = false } = {}) {
     scope.querySelectorAll('[data-v2-depth]').forEach((el) => {
         const speed = Number(el.dataset.v2Depth) || -0.3;
         gsap.to(el, {
-            y: () => speed * 280,
-            scale: 1 + Math.min(Math.abs(speed) * 0.12, 0.12) * (speed < 0 ? 1 : -1),
+            y: () => speed * 220,
+            scale: 1 + Math.min(Math.abs(speed) * 0.08, 0.08) * (speed < 0 ? 1 : -1),
             ease: 'none',
             scrollTrigger: {
                 trigger: el,
                 start: 'top bottom',
                 end: 'bottom top',
-                scrub: true,
+                // A touch of scrub lag lets the layer glide behind the scroll
+                // instead of tracking it 1:1 — the parallax reads as inertia.
+                scrub: 0.6,
             },
         });
     });
@@ -124,17 +137,17 @@ export function animateV2Tilt(scope, { reducedMotion = false } = {}) {
 
     scope.querySelectorAll('[data-v2-tilt]').forEach((el) => {
         gsap.to(el, {
-            rotationX: 9,
-            z: -160,
-            autoAlpha: 0.35,
+            rotationX: 5,
+            z: -110,
+            autoAlpha: 0.55,
             transformOrigin: '50% 0%',
             transformPerspective: 1400,
             ease: 'none',
             scrollTrigger: {
                 trigger: el,
-                start: 'bottom 62%',
+                start: 'bottom 58%',
                 end: 'bottom top',
-                scrub: true,
+                scrub: 0.6,
             },
         });
     });
