@@ -4,6 +4,8 @@ import { toClient, fromClient } from '@/lib/serialize';
 import { getSession } from '@/lib/auth';
 import cache, { CACHE_TTL, createCacheDebugHeaders } from '@/lib/cache';
 import { createPublicCacheHeaders, RESPONSE_CACHE } from '@/lib/httpCache';
+import { getDeploymentSlug } from '@/lib/contentSlugs';
+import { autoPing } from '@/lib/autoIndexing';
 
 export async function PUT(request, { params }) {
     const session = await getSession();
@@ -19,7 +21,9 @@ export async function PUT(request, { params }) {
             data: fromClient('deployment', body, { keepId: false }),
         });
         await cache.invalidatePrefixAsync('db:deployments');
-        return NextResponse.json(toClient('deployment', deployment));
+        const updated = toClient('deployment', deployment);
+        autoPing([`/apps/${getDeploymentSlug(updated)}`, '/apps']);
+        return NextResponse.json(updated);
     } catch (error) {
         if (error?.code === 'P2025') {
             return NextResponse.json({ error: 'Deployment not found' }, { status: 404 });
@@ -36,8 +40,10 @@ export async function DELETE(request, { params }) {
 
     try {
         const { id } = await params;
-        await prisma.deployment.delete({ where: { id } });
+        const deployment = await prisma.deployment.delete({ where: { id } });
         await cache.invalidatePrefixAsync('db:deployments');
+        autoPing([`/apps/${getDeploymentSlug(toClient('deployment', deployment))}`], 'URL_DELETED');
+        autoPing(['/apps']);
         return NextResponse.json({ message: 'Deployment deleted successfully' });
     } catch (error) {
         if (error?.code === 'P2025') {

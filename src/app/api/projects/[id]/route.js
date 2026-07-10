@@ -4,6 +4,8 @@ import { toClient, fromClient } from '@/lib/serialize';
 import { getSession } from '@/lib/auth';
 import cache, { CACHE_TTL, createCacheDebugHeaders } from '@/lib/cache';
 import { createPublicCacheHeaders, RESPONSE_CACHE } from '@/lib/httpCache';
+import { getProjectSlug } from '@/lib/contentSlugs';
+import { autoPing } from '@/lib/autoIndexing';
 
 export async function PUT(request, { params }) {
     const session = await getSession();
@@ -19,7 +21,9 @@ export async function PUT(request, { params }) {
             data: fromClient('project', body, { keepId: false }),
         });
         await cache.invalidatePrefixAsync('db:projects');
-        return NextResponse.json(toClient('project', project));
+        const updated = toClient('project', project);
+        autoPing([`/projects/${getProjectSlug(updated)}`, '/projects']);
+        return NextResponse.json(updated);
     } catch (error) {
         if (error?.code === 'P2025') {
             return NextResponse.json({ error: 'Project not found' }, { status: 404 });
@@ -36,8 +40,10 @@ export async function DELETE(request, { params }) {
 
     try {
         const { id } = await params;
-        await prisma.project.delete({ where: { id } });
+        const project = await prisma.project.delete({ where: { id } });
         await cache.invalidatePrefixAsync('db:projects');
+        autoPing([`/projects/${getProjectSlug(toClient('project', project))}`], 'URL_DELETED');
+        autoPing(['/projects']);
         return NextResponse.json({ message: 'Project deleted successfully' });
     } catch (error) {
         if (error?.code === 'P2025') {

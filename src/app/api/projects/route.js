@@ -4,6 +4,8 @@ import { toClient, toClientList, fromClient } from '@/lib/serialize';
 import { getSession } from '@/lib/auth';
 import cache, { CACHE_KEYS, CACHE_TTL, createCacheDebugHeaders } from '@/lib/cache';
 import { createPublicCacheHeaders, RESPONSE_CACHE } from '@/lib/httpCache';
+import { getProjectSlug } from '@/lib/contentSlugs';
+import { autoPing } from '@/lib/autoIndexing';
 
 const extractSortYear = (yearValue) => {
     const matches = String(yearValue || '').match(/\d{4}/g);
@@ -70,7 +72,9 @@ export async function POST(request) {
 
         const project = await prisma.project.create({ data: fromClient('project', payload, { keepId: false }) });
         await cache.invalidatePrefixAsync('db:projects');
-        return NextResponse.json(toClient('project', project), { status: 201 });
+        const created = toClient('project', project);
+        autoPing([`/projects/${getProjectSlug(created)}`, '/projects']);
+        return NextResponse.json(created, { status: 201 });
     } catch (error) {
         return NextResponse.json({ error: 'Failed to create project' }, { status: 500 });
     }

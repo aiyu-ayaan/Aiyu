@@ -4,6 +4,8 @@ import { toClient, toClientList, fromClient } from '@/lib/serialize';
 import { getSession } from '@/lib/auth';
 import cache, { CACHE_KEYS, CACHE_TTL, createCacheDebugHeaders } from '@/lib/cache';
 import { createPublicCacheHeaders, RESPONSE_CACHE } from '@/lib/httpCache';
+import { getDeploymentSlug } from '@/lib/contentSlugs';
+import { autoPing } from '@/lib/autoIndexing';
 
 const getDisplayOrderValue = (deployment) => {
     const parsedOrder = Number.parseInt(deployment?.displayOrder, 10);
@@ -66,7 +68,9 @@ export async function POST(request) {
 
         const deployment = await prisma.deployment.create({ data: fromClient('deployment', payload, { keepId: false }) });
         await cache.invalidatePrefixAsync('db:deployments');
-        return NextResponse.json(toClient('deployment', deployment), { status: 201 });
+        const created = toClient('deployment', deployment);
+        autoPing([`/apps/${getDeploymentSlug(created)}`, '/apps']);
+        return NextResponse.json(created, { status: 201 });
     } catch {
         return NextResponse.json({ error: 'Failed to create deployment' }, { status: 500 });
     }
