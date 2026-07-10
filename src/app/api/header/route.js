@@ -4,6 +4,7 @@ import { getSingleton, upsertSingleton } from '@/lib/serialize';
 import { getSession } from '@/lib/auth';
 import cache, { CACHE_KEYS, CACHE_TTL, createCacheDebugHeaders } from '@/lib/cache';
 import { createPublicCacheHeaders, RESPONSE_CACHE } from '@/lib/httpCache';
+import { autoPing, SECTION_PATHS } from '@/lib/autoIndexing';
 
 export async function GET() {
     try {
@@ -36,6 +37,9 @@ export async function PUT(request) {
         const body = await request.json();
         const header = await upsertSingleton(prisma, 'header', body);
         await cache.invalidateAsync(CACHE_KEYS.HEADER);
+        // The header renders on every page, so a change touches all of them;
+        // re-ping the section landing pages.
+        autoPing(SECTION_PATHS);
         return NextResponse.json(header);
     } catch (error) {
         return NextResponse.json({ error: 'Failed to update header data' }, { status: 500 });
