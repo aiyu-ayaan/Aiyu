@@ -1,4 +1,5 @@
 import BlogDetailClient from '../../../components/blogs/BlogDetailClient';
+import BreadcrumbSchema from '../../../components/shared/BreadcrumbSchema';
 import TrackView from '../../../components/shared/TrackView';
 import { cache } from 'react';
 import { notFound, permanentRedirect } from 'next/navigation';
@@ -130,6 +131,11 @@ export default async function BlogDetailV2Page({ params }) {
             <script
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(blogSchema) }}
+            />
+            <BreadcrumbSchema
+                path="/blogs"
+                name="Blogs"
+                trail={[{ name: blog?.title, path: `/blogs/${canonicalSlug}` }]}
             />
             <TrackView entityType="blog" entityId={blog?._id} entitySlug={canonicalSlug} />
             <BlogDetailClient blog={blog} config={config} adsConfig={adsConfig} backHref={v2PublicPath(config, '/blogs')} />

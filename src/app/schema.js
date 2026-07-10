@@ -76,12 +76,43 @@ export function generateWebsiteSchema(siteUrl, siteTitle) {
 }
 
 /**
+ * BreadcrumbList node (no @context) from an ordered trail of
+ * { name, item } entries — reused inside WebPage nodes and by the
+ * standalone breadcrumb schema below.
+ */
+export function buildBreadcrumbList(items) {
+    return {
+        '@type': 'BreadcrumbList',
+        itemListElement: (items || []).map((entry, index) => ({
+            '@type': 'ListItem',
+            position: index + 1,
+            name: entry.name,
+            item: entry.item,
+        })),
+    };
+}
+
+/**
+ * Standalone BreadcrumbList JSON-LD document for a page. `items` is the
+ * ordered trail INCLUDING Home, e.g.
+ *   [{ name: 'Home', item: siteUrl }, { name: 'Projects', item: url }]
+ */
+export function generateBreadcrumbSchema(items) {
+    return {
+        '@context': 'https://schema.org',
+        ...buildBreadcrumbList(items),
+    };
+}
+
+/**
  * Structured data for the AI Hub (/ai). Returns an array of JSON-LD nodes: a
  * WebPage with a Home → AI Hub breadcrumb, and — when the page has a `skills`
  * section — an ItemList enumerating every skill (name, description, optional
  * url) so search engines can surface the catalog as rich results.
+ * `breadcrumbName` lets the caller pass the live nav label so the crumb stays
+ * in sync with the admin-managed header.
  */
-export function generateAiHubSchema({ siteUrl, url, title, description, sections }) {
+export function generateAiHubSchema({ siteUrl, url, title, description, sections, breadcrumbName = 'AI Hub' }) {
     const webPage = {
         '@context': 'https://schema.org',
         '@type': 'WebPage',
@@ -93,13 +124,10 @@ export function generateAiHubSchema({ siteUrl, url, title, description, sections
             '@type': 'WebSite',
             url: siteUrl,
         },
-        breadcrumb: {
-            '@type': 'BreadcrumbList',
-            itemListElement: [
-                { '@type': 'ListItem', position: 1, name: 'Home', item: siteUrl },
-                { '@type': 'ListItem', position: 2, name: 'AI Hub', item: url },
-            ],
-        },
+        breadcrumb: buildBreadcrumbList([
+            { name: 'Home', item: siteUrl },
+            { name: breadcrumbName, item: url },
+        ]),
     };
 
     const schemas = [webPage];

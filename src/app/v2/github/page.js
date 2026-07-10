@@ -1,4 +1,5 @@
 import GitHubV2Loader from '../../components/github/v2/GitHubV2Loader';
+import BreadcrumbSchema from '../../components/shared/BreadcrumbSchema';
 import { getConfigData } from '@/lib/dataFetchers';
 import { getSiteUrl } from '@/lib/siteUrl';
 import { v2PublicPath } from '@/lib/siteVersion';
@@ -27,5 +28,10 @@ export async function generateMetadata() {
 }
 
 export default async function GitHubV2Page() {
-    return <GitHubV2Loader />;
+    return (
+        <>
+            <BreadcrumbSchema path="/github" name="GitHub" />
+            <GitHubV2Loader />
+        </>
+    );
 }

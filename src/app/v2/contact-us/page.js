@@ -1,4 +1,5 @@
 import ContactV2 from '../../components/contact/v2/ContactV2';
+import BreadcrumbSchema from '../../components/shared/BreadcrumbSchema';
 import { getConfigData } from '@/lib/dataFetchers';
 import { getSiteUrl } from '@/lib/siteUrl';
 import { v2PublicPath } from '@/lib/siteVersion';
@@ -42,12 +43,15 @@ export default async function ContactV2Page() {
     }
 
     return (
-        <ContactV2
-            location={location}
-            status={status}
-            email={email}
-            hasResume={hasResume}
-            resumeHref={resumeHref}
-        />
+        <>
+            <BreadcrumbSchema path="/contact-us" name="Contact" />
+            <ContactV2
+                location={location}
+                status={status}
+                email={email}
+                hasResume={hasResume}
+                resumeHref={resumeHref}
+            />
+        </>
     );
 }

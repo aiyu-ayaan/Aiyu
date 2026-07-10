@@ -1,4 +1,5 @@
 import SitemapV2 from '../../components/shared/v2/SitemapV2';
+import BreadcrumbSchema from '../../components/shared/BreadcrumbSchema';
 import { getPublishedBlogSlugs, getProjectsData, getDeploymentsData, getConfigData } from '@/lib/dataFetchers';
 import { getSiteUrl } from '@/lib/siteUrl';
 import { getProjectSlug, getDeploymentSlug } from '@/lib/contentSlugs';
@@ -67,5 +68,10 @@ export default async function SitemapV2Page() {
 
     const totalEntries = columns.reduce((sum, column) => sum + column.items.length, 0);
 
-    return <SitemapV2 columns={columns} totalEntries={totalEntries} />;
+    return (
+        <>
+            <BreadcrumbSchema path="/sitemap" name="Sitemap" />
+            <SitemapV2 columns={columns} totalEntries={totalEntries} />
+        </>
+    );
 }

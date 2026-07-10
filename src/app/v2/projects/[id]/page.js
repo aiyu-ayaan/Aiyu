@@ -1,6 +1,7 @@
 import { notFound, permanentRedirect } from 'next/navigation';
 import { cache } from 'react';
 import ProjectDetailV2 from '../../../components/projects/v2/ProjectDetailV2';
+import BreadcrumbSchema from '../../../components/shared/BreadcrumbSchema';
 import TrackView from '../../../components/shared/TrackView';
 import { getConfigData } from '@/lib/dataFetchers';
 import { getProjectSlug, resolveProjectByIdentifier } from '@/lib/contentSlugs';
@@ -128,6 +129,11 @@ export default async function ProjectDetailV2Page({ params }) {
             <script
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(projectSchema) }}
+            />
+            <BreadcrumbSchema
+                path="/projects"
+                name="Projects"
+                trail={[{ name: project.name, path: `/projects/${canonicalSlug}` }]}
             />
             <TrackView entityType="project" entityId={project?._id} entitySlug={canonicalSlug} />
             <ProjectDetailV2 project={project} backHref={v2PublicPath(config, '/projects')} />

@@ -1,4 +1,5 @@
 import ProjectsV2 from '../../components/projects/v2/ProjectsV2';
+import BreadcrumbSchema from '../../components/shared/BreadcrumbSchema';
 import { getConfigData, getProjectsData } from '@/lib/dataFetchers';
 import { getSiteUrl } from '@/lib/siteUrl';
 import { v2PublicPath } from '@/lib/siteVersion';
@@ -32,5 +33,10 @@ export default async function ProjectsV2Page() {
         getConfigData(),
     ]);
 
-    return <ProjectsV2 data={projectsData} config={config} />;
+    return (
+        <>
+            <BreadcrumbSchema path="/projects" name="Projects" />
+            <ProjectsV2 data={projectsData} config={config} />
+        </>
+    );
 }

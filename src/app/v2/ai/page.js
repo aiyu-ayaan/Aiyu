@@ -1,5 +1,6 @@
 import AiHub from '@/app/components/ai/v2/AiHub';
-import { getAiPageData, getConfigData } from '@/lib/dataFetchers';
+import { resolveNavLabel } from '@/app/components/shared/BreadcrumbSchema';
+import { getAiPageData, getConfigData, getLayoutData } from '@/lib/dataFetchers';
 import { getSiteUrl } from '@/lib/siteUrl';
 import { v2PublicPath } from '@/lib/siteVersion';
 import { generateAiHubSchema } from '@/app/schema';
@@ -84,8 +85,11 @@ export async function generateMetadata() {
 }
 
 export default async function AiHubPage() {
-    const { config, stats } = await getAiPageData();
-    const siteConfig = await getConfigData();
+    const [{ config, stats }, siteConfig, { headerData }] = await Promise.all([
+        getAiPageData(),
+        getConfigData(),
+        getLayoutData(),
+    ]);
     const baseUrl = getSiteUrl();
     const baseName = siteConfig?.siteTitle || siteConfig?.logoText || 'Portfolio';
     const url = `${baseUrl}${v2PublicPath(siteConfig, '/ai')}`;
@@ -96,6 +100,7 @@ export default async function AiHubPage() {
         title: `${baseName} | AI Hub`,
         description: AI_HUB_DESCRIPTION,
         sections: config?.sections,
+        breadcrumbName: resolveNavLabel(headerData?.navLinks, '/ai', 'AI Hub'),
     });
 
     return (

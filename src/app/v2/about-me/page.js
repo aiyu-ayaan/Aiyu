@@ -1,4 +1,5 @@
 import AboutV2 from "../../components/about/v2/AboutV2";
+import BreadcrumbSchema from "../../components/shared/BreadcrumbSchema";
 import { getConfigData, getAboutData } from "@/lib/dataFetchers";
 import { getSiteUrl } from '@/lib/siteUrl';
 import { v2PublicPath } from '@/lib/siteVersion';
@@ -28,5 +29,10 @@ export async function generateMetadata() {
 
 export default async function AboutV2Page() {
   const serializedAboutData = await getAboutData();
-  return <AboutV2 data={serializedAboutData} />;
+  return (
+    <>
+      <BreadcrumbSchema path="/about-me" name="About Me" />
+      <AboutV2 data={serializedAboutData} />
+    </>
+  );
 }

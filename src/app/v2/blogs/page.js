@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import BreadcrumbSchema from '../../components/shared/BreadcrumbSchema';
 import { getConfigData, getPublishedBlogs } from '@/lib/dataFetchers';
 import { getSiteUrl } from '@/lib/siteUrl';
 import { getBlogPath } from '@/lib/publicPaths';
@@ -54,6 +55,7 @@ export default async function BlogsV2Page() {
 
     return (
         <div className="relative overflow-hidden">
+            <BreadcrumbSchema path="/blogs" name="Blogs" />
             <div className="mx-auto w-full max-w-7xl px-6 pb-24 pt-32 sm:pt-40 lg:px-10">
                 <div className="relative mb-14 sm:mb-20">
                     <span

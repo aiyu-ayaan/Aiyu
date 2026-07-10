@@ -1,6 +1,7 @@
 import { notFound, permanentRedirect } from 'next/navigation';
 import { cache } from 'react';
 import AppDetailV2 from '../../../components/deployments/v2/AppDetailV2';
+import BreadcrumbSchema from '../../../components/shared/BreadcrumbSchema';
 import TrackView from '../../../components/shared/TrackView';
 import { getConfigData } from '@/lib/dataFetchers';
 import { getDeploymentSlug, resolveDeploymentByIdentifier } from '@/lib/contentSlugs';
@@ -125,6 +126,11 @@ export default async function AppDetailV2Page({ params }) {
             <script
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(appSchema) }}
+            />
+            <BreadcrumbSchema
+                path="/apps"
+                name="Apps"
+                trail={[{ name: deployment.name, path: `/apps/${canonicalSlug}` }]}
             />
             <TrackView entityType="app" entityId={deployment?._id} entitySlug={canonicalSlug} />
             <AppDetailV2 deployment={deployment} backHref={v2PublicPath(config, '/apps')} />
