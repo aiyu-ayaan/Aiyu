@@ -1,13 +1,20 @@
 "use client";
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import AiSectionShell from './AiSectionShell';
+import { refreshScrollTriggersSoon } from '@/app/components/landing/v2/gsap3d';
 
 /**
  * AI skills & specializations — the skills the site's AI agents can reach for.
- * Filterable category chips drive a grid; "all" shows everything. Each item is
- * a `{ name, description, url? }` record rendered as a titled entry with a short
- * blurb; when `url` is set the name links out.
+ * Every skill is its own glass card in one flat responsive grid, built to hold
+ * an unbounded catalog: categories only exist as filter chips and as the tag
+ * stamped on each card.
+ *
+ * Animation contract: the whole grid animates off ONE data-v2-group trigger,
+ * so entrance cost stays constant no matter how many skills exist, and
+ * filtering never unmounts a card — it only toggles `hidden` — so the GSAP
+ * tweens created at mount always keep their targets. The only thing a filter
+ * change needs is a ScrollTrigger refresh because the grid height moved.
  */
 export default function AiSkills({ index, section }) {
     const categories = useMemo(
@@ -16,13 +23,37 @@ export default function AiSkills({ index, section }) {
     );
     const [active, setActive] = useState('all');
 
-    const visible = active === 'all' ? categories : categories.filter((c) => c.id === active);
+    // Flatten to one card list; each skill remembers its category for the tag
+    // and for filtering.
+    const skills = useMemo(
+        () =>
+            categories.flatMap((cat) =>
+                (Array.isArray(cat.items) ? cat.items : []).map((item) => ({
+                    ...item,
+                    categoryId: cat.id,
+                    categoryLabel: cat.label,
+                    accent: cat.accent || section.accent,
+                }))
+            ),
+        [categories, section.accent]
+    );
+
+    // Grid height changes when cards are hidden/shown; reposition the
+    // ScrollTriggers of everything further down the page.
+    useEffect(() => {
+        refreshScrollTriggersSoon();
+    }, [active]);
 
     return (
         <AiSectionShell index={index} section={section}>
             {/* Filter row */}
             <div data-v2="rise" className="mb-12 flex flex-wrap gap-2.5 font-mono text-xs">
-                <FilterChip label="all" active={active === 'all'} accent={section.accent} onClick={() => setActive('all')} />
+                <FilterChip
+                    label={`all · ${skills.length}`}
+                    active={active === 'all'}
+                    accent={section.accent}
+                    onClick={() => setActive('all')}
+                />
                 {categories.map((cat) => (
                     <FilterChip
                         key={cat.id}
@@ -34,21 +65,13 @@ export default function AiSkills({ index, section }) {
                 ))}
             </div>
 
-            <div className="grid grid-cols-1 gap-x-14 gap-y-12 lg:grid-cols-2">
-                {visible.map((cat) => (
-                    <div key={cat.id} data-v2="door-left">
-                        <p
-                            className="mb-6 font-mono text-[0.7rem] uppercase tracking-[0.3em]"
-                            style={{ color: cat.accent || section.accent }}
-                        >
-                            $ {cat.label}
-                        </p>
-                        <div className="space-y-5">
-                            {(cat.items || []).map((item) => (
-                                <SkillEntry key={item.name} item={item} accent={cat.accent || section.accent} />
-                            ))}
-                        </div>
-                    </div>
+            <div data-v2-group data-v2-stagger="0.05" className="grid grid-cols-1 items-start gap-5 md:grid-cols-2 xl:grid-cols-3">
+                {skills.map((skill) => (
+                    <SkillCard
+                        key={skill.id || `${skill.categoryId}-${skill.name}`}
+                        skill={skill}
+                        hidden={active !== 'all' && active !== skill.categoryId}
+                    />
                 ))}
             </div>
         </AiSectionShell>
@@ -73,36 +96,60 @@ function FilterChip({ label, active, accent, onClick }) {
     );
 }
 
-function SkillEntry({ item, accent }) {
+function SkillCard({ skill, hidden }) {
+    const { accent } = skill;
+    const Wrapper = skill.url ? 'a' : 'div';
+    const linkProps = skill.url
+        ? { href: skill.url, target: '_blank', rel: 'noopener noreferrer' }
+        : {};
+
     return (
-        <div className="flex gap-3">
+        <Wrapper
+            {...linkProps}
+            data-v2="flip-x"
+            hidden={hidden}
+            className="group relative flex h-full flex-col rounded-2xl p-5 transition-all duration-300 sm:p-6"
+            style={{
+                border: '1px solid var(--hairline)',
+                background: 'var(--surface-glass)',
+                backdropFilter: 'blur(14px)',
+            }}
+        >
             <span
-                className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full"
-                style={{ background: accent }}
                 aria-hidden="true"
+                className="pointer-events-none absolute inset-x-0 top-0 h-px opacity-70"
+                style={{ background: `linear-gradient(90deg, transparent, ${accent}, transparent)` }}
             />
-            <div>
-                {item.url ? (
-                    <a
-                        href={item.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-base underline decoration-transparent underline-offset-4 transition-colors hover:decoration-current"
-                        style={{ color: accent }}
+
+            <h3 className="text-lg font-bold tracking-tight" style={{ color: 'var(--text-bright)' }}>
+                {skill.name}
+            </h3>
+
+            {skill.description && (
+                <p className="mt-2 flex-1 text-sm leading-relaxed" style={{ color: 'var(--text-tertiary)' }}>
+                    {skill.description}
+                </p>
+            )}
+
+            <div className="mt-5 flex items-center gap-2 font-mono text-[0.65rem] uppercase tracking-[0.15em]">
+                <span
+                    className="rounded px-2 py-1 normal-case tracking-normal"
+                    style={{
+                        color: accent,
+                        background: `color-mix(in srgb, ${accent} 12%, transparent)`,
+                    }}
+                >
+                    #{skill.categoryLabel}
+                </span>
+                {skill.url && (
+                    <span
+                        className="ml-auto transition-transform duration-300 group-hover:translate-x-1"
+                        style={{ color: 'var(--text-muted)' }}
                     >
-                        {item.name}
-                    </a>
-                ) : (
-                    <span className="text-base" style={{ color: 'var(--text-secondary)' }}>
-                        {item.name}
+                        docs ↗
                     </span>
                 )}
-                {item.description && (
-                    <p className="mt-1 text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-                        {item.description}
-                    </p>
-                )}
             </div>
-        </div>
+        </Wrapper>
     );
 }

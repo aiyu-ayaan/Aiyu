@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { mergeMcpConfig, buildMcpServerCard, DEFAULT_MCP_CONFIG } from './mcpConfig';
+import { TOOLS } from './mcp/tools';
 
 const abs = (p) => `https://x.com${p}`;
 
@@ -46,9 +47,11 @@ describe('buildMcpServerCard', () => {
         expect(card.serverInfo.name).toBe('aiyu');
         expect(card.transports.map((t) => t.type)).toContain('webmcp');
         expect(card.transports).toContainEqual(expect.objectContaining({ type: 'streamable-http', endpoint: 'https://x.com/api/mcp' }));
-        expect(card.capabilities.tools.tools.map((t) => t.name)).toEqual([
-            'aiyu.navigate', 'aiyu.search', 'aiyu.getPublicApiCatalog',
-        ]);
+        const names = card.capabilities.tools.tools.map((t) => t.name);
+        // Configured (webmcp) tools first, then every built-in endpoint tool.
+        expect(names.slice(0, 3)).toEqual(['aiyu.navigate', 'aiyu.search', 'aiyu.getPublicApiCatalog']);
+        for (const tool of TOOLS) expect(names).toContain(tool.name);
+        expect(names).toContain('list_ai_skills');
         expect(card.links.apiCatalog).toBe('https://x.com/.well-known/api-catalog');
         expect(card.links.documentation).toBe('https://x.com/docs/api');
     });
@@ -61,7 +64,9 @@ describe('buildMcpServerCard', () => {
             ],
             capabilities: { prompts: { enabled: false } },
         }, abs);
-        expect(card.capabilities.tools.tools.map((t) => t.name)).toEqual(['a']);
+        const names = card.capabilities.tools.tools.map((t) => t.name);
+        expect(names[0]).toBe('a');
+        expect(names).not.toContain('b');
         expect(card.capabilities.prompts).toBeUndefined();
     });
 

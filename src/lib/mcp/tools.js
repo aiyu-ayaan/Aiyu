@@ -268,6 +268,22 @@ export const TOOLS = [
     },
 ];
 
+/**
+ * Card-shaped entries for the built-in endpoint tools, for the published
+ * server card. Deriving the card from TOOLS means new tools (e.g. the AI Hub
+ * set) are discoverable the moment they exist — the admin-curated tool list
+ * only has to describe extras like the browser WebMCP tools.
+ */
+export function builtinToolCards() {
+    return TOOLS.map(({ name, title, description, inputSchema, annotations }) => ({
+        name,
+        ...(title ? { title } : {}),
+        ...(description ? { description } : {}),
+        ...(inputSchema ? { inputSchema } : {}),
+        ...(annotations && Object.keys(annotations).length ? { annotations } : {}),
+    }));
+}
+
 /** @typedef {{ uri:string, name:string, title:string, description:string, mimeType:string, read:()=>Promise<any> }} McpResource */
 
 /** @type {McpResource[]} */

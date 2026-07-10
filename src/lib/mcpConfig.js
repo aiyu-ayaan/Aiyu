@@ -17,6 +17,7 @@ import { prisma } from '@/lib/prisma';
 import { getSingleton } from '@/lib/serialize';
 import { toAbsoluteSiteUrl } from '@/lib/siteUrl';
 import cache from '@/lib/cache';
+import { builtinToolCards } from '@/lib/mcp/tools';
 
 // Day-one defaults — reproduce the previously hardcoded server card exactly so
 // output is unchanged until an admin saves the form.
@@ -256,9 +257,15 @@ export function buildMcpServerCard(config, resolveUrl = toAbsoluteSiteUrl) {
 
     const capabilities = {};
     if (cfg.capabilities.tools.enabled) {
+        // The card must advertise every tool the /api/mcp endpoint actually
+        // serves (its tools/list comes from lib/mcp/tools.js), so built-ins are
+        // merged in automatically; the configured list curates extras like the
+        // browser WebMCP tools and may override a built-in by name.
+        const configured = cfg.tools.filter((t) => t.enabled && t.name).map(toCardTool);
+        const configuredNames = new Set(configured.map((t) => t.name));
         capabilities.tools = {
             listChanged: !!cfg.capabilities.tools.listChanged,
-            tools: cfg.tools.filter((t) => t.enabled && t.name).map(toCardTool),
+            tools: [...configured, ...builtinToolCards().filter((t) => !configuredNames.has(t.name))],
         };
     }
     if (cfg.capabilities.resources.enabled) {

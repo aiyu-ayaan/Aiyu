@@ -79,6 +79,15 @@ async function handleRequest(req) {
                                     required: ["query"],
                                     additionalProperties: false
                                 }
+                            },
+                            {
+                                name: "aiyu.getAiHub",
+                                description: "Get the AI Hub (/ai) page content: skills grouped by category, recommended stack cards, free credits, and prompt library.",
+                                inputSchema: {
+                                    type: "object",
+                                    properties: {},
+                                    additionalProperties: false
+                                }
                             }
                         ]
                     }
@@ -142,6 +151,51 @@ async function handleRequest(req) {
                                 {
                                     type: "text",
                                     text: JSON.stringify(results, null, 2)
+                                }
+                            ]
+                        }
+                    };
+                }
+
+                if (name === 'aiyu.getAiHub') {
+                    const [categories, recommendations, credits, prompts] = await Promise.all([
+                        prisma.aiSkillCategory.findMany({
+                            orderBy: { displayOrder: 'asc' },
+                            include: { skills: { orderBy: { displayOrder: 'asc' } } }
+                        }),
+                        prisma.aiRecommendation.findMany({ orderBy: { displayOrder: 'asc' } }),
+                        prisma.aiCredit.findMany({ orderBy: { displayOrder: 'asc' } }),
+                        prisma.aiPrompt.findMany({ orderBy: { displayOrder: 'asc' } })
+                    ]);
+
+                    const payload = {
+                        skills: {
+                            categories: categories.map(c => ({
+                                label: c.label,
+                                items: c.skills.map(s => ({
+                                    name: s.name,
+                                    description: s.description || '',
+                                    ...(s.url ? { url: s.url } : {})
+                                }))
+                            }))
+                        },
+                        recommendations: recommendations.map(r => ({
+                            name: r.name, url: r.url, rating: r.rating, blurb: r.blurb, tags: r.tags
+                        })),
+                        credits: credits.map(c => ({
+                            name: c.name, offer: c.offer, url: c.url, noCard: c.noCard, freeApi: c.freeApi, note: c.note
+                        })),
+                        prompts: prompts.map(p => ({ title: p.title, role: p.role, prompt: p.prompt }))
+                    };
+
+                    return {
+                        jsonrpc: "2.0",
+                        id,
+                        result: {
+                            content: [
+                                {
+                                    type: "text",
+                                    text: JSON.stringify(payload, null, 2)
                                 }
                             ]
                         }
