@@ -311,11 +311,16 @@ function IndexingTab({ status, logs, urls, onSaveKey, onClearKey, onPing, saving
                 {!logs?.length ? <p className="text-xs text-slate-600 font-mono">No indexing requests yet.</p> : (
                     <div className="space-y-1">
                         {logs.map((l) => (
-                            <div key={l._id} className="flex items-center justify-between gap-3 text-xs font-mono border-b border-white/5 py-1.5">
-                                <span className={l.status === 'success' ? 'text-emerald-400' : 'text-red-400'}>{l.status === 'success' ? '✓' : '✗'}</span>
-                                <span className="text-slate-300 truncate flex-1">{l.url}</span>
-                                <span className="text-slate-500 shrink-0">{l.type}</span>
-                                <span className="text-slate-600 shrink-0 hidden md:inline">{new Date(l.createdAt).toLocaleString()}</span>
+                            <div key={l._id} className="text-xs font-mono border-b border-white/5 py-1.5">
+                                <div className="flex items-center justify-between gap-3">
+                                    <span className={l.status === 'success' ? 'text-emerald-400' : 'text-red-400'}>{l.status === 'success' ? '✓' : '✗'}</span>
+                                    <span className="text-slate-300 truncate flex-1">{l.url}</span>
+                                    <span className="text-slate-500 shrink-0">{l.type}</span>
+                                    <span className="text-slate-600 shrink-0 hidden md:inline">{new Date(l.createdAt).toLocaleString()}</span>
+                                </div>
+                                {l.status !== 'success' && l.response && (
+                                    <p className="mt-1 pl-5 text-red-400/70 break-words" title={l.response}>{l.response}</p>
+                                )}
                             </div>
                         ))}
                     </div>
