@@ -167,6 +167,14 @@ export async function POST(request) {
             { modelKey: 'header', key: 'header' },
             { modelKey: 'home', key: 'home' },
             { modelKey: 'aiPage', key: 'aiPage' },
+            // AI Hub section content. Category MUST precede skill: the per-model
+            // deleteMany+createMany loop runs in array order, and aiSkill.categoryId
+            // is a FK onto aiSkillCategory.
+            { modelKey: 'aiSkillCategory', key: 'aiSkillCategories' },
+            { modelKey: 'aiSkill', key: 'aiSkills' },
+            { modelKey: 'aiRecommendation', key: 'aiRecommendations' },
+            { modelKey: 'aiCredit', key: 'aiCredits' },
+            { modelKey: 'aiPrompt', key: 'aiPrompts' },
             { modelKey: 'project', key: 'projects' },
             { modelKey: 'deployment', key: 'deployments' },
             { modelKey: 'social', key: 'socials' },

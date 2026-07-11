@@ -42,6 +42,14 @@ export async function GET(request) {
             header: toClientList('header', await prisma.header.findMany()),
             home: toClientList('home', await prisma.home.findMany()),
             aiPage: toClientList('aiPage', await prisma.aiPage.findMany()),
+            // The AI Hub's section content (skills / recommendations / credits /
+            // prompts) lives in these relational tables, not the aiPage json blob
+            // — they must be backed up too or the /ai page restores empty.
+            aiSkillCategories: toClientList('aiSkillCategory', await prisma.aiSkillCategory.findMany()),
+            aiSkills: toClientList('aiSkill', await prisma.aiSkill.findMany()),
+            aiRecommendations: toClientList('aiRecommendation', await prisma.aiRecommendation.findMany()),
+            aiCredits: toClientList('aiCredit', await prisma.aiCredit.findMany()),
+            aiPrompts: toClientList('aiPrompt', await prisma.aiPrompt.findMany()),
             projects: toClientList('project', await prisma.project.findMany()),
             deployments: toClientList('deployment', await prisma.deployment.findMany()),
             socials: toClientList('social', await prisma.social.findMany()),
