@@ -92,7 +92,7 @@ export default function GitHubConfigPage() {
 
     const testConnection = async () => {
         if (!config.username) {
-            alert('Please enter a GitHub username first');
+            showNotification(false, 'Please enter a GitHub username first');
             return;
         }
 

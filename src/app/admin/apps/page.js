@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
 
 const getStatusMeta = (status) => {
     const normalizedStatus = String(status || '').trim().toLowerCase();
@@ -39,6 +40,7 @@ const getStatusMeta = (status) => {
 };
 
 export default function AdminApps() {
+    const { confirm, toast } = useAdminFeedback();
     const [deployments, setDeployments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isSavingOrder, setIsSavingOrder] = useState(false);
@@ -62,7 +64,12 @@ export default function AdminApps() {
     };
 
     const handleDelete = async (id) => {
-        if (!confirm('Are you sure you want to delete this app?')) return;
+        if (!(await confirm({
+            title: 'Delete app?',
+            message: 'Are you sure you want to delete this app? This action cannot be undone.',
+            confirmText: 'Delete',
+            danger: true,
+        }))) return;
 
         try {
             const response = await fetch(`/api/deployments/${id}`, {
@@ -72,7 +79,7 @@ export default function AdminApps() {
             if (response.ok) {
                 setDeployments((previous) => previous.filter((deployment) => deployment._id !== id));
             } else {
-                alert('Failed to delete app');
+                toast.error('Failed to delete app');
             }
         } catch (error) {
             console.error('Error deleting app', error);
@@ -100,7 +107,7 @@ export default function AdminApps() {
         } catch (error) {
             console.error('Error reordering apps', error);
             setDeployments(previousDeployments);
-            alert('Failed to save app order. Please try again.');
+            toast.error('Failed to save app order. Please try again.');
         } finally {
             setIsSavingOrder(false);
         }

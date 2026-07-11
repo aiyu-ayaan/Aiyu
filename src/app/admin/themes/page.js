@@ -7,10 +7,12 @@ import ThemePreviewCard from '@/app/components/admin/ThemePreviewCard';
 import ThemeEditor from '@/app/components/admin/ThemeEditor';
 import Toast from '@/app/components/admin/Toast';
 import { Paintbrush, Plus, Layout, Moon, Sun } from 'lucide-react';
+import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
 
 
 
 export default function AdminThemesPage() {
+    const { confirm } = useAdminFeedback();
     const router = useRouter();
     const [themes, setThemes] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -128,7 +130,12 @@ export default function AdminThemesPage() {
     };
 
     const handleDeleteTheme = async (themeSlug) => {
-        if (!confirm(`Are you sure you want to delete this theme?`)) return;
+        if (!(await confirm({
+            title: 'Delete theme?',
+            message: 'Are you sure you want to delete this theme? This action cannot be undone.',
+            confirmText: 'Delete',
+            danger: true,
+        }))) return;
 
         try {
             const response = await fetch(`/api/themes/${themeSlug}`, {

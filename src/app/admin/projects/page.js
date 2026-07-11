@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Search } from 'lucide-react';
+import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
 
 const getStatusMeta = (status) => {
     const normalizedStatus = String(status || '').trim().toLowerCase();
@@ -31,6 +32,7 @@ const getStatusMeta = (status) => {
 };
 
 export default function AdminProjects() {
+    const { confirm, toast } = useAdminFeedback();
     const [projects, setProjects] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isSavingOrder, setIsSavingOrder] = useState(false);
@@ -55,7 +57,12 @@ export default function AdminProjects() {
     };
 
     const handleDelete = async (id) => {
-        if (!confirm('Are you sure you want to delete this project?')) return;
+        if (!(await confirm({
+            title: 'Delete project?',
+            message: 'Are you sure you want to delete this project? This action cannot be undone.',
+            confirmText: 'Delete',
+            danger: true,
+        }))) return;
 
         try {
             const res = await fetch(`/api/projects/${id}`, {
@@ -64,7 +71,7 @@ export default function AdminProjects() {
             if (res.ok) {
                 setProjects(projects.filter((p) => p._id !== id));
             } else {
-                alert('Failed to delete project');
+                toast.error('Failed to delete project');
             }
         } catch (error) {
             console.error('Error deleting project', error);
@@ -92,7 +99,7 @@ export default function AdminProjects() {
         } catch (error) {
             console.error('Error reordering projects', error);
             setProjects(previousProjects);
-            alert('Failed to save project order. Please try again.');
+            toast.error('Failed to save project order. Please try again.');
         } finally {
             setIsSavingOrder(false);
         }

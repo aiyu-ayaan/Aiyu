@@ -1,5 +1,6 @@
 "use client";
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
 import Link from 'next/link';
 import {
     FaServer, FaMicrochip, FaMemory, FaHardDrive, FaGauge, FaDatabase,
@@ -167,6 +168,7 @@ function HistoryStrip({ history }) {
 }
 
 function UptimeTab() {
+    const { confirm } = useAdminFeedback();
     const [targets, setTargets] = useState([]);
     const [custom, setCustom] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -234,7 +236,12 @@ function UptimeTab() {
     };
 
     const removeTarget = async (id) => {
-        if (!confirm('Remove this custom endpoint from monitoring?')) return;
+        if (!(await confirm({
+            title: 'Remove endpoint?',
+            message: 'Remove this custom endpoint from monitoring?',
+            confirmText: 'Remove',
+            danger: true,
+        }))) return;
         await fetch(`/api/admin/health/targets?id=${id}`, { method: 'DELETE' });
         await load();
     };

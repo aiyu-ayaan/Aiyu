@@ -1,6 +1,7 @@
 "use client";
 import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import Link from 'next/link';
+import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
 import {
     FaMagnifyingGlass, FaArrowsRotate, FaTriangleExclamation, FaCircleCheck,
     FaCircleExclamation, FaRobot, FaSitemap, FaGoogle, FaListCheck,
@@ -383,6 +384,7 @@ function formToConfigBody(form) {
 }
 
 export default function SeoDashboard() {
+    const { confirm } = useAdminFeedback();
     const [tab, setTab] = useState('audit');
     const [audit, setAudit] = useState(null);
     const [configData, setConfigData] = useState(null);
@@ -557,7 +559,12 @@ export default function SeoDashboard() {
     };
 
     const clearKey = async () => {
-        if (!window.confirm('Remove the stored Google service account?')) return;
+        if (!(await confirm({
+            title: 'Remove service account?',
+            message: 'Remove the stored Google service account?',
+            confirmText: 'Remove',
+            danger: true,
+        }))) return;
         await saveKey('');
     };
 

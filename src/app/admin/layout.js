@@ -1,5 +1,6 @@
 import "../styles/globals.css";
 import AdminShell from "@/app/components/admin/shell/AdminShell";
+import { AdminFeedbackProvider } from "@/app/components/admin/feedback/AdminFeedbackProvider";
 
 export const metadata = {
     title: "Admin | Aiyu Portfolio",
@@ -20,7 +21,9 @@ export default function AdminLayout({ children }) {
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_0%_0%,rgba(139,92,246,0.15),transparent_60%)]" />
                 <div className="absolute inset-0 bg-[repeating-linear-gradient(rgba(255,255,255,0.05)_0px,transparent_1px,transparent_100px),repeating-linear-gradient(90deg,rgba(255,255,255,0.05)_0px,transparent_1px,transparent_100px)]" />
             </div>
-            <AdminShell>{children}</AdminShell>
+            <AdminFeedbackProvider>
+                <AdminShell>{children}</AdminShell>
+            </AdminFeedbackProvider>
         </div>
     );
 }

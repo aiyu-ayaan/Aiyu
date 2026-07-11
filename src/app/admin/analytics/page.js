@@ -9,6 +9,7 @@ import {
     FaGaugeHigh, FaUserShield,
 } from 'react-icons/fa6';
 import { LineChart, BarList, DonutSplit, WorldMap } from './charts';
+import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
 
 const RANGES = [
     { key: '7d', label: '7D' },
@@ -96,6 +97,7 @@ function InsightCard({ icon, label, value, sub, accent = 'text-cyan-400' }) {
 }
 
 export default function AnalyticsDashboard() {
+    const { confirm } = useAdminFeedback();
     const [range, setRange] = useState('30d');
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -119,7 +121,12 @@ export default function AnalyticsDashboard() {
     useEffect(() => { load(range); }, [range, load]);
 
     const handleReset = async () => {
-        if (!window.confirm('WARNING: THIS WILL PERMANENTLY DELETE ALL ANALYTICS DATA. CONFIRM PROTOCOL?')) return;
+        if (!(await confirm({
+            title: 'Delete all analytics data?',
+            message: 'WARNING: This will permanently delete ALL analytics data. This action cannot be undone.',
+            confirmText: 'Delete everything',
+            danger: true,
+        }))) return;
         try {
             const res = await fetch('/api/admin/analytics', { method: 'DELETE' });
             const json = await res.json();

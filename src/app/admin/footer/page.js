@@ -2,8 +2,10 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
+import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
 
 export default function AdminFooter() {
+    const { confirm } = useAdminFeedback();
     const [socials, setSocials] = useState([]);
     const [loading, setLoading] = useState(true);
     const [config, setConfig] = useState({
@@ -96,7 +98,12 @@ export default function AdminFooter() {
     };
 
     const handleDelete = async (id) => {
-        if (!confirm('Are you sure you want to delete this social link?')) return;
+        if (!(await confirm({
+            title: 'Delete social link?',
+            message: 'Are you sure you want to delete this social link? This action cannot be undone.',
+            confirmText: 'Delete',
+            danger: true,
+        }))) return;
 
         try {
             const res = await fetch(`/api/socials/${id}`, {

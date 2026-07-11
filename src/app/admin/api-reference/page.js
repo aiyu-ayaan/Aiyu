@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
 import dynamic from 'next/dynamic';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
@@ -63,6 +64,7 @@ const sections = [
 ];
 
 export default function AdminApiReferencePage() {
+    const { confirm } = useAdminFeedback();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [revoking, setRevoking] = useState(false);
@@ -230,7 +232,12 @@ Accept: application/json, text/event-stream`;
     };
 
     const revokeToken = async () => {
-        if (!confirm('Revoke blog API token? Existing automations will fail until you generate a new token.')) return;
+        if (!(await confirm({
+            title: 'Revoke blog API token?',
+            message: 'Existing automations will fail until you generate a new token.',
+            confirmText: 'Revoke',
+            danger: true,
+        }))) return;
         setRevoking(true);
         try {
             const res = await fetch('/api/admin/blogs/token', { method: 'DELETE' });

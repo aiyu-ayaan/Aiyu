@@ -165,8 +165,7 @@ export default function NotificationConfigPage() {
             if (data.success) {
                 showMessage('success', data.message || `Test message dispatched successfully to ${channel.toUpperCase()}!`);
             } else {
-                alert(`Test Failed: ${data.error}`);
-                showMessage('error', data.error || 'Integration test failed.');
+                showMessage('error', data.error ? `Test failed: ${data.error}` : 'Integration test failed.');
             }
         } catch (error) {
             showMessage('error', 'Network test failed. Verify connection settings.');

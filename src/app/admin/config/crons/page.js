@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
 import {
     Clock,
     Plus,
@@ -112,6 +113,7 @@ function resolveTemplateMode(savedType, value) {
 }
 
 export default function CronJobsPage() {
+    const { confirm } = useAdminFeedback();
     const [jobs, setJobs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -332,7 +334,7 @@ export default function CronJobsPage() {
                 showMessage('success', 'Global environment secrets updated successfully.');
                 setShowGlobalEnvModal(false);
             } else {
-                alert(data.error || 'Failed to save global environment secrets.');
+                showMessage('error', data.error || 'Failed to save global environment secrets.');
             }
         } catch (error) {
             showMessage('error', 'Communication error while saving global secrets.');
@@ -428,7 +430,12 @@ export default function CronJobsPage() {
     };
 
     const handleDelete = async (job) => {
-        if (!confirm(`Are you sure you want to permanently delete custom task: ${job.name}?`)) return;
+        if (!(await confirm({
+            title: 'Delete custom task?',
+            message: `Are you sure you want to permanently delete custom task: ${job.name}?`,
+            confirmText: 'Delete',
+            danger: true,
+        }))) return;
 
         try {
             const res = await fetch(`/api/admin/crons/${job._id}`, {
@@ -566,7 +573,7 @@ export default function CronJobsPage() {
                 setShowFormModal(false);
                 fetchJobs(false);
             } else {
-                alert(data.error || 'Submission failed.');
+                showMessage('error', data.error || 'Submission failed.');
             }
         } catch (error) {
             showMessage('error', 'Submit failed due to a communication issue.');

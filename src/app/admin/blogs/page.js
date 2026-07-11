@@ -2,8 +2,10 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
 
 export default function AdminBlogsPage() {
+    const { confirm } = useAdminFeedback();
     const [blogs, setBlogs] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -47,7 +49,12 @@ export default function AdminBlogsPage() {
     };
 
     const deleteBlog = async (id) => {
-        if (!confirm('Are you sure you want to delete this blog?')) return;
+        if (!(await confirm({
+            title: 'Delete blog?',
+            message: 'Are you sure you want to delete this blog? This action cannot be undone.',
+            confirmText: 'Delete',
+            danger: true,
+        }))) return;
 
         try {
             const res = await fetch(`/api/blogs/${id}`, {

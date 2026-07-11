@@ -1,5 +1,6 @@
 "use client";
 import React, { useCallback, useEffect, useState } from 'react';
+import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
 import Link from 'next/link';
 import {
     FaPlug, FaServer, FaScrewdriverWrench, FaFolderOpen, FaComment, FaLink,
@@ -299,6 +300,7 @@ function LinksTab({ config, patch }) {
 }
 
 function SecurityTab({ config, patch, flash, setError }) {
+    const { confirm } = useAdminFeedback();
     const writeEnabled = !!config.write?.enabled;
     const [status, setStatus] = useState(null);
     const [busy, setBusy] = useState(false);
@@ -329,7 +331,12 @@ function SecurityTab({ config, patch, flash, setError }) {
     };
 
     const revoke = async () => {
-        if (!window.confirm('Revoke the MCP write token? Clients using it will lose write access immediately.')) return;
+        if (!(await confirm({
+            title: 'Revoke write token?',
+            message: 'Revoke the MCP write token? Clients using it will lose write access immediately.',
+            confirmText: 'Revoke',
+            danger: true,
+        }))) return;
         setBusy(true); setError(null); setNewToken('');
         try {
             const res = await fetch('/api/admin/mcp/token', { method: 'DELETE' });

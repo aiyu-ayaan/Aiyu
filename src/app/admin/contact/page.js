@@ -5,8 +5,10 @@ import { useRouter } from 'next/navigation';
 import { Loader2, ArrowLeft, MapPin, Activity, Mail, Trash2, MessageSquare, Webhook, Bell, ToggleLeft, ToggleRight, ShieldAlert } from 'lucide-react';
 import Link from 'next/link';
 import Toast from '@/app/components/admin/Toast';
+import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
 
 export default function ContactAdminPage() {
+    const { confirm } = useAdminFeedback();
     const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -104,7 +106,12 @@ export default function ContactAdminPage() {
     };
 
     const handleDeleteMessage = async (id) => {
-        if (!confirm('Are you sure you want to delete this message?')) return;
+        if (!(await confirm({
+            title: 'Delete message?',
+            message: 'Are you sure you want to delete this message? This action cannot be undone.',
+            confirmText: 'Delete',
+            danger: true,
+        }))) return;
 
         try {
             const res = await fetch(`/api/contact/message?id=${id}`, {

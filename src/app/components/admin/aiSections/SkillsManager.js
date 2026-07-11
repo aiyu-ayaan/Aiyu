@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Loader2, Plus, ChevronDown, ChevronRight, Trash2, Save } from 'lucide-react';
 import { Field, TextInput, TextArea, AccentPicker } from '../aiPage/fields';
 import { getJson, postJson, putJson, del } from './api';
+import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
 
 /**
  * Skills manager — nested categories → skills. Each category is a card with an
@@ -122,13 +123,19 @@ export default function SkillsManager({ notify }) {
 }
 
 function CategoryCard({ category, onSave, onDelete, onAddSkill, onSaveSkill, onDeleteSkill, notify }) {
+    const { confirm } = useAdminFeedback();
     const [open, setOpen] = useState(false);
     const [editHeader, setEditHeader] = useState(false);
     const [draftSkill, setDraftSkill] = useState(null);
     const skills = category.skills || [];
 
     const remove = async () => {
-        if (!confirm(`Delete category "${category.label}" and its ${skills.length} skill(s)?`)) return;
+        if (!(await confirm({
+            title: 'Delete category?',
+            message: `Delete category "${category.label}" and its ${skills.length} skill(s)?`,
+            confirmText: 'Delete',
+            danger: true,
+        }))) return;
         try {
             await onDelete();
         } catch (e) {
@@ -245,6 +252,7 @@ function CategoryHeaderForm({ value, onSave, onCancel, isNew = false, notify }) 
 }
 
 function SkillRow({ skill, onSave, onDelete, notify }) {
+    const { confirm } = useAdminFeedback();
     const [open, setOpen] = useState(false);
     return (
         <div className="rounded-lg border border-white/5 bg-black/20">
@@ -255,7 +263,12 @@ function SkillRow({ skill, onSave, onDelete, notify }) {
                 <button
                     type="button"
                     onClick={async () => {
-                        if (confirm('Delete this skill?')) {
+                        if (await confirm({
+                            title: 'Delete skill?',
+                            message: 'Delete this skill?',
+                            confirmText: 'Delete',
+                            danger: true,
+                        })) {
                             try { await onDelete(); } catch (e) { notify?.(false, e.message); }
                         }
                     }}

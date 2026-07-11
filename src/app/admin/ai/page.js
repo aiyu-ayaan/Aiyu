@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
 import { 
     Loader2, Bot, CheckCircle, XCircle, ArrowLeft, Cpu, Key, 
     Lock, Server, BarChart3, Clock, Database, Plus, Trash2, 
@@ -100,6 +101,7 @@ const COMMON_MODELS = {
 };
 
 export default function AiConfigPage() {
+    const { confirm } = useAdminFeedback();
     const router = useRouter();
     const [config, setConfig] = useState({
         enabled: false,
@@ -362,10 +364,15 @@ export default function AiConfigPage() {
         showNotification(true, 'Provider API Key Validated and Added! Save configuration to persist.');
     };
 
-    const deleteProvider = (id) => {
+    const deleteProvider = async (id) => {
         const linkedModels = config.models.filter(m => m.providerId === id);
         if (linkedModels.length > 0) {
-            if (!confirm(`Warning: Deleting this provider will also delete the following models linked to it:\n${linkedModels.map(m => ` - ${m.name}`).join('\n')}\nProceed?`)) {
+            if (!(await confirm({
+                title: 'Delete provider and linked models?',
+                message: `Deleting this provider will also delete the following models linked to it:\n${linkedModels.map(m => ` - ${m.name}`).join('\n')}`,
+                confirmText: 'Delete',
+                danger: true,
+            }))) {
                 return;
             }
         }

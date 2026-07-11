@@ -3,8 +3,10 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { FaDownload, FaUpload, FaDatabase, FaExclamationTriangle, FaCheckCircle, FaServer, FaTrash, FaChartLine } from 'react-icons/fa';
+import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
 
 export default function DatabaseManager() {
+    const { confirm } = useAdminFeedback();
     const [isLoading, setIsLoading] = useState(false);
     const [message, setMessage] = useState(null);
     const [importFile, setImportFile] = useState(null);
@@ -62,7 +64,12 @@ export default function DatabaseManager() {
             return;
         }
 
-        if (!window.confirm('WARNING: THIS ACTION WILL OVERWRITE ALL SYSTEM DATA. CONFIRM PROTOCOL?')) {
+        if (!(await confirm({
+            title: 'Overwrite all system data?',
+            message: 'WARNING: This action will overwrite ALL system data with the imported backup. This cannot be undone.',
+            confirmText: 'Overwrite',
+            danger: true,
+        }))) {
             return;
         }
 
@@ -107,7 +114,12 @@ export default function DatabaseManager() {
     };
 
     const handleResetAnalytics = async () => {
-        if (!window.confirm('WARNING: THIS WILL PERMANENTLY DELETE ALL ANALYTICS DATA. CONFIRM PROTOCOL?')) {
+        if (!(await confirm({
+            title: 'Delete all analytics data?',
+            message: 'WARNING: This will permanently delete ALL analytics data. This action cannot be undone.',
+            confirmText: 'Delete everything',
+            danger: true,
+        }))) {
             return;
         }
 
@@ -131,7 +143,12 @@ export default function DatabaseManager() {
     };
 
     const handlePurgeCache = async () => {
-        if (!window.confirm('WARNING: THIS WILL PURGE ALL IN-MEMORY CACHES. CONFIRM PROTOCOL?')) {
+        if (!(await confirm({
+            title: 'Purge all caches?',
+            message: 'WARNING: This will purge all in-memory caches.',
+            confirmText: 'Purge',
+            danger: true,
+        }))) {
             return;
         }
 

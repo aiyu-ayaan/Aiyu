@@ -1,5 +1,6 @@
 "use client";
 import React, { useCallback, useEffect, useState } from 'react';
+import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
 import Link from 'next/link';
 import {
     FaShieldHalved, FaArrowsRotate, FaDesktop, FaMobileScreen, FaTablet,
@@ -105,6 +106,7 @@ function actionStyle(action) {
 // ─────────────────────────── Sessions tab ───────────────────────────
 
 function SessionsTab() {
+    const { confirm } = useAdminFeedback();
     const [sessions, setSessions] = useState([]);
     const [counts, setCounts] = useState({ active: 0, expired: 0, revoked: 0 });
     const [retentionDays, setRetentionDays] = useState(7);
@@ -134,8 +136,18 @@ function SessionsTab() {
 
     const revoke = async (s) => {
         const self = s.current;
-        if (self && !confirm('This is the device you are currently using. Revoking it will log you out. Continue?')) return;
-        if (!self && !confirm('Revoke this session? That device will be signed out immediately.')) return;
+        if (self && !(await confirm({
+            title: 'Revoke current device?',
+            message: 'This is the device you are currently using. Revoking it will log you out. Continue?',
+            confirmText: 'Revoke & log out',
+            danger: true,
+        }))) return;
+        if (!self && !(await confirm({
+            title: 'Revoke this session?',
+            message: 'That device will be signed out immediately.',
+            confirmText: 'Revoke',
+            danger: true,
+        }))) return;
         setRevoking(s._id);
         try {
             const res = await fetch(`/api/admin/security/sessions/${s._id}/revoke`, { method: 'POST' });

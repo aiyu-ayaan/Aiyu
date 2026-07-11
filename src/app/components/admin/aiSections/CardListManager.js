@@ -6,6 +6,7 @@ import {
     Field, TextInput, TextArea, NumberInput, SwitchRow, AccentPicker, StringListEditor,
 } from '../aiPage/fields';
 import { getJson, postJson, putJson, del } from './api';
+import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
 
 /**
  * Generic CRUD manager for a flat AI-section collection (recommendations,
@@ -110,6 +111,7 @@ export default function CardListManager({ endpoint, dataKey, itemKey, fields, ti
 }
 
 function ItemCard({ item, fields, titleField, onSave, onDelete, onCancel, notify, isNew = false, startOpen = false }) {
+    const { confirm } = useAdminFeedback();
     const [open, setOpen] = useState(startOpen);
     const [form, setForm] = useState(item);
     const [busy, setBusy] = useState(false);
@@ -129,7 +131,12 @@ function ItemCard({ item, fields, titleField, onSave, onDelete, onCancel, notify
     };
 
     const remove = async () => {
-        if (!confirm('Delete this entry?')) return;
+        if (!(await confirm({
+            title: 'Delete entry?',
+            message: 'Delete this entry?',
+            confirmText: 'Delete',
+            danger: true,
+        }))) return;
         setBusy(true);
         try {
             await onDelete();

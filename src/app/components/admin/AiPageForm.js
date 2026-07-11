@@ -7,6 +7,7 @@ import { postJson } from './aiSections/api';
 import SkillsManager from './aiSections/SkillsManager';
 import CardListManager from './aiSections/CardListManager';
 import LayoutManager from './aiSections/LayoutManager';
+import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
 
 /**
  * AI Hub editor. Card-based, live CRUD against the per-section REST APIs
@@ -47,6 +48,7 @@ const PROMPT_FIELDS = [
 ];
 
 export default function AiPageForm() {
+    const { confirm } = useAdminFeedback();
     const [tab, setTab] = useState('content');
     const [contentTab, setContentTab] = useState('skills');
     const [notification, setNotification] = useState(null);
@@ -58,7 +60,11 @@ export default function AiPageForm() {
     };
 
     const seedDefaults = async () => {
-        if (!confirm('Seed the four sections with the bundled defaults? This only fills sections that are currently empty.')) return;
+        if (!(await confirm({
+            title: 'Seed default sections?',
+            message: 'Seed the four sections with the bundled defaults? This only fills sections that are currently empty.',
+            confirmText: 'Seed',
+        }))) return;
         setSeeding(true);
         try {
             const res = await postJson('/api/ai/seed', {});

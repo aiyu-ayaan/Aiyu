@@ -4,8 +4,10 @@ import { useState, useEffect } from 'react';
 import { Upload, X, Trash2, Image as ImageIcon, Loader2, RefreshCw, CheckSquare, Square, Check, Sparkles, Pin } from 'lucide-react';
 import Image from 'next/image';
 import Toast from './Toast';
+import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
 
 export default function GalleryManager() {
+    const { confirm } = useAdminFeedback();
     const [images, setImages] = useState([]);
     const [loading, setLoading] = useState(true);
     const [uploading, setUploading] = useState(false);
@@ -263,7 +265,12 @@ export default function GalleryManager() {
     };
 
     const handleDelete = async (id) => {
-        if (!confirm('Are you sure you want to delete this image?')) return;
+        if (!(await confirm({
+            title: 'Delete image?',
+            message: 'Are you sure you want to delete this image? This action cannot be undone.',
+            confirmText: 'Delete',
+            danger: true,
+        }))) return;
 
         try {
             const res = await fetch(`/api/gallery?id=${id}`, {
@@ -313,7 +320,12 @@ export default function GalleryManager() {
         const count = selectedImages.size;
         if (count === 0) return;
 
-        if (!confirm(`Are you sure you want to delete these ${count} images? This action cannot be undone.`)) return;
+        if (!(await confirm({
+            title: `Delete ${count} images?`,
+            message: 'Are you sure you want to delete these images? This action cannot be undone.',
+            confirmText: 'Delete',
+            danger: true,
+        }))) return;
 
         setDeleting(true);
         let deletedCount = 0;
@@ -429,7 +441,11 @@ export default function GalleryManager() {
 
 
     const handleMigration = async () => {
-        if (!confirm('Generate thumbnails for existing images? This may take a while.')) return;
+        if (!(await confirm({
+            title: 'Generate thumbnails?',
+            message: 'Generate thumbnails for existing images? This may take a while.',
+            confirmText: 'Generate',
+        }))) return;
 
         setMigrating(true);
         setMigrationProgress({ message: 'Starting migration...', percentage: 0 });
@@ -464,7 +480,6 @@ export default function GalleryManager() {
                 }
             }
 
-            alert('Migration completed successfully!');
             showNotification(true, 'Migration completed successfully!');
             fetchImages(); // Refresh gallery
         } catch (error) {
