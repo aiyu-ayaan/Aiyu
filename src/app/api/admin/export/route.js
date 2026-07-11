@@ -89,8 +89,30 @@ export async function GET(request) {
         // Create ZIP archive in memory
         const archive = archiver('zip', { zlib: { level: 5 } });
 
-        // Add data.json
-        archive.append(JSON.stringify(data, null, 2), { name: 'data.json' });
+        // Split the database dump into one JSON file per collection under data/
+        // instead of a single monolithic data.json. High-churn collections
+        // (analytics) then grow in their own file while the content collections
+        // stay small and stable, and the archive diffs cleanly between backups.
+        // A manifest records the format + per-collection counts. The import
+        // route reads BOTH this split layout and the legacy single data.json.
+        const { exportedAt, ...collections } = data;
+
+        const manifest = {
+            format: 'split-v2',
+            exportedAt,
+            collections: Object.keys(collections),
+            counts: Object.fromEntries(
+                Object.entries(collections).map(([key, value]) => [
+                    key,
+                    Array.isArray(value) ? value.length : 1,
+                ])
+            ),
+        };
+        archive.append(JSON.stringify(manifest, null, 2), { name: 'manifest.json' });
+
+        for (const [key, value] of Object.entries(collections)) {
+            archive.append(JSON.stringify(value, null, 2), { name: `data/${key}.json` });
+        }
 
         // Add image files from public/uploads/
         const uploadsDir = join(process.cwd(), 'public', 'uploads');
