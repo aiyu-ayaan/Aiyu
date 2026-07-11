@@ -1,5 +1,21 @@
 # Changelog
 
+## [4.7.7](https://github.com/aiyu-ayaan/Aiyu/compare/v4.7.6...v4.7.7) (2026-07-11)
+
+### Features
+
+* Implement AI Hub sub-pages with overflow handling and "See all" links
+* Split export into per-collection JSON files
+
+### Bug Fixes
+
+* : Fix release done
+* Include AI Hub section content in export/import
+
+### Other Changes
+
+* Merge branch 'fix-backup-ai-and-split'
+
 ## [4.7.6](https://github.com/aiyu-ayaan/Aiyu/compare/v4.7.5...v4.7.6) (2026-07-11)
 
 ### Features
