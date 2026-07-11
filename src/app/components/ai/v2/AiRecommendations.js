@@ -2,19 +2,24 @@
 
 import React from 'react';
 import AiSectionShell from './AiSectionShell';
+import AiSeeAll from './AiSeeAll';
 
 /**
  * The recommended stack — glass cards, each with a rating meter, an honest
  * "why", capability tags, and a direct link. Cards swing up on their own
  * hinge as they enter.
  */
-export default function AiRecommendations({ index, section }) {
+export default function AiRecommendations({ index, section, limit = null, detailHref = null, totalCount = null }) {
     const cards = Array.isArray(section.data?.cards) ? section.data.cards : [];
+
+    const previewing = Number.isFinite(limit) && limit > 0 && cards.length > limit;
+    const visibleCards = previewing ? cards.slice(0, limit) : cards;
+    const total = Number.isFinite(totalCount) ? totalCount : cards.length;
 
     return (
         <AiSectionShell index={index} section={section}>
             <div data-v2-group data-v2-stagger="0.08" className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                {cards.map((card) => (
+                {visibleCards.map((card) => (
                     <a
                         key={card.id}
                         href={card.url || '#'}
@@ -68,6 +73,10 @@ export default function AiRecommendations({ index, section }) {
                     </a>
                 ))}
             </div>
+
+            {previewing && (
+                <AiSeeAll href={detailHref} label={`See all ${total} tools`} accent={section.accent} />
+            )}
         </AiSectionShell>
     );
 }

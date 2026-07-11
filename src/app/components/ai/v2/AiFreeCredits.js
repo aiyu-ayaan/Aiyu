@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import AiSectionShell from './AiSectionShell';
+import AiSeeAll from './AiSeeAll';
 
 /**
  * Free credits & free-tier finder. Two filter toggles ([free API key] / [no
@@ -9,21 +10,28 @@ import AiSectionShell from './AiSectionShell';
  * — provider, offer, badges, and a jump link — so it reads like terminal
  * output rather than a marketing table.
  */
-export default function AiFreeCredits({ index, section }) {
+export default function AiFreeCredits({ index, section, limit = null, detailHref = null, totalCount = null }) {
     const rows = Array.isArray(section.data?.rows) ? section.data.rows : [];
     const [freeApiOnly, setFreeApiOnly] = useState(false);
     const [noCardOnly, setNoCardOnly] = useState(false);
 
-    const visible = rows.filter(
-        (r) => (!freeApiOnly || r.freeApi) && (!noCardOnly || r.noCard)
-    );
+    // Preview mode (on the hub): cap the ledger and hand the full, filterable
+    // list to the /ai/free-credits sub-page; the toggles are hidden meanwhile.
+    const previewing = Number.isFinite(limit) && limit > 0 && rows.length > limit;
+    const total = Number.isFinite(totalCount) ? totalCount : rows.length;
+
+    const visible = previewing
+        ? rows.slice(0, limit)
+        : rows.filter((r) => (!freeApiOnly || r.freeApi) && (!noCardOnly || r.noCard));
 
     return (
         <AiSectionShell index={index} section={section}>
-            <div data-v2="rise" className="mb-10 flex flex-wrap gap-2.5 font-mono text-xs">
-                <Toggle label="free API key" active={freeApiOnly} accent={section.accent} onClick={() => setFreeApiOnly((v) => !v)} />
-                <Toggle label="no credit card" active={noCardOnly} accent={section.accent} onClick={() => setNoCardOnly((v) => !v)} />
-            </div>
+            {!previewing && (
+                <div data-v2="rise" className="mb-10 flex flex-wrap gap-2.5 font-mono text-xs">
+                    <Toggle label="free API key" active={freeApiOnly} accent={section.accent} onClick={() => setFreeApiOnly((v) => !v)} />
+                    <Toggle label="no credit card" active={noCardOnly} accent={section.accent} onClick={() => setNoCardOnly((v) => !v)} />
+                </div>
+            )}
 
             <div style={{ borderTop: '1px solid var(--hairline)' }}>
                 {visible.map((row) => (
@@ -78,6 +86,10 @@ export default function AiFreeCredits({ index, section }) {
                     </p>
                 )}
             </div>
+
+            {previewing && (
+                <AiSeeAll href={detailHref} label={`See all ${total} providers`} accent={section.accent} />
+            )}
         </AiSectionShell>
     );
 }

@@ -27,6 +27,9 @@ export const AI_ACCENTS = {
 export const AI_SECTION_TYPES = ['hero', 'skills', 'recommendations', 'credits', 'stats', 'prompts'];
 
 export const DEFAULT_AI_PAGE = {
+    // Items a section shows on the hub before it spills to its own /ai/<slug>
+    // sub-page (editable in /admin/ai-page → Layout). See lib/aiSubPages.js.
+    subPageThreshold: 12,
     sections: [
         {
             id: 'hero',

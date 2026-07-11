@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import AiSectionShell from './AiSectionShell';
+import AiSeeAll from './AiSeeAll';
 import { refreshScrollTriggersSoon } from '@/app/components/landing/v2/gsap3d';
 
 /**
@@ -16,7 +17,7 @@ import { refreshScrollTriggersSoon } from '@/app/components/landing/v2/gsap3d';
  * tweens created at mount always keep their targets. The only thing a filter
  * change needs is a ScrollTrigger refresh because the grid height moved.
  */
-export default function AiSkills({ index, section }) {
+export default function AiSkills({ index, section, limit = null, detailHref = null, totalCount = null }) {
     const categories = useMemo(
         () => (Array.isArray(section.data?.categories) ? section.data.categories : []),
         [section.data]
@@ -38,6 +39,13 @@ export default function AiSkills({ index, section }) {
         [categories, section.accent]
     );
 
+    // Preview mode (on the hub): cap the grid and defer the full, filterable
+    // catalog to the /ai/skills sub-page. Filtering a truncated set would be
+    // misleading, so the chips are hidden while previewing.
+    const previewing = Number.isFinite(limit) && limit > 0 && skills.length > limit;
+    const visibleSkills = previewing ? skills.slice(0, limit) : skills;
+    const total = Number.isFinite(totalCount) ? totalCount : skills.length;
+
     // Grid height changes when cards are hidden/shown; reposition the
     // ScrollTriggers of everything further down the page.
     useEffect(() => {
@@ -46,34 +54,40 @@ export default function AiSkills({ index, section }) {
 
     return (
         <AiSectionShell index={index} section={section}>
-            {/* Filter row */}
-            <div data-v2="rise" className="mb-12 flex flex-wrap gap-2.5 font-mono text-xs">
-                <FilterChip
-                    label={`all · ${skills.length}`}
-                    active={active === 'all'}
-                    accent={section.accent}
-                    onClick={() => setActive('all')}
-                />
-                {categories.map((cat) => (
+            {/* Filter row — full catalog only; a capped preview hides it. */}
+            {!previewing && (
+                <div data-v2="rise" className="mb-12 flex flex-wrap gap-2.5 font-mono text-xs">
                     <FilterChip
-                        key={cat.id}
-                        label={cat.label}
-                        active={active === cat.id}
-                        accent={cat.accent || section.accent}
-                        onClick={() => setActive(cat.id)}
+                        label={`all · ${skills.length}`}
+                        active={active === 'all'}
+                        accent={section.accent}
+                        onClick={() => setActive('all')}
+                    />
+                    {categories.map((cat) => (
+                        <FilterChip
+                            key={cat.id}
+                            label={cat.label}
+                            active={active === cat.id}
+                            accent={cat.accent || section.accent}
+                            onClick={() => setActive(cat.id)}
+                        />
+                    ))}
+                </div>
+            )}
+
+            <div data-v2-group data-v2-stagger="0.05" className="grid grid-cols-1 items-start gap-5 md:grid-cols-2 xl:grid-cols-3">
+                {visibleSkills.map((skill) => (
+                    <SkillCard
+                        key={skill.id || `${skill.categoryId}-${skill.name}`}
+                        skill={skill}
+                        hidden={!previewing && active !== 'all' && active !== skill.categoryId}
                     />
                 ))}
             </div>
 
-            <div data-v2-group data-v2-stagger="0.05" className="grid grid-cols-1 items-start gap-5 md:grid-cols-2 xl:grid-cols-3">
-                {skills.map((skill) => (
-                    <SkillCard
-                        key={skill.id || `${skill.categoryId}-${skill.name}`}
-                        skill={skill}
-                        hidden={active !== 'all' && active !== skill.categoryId}
-                    />
-                ))}
-            </div>
+            {previewing && (
+                <AiSeeAll href={detailHref} label={`See all ${total} skills`} accent={section.accent} />
+            )}
         </AiSectionShell>
     );
 }

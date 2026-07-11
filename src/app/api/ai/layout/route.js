@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getSingleton, upsertSingleton } from '@/lib/serialize';
 import { DEFAULT_AI_PAGE } from '@/lib/aiPageDefaults';
 import { requireAiWrite, invalidateAiPage } from '@/lib/aiSections';
+import { AI_SUBPAGE_THRESHOLD_MIN, AI_SUBPAGE_THRESHOLD_MAX } from '@/lib/aiSubPages';
 
 /**
  * The AI Hub page *skeleton*: the ordered list of sections with their shells
@@ -35,7 +36,19 @@ export async function PUT(request) {
         if (!body || !Array.isArray(body.sections)) {
             return NextResponse.json({ ok: false, error: 'Invalid payload: `sections` array required' }, { status: 400 });
         }
-        const saved = await upsertSingleton(prisma, 'aiPage', { sections: body.sections });
+
+        const patch = { sections: body.sections };
+        // Hub → sub-page overflow threshold (optional). Merge-on-upsert means a
+        // save that omits it leaves the stored value untouched.
+        if (body.subPageThreshold !== undefined) {
+            const n = Number(body.subPageThreshold);
+            if (!Number.isFinite(n)) {
+                return NextResponse.json({ ok: false, error: '`subPageThreshold` must be a number' }, { status: 400 });
+            }
+            patch.subPageThreshold = Math.max(AI_SUBPAGE_THRESHOLD_MIN, Math.min(AI_SUBPAGE_THRESHOLD_MAX, Math.round(n)));
+        }
+
+        const saved = await upsertSingleton(prisma, 'aiPage', patch);
         await invalidateAiPage();
         return NextResponse.json({ ok: true, ...saved });
     } catch (error) {
