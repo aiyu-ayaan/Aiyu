@@ -1,5 +1,27 @@
 # Changelog
 
+## [4.7.6](https://github.com/aiyu-ayaan/Aiyu/compare/v4.7.5...v4.7.6) (2026-07-11)
+
+### Features
+
+* Add new predefined themes: Copper Patina, Nebula Drift, Royal Sapphire, Ink & Vermilion, Acid Graphite, and Firefly Grove
+* Add jump-to-section navigation on AI Hub page
+* Add JWT_SECRET mock for testing environment
+
+### Bug Fixes
+
+* : Fix release done
+* Remove app memory/CPU caps causing runtime OOM kills
+* : Fix release done
+
+### Other Changes
+
+* Replace native alert/confirm with toast + dialog
+* Warn against low NODE_OPTIONS heap caps in .env
+* Add jump to section implementation plan
+* Add jump to section design doc
+* Release v4.7.5 (#247)
+
 ## [4.7.5](https://github.com/aiyu-ayaan/Aiyu/compare/v4.7.4...v4.7.5) (2026-07-10)
 
 ### Features
