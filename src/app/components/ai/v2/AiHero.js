@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useRef } from 'react';
+import { FaArrowDown } from 'react-icons/fa6';
 import useDevicePerformance from '@/app/hooks/useDevicePerformance';
 import { useV2Fx } from '@/app/components/landing/v2/gsap3d';
 
@@ -9,7 +10,7 @@ import { useV2Fx } from '@/app/components/landing/v2/gsap3d';
  * oversized headline that pivots up line-by-line, a lede, and a mono row of
  * capability tags reading like a command manifest.
  */
-export default function AiHero({ section }) {
+export default function AiHero({ section, jumpLinks = [] }) {
     const scopeRef = useRef(null);
     const { prefersReducedMotion } = useDevicePerformance();
     useV2Fx(scopeRef, { reducedMotion: prefersReducedMotion });
@@ -69,6 +70,31 @@ export default function AiHero({ section }) {
                             >
                                 {tag}
                             </span>
+                        ))}
+                    </div>
+                )}
+
+                {jumpLinks.length > 0 && (
+                    <div
+                        data-v2-group
+                        data-v2-stagger="0.05"
+                        className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-3 font-mono text-sm"
+                    >
+                        <span data-v2="rise" className="inline-flex items-center gap-2" style={{ color: 'var(--text-muted)' }}>
+                            <FaArrowDown size={10} aria-hidden="true" /> jump to
+                        </span>
+                        {jumpLinks.map((item) => (
+                            <a
+                                key={item.href}
+                                href={item.href}
+                                data-v2="rise"
+                                className="group cursor-pointer transition-colors duration-200"
+                                style={{ color: 'var(--text-secondary)' }}
+                            >
+                                <span style={{ color: accent }}>[</span>
+                                <span className="mx-1 underline-offset-4 group-hover:underline">{item.label}</span>
+                                <span style={{ color: accent }}>]</span>
+                            </a>
                         ))}
                     </div>
                 )}

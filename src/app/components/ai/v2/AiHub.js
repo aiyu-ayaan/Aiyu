@@ -1,6 +1,14 @@
 import ViewportLazySection from '@/app/components/shared/ViewportLazySection';
 import { AI_SECTION_COMPONENTS } from './registry';
 
+const SECTION_LABEL_MAP = {
+    skills: 'skills',
+    recommendations: 'stack',
+    credits: 'credits',
+    stats: 'telemetry',
+    prompts: 'prompts',
+};
+
 /**
  * Schema-driven renderer for the AI Hub. Walks the enabled sections in order,
  * maps each `type` to a component via the registry, and injects live `stats`
@@ -12,6 +20,13 @@ export default function AiHub({ config, stats }) {
     const sections = Array.isArray(config?.sections) ? config.sections : [];
     const enabled = sections.filter((s) => s && s.enabled !== false && AI_SECTION_COMPONENTS[s.type]);
 
+    const jumpLinks = enabled
+        .filter((s) => s.type !== 'hero')
+        .map((s) => ({
+            href: `#ai-${s.id}`,
+            label: SECTION_LABEL_MAP[s.type] || String(s.eyebrow || s.title || s.id).toLowerCase().replace(/\s+/g, '-'),
+        }));
+
     let chapter = 0;
 
     return (
@@ -22,9 +37,11 @@ export default function AiHub({ config, stats }) {
                 const index = isHero ? '00' : String(++chapter).padStart(2, '0');
                 const extra = section.type === 'stats' ? { stats } : {};
 
-                const node = <Component key={section.id} index={index} section={section} {...extra} />;
+                if (isHero) {
+                    return <Component key={section.id} index={index} section={section} jumpLinks={jumpLinks} {...extra} />;
+                }
 
-                if (isHero) return node;
+                const node = <Component key={section.id} index={index} section={section} {...extra} />;
 
                 return (
                     <ViewportLazySection key={section.id} id={`ai-${section.id}`} placeholderHeight={520}>
