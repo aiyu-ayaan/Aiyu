@@ -116,7 +116,6 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
       NODE_ENV: production
-      NODE_OPTIONS: ${NODE_OPTIONS:---max-old-space-size=256}
     volumes:
       - uploads_data:/app/public/uploads
       - nextjs_cache:/app/.next/cache
@@ -132,9 +131,7 @@ services:
     security_opt:
       - no-new-privileges:true
     read_only: true
-    mem_limit: ${APP_MEMORY_LIMIT:-384m}
-    mem_reservation: ${APP_MEMORY_RESERVATION:-192m}
-    cpus: ${APP_CPUS:-1.0}
+    # No memory/CPU caps: the app may use the full server capacity.
     healthcheck:
       test: ["CMD", "sh", "/app/healthcheck.sh"]
       interval: 15s
