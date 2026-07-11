@@ -2,16 +2,21 @@
 
 import React, { useState } from 'react';
 import AiSectionShell from './AiSectionShell';
+import AiSeeAll from './AiSeeAll';
 
 /**
  * Prompt library — expandable cards. Collapsed rows read like a table of
  * contents; expanding reveals the full system prompt in a mono block with a
  * one-tap copy button.
  */
-export default function AiPromptLibrary({ index, section }) {
-    const items = Array.isArray(section.data?.items) ? section.data.items : [];
+export default function AiPromptLibrary({ index, section, limit = null, detailHref = null, totalCount = null }) {
+    const allItems = Array.isArray(section.data?.items) ? section.data.items : [];
     const [openId, setOpenId] = useState(null);
     const [copiedId, setCopiedId] = useState(null);
+
+    const previewing = Number.isFinite(limit) && limit > 0 && allItems.length > limit;
+    const items = previewing ? allItems.slice(0, limit) : allItems;
+    const total = Number.isFinite(totalCount) ? totalCount : allItems.length;
 
     const copy = async (item) => {
         try {
@@ -94,6 +99,10 @@ export default function AiPromptLibrary({ index, section }) {
                     );
                 })}
             </div>
+
+            {previewing && (
+                <AiSeeAll href={detailHref} label={`See all ${total} prompts`} accent={section.accent} />
+            )}
         </AiSectionShell>
     );
 }

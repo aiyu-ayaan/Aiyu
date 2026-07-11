@@ -16,6 +16,47 @@ function isZipBuffer(buffer) {
 const MAX_DECOMPRESSED_BYTES = 500 * 1024 * 1024; // 500MB
 const MAX_ZIP_ENTRIES = 10000;
 
+/**
+ * Assemble the database dump from a backup ZIP, supporting both layouts:
+ *   - legacy: a single top-level `data.json` holding the whole dump.
+ *   - split-v2: one `data/<collection>.json` file per collection.
+ * Both produce the same flat `{ <collection>: value }` object the import loop
+ * consumes, so old and new backups stay mutually compatible.
+ */
+function assembleJsonData(zipEntries) {
+    // Legacy single-file layout wins if present (keeps old backups importable).
+    const legacyEntry = zipEntries.find(
+        (entry) => !entry.isDirectory && /(^|\/)data\.json$/i.test(entry.entryName)
+    );
+    if (legacyEntry) {
+        try {
+            return JSON.parse(legacyEntry.getData().toString('utf8'));
+        } catch {
+            throw new Error("Invalid JSON in data.json");
+        }
+    }
+
+    // Split-v2 layout: merge every data/<collection>.json back into one object.
+    const collectionEntries = zipEntries.filter(
+        (entry) => !entry.isDirectory && /(^|\/)data\/[^/]+\.json$/i.test(entry.entryName)
+    );
+    if (collectionEntries.length > 0) {
+        const jsonData = {};
+        for (const entry of collectionEntries) {
+            const key = entry.entryName.split('/').pop().replace(/\.json$/i, '');
+            if (!key || key === 'manifest') continue;
+            try {
+                jsonData[key] = JSON.parse(entry.getData().toString('utf8'));
+            } catch {
+                throw new Error(`Invalid JSON in data/${key}.json`);
+            }
+        }
+        return jsonData;
+    }
+
+    throw new Error("ZIP does not contain data.json or a data/ collection folder");
+}
+
 function parseZipImport(fileBuffer) {
     const zip = new AdmZip(fileBuffer);
     const zipEntries = zip.getEntries();
@@ -29,17 +70,7 @@ function parseZipImport(fileBuffer) {
         throw new Error("Backup archive's uncompressed size exceeds the 500MB limit");
     }
 
-    const dataEntry = zipEntries.find((entry) => !entry.isDirectory && /(^|\/)data\.json$/i.test(entry.entryName));
-    if (!dataEntry) {
-        throw new Error("ZIP does not contain data.json");
-    }
-
-    let jsonData;
-    try {
-        jsonData = JSON.parse(dataEntry.getData().toString('utf8'));
-    } catch {
-        throw new Error("Invalid JSON in data.json");
-    }
+    const jsonData = assembleJsonData(zipEntries);
 
     const imageEntries = zipEntries.filter((entry) =>
         !entry.isDirectory && /(^|\/)uploads\/.+/i.test(entry.entryName)
@@ -167,6 +198,14 @@ export async function POST(request) {
             { modelKey: 'header', key: 'header' },
             { modelKey: 'home', key: 'home' },
             { modelKey: 'aiPage', key: 'aiPage' },
+            // AI Hub section content. Category MUST precede skill: the per-model
+            // deleteMany+createMany loop runs in array order, and aiSkill.categoryId
+            // is a FK onto aiSkillCategory.
+            { modelKey: 'aiSkillCategory', key: 'aiSkillCategories' },
+            { modelKey: 'aiSkill', key: 'aiSkills' },
+            { modelKey: 'aiRecommendation', key: 'aiRecommendations' },
+            { modelKey: 'aiCredit', key: 'aiCredits' },
+            { modelKey: 'aiPrompt', key: 'aiPrompts' },
             { modelKey: 'project', key: 'projects' },
             { modelKey: 'deployment', key: 'deployments' },
             { modelKey: 'social', key: 'socials' },

@@ -12,6 +12,11 @@ import { GripVertical, ChevronDown, ChevronRight, Trash2, Loader2, Save, Plus, E
 import { Field, TextInput, TextArea, AccentPicker, newId } from '../aiPage/fields';
 import SectionBodyEditor from '../aiPage/SectionBodyEditor';
 import { DEFAULT_AI_PAGE, AI_SECTION_TYPES } from '@/lib/aiPageDefaults';
+import {
+    AI_SUBPAGE_THRESHOLD,
+    AI_SUBPAGE_THRESHOLD_MIN,
+    AI_SUBPAGE_THRESHOLD_MAX,
+} from '@/lib/aiSubPages';
 import { getJson, putJson } from './api';
 
 const TYPE_LABELS = {
@@ -39,6 +44,7 @@ function clone(obj) {
  */
 export default function LayoutManager({ notify }) {
     const [sections, setSections] = useState([]);
+    const [threshold, setThreshold] = useState(String(DEFAULT_AI_PAGE.subPageThreshold ?? AI_SUBPAGE_THRESHOLD));
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [openId, setOpenId] = useState(null);
@@ -55,6 +61,9 @@ export default function LayoutManager({ notify }) {
                     ? data.sections
                     : clone(DEFAULT_AI_PAGE.sections);
                 setSections(loaded.map((s) => ({ ...s, id: s.id || newId('section') })));
+                if (Number.isFinite(Number(data?.subPageThreshold))) {
+                    setThreshold(String(data.subPageThreshold));
+                }
             })
             .catch(() => {
                 setSections(clone(DEFAULT_AI_PAGE.sections));
@@ -91,10 +100,18 @@ export default function LayoutManager({ notify }) {
         });
     };
 
+    const clampThreshold = (value) => {
+        const n = Number(value);
+        if (!Number.isFinite(n)) return DEFAULT_AI_PAGE.subPageThreshold ?? AI_SUBPAGE_THRESHOLD;
+        return Math.max(AI_SUBPAGE_THRESHOLD_MIN, Math.min(AI_SUBPAGE_THRESHOLD_MAX, Math.round(n)));
+    };
+
     const save = async () => {
         setSaving(true);
         try {
-            await putJson('/api/ai/layout', { sections });
+            const subPageThreshold = clampThreshold(threshold);
+            setThreshold(String(subPageThreshold));
+            await putJson('/api/ai/layout', { sections, subPageThreshold });
             notify?.(true, 'Layout saved.');
         } catch (e) {
             notify?.(false, e.message || 'Save failed.');
@@ -113,6 +130,30 @@ export default function LayoutManager({ notify }) {
 
     return (
         <div className="space-y-6">
+            <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                    <label htmlFor="ai-subpage-threshold" className="block text-sm font-semibold text-white">
+                        Sub-page overflow threshold
+                    </label>
+                    <p className="mt-1 text-xs text-slate-400">
+                        When a section has more than this many items, the{' '}
+                        <span className="font-mono text-cyan-400">/ai</span> hub shows only this many and adds a{' '}
+                        <span className="font-mono text-cyan-400">See all →</span> link to its sub-page
+                        (e.g. <span className="font-mono text-cyan-400">/ai/skills</span>).
+                    </p>
+                </div>
+                <input
+                    id="ai-subpage-threshold"
+                    type="number"
+                    min={AI_SUBPAGE_THRESHOLD_MIN}
+                    max={AI_SUBPAGE_THRESHOLD_MAX}
+                    value={threshold}
+                    onChange={(e) => setThreshold(e.target.value)}
+                    onBlur={() => setThreshold(String(clampThreshold(threshold)))}
+                    className="w-full shrink-0 rounded-lg border border-white/10 bg-black/30 px-3 py-2 font-mono text-sm text-white outline-none transition-colors focus:border-cyan-400/50 sm:w-28"
+                />
+            </div>
+
             <div className="flex flex-wrap items-center justify-between gap-4">
                 <p className="font-mono text-xs text-slate-500">
                     {sections.filter((s) => s.enabled !== false).length}/{sections.length} sections live · drag to reorder

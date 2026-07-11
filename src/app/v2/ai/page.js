@@ -92,7 +92,8 @@ export default async function AiHubPage() {
     ]);
     const baseUrl = getSiteUrl();
     const baseName = siteConfig?.siteTitle || siteConfig?.logoText || 'Portfolio';
-    const url = `${baseUrl}${v2PublicPath(siteConfig, '/ai')}`;
+    const aiPath = v2PublicPath(siteConfig, '/ai');
+    const url = `${baseUrl}${aiPath}`;
 
     const schema = generateAiHubSchema({
         siteUrl: baseUrl,
@@ -109,7 +110,7 @@ export default async function AiHubPage() {
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
             />
-            <AiHub config={config} stats={stats} />
+            <AiHub config={config} stats={stats} basePath={aiPath} />
         </>
     );
 }

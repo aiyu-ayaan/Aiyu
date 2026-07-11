@@ -7,8 +7,9 @@ import {
   getProjectSlug,
 } from '@/lib/contentSlugs';
 import { getSeoConfig, applySitemapOverrides } from '@/lib/seoConfig';
-import { getConfigData } from '@/lib/dataFetchers';
+import { getConfigData, getAiPageData } from '@/lib/dataFetchers';
 import { v2PublicPath } from '@/lib/siteVersion';
+import { AI_SUBPAGES, findRenderableSection } from '@/lib/aiSubPages';
 
 const IS_PRODUCTION_BUILD = process.env.NEXT_PHASE === 'phase-production-build';
 const ALLOW_DB_DURING_BUILD = process.env.ALLOW_DB_DURING_BUILD === 'true';
@@ -130,6 +131,37 @@ function createStaticRoutes(baseUrl, options = {}) {
   ];
 }
 
+/**
+ * One sitemap entry per AI Hub sub-page whose section is enabled and present
+ * (`/ai/skills`, `/ai/stack`, `/ai/free-credits`, `/ai/prompt-library`). The
+ * page's own metadata sets these to index=follow, so listing them here lets the
+ * full catalog behind each "See all" link get crawled. Never throws — a failed
+ * AI-config read just yields no sub-page routes.
+ */
+async function createAiSubPageRoutes(baseUrl, aiBasePath) {
+  try {
+    const { config } = await getAiPageData();
+    const base = String(aiBasePath || '/ai').replace(/\/+$/, '');
+    const now = new Date();
+
+    return AI_SUBPAGES.reduce((routes, route) => {
+      if (!findRenderableSection(config, route.type)) {
+        return routes;
+      }
+      routes.push({
+        url: `${baseUrl}${base}/${route.slug}`,
+        lastModified: now,
+        changeFrequency: 'weekly',
+        priority: 0.8,
+      });
+      return routes;
+    }, []);
+  } catch (error) {
+    console.warn('[sitemap] AI sub-page routes skipped:', error?.message || error);
+    return [];
+  }
+}
+
 function normalizeSitemapRoutes(routes = []) {
   const seenUrls = new Set();
 
@@ -166,8 +198,12 @@ export default async function sitemap() {
   // the sitemap URL matches whichever site version is the active default.
   const siteConfig = await getConfigData();
   const aiPath = v2PublicPath(siteConfig, '/ai');
+  const aiSubPageRoutes = await createAiSubPageRoutes(baseUrl, aiPath);
 
-  const staticRoutes = normalizeSitemapRoutes(createStaticRoutes(baseUrl, { aiPath }));
+  const staticRoutes = normalizeSitemapRoutes([
+    ...createStaticRoutes(baseUrl, { aiPath }),
+    ...aiSubPageRoutes,
+  ]);
 
   if (SKIP_DB_DURING_BUILD) {
     console.warn('[sitemap] Database reads skipped during production build. Returning static routes only.');
@@ -220,7 +256,7 @@ export default async function sitemap() {
       priority: 0.74,
     }));
 
-    const generated = normalizeSitemapRoutes([...staticRoutesWithRealtimeCollections, ...blogRoutes, ...projectRoutes, ...appRoutes]);
+    const generated = normalizeSitemapRoutes([...staticRoutesWithRealtimeCollections, ...aiSubPageRoutes, ...blogRoutes, ...projectRoutes, ...appRoutes]);
 
     // Apply admin sitemap overrides (extra URLs + path exclusions). Failure here
     // must never break the sitemap, so fall back to the generated list.
