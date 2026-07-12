@@ -351,6 +351,17 @@ export default function ResumeStudioClient() {
                     snapshots={studio?.snapshots || []}
                     onRestoreSnapshot={restoreSnapshot}
                     onDeleteSnapshot={deleteSnapshot}
+                    editorApi={{
+                        getValue: () => editorRef.current?.getValue() || '',
+                        getSelection: () => editorRef.current?.getSelection() || '',
+                        replaceSelection: (text) => { editorRef.current?.replaceSelection(text); setDirty(true); },
+                        insertAtCursor: insertBlock,
+                    }}
+                    compileErrors={compileErrors}
+                    compileLog={compileLog}
+                    ideas={studio?.ideas || []}
+                    onSaveIdeas={(ideas) => save({ ideas })}
+                    toast={toast}
                 />
             </div>
         </div>

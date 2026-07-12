@@ -8,7 +8,10 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
     FaBriefcase, FaPalette, FaClockRotateLeft, FaPlus, FaSpinner,
     FaServer, FaUserTie, FaGraduationCap, FaListCheck,
+    FaWandMagicSparkles, FaLightbulb,
 } from 'react-icons/fa6';
+import StudioAiPanel from './StudioAiPanel';
+import StudioIdeasPanel from './StudioIdeasPanel';
 import {
     RESUME_TEMPLATES, THEME_PRESETS, detectThemePreset,
     projectToLatex, deploymentToLatex, experienceToLatex,
@@ -16,8 +19,10 @@ import {
 } from '@/lib/resumeStudio';
 
 const TABS = [
-    { id: 'portfolio', label: 'Portfolio', icon: FaBriefcase },
+    { id: 'portfolio', label: 'Items', icon: FaBriefcase },
     { id: 'design', label: 'Design', icon: FaPalette },
+    { id: 'ai', label: 'AI', icon: FaWandMagicSparkles },
+    { id: 'ideas', label: 'Ideas', icon: FaLightbulb },
     { id: 'snapshots', label: 'History', icon: FaClockRotateLeft },
 ];
 
@@ -55,6 +60,12 @@ export default function StudioSidePanel({
     snapshots,
     onRestoreSnapshot,
     onDeleteSnapshot,
+    editorApi,         // { getValue, getSelection, replaceSelection, insertAtCursor }
+    compileErrors,
+    compileLog,
+    ideas,
+    onSaveIdeas,
+    toast,
 }) {
     const [tab, setTab] = useState('portfolio');
     const [loading, setLoading] = useState(true);
@@ -213,6 +224,26 @@ export default function StudioSidePanel({
                             </button>
                         ))}
                     </>
+                )}
+
+                {/* ── AI ── */}
+                {tab === 'ai' && (
+                    <StudioAiPanel
+                        editorApi={editorApi}
+                        compileErrors={compileErrors}
+                        compileLog={compileLog}
+                        toast={toast}
+                    />
+                )}
+
+                {/* ── Ideas ── */}
+                {tab === 'ideas' && (
+                    <StudioIdeasPanel
+                        ideas={ideas || []}
+                        onSaveIdeas={onSaveIdeas}
+                        editorApi={editorApi}
+                        toast={toast}
+                    />
                 )}
 
                 {/* ── Snapshots ── */}

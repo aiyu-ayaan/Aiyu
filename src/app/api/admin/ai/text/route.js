@@ -255,6 +255,21 @@ async function generateText(request) {
         } else if (mode === 'generate_subtitle') {
             finalSystemInstruction += "\nYou are a creative writer. Generate a short, intriguing, and professional subtitle for a portfolio section named '${context?.section}'. Tone should be futuristic and tech-focused. Output exactly one line. NO quotes or extra text.";
             finalPrompt = `Title of the section: "${prompt}"`;
+        } else if (mode === 'latex_refine') {
+            finalSystemInstruction += "\nYou are an expert resume writer who is also a LaTeX specialist. Improve the wording of the given LaTeX resume snippet: stronger action verbs, quantified impact, concise professional tone. Preserve every LaTeX command, macro, and the overall structure exactly — only improve the human-readable text inside. Return ONLY the improved LaTeX snippet. No markdown fences, no commentary.";
+            finalPrompt = `Improve this LaTeX resume snippet:\n\n${prompt}`;
+        } else if (mode === 'latex_fix') {
+            finalSystemInstruction += "\nYou are a LaTeX debugging expert. You get compiler errors and the related source. Respond with: (1) a one-line explanation per error, then (2) a corrected version of the affected source lines in a LaTeX block. Be surgical — change only what is needed to fix the errors. No markdown fences.";
+            finalPrompt = `Fix these LaTeX errors.\n\nCompiler errors:\n${context?.errors || 'unknown'}\n\nSource:\n${prompt}`;
+        } else if (mode === 'latex_generate') {
+            finalSystemInstruction += "\nYou are an expert resume writer fluent in LaTeX. Generate a resume block from the user's description using these macros where appropriate: \\resumeItem{...}, \\resumeSubheading{Role}{Dates}{Company}{Location}, \\resumeProjectHeading{...}{...}, \\resumeItemListStart/\\resumeItemListEnd. Escape LaTeX special characters in prose (&, %, #, _). Return ONLY LaTeX. No markdown fences, no commentary.";
+            finalPrompt = `Generate a LaTeX resume block (${context?.sectionType || 'generic'}) for:\n\n${prompt}`;
+        } else if (mode === 'latex_tailor') {
+            finalSystemInstruction += "\nYou are an expert career coach. Compare the LaTeX resume against the job description. Return a short, prioritized list of concrete edits: what to emphasize, reword, add, or drop, referencing specific resume lines. Plain text bullets only — terse and actionable. No LaTeX output, no fences.";
+            finalPrompt = `Job description:\n${context?.jobDescription || ''}\n\nResume (LaTeX):\n${prompt.substring(0, 12000)}`;
+        } else if (mode === 'resume_expand_idea') {
+            finalSystemInstruction += "\nYou are an expert resume writer fluent in LaTeX. Turn the user's rough idea into 1-3 polished, impact-oriented \\resumeItem{...} bullet points. Use action verbs and quantify where plausible. Escape LaTeX special characters. Return ONLY the \\resumeItem lines. No markdown fences, no commentary.";
+            finalPrompt = `Turn this resume idea into bullet points:\n\n${prompt}`;
         } else if (mode === 'generate_theme') {
             finalSystemInstruction += `\nYou are an expert UI theme designer. Generate a complete color palette for a developer portfolio.
 
