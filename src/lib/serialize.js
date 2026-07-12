@@ -185,6 +185,7 @@ export const MODELS = {
   cronEnv: { delegate: 'cronEnv', kind: 'json', singleton: true, timestamps: true },
   mcpConfig: { delegate: 'mcpConfig', kind: 'json', singleton: true, timestamps: true, secrets: MCP_SECRETS },
   aiPage: { delegate: 'aiPage', kind: 'json', singleton: true, timestamps: true },
+  resumeStudio: { delegate: 'resumeStudio', kind: 'json', singleton: true, timestamps: true },
 };
 
 export function getDelegate(prisma, key) {

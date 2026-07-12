@@ -461,6 +461,15 @@ model AiPage {
   updatedAt DateTime @default(now()) @updatedAt
 }
 
+// LaTeX Resume Studio singleton: `data` holds the LaTeX source, editor
+// settings (engine, template/theme ids), snapshots, and the ideas board.
+model ResumeStudio {
+  id        String   @id @default(cuid())
+  data      Json     @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+}
+
 // ───────────────────────── AI Hub section content ─────────────────────────
 // Relational, first-class content for the /ai sections so each is independently
 // CRUD-able over REST (/api/ai/*) and MCP, and shareable on its own. `id`s are
