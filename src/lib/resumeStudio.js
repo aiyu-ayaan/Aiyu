@@ -115,11 +115,14 @@ export function detectThemePreset(latex) {
 
 /** Escape text destined for LaTeX body content. */
 export function escapeLatex(text = '') {
-    return String(text)
-        .replace(/\\/g, '\\textbackslash{}')
-        .replace(/([&%$#_{}])/g, '\\$1')
-        .replace(/~/g, '\\textasciitilde{}')
-        .replace(/\^/g, '\\textasciicircum{}');
+    // Single pass so replacement output (e.g. the {} in \textbackslash{})
+    // is never re-escaped by a later rule.
+    return String(text).replace(/[\\&%$#_{}~^]/g, (ch) => {
+        if (ch === '\\') return '\\textbackslash{}';
+        if (ch === '~') return '\\textasciitilde{}';
+        if (ch === '^') return '\\textasciicircum{}';
+        return `\\${ch}`;
+    });
 }
 
 /** Render one portfolio Project as a resumeProjectHeading block. */
@@ -178,6 +181,19 @@ export function experienceToLatex(exp) {
         `      \\resumeItemListStart`,
         items || `        \\resumeItem{}`,
         `      \\resumeItemListEnd`,
+    ].join('\n');
+}
+
+/** Render an About-page education entry as a resumeSubheading block. */
+export function educationToLatex(edu) {
+    const degree = escapeLatex(edu.degree || 'Degree');
+    const institution = escapeLatex(edu.institution || edu.school || '');
+    const duration = escapeLatex(edu.duration || edu.year || '');
+    const cgpa = edu.cgpa ? `CGPA: ${escapeLatex(edu.cgpa)}` : '';
+    return [
+        `    \\resumeSubheading`,
+        `      {${institution}}{${duration}}`,
+        `      {${degree}}{${cgpa}}`,
     ].join('\n');
 }
 

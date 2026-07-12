@@ -8,12 +8,13 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
-    FaFloppyDisk, FaPlay, FaUpload, FaDownload, FaClockRotateLeft,
+    FaFloppyDisk, FaPlay, FaUpload, FaDownload,
     FaSpinner, FaCircleExclamation, FaXmark, FaCamera,
 } from 'react-icons/fa6';
 import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
-import { RESUME_ENGINES, MAX_SNAPSHOTS } from '@/lib/resumeStudio';
+import { RESUME_ENGINES, MAX_SNAPSHOTS, applyThemePreset } from '@/lib/resumeStudio';
 import LatexEditor from './LatexEditor';
+import StudioSidePanel from './StudioSidePanel';
 
 function timeLabel(iso) {
     if (!iso) return 'never';
@@ -210,6 +211,33 @@ export default function ResumeStudioClient() {
         await save({ snapshots });
     }, [confirm, save, studio]);
 
+    const insertBlock = useCallback((block) => {
+        editorRef.current?.insertAtCursor(block);
+        setDirty(true);
+    }, []);
+
+    const applyTemplate = useCallback(async (template) => {
+        if (!(await confirm({
+            title: `Load "${template.name}"?`,
+            message: 'This replaces the entire document. Take a snapshot first if you want to keep the current version.',
+            confirmText: 'Replace document',
+            danger: true,
+        }))) return;
+        editorRef.current?.setValue(template.latex);
+        setDirty(true);
+        await save({ templateId: template.id });
+        toast.success(`Template "${template.name}" loaded`);
+    }, [confirm, save, toast]);
+
+    const applyTheme = useCallback((presetId) => {
+        const current = editorRef.current?.getValue() || '';
+        const themed = applyThemePreset(current, presetId);
+        if (themed === current) return;
+        editorRef.current?.setValue(themed);
+        setDirty(true);
+        toast.success('Theme applied — compile to preview');
+    }, [toast]);
+
     // ── Render ──────────────────────────────────────────────────────────
     if (loading) {
         return (
@@ -314,25 +342,16 @@ export default function ResumeStudioClient() {
                     )}
                 </div>
 
-                {/* Snapshots rail */}
-                <div className="w-56 shrink-0 hidden xl:flex flex-col rounded-xl border border-white/10 bg-slate-900/60 p-3 gap-2 overflow-auto">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-                        <FaClockRotateLeft /> Snapshots
-                    </h3>
-                    {(studio?.snapshots || []).length === 0 && (
-                        <p className="text-[11px] text-slate-600">No snapshots yet — use the Snapshot button to save named versions.</p>
-                    )}
-                    {(studio?.snapshots || []).map((snap) => (
-                        <div key={snap.id} className="rounded-lg border border-white/5 bg-white/[0.03] p-2">
-                            <p className="text-xs text-slate-200 font-semibold truncate" title={snap.label}>{snap.label}</p>
-                            <p className="text-[10px] text-slate-500 font-mono">{new Date(snap.createdAt).toLocaleString()}</p>
-                            <div className="flex gap-2 mt-1">
-                                <button onClick={() => restoreSnapshot(snap)} className="text-[10px] uppercase font-bold text-cyan-400 hover:text-cyan-300">Restore</button>
-                                <button onClick={() => deleteSnapshot(snap)} className="text-[10px] uppercase font-bold text-red-400 hover:text-red-300">Delete</button>
-                            </div>
-                        </div>
-                    ))}
-                </div>
+                {/* Side panel: portfolio items, design, history */}
+                <StudioSidePanel
+                    onInsert={insertBlock}
+                    onApplyTemplate={applyTemplate}
+                    onApplyTheme={applyTheme}
+                    currentLatex={() => editorRef.current?.getValue() || ''}
+                    snapshots={studio?.snapshots || []}
+                    onRestoreSnapshot={restoreSnapshot}
+                    onDeleteSnapshot={deleteSnapshot}
+                />
             </div>
         </div>
     );
