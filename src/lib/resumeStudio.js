@@ -12,6 +12,8 @@
  * so switching a theme never touches the user's content.
  */
 
+import { AYAAN_BASE_TEMPLATE } from './resumeBaseTemplate';
+
 export const THEME_BEGIN_RE = /^%\s*====\s*RESUME-THEME:BEGIN.*$/m;
 export const THEME_END_RE = /^%\s*====\s*RESUME-THEME:END\s*====.*$/m;
 
@@ -347,6 +349,12 @@ const JAKE_BODY = `\\begin{document}
 
 export const RESUME_TEMPLATES = [
     {
+        id: 'ayaan-base',
+        name: 'Ayaan Base Resume',
+        description: 'Your real resume — the visual editor understands this layout natively.',
+        latex: AYAAN_BASE_TEMPLATE,
+    },
+    {
         id: 'jake-classic',
         name: "Jake's Resume (Classic)",
         description: 'The battle-tested single-column ATS-friendly layout.',
@@ -373,7 +381,7 @@ export const RESUME_TEMPLATES = [
     },
 ];
 
-export const DEFAULT_RESUME_LATEX = RESUME_TEMPLATES[0].latex;
+export const DEFAULT_RESUME_LATEX = AYAAN_BASE_TEMPLATE;
 
 export const RESUME_ENGINES = ['pdflatex', 'xelatex', 'lualatex'];
 
@@ -384,7 +392,7 @@ export function defaultStudio() {
     return {
         latex: DEFAULT_RESUME_LATEX,
         engine: 'pdflatex',
-        templateId: 'jake-classic',
+        templateId: 'ayaan-base',
         snapshots: [], // [{ id, label, latex, createdAt }]
         ideas: [], // [{ id, text, done, createdAt }]
         lastCompiledAt: null,
