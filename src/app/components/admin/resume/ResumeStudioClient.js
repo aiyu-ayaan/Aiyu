@@ -10,7 +10,7 @@ import Link from 'next/link';
 import {
     FaFloppyDisk, FaPlay, FaUpload, FaDownload,
     FaSpinner, FaCircleExclamation, FaXmark, FaCamera,
-    FaCode, FaShapes, FaBolt, FaArrowsRotate,
+    FaCode, FaShapes,
 } from 'react-icons/fa6';
 import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
 import { RESUME_ENGINES, MAX_SNAPSHOTS, applyThemePreset } from '@/lib/resumeStudio';
@@ -44,6 +44,7 @@ export default function ResumeStudioClient() {
     const [model, setModel] = useState(null); // parsed model while in visual mode
     const [autoSave, setAutoSave] = useState(false);
     const [autoCompile, setAutoCompile] = useState(false);
+    const [settingsOpen, setSettingsOpen] = useState(false);
     const pdfUrlRef = useRef(null);
 
     /** Current LaTeX source regardless of editing mode. */
@@ -340,80 +341,119 @@ export default function ResumeStudioClient() {
 
     return (
         <div className="flex flex-col h-[calc(100vh-4rem)] p-3 gap-3 overflow-hidden bg-slate-950">
-            {/* Header / toolbar */}
-            <div className="flex flex-wrap items-center gap-3 rounded-xl border border-white/10 bg-slate-900/60 backdrop-blur px-4 py-3">
-                <div className="mr-auto">
-                    <Link href="/admin" className="text-cyan-400 hover:text-cyan-300 text-xs font-mono opacity-60 hover:opacity-100">
-                        ← BACK
+            {/* Redesigned Toolbar */}
+            <div className="flex items-center justify-between rounded-xl border border-white/10 bg-slate-900/60 backdrop-blur px-4 py-2.5 shrink-0 z-20">
+                {/* Left side: Back & Title */}
+                <div className="flex items-center gap-3">
+                    <Link href="/admin" className="flex items-center justify-center w-8 h-8 rounded-lg border border-white/5 bg-white/[0.02] text-slate-400 hover:text-white hover:bg-white/5 transition-all text-xs" title="Back to Admin Panel">
+                        ←
                     </Link>
-                    <h1 className="text-lg font-bold text-white leading-tight">
-                        Resume Studio
-                        {dirty && <span className="ml-2 text-amber-400 text-xs align-middle">● unsaved</span>}
-                    </h1>
-                    <p className="text-[11px] text-slate-500 font-mono">
-                        saved {timeLabel(studio?.updatedAt)} · compiled {timeLabel(studio?.lastCompiledAt)} · published {timeLabel(studio?.lastPublishedAt)}
-                    </p>
+                    <div>
+                        <div className="flex items-center gap-2">
+                            <h1 className="text-sm font-bold text-white leading-tight">
+                                Resume Studio
+                            </h1>
+                            <span className="text-[10px] text-slate-500 font-mono">
+                                (v{studio?.updatedAt ? timeLabel(studio.updatedAt) : 'never'})
+                            </span>
+                        </div>
+                        <p className="text-[10px] text-slate-500 font-mono mt-0.5">
+                            compiled {timeLabel(studio?.lastCompiledAt)} · published {timeLabel(studio?.lastPublishedAt)}
+                        </p>
+                    </div>
                 </div>
 
-                {/* Mode toggle (Visual first) */}
-                <div className="flex rounded-lg border border-white/10 overflow-hidden">
-                    <button
-                        onClick={() => switchMode('visual')}
-                        className={`flex items-center gap-1.5 px-3 py-2 text-xs font-bold uppercase tracking-wider transition-colors ${mode === 'visual' ? 'bg-purple-500/20 text-purple-300' : 'text-slate-500 hover:text-slate-300'}`}
-                        title="Drag-and-drop visual editor"
-                    >
-                        <FaShapes /> Visual
+                {/* Right side: Action Triggers & Configure Dropdown */}
+                <div className="flex items-center gap-2 relative">
+                    {/* Action Group */}
+                    <button onClick={() => save()} disabled={saving} className={`${toolbarBtn} bg-slate-500/10 border-slate-500/20 text-slate-300 hover:bg-slate-500/20 hover:border-slate-400/40`}>
+                        {saving ? <FaSpinner className="animate-spin" /> : <FaFloppyDisk />} Save
                     </button>
-                    <button
-                        onClick={() => switchMode('code')}
-                        className={`flex items-center gap-1.5 px-3 py-2 text-xs font-bold uppercase tracking-wider transition-colors ${mode === 'code' ? 'bg-cyan-500/20 text-cyan-300' : 'text-slate-500 hover:text-slate-300'}`}
-                        title="LaTeX code editor"
-                    >
-                        <FaCode /> Code
+                    
+                    <button onClick={saveAndCompile} disabled={compiling || saving} className={`${toolbarBtn} bg-cyan-500/10 border-cyan-500/20 text-cyan-300 hover:bg-cyan-500/20 hover:border-cyan-400/40`}>
+                        {compiling ? <FaSpinner className="animate-spin" /> : <FaPlay />} Compile
                     </button>
-                </div>
+                    
+                    <button onClick={publish} disabled={publishing || !pdfBase64} className={`${toolbarBtn} bg-emerald-500/10 border-emerald-500/20 text-emerald-300 hover:bg-emerald-500/20 hover:border-emerald-400/40`}>
+                        {publishing ? <FaSpinner className="animate-spin" /> : <FaUpload />} Publish
+                    </button>
+                    
+                    <button onClick={download} disabled={!pdfUrl} className={`${toolbarBtn} bg-purple-500/10 border-purple-500/20 text-purple-300 hover:bg-purple-500/20 hover:border-purple-400/40`} title="Download PDF">
+                        <FaDownload /> PDF
+                    </button>
+                    
+                    <button onClick={takeSnapshot} className={`${toolbarBtn} bg-amber-500/10 border-amber-500/20 text-amber-300 hover:bg-amber-500/20 hover:border-amber-400/40`} title="Backup Snapshot">
+                        <FaCamera /> Snapshot
+                    </button>
 
-                <select
-                    value={engine}
-                    onChange={(e) => { setEngine(e.target.value); setDirty(true); }}
-                    className="bg-slate-800 border border-white/10 rounded-lg px-2 py-2 text-xs text-slate-300 font-mono"
-                    title="LaTeX engine"
-                >
-                    {RESUME_ENGINES.map((eng) => <option key={eng} value={eng}>{eng}</option>)}
-                </select>
+                    {/* Configure Settings Popover */}
+                    <div className="relative">
+                        <button
+                            onClick={() => setSettingsOpen(!settingsOpen)}
+                            className={`flex items-center justify-center w-8 h-8 rounded-lg border text-slate-400 hover:text-slate-200 transition-all ${
+                                settingsOpen ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-300' : 'border-white/10 bg-slate-800/40 hover:bg-slate-800'
+                            }`}
+                            title="Configure Studio Settings"
+                        >
+                            <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                        </button>
 
-                <button onClick={() => save()} disabled={saving} className={`${toolbarBtn} bg-slate-500/10 border-slate-500/30 text-slate-300 hover:border-slate-400`}>
-                    {saving ? <FaSpinner className="animate-spin" /> : <FaFloppyDisk />} Save
-                </button>
-                <button onClick={saveAndCompile} disabled={compiling || saving} className={`${toolbarBtn} bg-cyan-500/10 border-cyan-500/30 text-cyan-300 hover:border-cyan-400`}>
-                    {compiling ? <FaSpinner className="animate-spin" /> : <FaPlay />} Compile
-                </button>
-                <button onClick={publish} disabled={publishing || !pdfBase64} className={`${toolbarBtn} bg-emerald-500/10 border-emerald-500/30 text-emerald-300 hover:border-emerald-400`}>
-                    {publishing ? <FaSpinner className="animate-spin" /> : <FaUpload />} Publish
-                </button>
-                <button onClick={download} disabled={!pdfUrl} className={`${toolbarBtn} bg-purple-500/10 border-purple-500/30 text-purple-300 hover:border-purple-400`}>
-                    <FaDownload /> PDF
-                </button>
-                <button onClick={takeSnapshot} className={`${toolbarBtn} bg-amber-500/10 border-amber-500/30 text-amber-300 hover:border-amber-400`}>
-                    <FaCamera /> Snapshot
-                </button>
+                        {settingsOpen && (
+                            <>
+                                {/* Click outside overlay */}
+                                <div className="fixed inset-0 z-30" onClick={() => setSettingsOpen(false)} />
+                                {/* Dropdown panel */}
+                                <div className="absolute right-0 top-full mt-2 w-56 rounded-xl border border-white/10 bg-slate-900/95 p-3.5 shadow-2xl z-40 space-y-3.5 backdrop-blur-xl">
+                                    <div>
+                                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                                            LaTeX Engine
+                                        </label>
+                                        <select
+                                            value={engine}
+                                            onChange={(e) => { setEngine(e.target.value); setDirty(true); }}
+                                            className="w-full bg-slate-950 border border-white/10 rounded-md px-2.5 py-1.5 text-xs text-slate-300 font-mono focus:border-cyan-500/50 focus:outline-none"
+                                        >
+                                            {RESUME_ENGINES.map((eng) => <option key={eng} value={eng}>{eng}</option>)}
+                                        </select>
+                                    </div>
 
-                {/* Auto toggles */}
-                <div className="flex items-center gap-1 rounded-lg border border-white/10 overflow-hidden">
-                    <button
-                        onClick={() => setAutoSave((v) => !v)}
-                        className={`flex items-center gap-1.5 px-2.5 py-2 text-[11px] font-bold uppercase tracking-wider transition-colors ${autoSave ? 'bg-emerald-500/20 text-emerald-300' : 'text-slate-500 hover:text-slate-300'}`}
-                        title="Auto-save edits after a short pause"
-                    >
-                        <FaBolt className="text-[10px]" /> Auto-save
-                    </button>
-                    <button
-                        onClick={() => setAutoCompile((v) => { const next = !v; if (next) setAutoSave(true); return next; })}
-                        className={`flex items-center gap-1.5 px-2.5 py-2 text-[11px] font-bold uppercase tracking-wider transition-colors ${autoCompile ? 'bg-cyan-500/20 text-cyan-300' : 'text-slate-500 hover:text-slate-300'}`}
-                        title="Compile automatically after each auto-save"
-                    >
-                        <FaArrowsRotate className="text-[10px]" /> Auto-compile
-                    </button>
+                                    <hr className="border-white/5" />
+
+                                    <div className="space-y-2">
+                                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                                            Edits Automation
+                                        </label>
+                                        <button
+                                            onClick={() => setAutoSave((v) => !v)}
+                                            className={`w-full flex items-between items-center justify-between px-2.5 py-1.5 rounded-lg border text-xs transition-colors cursor-pointer ${
+                                                autoSave 
+                                                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' 
+                                                    : 'border-white/10 text-slate-500 hover:text-slate-300'
+                                            }`}
+                                        >
+                                            <span>Auto-Save</span>
+                                            <span className={`w-1.5 h-1.5 rounded-full ${autoSave ? 'bg-emerald-400 animate-pulse' : 'bg-slate-600'}`} />
+                                        </button>
+                                        
+                                        <button
+                                            onClick={() => setAutoCompile((v) => { const next = !v; if (next) setAutoSave(true); return next; })}
+                                            className={`w-full flex items-between items-center justify-between px-2.5 py-1.5 rounded-lg border text-xs transition-colors cursor-pointer ${
+                                                autoCompile 
+                                                    ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-300' 
+                                                    : 'border-white/10 text-slate-500 hover:text-slate-300'
+                                            }`}
+                                        >
+                                            <span>Auto-Compile</span>
+                                            <span className={`w-1.5 h-1.5 rounded-full ${autoCompile ? 'bg-cyan-400 animate-pulse' : 'bg-slate-600'}`} />
+                                        </button>
+                                    </div>
+                                </div>
+                            </>
+                        )}
+                    </div>
                 </div>
             </div>
 
