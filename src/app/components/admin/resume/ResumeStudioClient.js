@@ -62,6 +62,14 @@ export default function ResumeStudioClient() {
                 if (!cancelled && json.success) {
                     setStudio(json.data);
                     setEngine(json.data.engine || 'pdflatex');
+                    // Visual mode is the default; fall back to code if the
+                    // document can't be parsed into a structured model.
+                    try {
+                        setModel(parseResumeLatex(json.data.latex || ''));
+                        setMode('visual');
+                    } catch {
+                        /* stay in code mode */
+                    }
                 }
             } catch {
                 if (!cancelled) toast.error('Failed to load resume studio');
