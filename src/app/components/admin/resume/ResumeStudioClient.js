@@ -10,11 +10,14 @@ import Link from 'next/link';
 import {
     FaFloppyDisk, FaPlay, FaUpload, FaDownload,
     FaSpinner, FaCircleExclamation, FaXmark, FaCamera,
+    FaCode, FaShapes,
 } from 'react-icons/fa6';
 import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
 import { RESUME_ENGINES, MAX_SNAPSHOTS, applyThemePreset } from '@/lib/resumeStudio';
+import { parseResumeLatex, generateResumeLatex } from '@/lib/resumeVisual';
 import LatexEditor from './LatexEditor';
 import StudioSidePanel from './StudioSidePanel';
+import VisualEditor from './VisualEditor';
 
 function timeLabel(iso) {
     if (!iso) return 'never';
@@ -37,7 +40,17 @@ export default function ResumeStudioClient() {
     const [compileLog, setCompileLog] = useState('');
     const [showLog, setShowLog] = useState(false);
     const [engine, setEngine] = useState('pdflatex');
+    const [mode, setMode] = useState('code'); // 'code' | 'visual'
+    const [model, setModel] = useState(null); // parsed model while in visual mode
     const pdfUrlRef = useRef(null);
+
+    /** Current LaTeX source regardless of editing mode. */
+    const getLatex = useCallback(() => {
+        if (mode === 'visual' && model) {
+            return generateResumeLatex(model);
+        }
+        return editorRef.current?.getValue() ?? '';
+    }, [mode, model]);
 
     // ── Load ────────────────────────────────────────────────────────────
     useEffect(() => {
@@ -65,8 +78,8 @@ export default function ResumeStudioClient() {
 
     // ── Actions ─────────────────────────────────────────────────────────
     const save = useCallback(async (extraPatch = {}) => {
-        const latex = editorRef.current?.getValue();
-        if (latex == null) return null;
+        const latex = getLatex();
+        if (!latex) return null;
         setSaving(true);
         try {
             const res = await fetch('/api/admin/resume', {
@@ -85,10 +98,10 @@ export default function ResumeStudioClient() {
         } finally {
             setSaving(false);
         }
-    }, [engine, toast]);
+    }, [engine, toast, getLatex]);
 
     const compile = useCallback(async () => {
-        const latex = editorRef.current?.getValue();
+        const latex = getLatex();
         if (!latex) return;
         setCompiling(true);
         setCompileErrors([]);
@@ -124,7 +137,7 @@ export default function ResumeStudioClient() {
         } finally {
             setCompiling(false);
         }
-    }, [engine, toast]);
+    }, [engine, toast, getLatex]);
 
     const saveAndCompile = useCallback(async () => {
         await save();
@@ -177,7 +190,7 @@ export default function ResumeStudioClient() {
             defaultValue: `Snapshot ${new Date().toLocaleDateString()}`,
         });
         if (!label) return;
-        const latex = editorRef.current?.getValue() || '';
+        const latex = getLatex();
         const snapshot = {
             id: `snap-${Date.now()}`,
             label,
@@ -187,7 +200,7 @@ export default function ResumeStudioClient() {
         const snapshots = [snapshot, ...(studio?.snapshots || [])].slice(0, MAX_SNAPSHOTS);
         const saved = await save({ snapshots });
         if (saved) toast.success('Snapshot saved');
-    }, [prompt, save, studio, toast]);
+    }, [prompt, save, studio, toast, getLatex]);
 
     const restoreSnapshot = useCallback(async (snapshot) => {
         if (!(await confirm({
@@ -210,6 +223,24 @@ export default function ResumeStudioClient() {
         const snapshots = (studio?.snapshots || []).filter((s) => s.id !== snapshot.id);
         await save({ snapshots });
     }, [confirm, save, studio]);
+
+    const switchMode = useCallback((next) => {
+        if (next === mode) return;
+        if (next === 'visual') {
+            try {
+                setModel(parseResumeLatex(editorRef.current?.getValue() ?? ''));
+                setMode('visual');
+            } catch (e) {
+                toast.error(`Can't open visual mode: ${e.message}`);
+            }
+        } else {
+            if (model) {
+                editorRef.current?.setValue(generateResumeLatex(model));
+            }
+            setModel(null);
+            setMode('code');
+        }
+    }, [mode, model, toast]);
 
     const insertBlock = useCallback((block) => {
         editorRef.current?.insertAtCursor(block);
@@ -266,6 +297,24 @@ export default function ResumeStudioClient() {
                     </p>
                 </div>
 
+                {/* Mode toggle */}
+                <div className="flex rounded-lg border border-white/10 overflow-hidden">
+                    <button
+                        onClick={() => switchMode('code')}
+                        className={`flex items-center gap-1.5 px-3 py-2 text-xs font-bold uppercase tracking-wider transition-colors ${mode === 'code' ? 'bg-cyan-500/20 text-cyan-300' : 'text-slate-500 hover:text-slate-300'}`}
+                        title="LaTeX code editor"
+                    >
+                        <FaCode /> Code
+                    </button>
+                    <button
+                        onClick={() => switchMode('visual')}
+                        className={`flex items-center gap-1.5 px-3 py-2 text-xs font-bold uppercase tracking-wider transition-colors ${mode === 'visual' ? 'bg-purple-500/20 text-purple-300' : 'text-slate-500 hover:text-slate-300'}`}
+                        title="Drag-and-drop visual editor"
+                    >
+                        <FaShapes /> Visual
+                    </button>
+                </div>
+
                 <select
                     value={engine}
                     onChange={(e) => { setEngine(e.target.value); setDirty(true); }}
@@ -294,8 +343,8 @@ export default function ResumeStudioClient() {
 
             {/* Main split */}
             <div className="flex flex-1 min-h-0 gap-3">
-                {/* Editor */}
-                <div className="flex-1 min-w-0 rounded-xl border border-white/10 overflow-hidden bg-[#282c34]">
+                {/* Editor (CodeMirror stays mounted so its buffer survives mode switches) */}
+                <div className={`flex-1 min-w-0 rounded-xl border border-white/10 overflow-hidden bg-[#282c34] ${mode === 'visual' ? 'hidden' : ''}`}>
                     <LatexEditor
                         ref={editorRef}
                         initialDoc={studio?.latex || ''}
@@ -303,6 +352,14 @@ export default function ResumeStudioClient() {
                         onSaveShortcut={saveAndCompile}
                     />
                 </div>
+                {mode === 'visual' && model && (
+                    <div className="flex-1 min-w-0 rounded-xl border border-white/10 overflow-hidden bg-slate-950/40">
+                        <VisualEditor
+                            model={model}
+                            onChange={(next) => { setModel(next); setDirty(true); }}
+                        />
+                    </div>
+                )}
 
                 {/* Preview / errors */}
                 <div className="flex-1 min-w-0 flex flex-col gap-3">
@@ -342,8 +399,8 @@ export default function ResumeStudioClient() {
                     )}
                 </div>
 
-                {/* Side panel: portfolio items, design, history */}
-                <StudioSidePanel
+                {/* Side panel targets the code editor; hidden in visual mode */}
+                {mode === 'code' && <StudioSidePanel
                     onInsert={insertBlock}
                     onApplyTemplate={applyTemplate}
                     onApplyTheme={applyTheme}
@@ -362,7 +419,7 @@ export default function ResumeStudioClient() {
                     ideas={studio?.ideas || []}
                     onSaveIdeas={(ideas) => save({ ideas })}
                     toast={toast}
-                />
+                />}
             </div>
         </div>
     );
