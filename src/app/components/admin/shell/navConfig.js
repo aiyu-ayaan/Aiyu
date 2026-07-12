@@ -4,7 +4,7 @@ import {
     FaDatabase, FaTerminal, FaRobot, FaServer, FaHardDrive, FaCode,
     FaGoogle, FaClock, FaBell, FaChartLine, FaMagnifyingGlass,
     FaShieldHalved, FaGauge, FaCodeBranch, FaPlug, FaWandMagicSparkles,
-    FaGear,
+    FaGear, FaFileLines,
 } from "react-icons/fa6";
 
 /**
@@ -35,6 +35,7 @@ export const NAV_GROUPS = [
             { label: "Blogs", description: "Articles & posts", icon: FaPenNib, path: "/admin/blogs", accent: "teal" },
             { label: "Gallery", description: "Photos & certificates", icon: FaImages, path: "/admin/gallery", accent: "indigo" },
             { label: "AI Hub", description: "The /ai showcase page", icon: FaWandMagicSparkles, path: "/admin/ai-page", accent: "fuchsia" },
+            { label: "Resume Studio", description: "LaTeX resume editor", icon: FaFileLines, path: "/admin/resume", accent: "amber" },
         ],
     },
     {
