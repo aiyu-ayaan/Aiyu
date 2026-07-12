@@ -10,7 +10,7 @@ import Link from 'next/link';
 import {
     FaFloppyDisk, FaPlay, FaUpload, FaDownload,
     FaSpinner, FaCircleExclamation, FaXmark, FaCamera,
-    FaCode, FaShapes,
+    FaCode, FaShapes, FaChevronLeft,
 } from 'react-icons/fa6';
 import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
 import { RESUME_ENGINES, MAX_SNAPSHOTS, applyThemePreset } from '@/lib/resumeStudio';
@@ -345,16 +345,16 @@ export default function ResumeStudioClient() {
             <div className="flex items-center justify-between rounded-xl border border-white/10 bg-slate-900/60 backdrop-blur px-4 py-2.5 shrink-0 z-20">
                 {/* Left side: Back & Title */}
                 <div className="flex items-center gap-3">
-                    <Link href="/admin" className="flex items-center justify-center w-8 h-8 rounded-lg border border-white/5 bg-white/[0.02] text-slate-400 hover:text-white hover:bg-white/5 transition-all text-xs" title="Back to Admin Panel">
-                        ←
+                    <Link href="/admin" className="flex items-center justify-center w-8 h-8 rounded-lg border border-white/10 bg-slate-800/40 text-slate-400 hover:text-white hover:bg-slate-800 transition-all text-xs" title="Back to Admin Panel">
+                        <FaChevronLeft className="text-[10px]" />
                     </Link>
                     <div>
                         <div className="flex items-center gap-2">
                             <h1 className="text-sm font-bold text-white leading-tight">
                                 Resume Studio
                             </h1>
-                            <span className="text-[10px] text-slate-500 font-mono">
-                                (v{studio?.updatedAt ? timeLabel(studio.updatedAt) : 'never'})
+                            <span className="text-[9px] font-semibold tracking-wider uppercase text-slate-400 bg-slate-850 border border-white/5 px-1.5 py-0.5 rounded leading-none">
+                                v{studio?.updatedAt ? timeLabel(studio.updatedAt) : 'never'}
                             </span>
                         </div>
                         <p className="text-[10px] text-slate-500 font-mono mt-0.5">
@@ -520,7 +520,7 @@ export default function ResumeStudioClient() {
                 <div className="flex-1 min-w-0 flex flex-col gap-3 overflow-hidden">
                     <div className="flex-1 min-h-0 rounded-xl border border-white/10 overflow-hidden bg-slate-900/60 relative">
                         {pdfUrl ? (
-                            <iframe title="Resume preview" src={pdfUrl} className="w-full h-full" />
+                            <iframe title="Resume preview" src={`${pdfUrl}#toolbar=0&navpanes=0&view=FitH`} className="w-full h-full border-0" />
                         ) : (
                             <div className="h-full flex flex-col items-center justify-center text-slate-500 text-sm gap-2">
                                 <FaPlay className="text-2xl opacity-40" />

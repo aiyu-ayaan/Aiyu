@@ -20,7 +20,7 @@ import {
 import { blankItemFor, blankSection } from '@/lib/resumeVisual';
 import { escapeLatex } from '@/lib/resumeStudio';
 
-const inputCls = 'w-full bg-slate-950/60 border border-white/10 rounded-md px-2 py-1.5 text-xs text-slate-200 placeholder:text-slate-600 focus:border-cyan-500/50 focus:outline-none';
+const inputCls = 'w-full bg-slate-950/45 border border-white/5 focus:border-cyan-500/20 hover:border-white/10 rounded-lg px-3 py-2 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none transition-all';
 const miniBtn = 'p-1 rounded text-slate-500 hover:text-slate-200 transition-colors';
 
 const SECTION_TYPES = [
@@ -41,26 +41,28 @@ function BulletsEditor({ bullets, onChange }) {
         onChange(next);
     };
     return (
-        <div className="space-y-1 mt-1.5">
+        <div className="space-y-1.5 mt-2">
             {bullets.map((bullet, i) => (
-                <div key={i} className="flex items-start gap-1">
-                    <span className="text-slate-600 text-xs mt-1.5">•</span>
+                <div key={i} className="group flex items-start gap-2 relative">
+                    <span className="text-slate-600 text-xs mt-2">•</span>
                     <textarea
                         value={bullet}
-                        rows={2}
+                        rows={1}
                         onChange={(e) => onChange(bullets.map((b, k) => (k === i ? e.target.value : b)))}
-                        className={`${inputCls} resize-y leading-snug`}
+                        className={`${inputCls} resize-none py-1.5 leading-normal overflow-hidden`}
+                        style={{ minHeight: '32px' }}
+                        placeholder="Describe achievement or responsibility..."
                     />
-                    <div className="flex flex-col shrink-0">
-                        <button onClick={() => move(i, -1)} className={miniBtn} title="Move up"><FaArrowUp className="text-[9px]" /></button>
-                        <button onClick={() => move(i, 1)} className={miniBtn} title="Move down"><FaArrowDown className="text-[9px]" /></button>
-                        <button onClick={() => onChange(bullets.filter((_, k) => k !== i))} className={`${miniBtn} hover:text-red-400`} title="Delete bullet"><FaTrash className="text-[9px]" /></button>
+                    <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-150 shrink-0 mt-0.5">
+                        <button onClick={() => move(i, -1)} className="p-1 rounded text-slate-500 hover:text-slate-200 hover:bg-white/5 transition-colors" title="Move up"><FaArrowUp className="text-[10px]" /></button>
+                        <button onClick={() => move(i, 1)} className="p-1 rounded text-slate-500 hover:text-slate-200 hover:bg-white/5 transition-colors" title="Move down"><FaArrowDown className="text-[10px]" /></button>
+                        <button onClick={() => onChange(bullets.filter((_, k) => k !== i))} className="p-1 rounded text-slate-500 hover:text-red-400 hover:bg-red-500/5 transition-colors" title="Delete bullet"><FaTrash className="text-[10px]" /></button>
                     </div>
                 </div>
             ))}
             <button
                 onClick={() => onChange([...bullets, ''])}
-                className="flex items-center gap-1 text-[10px] uppercase font-bold text-cyan-500/70 hover:text-cyan-300"
+                className="mt-1 flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-cyan-500/20 bg-cyan-500/5 text-[9px] uppercase font-bold tracking-wider text-cyan-400 hover:bg-cyan-500/10 hover:text-cyan-300 transition-all cursor-pointer"
             >
                 <FaPlus className="text-[8px]" /> bullet
             </button>
@@ -69,19 +71,28 @@ function BulletsEditor({ bullets, onChange }) {
 }
 
 /** One draggable item card inside a section (entry / project / skill row). */
-function SortableItem({ id, children }) {
+function SortableItem({ id, onDelete, children }) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
     return (
         <div
             ref={setNodeRef}
             style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.6 : 1 }}
-            className="rounded-lg border border-white/5 bg-white/[0.02] p-2"
+            className="group relative rounded-xl border border-white/5 bg-slate-900/20 p-3 hover:border-slate-800 transition-all"
         >
-            <div className="flex gap-1.5">
-                <button {...attributes} {...listeners} className="mt-1 shrink-0 cursor-grab text-slate-600 hover:text-slate-300" title="Drag to reorder">
-                    <FaGripVertical className="text-[10px]" />
+            <div className="flex gap-2">
+                <button {...attributes} {...listeners} className="mt-1.5 shrink-0 cursor-grab text-slate-600 hover:text-slate-300 transition-colors" title="Drag to reorder">
+                    <FaGripVertical className="text-xs" />
                 </button>
                 <div className="min-w-0 flex-1">{children}</div>
+                {onDelete && (
+                    <button
+                        onClick={onDelete}
+                        className="shrink-0 p-1.5 rounded-lg border border-red-500/10 hover:border-red-500/25 bg-red-500/5 hover:bg-red-500/10 text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-all self-start transition-opacity duration-150 cursor-pointer"
+                        title="Remove item"
+                    >
+                        <FaTrash className="text-[10px]" />
+                    </button>
+                )}
             </div>
         </div>
     );
@@ -116,21 +127,18 @@ function EntriesBody({ section, patch }) {
         <>
             <ItemsDnd items={section.items} onReorder={setItems}>
                 {section.items.map((item) => (
-                    <SortableItem key={item.id} id={item.id}>
-                        <div className="grid grid-cols-2 gap-1.5">
+                    <SortableItem key={item.id} id={item.id} onDelete={() => setItems(section.items.filter((i) => i.id !== item.id))}>
+                        <div className="grid grid-cols-2 gap-2">
                             <input value={item.title} placeholder="Company / Institution" onChange={(e) => patchItem(item.id, { title: e.target.value })} className={inputCls} />
                             <input value={item.right} placeholder="Dates (e.g. Jun 2025 -- Present)" onChange={(e) => patchItem(item.id, { right: e.target.value })} className={inputCls} />
                             <input value={item.subtitle} placeholder="Role / Degree" onChange={(e) => patchItem(item.id, { subtitle: e.target.value })} className={inputCls} />
                             <input value={item.subright} placeholder="Location / CGPA" onChange={(e) => patchItem(item.id, { subright: e.target.value })} className={inputCls} />
                         </div>
                         <BulletsEditor bullets={item.bullets} onChange={(bullets) => patchItem(item.id, { bullets })} />
-                        <button onClick={() => setItems(section.items.filter((i) => i.id !== item.id))} className="mt-1 flex items-center gap-1 text-[10px] uppercase font-bold text-red-400/60 hover:text-red-300">
-                            <FaTrash className="text-[8px]" /> remove entry
-                        </button>
                     </SortableItem>
                 ))}
             </ItemsDnd>
-            <button onClick={() => setItems([...section.items, blankItemFor('entries')])} className="mt-2 flex items-center gap-1 text-[10px] uppercase font-bold text-cyan-400 hover:text-cyan-300">
+            <button onClick={() => setItems([...section.items, blankItemFor('entries')])} className="mt-2.5 flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-cyan-500/20 bg-cyan-500/5 text-[10px] uppercase font-bold tracking-wider text-cyan-400 hover:bg-cyan-500/10 hover:text-cyan-300 transition-all cursor-pointer">
                 <FaPlus className="text-[8px]" /> Add entry
             </button>
         </>
@@ -158,32 +166,29 @@ function ProjectsBody({ section, patch, portfolio }) {
         <>
             <ItemsDnd items={section.items} onReorder={setItems}>
                 {section.items.map((item) => (
-                    <SortableItem key={item.id} id={item.id}>
+                    <SortableItem key={item.id} id={item.id} onDelete={() => setItems(section.items.filter((i) => i.id !== item.id))}>
                         {item.rawTitle ? (
                             <input value={item.rawTitle} placeholder="Title (LaTeX)" onChange={(e) => patchItem(item.id, { rawTitle: e.target.value })} className={inputCls} />
                         ) : (
-                            <div className="grid grid-cols-2 gap-1.5">
+                            <div className="grid grid-cols-2 gap-2">
                                 <input value={item.name} placeholder="Project name" onChange={(e) => patchItem(item.id, { name: e.target.value })} className={inputCls} />
                                 <input value={item.tech} placeholder="Tech (Kotlin, Compose…)" onChange={(e) => patchItem(item.id, { tech: e.target.value })} className={inputCls} />
                             </div>
                         )}
-                        <input value={item.right} placeholder="Dates / status" onChange={(e) => patchItem(item.id, { right: e.target.value })} className={`${inputCls} mt-1.5`} />
+                        <input value={item.right} placeholder="Dates / status" onChange={(e) => patchItem(item.id, { right: e.target.value })} className={`${inputCls} mt-2`} />
                         <BulletsEditor bullets={item.bullets} onChange={(bullets) => patchItem(item.id, { bullets })} />
-                        <button onClick={() => setItems(section.items.filter((i) => i.id !== item.id))} className="mt-1 flex items-center gap-1 text-[10px] uppercase font-bold text-red-400/60 hover:text-red-300">
-                            <FaTrash className="text-[8px]" /> remove project
-                        </button>
                     </SortableItem>
                 ))}
             </ItemsDnd>
-            <div className="mt-2 flex items-center gap-2">
-                <button onClick={() => setItems([...section.items, blankItemFor('projects')])} className="flex items-center gap-1 text-[10px] uppercase font-bold text-cyan-400 hover:text-cyan-300">
+            <div className="mt-2.5 flex items-center gap-2">
+                <button onClick={() => setItems([...section.items, blankItemFor('projects')])} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-cyan-500/20 bg-cyan-500/5 text-[10px] uppercase font-bold tracking-wider text-cyan-400 hover:bg-cyan-500/10 hover:text-cyan-300 transition-all cursor-pointer">
                     <FaPlus className="text-[8px]" /> Add project
                 </button>
                 {portfolio.length > 0 && (
                     <select
                         value=""
                         onChange={(e) => e.target.value && addFromPortfolio(e.target.value)}
-                        className="bg-slate-800 border border-white/10 rounded-md px-2 py-1 text-[10px] text-slate-300"
+                        className="bg-slate-800 border border-white/10 rounded-lg px-2.5 py-1.5 text-[10px] text-slate-300 cursor-pointer focus:outline-none focus:border-cyan-500/30"
                     >
                         <option value="">+ from portfolio…</option>
                         {portfolio.map((p) => <option key={p._id} value={p._id}>{p.name}</option>)}
@@ -202,16 +207,15 @@ function SkillsBody({ section, patch }) {
         <>
             <ItemsDnd items={section.rows} onReorder={setRows}>
                 {section.rows.map((row) => (
-                    <SortableItem key={row.id} id={row.id}>
-                        <div className="flex gap-1.5">
+                    <SortableItem key={row.id} id={row.id} onDelete={() => setRows(section.rows.filter((r) => r.id !== row.id))}>
+                        <div className="flex gap-2">
                             <input value={row.category} placeholder="Category" onChange={(e) => patchRow(row.id, { category: e.target.value })} className={`${inputCls} !w-40 shrink-0`} />
                             <input value={row.items} placeholder="Comma-separated items" onChange={(e) => patchRow(row.id, { items: e.target.value })} className={inputCls} />
-                            <button onClick={() => setRows(section.rows.filter((r) => r.id !== row.id))} className={`${miniBtn} hover:text-red-400 shrink-0`}><FaTrash className="text-[10px]" /></button>
                         </div>
                     </SortableItem>
                 ))}
             </ItemsDnd>
-            <button onClick={() => setRows([...section.rows, blankItemFor('skills')])} className="mt-2 flex items-center gap-1 text-[10px] uppercase font-bold text-cyan-400 hover:text-cyan-300">
+            <button onClick={() => setRows([...section.rows, blankItemFor('skills')])} className="mt-2.5 flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-cyan-500/20 bg-cyan-500/5 text-[10px] uppercase font-bold tracking-wider text-cyan-400 hover:bg-cyan-500/10 hover:text-cyan-300 transition-all cursor-pointer">
                 <FaPlus className="text-[8px]" /> Add row
             </button>
         </>
@@ -228,7 +232,7 @@ function SectionCard({ section, patch, remove, portfolio }) {
         <div
             ref={setNodeRef}
             style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.6 : 1 }}
-            className="rounded-xl border border-white/10 bg-slate-900/60"
+            className="rounded-xl border border-white/5 bg-slate-900/30 hover:border-slate-800/80 transition-all shadow-md"
         >
             <div className="flex items-center gap-2 p-2.5 border-b border-white/5">
                 <button {...attributes} {...listeners} className="cursor-grab text-slate-600 hover:text-slate-300 shrink-0" title="Drag section">
@@ -245,13 +249,13 @@ function SectionCard({ section, patch, remove, portfolio }) {
                 <span className="shrink-0 text-[9px] uppercase font-bold tracking-wider text-slate-600 border border-white/10 rounded px-1.5 py-0.5">
                     {typeMeta?.label || section.type}
                 </span>
-                <button onClick={remove} className="shrink-0 text-slate-600 hover:text-red-400" title="Delete section">
+                <button onClick={remove} className="shrink-0 text-slate-600 hover:text-red-400 transition-colors" title="Delete section">
                     <FaTrash className="text-[11px]" />
                 </button>
             </div>
 
             {open && (
-                <div className="p-2.5">
+                <div className="p-3 space-y-2.5">
                     {section.type === 'text' && (
                         <textarea
                             value={section.content}
@@ -355,7 +359,7 @@ export default function VisualEditor({ model, onChange }) {
             <div className="relative">
                 <button
                     onClick={() => setAddOpen(!addOpen)}
-                    className="w-full rounded-xl border border-dashed border-white/15 hover:border-cyan-500/40 py-3 text-xs font-bold uppercase tracking-wider text-slate-500 hover:text-cyan-300 transition-all"
+                    className="w-full rounded-xl border border-dashed border-white/10 hover:border-cyan-500/30 bg-white/[0.01] hover:bg-cyan-500/5 py-3 text-xs font-bold uppercase tracking-wider text-slate-500 hover:text-cyan-400 transition-all cursor-pointer"
                 >
                     <FaPlus className="inline mr-2 text-[10px]" /> Add section
                 </button>
