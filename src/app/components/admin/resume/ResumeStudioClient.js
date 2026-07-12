@@ -419,23 +419,62 @@ export default function ResumeStudioClient() {
 
             {/* Main split */}
             <div className="flex flex-1 min-h-0 gap-3 overflow-hidden">
-                {/* Editor (CodeMirror stays mounted so its buffer survives mode switches) */}
-                <div className={`flex-1 min-w-0 rounded-xl border border-white/10 overflow-hidden bg-[#282c34] ${mode === 'visual' ? 'hidden' : ''}`}>
-                    <LatexEditor
-                        ref={editorRef}
-                        initialDoc={studio?.latex || ''}
-                        onDocChanged={() => setDirty(true)}
-                        onSaveShortcut={saveAndCompile}
-                    />
-                </div>
-                {mode === 'visual' && model && (
-                    <div className="flex-1 min-w-0 rounded-xl border border-white/10 overflow-hidden bg-slate-950/40">
-                        <VisualEditor
-                            model={model}
-                            onChange={(next) => { setModel(next); setDirty(true); }}
-                        />
+                {/* Editor Pane (holds both Visual and Code mode views) */}
+                <div className="flex-1 min-w-0 flex flex-col rounded-xl border border-white/10 overflow-hidden bg-slate-900/40">
+                    {/* Pane tabs header */}
+                    <div className="flex items-center justify-between border-b border-white/10 bg-slate-950/45 px-3 py-2 shrink-0">
+                        <div className="flex gap-1.5">
+                            <button
+                                onClick={() => switchMode('visual')}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all border ${
+                                    mode === 'visual'
+                                        ? 'bg-purple-500/10 border-purple-500/30 text-purple-300 shadow-[0_0_12px_rgba(168,85,247,0.08)]'
+                                        : 'border-transparent text-slate-500 hover:text-slate-300'
+                                }`}
+                                title="Drag-and-drop visual editor"
+                            >
+                                <FaShapes className="text-[10.5px]" /> Visual
+                            </button>
+                            <button
+                                onClick={() => switchMode('code')}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all border ${
+                                    mode === 'code'
+                                        ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.08)]'
+                                        : 'border-transparent text-slate-500 hover:text-slate-300'
+                                }`}
+                                title="LaTeX code editor"
+                            >
+                                <FaCode className="text-[10.5px]" /> Code
+                            </button>
+                        </div>
+                        {dirty && (
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400 bg-amber-500/5 border border-amber-500/20 px-2 py-0.5 rounded-md animate-pulse">
+                                ● unsaved
+                            </span>
+                        )}
                     </div>
-                )}
+
+                    {/* Pane editor canvas */}
+                    <div className="flex-1 min-h-0 relative overflow-hidden">
+                        {/* Editor (CodeMirror stays mounted so its buffer survives mode switches) */}
+                        <div className={`w-full h-full bg-[#282c34] ${mode === 'visual' ? 'hidden' : ''}`}>
+                            <LatexEditor
+                                ref={editorRef}
+                                initialDoc={studio?.latex || ''}
+                                onDocChanged={() => setDirty(true)}
+                                onSaveShortcut={saveAndCompile}
+                            />
+                        </div>
+                        {mode === 'visual' && model && (
+                            <div className="w-full h-full overflow-auto bg-slate-950/40">
+                                <VisualEditor
+                                    model={model}
+                                    onChange={(next) => { setModel(next); setDirty(true); }}
+                                />
+                            </div>
+                        )}
+                    </div>
+                </div>
 
                 {/* Preview / errors */}
                 <div className="flex-1 min-w-0 flex flex-col gap-3 overflow-hidden">
