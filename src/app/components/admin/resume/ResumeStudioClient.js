@@ -10,7 +10,7 @@ import Link from 'next/link';
 import {
     FaFloppyDisk, FaPlay, FaUpload, FaDownload,
     FaSpinner, FaCircleExclamation, FaXmark, FaCamera,
-    FaCode, FaShapes,
+    FaCode, FaShapes, FaBolt, FaArrowsRotate,
 } from 'react-icons/fa6';
 import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
 import { RESUME_ENGINES, MAX_SNAPSHOTS, applyThemePreset } from '@/lib/resumeStudio';
@@ -42,6 +42,8 @@ export default function ResumeStudioClient() {
     const [engine, setEngine] = useState('pdflatex');
     const [mode, setMode] = useState('code'); // 'code' | 'visual'
     const [model, setModel] = useState(null); // parsed model while in visual mode
+    const [autoSave, setAutoSave] = useState(false);
+    const [autoCompile, setAutoCompile] = useState(false);
     const pdfUrlRef = useRef(null);
 
     /** Current LaTeX source regardless of editing mode. */
@@ -84,9 +86,23 @@ export default function ResumeStudioClient() {
         if (pdfUrlRef.current) URL.revokeObjectURL(pdfUrlRef.current);
     }, []);
 
+    // Restore auto-save / auto-compile preferences.
+    useEffect(() => {
+        try {
+            setAutoSave(localStorage.getItem('resumeStudio.autoSave') === '1');
+            setAutoCompile(localStorage.getItem('resumeStudio.autoCompile') === '1');
+        } catch { /* localStorage unavailable */ }
+    }, []);
+    useEffect(() => {
+        try { localStorage.setItem('resumeStudio.autoSave', autoSave ? '1' : '0'); } catch { /* ignore */ }
+    }, [autoSave]);
+    useEffect(() => {
+        try { localStorage.setItem('resumeStudio.autoCompile', autoCompile ? '1' : '0'); } catch { /* ignore */ }
+    }, [autoCompile]);
+
     // ── Actions ─────────────────────────────────────────────────────────
-    const save = useCallback(async (extraPatch = {}) => {
-        const latex = getLatex();
+    const save = useCallback(async (extraPatch = {}, latexOverride = null) => {
+        const latex = latexOverride ?? getLatex();
         if (!latex) return null;
         setSaving(true);
         try {
@@ -210,16 +226,29 @@ export default function ResumeStudioClient() {
         if (saved) toast.success('Snapshot saved');
     }, [prompt, save, studio, toast, getLatex]);
 
+    const loadLatexIntoActiveEditor = useCallback((latex) => {
+        editorRef.current?.setValue(latex);
+        if (mode === 'visual') {
+            try {
+                setModel(parseResumeLatex(latex));
+            } catch (e) {
+                setModel(null);
+                setMode('code');
+                toast.error(`Opened in code mode: ${e.message}`);
+            }
+        }
+        setDirty(true);
+    }, [mode, toast]);
+
     const restoreSnapshot = useCallback(async (snapshot) => {
         if (!(await confirm({
             title: `Restore "${snapshot.label}"?`,
-            message: 'Your current editor content will be replaced (a safety snapshot is kept in history via undo).',
+            message: 'Your current content will be replaced (the previous version stays in your snapshot history).',
             confirmText: 'Restore',
         }))) return;
-        editorRef.current?.setValue(snapshot.latex);
-        setDirty(true);
-        toast.success('Snapshot restored into the editor — save to keep it.');
-    }, [confirm, toast]);
+        loadLatexIntoActiveEditor(snapshot.latex);
+        toast.success('Snapshot restored — save to keep it.');
+    }, [confirm, toast, loadLatexIntoActiveEditor]);
 
     const deleteSnapshot = useCallback(async (snapshot) => {
         if (!(await confirm({
@@ -250,10 +279,20 @@ export default function ResumeStudioClient() {
         }
     }, [mode, model, toast]);
 
-    const insertBlock = useCallback((block) => {
-        editorRef.current?.insertAtCursor(block);
-        setDirty(true);
-    }, []);
+    // Insert LaTeX at the cursor (code mode) or as a new headerless block
+    // (visual mode), so AI / portfolio / ideas insertions work in both modes.
+    const insertLatex = useCallback((block) => {
+        if (mode === 'visual') {
+            setModel((m) => (m
+                ? { ...m, sections: [...m.sections, { id: `raw-${Date.now()}`, title: 'Added Block', type: 'raw', raw: block.trim() }] }
+                : m));
+            setDirty(true);
+            toast.success('Added as a new "Added Block" section — rename or drag it into place');
+        } else {
+            editorRef.current?.insertAtCursor(block);
+            setDirty(true);
+        }
+    }, [mode, toast]);
 
     const applyTemplate = useCallback(async (template) => {
         if (!(await confirm({
@@ -262,20 +301,31 @@ export default function ResumeStudioClient() {
             confirmText: 'Replace document',
             danger: true,
         }))) return;
-        editorRef.current?.setValue(template.latex);
-        setDirty(true);
-        await save({ templateId: template.id });
+        loadLatexIntoActiveEditor(template.latex);
+        await save({ templateId: template.id }, template.latex);
         toast.success(`Template "${template.name}" loaded`);
-    }, [confirm, save, toast]);
+    }, [confirm, save, toast, loadLatexIntoActiveEditor]);
 
     const applyTheme = useCallback((presetId) => {
-        const current = editorRef.current?.getValue() || '';
+        const current = getLatex();
         const themed = applyThemePreset(current, presetId);
         if (themed === current) return;
-        editorRef.current?.setValue(themed);
-        setDirty(true);
+        loadLatexIntoActiveEditor(themed);
         toast.success('Theme applied — compile to preview');
-    }, [toast]);
+    }, [getLatex, toast, loadLatexIntoActiveEditor]);
+
+    // Auto-save (debounced) with optional auto-compile after a successful save.
+    // The timer resets on every edit (dirty stays true until the save lands),
+    // so rapid typing coalesces into one save.
+    useEffect(() => {
+        if (!autoSave || !dirty || saving || compiling) return undefined;
+        const delay = autoCompile ? 2500 : 1500;
+        const timer = setTimeout(async () => {
+            const saved = await save();
+            if (saved && autoCompile) await compile();
+        }, delay);
+        return () => clearTimeout(timer);
+    }, [autoSave, autoCompile, dirty, saving, compiling, save, compile]);
 
     // ── Render ──────────────────────────────────────────────────────────
     if (loading) {
@@ -305,21 +355,21 @@ export default function ResumeStudioClient() {
                     </p>
                 </div>
 
-                {/* Mode toggle */}
+                {/* Mode toggle (Visual first) */}
                 <div className="flex rounded-lg border border-white/10 overflow-hidden">
-                    <button
-                        onClick={() => switchMode('code')}
-                        className={`flex items-center gap-1.5 px-3 py-2 text-xs font-bold uppercase tracking-wider transition-colors ${mode === 'code' ? 'bg-cyan-500/20 text-cyan-300' : 'text-slate-500 hover:text-slate-300'}`}
-                        title="LaTeX code editor"
-                    >
-                        <FaCode /> Code
-                    </button>
                     <button
                         onClick={() => switchMode('visual')}
                         className={`flex items-center gap-1.5 px-3 py-2 text-xs font-bold uppercase tracking-wider transition-colors ${mode === 'visual' ? 'bg-purple-500/20 text-purple-300' : 'text-slate-500 hover:text-slate-300'}`}
                         title="Drag-and-drop visual editor"
                     >
                         <FaShapes /> Visual
+                    </button>
+                    <button
+                        onClick={() => switchMode('code')}
+                        className={`flex items-center gap-1.5 px-3 py-2 text-xs font-bold uppercase tracking-wider transition-colors ${mode === 'code' ? 'bg-cyan-500/20 text-cyan-300' : 'text-slate-500 hover:text-slate-300'}`}
+                        title="LaTeX code editor"
+                    >
+                        <FaCode /> Code
                     </button>
                 </div>
 
@@ -347,6 +397,24 @@ export default function ResumeStudioClient() {
                 <button onClick={takeSnapshot} className={`${toolbarBtn} bg-amber-500/10 border-amber-500/30 text-amber-300 hover:border-amber-400`}>
                     <FaCamera /> Snapshot
                 </button>
+
+                {/* Auto toggles */}
+                <div className="flex items-center gap-1 rounded-lg border border-white/10 overflow-hidden">
+                    <button
+                        onClick={() => setAutoSave((v) => !v)}
+                        className={`flex items-center gap-1.5 px-2.5 py-2 text-[11px] font-bold uppercase tracking-wider transition-colors ${autoSave ? 'bg-emerald-500/20 text-emerald-300' : 'text-slate-500 hover:text-slate-300'}`}
+                        title="Auto-save edits after a short pause"
+                    >
+                        <FaBolt className="text-[10px]" /> Auto-save
+                    </button>
+                    <button
+                        onClick={() => setAutoCompile((v) => { const next = !v; if (next) setAutoSave(true); return next; })}
+                        className={`flex items-center gap-1.5 px-2.5 py-2 text-[11px] font-bold uppercase tracking-wider transition-colors ${autoCompile ? 'bg-cyan-500/20 text-cyan-300' : 'text-slate-500 hover:text-slate-300'}`}
+                        title="Compile automatically after each auto-save"
+                    >
+                        <FaArrowsRotate className="text-[10px]" /> Auto-compile
+                    </button>
+                </div>
             </div>
 
             {/* Main split */}
@@ -407,27 +475,35 @@ export default function ResumeStudioClient() {
                     )}
                 </div>
 
-                {/* Side panel targets the code editor; hidden in visual mode */}
-                {mode === 'code' && <StudioSidePanel
-                    onInsert={insertBlock}
+                {/* Side panel (AI, Ideas, Portfolio, Design, History) — both modes */}
+                <StudioSidePanel
+                    mode={mode}
+                    onInsert={insertLatex}
                     onApplyTemplate={applyTemplate}
                     onApplyTheme={applyTheme}
-                    currentLatex={() => editorRef.current?.getValue() || ''}
+                    currentLatex={getLatex}
                     snapshots={studio?.snapshots || []}
                     onRestoreSnapshot={restoreSnapshot}
                     onDeleteSnapshot={deleteSnapshot}
                     editorApi={{
-                        getValue: () => editorRef.current?.getValue() || '',
-                        getSelection: () => editorRef.current?.getSelection() || '',
-                        replaceSelection: (text) => { editorRef.current?.replaceSelection(text); setDirty(true); },
-                        insertAtCursor: insertBlock,
+                        getValue: getLatex,
+                        getSelection: () => (mode === 'code' ? (editorRef.current?.getSelection() || '') : ''),
+                        replaceSelection: (text) => {
+                            if (mode === 'code') {
+                                editorRef.current?.replaceSelection(text);
+                                setDirty(true);
+                            } else {
+                                insertLatex(text);
+                            }
+                        },
+                        insertAtCursor: insertLatex,
                     }}
                     compileErrors={compileErrors}
                     compileLog={compileLog}
                     ideas={studio?.ideas || []}
                     onSaveIdeas={(ideas) => save({ ideas })}
                     toast={toast}
-                />}
+                />
             </div>
         </div>
     );

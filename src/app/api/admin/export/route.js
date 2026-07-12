@@ -42,6 +42,8 @@ export async function GET(request) {
             header: toClientList('header', await prisma.header.findMany()),
             home: toClientList('home', await prisma.home.findMany()),
             aiPage: toClientList('aiPage', await prisma.aiPage.findMany()),
+            // Resume Studio singleton: LaTeX source, snapshots, ideas, settings.
+            resumeStudio: toClientList('resumeStudio', await prisma.resumeStudio.findMany()),
             // The AI Hub's section content (skills / recommendations / credits /
             // prompts) lives in these relational tables, not the aiPage json blob
             // — they must be backed up too or the /ai page restores empty.

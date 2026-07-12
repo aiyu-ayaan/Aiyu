@@ -20,7 +20,7 @@ async function callAi({ prompt, mode, context }) {
 
 const actionBtn = 'w-full flex items-center gap-2 rounded-lg border p-2 text-left text-xs font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed';
 
-export default function StudioAiPanel({ editorApi, compileErrors, compileLog, toast }) {
+export default function StudioAiPanel({ mode = 'code', editorApi, compileErrors, compileLog, toast }) {
     const [busy, setBusy] = useState(null); // which action is running
     const [output, setOutput] = useState('');
     const [outputKind, setOutputKind] = useState('latex'); // latex | advice
@@ -81,9 +81,15 @@ export default function StudioAiPanel({ editorApi, compileErrors, compileLog, to
 
     return (
         <div className="space-y-2">
-            <button onClick={refineSelection} disabled={!!busy} className={`${actionBtn} border-cyan-500/30 bg-cyan-500/10 text-cyan-300 hover:border-cyan-400`}>
-                {busy === 'refine' ? <FaSpinner className="animate-spin" /> : <FaPenFancy />} Refine selection
-            </button>
+            {mode === 'visual' ? (
+                <p className="rounded-lg border border-white/5 bg-white/[0.03] p-2 text-[10px] text-slate-500">
+                    Generated LaTeX is added as a new block you can drag into place. Switch to <span className="text-cyan-400 font-semibold">Code</span> mode to refine a specific selection.
+                </p>
+            ) : (
+                <button onClick={refineSelection} disabled={!!busy} className={`${actionBtn} border-cyan-500/30 bg-cyan-500/10 text-cyan-300 hover:border-cyan-400`}>
+                    {busy === 'refine' ? <FaSpinner className="animate-spin" /> : <FaPenFancy />} Refine selection
+                </button>
+            )}
             <button onClick={fixErrors} disabled={!!busy || !compileErrors?.length} className={`${actionBtn} border-red-500/30 bg-red-500/10 text-red-300 hover:border-red-400`}>
                 {busy === 'fix' ? <FaSpinner className="animate-spin" /> : <FaBugSlash />} Fix compile errors ({compileErrors?.length || 0})
             </button>

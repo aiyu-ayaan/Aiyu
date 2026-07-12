@@ -307,6 +307,9 @@ export function generateResumeLatex(model) {
         '',
         model.header,
         '',
+        // Every section emits a \section{} boundary — even an empty title — so a
+        // section's body is never merged into its neighbour on the next parse
+        // (which would let a specialized parser silently drop it).
         ...model.sections.flatMap((section) => [
             `\\section{${section.title}}`,
             generateSectionLatex(section),

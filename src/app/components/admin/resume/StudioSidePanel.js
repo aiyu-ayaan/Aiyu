@@ -53,6 +53,7 @@ function InsertRow({ title, subtitle, onInsert }) {
 }
 
 export default function StudioSidePanel({
+    mode = 'code',     // 'code' | 'visual'
     onInsert,          // (latexBlock: string) => void
     onApplyTemplate,   // (template) => void
     onApplyTheme,      // (presetId) => void
@@ -229,6 +230,7 @@ export default function StudioSidePanel({
                 {/* ── AI ── */}
                 {tab === 'ai' && (
                     <StudioAiPanel
+                        mode={mode}
                         editorApi={editorApi}
                         compileErrors={compileErrors}
                         compileLog={compileLog}
