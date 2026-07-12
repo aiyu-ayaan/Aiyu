@@ -339,7 +339,7 @@ export default function ResumeStudioClient() {
     const toolbarBtn = 'flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all border disabled:opacity-40 disabled:cursor-not-allowed';
 
     return (
-        <div className="flex flex-col h-[calc(100vh-1rem)] p-3 gap-3">
+        <div className="flex flex-col h-[calc(100vh-4rem)] p-3 gap-3 overflow-hidden bg-slate-950">
             {/* Header / toolbar */}
             <div className="flex flex-wrap items-center gap-3 rounded-xl border border-white/10 bg-slate-900/60 backdrop-blur px-4 py-3">
                 <div className="mr-auto">
@@ -418,7 +418,7 @@ export default function ResumeStudioClient() {
             </div>
 
             {/* Main split */}
-            <div className="flex flex-1 min-h-0 gap-3">
+            <div className="flex flex-1 min-h-0 gap-3 overflow-hidden">
                 {/* Editor (CodeMirror stays mounted so its buffer survives mode switches) */}
                 <div className={`flex-1 min-w-0 rounded-xl border border-white/10 overflow-hidden bg-[#282c34] ${mode === 'visual' ? 'hidden' : ''}`}>
                     <LatexEditor
@@ -438,8 +438,8 @@ export default function ResumeStudioClient() {
                 )}
 
                 {/* Preview / errors */}
-                <div className="flex-1 min-w-0 flex flex-col gap-3">
-                    <div className="flex-1 min-h-0 rounded-xl border border-white/10 overflow-hidden bg-slate-900/60">
+                <div className="flex-1 min-w-0 flex flex-col gap-3 overflow-hidden">
+                    <div className="flex-1 min-h-0 rounded-xl border border-white/10 overflow-hidden bg-slate-900/60 relative">
                         {pdfUrl ? (
                             <iframe title="Resume preview" src={pdfUrl} className="w-full h-full" />
                         ) : (
