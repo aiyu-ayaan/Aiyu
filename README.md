@@ -76,15 +76,16 @@ Run two complete site designs side by side:
 
 | Module | Desktop Dark Mode (1920x1080) | Mobile Dark Mode (430x932) |
 |---|---|---|
-| **Landing Page** | [![Desktop Dark](public/screenshots/desktop-dark-home.png)](public/screenshots/desktop-dark-home.png) | [![Mobile Dark](public/screenshots/mobile-dark-home.png)](public/screenshots/mobile-dark-home.png) |
-| **About Biography** | [![Desktop Dark](public/screenshots/desktop-dark-about.png)](public/screenshots/desktop-dark-about.png) | [![Mobile Dark](public/screenshots/mobile-dark-about.png)](public/screenshots/mobile-dark-about.png) |
+| **Home Page** | [![Desktop Dark](public/screenshots/desktop-dark-home.png)](public/screenshots/desktop-dark-home.png) | [![Mobile Dark](public/screenshots/mobile-dark-home.png)](public/screenshots/mobile-dark-home.png) |
+| **About Me** | [![Desktop Dark](public/screenshots/desktop-dark-about.png)](public/screenshots/desktop-dark-about.png) | [![Mobile Dark](public/screenshots/mobile-dark-about.png)](public/screenshots/mobile-dark-about.png) |
 | **Projects Showcase** | [![Desktop Dark](public/screenshots/desktop-dark-projects.png)](public/screenshots/desktop-dark-projects.png) | [![Mobile Dark](public/screenshots/mobile-dark-projects.png)](public/screenshots/mobile-dark-projects.png) |
-| **Blogs & Articles** | [![Desktop Dark](public/screenshots/desktop-dark-blogs.png)](public/screenshots/desktop-dark-blogs.png) | [![Mobile Dark](public/screenshots/mobile-dark-blogs.png)](public/screenshots/mobile-dark-blogs.png) |
-| **Interactive Gallery** | [![Desktop Dark](public/screenshots/desktop-dark-gallery.png)](public/screenshots/desktop-dark-gallery.png) | [![Mobile Dark](public/screenshots/mobile-dark-gallery.png)](public/screenshots/mobile-dark-gallery.png) |
-| **Contact Dashboard** | [![Desktop Dark](public/screenshots/desktop-dark-contact.png)](public/screenshots/desktop-dark-contact.png) | [![Mobile Dark](public/screenshots/mobile-dark-contact.png)](public/screenshots/mobile-dark-contact.png) |
+| **Live Deployments / Apps** | [![Desktop Dark](public/screenshots/desktop-dark-apps.png)](public/screenshots/desktop-dark-apps.png) | [![Mobile Dark](public/screenshots/mobile-dark-apps.png)](public/screenshots/mobile-dark-apps.png) |
+| **Blogs Page** | [![Desktop Dark](public/screenshots/desktop-dark-blogs.png)](public/screenshots/desktop-dark-blogs.png) | [![Mobile Dark](public/screenshots/mobile-dark-blogs.png)](public/screenshots/mobile-dark-blogs.png) |
+| **Gallery (Certificates)** | [![Desktop Dark](public/screenshots/desktop-dark-gallery.png)](public/screenshots/desktop-dark-gallery.png) | [![Mobile Dark](public/screenshots/mobile-dark-gallery.png)](public/screenshots/mobile-dark-gallery.png) |
+| **GitHub Activity** | [![Desktop Dark](public/screenshots/desktop-dark-github.png)](public/screenshots/desktop-dark-github.png) | [![Mobile Dark](public/screenshots/mobile-dark-github.png)](public/screenshots/mobile-dark-github.png) |
+| **Contact Us** | [![Desktop Dark](public/screenshots/desktop-dark-contact.png)](public/screenshots/desktop-dark-contact.png) | [![Mobile Dark](public/screenshots/mobile-dark-contact.png)](public/screenshots/mobile-dark-contact.png) |
 | **Admin Command Center** | [![Admin Dashboard](public/screenshots/admin/desktop-dashboard.png)](public/screenshots/admin/desktop-dashboard.png) | [![Admin Mobile](public/screenshots/admin/mobile-dashboard.png)](public/screenshots/admin/mobile-dashboard.png) |
 
----
 
 ## 🚀 Quick Start (Docker Deployment)
 
