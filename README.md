@@ -46,12 +46,29 @@ Advanced contact settings for real-time lead routing:
 - **Route Validation**: Instant one-click connection tests to verify endpoint accessibility.
 
 ### 🎨 Live Theme Customizer
-- **21 Preset Themes**: Switch between Dracula, Tokyo Night, Nord, Cyberpunk, Catppuccin, and more with a single click.
+- **52 Preset Themes**: Switch between Dracula, Tokyo Night, Nord, Cyberpunk, Catppuccin, and dozens more with a single click.
 - **Granular Palette Tuning**: Modify primary, secondary, background, text, and border tokens with immediate live preview.
 
 ### 📝 Automated Blog & Masonry Gallery
 - **Blog System**: Markdown-based editor with syntax highlighting, auto-saving drafts, and Notion sync API support.
 - **Gallery**: Masonry grid layout with auto image optimization and HEIC photo upload compatibility.
+
+### 📄 Resume Studio
+Full-screen LaTeX resume IDE with a live PDF preview:
+- **Visual & Code Modes**: Edit raw LaTeX or drag-and-drop structured section cards — your choice.
+- **AI Assistant**: Refine a selection, auto-fix compile errors, or tailor your resume to a pasted job description.
+- **Named Versions & Auto-Everything**: Save snapshots, auto-compile, auto-save, and publish your live resume in one click.
+
+### 🌓 Classic vs V2 Experience
+Run two complete site designs side by side:
+- **One-Click Default**: Pick which redesign (Classic or V2) visitors land on at the clean URLs.
+- **Always Reachable**: The non-default version stays live at `/v1` or `/v2`.
+- **V2**: an editorial-depth redesign with numbered chapters, GSAP scroll-driven motion, and terminal-style chrome.
+
+### 🔌 MCP Server & Developer Tools
+- **Model Context Protocol Server**: Expose custom tools, resources, and prompts from your portfolio to AI clients, with its own secured write-access token.
+- **API Reference Dashboard**: In-app docs for the blog automation API, image uploads, and AI Hub CRUD endpoints.
+- **Server Health**: Live CPU/memory/disk/event-loop metrics, uptime monitoring for your deployments, and an AI-powered log analyzer.
 
 ---
 
