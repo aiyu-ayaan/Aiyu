@@ -58,6 +58,10 @@ Migration.md
 DOCKER.md
 CNAME
 
+# README/wiki screenshots (docs-only assets, not served at runtime)
+public/screenshots
+docs/images
+
 # IDE
 .vscode
 .idea
