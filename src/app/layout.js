@@ -111,7 +111,9 @@ export default async function RootLayout({ children }) {
       style={{ backgroundColor: '#0d1117' }}
     >
       <head>
-        <script
+        <Script
+          id="prepaint-theme-perf"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
@@ -160,7 +162,9 @@ export default async function RootLayout({ children }) {
             `,
           }}
         />
-        <script
+        <Script
+          id="prepaint-boot-gate"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
