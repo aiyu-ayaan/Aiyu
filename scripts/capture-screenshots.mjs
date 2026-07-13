@@ -4,9 +4,22 @@ import { fileURLToPath } from 'url';
 import { spawn, execSync } from 'child_process';
 import http from 'http';
 import { chromium } from 'playwright';
+import { NAV_ITEMS } from '../src/app/components/admin/shell/navConfig.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Derive the full list of admin sections (Dashboard + every sidebar item,
+// including Settings) straight from the real nav config, so this script can
+// never drift out of sync with the actual admin panel again.
+const adminRoutes = NAV_ITEMS.map((item) => {
+  const slug = item.path === '/admin' ? 'dashboard' : item.path.replace(/^\/admin\//, '').replace(/\//g, '-');
+  return { slug, label: item.label, path: item.path };
+});
+
+// Sections that pull in slow async data (charts, live metrics, activity
+// feeds) get a longer settle time before the screenshot is taken.
+const SLOW_ADMIN_SLUGS = new Set(['dashboard', 'analytics', 'health', 'github', 'seo', 'mcp']);
 
 // ==========================================
 // 0. Parse .env if it exists to load credentials into process.env
@@ -181,50 +194,84 @@ async function main() {
     }
 
     // ==========================================
-    // ADMIN DASHBOARD CAPTURE (DARK MODE)
+    // ADMIN LOGIN (ALWAYS, UNCONDITIONALLY)
     // ==========================================
-    console.log('\n📸 Capturing Admin Dashboard (/admin)');
-    const adminUrl = 'http://localhost:3000/admin';
-    await page.setViewportSize({ width: 1920, height: 1080 });
-    await page.goto(adminUrl, { waitUntil: 'load' });
-    await page.waitForTimeout(2000);
+    console.log('\n🔐 Logging into Admin Panel...');
+    const username = process.env.ADMIN_USERNAME || 'aiyu';
+    const password = process.env.ADMIN_PASSWORD || '1501@AiyuLoveAnshu^2401!!';
 
-    // Check if we are on the login page or dashboard
-    const isLoginPage = await page.$('input[type="text"]');
-    if (isLoginPage) {
-      console.log('  -> Logging into Admin Panel...');
-      const username = process.env.ADMIN_USERNAME || 'aiyu';
-      const password = process.env.ADMIN_PASSWORD || '1501@AiyuLoveAnshu^2401!!';
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    await page.goto('http://localhost:3000/admin/login', { waitUntil: 'load' });
+    await page.waitForTimeout(1000);
+
+    // If a session already exists, /admin/login redirects straight to /admin.
+    if (!page.url().includes('/admin/login')) {
+      console.log('  -> Already authenticated (existing session).');
+    } else {
       await page.fill('input[type="text"]', username);
       await page.fill('input[type="password"]', password);
       await page.click('button[type="submit"]');
-
-      // Wait for login transition to complete
-      await page.waitForNavigation({ waitUntil: 'load' }).catch(() => {});
-      await page.waitForTimeout(3000);
+      await page.waitForURL('**/admin', { timeout: 15000 }).catch(() => {});
+      await page.waitForTimeout(2000);
+      console.log('  -> Login successful.');
     }
 
-    // Set theme to dark for admin panel
+    const adminOutputDir = path.resolve('public/screenshots/admin');
+    if (!fs.existsSync(adminOutputDir)) {
+      fs.mkdirSync(adminOutputDir, { recursive: true });
+    }
+
+    // Force dark mode once; every admin section screenshot reuses this session.
     await page.evaluate(() => {
       localStorage.setItem('themeMode', 'dark');
       localStorage.setItem('theme', 'dark');
       localStorage.setItem('themeVariant', 'dark');
       document.documentElement.setAttribute('data-theme', 'dark');
     });
-    await page.reload({ waitUntil: 'load' });
-    await page.waitForTimeout(3000); // Allow charts, count widgets, and database stats to populate
 
-    const adminDashboardPath = 'public/screenshots/admin.png';
-    await page.screenshot({ path: adminDashboardPath });
-    console.log(`  -> Admin Dashboard screenshot captured at ${adminDashboardPath}`);
+    // ==========================================
+    // ADMIN SECTION CAPTURE (DESKTOP + MOBILE, DARK MODE)
+    // ==========================================
+    console.log(`\n📸 Capturing ${adminRoutes.length} admin sections (desktop + mobile)...\n`);
 
-    // Copy admin screenshot to docs/images/admin-dashboard.png too
-    const legacyAdminPath = 'docs/images/admin-dashboard.png';
+    for (const route of adminRoutes) {
+      const url = `http://localhost:3000${route.path}`;
+      const waitTime = SLOW_ADMIN_SLUGS.has(route.slug) ? 4000 : 2000;
+      console.log(`📸 Capturing admin section: ${route.label} (${route.path})`);
+
+      console.log('  -> Desktop Dark Mode (1920x1080)');
+      await page.setViewportSize({ width: 1920, height: 1080 });
+      await page.goto(url, { waitUntil: 'load' });
+      await page.waitForTimeout(waitTime);
+      const desktopAdminPath = `public/screenshots/admin/desktop-${route.slug}.png`;
+      await page.screenshot({ path: desktopAdminPath });
+
+      console.log('  -> Mobile Dark Mode (430x932)');
+      await page.setViewportSize({ width: 430, height: 932 });
+      await page.waitForTimeout(1200); // Allow the mobile nav/layout to settle
+      const mobileAdminPath = `public/screenshots/admin/mobile-${route.slug}.png`;
+      await page.screenshot({ path: mobileAdminPath });
+
+      // Mirror both into docs/images so wiki pages can reference stable,
+      // predictable filenames (e.g. docs/images/admin-themes.png).
+      const docsDesktopPath = `docs/images/admin-${route.slug}.png`;
+      const docsMobilePath = `docs/images/admin-${route.slug}-mobile.png`;
+      try {
+        fs.copyFileSync(desktopAdminPath, docsDesktopPath);
+        fs.copyFileSync(mobileAdminPath, docsMobilePath);
+      } catch (err) {
+        console.error(`  -> Failed to mirror ${route.slug} screenshots to docs/images:`, err.message);
+      }
+    }
+
+    // Keep the legacy single-file paths that the README/wiki already reference.
+    const legacyDashboardDesktop = 'public/screenshots/admin/desktop-dashboard.png';
     try {
-      fs.copyFileSync(adminDashboardPath, legacyAdminPath);
-      console.log(`  -> Copied admin dashboard screenshot to ${legacyAdminPath}`);
+      fs.copyFileSync(legacyDashboardDesktop, 'public/screenshots/admin.png');
+      fs.copyFileSync(legacyDashboardDesktop, 'docs/images/admin-dashboard.png');
+      console.log('\n  -> Refreshed legacy admin.png / admin-dashboard.png');
     } catch (err) {
-      console.error(`Failed to copy admin screenshot to ${legacyAdminPath}:`, err.message);
+      console.error('Failed to refresh legacy admin dashboard screenshot copies:', err.message);
     }
 
     console.log('\nClosing Playwright Chromium...');
@@ -271,7 +318,7 @@ async function main() {
       let readme = fs.readFileSync(readmePath, 'utf8');
 
       // Build the beautiful markdown table with DARK THEME ONLY
-      let tableMarkdown = '| Page | Desktop Dark Mode (1920x1080) | Mobile Dark Mode (430x932) |\n';
+      let tableMarkdown = '| Module | Desktop Dark Mode (1920x1080) | Mobile Dark Mode (430x932) |\n';
       tableMarkdown += '|---|---|---|\n';
 
       for (const route of routes) {
@@ -281,12 +328,13 @@ async function main() {
         tableMarkdown += `| **${route.label}** | [![Desktop Dark](${dd})](${dd}) | [![Mobile Dark](${md})](${md}) |\n`;
       }
 
-      // Add Admin Panel row
-      const adminPath = 'public/screenshots/admin.png';
-      tableMarkdown += `| **Admin Dashboard** | [![Admin Dashboard](${adminPath})](${adminPath}) | *Desktop Only* |\n`;
+      // Add Admin Panel row (now with a real mobile capture too)
+      const adminDesktopPath = 'public/screenshots/admin/desktop-dashboard.png';
+      const adminMobilePath = 'public/screenshots/admin/mobile-dashboard.png';
+      tableMarkdown += `| **Admin Command Center** | [![Admin Dashboard](${adminDesktopPath})](${adminDesktopPath}) | [![Admin Mobile](${adminMobilePath})](${adminMobilePath}) |\n`;
 
-      const screenshotsHeader = '## Screenshots';
-      const techStackHeader = '## 🛠️ Tech Stack';
+      const screenshotsHeader = '## 📸 Visual Showcase';
+      const techStackHeader = '## 🚀 Quick Start (Docker Deployment)';
 
       const screenshotsIndex = readme.indexOf(screenshotsHeader);
       const techStackIndex = readme.indexOf(techStackHeader);
@@ -300,7 +348,7 @@ async function main() {
         fs.writeFileSync(readmePath, readme, 'utf8');
         console.log('Successfully injected Dark-Mode screenshots comparison table into README.md!');
       } else {
-        console.warn('Could not locate standard ## Screenshots or ## 🛠️ Tech Stack headers in README.md to replace. Table generated, but not injected.');
+        console.warn(`Could not locate standard "${screenshotsHeader}" or "${techStackHeader}" headers in README.md to replace. Table generated, but not injected.`);
         console.log('Generated Table:\n', tableMarkdown);
       }
     } else {
