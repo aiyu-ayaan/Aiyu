@@ -1,5 +1,50 @@
 # Changelog
 
+## [4.8.0](https://github.com/aiyu-ayaan/Aiyu/compare/v4.7.7...v4.8.0) (2026-07-13)
+
+### Features
+
+* : Feature release is done
+* Capture every admin section on desktop + mobile
+* Add hotfix detection and deployment workflow
+* Restore initial auto-compile on document load and update script placement in layout
+* Auto-compile on load and one-click publish pipeline
+* Named versions you can save and switch between
+* Move studio side panel to the left of the editor
+* GUI header form and expanded add-section menu
+* Add structured header parse/generate helpers
+* Polish inputs, hide browser PDF controls, hover trash triggers, and update back icon
+* Consolidate auto-save, auto-compile, and engine select into settings dropdown
+* Add tabbed editor pane switching between visual and code modes
+* AI in visual mode, Visual-first toggle, backup, autosave
+* Open Resume Studio in visual mode by default
+* Visual drag-and-drop editor with Code/Visual mode toggle
+* LaTeX <-> structured model bridge + Ayaan base template
+* AI assistant + ideas board wired into the AI Core stack
+* Portfolio integration, starter templates, color themes
+* /admin/resume LaTeX editor with live PDF preview
+* LaTeX compile pipeline + one-click publish
+* Add ResumeStudio data layer (model, migration, admin API)
+
+### Bug Fixes
+
+* Make capture run resilient to dev-server hiccups
+* Use next/script beforeInteractive for pre-paint head scripts
+
+### Other Changes
+
+* Merge branch 'master' of https://github.com/aiyu-ayaan/Aiyu
+* Capture full admin panel + refresh public page screenshots
+* Exclude screenshot/doc assets from the build context
+* Add Resume Studio, V2 site, and MCP Server feature spotlights
+* Bump next from 16.2.9 to 16.2.10 (#252)
+* Bump eslint from 10.6.0 to 10.7.0 (#251)
+* Bump @tailwindcss/postcss from 4.3.1 to 4.3.2 (#250)
+* Bump three from 0.184.0 to 0.185.1 (#248)
+* Lock editor viewport height and prevent double scrollbars
+* Add implementation plan for resume studio ui redesign
+* Add design spec for resume studio ui redesign
+
 ## [4.7.7](https://github.com/aiyu-ayaan/Aiyu/compare/v4.7.6...v4.7.7) (2026-07-11)
 
 ### Features
