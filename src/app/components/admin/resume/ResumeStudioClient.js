@@ -87,14 +87,6 @@ export default function ResumeStudioClient() {
         if (pdfUrlRef.current) URL.revokeObjectURL(pdfUrlRef.current);
     }, []);
 
-    // Compile once as soon as the document is loaded so a preview is ready
-    // without the user hitting Compile first.
-    useEffect(() => {
-        if (loading || !studio || didInitialCompile.current) return;
-        didInitialCompile.current = true;
-        compile();
-    }, [loading, studio, compile]);
-
     // Restore auto-save / auto-compile preferences.
     useEffect(() => {
         try {
@@ -176,6 +168,14 @@ export default function ResumeStudioClient() {
             setCompiling(false);
         }
     }, [engine, toast, getLatex]);
+
+    // Compile once as soon as the document is loaded so a preview is ready
+    // without the user hitting Compile first.
+    useEffect(() => {
+        if (loading || !studio || didInitialCompile.current) return;
+        didInitialCompile.current = true;
+        compile();
+    }, [loading, studio, compile]);
 
     const saveAndCompile = useCallback(async () => {
         await save();

@@ -111,6 +111,13 @@ export default async function RootLayout({ children }) {
       style={{ backgroundColor: '#0d1117' }}
     >
       <head>
+        {/* Next.js 16.2's documented pattern (Script as a sibling of <head>)
+            hits a confirmed framework bug that breaks script ordering
+            guarantees (vercel/next.js#51242). Keeping these nested in <head>
+            avoids that real error; it triggers a known dev-only console
+            warning ("Encountered a script tag...") that is a false positive
+            for next/script's beforeInteractive strategy — the script still
+            executes correctly. Revisit once upstream ships a fix. */}
         <Script
           id="prepaint-theme-perf"
           strategy="beforeInteractive"
