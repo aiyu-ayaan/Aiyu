@@ -321,6 +321,127 @@ export function generateResumeLatex(model) {
     return parts.join('\n');
 }
 
+// ─────────────────────────── header parse / generate ───────────────────────
+
+/** Contact link types the header GUI understands, mapped to fontawesome icons. */
+export const CONTACT_TYPES = [
+    { type: 'phone', icon: '\\faPhone', label: 'Phone' },
+    { type: 'email', icon: '\\faEnvelope', label: 'Email' },
+    { type: 'linkedin', icon: '\\faLinkedin', label: 'LinkedIn' },
+    { type: 'github', icon: '\\faGithub', label: 'GitHub' },
+    { type: 'website', icon: '\\faGlobe', label: 'Website' },
+    { type: 'location', icon: '\\faLocationDot', label: 'Location' },
+    { type: 'link', icon: '\\faLink', label: 'Link' },
+];
+
+const iconToType = (icon) =>
+    (CONTACT_TYPES.find((c) => c.icon === icon) || { type: 'link' }).type;
+
+/** Split `\faEnvelope\ some label` into its icon command and trailing label. */
+function splitIconLabel(s) {
+    const m = s.trim().match(/^(\\fa[A-Za-z]+)\\?\s+([\s\S]*)$/);
+    if (!m) return { icon: '', label: s.trim() };
+    return { icon: m[1], label: m[2].trim() };
+}
+
+/** Parse one `~`-separated contact token into { type, icon, label, url }. */
+function parseContactToken(tok) {
+    if (tok.startsWith('\\href')) {
+        const urlG = readGroup(tok, tok.indexOf('{'));
+        if (!urlG) return null;
+        const labelG = readGroup(tok, tok.indexOf('{', urlG.end));
+        if (!labelG) return null;
+        const { icon, label } = splitIconLabel(labelG.content);
+        return { type: iconToType(icon), icon, label, url: urlG.content.trim() };
+    }
+    const { icon, label } = splitIconLabel(tok);
+    if (!icon) return null;
+    return { type: iconToType(icon), icon, label, url: '' };
+}
+
+/**
+ * Best-effort parse of the standard `\begin{center}` header into structured
+ * fields for the GUI. Returns null when the shape isn't recognised so the
+ * caller can fall back to a raw textarea and never lose an exotic header.
+ * Shape returned: { prefix, suffix, name, lines[], contacts[] }.
+ */
+export function parseHeader(header) {
+    if (!header) return null;
+    const beginTag = '\\begin{center}';
+    const endTag = '\\end{center}';
+    const centerStart = header.indexOf(beginTag);
+    const centerEnd = header.indexOf(endTag);
+    if (centerStart === -1 || centerEnd === -1 || centerEnd < centerStart) return null;
+
+    const prefix = header.slice(0, centerStart);
+    const suffix = header.slice(centerEnd + endTag.length);
+    const inner = header.slice(centerStart + beginTag.length, centerEnd);
+
+    // Break on LaTeX line breaks (\\) and drop spacing macros.
+    const stripped = inner
+        .split(/\\\\/)
+        .map((l) => l.replace(/\\vspace\{[^}]*\}/g, '').trim())
+        .filter(Boolean);
+    if (!stripped.length) return null;
+
+    const nameMatch = stripped[0].match(/\{\\Huge\s+\\scshape\s+([^}]*)\}/);
+    if (!nameMatch) return null;
+    const name = nameMatch[1].trim();
+
+    const lines = [];
+    let contactsLine = null;
+    for (let k = 1; k < stripped.length; k++) {
+        const l = stripped[k];
+        if (/\\href|\\fa[A-Z]/.test(l)) {
+            if (contactsLine !== null) return null; // multiple contact lines: bail
+            contactsLine = l;
+        } else {
+            if (contactsLine !== null) return null; // text after contacts: bail
+            lines.push(l);
+        }
+    }
+
+    const contacts = [];
+    if (contactsLine) {
+        const tokens = contactsLine
+            .replace(/\\small/g, '')
+            .split('~')
+            .map((t) => t.trim())
+            .filter(Boolean);
+        for (const tok of tokens) {
+            const c = parseContactToken(tok);
+            if (!c) return null;
+            contacts.push(c);
+        }
+    }
+
+    return { prefix, suffix, name, lines, contacts };
+}
+
+/** Serialize structured header fields back into a `\begin{center}` block. */
+export function generateHeader(h) {
+    const contactStr = (h.contacts || [])
+        .map((c) => {
+            const inner = c.icon ? `${c.icon}\\ ${c.label}` : c.label;
+            return c.url ? `\\href{${c.url}}{${inner}}` : inner;
+        })
+        .join(' ~\n    ');
+    const body = [
+        '\\begin{center}',
+        `    {\\Huge \\scshape ${h.name}} \\\\ \\vspace{1pt}`,
+        ...(h.lines || []).map((l) => `    ${l} \\\\ \\vspace{1pt}`),
+        contactStr ? `    \\small ${contactStr}` : '    \\small',
+        '    \\vspace{-8pt}',
+        '\\end{center}',
+    ].join('\n');
+    return `${h.prefix || ''}${body}${h.suffix || ''}`;
+}
+
+/** A fresh contact row for the header GUI's "add contact" button. */
+export function blankContact() {
+    return { type: 'link', icon: '\\faLink', label: '', url: '' };
+}
+
 // ─────────────────────────── model edit helpers ───────────────────────────
 
 /** Blank items used by the GUI's "add" buttons. */
