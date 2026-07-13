@@ -11,6 +11,17 @@ name: Release PR + Deploy After Merge
 # Pushes without a leading marker are skipped. Markers are matched only on the
 # subject line (not the body), so a commit that merely mentions a marker in its
 # description does not trigger a release.
+#
+# HOTFIX marker (emergency path, NO version bump, NO PR):
+#   !hotfix -> rebuild + overwrite the CURRENT package.json version
+# Use this when an already-released Docker image is broken and needs an
+# immediate fix. A push to master whose subject begins with !hotfix builds the
+# image clean (--no-cache) for the current version, force-overwrites the
+# aiyuayaan/aiyu:<current> and :latest tags on Docker Hub, redeploys the server
+# (recreating containers + pruning the stale image), and APPENDS a hotfix note
+# to that version's existing GitHub Release. It does NOT open a PR, does NOT
+# bump the version, and does NOT match the !fix marker above, so the normal
+# release/deploy jobs stay dormant for a hotfix push.
 
 on:
   push:
@@ -544,3 +555,285 @@ jobs:
             ---
           draft: false
           prerelease: false
+
+  # ---------------------------------------------------------------------------
+  # HOTFIX PATH — emergency rebuild of the current version's Docker image.
+  # Triggered by a commit whose SUBJECT starts with !hotfix. No version bump,
+  # no release PR. Runs independently of the release jobs above.
+  # ---------------------------------------------------------------------------
+  detect-hotfix:
+    name: Detect Hotfix Marker
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    outputs:
+      should_hotfix: ${{ steps.detect.outputs.should_hotfix }}
+      version: ${{ steps.detect.outputs.version }}
+
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect !hotfix marker on pushed commit subject(s)
+        id: detect
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+          AFTER_SHA: ${{ github.sha }}
+          HEAD_COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import re
+          import subprocess
+
+          # !hotfix is honored ONLY at the start of a subject line. (?!\w) keeps
+          # it from matching things like "!hotfixes". It deliberately does not
+          # overlap with the !fix release marker.
+          HOTFIX = re.compile(r"^\s*!hotfix(?!\w)", re.IGNORECASE)
+          # A merged release PR lands as "chore(master): release vX.Y.Z" — never
+          # treat that as a hotfix trigger.
+          RELEASE_COMMIT = re.compile(
+              r"^\s*chore(?:\([^)]+\))?:\s*release\s+v?\d+\.\d+\.\d+\s*$",
+              re.IGNORECASE,
+          )
+
+          before = os.environ.get("BEFORE_SHA", "").strip()
+          after = os.environ.get("AFTER_SHA", "").strip()
+          subjects = []
+          try:
+              if before and set(before) != {"0"}:
+                  out = subprocess.check_output(
+                      ["git", "log", f"{before}..{after}", "--format=%s"],
+                      text=True,
+                  )
+                  subjects = [s for s in out.splitlines() if s.strip()]
+              if not subjects:
+                  out = subprocess.check_output(
+                      ["git", "log", "-1", "--format=%s"], text=True
+                  )
+                  subjects = [out.strip()]
+          except subprocess.CalledProcessError:
+              head = os.environ.get("HEAD_COMMIT_MESSAGE", "")
+              subjects = [head.splitlines()[0] if head else ""]
+
+          subjects = [s for s in subjects if not RELEASE_COMMIT.match(s.strip())]
+          should_hotfix = any(HOTFIX.match(s) for s in subjects)
+
+          version = ""
+          if should_hotfix:
+              current = json.loads(
+                  open("package.json", encoding="utf-8").read()
+              ).get("version", "").strip()
+              if not re.fullmatch(r"\d+\.\d+\.\d+", current):
+                  raise SystemExit(
+                      f"Invalid package.json version '{current}'. Expected X.Y.Z."
+                  )
+              version = f"v{current}"
+
+          output_file = os.environ["GITHUB_OUTPUT"]
+          with open(output_file, "a", encoding="utf-8") as f:
+              f.write(f"should_hotfix={'true' if should_hotfix else 'false'}\n")
+              f.write(f"version={version}\n")
+
+          if should_hotfix:
+              print(f"Hotfix requested for current version {version}.")
+          else:
+              print("No !hotfix marker found; hotfix path skipped.")
+          PY
+
+      - name: Skip reason
+        if: steps.detect.outputs.should_hotfix != 'true'
+        run: echo "Push has no !hotfix marker; hotfix rebuild skipped."
+
+  hotfix-build-push:
+    name: Hotfix — Rebuild & overwrite Docker image
+    needs: detect-hotfix
+    if: github.event_name == 'push' && needs.detect-hotfix.outputs.should_hotfix == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+      attestations: write
+      id-token: write
+
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+
+      - name: Get version
+        id: get-version
+        run: |
+          VERSION="${{ needs.detect-hotfix.outputs.version }}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Rebuilding (clean) and overwriting image tag: $VERSION"
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: aiyuayaan/aiyu
+          tags: |
+            type=raw,value=${{ steps.get-version.outputs.version }}
+            type=raw,value=latest
+
+      # no-cache: the previous image was broken, so build fresh rather than
+      # risk reusing a poisoned layer. Pushing the same tag overwrites it on
+      # Docker Hub; the old digest becomes untagged and is garbage-collected.
+      - name: Build and push Docker image
+        id: push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          no-cache: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Generate artifact attestation
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-name: index.docker.io/aiyuayaan/aiyu
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
+
+  hotfix-deploy:
+    name: Hotfix — Redeploy to Server
+    needs: [detect-hotfix, hotfix-build-push]
+    if: github.event_name == 'push' && needs.detect-hotfix.outputs.should_hotfix == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          script: |
+            set -e
+
+            echo "Starting hotfix deployment..."
+
+            cd docker/Aiyu/ || { echo "Failed to navigate to docker/Aiyu/"; exit 1; }
+
+            echo "Pulling rebuilt image (same tag, new digest)..."
+            docker compose pull || { echo "Failed to pull image"; exit 1; }
+
+            # --force-recreate ensures containers restart even though the tag
+            # string is unchanged (only its digest moved).
+            echo "Recreating containers..."
+            sudo docker compose up -d --force-recreate || { echo "Failed to start containers"; exit 1; }
+
+            echo "Pruning the stale (now-dangling) image..."
+            sudo docker image prune -f || true
+
+            echo "Hotfix deployment completed successfully!"
+
+  hotfix-release-notes:
+    name: Hotfix — Append note to release
+    needs: [detect-hotfix, hotfix-build-push]
+    if: github.event_name == 'push' && needs.detect-hotfix.outputs.should_hotfix == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Append hotfix note to GitHub Release and CHANGELOG
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.detect-hotfix.outputs.version }}
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+          COMMIT_SHA: ${{ github.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          python - <<'PY'
+          import os
+          import re
+          import subprocess
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          version = os.environ["VERSION"].strip()          # e.g. v4.7.6
+          bare = version.lstrip("v")
+          raw = os.environ.get("COMMIT_MESSAGE", "").strip()
+          subject = raw.splitlines()[0] if raw else ""
+          subject = re.sub(r"^\s*!hotfix\b[:\-\s]*", "", subject, flags=re.IGNORECASE).strip()
+          subject = subject or "Docker image rebuilt"
+          sha = os.environ.get("COMMIT_SHA", "")[:7]
+          run_url = os.environ.get("RUN_URL", "")
+          stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+
+          note = (
+              f"\n\n### 🔧 Hotfix ({stamp})\n\n"
+              f"* {subject} ({sha})\n"
+              f"* Image `aiyuayaan/aiyu:{version}` rebuilt clean (--no-cache) and redeployed.\n"
+          )
+          if run_url:
+              note += f"* [Workflow run]({run_url})\n"
+
+          # --- GitHub Release: append to the existing release body, or create it ---
+          exists = subprocess.run(
+              ["gh", "release", "view", version],
+              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+          ).returncode == 0
+
+          if exists:
+              body = subprocess.check_output(
+                  ["gh", "release", "view", version, "--json", "body", "-q", ".body"],
+                  text=True,
+              )
+              subprocess.check_call(
+                  ["gh", "release", "edit", version, "--notes", body.rstrip() + note]
+              )
+              print(f"Appended hotfix note to existing release {version}.")
+          else:
+              subprocess.check_call([
+                  "gh", "release", "create", version,
+                  "--title", f"Release {version}",
+                  "--notes", f"**Docker Image:** `aiyuayaan/aiyu:{version}`{note}",
+              ])
+              print(f"No existing release; created {version} with hotfix note.")
+
+          # --- CHANGELOG.md: insert a note under this version's heading ---------
+          # Best-effort: a failure here must not fail the hotfix. Committed with
+          # [skip ci] so the push does not re-trigger any workflow.
+          try:
+              changelog = Path("CHANGELOG.md")
+              text = changelog.read_text(encoding="utf-8")
+              bullet = f"> **🔧 Hotfix ({stamp}):** {subject} ({sha})\n"
+              heading = re.search(rf"(?m)^##\s*\[?{re.escape(bare)}\]?.*$", text)
+              if heading and bullet.strip() not in text:
+                  insert_at = heading.end()
+                  text = text[:insert_at] + "\n\n" + bullet.rstrip("\n") + text[insert_at:]
+                  changelog.write_text(text, encoding="utf-8")
+                  subprocess.check_call(["git", "config", "user.name", "github-actions[bot]"])
+                  subprocess.check_call([
+                      "git", "config", "user.email",
+                      "41898282+github-actions[bot]@users.noreply.github.com",
+                  ])
+                  subprocess.check_call(["git", "add", "CHANGELOG.md"])
+                  subprocess.check_call([
+                      "git", "commit", "-m",
+                      f"docs(changelog): hotfix note for {version} [skip ci]",
+                  ])
+                  subprocess.check_call(["git", "push"])
+                  print(f"Appended hotfix note to CHANGELOG for {bare}.")
+              else:
+                  print("CHANGELOG heading not found or note already present; skipped.")
+          except Exception as exc:  # noqa: BLE001
+              print(f"CHANGELOG update skipped (non-fatal): {exc}")
+          PY
