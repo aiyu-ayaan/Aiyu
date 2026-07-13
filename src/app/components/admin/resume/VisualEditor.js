@@ -16,19 +16,40 @@ import { CSS } from '@dnd-kit/utilities';
 import {
     FaGripVertical, FaTrash, FaPlus, FaChevronDown, FaChevronRight,
     FaArrowUp, FaArrowDown, FaBriefcase, FaFileLines, FaListCheck, FaAlignLeft, FaCode,
+    FaGraduationCap, FaCertificate, FaTrophy, FaHandshake, FaDiagramProject,
+    FaUser, FaPenToSquare,
 } from 'react-icons/fa6';
-import { blankItemFor, blankSection } from '@/lib/resumeVisual';
+import {
+    blankItemFor, blankSection, blankContact,
+    parseHeader, generateHeader, CONTACT_TYPES,
+} from '@/lib/resumeVisual';
 import { escapeLatex } from '@/lib/resumeStudio';
 
 const inputCls = 'w-full bg-slate-950/45 border border-white/5 focus:border-cyan-500/20 hover:border-white/10 rounded-lg px-3 py-2 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none transition-all';
 const miniBtn = 'p-1 rounded text-slate-500 hover:text-slate-200 transition-colors';
 
+// Badge labels shown per underlying section type.
 const SECTION_TYPES = [
     { type: 'entries', label: 'Experience / Education', icon: FaBriefcase },
     { type: 'projects', label: 'Projects', icon: FaFileLines },
     { type: 'skills', label: 'Skills', icon: FaListCheck },
     { type: 'text', label: 'Text paragraph', icon: FaAlignLeft },
     { type: 'raw', label: 'Raw LaTeX', icon: FaCode },
+];
+
+// Insertable section presets. Several map to the same underlying `type` but
+// give the GUI a resume-shaped starting point (title + relevant fields), so a
+// full resume can be assembled without touching LaTeX.
+const SECTION_MENU = [
+    { key: 'experience', label: 'Experience', icon: FaBriefcase, type: 'entries', title: 'Experience' },
+    { key: 'education', label: 'Education', icon: FaGraduationCap, type: 'entries', title: 'Education' },
+    { key: 'projects', label: 'Projects', icon: FaDiagramProject, type: 'projects', title: 'Projects' },
+    { key: 'skills', label: 'Skills', icon: FaListCheck, type: 'skills', title: 'Technical Skills' },
+    { key: 'summary', label: 'Summary', icon: FaAlignLeft, type: 'text', title: 'Professional Summary' },
+    { key: 'certifications', label: 'Certifications', icon: FaCertificate, type: 'skills', title: 'Certifications' },
+    { key: 'achievements', label: 'Achievements', icon: FaTrophy, type: 'text', title: 'Achievements' },
+    { key: 'involvement', label: 'Involvement', icon: FaHandshake, type: 'entries', title: 'Leadership & Involvement' },
+    { key: 'raw', label: 'Raw LaTeX', icon: FaCode, type: 'raw', title: 'Custom Section' },
 ];
 
 /** Bullet list editor shared by entries + projects items. */
@@ -282,9 +303,144 @@ function SectionCard({ section, patch, remove, portfolio }) {
     );
 }
 
+/**
+ * Structured GUI for the resume header (name, subtitle lines, contact links).
+ * Falls back to a raw LaTeX textarea when the header can't be parsed into the
+ * standard `\begin{center}` shape, so unusual headers are never lost.
+ */
+function HeaderEditor({ header, onChange }) {
+    const [open, setOpen] = useState(true);
+    const [raw, setRaw] = useState(false);
+    const parsed = parseHeader(header);
+    const canStructure = parsed !== null;
+    const structured = canStructure && !raw;
+
+    const update = (patch) => onChange(generateHeader({ ...parsed, ...patch }));
+    const patchContact = (i, cPatch) =>
+        update({ contacts: parsed.contacts.map((c, k) => (k === i ? { ...c, ...cPatch } : c)) });
+
+    return (
+        <div className="rounded-xl border border-white/10 bg-slate-900/60">
+            <div className="flex items-center gap-2 p-2.5">
+                <button onClick={() => setOpen(!open)} className="flex items-center gap-2 text-left min-w-0 flex-1">
+                    {open ? <FaChevronDown className="text-[10px] text-slate-500 shrink-0" /> : <FaChevronRight className="text-[10px] text-slate-500 shrink-0" />}
+                    <FaUser className="text-[11px] text-slate-500 shrink-0" />
+                    <span className="text-sm font-bold text-white shrink-0">Header</span>
+                    <span className="text-[10px] text-slate-500 truncate">
+                        {canStructure ? (parsed.name || 'name') + ' · contacts' : 'edited as raw LaTeX'}
+                    </span>
+                </button>
+                {canStructure && (
+                    <button
+                        onClick={() => setRaw((v) => !v)}
+                        className={`shrink-0 flex items-center gap-1.5 px-2 py-1 rounded-md border text-[9px] font-bold uppercase tracking-wider transition-all ${
+                            raw ? 'border-cyan-500/30 bg-cyan-500/10 text-cyan-300' : 'border-white/10 text-slate-500 hover:text-slate-300'
+                        }`}
+                        title="Toggle raw LaTeX editing"
+                    >
+                        {raw ? <FaPenToSquare className="text-[9px]" /> : <FaCode className="text-[9px]" />}
+                        {raw ? 'Fields' : 'LaTeX'}
+                    </button>
+                )}
+            </div>
+
+            {open && (
+                <div className="p-2.5 pt-0 space-y-3">
+                    {structured ? (
+                        <>
+                            {/* Name + subtitle lines */}
+                            <div className="space-y-2">
+                                <input
+                                    value={parsed.name}
+                                    onChange={(e) => update({ name: e.target.value })}
+                                    placeholder="Full name"
+                                    className={`${inputCls} text-sm font-bold`}
+                                />
+                                {parsed.lines.map((line, i) => (
+                                    <div key={i} className="group flex items-center gap-2">
+                                        <input
+                                            value={line}
+                                            onChange={(e) => update({ lines: parsed.lines.map((l, k) => (k === i ? e.target.value : l)) })}
+                                            placeholder={i === 0 ? 'Title (e.g. Mobile Android Developer)' : 'Location or extra line'}
+                                            className={inputCls}
+                                        />
+                                        <button
+                                            onClick={() => update({ lines: parsed.lines.filter((_, k) => k !== i) })}
+                                            className={`${miniBtn} opacity-0 group-hover:opacity-100 hover:text-red-400 shrink-0`}
+                                            title="Remove line"
+                                        >
+                                            <FaTrash className="text-[10px]" />
+                                        </button>
+                                    </div>
+                                ))}
+                                <button
+                                    onClick={() => update({ lines: [...parsed.lines, ''] })}
+                                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-white/10 bg-white/[0.02] text-[9px] uppercase font-bold tracking-wider text-slate-500 hover:text-slate-300 hover:border-white/20 transition-all cursor-pointer"
+                                >
+                                    <FaPlus className="text-[8px]" /> subtitle line
+                                </button>
+                            </div>
+
+                            {/* Contact links */}
+                            <div className="space-y-2 border-t border-white/5 pt-2.5">
+                                <p className="text-[9px] font-bold uppercase tracking-widest text-slate-600">Contacts</p>
+                                {parsed.contacts.map((c, i) => (
+                                    <div key={i} className="group flex items-center gap-2">
+                                        <select
+                                            value={c.type}
+                                            onChange={(e) => {
+                                                const meta = CONTACT_TYPES.find((t) => t.type === e.target.value);
+                                                patchContact(i, { type: meta.type, icon: meta.icon });
+                                            }}
+                                            className="shrink-0 w-24 bg-slate-950/45 border border-white/5 rounded-lg px-2 py-2 text-[11px] text-slate-300 focus:outline-none focus:border-cyan-500/20"
+                                        >
+                                            {CONTACT_TYPES.map((t) => <option key={t.type} value={t.type}>{t.label}</option>)}
+                                        </select>
+                                        <input
+                                            value={c.label}
+                                            onChange={(e) => patchContact(i, { label: e.target.value })}
+                                            placeholder="Displayed text"
+                                            className={inputCls}
+                                        />
+                                        <input
+                                            value={c.url}
+                                            onChange={(e) => patchContact(i, { url: e.target.value })}
+                                            placeholder="Link URL (optional)"
+                                            className={inputCls}
+                                        />
+                                        <button
+                                            onClick={() => update({ contacts: parsed.contacts.filter((_, k) => k !== i) })}
+                                            className={`${miniBtn} opacity-0 group-hover:opacity-100 hover:text-red-400 shrink-0`}
+                                            title="Remove contact"
+                                        >
+                                            <FaTrash className="text-[10px]" />
+                                        </button>
+                                    </div>
+                                ))}
+                                <button
+                                    onClick={() => update({ contacts: [...parsed.contacts, blankContact()] })}
+                                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-cyan-500/20 bg-cyan-500/5 text-[9px] uppercase font-bold tracking-wider text-cyan-400 hover:bg-cyan-500/10 hover:text-cyan-300 transition-all cursor-pointer"
+                                >
+                                    <FaPlus className="text-[8px]" /> contact
+                                </button>
+                            </div>
+                        </>
+                    ) : (
+                        <textarea
+                            value={header}
+                            rows={9}
+                            onChange={(e) => onChange(e.target.value)}
+                            className={`${inputCls} resize-y font-mono`}
+                        />
+                    )}
+                </div>
+            )}
+        </div>
+    );
+}
+
 export default function VisualEditor({ model, onChange }) {
     const [portfolio, setPortfolio] = useState([]);
-    const [showHeader, setShowHeader] = useState(false);
     const [addOpen, setAddOpen] = useState(false);
 
     useEffect(() => {
@@ -320,23 +476,10 @@ export default function VisualEditor({ model, onChange }) {
     return (
         <div className="h-full overflow-auto p-3 space-y-3">
             {/* Header block */}
-            <div className="rounded-xl border border-white/10 bg-slate-900/60">
-                <button onClick={() => setShowHeader(!showHeader)} className="w-full flex items-center gap-2 p-2.5 text-left">
-                    {showHeader ? <FaChevronDown className="text-[10px] text-slate-500" /> : <FaChevronRight className="text-[10px] text-slate-500" />}
-                    <span className="text-sm font-bold text-white">Header</span>
-                    <span className="text-[10px] text-slate-500">name, contacts — edited as LaTeX</span>
-                </button>
-                {showHeader && (
-                    <div className="p-2.5 pt-0">
-                        <textarea
-                            value={model.header}
-                            rows={9}
-                            onChange={(e) => onChange({ ...model, header: e.target.value })}
-                            className={`${inputCls} resize-y font-mono`}
-                        />
-                    </div>
-                )}
-            </div>
+            <HeaderEditor
+                header={model.header}
+                onChange={(header) => onChange({ ...model, header })}
+            />
 
             {/* Sections */}
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleSectionDrag}>
@@ -364,22 +507,29 @@ export default function VisualEditor({ model, onChange }) {
                     <FaPlus className="inline mr-2 text-[10px]" /> Add section
                 </button>
                 {addOpen && (
-                    <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 z-10 rounded-xl border border-white/10 bg-slate-800 shadow-xl p-1.5 flex gap-1">
-                        {SECTION_TYPES.map(({ type, label, icon: Icon }) => (
-                            <button
-                                key={type}
-                                onClick={() => {
-                                    onChange({ ...model, sections: [...model.sections, blankSection(type)] });
-                                    setAddOpen(false);
-                                }}
-                                className="flex flex-col items-center gap-1 rounded-lg px-3 py-2 text-slate-300 hover:bg-cyan-500/10 hover:text-cyan-300"
-                                title={label}
-                            >
-                                <Icon />
-                                <span className="text-[9px] whitespace-nowrap">{label}</span>
-                            </button>
-                        ))}
-                    </div>
+                    <>
+                        <div className="fixed inset-0 z-10" onClick={() => setAddOpen(false)} />
+                        <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 z-20 w-[19rem] max-w-[calc(100vw-2rem)] rounded-xl border border-white/10 bg-slate-800 shadow-2xl p-2">
+                            <p className="px-1.5 pt-0.5 pb-1.5 text-[9px] font-bold uppercase tracking-widest text-slate-500">Add a section</p>
+                            <div className="grid grid-cols-3 gap-1">
+                                {SECTION_MENU.map(({ key, label, icon: Icon, type, title }) => (
+                                    <button
+                                        key={key}
+                                        onClick={() => {
+                                            const base = blankSection(type);
+                                            onChange({ ...model, sections: [...model.sections, { ...base, title }] });
+                                            setAddOpen(false);
+                                        }}
+                                        className="flex flex-col items-center gap-1.5 rounded-lg border border-transparent px-2 py-2.5 text-slate-300 hover:border-cyan-500/30 hover:bg-cyan-500/10 hover:text-cyan-300 transition-all"
+                                        title={title}
+                                    >
+                                        <Icon className="text-sm" />
+                                        <span className="text-[9px] text-center leading-tight">{label}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </>
                 )}
             </div>
         </div>
