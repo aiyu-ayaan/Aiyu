@@ -118,9 +118,11 @@ function FeedbackDialog({ dialog, onClose }) {
         danger = false,
         defaultValue = "",
         placeholder = "",
+        checkbox = null, // confirm-only: { label } → resolves { confirmed, checked }
     } = dialog;
 
     const [input, setInput] = useState(defaultValue);
+    const [checked, setChecked] = useState(false);
     const inputRef = useRef(null);
 
     const accent = danger
@@ -130,8 +132,9 @@ function FeedbackDialog({ dialog, onClose }) {
         ? "bg-red-500/90 hover:bg-red-500 text-white"
         : "bg-cyan-500/90 hover:bg-cyan-500 text-white";
 
-    const submit = () => onClose(mode === "prompt" ? input : true);
-    const cancel = () => onClose(mode === "prompt" ? null : false);
+    const resolveConfirm = (confirmed) => (checkbox ? { confirmed, checked } : confirmed);
+    const submit = () => onClose(mode === "prompt" ? input : resolveConfirm(true));
+    const cancel = () => onClose(mode === "prompt" ? null : resolveConfirm(false));
 
     if (typeof document === "undefined") return null;
 
@@ -172,6 +175,18 @@ function FeedbackDialog({ dialog, onClose }) {
                             onKeyDown={(e) => { if (e.key === "Enter") submit(); }}
                             className="mt-4 w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-slate-100 outline-none focus:border-cyan-500/50"
                         />
+                    )}
+
+                    {mode === "confirm" && checkbox && (
+                        <label className="mt-5 flex items-center gap-2.5 cursor-pointer select-none text-sm text-slate-400 hover:text-slate-300">
+                            <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={(e) => setChecked(e.target.checked)}
+                                className="h-4 w-4 rounded border-white/20 bg-black/30 accent-cyan-500 cursor-pointer"
+                            />
+                            {checkbox.label || "Don't show this again"}
+                        </label>
                     )}
                 </div>
 

@@ -35,7 +35,6 @@ export default function ResumeStudioClient() {
     const [compiling, setCompiling] = useState(false);
     const [publishing, setPublishing] = useState(false);
     const [pdfUrl, setPdfUrl] = useState(null);
-    const [pdfBase64, setPdfBase64] = useState(null);
     const [compileErrors, setCompileErrors] = useState([]);
     const [compileLog, setCompileLog] = useState('');
     const [showLog, setShowLog] = useState(false);
@@ -46,6 +45,7 @@ export default function ResumeStudioClient() {
     const [autoCompile, setAutoCompile] = useState(false);
     const [settingsOpen, setSettingsOpen] = useState(false);
     const pdfUrlRef = useRef(null);
+    const didInitialCompile = useRef(false);
 
     /** Current LaTeX source regardless of editing mode. */
     const getLatex = useCallback(() => {
@@ -87,6 +87,14 @@ export default function ResumeStudioClient() {
         if (pdfUrlRef.current) URL.revokeObjectURL(pdfUrlRef.current);
     }, []);
 
+    // Compile once as soon as the document is loaded so a preview is ready
+    // without the user hitting Compile first.
+    useEffect(() => {
+        if (loading || !studio || didInitialCompile.current) return;
+        didInitialCompile.current = true;
+        compile();
+    }, [loading, studio, compile]);
+
     // Restore auto-save / auto-compile preferences.
     useEffect(() => {
         try {
@@ -125,9 +133,11 @@ export default function ResumeStudioClient() {
         }
     }, [engine, toast, getLatex]);
 
+    // Returns the compiled PDF's base64 on success (so callers like publish can
+    // chain on a fresh compile), or null on failure.
     const compile = useCallback(async () => {
         const latex = getLatex();
-        if (!latex) return;
+        if (!latex) return null;
         setCompiling(true);
         setCompileErrors([]);
         try {
@@ -144,12 +154,13 @@ export default function ResumeStudioClient() {
                 const url = URL.createObjectURL(blob);
                 pdfUrlRef.current = url;
                 setPdfUrl(url);
-                setPdfBase64(json.data.pdfBase64);
                 setCompileLog('');
                 setShowLog(false);
                 setStudio((s) => (s ? { ...s, lastCompiledAt: json.data.compiledAt } : s));
                 toast.success('Compiled successfully');
-            } else if (json.data?.log) {
+                return json.data.pdfBase64;
+            }
+            if (json.data?.log) {
                 setCompileErrors(json.data.errors || []);
                 setCompileLog(json.data.log);
                 setShowLog(true);
@@ -157,8 +168,10 @@ export default function ResumeStudioClient() {
             } else {
                 toast.error(json.error || 'Compile failed');
             }
+            return null;
         } catch {
             toast.error('Compile request failed');
+            return null;
         } finally {
             setCompiling(false);
         }
@@ -169,22 +182,42 @@ export default function ResumeStudioClient() {
         await compile();
     }, [save, compile]);
 
+    // Publish runs the full pipeline: save → compile → upload. A one-time
+    // explainer dialog describes the flow; "Don't show this again" persists a
+    // skip flag so future publishes go straight through.
     const publish = useCallback(async () => {
-        if (!pdfBase64) {
-            toast.error('Compile a PDF first, then publish.');
-            return;
+        let skip = false;
+        try { skip = localStorage.getItem('resumeStudio.skipPublishDialog') === '1'; } catch { /* ignore */ }
+
+        if (!skip) {
+            const res = await confirm({
+                title: 'Publish resume',
+                message: 'Publishing runs the full pipeline for you:\n\n'
+                    + '1.  Save — store the current document\n'
+                    + '2.  Compile — build a fresh PDF\n'
+                    + '3.  Publish — replace the PDF served at /api/resume on your live site',
+                confirmText: 'Save, compile & publish',
+                checkbox: { label: "Don't show this again" },
+            });
+            if (!res?.confirmed) return;
+            if (res.checked) {
+                try { localStorage.setItem('resumeStudio.skipPublishDialog', '1'); } catch { /* ignore */ }
+            }
         }
-        if (!(await confirm({
-            title: 'Publish resume?',
-            message: 'This replaces the PDF served on your public site at /api/resume.',
-            confirmText: 'Publish',
-        }))) return;
+
         setPublishing(true);
         try {
+            const saved = await save();
+            if (!saved) return; // save() already reported the failure
+            const base64 = await compile();
+            if (!base64) {
+                toast.error('Compile failed — nothing was published.');
+                return;
+            }
             const res = await fetch('/api/admin/resume/publish', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ pdfBase64, filename: 'resume.pdf' }),
+                body: JSON.stringify({ pdfBase64: base64, filename: 'resume.pdf' }),
             });
             const json = await res.json();
             if (!json.success) throw new Error(json.error);
@@ -195,7 +228,7 @@ export default function ResumeStudioClient() {
         } finally {
             setPublishing(false);
         }
-    }, [pdfBase64, confirm, toast]);
+    }, [confirm, save, compile, toast]);
 
     const download = useCallback(() => {
         if (!pdfUrl) {
@@ -400,7 +433,7 @@ export default function ResumeStudioClient() {
                         {compiling ? <FaSpinner className="animate-spin" /> : <FaPlay />} Compile
                     </button>
                     
-                    <button onClick={publish} disabled={publishing || !pdfBase64} className={`${toolbarBtn} bg-emerald-500/10 border-emerald-500/20 text-emerald-300 hover:bg-emerald-500/20 hover:border-emerald-400/40`}>
+                    <button onClick={publish} disabled={publishing || saving || compiling} className={`${toolbarBtn} bg-emerald-500/10 border-emerald-500/20 text-emerald-300 hover:bg-emerald-500/20 hover:border-emerald-400/40`} title="Save, compile, then publish to the live site">
                         {publishing ? <FaSpinner className="animate-spin" /> : <FaUpload />} Publish
                     </button>
                     
