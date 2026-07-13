@@ -459,6 +459,37 @@ export default function ResumeStudioClient() {
 
             {/* Main split */}
             <div className="flex flex-1 min-h-0 gap-3 overflow-hidden">
+                {/* Side panel (AI, Ideas, Portfolio, Design, History) — left of the
+                    editor so items sit next to the visual canvas you insert them into. */}
+                <StudioSidePanel
+                    mode={mode}
+                    onInsert={insertLatex}
+                    onApplyTemplate={applyTemplate}
+                    onApplyTheme={applyTheme}
+                    currentLatex={getLatex}
+                    snapshots={studio?.snapshots || []}
+                    onRestoreSnapshot={restoreSnapshot}
+                    onDeleteSnapshot={deleteSnapshot}
+                    editorApi={{
+                        getValue: getLatex,
+                        getSelection: () => (mode === 'code' ? (editorRef.current?.getSelection() || '') : ''),
+                        replaceSelection: (text) => {
+                            if (mode === 'code') {
+                                editorRef.current?.replaceSelection(text);
+                                setDirty(true);
+                            } else {
+                                insertLatex(text);
+                            }
+                        },
+                        insertAtCursor: insertLatex,
+                    }}
+                    compileErrors={compileErrors}
+                    compileLog={compileLog}
+                    ideas={studio?.ideas || []}
+                    onSaveIdeas={(ideas) => save({ ideas })}
+                    toast={toast}
+                />
+
                 {/* Editor Pane (holds both Visual and Code mode views) */}
                 <div className="flex-1 min-w-0 flex flex-col rounded-xl border border-white/10 overflow-hidden bg-slate-900/40">
                     {/* Pane tabs header */}
@@ -553,36 +584,6 @@ export default function ResumeStudioClient() {
                         </div>
                     )}
                 </div>
-
-                {/* Side panel (AI, Ideas, Portfolio, Design, History) — both modes */}
-                <StudioSidePanel
-                    mode={mode}
-                    onInsert={insertLatex}
-                    onApplyTemplate={applyTemplate}
-                    onApplyTheme={applyTheme}
-                    currentLatex={getLatex}
-                    snapshots={studio?.snapshots || []}
-                    onRestoreSnapshot={restoreSnapshot}
-                    onDeleteSnapshot={deleteSnapshot}
-                    editorApi={{
-                        getValue: getLatex,
-                        getSelection: () => (mode === 'code' ? (editorRef.current?.getSelection() || '') : ''),
-                        replaceSelection: (text) => {
-                            if (mode === 'code') {
-                                editorRef.current?.replaceSelection(text);
-                                setDirty(true);
-                            } else {
-                                insertLatex(text);
-                            }
-                        },
-                        insertAtCursor: insertLatex,
-                    }}
-                    compileErrors={compileErrors}
-                    compileLog={compileLog}
-                    ideas={studio?.ideas || []}
-                    onSaveIdeas={(ideas) => save({ ideas })}
-                    toast={toast}
-                />
             </div>
         </div>
     );
