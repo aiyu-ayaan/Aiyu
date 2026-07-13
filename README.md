@@ -82,7 +82,7 @@ Run two complete site designs side by side:
 | **Blogs & Articles** | [![Desktop Dark](public/screenshots/desktop-dark-blogs.png)](public/screenshots/desktop-dark-blogs.png) | [![Mobile Dark](public/screenshots/mobile-dark-blogs.png)](public/screenshots/mobile-dark-blogs.png) |
 | **Interactive Gallery** | [![Desktop Dark](public/screenshots/desktop-dark-gallery.png)](public/screenshots/desktop-dark-gallery.png) | [![Mobile Dark](public/screenshots/mobile-dark-gallery.png)](public/screenshots/mobile-dark-gallery.png) |
 | **Contact Dashboard** | [![Desktop Dark](public/screenshots/desktop-dark-contact.png)](public/screenshots/desktop-dark-contact.png) | [![Mobile Dark](public/screenshots/mobile-dark-contact.png)](public/screenshots/mobile-dark-contact.png) |
-| **Admin Command Center** | [![Admin Dashboard](public/screenshots/admin.png)](public/screenshots/admin.png) | *Desktop Only* |
+| **Admin Command Center** | [![Admin Dashboard](public/screenshots/admin/desktop-dashboard.png)](public/screenshots/admin/desktop-dashboard.png) | [![Admin Mobile](public/screenshots/admin/mobile-dashboard.png)](public/screenshots/admin/mobile-dashboard.png) |
 
 ---
 

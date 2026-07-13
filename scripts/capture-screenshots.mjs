@@ -62,6 +62,35 @@ const checkServer = () => new Promise((resolve) => {
   req.end();
 });
 
+// Dev server on Windows occasionally hiccups mid-run (a rebuild, a transient
+// crash/restart). Wait for it to come back instead of treating one bad
+// navigation as fatal for the whole capture run.
+async function waitForServer(maxSeconds = 30) {
+  for (let i = 0; i < maxSeconds; i++) {
+    if (await checkServer()) return true;
+    await new Promise((r) => setTimeout(r, 1000));
+  }
+  return false;
+}
+
+async function gotoWithRetry(page, url, { attempts = 3 } = {}) {
+  let lastErr;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      await page.goto(url, { waitUntil: 'load' });
+      return;
+    } catch (err) {
+      lastErr = err;
+      console.warn(`  -> Navigation to ${url} failed (attempt ${i + 1}/${attempts}): ${err.message}`);
+      const backUp = await waitForServer(30);
+      if (!backUp) {
+        console.warn('  -> Dev server did not come back within 30s.');
+      }
+    }
+  }
+  throw lastErr;
+}
+
 async function main() {
   const outputDir = path.resolve('public/screenshots');
   if (!fs.existsSync(outputDir)) {
@@ -72,6 +101,8 @@ async function main() {
   const envExists = fs.existsSync('.env');
   const envLocalExists = fs.existsSync('.env.local');
   let envCopied = false;
+  let devServer = null;
+  let browser = null;
 
   try {
     // 1. Create temporary .env.local for database seeding
@@ -93,7 +124,7 @@ async function main() {
     // 3. Start Next.js dev server
     console.log('--- Starting Next.js Dev Server ---');
     const npmBin = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-    const devServer = spawn(npmBin, ['run', 'dev'], { stdio: 'pipe', shell: true });
+    devServer = spawn(npmBin, ['run', 'dev'], { stdio: 'pipe', shell: true });
 
     let serverLogs = '';
     devServer.stdout.on('data', (data) => {
@@ -105,7 +136,9 @@ async function main() {
     });
 
     devServer.stderr.on('data', (data) => {
-      console.error(`[Next.js Error]: ${data.toString().trim()}`);
+      const log = data.toString();
+      serverLogs += log;
+      console.error(`[Next.js Error]: ${log.trim()}`);
     });
 
     // 4. Poll for dev server health check
@@ -127,7 +160,7 @@ async function main() {
 
     // 5. Launch Playwright Chromium
     console.log('\n--- Launching Playwright Chromium Browser ---');
-    const browser = await chromium.launch({ headless: true });
+    browser = await chromium.launch({ headless: true });
     const page = await browser.newPage();
 
     console.log('Starting screenshot captures for all public pages...\n');
@@ -136,61 +169,65 @@ async function main() {
       const url = `http://localhost:3000${route.path}`;
       console.log(`📸 Capturing public route: ${route.label} (${route.path})`);
 
-      // ==========================================
-      // LIGHT MODE CAPTURE
-      // ==========================================
-      console.log(`  -> Desktop Light Mode (1920x1080)`);
-      await page.setViewportSize({ width: 1920, height: 1080 });
-      await page.goto(url, { waitUntil: 'load' });
+      try {
+        // ==========================================
+        // LIGHT MODE CAPTURE
+        // ==========================================
+        console.log(`  -> Desktop Light Mode (1920x1080)`);
+        await page.setViewportSize({ width: 1920, height: 1080 });
+        await gotoWithRetry(page, url);
 
-      // Inject localStorage and document theme settings
-      await page.evaluate(() => {
-        localStorage.setItem('themeMode', 'light');
-        localStorage.setItem('theme', 'light');
-        localStorage.setItem('themeVariant', 'light');
-        document.documentElement.setAttribute('data-theme', 'light');
-      });
-      // Reload page to ensure theme logic hydrates cleanly
-      await page.reload({ waitUntil: 'load' });
-      const lightWaitTime = route.name === 'github' ? 4500 : 2500;
-      await page.waitForTimeout(lightWaitTime); // Allow entry animations and async data to settle
+        // Inject localStorage and document theme settings
+        await page.evaluate(() => {
+          localStorage.setItem('themeMode', 'light');
+          localStorage.setItem('theme', 'light');
+          localStorage.setItem('themeVariant', 'light');
+          document.documentElement.setAttribute('data-theme', 'light');
+        });
+        // Reload page to ensure theme logic hydrates cleanly
+        await page.reload({ waitUntil: 'load' });
+        const lightWaitTime = route.name === 'github' ? 4500 : 2500;
+        await page.waitForTimeout(lightWaitTime); // Allow entry animations and async data to settle
 
-      const desktopLightPath = `public/screenshots/desktop-light-${route.name}.png`;
-      await page.screenshot({ path: desktopLightPath });
+        const desktopLightPath = `public/screenshots/desktop-light-${route.name}.png`;
+        await page.screenshot({ path: desktopLightPath });
 
-      console.log(`  -> Mobile Light Mode (430x932)`);
-      await page.setViewportSize({ width: 430, height: 932 });
-      await page.waitForTimeout(1500); // Allow viewport layout shift animations to settle
-      const mobileLightPath = `public/screenshots/mobile-light-${route.name}.png`;
-      await page.screenshot({ path: mobileLightPath });
+        console.log(`  -> Mobile Light Mode (430x932)`);
+        await page.setViewportSize({ width: 430, height: 932 });
+        await page.waitForTimeout(1500); // Allow viewport layout shift animations to settle
+        const mobileLightPath = `public/screenshots/mobile-light-${route.name}.png`;
+        await page.screenshot({ path: mobileLightPath });
 
-      // ==========================================
-      // DARK MODE CAPTURE
-      // ==========================================
-      console.log(`  -> Desktop Dark Mode (1920x1080)`);
-      await page.setViewportSize({ width: 1920, height: 1080 });
-      await page.goto(url, { waitUntil: 'load' });
+        // ==========================================
+        // DARK MODE CAPTURE
+        // ==========================================
+        console.log(`  -> Desktop Dark Mode (1920x1080)`);
+        await page.setViewportSize({ width: 1920, height: 1080 });
+        await gotoWithRetry(page, url);
 
-      // Inject localStorage and document theme settings
-      await page.evaluate(() => {
-        localStorage.setItem('themeMode', 'dark');
-        localStorage.setItem('theme', 'dark');
-        localStorage.setItem('themeVariant', 'dark');
-        document.documentElement.setAttribute('data-theme', 'dark');
-      });
-      // Reload page to ensure theme logic hydrates cleanly
-      await page.reload({ waitUntil: 'load' });
-      const darkWaitTime = route.name === 'github' ? 4500 : 2500;
-      await page.waitForTimeout(darkWaitTime); // Allow entry animations and async data to settle
+        // Inject localStorage and document theme settings
+        await page.evaluate(() => {
+          localStorage.setItem('themeMode', 'dark');
+          localStorage.setItem('theme', 'dark');
+          localStorage.setItem('themeVariant', 'dark');
+          document.documentElement.setAttribute('data-theme', 'dark');
+        });
+        // Reload page to ensure theme logic hydrates cleanly
+        await page.reload({ waitUntil: 'load' });
+        const darkWaitTime = route.name === 'github' ? 4500 : 2500;
+        await page.waitForTimeout(darkWaitTime); // Allow entry animations and async data to settle
 
-      const desktopDarkPath = `public/screenshots/desktop-dark-${route.name}.png`;
-      await page.screenshot({ path: desktopDarkPath });
+        const desktopDarkPath = `public/screenshots/desktop-dark-${route.name}.png`;
+        await page.screenshot({ path: desktopDarkPath });
 
-      console.log(`  -> Mobile Dark Mode (430x932)`);
-      await page.setViewportSize({ width: 430, height: 932 });
-      await page.waitForTimeout(1500); // Allow viewport layout shift animations to settle
-      const mobileDarkPath = `public/screenshots/mobile-dark-${route.name}.png`;
-      await page.screenshot({ path: mobileDarkPath });
+        console.log(`  -> Mobile Dark Mode (430x932)`);
+        await page.setViewportSize({ width: 430, height: 932 });
+        await page.waitForTimeout(1500); // Allow viewport layout shift animations to settle
+        const mobileDarkPath = `public/screenshots/mobile-dark-${route.name}.png`;
+        await page.screenshot({ path: mobileDarkPath });
+      } catch (err) {
+        console.error(`  -> Skipping "${route.label}" after repeated failures: ${err.message}`);
+      }
     }
 
     // ==========================================
@@ -201,7 +238,7 @@ async function main() {
     const password = process.env.ADMIN_PASSWORD || '1501@AiyuLoveAnshu^2401!!';
 
     await page.setViewportSize({ width: 1920, height: 1080 });
-    await page.goto('http://localhost:3000/admin/login', { waitUntil: 'load' });
+    await gotoWithRetry(page, 'http://localhost:3000/admin/login');
     await page.waitForTimeout(1000);
 
     // If a session already exists, /admin/login redirects straight to /admin.
@@ -239,28 +276,28 @@ async function main() {
       const waitTime = SLOW_ADMIN_SLUGS.has(route.slug) ? 4000 : 2000;
       console.log(`📸 Capturing admin section: ${route.label} (${route.path})`);
 
-      console.log('  -> Desktop Dark Mode (1920x1080)');
-      await page.setViewportSize({ width: 1920, height: 1080 });
-      await page.goto(url, { waitUntil: 'load' });
-      await page.waitForTimeout(waitTime);
-      const desktopAdminPath = `public/screenshots/admin/desktop-${route.slug}.png`;
-      await page.screenshot({ path: desktopAdminPath });
-
-      console.log('  -> Mobile Dark Mode (430x932)');
-      await page.setViewportSize({ width: 430, height: 932 });
-      await page.waitForTimeout(1200); // Allow the mobile nav/layout to settle
-      const mobileAdminPath = `public/screenshots/admin/mobile-${route.slug}.png`;
-      await page.screenshot({ path: mobileAdminPath });
-
-      // Mirror both into docs/images so wiki pages can reference stable,
-      // predictable filenames (e.g. docs/images/admin-themes.png).
-      const docsDesktopPath = `docs/images/admin-${route.slug}.png`;
-      const docsMobilePath = `docs/images/admin-${route.slug}-mobile.png`;
       try {
+        console.log('  -> Desktop Dark Mode (1920x1080)');
+        await page.setViewportSize({ width: 1920, height: 1080 });
+        await gotoWithRetry(page, url);
+        await page.waitForTimeout(waitTime);
+        const desktopAdminPath = `public/screenshots/admin/desktop-${route.slug}.png`;
+        await page.screenshot({ path: desktopAdminPath });
+
+        console.log('  -> Mobile Dark Mode (430x932)');
+        await page.setViewportSize({ width: 430, height: 932 });
+        await page.waitForTimeout(1200); // Allow the mobile nav/layout to settle
+        const mobileAdminPath = `public/screenshots/admin/mobile-${route.slug}.png`;
+        await page.screenshot({ path: mobileAdminPath });
+
+        // Mirror both into docs/images so wiki pages can reference stable,
+        // predictable filenames (e.g. docs/images/admin-themes.png).
+        const docsDesktopPath = `docs/images/admin-${route.slug}.png`;
+        const docsMobilePath = `docs/images/admin-${route.slug}-mobile.png`;
         fs.copyFileSync(desktopAdminPath, docsDesktopPath);
         fs.copyFileSync(mobileAdminPath, docsMobilePath);
       } catch (err) {
-        console.error(`  -> Failed to mirror ${route.slug} screenshots to docs/images:`, err.message);
+        console.error(`  -> Skipping admin section "${route.label}" after repeated failures: ${err.message}`);
       }
     }
 
@@ -273,18 +310,6 @@ async function main() {
     } catch (err) {
       console.error('Failed to refresh legacy admin dashboard screenshot copies:', err.message);
     }
-
-    console.log('\nClosing Playwright Chromium...');
-    await browser.close();
-
-    // 6. Stop Next.js dev server
-    console.log('Stopping Next.js dev server...');
-    if (process.platform === 'win32') {
-      execSync('taskkill /pid ' + devServer.pid + ' /T /F');
-    } else {
-      devServer.kill('SIGINT');
-    }
-    console.log('Next.js dev server stopped successfully.');
 
     // ==========================================
     // Copy new dark screenshots to legacy paths ("old images")
@@ -360,6 +385,28 @@ async function main() {
   } catch (error) {
     console.error('\n❌ Error occurred during execution:', error);
   } finally {
+    // Always tear down the browser and dev server, even if a capture threw
+    // past its retries — leaving either running would block the next run
+    // (port 3000 already in use) and leave a zombie Chromium process.
+    if (browser) {
+      console.log('\nClosing Playwright Chromium...');
+      await browser.close().catch((err) => console.error('Failed to close browser:', err.message));
+    }
+
+    if (devServer) {
+      console.log('Stopping Next.js dev server...');
+      try {
+        if (process.platform === 'win32') {
+          execSync('taskkill /pid ' + devServer.pid + ' /T /F');
+        } else {
+          devServer.kill('SIGINT');
+        }
+        console.log('Next.js dev server stopped successfully.');
+      } catch (err) {
+        console.error('Failed to stop dev server:', err.message);
+      }
+    }
+
     // Clean up temporary .env.local
     if (envCopied && fs.existsSync('.env.local')) {
       fs.unlinkSync('.env.local');
