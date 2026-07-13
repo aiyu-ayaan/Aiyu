@@ -393,7 +393,8 @@ export function defaultStudio() {
         latex: DEFAULT_RESUME_LATEX,
         engine: 'pdflatex',
         templateId: 'ayaan-base',
-        snapshots: [], // [{ id, label, latex, createdAt }]
+        snapshots: [], // saved versions: [{ id, label, latex, createdAt, updatedAt }]
+        activeVersionId: null, // id of the version currently switched to (if any)
         ideas: [], // [{ id, text, done, createdAt }]
         lastCompiledAt: null,
         lastPublishedAt: null,

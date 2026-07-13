@@ -6,9 +6,10 @@
  */
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-    FaBriefcase, FaPalette, FaClockRotateLeft, FaPlus, FaSpinner,
+    FaBriefcase, FaPalette, FaCodeBranch, FaPlus, FaSpinner,
     FaServer, FaUserTie, FaGraduationCap, FaListCheck,
-    FaWandMagicSparkles, FaLightbulb,
+    FaWandMagicSparkles, FaLightbulb, FaCheck, FaArrowRotateLeft,
+    FaPen, FaTrash,
 } from 'react-icons/fa6';
 import StudioAiPanel from './StudioAiPanel';
 import StudioIdeasPanel from './StudioIdeasPanel';
@@ -23,7 +24,7 @@ const TABS = [
     { id: 'design', label: 'Design', icon: FaPalette },
     { id: 'ai', label: 'AI', icon: FaWandMagicSparkles },
     { id: 'ideas', label: 'Ideas', icon: FaLightbulb },
-    { id: 'snapshots', label: 'History', icon: FaClockRotateLeft },
+    { id: 'versions', label: 'Versions', icon: FaCodeBranch },
 ];
 
 function SectionLabel({ icon: Icon, children }) {
@@ -58,9 +59,13 @@ export default function StudioSidePanel({
     onApplyTemplate,   // (template) => void
     onApplyTheme,      // (presetId) => void
     currentLatex,      // () => string (for theme detection)
-    snapshots,
-    onRestoreSnapshot,
-    onDeleteSnapshot,
+    versions,          // [{ id, label, latex, createdAt, updatedAt }]
+    activeVersionId,   // id of the version currently switched to
+    onSaveVersion,     // () => void
+    onSwitchVersion,   // (version) => void
+    onUpdateVersion,   // (version) => void
+    onRenameVersion,   // (version) => void
+    onDeleteVersion,   // (version) => void
     editorApi,         // { getValue, getSelection, replaceSelection, insertAtCursor }
     compileErrors,
     compileLog,
@@ -248,22 +253,66 @@ export default function StudioSidePanel({
                     />
                 )}
 
-                {/* ── Snapshots ── */}
-                {tab === 'snapshots' && (
+                {/* ── Versions ── */}
+                {tab === 'versions' && (
                     <>
-                        {(snapshots || []).length === 0 && (
-                            <p className="text-[11px] text-slate-600">No snapshots yet — use the Snapshot button in the toolbar.</p>
-                        )}
-                        {(snapshots || []).map((snap) => (
-                            <div key={snap.id} className="rounded-lg border border-white/5 bg-white/[0.03] p-2">
-                                <p className="text-xs text-slate-200 font-semibold truncate" title={snap.label}>{snap.label}</p>
-                                <p className="text-[10px] text-slate-500 font-mono">{new Date(snap.createdAt).toLocaleString()}</p>
-                                <div className="flex gap-2 mt-1">
-                                    <button onClick={() => onRestoreSnapshot(snap)} className="text-[10px] uppercase font-bold text-cyan-400 hover:text-cyan-300">Restore</button>
-                                    <button onClick={() => onDeleteSnapshot(snap)} className="text-[10px] uppercase font-bold text-red-400 hover:text-red-300">Delete</button>
-                                </div>
+                        <button
+                            onClick={onSaveVersion}
+                            className="w-full flex items-center justify-center gap-2 rounded-lg border border-cyan-500/30 bg-cyan-500/10 py-2 text-[10px] font-bold uppercase tracking-wider text-cyan-300 hover:bg-cyan-500/20 hover:border-cyan-400/50 transition-all"
+                        >
+                            <FaPlus className="text-[9px]" /> Save current as version
+                        </button>
+
+                        {(versions || []).length === 0 ? (
+                            <p className="text-[11px] text-slate-600 mt-2">
+                                No versions yet. Save one, then switch between as many as you like — each keeps its own copy of the document.
+                            </p>
+                        ) : (
+                            <div className="space-y-1.5 mt-1">
+                                {(versions || []).map((v) => {
+                                    const active = v.id === activeVersionId;
+                                    return (
+                                        <div
+                                            key={v.id}
+                                            className={`rounded-lg border p-2 transition-all ${
+                                                active
+                                                    ? 'border-cyan-400/60 bg-cyan-500/10'
+                                                    : 'border-white/5 bg-white/[0.03] hover:border-white/20'
+                                            }`}
+                                        >
+                                            <div className="flex items-center gap-1.5">
+                                                {active && (
+                                                    <span className="shrink-0 flex items-center gap-1 rounded bg-cyan-500/20 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider text-cyan-300">
+                                                        <FaCheck className="text-[7px]" /> current
+                                                    </span>
+                                                )}
+                                                <p className="min-w-0 flex-1 text-xs text-slate-200 font-semibold truncate" title={v.label}>{v.label}</p>
+                                            </div>
+                                            <p className="text-[10px] text-slate-500 font-mono mt-0.5">
+                                                {new Date(v.updatedAt || v.createdAt).toLocaleString()}
+                                            </p>
+                                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5">
+                                                {active ? (
+                                                    <button onClick={() => onUpdateVersion(v)} className="flex items-center gap-1 text-[10px] uppercase font-bold text-emerald-400 hover:text-emerald-300" title="Save current document into this version">
+                                                        <FaCheck className="text-[8px]" /> Update
+                                                    </button>
+                                                ) : (
+                                                    <button onClick={() => onSwitchVersion(v)} className="flex items-center gap-1 text-[10px] uppercase font-bold text-cyan-400 hover:text-cyan-300" title="Load this version into the editor">
+                                                        <FaArrowRotateLeft className="text-[8px]" /> Switch
+                                                    </button>
+                                                )}
+                                                <button onClick={() => onRenameVersion(v)} className="flex items-center gap-1 text-[10px] uppercase font-bold text-slate-400 hover:text-slate-200" title="Rename version">
+                                                    <FaPen className="text-[8px]" /> Rename
+                                                </button>
+                                                <button onClick={() => onDeleteVersion(v)} className="flex items-center gap-1 text-[10px] uppercase font-bold text-red-400 hover:text-red-300" title="Delete version">
+                                                    <FaTrash className="text-[8px]" /> Delete
+                                                </button>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
                             </div>
-                        ))}
+                        )}
                     </>
                 )}
             </div>

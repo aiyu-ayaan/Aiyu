@@ -9,7 +9,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
     FaFloppyDisk, FaPlay, FaUpload, FaDownload,
-    FaSpinner, FaCircleExclamation, FaXmark, FaCamera,
+    FaSpinner, FaCircleExclamation, FaXmark, FaCodeBranch,
     FaCode, FaShapes, FaChevronLeft,
 } from 'react-icons/fa6';
 import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
@@ -208,23 +208,25 @@ export default function ResumeStudioClient() {
         a.click();
     }, [pdfUrl, toast]);
 
-    const takeSnapshot = useCallback(async () => {
+    const saveVersion = useCallback(async () => {
         const label = await prompt({
-            title: 'Snapshot label',
-            message: 'Name this version so you can restore it later.',
-            defaultValue: `Snapshot ${new Date().toLocaleDateString()}`,
+            title: 'Save version',
+            message: 'Name this version so you can switch back to it later.',
+            defaultValue: `Version ${(studio?.snapshots?.length || 0) + 1}`,
         });
         if (!label) return;
         const latex = getLatex();
-        const snapshot = {
-            id: `snap-${Date.now()}`,
+        const now = new Date().toISOString();
+        const version = {
+            id: `ver-${Date.now()}`,
             label,
             latex,
-            createdAt: new Date().toISOString(),
+            createdAt: now,
+            updatedAt: now,
         };
-        const snapshots = [snapshot, ...(studio?.snapshots || [])].slice(0, MAX_SNAPSHOTS);
-        const saved = await save({ snapshots });
-        if (saved) toast.success('Snapshot saved');
+        const snapshots = [version, ...(studio?.snapshots || [])].slice(0, MAX_SNAPSHOTS);
+        const saved = await save({ snapshots, activeVersionId: version.id }, latex);
+        if (saved) toast.success(`Saved version "${label}"`);
     }, [prompt, save, studio, toast, getLatex]);
 
     const loadLatexIntoActiveEditor = useCallback((latex) => {
@@ -241,25 +243,49 @@ export default function ResumeStudioClient() {
         setDirty(true);
     }, [mode, toast]);
 
-    const restoreSnapshot = useCallback(async (snapshot) => {
-        if (!(await confirm({
-            title: `Restore "${snapshot.label}"?`,
-            message: 'Your current content will be replaced (the previous version stays in your snapshot history).',
-            confirmText: 'Restore',
+    // Load a saved version into the editor and mark it active. Warns before
+    // discarding unsaved edits so switching never silently loses work.
+    const switchVersion = useCallback(async (version) => {
+        if (version.id === studio?.activeVersionId && !dirty) return;
+        if (dirty && !(await confirm({
+            title: `Switch to "${version.label}"?`,
+            message: 'You have unsaved changes that will be discarded. Save them as a version first if you want to keep them.',
+            confirmText: 'Switch anyway',
+            danger: true,
         }))) return;
-        loadLatexIntoActiveEditor(snapshot.latex);
-        toast.success('Snapshot restored — save to keep it.');
-    }, [confirm, toast, loadLatexIntoActiveEditor]);
+        loadLatexIntoActiveEditor(version.latex);
+        await save({ activeVersionId: version.id }, version.latex);
+        toast.success(`Switched to "${version.label}"`);
+    }, [confirm, save, studio, dirty, toast, loadLatexIntoActiveEditor]);
 
-    const deleteSnapshot = useCallback(async (snapshot) => {
+    // Overwrite an existing version with the current document.
+    const updateVersion = useCallback(async (version) => {
+        const latex = getLatex();
+        const snapshots = (studio?.snapshots || []).map((s) => (
+            s.id === version.id ? { ...s, latex, updatedAt: new Date().toISOString() } : s
+        ));
+        const saved = await save({ snapshots, activeVersionId: version.id }, latex);
+        if (saved) toast.success(`Updated "${version.label}"`);
+    }, [save, studio, toast, getLatex]);
+
+    const renameVersion = useCallback(async (version) => {
+        const label = await prompt({ title: 'Rename version', defaultValue: version.label });
+        if (!label || label === version.label) return;
+        const snapshots = (studio?.snapshots || []).map((s) => (s.id === version.id ? { ...s, label } : s));
+        await save({ snapshots });
+    }, [prompt, save, studio]);
+
+    const deleteVersion = useCallback(async (version) => {
         if (!(await confirm({
-            title: 'Delete snapshot?',
-            message: `"${snapshot.label}" will be removed permanently.`,
+            title: 'Delete version?',
+            message: `"${version.label}" will be removed permanently.`,
             confirmText: 'Delete',
             danger: true,
         }))) return;
-        const snapshots = (studio?.snapshots || []).filter((s) => s.id !== snapshot.id);
-        await save({ snapshots });
+        const snapshots = (studio?.snapshots || []).filter((s) => s.id !== version.id);
+        const patch = { snapshots };
+        if (studio?.activeVersionId === version.id) patch.activeVersionId = null;
+        await save(patch);
     }, [confirm, save, studio]);
 
     const switchMode = useCallback((next) => {
@@ -382,8 +408,8 @@ export default function ResumeStudioClient() {
                         <FaDownload /> PDF
                     </button>
                     
-                    <button onClick={takeSnapshot} className={`${toolbarBtn} bg-amber-500/10 border-amber-500/20 text-amber-300 hover:bg-amber-500/20 hover:border-amber-400/40`} title="Backup Snapshot">
-                        <FaCamera /> Snapshot
+                    <button onClick={saveVersion} className={`${toolbarBtn} bg-amber-500/10 border-amber-500/20 text-amber-300 hover:bg-amber-500/20 hover:border-amber-400/40`} title="Save current document as a new version">
+                        <FaCodeBranch /> Save Version
                     </button>
 
                     {/* Configure Settings Popover */}
@@ -467,9 +493,13 @@ export default function ResumeStudioClient() {
                     onApplyTemplate={applyTemplate}
                     onApplyTheme={applyTheme}
                     currentLatex={getLatex}
-                    snapshots={studio?.snapshots || []}
-                    onRestoreSnapshot={restoreSnapshot}
-                    onDeleteSnapshot={deleteSnapshot}
+                    versions={studio?.snapshots || []}
+                    activeVersionId={studio?.activeVersionId || null}
+                    onSaveVersion={saveVersion}
+                    onSwitchVersion={switchVersion}
+                    onUpdateVersion={updateVersion}
+                    onRenameVersion={renameVersion}
+                    onDeleteVersion={deleteVersion}
                     editorApi={{
                         getValue: getLatex,
                         getSelection: () => (mode === 'code' ? (editorRef.current?.getSelection() || '') : ''),

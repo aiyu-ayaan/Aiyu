@@ -35,10 +35,15 @@ async function saveStudio(request) {
         if (Array.isArray(body.snapshots)) {
             patch.snapshots = body.snapshots.slice(0, MAX_SNAPSHOTS).map((snap) => ({
                 id: String(snap.id || Date.now()),
-                label: String(snap.label || 'Snapshot').slice(0, 120),
+                label: String(snap.label || 'Version').slice(0, 120),
                 latex: String(snap.latex || ''),
                 createdAt: snap.createdAt || new Date().toISOString(),
+                updatedAt: snap.updatedAt || snap.createdAt || new Date().toISOString(),
             }));
+        }
+
+        if (body.activeVersionId !== undefined) {
+            patch.activeVersionId = body.activeVersionId ? String(body.activeVersionId) : null;
         }
 
         if (Array.isArray(body.ideas)) {
