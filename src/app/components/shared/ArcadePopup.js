@@ -12,9 +12,9 @@ const SHOW_DELAY_MS = 2400;
 /**
  * Collapsible chiptune-themed announcement widget.
  * Fixed on the left edge, matching the style and lifecycle of LiveCommitStream.
+ * The toggle badge itself is visible all the time.
  */
 export default function ArcadePopup() {
-    const [visible, setVisible] = useState(false);
     const [isExpanded, setIsExpanded] = useState(false);
     const [scrolled, setScrolled] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
@@ -44,7 +44,8 @@ export default function ArcadePopup() {
             dismissed = window.localStorage.getItem(DISMISS_KEY) === '1';
             v2PopupPending = window.localStorage.getItem(V2_POPUP_DISMISS_KEY) !== '1';
         } catch {
-            // localStorage unavailable — show anyway.
+            // localStorage unavailable — treat as dismissed to prevent intrusive behavior
+            dismissed = true;
         }
         if (dismissed) return;
 
@@ -53,7 +54,6 @@ export default function ArcadePopup() {
         if (onClassicHome && v2PopupPending) return;
 
         const timer = window.setTimeout(() => {
-            setVisible(true);
             setIsExpanded(true); // Auto-expand on first visit
         }, SHOW_DELAY_MS);
 
@@ -61,7 +61,6 @@ export default function ArcadePopup() {
     }, []);
 
     const dismiss = () => {
-        setVisible(false);
         setIsExpanded(false);
         try {
             window.localStorage.setItem(DISMISS_KEY, '1');
@@ -69,8 +68,6 @@ export default function ArcadePopup() {
             // Ignore storage failures
         }
     };
-
-    if (!visible) return null;
 
     return (
         <motion.div
@@ -87,7 +84,7 @@ export default function ArcadePopup() {
                 right: 'auto'
             }}
         >
-            {/* Collapsed Toggle Badge Button */}
+            {/* Collapsed Toggle Badge Button — Visible all the time */}
             <motion.button
                 onClick={() => setIsExpanded(!isExpanded)}
                 whileHover={{ scale: 1.05, x: isExpanded ? 0 : 2 }}
