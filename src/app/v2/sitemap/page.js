@@ -4,6 +4,7 @@ import { getPublishedBlogSlugs, getProjectsData, getDeploymentsData, getConfigDa
 import { getSiteUrl } from '@/lib/siteUrl';
 import { getProjectSlug, getDeploymentSlug } from '@/lib/contentSlugs';
 import { v2PublicPath } from '@/lib/siteVersion';
+import { GAMES } from '@/app/components/games/registry';
 
 export const revalidate = 3600;
 
@@ -42,6 +43,7 @@ export default async function SitemapV2Page() {
         { name: 'Projects', href: v2PublicPath(config, '/projects') },
         { name: 'Apps', href: v2PublicPath(config, '/apps') },
         { name: 'Blogs', href: v2PublicPath(config, '/blogs') },
+        { name: 'Arcade', href: v2PublicPath(config, '/games') },
         { name: 'Gallery', href: v2PublicPath(config, '/gallery') },
         { name: 'GitHub', href: v2PublicPath(config, '/github') },
         { name: 'Contact Us', href: v2PublicPath(config, '/contact-us') },
@@ -58,6 +60,11 @@ export default async function SitemapV2Page() {
             label: '// projects',
             accent: 'var(--accent-purple)',
             items: (projects || []).map((project) => ({ name: project.name, href: v2PublicPath(config, `/projects/${getProjectSlug(project)}`) })),
+        },
+        {
+            label: '// arcade',
+            accent: 'var(--accent-pink)',
+            items: GAMES.map((game) => ({ name: game.title, href: v2PublicPath(config, `/games/${game.slug}`) })),
         },
         {
             label: '// writing',

@@ -10,6 +10,7 @@ import { getSeoConfig, applySitemapOverrides } from '@/lib/seoConfig';
 import { getConfigData, getAiPageData } from '@/lib/dataFetchers';
 import { v2PublicPath } from '@/lib/siteVersion';
 import { AI_SUBPAGES, findRenderableSection } from '@/lib/aiSubPages';
+import { GAMES } from '@/app/components/games/registry';
 
 const IS_PRODUCTION_BUILD = process.env.NEXT_PHASE === 'phase-production-build';
 const ALLOW_DB_DURING_BUILD = process.env.ALLOW_DB_DURING_BUILD === 'true';
@@ -117,6 +118,12 @@ function createStaticRoutes(baseUrl, options = {}) {
       priority: 0.7,
     },
     {
+      url: `${baseUrl}/games`,
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.85,
+    },
+    {
       url: `${baseUrl}/github`,
       lastModified: now,
       changeFrequency: 'weekly',
@@ -200,9 +207,17 @@ export default async function sitemap() {
   const aiPath = v2PublicPath(siteConfig, '/ai');
   const aiSubPageRoutes = await createAiSubPageRoutes(baseUrl, aiPath);
 
+  const gameRoutes = GAMES.map((game) => ({
+    url: toCanonicalSiteUrl(`/games/${game.slug}`),
+    lastModified: new Date(),
+    changeFrequency: 'monthly',
+    priority: 0.75,
+  }));
+
   const staticRoutes = normalizeSitemapRoutes([
     ...createStaticRoutes(baseUrl, { aiPath }),
     ...aiSubPageRoutes,
+    ...gameRoutes,
   ]);
 
   if (SKIP_DB_DURING_BUILD) {
@@ -256,7 +271,14 @@ export default async function sitemap() {
       priority: 0.74,
     }));
 
-    const generated = normalizeSitemapRoutes([...staticRoutesWithRealtimeCollections, ...aiSubPageRoutes, ...blogRoutes, ...projectRoutes, ...appRoutes]);
+    const generated = normalizeSitemapRoutes([
+      ...staticRoutesWithRealtimeCollections,
+      ...aiSubPageRoutes,
+      ...blogRoutes,
+      ...projectRoutes,
+      ...appRoutes,
+      ...gameRoutes,
+    ]);
 
     // Apply admin sitemap overrides (extra URLs + path exclusions). Failure here
     // must never break the sitemap, so fall back to the generated list.

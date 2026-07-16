@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getPublishedBlogSlugs, getProjectsData, getDeploymentsData, getConfigData } from "@/lib/dataFetchers";
 import { getSiteUrl } from "@/lib/siteUrl";
 import { getProjectSlug, getDeploymentSlug } from "@/lib/contentSlugs";
+import { GAMES } from "@/app/components/games/registry";
 
 export const revalidate = 3600;
 
@@ -33,6 +34,7 @@ export default async function SitemapPage() {
         { name: 'Projects', href: '/projects' },
         { name: 'Apps', href: '/apps' },
         { name: 'Blogs', href: '/blogs' },
+        { name: 'Arcade', href: '/games' },
         { name: 'Gallery', href: '/gallery' },
         { name: 'GitHub', href: '/github' },
         { name: 'Contact Us', href: '/contact-us' }
@@ -92,6 +94,19 @@ export default async function SitemapPage() {
                                 </li>
                             );
                         })}
+                    </ul>
+                </section>
+
+                <section>
+                    <h2 className="mb-4 text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Arcade Games</h2>
+                    <ul className="space-y-2">
+                        {GAMES.map(game => (
+                            <li key={game.slug}>
+                                <Link href={`/games/${game.slug}`} className="hover:underline" style={{ color: 'var(--text-secondary)' }}>
+                                    {game.title}
+                                </Link>
+                            </li>
+                        ))}
                     </ul>
                 </section>
 
