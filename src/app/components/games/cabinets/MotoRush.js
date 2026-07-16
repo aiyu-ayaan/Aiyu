@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useHighScore } from '../useHighScore';
+import { useGameAudio } from '../audio/useGameAudio';
 
 const W = 380;
 const H = 560;
@@ -32,6 +33,7 @@ export default function MotoRush() {
     const [score, setScore] = useState(0);
     const [level, setLevel] = useState(1);
     const [highScore, submitScore] = useHighScore('moto-rush');
+    const audio = useGameAudio('moto-rush', phase);
 
     const stateRef = useRef(null);
     const phaseRef = useRef('ready');
@@ -166,6 +168,7 @@ export default function MotoRush() {
             setScore(s.score);
             submitScore(s.score);
             setPhaseBoth('over');
+            audio.sfx('explode');
         };
 
         const update = (dt) => {
@@ -181,6 +184,7 @@ export default function MotoRush() {
                 s.level = newLevel;
                 s.flash = 1.4;
                 setLevel(newLevel);
+                audio.sfx('levelUp');
             }
             if (s.flash > 0) s.flash -= sec;
 
@@ -226,6 +230,7 @@ export default function MotoRush() {
                     if (Math.abs(car.x - s.x) < (CAR_W + BIKE_W) / 2 + NEAR_MISS_PX) {
                         s.bonus += NEAR_MISS_BONUS;
                         s.floats.push({ x: car.x, y: car.y - 10, text: `+${NEAR_MISS_BONUS}`, life: 0.9 });
+                        audio.sfx('point');
                     }
                 }
             }

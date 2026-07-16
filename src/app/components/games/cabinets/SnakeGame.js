@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useHighScore } from '../useHighScore';
+import { useGameAudio } from '../audio/useGameAudio';
 
 const COLS = 22;
 const ROWS = 22;
@@ -34,6 +35,7 @@ export default function SnakeGame() {
     const [phase, setPhase] = useState('ready'); // ready | playing | paused | over
     const [score, setScore] = useState(0);
     const [highScore, submitScore] = useHighScore('snake');
+    const audio = useGameAudio('snake', phase);
 
     const stateRef = useRef(null);
     const phaseRef = useRef('ready');
@@ -161,6 +163,7 @@ export default function SnakeGame() {
             if (hitWall || hitSelf) {
                 submitScore(s.score);
                 setPhaseBoth('over');
+                audio.sfx('gameOver');
                 return;
             }
 
@@ -170,6 +173,7 @@ export default function SnakeGame() {
                 setScore(s.score);
                 s.food = randomFood(s.snake);
                 s.stepMs = Math.max(MIN_STEP_MS, s.stepMs - STEP_DECAY_MS);
+                audio.sfx('point');
             } else {
                 s.snake.pop();
             }
