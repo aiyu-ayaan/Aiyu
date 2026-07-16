@@ -10,8 +10,8 @@ export const GAMES = [
         title: 'BYTE RUNNER 3D',
         icon: '🏃',
         color: 'var(--arc-cyan)',
-        tagline: 'Full-3D endless run down a neon highway. Firewalls incoming — collect data bits, do not get flattened.',
-        controls: '◀ ▶ or A/D to switch lanes · swipe on mobile',
+        tagline: 'Full-3D endless run down a neon highway. Dodge walls, jump hurdles, roll under bars, grab data bits.',
+        controls: '◀ ▶ lanes · ▲ jump · ▼ roll · swipe on mobile',
         scored: true,
     },
     {

@@ -259,6 +259,19 @@
     width: 100%;
 }
 
+/* Fullscreen cabinet: the play field stretches to fill the viewport (minus
+   the HUD/header chrome) in BOTH axes; the game resizes its renderer to the
+   container instead of keeping a fixed aspect. */
+.arc-cab-full {
+    width: 100%;
+    height: max(20rem, calc(100dvh - 17rem));
+}
+
+.arc-cab-full canvas {
+    width: 100%;
+    height: 100%;
+}
+
 /* Overlay for start / pause / game-over states */
 .arc-overlay {
     position: absolute;
