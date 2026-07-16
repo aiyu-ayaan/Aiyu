@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useHighScore } from '../useHighScore';
+import { useGameAudio } from '../audio/useGameAudio';
 
 const COLS = 10;
 const ROWS = 20;
@@ -64,6 +65,7 @@ export default function Tetris() {
     const [lines, setLines] = useState(0);
     const [level, setLevel] = useState(1);
     const [highScore, submitScore] = useHighScore('tetris');
+    const audio = useGameAudio('tetris', phase);
 
     const stateRef = useRef(null);
     const phaseRef = useRef('ready');
@@ -110,6 +112,7 @@ export default function Tetris() {
                 if (!collides(s().grid, s().piece, kick, 0, rotated)) {
                     s().piece.shape = rotated;
                     s().piece.x += kick;
+                    audio.sfx('rotate');
                     return;
                 }
             }
@@ -182,11 +185,13 @@ export default function Tetris() {
                     if (gy < 0) {
                         submitScore(s.score);
                         setPhaseBoth('over');
+                        audio.sfx('gameOver');
                         return;
                     }
                     grid[gy][piece.x + x] = piece.color;
                 }
             }
+            audio.sfx('lock');
 
             // Clear lines
             let cleared = 0;
@@ -201,10 +206,17 @@ export default function Tetris() {
             if (cleared) {
                 s.score += LINE_POINTS[cleared] * s.level;
                 s.lines += cleared;
-                s.level = Math.floor(s.lines / 10) + 1;
+                const nextLevel = Math.floor(s.lines / 10) + 1;
+                const didLevelUp = nextLevel !== s.level;
+                s.level = nextLevel;
                 setScore(s.score);
                 setLines(s.lines);
                 setLevel(s.level);
+                if (didLevelUp) {
+                    audio.sfx('levelUp');
+                } else {
+                    audio.sfx('lineClear');
+                }
             }
 
             s.piece = s.next;
@@ -212,6 +224,7 @@ export default function Tetris() {
             if (collides(s.grid, s.piece)) {
                 submitScore(s.score);
                 setPhaseBoth('over');
+                audio.sfx('gameOver');
             }
         };
 

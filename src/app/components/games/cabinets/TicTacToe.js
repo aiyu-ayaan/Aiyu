@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from 'react';
+import { useGameAudio } from '../audio/useGameAudio';
 
 const LINES = [
     [0, 1, 2], [3, 4, 5], [6, 7, 8],
@@ -62,7 +63,26 @@ export default function TicTacToe() {
     const [turn, setTurn] = useState('X');
     const [mode, setMode] = useState('cpu'); // cpu | 2p
     const [tally, setTally] = useState({ X: 0, O: 0, draw: 0 });
+    const [phase, setPhase] = useState('playing');
+    const phaseRef = useRef('playing');
+    const setPhaseBoth = (next) => {
+        phaseRef.current = next;
+        setPhase(next);
+    };
+    const audio = useGameAudio('tic-tac-toe', phase);
     const cpuTimer = useRef(null);
+
+    useEffect(() => {
+        const onVisibility = () => {
+            if (document.hidden && phaseRef.current === 'playing') {
+                setPhaseBoth('paused');
+            } else if (!document.hidden && phaseRef.current === 'paused') {
+                setPhaseBoth('playing');
+            }
+        };
+        document.addEventListener('visibilitychange', onVisibility);
+        return () => document.removeEventListener('visibilitychange', onVisibility);
+    }, []);
 
     const winner = getWinner(board);
     const draw = !winner && isFull(board);
@@ -78,11 +98,26 @@ export default function TicTacToe() {
         }
         if (recordedRef.current) return;
         recordedRef.current = true;
+
+        if (winner) {
+            if (mode === 'cpu') {
+                if (winner.player === 'X') {
+                    audio.sfx('win');
+                } else {
+                    audio.sfx('lose');
+                }
+            } else {
+                audio.sfx('win');
+            }
+        } else if (draw) {
+            audio.sfx('draw');
+        }
+
         setTally((t) => {
             if (winner) return { ...t, [winner.player]: t[winner.player] + 1 };
             return { ...t, draw: t.draw + 1 };
         });
-    }, [gameOver, winner]);
+    }, [gameOver, winner, draw, mode]);
 
     // CPU move with a small "thinking" delay for arcade feel.
     useEffect(() => {
@@ -97,6 +132,7 @@ export default function TicTacToe() {
                 return next;
             });
             setTurn('X');
+            audio.sfx('blip');
         }, CPU_THINK_MS);
         return () => clearTimeout(cpuTimer.current);
     }, [cpuThinking, board]);
@@ -107,12 +143,14 @@ export default function TicTacToe() {
         next[i] = turn;
         setBoard(next);
         setTurn(turn === 'X' ? 'O' : 'X');
+        audio.sfx('blip');
     };
 
     const newRound = () => {
         clearTimeout(cpuTimer.current);
         setBoard(Array(9).fill(null));
         setTurn('X');
+        audio.sfx('coin');
     };
 
     const switchMode = (nextMode) => {
@@ -121,6 +159,7 @@ export default function TicTacToe() {
         clearTimeout(cpuTimer.current);
         setBoard(Array(9).fill(null));
         setTurn('X');
+        audio.sfx('coin');
     };
 
     const status = winner
