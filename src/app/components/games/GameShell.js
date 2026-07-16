@@ -1,22 +1,27 @@
 "use client";
 
 import Link from 'next/link';
+import MuteButton from './audio/MuteButton';
 
 /**
  * Shared cabinet chrome around every arcade game: marquee title, back link,
- * and the controls hint. The game itself (canvas + HUD) renders as children.
+ * audio toggle, and the controls hint. The game itself (canvas + HUD) renders
+ * as children.
  */
 export default function GameShell({ game, children }) {
     return (
         <main style={{ '--arc-frame': game.color, '--arc-btn-color': game.color }}>
             <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
-                <Link
-                    href="/games"
-                    className="arc-btn arc-btn--ghost"
-                    style={{ '--arc-btn-color': 'var(--arc-dim)' }}
-                >
-                    ◀ ARCADE
-                </Link>
+                <div className="flex items-center gap-3">
+                    <Link
+                        href="/games"
+                        className="arc-btn arc-btn--ghost"
+                        style={{ '--arc-btn-color': 'var(--arc-dim)' }}
+                    >
+                        ◀ ARCADE
+                    </Link>
+                    <MuteButton />
+                </div>
                 <h1 className="arc-title" style={{ fontSize: 'clamp(1rem, 4vw, 1.6rem)', color: game.color }}>
                     {game.icon} {game.title}
                 </h1>
