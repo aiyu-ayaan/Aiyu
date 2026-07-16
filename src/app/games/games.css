@@ -1,0 +1,322 @@
+/* ──────────────────────────────────────────────────────────────────────────
+   AIYU ARCADE — retro CRT theme for /games
+   Self-contained: the arcade deliberately ignores the site theme presets and
+   always renders as a dark phosphor screen, like a real cabinet in a corner.
+   ────────────────────────────────────────────────────────────────────────── */
+
+.arcade-root {
+    --arc-bg: #060310;
+    --arc-panel: #0c0820;
+    --arc-green: #33ff66;
+    --arc-cyan: #2ee6ff;
+    --arc-magenta: #ff4fd8;
+    --arc-amber: #ffc94f;
+    --arc-red: #ff5c5c;
+    --arc-dim: #7d7a99;
+    --arc-grid: rgba(46, 230, 255, 0.06);
+
+    position: relative;
+    isolation: isolate;
+    min-height: 100dvh;
+    background:
+        radial-gradient(ellipse at 50% -10%, rgba(46, 230, 255, 0.08), transparent 55%),
+        radial-gradient(ellipse at 80% 110%, rgba(255, 79, 216, 0.07), transparent 50%),
+        var(--arc-bg);
+    color: var(--arc-green);
+    font-family: var(--font-arcade), "Courier New", monospace;
+    overflow-x: hidden;
+}
+
+/* CRT scanlines + vignette overlay */
+.arcade-root::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 40;
+    pointer-events: none;
+    background:
+        repeating-linear-gradient(
+            0deg,
+            rgba(0, 0, 0, 0.22) 0px,
+            rgba(0, 0, 0, 0.22) 1px,
+            transparent 1px,
+            transparent 3px
+        ),
+        radial-gradient(ellipse at center, transparent 58%, rgba(0, 0, 0, 0.55) 100%);
+}
+
+/* Soft phosphor flicker — disabled for reduced motion */
+@keyframes arc-flicker {
+    0%, 100% { opacity: 1; }
+    92% { opacity: 1; }
+    93% { opacity: 0.92; }
+    94% { opacity: 1; }
+    97% { opacity: 0.96; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .arcade-screen {
+        animation: arc-flicker 7s infinite;
+    }
+}
+
+.arcade-inner {
+    position: relative;
+    z-index: 1;
+    max-width: 72rem;
+    margin: 0 auto;
+    padding: 2.5rem 1.25rem 4rem;
+}
+
+/* ── Typography ── */
+.arc-title {
+    font-size: clamp(1.4rem, 5vw, 2.6rem);
+    letter-spacing: 0.08em;
+    color: var(--arc-cyan);
+    text-shadow:
+        0 0 8px rgba(46, 230, 255, 0.8),
+        0 0 24px rgba(46, 230, 255, 0.45),
+        3px 3px 0 rgba(255, 79, 216, 0.55);
+}
+
+.arc-subtitle {
+    font-size: clamp(0.55rem, 2vw, 0.75rem);
+    color: var(--arc-dim);
+    letter-spacing: 0.18em;
+    line-height: 1.9;
+}
+
+@keyframes arc-blink {
+    0%, 55% { opacity: 1; }
+    56%, 100% { opacity: 0; }
+}
+
+.arc-blink {
+    animation: arc-blink 1.15s step-end infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .arc-blink {
+        animation: none;
+    }
+}
+
+/* ── Pixel frame / cards ── */
+.pixel-frame {
+    position: relative;
+    background: linear-gradient(180deg, rgba(46, 230, 255, 0.05), transparent 40%), var(--arc-panel);
+    border: 3px solid var(--arc-frame, var(--arc-cyan));
+    box-shadow:
+        0 0 0 3px var(--arc-bg),
+        0 0 18px -4px var(--arc-frame, var(--arc-cyan)),
+        inset 0 0 22px rgba(0, 0, 0, 0.6);
+    image-rendering: pixelated;
+}
+
+.arc-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    padding: 1.4rem 1.2rem 1.2rem;
+    text-decoration: none;
+    transition: transform 160ms ease-out, box-shadow 160ms ease-out;
+    outline: none;
+}
+
+.arc-card:hover,
+.arc-card:focus-visible {
+    transform: translateY(-4px);
+    box-shadow:
+        0 0 0 3px var(--arc-bg),
+        0 0 30px -2px var(--arc-frame, var(--arc-cyan)),
+        inset 0 0 22px rgba(0, 0, 0, 0.6);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .arc-card,
+    .arc-card:hover {
+        transition: none;
+        transform: none;
+    }
+}
+
+.arc-card-icon {
+    font-size: 2rem;
+    line-height: 1;
+    filter: drop-shadow(0 0 10px var(--arc-frame, var(--arc-cyan)));
+}
+
+.arc-card-title {
+    font-size: 0.9rem;
+    letter-spacing: 0.1em;
+    color: var(--arc-frame, var(--arc-cyan));
+    text-shadow: 0 0 10px currentColor;
+}
+
+.arc-card-tagline {
+    font-size: 0.55rem;
+    line-height: 1.9;
+    letter-spacing: 0.08em;
+    color: var(--arc-dim);
+}
+
+.arc-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-top: auto;
+    padding-top: 0.6rem;
+    border-top: 1px dashed rgba(125, 122, 153, 0.35);
+    font-size: 0.5rem;
+    letter-spacing: 0.12em;
+}
+
+.arc-hiscore {
+    color: var(--arc-amber);
+    text-shadow: 0 0 8px rgba(255, 201, 79, 0.6);
+}
+
+.arc-press-start {
+    color: var(--arc-green);
+}
+
+/* ── Buttons ── */
+.arc-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.7rem 1.1rem;
+    font-family: inherit;
+    font-size: 0.6rem;
+    letter-spacing: 0.14em;
+    color: var(--arc-bg);
+    background: var(--arc-btn-color, var(--arc-green));
+    border: none;
+    box-shadow:
+        3px 3px 0 rgba(0, 0, 0, 0.7),
+        0 0 16px -2px var(--arc-btn-color, var(--arc-green));
+    cursor: pointer;
+    text-decoration: none;
+    text-transform: uppercase;
+    transition: transform 100ms ease-out;
+    user-select: none;
+    touch-action: manipulation;
+}
+
+.arc-btn:hover { transform: translate(-1px, -1px); }
+.arc-btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.7); }
+
+.arc-btn--ghost {
+    color: var(--arc-btn-color, var(--arc-green));
+    background: transparent;
+    border: 2px solid var(--arc-btn-color, var(--arc-green));
+    box-shadow: none;
+}
+
+/* ── Game screen chrome ── */
+.arc-hud {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem 1.2rem;
+    font-size: 0.6rem;
+    letter-spacing: 0.12em;
+}
+
+.arc-canvas-wrap {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    background: #030208;
+    border: 3px solid var(--arc-frame, var(--arc-cyan));
+    box-shadow:
+        0 0 24px -4px var(--arc-frame, var(--arc-cyan)),
+        inset 0 0 30px rgba(0, 0, 0, 0.8);
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.arc-canvas-wrap canvas {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    image-rendering: pixelated;
+}
+
+/* Overlay for start / pause / game-over states */
+.arc-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 1rem;
+    text-align: center;
+    background: rgba(3, 2, 8, 0.82);
+    backdrop-filter: blur(2px);
+}
+
+.arc-overlay-title {
+    font-size: clamp(0.9rem, 4vw, 1.4rem);
+    letter-spacing: 0.1em;
+    color: var(--arc-frame, var(--arc-cyan));
+    text-shadow: 0 0 14px currentColor;
+}
+
+.arc-overlay-text {
+    font-size: 0.55rem;
+    line-height: 2.1;
+    letter-spacing: 0.1em;
+    color: var(--arc-dim);
+    max-width: 30rem;
+}
+
+/* Mobile touch pad buttons */
+.arc-touch-controls {
+    display: none;
+    gap: 0.6rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.arc-touch-btn {
+    width: 3.4rem;
+    height: 3.4rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: inherit;
+    font-size: 1rem;
+    color: var(--arc-cyan);
+    background: rgba(46, 230, 255, 0.08);
+    border: 2px solid rgba(46, 230, 255, 0.5);
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+}
+
+.arc-touch-btn:active {
+    background: rgba(46, 230, 255, 0.25);
+}
+
+@media (pointer: coarse) {
+    .arc-touch-controls {
+        display: flex;
+    }
+}
+
+/* Marquee grid floor under the menu */
+.arc-grid-floor {
+    background-image:
+        linear-gradient(var(--arc-grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--arc-grid) 1px, transparent 1px);
+    background-size: 34px 34px;
+}
