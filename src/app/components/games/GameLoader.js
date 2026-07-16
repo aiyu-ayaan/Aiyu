@@ -20,6 +20,9 @@ const CABINETS = {
     'byte-runner': dynamic(() => import('./cabinets/ByteRunner'), { ssr: false, loading: loadingScreen }),
     'breakout': dynamic(() => import('./cabinets/Breakout'), { ssr: false, loading: loadingScreen }),
     'invaders': dynamic(() => import('./cabinets/Invaders'), { ssr: false, loading: loadingScreen }),
+    'tetris': dynamic(() => import('./cabinets/Tetris'), { ssr: false, loading: loadingScreen }),
+    'pong': dynamic(() => import('./cabinets/Pong'), { ssr: false, loading: loadingScreen }),
+    'flappy-byte': dynamic(() => import('./cabinets/FlappyByte'), { ssr: false, loading: loadingScreen }),
 };
 
 export default function GameLoader({ slug }) {

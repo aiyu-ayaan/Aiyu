@@ -7,11 +7,20 @@
 export const GAMES = [
     {
         slug: 'byte-runner',
-        title: 'BYTE RUNNER',
+        title: 'BYTE RUNNER 3D',
         icon: '🏃',
         color: 'var(--arc-cyan)',
-        tagline: 'Endless 3-lane dodge. Firewalls incoming — collect data bits, do not get flattened.',
+        tagline: 'Full-3D endless run down a neon highway. Firewalls incoming — collect data bits, do not get flattened.',
         controls: '◀ ▶ or A/D to switch lanes · swipe on mobile',
+        scored: true,
+    },
+    {
+        slug: 'tetris',
+        title: 'TETRIS',
+        icon: '🟪',
+        color: 'var(--arc-magenta)',
+        tagline: 'Seven pieces, ghost drop, hard drop, and gravity that stops being polite at level 5.',
+        controls: '◀ ▶ move · ▲ rotate · ▼ soft drop · SPACE hard drop · touch pad on mobile',
         scored: true,
     },
     {
@@ -39,6 +48,24 @@ export const GAMES = [
         color: 'var(--arc-amber)',
         tagline: 'The fleet descends. Hold the line, cannon commander — waves only get meaner.',
         controls: '◀ ▶ to move · SPACE to fire · touch buttons on mobile',
+        scored: true,
+    },
+    {
+        slug: 'pong',
+        title: 'PONG',
+        icon: '🏓',
+        color: 'var(--arc-cyan)',
+        tagline: 'The 1972 original, vs a beatable-but-mean CPU. First to 7. Edge hits go fast.',
+        controls: '▲ ▼ or W/S · mouse / drag on mobile',
+        scored: false,
+    },
+    {
+        slug: 'flappy-byte',
+        title: 'FLAPPY BYTE',
+        icon: '🐤',
+        color: 'var(--arc-amber)',
+        tagline: 'One button. Infinite regret. Thread the circuit pillars as long as your nerves hold.',
+        controls: 'TAP / SPACE / ▲ to flap · P to pause',
         scored: true,
     },
     {

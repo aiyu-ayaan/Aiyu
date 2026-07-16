@@ -15,7 +15,7 @@ const arcadeFont = Press_Start_2P({
 export const metadata = {
     title: "Aiyu Arcade | Retro Games",
     description:
-        "A retro CRT arcade hidden inside the portfolio — Snake, Byte Runner, Breakout, Space Invaders, and Tic-Tac-Toe. Insert coin.",
+        "A retro CRT arcade hidden inside the portfolio — Byte Runner 3D, Tetris, Snake, Breakout, Space Invaders, Pong, Flappy Byte, and Tic-Tac-Toe. Insert coin.",
 };
 
 export default function GamesLayout({ children }) {

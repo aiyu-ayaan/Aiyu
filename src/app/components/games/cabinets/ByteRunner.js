@@ -108,7 +108,7 @@ export default function ByteRunner() {
             canvas.removeEventListener('touchstart', onTouchStart);
             canvas.removeEventListener('touchend', onTouchEnd);
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+         
     }, []);
 
     // Three.js scene + game loop.
@@ -301,7 +301,7 @@ export default function ByteRunner() {
             });
             renderer.dispose();
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+         
     }, [submitScore]);
 
     return (
