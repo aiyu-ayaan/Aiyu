@@ -112,7 +112,7 @@ export default function Invaders() {
             window.removeEventListener('keydown', onKey);
             window.removeEventListener('keyup', onKey);
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+         
     }, []);
 
     useEffect(() => {
@@ -294,7 +294,7 @@ export default function Invaders() {
             cancelAnimationFrame(raf);
             document.removeEventListener('visibilitychange', onVisibility);
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+         
     }, [submitScore]);
 
     const holdKey = (key, down) => {

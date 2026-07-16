@@ -16,6 +16,10 @@ const V2BetaPopup = dynamic(() => import("./V2BetaPopup"), {
     ssr: false,
 });
 
+const ArcadePopup = dynamic(() => import("./ArcadePopup"), {
+    ssr: false,
+});
+
 const IDLE_ENHANCEMENT_DELAY_MS = 2200;
 
 function detectLowEndDevice() {
@@ -271,6 +275,7 @@ export default function ClientEnhancements() {
             {mountPalette && <CommandPalette />}
 
             {(pathname === '/' || pathname === '/v1') && <V2BetaPopup />}
+            {(pathname === '/' || pathname === '/v1' || pathname === '/v2') && <ArcadePopup />}
 
             {/* Scroll to top button — CSS-only transitions (no framer-motion) so
                 this always-rendered root component stays out of the heavy

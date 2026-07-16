@@ -126,7 +126,7 @@ export default function Breakout() {
             canvas.removeEventListener('touchmove', onTouchMove);
             canvas.removeEventListener('click', onPointerTap);
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+         
     }, []);
 
     useEffect(() => {
@@ -263,7 +263,7 @@ export default function Breakout() {
             cancelAnimationFrame(raf);
             document.removeEventListener('visibilitychange', onVisibility);
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+         
     }, [submitScore]);
 
     return (

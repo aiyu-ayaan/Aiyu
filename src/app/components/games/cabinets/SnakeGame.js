@@ -137,7 +137,7 @@ export default function SnakeGame() {
             canvas.removeEventListener('touchstart', onTouchStart);
             canvas.removeEventListener('touchend', onTouchEnd);
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+         
     }, []);
 
     // Game loop + rendering.
@@ -246,7 +246,7 @@ export default function SnakeGame() {
             cancelAnimationFrame(raf);
             document.removeEventListener('visibilitychange', onVisibility);
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+         
     }, [submitScore]);
 
     return (

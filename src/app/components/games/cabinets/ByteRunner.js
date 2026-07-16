@@ -111,7 +111,7 @@ export default function ByteRunner() {
             canvas.removeEventListener('touchstart', onTouchStart);
             canvas.removeEventListener('touchend', onTouchEnd);
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+         
     }, []);
 
     useEffect(() => {
@@ -251,7 +251,7 @@ export default function ByteRunner() {
             cancelAnimationFrame(raf);
             document.removeEventListener('visibilitychange', onVisibility);
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+         
     }, [submitScore]);
 
     return (
