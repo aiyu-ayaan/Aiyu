@@ -1,5 +1,32 @@
 # Changelog
 
+## [4.8.1](https://github.com/aiyu-ayaan/Aiyu/compare/v4.8.0...v4.8.1) (2026-07-16)
+
+### Features
+
+* Add arcade games pages to XML and HTML sitemaps
+* Remove 'maybe later' action button, close header button saves dismissal
+* Make toggle badge button visible all the time
+* Replace dialog with collapsible announcement badge on left edge
+* Integrate audio and SFX in Tetris and TicTacToe
+* Integrate audio and SFX in MotoRush and SnakeGame
+* Integrate audio and SFX in ByteRunner and Invaders
+* Integrate audio and SFX in Pong, FlappyByte, and Breakout
+* Add chiptune synth engine, mute controls, and GameShell integration
+* Add Moto Rush game and integrate into game loader
+* Byte Runner gets a real runner model, jump/roll moves, and a fullscreen viewport
+* Tetris, Pong, and Flappy Byte — arcade grows to eight cabinets
+* True 3D Byte Runner and full-viewport cabinet scaling
+* Arcade announcement popup on home pages
+* Byte Runner, Breakout, and Space Invaders cabinets
+* Playable Snake and unbeatable Tic-Tac-Toe cabinets
+* Add Aiyu Arcade shell, retro CRT theme, and game menu at /games
+
+### Bug Fixes
+
+* : Fix release is done
+* Define missing teal and green css variables to prevent selected chips from disappearing
+
 ## [4.8.0](https://github.com/aiyu-ayaan/Aiyu/compare/v4.7.7...v4.8.0) (2026-07-13)
 
 ### Features
