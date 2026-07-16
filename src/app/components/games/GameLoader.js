@@ -18,6 +18,7 @@ const CABINETS = {
     'snake': dynamic(() => import('./cabinets/SnakeGame'), { ssr: false, loading: loadingScreen }),
     'tic-tac-toe': dynamic(() => import('./cabinets/TicTacToe'), { ssr: false, loading: loadingScreen }),
     'byte-runner': dynamic(() => import('./cabinets/ByteRunner'), { ssr: false, loading: loadingScreen }),
+    'moto-rush': dynamic(() => import('./cabinets/MotoRush'), { ssr: false, loading: loadingScreen }),
     'breakout': dynamic(() => import('./cabinets/Breakout'), { ssr: false, loading: loadingScreen }),
     'invaders': dynamic(() => import('./cabinets/Invaders'), { ssr: false, loading: loadingScreen }),
     'tetris': dynamic(() => import('./cabinets/Tetris'), { ssr: false, loading: loadingScreen }),

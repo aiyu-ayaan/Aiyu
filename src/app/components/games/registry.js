@@ -15,6 +15,15 @@ export const GAMES = [
         scored: true,
     },
     {
+        slug: 'moto-rush',
+        title: 'MOTO RUSH',
+        icon: '🏍️',
+        color: 'var(--arc-green)',
+        tagline: 'Infinite neon highway on two wheels. Weave the traffic, graze cars for bonus — every level cranks the throttle.',
+        controls: '◀ ▶ hold to steer · hold screen sides on mobile',
+        scored: true,
+    },
+    {
         slug: 'tetris',
         title: 'TETRIS',
         icon: '🟪',

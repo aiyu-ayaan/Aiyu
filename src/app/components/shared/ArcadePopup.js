@@ -93,8 +93,9 @@ export default function ArcadePopup() {
                     The Aiyu Arcade just opened. 🕹️
                 </h2>
                 <p className="mb-4 text-sm leading-relaxed" style={{ color: 'var(--text-tertiary)' }}>
-                    Eight retro time-killers — a 3D Byte Runner, Tetris, Snake, Breakout, Space
-                    Invaders, Pong, Flappy Byte, and an unbeatable Tic-Tac-Toe. High scores included.
+                    Nine retro time-killers — a 3D Byte Runner, Moto Rush highway weaving, Tetris,
+                    Snake, Breakout, Space Invaders, Pong, Flappy Byte, and an unbeatable
+                    Tic-Tac-Toe. High scores included.
                 </p>
 
                 <div className="flex items-center gap-3">

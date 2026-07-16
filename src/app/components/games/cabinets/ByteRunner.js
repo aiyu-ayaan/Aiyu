@@ -9,11 +9,13 @@ const ROAD_W = 9.6;
 const SPAWN_Z = -130;
 const KILL_Z = 12;
 const PLAYER_Z = 0;
-const START_SPEED = 26; // world units/s toward the camera
-const MAX_SPEED = 68;
-const SPEED_RAMP = 0.55; // units/s gained per second survived
-const SPAWN_EVERY_MS = 950;
-const MIN_SPAWN_MS = 440;
+const START_SPEED = 27; // world units/s toward the camera
+const MAX_SPEED = 92;
+const SPEED_RAMP = 0.9; // units/s gained per second survived
+const LEVEL_TIME = 16; // seconds survived per level
+const LEVEL_SPEED_BOOST = 4.5; // extra speed kick on each level-up
+const SPAWN_EVERY_MS = 820;
+const MIN_SPAWN_MS = 300;
 const COIN_CHANCE = 0.4;
 const SWIPE_THRESHOLD = 26;
 
@@ -40,52 +42,118 @@ function pickObstacle() {
     return 'wall';
 }
 
-// Low-poly runner built from primitives: feet at y=0 so the roll crouch can
-// scale the body toward the ground. Returns the group plus animatable limbs.
+// Jointed low-poly runner: shoulder/hip pivots swing whole limbs, elbow/knee
+// pivots bend them. Feet at y=0 so the roll crouch can scale toward the ground.
 function buildRunner() {
-    const bodyMat = new THREE.MeshStandardMaterial({ color: 0x2ee6ff, emissive: 0x0e7a99, roughness: 0.35 });
-    const limbMat = new THREE.MeshStandardMaterial({ color: 0x1899bb, emissive: 0x07495e, roughness: 0.45 });
-    const headMat = new THREE.MeshStandardMaterial({ color: 0x9df2ff, emissive: 0x2d8fa8, roughness: 0.3 });
-    const visorMat = new THREE.MeshBasicMaterial({ color: 0x061018 });
+    const suitMat = new THREE.MeshStandardMaterial({ color: 0x2ee6ff, emissive: 0x0e7a99, roughness: 0.35 });
+    const trimMat = new THREE.MeshStandardMaterial({ color: 0x1899bb, emissive: 0x07495e, roughness: 0.45 });
+    const darkMat = new THREE.MeshStandardMaterial({ color: 0x123344, emissive: 0x051820, roughness: 0.6 });
+    const skinMat = new THREE.MeshStandardMaterial({ color: 0x9df2ff, emissive: 0x2d8fa8, roughness: 0.3 });
+    const glowMat = new THREE.MeshBasicMaterial({ color: 0xff4fd8 });
+    const visorMat = new THREE.MeshBasicMaterial({ color: 0xffc94f });
 
     const body = new THREE.Group();
 
-    const torso = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.85, 0.42), bodyMat);
-    torso.position.y = 1.22;
-    body.add(torso);
+    const chest = new THREE.Mesh(new THREE.BoxGeometry(0.66, 0.6, 0.4), suitMat);
+    chest.position.y = 1.38;
+    body.add(chest);
 
-    const hips = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.22, 0.38), limbMat);
-    hips.position.y = 0.72;
+    // Glowing reactor core on the chest (front faces -z, the run direction)
+    const core = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.16, 0.05), glowMat);
+    core.position.set(0, 1.44, -0.21);
+    body.add(core);
+
+    const waist = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.28, 0.34), darkMat);
+    waist.position.y = 0.98;
+    body.add(waist);
+
+    const hips = new THREE.Mesh(new THREE.BoxGeometry(0.56, 0.2, 0.36), trimMat);
+    hips.position.y = 0.8;
     body.add(hips);
 
-    const head = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.42, 0.44), headMat);
-    head.position.y = 1.92;
+    const backpack = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.5, 0.16), darkMat);
+    backpack.position.set(0, 1.4, 0.27);
+    body.add(backpack);
+    const packStrip = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.06, 0.03), glowMat);
+    packStrip.position.set(0, 1.52, 0.36);
+    body.add(packStrip);
+
+    // Head group so it can bob independently
+    const head = new THREE.Group();
+    head.position.y = 1.86;
+    const helmet = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.4, 0.44), suitMat);
+    helmet.position.y = 0.14;
+    head.add(helmet);
+    const visor = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.14, 0.06), visorMat);
+    visor.position.set(0, 0.12, -0.24);
+    head.add(visor);
+    for (const side of [-1, 1]) {
+        const pod = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.14, 0.14), glowMat);
+        pod.position.set(side * 0.24, 0.12, 0);
+        head.add(pod);
+    }
     body.add(head);
 
-    const visor = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.14, 0.06), visorMat);
-    visor.position.set(0, 1.94, -0.23);
-    body.add(visor);
-
-    // Limbs pivot at their top (shoulder / hip) so rotation.x swings them.
-    const makeLimb = (w, len, mat) => {
-        const geo = new THREE.BoxGeometry(w, len, w);
+    // Limb segments hang down from their pivot: geometry translated so the
+    // pivot sits at the top (shoulder/hip, then elbow/knee).
+    const seg = (w, len, mat, d = w) => {
+        const geo = new THREE.BoxGeometry(w, len, d);
         geo.translate(0, -len / 2, 0);
         return new THREE.Mesh(geo, mat);
     };
 
-    const armL = makeLimb(0.2, 0.75, limbMat);
-    armL.position.set(-0.5, 1.6, 0);
-    const armR = makeLimb(0.2, 0.75, limbMat);
-    armR.position.set(0.5, 1.6, 0);
-    const legL = makeLimb(0.24, 0.72, bodyMat);
-    legL.position.set(-0.2, 0.68, 0);
-    const legR = makeLimb(0.24, 0.72, bodyMat);
-    legR.position.set(0.2, 0.68, 0);
-    body.add(armL, armR, legL, legR);
+    const makeArm = (side) => {
+        const shoulder = new THREE.Group();
+        shoulder.position.set(side * 0.44, 1.6, 0);
+        shoulder.add(seg(0.17, 0.4, trimMat));
+        const elbow = new THREE.Group();
+        elbow.position.y = -0.42;
+        elbow.add(seg(0.15, 0.34, suitMat));
+        const hand = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.14, 0.16), skinMat);
+        hand.position.y = -0.42;
+        elbow.add(hand);
+        shoulder.add(elbow);
+        return { shoulder, elbow };
+    };
+
+    const makeLeg = (side) => {
+        const hip = new THREE.Group();
+        hip.position.set(side * 0.19, 0.8, 0);
+        hip.add(seg(0.22, 0.42, suitMat));
+        const knee = new THREE.Group();
+        knee.position.y = -0.44;
+        knee.add(seg(0.18, 0.38, trimMat));
+        const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.13, 0.36), darkMat);
+        shoe.position.set(0, -0.42, -0.06);
+        knee.add(shoe);
+        const shoeGlow = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.04, 0.06), glowMat);
+        shoeGlow.position.set(0, -0.46, -0.22);
+        knee.add(shoeGlow);
+        hip.add(knee);
+        return { hip, knee };
+    };
+
+    const armL = makeArm(-1);
+    const armR = makeArm(1);
+    const legL = makeLeg(-1);
+    const legR = makeLeg(1);
+    body.add(armL.shoulder, armR.shoulder, legL.hip, legR.hip);
 
     const group = new THREE.Group();
     group.add(body);
-    return { group, body, armL, armR, legL, legR };
+    return {
+        group,
+        body,
+        head,
+        armL: armL.shoulder,
+        armR: armR.shoulder,
+        elbowL: armL.elbow,
+        elbowR: armR.elbow,
+        legL: legL.hip,
+        legR: legR.hip,
+        kneeL: legL.knee,
+        kneeR: legR.knee,
+    };
 }
 
 export default function ByteRunner() {
@@ -93,10 +161,13 @@ export default function ByteRunner() {
     const wrapRef = useRef(null);
     const [phase, setPhase] = useState('ready');
     const [score, setScore] = useState(0);
+    const [level, setLevel] = useState(1);
+    const [levelFlash, setLevelFlash] = useState(0);
     const [highScore, submitScore] = useHighScore('byte-runner');
 
     const stateRef = useRef(null);
     const phaseRef = useRef('ready');
+    const flashTimeout = useRef(null);
     const setPhaseBoth = (next) => {
         phaseRef.current = next;
         setPhase(next);
@@ -110,6 +181,8 @@ export default function ByteRunner() {
         s.spawnTimer = 0;
         s.spawnEvery = SPAWN_EVERY_MS;
         s.distance = 0;
+        s.time = 0;
+        s.level = 1;
         s.coins = 0;
         s.score = 0;
         s.jumpY = 0;
@@ -121,6 +194,8 @@ export default function ByteRunner() {
             ent.mesh.visible = false;
         }
         setScore(0);
+        setLevel(1);
+        setLevelFlash(0);
     };
 
     const startGame = () => {
@@ -218,7 +293,7 @@ export default function ByteRunner() {
             canvas.removeEventListener('touchstart', onTouchStart);
             canvas.removeEventListener('touchend', onTouchEnd);
         };
-         
+
     }, []);
 
     // Three.js scene + game loop.
@@ -325,17 +400,17 @@ export default function ByteRunner() {
             }
         };
 
-        addPool('wall', 8, () => {
+        addPool('wall', 10, () => {
             const m = new THREE.Mesh(wallGeo, wallMat);
             m.position.y = 1.3;
             return m;
         });
-        addPool('hurdle', 8, () => {
+        addPool('hurdle', 10, () => {
             const m = new THREE.Mesh(hurdleGeo, hurdleMat);
             m.position.y = 0.5;
             return m;
         });
-        addPool('bar', 8, () => {
+        addPool('bar', 10, () => {
             // Overhead bar on two posts — gap underneath is roll height.
             const g = new THREE.Group();
             const top = new THREE.Mesh(barTopGeo, barMat);
@@ -347,7 +422,7 @@ export default function ByteRunner() {
             g.add(top, postL, postR);
             return g;
         });
-        addPool('coin', 10, () => {
+        addPool('coin', 18, () => {
             const m = new THREE.Mesh(coinGeo, coinMat);
             m.position.y = 1.0;
             return m;
@@ -359,6 +434,8 @@ export default function ByteRunner() {
             spawnTimer: 0,
             spawnEvery: SPAWN_EVERY_MS,
             distance: 0,
+            time: 0,
+            level: 1,
             coins: 0,
             score: 0,
             jumpY: 0,
@@ -391,6 +468,17 @@ export default function ByteRunner() {
             const s = stateRef.current;
             const sec = dt / 1000;
 
+            // Level-up on survival time: instant speed kick on top of the ramp.
+            s.time += sec;
+            const newLevel = 1 + Math.floor(s.time / LEVEL_TIME);
+            if (newLevel !== s.level) {
+                s.level = newLevel;
+                s.speed = Math.min(MAX_SPEED, s.speed + LEVEL_SPEED_BOOST);
+                setLevel(newLevel);
+                setLevelFlash(newLevel);
+                clearTimeout(flashTimeout.current);
+                flashTimeout.current = setTimeout(() => setLevelFlash(0), 1300);
+            }
             s.speed = Math.min(MAX_SPEED, s.speed + SPEED_RAMP * sec);
             s.distance += s.speed * sec;
 
@@ -423,42 +511,79 @@ export default function ByteRunner() {
 
             const crouch = rolling ? 0.45 : 1;
             runner.body.scale.y += (crouch - runner.body.scale.y) * Math.min(1, sec * 18);
-            runner.body.rotation.x = rolling ? 0.55 : (s.airborne ? -0.18 : 0);
+            runner.body.rotation.x = rolling ? 0.55 : (s.airborne ? -0.18 : -0.14);
 
             const t = performance.now() / 1000;
             const swing = Math.sin(t * (7 + s.speed * 0.12));
             if (s.airborne) {
                 // tucked mid-air pose
-                runner.legL.rotation.x = 0.85;
+                runner.legL.rotation.x = 0.95;
+                runner.kneeL.rotation.x = -1.5;
                 runner.legR.rotation.x = -0.35;
-                runner.armL.rotation.x = -2.4;
-                runner.armR.rotation.x = -2.4;
+                runner.kneeR.rotation.x = -0.8;
+                runner.armL.rotation.x = -2.3;
+                runner.armR.rotation.x = -2.3;
+                runner.elbowL.rotation.x = 0.5;
+                runner.elbowR.rotation.x = 0.5;
             } else if (rolling) {
-                runner.legL.rotation.x = 0.5;
-                runner.legR.rotation.x = 0.5;
-                runner.armL.rotation.x = -0.6;
-                runner.armR.rotation.x = -0.6;
+                runner.legL.rotation.x = 0.6;
+                runner.legR.rotation.x = 0.6;
+                runner.kneeL.rotation.x = -1.7;
+                runner.kneeR.rotation.x = -1.7;
+                runner.armL.rotation.x = -0.5;
+                runner.armR.rotation.x = -0.5;
+                runner.elbowL.rotation.x = 1.3;
+                runner.elbowR.rotation.x = 1.3;
             } else {
+                // Run cycle: opposing limbs, knees fold on the recovery swing,
+                // elbows stay pumped at ~90°.
                 runner.legL.rotation.x = swing * 0.95;
                 runner.legR.rotation.x = -swing * 0.95;
-                runner.armL.rotation.x = -swing * 0.7;
-                runner.armR.rotation.x = swing * 0.7;
-                runner.body.position.y = Math.abs(Math.sin(t * (7 + s.speed * 0.12))) * 0.08;
+                runner.kneeL.rotation.x = -(0.25 + Math.max(0, swing) * 1.15);
+                runner.kneeR.rotation.x = -(0.25 + Math.max(0, -swing) * 1.15);
+                runner.armL.rotation.x = -swing * 0.75;
+                runner.armR.rotation.x = swing * 0.75;
+                runner.elbowL.rotation.x = 1.2;
+                runner.elbowR.rotation.x = 1.2;
+                runner.head.rotation.x = swing * 0.05;
+                runner.body.position.y = Math.abs(swing) * 0.09;
             }
 
             camera.position.x = g.position.x * 0.35;
             camera.position.y = 4.4 + s.jumpY * 0.25;
 
-            // Spawns
+            // Spawns — denser with level, and from level 2 waves can block two
+            // lanes at once (double walls only past level 4, never all three).
             s.spawnTimer += dt;
-            s.spawnEvery = Math.max(MIN_SPAWN_MS, SPAWN_EVERY_MS - s.distance / 6);
+            s.spawnEvery = Math.max(MIN_SPAWN_MS, SPAWN_EVERY_MS - s.level * 55 - s.distance / 12);
             if (s.spawnTimer >= s.spawnEvery) {
                 s.spawnTimer = 0;
+                const occupied = new Set();
                 const lane = Math.floor(Math.random() * LANES.length);
-                spawn(pickObstacle(), lane, SPAWN_Z);
+                const kind = pickObstacle();
+                spawn(kind, lane, SPAWN_Z);
+                occupied.add(lane);
+
+                const doubleChance = Math.min(0.72, 0.18 + s.level * 0.09);
+                if (s.level >= 2 && Math.random() < doubleChance) {
+                    const others = [0, 1, 2].filter((l) => l !== lane);
+                    const lane2 = others[Math.floor(Math.random() * others.length)];
+                    let kind2 = pickObstacle();
+                    if (kind === 'wall' && kind2 === 'wall' && s.level < 4) {
+                        kind2 = Math.random() < 0.5 ? 'hurdle' : 'bar';
+                    }
+                    spawn(kind2, lane2, SPAWN_Z);
+                    occupied.add(lane2);
+                }
+
                 if (Math.random() < COIN_CHANCE) {
-                    const free = [0, 1, 2].filter((l) => l !== lane);
-                    spawn('coin', free[Math.floor(Math.random() * free.length)], SPAWN_Z - 14);
+                    const free = [0, 1, 2].filter((l) => !occupied.has(l));
+                    if (free.length) {
+                        const coinLane = free[Math.floor(Math.random() * free.length)];
+                        for (let i = 0; i < 3; i++) {
+                            spawn('coin', coinLane, SPAWN_Z - 12 - i * 2.8);
+                        }
+                    }
                 }
             }
 
@@ -521,6 +646,7 @@ export default function ByteRunner() {
 
         return () => {
             cancelAnimationFrame(raf);
+            clearTimeout(flashTimeout.current);
             resizeObserver.disconnect();
             document.removeEventListener('visibilitychange', onVisibility);
             scene.traverse((obj) => {
@@ -531,18 +657,23 @@ export default function ByteRunner() {
             });
             renderer.dispose();
         };
-         
+
     }, [submitScore]);
 
     return (
         <div>
             <div className="arc-hud mb-3">
                 <span>SCORE {String(score).padStart(6, '0')}</span>
+                <span>LV {level}</span>
                 <span className="arc-hiscore">HI {String(Math.max(highScore, score)).padStart(6, '0')}</span>
             </div>
 
             <div ref={wrapRef} className="arc-canvas-wrap arc-cab-full">
                 <canvas ref={canvasRef} />
+
+                {levelFlash > 0 && phase === 'playing' && (
+                    <div className="arc-level-flash">LEVEL {levelFlash}</div>
+                )}
 
                 {phase !== 'playing' && (
                     <div className="arc-overlay">
@@ -557,6 +688,8 @@ export default function ByteRunner() {
                                     PINK BARS — ROLL UNDER (▼).
                                     <br />
                                     GOLD DATA BITS — GRAB THEM (+25).
+                                    <br />
+                                    EVERY LEVEL THE GRID RUNS FASTER.
                                 </p>
                                 <button type="button" className="arc-btn" onClick={startGame}>
                                     ▶ RUN
@@ -577,7 +710,7 @@ export default function ByteRunner() {
                                     CONNECTION LOST
                                 </p>
                                 <p className="arc-overlay-text">
-                                    FINAL SCORE {String(score).padStart(6, '0')}
+                                    FINAL SCORE {String(score).padStart(6, '0')} · LEVEL {level}
                                     {score >= highScore && score > 0 ? ' — NEW RECORD!' : ''}
                                 </p>
                                 <button type="button" className="arc-btn" onClick={startGame}>

@@ -303,6 +303,29 @@
     max-width: 30rem;
 }
 
+/* In-game level-up flash (Byte Runner) */
+.arc-level-flash {
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    display: grid;
+    place-items: center;
+    pointer-events: none;
+    font-size: clamp(1.1rem, 5vw, 1.8rem);
+    letter-spacing: 0.2em;
+    color: var(--arc-amber);
+    text-shadow: 0 0 18px var(--arc-amber);
+    animation: arc-level-flash 1.3s ease-out forwards;
+}
+
+@keyframes arc-level-flash {
+    0% { opacity: 0; transform: scale(0.6); }
+    15% { opacity: 1; transform: scale(1.12); }
+    30% { transform: scale(1); }
+    70% { opacity: 1; }
+    100% { opacity: 0; transform: scale(1.05); }
+}
+
 /* Mobile touch pad buttons */
 .arc-touch-controls {
     display: none;
