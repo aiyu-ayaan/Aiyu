@@ -652,6 +652,8 @@ const HomeForm = () => {
                                                 <option value="var(--accent-purple)">Purple</option>
                                                 <option value="var(--accent-orange)">Orange</option>
                                                 <option value="var(--accent-pink)">Pink</option>
+                                                <option value="var(--accent-teal)">Teal</option>
+                                                <option value="var(--accent-green)">Green</option>
                                             </select>
                                         </div>
 

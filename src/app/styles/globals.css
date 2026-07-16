@@ -379,6 +379,10 @@ html[data-perf="lite"] .shimmer {
   --accent-pink-hot: #ff2d55;
   --accent-orange: #ff9f0a;
   --accent-orange-bright: #ffd60a;
+  --accent-teal: #30b0c7;
+  --accent-teal-bright: #5ac8fa;
+  --accent-green: #30d158;
+  --accent-green-bright: #34c759;
 
   /* Border Colors */
   --border-primary: #1d1d20;
@@ -443,6 +447,10 @@ html[data-perf="lite"] .shimmer {
   --accent-pink-hot: #be185d;
   --accent-orange: #ea580c;
   --accent-orange-bright: #f97316;
+  --accent-teal: #0d9488;
+  --accent-teal-bright: #14b8a6;
+  --accent-green: #16a34a;
+  --accent-green-bright: #22c55e;
 
   /* Border Colors */
   --border-primary: #e2e8f0;

@@ -83,6 +83,8 @@ const ACCENTS = [
     { label: 'purple', value: 'var(--accent-purple)', swatch: '#bf5af2' },
     { label: 'orange', value: 'var(--accent-orange)', swatch: '#ff9f0a' },
     { label: 'pink', value: 'var(--accent-pink)', swatch: '#ff375f' },
+    { label: 'teal', value: 'var(--accent-teal)', swatch: '#30b0c7' },
+    { label: 'green', value: 'var(--accent-green)', swatch: '#30d158' },
 ];
 
 export function AccentPicker({ value, onChange }) {
