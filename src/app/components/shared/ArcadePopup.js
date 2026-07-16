@@ -130,7 +130,7 @@ export default function ArcadePopup() {
                                 <span className="text-[10px] font-mono font-bold text-[var(--accent-cyan)] tracking-wider">NEW UPDATE · ARCADE</span>
                             </div>
                             <button 
-                                onClick={() => setIsExpanded(false)} 
+                                onClick={dismiss} 
                                 className="text-[var(--text-muted)] hover:text-white transition-colors p-1 cursor-pointer"
                                 aria-label="Collapse panel"
                             >
@@ -159,13 +159,6 @@ export default function ArcadePopup() {
                             >
                                 <FaGamepad size={13} /> Insert coin
                             </Link>
-                            <button
-                                type="button"
-                                onClick={dismiss}
-                                className="cursor-pointer text-xs font-medium underline-offset-4 hover:underline text-[var(--text-muted)] hover:text-[var(--text-bright)] transition-colors"
-                            >
-                                Maybe later
-                            </button>
                         </div>
                     </motion.div>
                 )}
