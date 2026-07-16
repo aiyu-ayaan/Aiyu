@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useHighScore } from '../useHighScore';
+import { useGameAudio } from '../audio/useGameAudio';
 
 const W = 480;
 const H = 560;
@@ -36,6 +37,7 @@ export default function Breakout() {
     const [lives, setLives] = useState(3);
     const [level, setLevel] = useState(1);
     const [highScore, submitScore] = useHighScore('breakout');
+    const audio = useGameAudio('breakout', phase);
 
     const stateRef = useRef(null);
     const phaseRef = useRef('ready');
@@ -148,9 +150,9 @@ export default function Breakout() {
             b.y += b.vy * sec;
 
             // Walls
-            if (b.x < BALL_R) { b.x = BALL_R; b.vx = Math.abs(b.vx); }
-            if (b.x > W - BALL_R) { b.x = W - BALL_R; b.vx = -Math.abs(b.vx); }
-            if (b.y < BALL_R) { b.y = BALL_R; b.vy = Math.abs(b.vy); }
+            if (b.x < BALL_R) { b.x = BALL_R; b.vx = Math.abs(b.vx); audio.sfx('wall'); }
+            if (b.x > W - BALL_R) { b.x = W - BALL_R; b.vx = -Math.abs(b.vx); audio.sfx('wall'); }
+            if (b.y < BALL_R) { b.y = BALL_R; b.vy = Math.abs(b.vy); audio.sfx('wall'); }
 
             // Paddle — reflect angle by where the ball lands on it
             if (
@@ -165,6 +167,7 @@ export default function Breakout() {
                 b.vx = Math.cos(angle) * speed;
                 b.vy = Math.sin(angle) * speed;
                 b.y = PADDLE_Y - BALL_R;
+                audio.sfx('bounce');
             }
 
             // Bricks
@@ -185,6 +188,7 @@ export default function Breakout() {
                     const overlapY = Math.min(b.y + BALL_R - by, by + BRICK_H - (b.y - BALL_R));
                     if (overlapX < overlapY) b.vx = -b.vx;
                     else b.vy = -b.vy;
+                    audio.sfx('blip');
                     break;
                 }
             }
@@ -196,6 +200,7 @@ export default function Breakout() {
                 s.bricks = buildBricks();
                 s.ballSpeed = Math.min(MAX_BALL_SPEED, s.ballSpeed + 40);
                 launchBall(s);
+                audio.sfx('levelUp');
                 return;
             }
 
@@ -206,8 +211,10 @@ export default function Breakout() {
                 if (s.lives <= 0) {
                     submitScore(s.score);
                     setPhaseBoth('over');
+                    audio.sfx('gameOver');
                 } else {
                     launchBall(s);
+                    audio.sfx('lose');
                 }
             }
         };

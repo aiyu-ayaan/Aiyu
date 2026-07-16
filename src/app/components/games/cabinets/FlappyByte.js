@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useHighScore } from '../useHighScore';
+import { useGameAudio } from '../audio/useGameAudio';
 
 const W = 380;
 const H = 560;
@@ -20,6 +21,7 @@ export default function FlappyByte() {
     const [phase, setPhase] = useState('ready');
     const [score, setScore] = useState(0);
     const [highScore, submitScore] = useHighScore('flappy-byte');
+    const audio = useGameAudio('flappy-byte', phase);
 
     const stateRef = useRef(null);
     const phaseRef = useRef('ready');
@@ -51,6 +53,7 @@ export default function FlappyByte() {
             if (phaseRef.current === 'ready' || phaseRef.current === 'over') {
                 startGame();
                 stateRef.current.vy = FLAP_VY;
+                audio.sfx('jump');
                 return;
             }
             if (phaseRef.current === 'paused') {
@@ -58,6 +61,7 @@ export default function FlappyByte() {
                 return;
             }
             stateRef.current.vy = FLAP_VY;
+            audio.sfx('jump');
         };
 
         const onKey = (e) => {
@@ -96,6 +100,7 @@ export default function FlappyByte() {
         const die = (s) => {
             submitScore(s.score);
             setPhaseBoth('over');
+            audio.sfx('hit');
         };
 
         const update = (dt) => {
@@ -119,6 +124,7 @@ export default function FlappyByte() {
                     p.passed = true;
                     s.score += 1;
                     setScore(s.score);
+                    audio.sfx('point');
                 }
                 // Collision
                 const inX = BIRD_X + BIRD_R > p.x && BIRD_X - BIRD_R < p.x + PIPE_W;

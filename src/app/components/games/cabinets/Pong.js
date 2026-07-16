@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from 'react';
+import { useGameAudio } from '../audio/useGameAudio';
 
 const W = 640;
 const H = 420;
@@ -18,6 +19,7 @@ export default function Pong() {
     const canvasRef = useRef(null);
     const [phase, setPhase] = useState('ready');
     const [scores, setScores] = useState({ you: 0, cpu: 0 });
+    const audio = useGameAudio('pong', phase);
 
     const stateRef = useRef(null);
     const phaseRef = useRef('ready');
@@ -118,6 +120,7 @@ export default function Pong() {
             const speed = Math.min(MAX_BALL_SPEED, Math.hypot(b.vx, b.vy) * 1.04);
             b.vx = Math.cos(angle) * speed * dir;
             b.vy = Math.sin(angle) * speed;
+            audio.sfx('bounce');
         };
 
         const update = (dt) => {
@@ -138,8 +141,8 @@ export default function Pong() {
             b.x += b.vx * sec;
             b.y += b.vy * sec;
 
-            if (b.y < BALL_R) { b.y = BALL_R; b.vy = Math.abs(b.vy); }
-            if (b.y > H - BALL_R) { b.y = H - BALL_R; b.vy = -Math.abs(b.vy); }
+            if (b.y < BALL_R) { b.y = BALL_R; b.vy = Math.abs(b.vy); audio.sfx('wall'); }
+            if (b.y > H - BALL_R) { b.y = H - BALL_R; b.vy = -Math.abs(b.vy); audio.sfx('wall'); }
 
             // Player paddle
             if (
@@ -165,13 +168,15 @@ export default function Pong() {
             if (b.x < -BALL_R * 2) {
                 s.cpu += 1;
                 setScores({ you: s.you, cpu: s.cpu });
-                if (s.cpu >= WIN_SCORE) { setPhaseBoth('over'); return; }
+                if (s.cpu >= WIN_SCORE) { audio.sfx('gameOver'); setPhaseBoth('over'); return; }
+                audio.sfx('lose');
                 s.ballSpeed = Math.min(MAX_BALL_SPEED, s.ballSpeed + 12);
                 serve(s, -1);
             } else if (b.x > W + BALL_R * 2) {
                 s.you += 1;
                 setScores({ you: s.you, cpu: s.cpu });
-                if (s.you >= WIN_SCORE) { setPhaseBoth('over'); return; }
+                if (s.you >= WIN_SCORE) { audio.sfx('win'); setPhaseBoth('over'); return; }
+                audio.sfx('point');
                 s.ballSpeed = Math.min(MAX_BALL_SPEED, s.ballSpeed + 12);
                 serve(s, 1);
             }
