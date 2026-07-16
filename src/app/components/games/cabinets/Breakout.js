@@ -275,7 +275,7 @@ export default function Breakout() {
                 <span className="arc-hiscore">HI {String(Math.max(highScore, score)).padStart(6, '0')}</span>
             </div>
 
-            <div className="arc-canvas-wrap mx-auto" style={{ maxWidth: W }}>
+            <div className="arc-canvas-wrap arc-cab" style={{ '--arc-aspect': W / H }}>
                 <canvas ref={canvasRef} width={W} height={H} />
 
                 {phase !== 'playing' && (

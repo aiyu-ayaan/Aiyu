@@ -256,7 +256,7 @@ export default function SnakeGame() {
                 <span className="arc-hiscore">HI {String(Math.max(highScore, score)).padStart(6, '0')}</span>
             </div>
 
-            <div className="arc-canvas-wrap mx-auto" style={{ maxWidth: COLS * CELL }}>
+            <div className="arc-canvas-wrap arc-cab" style={{ '--arc-aspect': COLS / ROWS }}>
                 <canvas ref={canvasRef} width={COLS * CELL} height={ROWS * CELL} />
 
                 {phase !== 'playing' && (

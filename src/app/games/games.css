@@ -247,6 +247,18 @@
     image-rendering: pixelated;
 }
 
+/* Cabinet sizing: scale the play field (up or down, aspect preserved) so it
+   fills the viewport height minus the HUD/header chrome. Each game sets
+   --arc-aspect to its canvas width/height ratio. */
+.arc-cab {
+    width: min(100%, calc((100dvh - 16rem) * var(--arc-aspect, 0.85)));
+    margin-inline: auto;
+}
+
+.arc-cab canvas {
+    width: 100%;
+}
+
 /* Overlay for start / pause / game-over states */
 .arc-overlay {
     position: absolute;
