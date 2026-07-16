@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { useHighScore } from '../useHighScore';
+import { useGameAudio } from '../audio/useGameAudio';
 
 const LANES = [-3, 0, 3];
 const ROAD_W = 9.6;
@@ -164,6 +165,7 @@ export default function ByteRunner() {
     const [level, setLevel] = useState(1);
     const [levelFlash, setLevelFlash] = useState(0);
     const [highScore, submitScore] = useHighScore('byte-runner');
+    const audio = useGameAudio('byte-runner', phase);
 
     const stateRef = useRef(null);
     const phaseRef = useRef('ready');
@@ -210,6 +212,7 @@ export default function ByteRunner() {
             s.airborne = true;
             s.vy = JUMP_VY;
             s.rollTimer = 0;
+            audio.sfx('jump');
         }
     };
 
@@ -221,6 +224,7 @@ export default function ByteRunner() {
             s.queueRoll = true;
         } else {
             s.rollTimer = ROLL_TIME;
+            audio.sfx('roll');
         }
     };
 
@@ -229,7 +233,11 @@ export default function ByteRunner() {
         const move = (delta) => {
             const s = stateRef.current;
             if (!s) return;
+            const oldLane = s.lane;
             s.lane = Math.max(0, Math.min(LANES.length - 1, s.lane + delta));
+            if (s.lane !== oldLane) {
+                audio.sfx('blip');
+            }
         };
 
         const primaryAction = () => {
@@ -462,6 +470,7 @@ export default function ByteRunner() {
             setScore(s.score);
             submitScore(s.score);
             setPhaseBoth('over');
+            audio.sfx('explode');
         };
 
         const update = (dt) => {
@@ -478,6 +487,7 @@ export default function ByteRunner() {
                 setLevelFlash(newLevel);
                 clearTimeout(flashTimeout.current);
                 flashTimeout.current = setTimeout(() => setLevelFlash(0), 1300);
+                audio.sfx('levelUp');
             }
             s.speed = Math.min(MAX_SPEED, s.speed + SPEED_RAMP * sec);
             s.distance += s.speed * sec;
@@ -601,6 +611,7 @@ export default function ByteRunner() {
                         ent.active = false;
                         ent.mesh.visible = false;
                         s.coins += 1;
+                        audio.sfx('coin');
                     } else if (ent.type === 'wall') {
                         die(s);
                         return;

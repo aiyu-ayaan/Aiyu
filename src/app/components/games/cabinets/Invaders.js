@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useHighScore } from '../useHighScore';
+import { useGameAudio } from '../audio/useGameAudio';
 
 const W = 480;
 const H = 560;
@@ -46,6 +47,7 @@ export default function Invaders() {
     const [lives, setLives] = useState(3);
     const [wave, setWave] = useState(1);
     const [highScore, submitScore] = useHighScore('invaders');
+    const audio = useGameAudio('invaders', phase);
 
     const stateRef = useRef(null);
     const phaseRef = useRef('ready');
@@ -80,6 +82,7 @@ export default function Invaders() {
         const s = stateRef.current;
         if (!s || s.bullet) return;
         s.bullet = { x: s.playerX, y: PLAYER_Y - PLAYER_H / 2 };
+        audio.sfx('shoot');
     };
 
     useEffect(() => {
@@ -134,6 +137,9 @@ export default function Invaders() {
             if (s.lives <= 0) {
                 submitScore(s.score);
                 setPhaseBoth('over');
+                audio.sfx('gameOver');
+            } else {
+                audio.sfx('explode');
             }
         };
 
@@ -173,6 +179,7 @@ export default function Invaders() {
                 setLives(0);
                 submitScore(s.score);
                 setPhaseBoth('over');
+                audio.sfx('gameOver');
                 return;
             }
 
@@ -201,6 +208,7 @@ export default function Invaders() {
                             s.bullet = null;
                             s.score += ROW_POINTS[a.r] * s.wave;
                             setScore(s.score);
+                            audio.sfx('hit');
                             break;
                         }
                     }
@@ -228,6 +236,7 @@ export default function Invaders() {
                 s.fleet = buildFleet(s.wave);
                 s.bullet = null;
                 s.alienBullets = [];
+                audio.sfx('levelUp');
             }
         };
 
