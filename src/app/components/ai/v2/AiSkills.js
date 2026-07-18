@@ -87,6 +87,31 @@ export default function AiSkills({ index, section, limit = null, detailHref = nu
         refreshScrollTriggersSoon();
     }, [active, page]);
 
+    // Auto-paging: a sentinel below the grid pulls the next page as it nears
+    // the viewport, so the catalog reads as one continuous list. The margin
+    // fires it a screenful early — the next page is already in the DOM by the
+    // time the user reaches where it goes, so no spinner is ever seen.
+    const sentinel = useRef(null);
+    const [autoPaging, setAutoPaging] = useState(false);
+
+    useEffect(() => {
+        if (typeof IntersectionObserver !== 'function') return undefined;
+        setAutoPaging(true);
+        const node = sentinel.current;
+        if (!node) return undefined;
+
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                // Bounded by `remaining` at render time: once the last page is
+                // rendered the sentinel unmounts and the observer is torn down.
+                if (entry.isIntersecting) setPage((cur) => cur + 1);
+            },
+            { rootMargin: '800px 0px' }
+        );
+        observer.observe(node);
+        return () => observer.disconnect();
+    }, [active, page, remaining]);
+
     return (
         <AiSectionShell index={index} section={section}>
             {/* Filter row — full catalog only; a capped preview hides it. */}
@@ -123,20 +148,29 @@ export default function AiSkills({ index, section, limit = null, detailHref = nu
             )}
 
             {remaining > 0 && (
-                <div className="mt-10 flex flex-col items-center gap-3">
-                    <button
-                        type="button"
-                        onClick={() => setPage((cur) => cur + 1)}
-                        className="cursor-pointer rounded-full px-7 py-3 font-mono text-xs uppercase tracking-[0.15em] transition-all duration-200"
-                        style={{
-                            color: section.accent,
-                            background: `color-mix(in srgb, ${section.accent} 12%, transparent)`,
-                            border: `1px solid ${section.accent}`,
-                        }}
+                <div ref={sentinel} className="mt-10 flex flex-col items-center gap-3">
+                    {/* Only surfaced where auto-paging can't run (no
+                        IntersectionObserver, or JS still hydrating) — otherwise
+                        a button the user never needs to press is just noise. */}
+                    {!autoPaging && (
+                        <button
+                            type="button"
+                            onClick={() => setPage((cur) => cur + 1)}
+                            className="cursor-pointer rounded-full px-7 py-3 font-mono text-xs uppercase tracking-[0.15em] transition-all duration-200"
+                            style={{
+                                color: section.accent,
+                                background: `color-mix(in srgb, ${section.accent} 12%, transparent)`,
+                                border: `1px solid ${section.accent}`,
+                            }}
+                        >
+                            Load {Math.min(remaining, PAGE_SIZE)} more
+                        </button>
+                    )}
+                    <span
+                        aria-live="polite"
+                        className="font-mono text-[0.65rem] uppercase tracking-[0.15em]"
+                        style={{ color: 'var(--text-muted)' }}
                     >
-                        Load {Math.min(remaining, PAGE_SIZE)} more
-                    </button>
-                    <span className="font-mono text-[0.65rem] uppercase tracking-[0.15em]" style={{ color: 'var(--text-muted)' }}>
                         {visibleSkills.length} of {filtered.length}
                     </span>
                 </div>
