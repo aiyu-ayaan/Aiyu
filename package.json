@@ -47,7 +47,7 @@
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@prisma/client": "^6.19.3",
     "@tailwindcss/typography": "^0.5.19",
-    "adm-zip": "^0.5.17",
+    "adm-zip": "^0.6.0",
     "archiver": "^7.0.1",
     "canvas-confetti": "^1.9.4",
     "clsx": "^2.1.1",
