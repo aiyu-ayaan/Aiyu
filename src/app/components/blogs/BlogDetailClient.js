@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import dynamic from 'next/dynamic';
-import { FaArrowLeft, FaCalendarAlt, FaClock, FaShareAlt, FaTag, FaBolt, FaListUl, FaTimes } from 'react-icons/fa';
+import { FaArrowLeft, FaCalendarAlt, FaClock, FaShareAlt, FaTag, FaBolt, FaListUl, FaTimes, FaEye } from 'react-icons/fa';
 import { IoCheckmark } from 'react-icons/io5';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import LinkPreview from './LinkPreview';
@@ -140,7 +140,7 @@ const AdUnit = memo(({ adsConfig, positionKey }) => {
 
 AdUnit.displayName = 'AdUnit';
 
-export default memo(function BlogDetailClient({ blog, config, adsConfig, backHref = '/blogs' }) {
+export default memo(function BlogDetailClient({ blog, config, adsConfig, viewCount = null, backHref = '/blogs' }) {
   const [selectedImage, setSelectedImage] = useState(null);
   const [showShareToast, setShowShareToast] = useState(false);
   const [imageError, setImageError] = useState(false);
@@ -182,6 +182,14 @@ export default memo(function BlogDetailClient({ blog, config, adsConfig, backHre
   const authorName = useMemo(() => {
     return config?.authorName || config?.author || config?.name || 'Author';
   }, [config]);
+
+  // `null` means the admin has the option switched off — render nothing at all
+  // rather than a "0 views" placeholder.
+  const formattedViews = useMemo(() => {
+    if (typeof viewCount !== 'number' || !Number.isFinite(viewCount)) return null;
+    const rounded = Math.max(0, Math.trunc(viewCount));
+    return `${rounded.toLocaleString()} ${rounded === 1 ? 'view' : 'views'}`;
+  }, [viewCount]);
 
   // Memoize image checks
   const hasImage = useMemo(() => Boolean(blog?.image && String(blog.image).trim() !== ''), [blog?.image]);
@@ -360,6 +368,15 @@ export default memo(function BlogDetailClient({ blog, config, adsConfig, backHre
             <span>{formatBlogDate(blog.date || blog.createdAt)}</span>
             <span>&bull;</span>
             <span>{getReadTime(sanitizedContent)}</span>
+            {formattedViews && (
+              <>
+                <span>&bull;</span>
+                <span className="inline-flex items-center gap-1.5">
+                  <FaEye className="h-3.5 w-3.5" aria-hidden="true" />
+                  {formattedViews}
+                </span>
+              </>
+            )}
           </div>
 
           {tags.length > 0 && (

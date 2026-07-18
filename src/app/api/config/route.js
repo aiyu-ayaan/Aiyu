@@ -34,6 +34,7 @@ const PUBLIC_CONFIG_KEYS = [
     'blogsSubtitle',
     'isBlogAutomated',
     'blogAutomationMessage',
+    'showBlogViewCount',
     'projectsTitle',
     'projectsSubtitle',
     'galleryTitle',

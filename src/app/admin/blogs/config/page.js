@@ -14,7 +14,8 @@ export default function BlogConfigPage() {
         blogsTitle: 'Latest Insights',
         blogsSubtitle: 'Thoughts, tutorials, and updates on web development and technology.',
         isBlogAutomated: false,
-        blogAutomationMessage: 'Automated via API'
+        blogAutomationMessage: 'Automated via API',
+        showBlogViewCount: false
     });
 
     const showToast = (message, success = true) => {
@@ -32,7 +33,8 @@ export default function BlogConfigPage() {
                         blogsTitle: data.blogsTitle || '',
                         blogsSubtitle: data.blogsSubtitle || '',
                         isBlogAutomated: !!data.isBlogAutomated,
-                        blogAutomationMessage: data.blogAutomationMessage || ''
+                        blogAutomationMessage: data.blogAutomationMessage || '',
+                        showBlogViewCount: !!data.showBlogViewCount
                     });
                 }
             } catch (error) {
@@ -122,7 +124,26 @@ export default function BlogConfigPage() {
                                 <span className="text-sm font-medium text-slate-300">Indicate Blog Automation</span>
                             </label>
                         </div>
-                        
+
+                        <div className="border-t border-slate-700/50 pt-6">
+                            <label className="flex items-center gap-3 cursor-pointer">
+                                <div className="relative">
+                                    <input
+                                        type="checkbox"
+                                        className="sr-only"
+                                        checked={config.showBlogViewCount}
+                                        onChange={(e) => setConfig({ ...config, showBlogViewCount: e.target.checked })}
+                                    />
+                                    <div className={`block w-10 h-6 rounded-full transition-colors ${config.showBlogViewCount ? 'bg-cyan-500' : 'bg-slate-700'}`}></div>
+                                    <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${config.showBlogViewCount ? 'translate-x-4' : ''}`}></div>
+                                </div>
+                                <span className="text-sm font-medium text-slate-300">Show View Count on Blogs</span>
+                            </label>
+                            <p className="mt-2 ml-[52px] text-xs text-slate-500">
+                                Displays total views on each article, counted from your own analytics. Views recorded while you are logged in as admin are never counted.
+                            </p>
+                        </div>
+
                         {config.isBlogAutomated && (
                             <div>
                                 <label className="block text-sm font-medium text-slate-300 mb-2">Automation Hover Message</label>

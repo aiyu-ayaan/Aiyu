@@ -165,6 +165,28 @@ async function bumpDaily(event, isUnique) {
 }
 
 /**
+ * Total recorded views for one entity, summed across every daily rollup bucket.
+ *
+ * Reads the pre-aggregated `AnalyticsDaily` table rather than scanning the raw
+ * event log, so this is cheap enough to call while rendering a public page.
+ * Best-effort: any failure yields 0 so a stats hiccup never breaks the page.
+ */
+export async function getEntityViewCount(entityType, entityId) {
+  if (!ENTITY_TYPES.includes(entityType) || !entityId) return 0;
+
+  try {
+    const result = await prisma.analyticsDaily.aggregate({
+      where: { type: 'entity_view', entityType, entityId: String(entityId) },
+      _sum: { views: true },
+    });
+    return result?._sum?.views || 0;
+  } catch (error) {
+    console.error('[analytics] getEntityViewCount failed:', error?.message);
+    return 0;
+  }
+}
+
+/**
  * Record one analytics event. Best-effort: returns { ok } and never throws.
  */
 export async function recordEvent(payload, request) {

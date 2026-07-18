@@ -39,6 +39,12 @@ function RouteChangeTracker({ gaId }) {
 }
 
 export default function GoogleAnalytics({ gaId }) {
+    const pathname = usePathname();
+
+    // The admin panel is tooling, not content — never load GA there. The root
+    // layout wraps /admin too, so this guard is what keeps the tag off it (it
+    // also covers the login screen, where there is no session to detect yet).
+    if (pathname?.startsWith('/admin')) return null;
     if (!gaId || !GA_ID_RE.test(gaId)) return null;
 
     return (

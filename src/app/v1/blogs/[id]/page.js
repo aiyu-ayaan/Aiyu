@@ -3,6 +3,7 @@ import TrackView from '../../../components/shared/TrackView';
 import { cache } from 'react';
 import { notFound, permanentRedirect } from 'next/navigation';
 import { getBlogById, getConfigData } from '@/lib/dataFetchers';
+import { getEntityViewCount } from '@/lib/analytics';
 import { getAdsData } from '@/lib/adsDataFetcher';
 import { generateBlogSchema } from '@/app/schema';
 import { getSafeCanonicalUrl, getSiteUrl } from '@/lib/siteUrl';
@@ -111,6 +112,11 @@ export default async function BlogDetailPage({ params }) {
         permanentRedirect(`/blogs/${canonicalSlug}`);
     }
 
+    // Opt-in via admin blog settings; `null` keeps the meta row unchanged.
+    const viewCount = config?.showBlogViewCount
+        ? await getEntityViewCount('blog', blog?._id)
+        : null;
+
     const baseUrl = getBaseUrl();
     const canonicalUrl = getSafeCanonicalUrl(blog?.canonicalUrl, `/blogs/${canonicalSlug}`);
     const fallbackDescription = blog?.content?.substring(0, 160) || 'Blog article';
@@ -141,7 +147,7 @@ export default async function BlogDetailPage({ params }) {
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(blogSchema) }}
             />
             <TrackView entityType="blog" entityId={blog?._id} entitySlug={canonicalSlug} />
-            <BlogDetailClient blog={blog} config={config} adsConfig={adsConfig} />
+            <BlogDetailClient blog={blog} config={config} adsConfig={adsConfig} viewCount={viewCount} />
         </>
     );
 }

@@ -93,6 +93,7 @@ export const viewport = {
 }
 
 import GoogleAnalytics from "./components/GoogleAnalytics";
+import { isAdminViewer } from "@/lib/adminPresence";
 import ClientEnhancements from "./components/shared/ClientEnhancements";
 import DynamicLiveCommitStream from "./components/shared/DynamicLiveCommitStream";
 import BootLoader from "./components/shared/BootLoader";
@@ -101,7 +102,13 @@ export default async function RootLayout({ children }) {
   const config = await getConfigData();
   const adsConfig = await getAdsData();
   const adsenseClientId = typeof adsConfig?.clientId === 'string' ? adsConfig.clientId.trim() : '';
-  const gaId = config?.googleAnalyticsId || process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
+  // While logged in as admin, our own browsing must not be measured. The
+  // first-party beacon is already rejected server-side by /api/analytics/track;
+  // GA runs entirely in the browser, so it has to be withheld at render time.
+  const isAdmin = await isAdminViewer();
+  const gaId = isAdmin
+    ? null
+    : config?.googleAnalyticsId || process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
   return (
     <html

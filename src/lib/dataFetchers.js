@@ -94,6 +94,7 @@ const CONFIG_PUBLIC_SELECT = [
     'blogsSubtitle',
     'isBlogAutomated',
     'blogAutomationMessage',
+    'showBlogViewCount',
     'projectsTitle',
     'projectsSubtitle',
     'galleryTitle',
