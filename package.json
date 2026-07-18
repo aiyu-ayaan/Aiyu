@@ -46,7 +46,7 @@
     "@gsap/react": "^2.1.2",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@prisma/client": "^6.19.3",
-    "@tailwindcss/typography": "^0.5.19",
+    "@tailwindcss/typography": "^0.5.20",
     "adm-zip": "^0.5.17",
     "archiver": "^7.0.1",
     "canvas-confetti": "^1.9.4",
