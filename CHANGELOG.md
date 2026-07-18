@@ -1,5 +1,24 @@
 # Changelog
 
+## [4.9.0](https://github.com/aiyu-ayaan/Aiyu/compare/v4.8.1...v4.9.0) (2026-07-18)
+
+### Features
+
+* : Feat release is done
+* Optional view count, and keep admin traffic out of analytics
+* Sync deployment config and validate before restart
+* Auto-load the next page as the grid nears the viewport
+* Optimize memory usage and caching for production environment
+
+### Bug Fixes
+
+* Cap group stagger so large catalogs never stall at opacity 0
+
+### Other Changes
+
+* Merge branch 'master' of https://github.com/aiyu-ayaan/Aiyu
+* Page the catalog instead of mounting every card
+
 ## [4.8.1](https://github.com/aiyu-ayaan/Aiyu/compare/v4.8.0...v4.8.1) (2026-07-16)
 
 ### Features
