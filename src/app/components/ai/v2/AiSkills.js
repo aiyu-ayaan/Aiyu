@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import AiSectionShell from './AiSectionShell';
 import AiSeeAll from './AiSeeAll';
 import { refreshScrollTriggersSoon } from '@/app/components/landing/v2/gsap3d';
@@ -11,12 +11,22 @@ import { refreshScrollTriggersSoon } from '@/app/components/landing/v2/gsap3d';
  * an unbounded catalog: categories only exist as filter chips and as the tag
  * stamped on each card.
  *
- * Animation contract: the whole grid animates off ONE data-v2-group trigger,
- * so entrance cost stays constant no matter how many skills exist, and
- * filtering never unmounts a card — it only toggles `hidden` — so the GSAP
- * tweens created at mount always keep their targets. The only thing a filter
- * change needs is a ScrollTrigger refresh because the grid height moved.
+ * Rendering contract: the DOM only ever holds one page of cards. An earlier
+ * version mounted the entire catalog and merely toggled `hidden` to filter;
+ * at a couple thousand skills that meant a couple thousand blurred glass
+ * surfaces the compositor had to keep alive, and filtering stayed slow because
+ * nothing ever left the document. Paging keeps the node count flat, so a
+ * filter switch costs the same whether the catalog holds 20 skills or 20,000.
+ *
+ * Animation contract: the visible page animates off ONE data-v2-group trigger.
+ * Cards appended by "load more" mount after the GSAP scope has run and so
+ * carry no tween — they simply appear, which is the correct behaviour for
+ * content the user explicitly asked to see. Grid height moves on every filter
+ * or page change, so downstream ScrollTriggers are refreshed.
  */
+
+/** Cards added per page — one to two scrolls' worth on a 3-column grid. */
+const PAGE_SIZE = 24;
 export default function AiSkills({ index, section, limit = null, detailHref = null, totalCount = null }) {
     const categories = useMemo(
         () => (Array.isArray(section.data?.categories) ? section.data.categories : []),
@@ -43,14 +53,39 @@ export default function AiSkills({ index, section, limit = null, detailHref = nu
     // catalog to the /ai/skills sub-page. Filtering a truncated set would be
     // misleading, so the chips are hidden while previewing.
     const previewing = Number.isFinite(limit) && limit > 0 && skills.length > limit;
-    const visibleSkills = previewing ? skills.slice(0, limit) : skills;
     const total = Number.isFinite(totalCount) ? totalCount : skills.length;
 
-    // Grid height changes when cards are hidden/shown; reposition the
+    // Per-category counts, computed once — the chips advertise how much is
+    // behind each filter before the user commits to tapping it.
+    const counts = useMemo(() => {
+        const map = new Map();
+        for (const skill of skills) map.set(skill.categoryId, (map.get(skill.categoryId) || 0) + 1);
+        return map;
+    }, [skills]);
+
+    const filtered = useMemo(
+        () => (active === 'all' ? skills : skills.filter((skill) => skill.categoryId === active)),
+        [skills, active]
+    );
+
+    const [page, setPage] = useState(1);
+
+    // A filter switch is a new result set, so paging restarts. Skipping the
+    // first render keeps the initial page from being reset needlessly.
+    const mounted = useRef(false);
+    useEffect(() => {
+        if (mounted.current) setPage(1);
+        else mounted.current = true;
+    }, [active]);
+
+    const visibleSkills = previewing ? skills.slice(0, limit) : filtered.slice(0, page * PAGE_SIZE);
+    const remaining = previewing ? 0 : filtered.length - visibleSkills.length;
+
+    // Grid height changes on every filter or page change; reposition the
     // ScrollTriggers of everything further down the page.
     useEffect(() => {
         refreshScrollTriggersSoon();
-    }, [active]);
+    }, [active, page]);
 
     return (
         <AiSectionShell index={index} section={section}>
@@ -66,7 +101,7 @@ export default function AiSkills({ index, section, limit = null, detailHref = nu
                     {categories.map((cat) => (
                         <FilterChip
                             key={cat.id}
-                            label={cat.label}
+                            label={`${cat.label} · ${counts.get(cat.id) || 0}`}
                             active={active === cat.id}
                             accent={cat.accent || section.accent}
                             onClick={() => setActive(cat.id)}
@@ -77,13 +112,35 @@ export default function AiSkills({ index, section, limit = null, detailHref = nu
 
             <div data-v2-group data-v2-stagger="0.05" className="grid grid-cols-1 items-start gap-5 md:grid-cols-2 xl:grid-cols-3">
                 {visibleSkills.map((skill) => (
-                    <SkillCard
-                        key={skill.id || `${skill.categoryId}-${skill.name}`}
-                        skill={skill}
-                        hidden={!previewing && active !== 'all' && active !== skill.categoryId}
-                    />
+                    <SkillCard key={skill.id || `${skill.categoryId}-${skill.name}`} skill={skill} />
                 ))}
             </div>
+
+            {!previewing && filtered.length === 0 && (
+                <p className="font-mono text-sm" style={{ color: 'var(--text-muted)' }}>
+                    No skills in this category yet.
+                </p>
+            )}
+
+            {remaining > 0 && (
+                <div className="mt-10 flex flex-col items-center gap-3">
+                    <button
+                        type="button"
+                        onClick={() => setPage((cur) => cur + 1)}
+                        className="cursor-pointer rounded-full px-7 py-3 font-mono text-xs uppercase tracking-[0.15em] transition-all duration-200"
+                        style={{
+                            color: section.accent,
+                            background: `color-mix(in srgb, ${section.accent} 12%, transparent)`,
+                            border: `1px solid ${section.accent}`,
+                        }}
+                    >
+                        Load {Math.min(remaining, PAGE_SIZE)} more
+                    </button>
+                    <span className="font-mono text-[0.65rem] uppercase tracking-[0.15em]" style={{ color: 'var(--text-muted)' }}>
+                        {visibleSkills.length} of {filtered.length}
+                    </span>
+                </div>
+            )}
 
             {previewing && (
                 <AiSeeAll href={detailHref} label={`See all ${total} skills`} accent={section.accent} />
@@ -110,7 +167,7 @@ function FilterChip({ label, active, accent, onClick }) {
     );
 }
 
-function SkillCard({ skill, hidden }) {
+function SkillCard({ skill }) {
     const { accent } = skill;
     const Wrapper = skill.url ? 'a' : 'div';
     const linkProps = skill.url
@@ -121,7 +178,6 @@ function SkillCard({ skill, hidden }) {
         <Wrapper
             {...linkProps}
             data-v2="flip-x"
-            hidden={hidden}
             className="group relative flex h-full flex-col rounded-2xl p-5 transition-all duration-300 sm:p-6"
             style={{
                 border: '1px solid var(--hairline)',
