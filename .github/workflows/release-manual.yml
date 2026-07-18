@@ -466,6 +466,88 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Deploying version: $VERSION"
 
+      # Ship the repo's deployment config to the server so docker-compose.yml and
+      # nginx.conf on the host always match the released commit. Files land in a
+      # staging dir; the SSH step below backs up, installs, and validates them.
+      # Disable by setting repository variable SYNC_DEPLOY_CONFIG to "false".
+      - name: Upload deployment config to server
+        if: vars.SYNC_DEPLOY_CONFIG != 'false'
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          source: 'docker-compose.yml,nginx.conf'
+          target: docker/Aiyu/.deploy-sync/
+          overwrite: true
+
+      - name: Install deployment config on server
+        if: vars.SYNC_DEPLOY_CONFIG != 'false'
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          script: |
+            set -e
+
+            cd docker/Aiyu/ || { echo "Failed to navigate to docker/Aiyu/"; exit 1; }
+
+            STAMP="$(date +%Y%m%d-%H%M%S)"
+            mkdir -p .deploy-backup
+
+            for FILE in docker-compose.yml nginx.conf; do
+              NEW=".deploy-sync/$FILE"
+              [ -f "$NEW" ] || { echo "Missing uploaded $FILE"; exit 1; }
+
+              if [ -f "$FILE" ] && cmp -s "$FILE" "$NEW"; then
+                echo "$FILE unchanged."
+                continue
+              fi
+
+              if [ -f "$FILE" ]; then
+                cp "$FILE" ".deploy-backup/$FILE.$STAMP"
+                echo "Backed up $FILE to .deploy-backup/$FILE.$STAMP"
+              fi
+              cp "$NEW" "$FILE"
+              echo "Updated $FILE from repo."
+            done
+
+            # Validate the new nginx.conf before any container restarts. A bad
+            # config here would otherwise take the site down on `up -d`.
+            echo "Validating nginx.conf..."
+            if ! sudo docker run --rm \
+              -v "$PWD/nginx.conf:/etc/nginx/nginx.conf:ro" \
+              nginx:alpine nginx -t -c /etc/nginx/nginx.conf; then
+              echo "nginx.conf failed validation; restoring previous config."
+              if [ -f ".deploy-backup/nginx.conf.$STAMP" ]; then
+                cp ".deploy-backup/nginx.conf.$STAMP" nginx.conf
+              fi
+              if [ -f ".deploy-backup/docker-compose.yml.$STAMP" ]; then
+                cp ".deploy-backup/docker-compose.yml.$STAMP" docker-compose.yml
+              fi
+              exit 1
+            fi
+
+            echo "Validating docker-compose.yml..."
+            sudo docker compose config -q || {
+              echo "docker-compose.yml is invalid; restoring previous config."
+              if [ -f ".deploy-backup/docker-compose.yml.$STAMP" ]; then
+                cp ".deploy-backup/docker-compose.yml.$STAMP" docker-compose.yml
+              fi
+              if [ -f ".deploy-backup/nginx.conf.$STAMP" ]; then
+                cp ".deploy-backup/nginx.conf.$STAMP" nginx.conf
+              fi
+              exit 1
+            }
+
+            rm -rf .deploy-sync
+            # Keep only the 10 most recent backups per file.
+            ls -1t .deploy-backup/docker-compose.yml.* 2>/dev/null | tail -n +11 | xargs -r rm -f
+            ls -1t .deploy-backup/nginx.conf.* 2>/dev/null | tail -n +11 | xargs -r rm -f
+
+            echo "Deployment config sync complete."
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@master
         with:
@@ -485,6 +567,11 @@ jobs:
 
             echo "Restarting containers..."
             sudo docker compose up -d || { echo "Failed to start containers"; exit 1; }
+
+            # nginx.conf is a bind mount, so a changed file does not make Compose
+            # recreate the container. Reload explicitly to pick up config edits.
+            echo "Reloading nginx config..."
+            sudo docker compose exec -T nginx nginx -s reload || echo "nginx reload skipped."
 
             echo "Deployment completed successfully!"
 
@@ -712,6 +799,82 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Same config sync as the normal deploy: a hotfix may be a compose/nginx
+      # fix, so the host files must match the pushed commit.
+      - name: Upload deployment config to server
+        if: vars.SYNC_DEPLOY_CONFIG != 'false'
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          source: 'docker-compose.yml,nginx.conf'
+          target: docker/Aiyu/.deploy-sync/
+          overwrite: true
+
+      - name: Install deployment config on server
+        if: vars.SYNC_DEPLOY_CONFIG != 'false'
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          script: |
+            set -e
+
+            cd docker/Aiyu/ || { echo "Failed to navigate to docker/Aiyu/"; exit 1; }
+
+            STAMP="$(date +%Y%m%d-%H%M%S)"
+            mkdir -p .deploy-backup
+
+            for FILE in docker-compose.yml nginx.conf; do
+              NEW=".deploy-sync/$FILE"
+              [ -f "$NEW" ] || { echo "Missing uploaded $FILE"; exit 1; }
+
+              if [ -f "$FILE" ] && cmp -s "$FILE" "$NEW"; then
+                echo "$FILE unchanged."
+                continue
+              fi
+
+              if [ -f "$FILE" ]; then
+                cp "$FILE" ".deploy-backup/$FILE.$STAMP"
+                echo "Backed up $FILE to .deploy-backup/$FILE.$STAMP"
+              fi
+              cp "$NEW" "$FILE"
+              echo "Updated $FILE from repo."
+            done
+
+            restore() {
+              [ -f ".deploy-backup/nginx.conf.$STAMP" ] && cp ".deploy-backup/nginx.conf.$STAMP" nginx.conf
+              [ -f ".deploy-backup/docker-compose.yml.$STAMP" ] && cp ".deploy-backup/docker-compose.yml.$STAMP" docker-compose.yml
+              true
+            }
+
+            echo "Validating nginx.conf..."
+            sudo docker run --rm \
+              -v "$PWD/nginx.conf:/etc/nginx/nginx.conf:ro" \
+              nginx:alpine nginx -t -c /etc/nginx/nginx.conf || {
+                echo "nginx.conf failed validation; restoring previous config."
+                restore
+                exit 1
+              }
+
+            echo "Validating docker-compose.yml..."
+            sudo docker compose config -q || {
+              echo "docker-compose.yml is invalid; restoring previous config."
+              restore
+              exit 1
+            }
+
+            rm -rf .deploy-sync
+            ls -1t .deploy-backup/docker-compose.yml.* 2>/dev/null | tail -n +11 | xargs -r rm -f
+            ls -1t .deploy-backup/nginx.conf.* 2>/dev/null | tail -n +11 | xargs -r rm -f
+
+            echo "Deployment config sync complete."
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@master
         with:
