@@ -48,6 +48,16 @@ const V2_DURATION = 1.0;
 
 const getV2Preset = (el) => V2_PRESETS[el.dataset.v2] || V2_PRESETS.rise;
 
+// A per-child stagger is only a reveal rhythm, never a queue: on a large
+// catalog `each × count` grows without bound and the tail of the group sits at
+// autoAlpha 0 for minutes, which reads as a page stuck loading. Cap the total
+// spread so the last child always lands within this window.
+const V2_STAGGER_MAX_TOTAL = 0.8;
+
+// Past this many children the entrance stops being a stagger and starts being
+// a cost: the group animates as one element instead.
+const V2_GROUP_MAX_CHILDREN = 48;
+
 function revealV2(target, preset, { delay = 0, stagger = 0, trigger } = {}) {
     const firstTarget = Array.isArray(target) ? target[0] : target;
     
@@ -90,8 +100,18 @@ export function animateV2Reveals(scope, { reducedMotion = false } = {}) {
         const children = Array.from(group.querySelectorAll('[data-v2]')).filter((el) => !claimed.has(el));
         if (children.length === 0) return;
         children.forEach((el) => claimed.add(el));
+
+        // Big group: one tween on the container. Children keep their own paint
+        // but cost nothing extra to reveal, and none of them can be left behind
+        // at opacity 0.
+        if (children.length > V2_GROUP_MAX_CHILDREN) {
+            revealV2(group, V2_PRESETS.rise, { trigger: group });
+            return;
+        }
+
+        const each = Number(group.dataset.v2Stagger) || 0.1;
         revealV2(children, getV2Preset(children[0]), {
-            stagger: Number(group.dataset.v2Stagger) || 0.1,
+            stagger: Math.min(each, V2_STAGGER_MAX_TOTAL / children.length),
             trigger: group,
         });
     });
