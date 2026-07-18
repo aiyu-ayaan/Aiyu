@@ -63,8 +63,11 @@ services:
     security_opt:
       - no-new-privileges:true
     read_only: true
-    # No memory/CPU caps: the app may use the full server capacity. Docker
-    # only OOM-kills a container when a limit is set.
+    # Soft ceiling, not a straitjacket: the Node heap is capped at 384MB in the
+    # image (NODE_OPTIONS), so 1g leaves ample headroom for sharp buffers and
+    # never OOM-kills in practice while letting the kernel reclaim page cache.
+    # Raise via APP_MEMORY_LIMIT on bigger hosts.
+    mem_limit: ${APP_MEMORY_LIMIT:-1g}
     healthcheck:
       test: ["CMD", "sh", "/app/healthcheck.sh"]
       interval: 15s

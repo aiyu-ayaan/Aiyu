@@ -26,6 +26,11 @@ const nextConfig = {
   allowedDevOrigins: ['192.168.31.54', '192.168.1.102'],
   assetPrefix: isProduction && cdnUrl ? cdnUrl : undefined,
 
+  // Skip the in-memory ISR/fetch cache: the same entries are already persisted
+  // in .next/cache (a mounted volume in Docker) and HTML is cached at the CDN,
+  // so the default 50MB RAM duplicate only inflates the container's RSS.
+  cacheMaxMemorySize: 0,
+
   // Enhanced performance optimizations
   experimental: {
     optimizeCss: true,
