@@ -50,6 +50,7 @@ services:
       DATABASE_URL: ${APP_DATABASE_URL:-postgresql://${POSTGRES_USER:-aiyu}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-aiyu}?schema=public}
       # Run `prisma migrate deploy` from the container entrypoint before boot.
       RUN_MIGRATIONS: "true"
+      RUN_SEED: ${RUN_SEED:-auto}
       # N8N webhook URL
       NEXT_PUBLIC_N8N_WEBHOOK_URL: ${NEXT_PUBLIC_N8N_WEBHOOK_URL}
       # Base URL for SEO/OG tags

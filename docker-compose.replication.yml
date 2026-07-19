@@ -101,6 +101,7 @@ services:
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgresql://${POSTGRES_USER:-aiyu}:${POSTGRES_PASSWORD}@postgres-primary:5432/${POSTGRES_DB:-aiyu}?schema=public}
       RUN_MIGRATIONS: "true"
+      RUN_SEED: ${RUN_SEED:-auto}
       NEXT_PUBLIC_N8N_WEBHOOK_URL: ${NEXT_PUBLIC_N8N_WEBHOOK_URL}
       NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL}
       SITE_URL: ${SITE_URL}

@@ -18,5 +18,17 @@ if [ "${RUN_MIGRATIONS}" = "true" ] && [ -n "${DATABASE_URL}" ]; then
   fi
 fi
 
+# Seed the database when RUN_SEED is set. "auto" (the recommended value) only
+# seeds a database that is still empty, so restarting an existing deployment
+# never wipes content; "force" re-runs the destructive base seeder.
+if [ -n "${RUN_SEED}" ] && [ "${RUN_SEED}" != "false" ] && [ -n "${DATABASE_URL}" ]; then
+  echo "[entrypoint] Running seed bootstrap (RUN_SEED=${RUN_SEED})..."
+  if node /app/scripts/seed-bootstrap.mjs; then
+    echo "[entrypoint] Seed bootstrap finished."
+  else
+    echo "[entrypoint] WARNING: seed bootstrap failed; starting app anyway." >&2
+  fi
+fi
+
 echo "[entrypoint] Starting Next.js server..."
 exec node server.js

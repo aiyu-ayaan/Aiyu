@@ -33,6 +33,9 @@ services:
       DATABASE_URL: ${APP_DATABASE_URL:-postgresql://${POSTGRES_USER:-aiyu}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-aiyu}?schema=public}
       # Apply pending Prisma migrations on container start (entrypoint).
       RUN_MIGRATIONS: "true"
+      # Seed a fresh database on first boot. "auto" is a no-op once content
+      # exists; set RUN_SEED=force to wipe and re-seed the base tables.
+      RUN_SEED: ${RUN_SEED:-auto}
       NEXT_PUBLIC_N8N_WEBHOOK_URL: ${NEXT_PUBLIC_N8N_WEBHOOK_URL}
       NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL}
       SITE_URL: ${SITE_URL}

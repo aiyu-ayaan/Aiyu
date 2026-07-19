@@ -157,6 +157,19 @@ COPY --from=prismacli --chown=nextjs:nodejs /prismacli/node_modules /app/prisma-
 COPY --chown=nextjs:nodejs scripts/healthcheck.sh /app/healthcheck.sh
 COPY --chown=nextjs:nodejs scripts/docker-entrypoint.sh /app/docker-entrypoint.sh
 
+# Seeder. The Next.js standalone trace only contains what the server imports, so
+# the seed scripts and the plain data modules they read must be copied
+# explicitly. They resolve @prisma/client from /app/node_modules and are run by
+# the entrypoint when RUN_SEED is set (see scripts/seed-bootstrap.mjs).
+COPY --chown=nextjs:nodejs scripts/seed-bootstrap.mjs scripts/seed.mjs scripts/seed-ai-sections.mjs /app/scripts/
+COPY --chown=nextjs:nodejs src/app/data /app/src/app/data
+COPY --chown=nextjs:nodejs src/lib/aiPageDefaults.js /app/src/lib/aiPageDefaults.js
+# Those data modules are ESM `.js` with no "type" field at the repo root (Next
+# transpiles them). Marking /app/src as ESM makes `node` parse them the same way
+# instead of depending on Node's module-syntax detection.
+RUN echo '{"type":"module"}' > /app/src/package.json \
+    && chown nextjs:nodejs /app/src/package.json
+
 # Create writable directories needed when running with read-only root fs.
 # Strip any CR characters first: when the build context comes from a Windows
 # checkout the .sh files can carry CRLF endings, which makes `sh` fail with
