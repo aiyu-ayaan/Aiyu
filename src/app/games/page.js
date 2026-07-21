@@ -45,7 +45,9 @@ export default function GamesPage() {
                         <span className="arc-card-title">{game.title}</span>
                         <span className="arc-card-tagline">{game.tagline}</span>
                         <span className="arc-card-footer">
-                            {game.scored ? (
+                            {game.badge ? (
+                                <span className="arc-hiscore">{game.badge}</span>
+                            ) : game.scored ? (
                                 <HighScoreBadge slug={game.slug} />
                             ) : (
                                 <span className="arc-hiscore">VS CPU / 2P</span>

@@ -234,35 +234,6 @@ export const TRACKS = {
         },
     },
 
-    // Red. Palm-muted chug on the low string — pure demon-slaying dread.
-    doom: {
-        bpm: 140,
-        lead: {
-            wave: 'sawtooth', gain: 0.10, bars: [
-                'E4 . . E4 . . E4 . G4 . F4 . E4 . . .',
-                'E4 . . E4 . . E4 . Bb4 . A4 . G4 . . .',
-                'E4 . . E4 . . E4 . C5 . Bb4 . A4 . . .',
-                'E4 . . D4 . . E4 . G4 . Bb4 . B4 . . .',
-            ],
-        },
-        bass: {
-            wave: 'square', gain: 0.26, bars: [
-                'E1 E1 . E1 E1 . E1 E1 E1 E1 . E1 E1 . G1 F1',
-                'E1 E1 . E1 E1 . E1 E1 E1 E1 . E1 Bb1 . A1 .',
-                'E1 E1 . E1 E1 . E1 E1 E1 E1 . E1 C2 . Bb1 .',
-                'E1 E1 . E1 E1 . E1 E1 E1 E1 . E1 Bb1 . B1 .',
-            ],
-        },
-        drums: {
-            gain: 0.19, bars: [
-                'K h K h S h K h K h K h S h K H',
-                'K h K h S h K h K h K h S h K H',
-                'K h K h S h K h K h K h S h K H',
-                'K h K h S h K h K h S S S h S H',
-            ],
-        },
-    },
-
     // Red. Slow and brooding — there is no game loop here to compete with.
     'tic-tac-toe': {
         bpm: 92,

@@ -82,9 +82,10 @@ export const GAMES = [
         title: 'DOOM',
         icon: '👹',
         color: 'var(--arc-red)',
-        tagline: 'Raycast the halls of hell. Strafe the maze, blast the demons, clear the wave — ammo is short, they are not.',
-        controls: 'W/S move · A/D strafe · ◀ ▶ or arrows turn · SPACE / click fire · drag to look',
-        scored: true,
+        tagline: 'The real 1993 id Software shareware — Knee-Deep in the Dead — booted in-browser on a WebAssembly DOS emulator.',
+        controls: 'W/S move · A/D strafe · ◀ ▶ turn · FIRE shoot · USE doors · ⏎ menus · desktop: click + arrows/ctrl',
+        scored: false,
+        badge: 'SHAREWARE',
     },
     {
         slug: 'tic-tac-toe',
