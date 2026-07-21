@@ -9,13 +9,6 @@ const ConfigForm = () => {
     const [formData, setFormData] = useState({
         googleAnalyticsId: '',
         logoText: '< aiyu />',
-        siteTitle: '',
-        ogImage: '',
-        favicon: {
-            value: '',
-            filename: '',
-            mimeType: ''
-        },
         resume: {
             type: 'url',
             value: '',
@@ -34,7 +27,6 @@ const ConfigForm = () => {
     const [notification, setNotification] = useState(null);
     const [aiEnabled, setAiEnabled] = useState(false);
     const [aiGenerating, setAiGenerating] = useState(null); // 'projects', 'blogs', 'gallery'
-    const [uploadingOgImage, setUploadingOgImage] = useState(false);
 
     useEffect(() => {
         fetchData();
@@ -100,13 +92,6 @@ const ConfigForm = () => {
                     setFormData({
                         googleAnalyticsId: data.googleAnalyticsId || '',
                         logoText: data.logoText || '< aiyu />',
-                        siteTitle: data.siteTitle || '',
-                        ogImage: data.ogImage || '',
-                        favicon: {
-                            value: data.favicon?.value || '',
-                            filename: data.favicon?.filename || '',
-                            mimeType: data.favicon?.mimeType || ''
-                        },
                         resume: {
                             type: data.resume?.type || 'url',
                             value: data.resume?.value || '',
@@ -174,66 +159,6 @@ const ConfigForm = () => {
                 }));
             };
             reader.readAsDataURL(file);
-        }
-    };
-
-    const handleFaviconUpload = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            if (file.size > 1 * 1024 * 1024) { // 1MB limit for favicon
-                setError("Favicon size too large. Max 1MB.");
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setFormData(prev => ({
-                    ...prev,
-                    favicon: {
-                        value: reader.result,
-                        filename: file.name,
-                        mimeType: file.type
-                    }
-                }));
-            };
-            reader.readAsDataURL(file);
-        }
-    };
-
-    const handleOgImageUpload = async (e) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        setUploadingOgImage(true);
-        setError('');
-
-        try {
-            const payload = new FormData();
-            payload.append('file', file);
-
-            const response = await fetch('/api/upload', {
-                method: 'POST',
-                body: payload,
-            });
-
-            const data = await response.json();
-
-            if (!response.ok || !data.success) {
-                throw new Error(data.error || 'Failed to upload OG image');
-            }
-
-            setFormData((prev) => ({
-                ...prev,
-                ogImage: data.url,
-            }));
-            showNotification(true, 'OG image uploaded and preview updated.');
-        } catch (err) {
-            const message = err instanceof Error ? err.message : 'Failed to upload OG image';
-            setError(message);
-            showNotification(false, message);
-        } finally {
-            setUploadingOgImage(false);
-            e.target.value = '';
         }
     };
 
@@ -307,96 +232,6 @@ const ConfigForm = () => {
             </div>
 
 
-
-            {/* Browser & SEO Section */}
-            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 md:p-8 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-green-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
-
-                <h2 className="text-sm font-mono text-green-500/70 uppercase tracking-widest mb-8 flex items-center gap-4">
-                    SEO & Metadata
-                    <div className="h-px bg-green-500/10 flex-grow" />
-                </h2>
-
-                <div className="space-y-6 relative z-10">
-                    <div>
-                        <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Site Title</label>
-                        <input
-                            type="text"
-                            name="siteTitle"
-                            value={formData.siteTitle}
-                            onChange={handleChange}
-                            placeholder="Ayaan's Portfolio"
-                            className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-green-500/50 focus:ring-1 focus:ring-green-500/50 outline-none transition-all placeholder:text-slate-600"
-                        />
-                        <p className="text-xs text-slate-500 mt-2 font-mono">
-                            {'// The title shown in the browser tab.'}
-                        </p>
-                    </div>
-                    <div>
-                        <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Favicon Source</label>
-                        <div className="flex items-center gap-4">
-                            <label className="cursor-pointer bg-slate-950/50 border border-white/10 hover:border-green-500/50 text-slate-300 px-4 py-3 rounded-lg transition-all flex items-center gap-3 w-full">
-                                <span className="bg-green-500/10 text-green-400 px-2 py-1 rounded text-xs font-bold uppercase">Upload</span>
-                                <span className="text-sm truncate opacity-60 hover:opacity-100 transition-opacity">
-                                    {formData.favicon.filename || "Select .ico, .png, .svg..."}
-                                </span>
-                                <input
-                                    type="file"
-                                    accept=".ico,.png,.jpg,.svg"
-                                    onChange={handleFaviconUpload}
-                                    className="hidden"
-                                />
-                            </label>
-                            {formData.favicon.value && (
-                                <div className="h-12 w-12 rounded-lg bg-slate-950/50 border border-white/10 flex items-center justify-center p-2 shrink-0">
-                                    <img src={formData.favicon.value} alt="Favicon Preview" className="w-full h-full object-contain" loading="lazy" decoding="async" />
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                    <div>
-                        <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Open Graph Image</label>
-                        <div className="space-y-3">
-                            <input
-                                type="text"
-                                name="ogImage"
-                                value={formData.ogImage}
-                                onChange={handleChange}
-                                placeholder="/api/uploads/your-og-image.webp or https://example.com/og-image.png"
-                                className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-green-500/50 focus:ring-1 focus:ring-green-500/50 outline-none transition-all placeholder:text-slate-600 font-mono text-sm"
-                            />
-                            <div className="flex flex-col gap-4 md:flex-row md:items-center">
-                                <label className={`cursor-pointer bg-slate-950/50 border border-white/10 hover:border-green-500/50 text-slate-300 px-4 py-3 rounded-lg transition-all flex items-center gap-3 ${uploadingOgImage ? 'opacity-60 pointer-events-none' : ''}`}>
-                                    <span className="bg-green-500/10 text-green-400 px-2 py-1 rounded text-xs font-bold uppercase">
-                                        {uploadingOgImage ? 'Uploading' : 'Upload'}
-                                    </span>
-                                    <span className="text-sm opacity-70">Select OG image</span>
-                                    <input
-                                        type="file"
-                                        accept="image/*"
-                                        onChange={handleOgImageUpload}
-                                        className="hidden"
-                                    />
-                                </label>
-                                <p className="text-xs text-slate-500 font-mono">
-                                    {'// Preview updates instantly here. Public metadata updates after save.'}
-                                </p>
-                            </div>
-                            {formData.ogImage && (
-                                <div className="overflow-hidden rounded-xl border border-white/10 bg-slate-950/50">
-                                    <img
-                                        src={formData.ogImage}
-                                        alt="OG Image Preview"
-                                        className="w-full max-h-64 object-cover"
-                                        loading="lazy"
-                                        decoding="async"
-                                    />
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            </div>
 
             {/* Page Headers Section */}
             <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 md:p-8 relative overflow-hidden group">

@@ -4,7 +4,7 @@ import {
     FaDatabase, FaTerminal, FaRobot, FaServer, FaHardDrive, FaCode,
     FaGoogle, FaClock, FaBell, FaChartLine, FaMagnifyingGlass,
     FaShieldHalved, FaGauge, FaCodeBranch, FaPlug, FaWandMagicSparkles,
-    FaGear, FaFileLines,
+    FaGear, FaFileLines, FaShareFromSquare,
 } from "react-icons/fa6";
 
 /**
@@ -63,6 +63,7 @@ export const NAV_GROUPS = [
         items: [
             { label: "Analytics", description: "Traffic & insights", icon: FaChartLine, path: "/admin/analytics", accent: "cyan" },
             { label: "SEO & Crawl", description: "Search & sitemap", icon: FaMagnifyingGlass, path: "/admin/seo", accent: "lime" },
+            { label: "Social & Metadata", description: "Per-page Open Graph tags", icon: FaShareFromSquare, path: "/admin/social", accent: "green" },
             { label: "Server Health", description: "Resources & uptime", icon: FaGauge, path: "/admin/health", accent: "emerald" },
             { label: "GitHub", description: "Repo stats", icon: FaGithub, path: "/admin/github", accent: "slate" },
         ],

@@ -11,7 +11,7 @@ export default function ConfigPage() {
                     ← BACK_TO_COMMAND_CENTER
                 </Link>
                 <h1 className="text-3xl md:text-4xl font-bold text-white mb-2 tracking-tight">System Configuration</h1>
-                <p className="text-slate-400">Manage global variables, SEO metadata, and core integration settings.</p>
+                <p className="text-slate-400">Manage global variables and core integration settings. SEO &amp; social metadata now lives under <Link href="/admin/social" className="text-cyan-400 hover:text-cyan-300 underline underline-offset-2">Social &amp; Metadata</Link>.</p>
             </div>
 
             <ConfigForm />
