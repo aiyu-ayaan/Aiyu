@@ -11,9 +11,8 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - aiyu-network
-    mem_limit: ${POSTGRES_MEMORY_LIMIT:-512m}
-    mem_reservation: ${POSTGRES_MEMORY_RESERVATION:-256m}
-    cpus: ${POSTGRES_CPUS:-0.5}
+    # No CPU/memory caps: Postgres uses the full host. Tune shared_buffers etc.
+    # via Postgres config if you need to bound it, not container limits.
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-aiyu} -d ${POSTGRES_DB:-aiyu}"]
       interval: 30s
@@ -66,11 +65,9 @@ services:
     security_opt:
       - no-new-privileges:true
     read_only: true
-    # Soft ceiling, not a straitjacket: the Node heap is capped at 384MB in the
-    # image (NODE_OPTIONS), so 1g leaves ample headroom for sharp buffers and
-    # never OOM-kills in practice while letting the kernel reclaim page cache.
-    # Raise via APP_MEMORY_LIMIT on bigger hosts.
-    mem_limit: ${APP_MEMORY_LIMIT:-1g}
+    # No memory cap: the app uses the full host. The Node heap sizes itself off
+    # host RAM (no --max-old-space-size in the image), and sharp/libvips scale
+    # to available cores. The kernel reclaims page cache under real pressure.
     healthcheck:
       test: ["CMD", "sh", "/app/healthcheck.sh"]
       interval: 15s
