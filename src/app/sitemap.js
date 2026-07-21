@@ -207,7 +207,7 @@ export default async function sitemap() {
   const aiPath = v2PublicPath(siteConfig, '/ai');
   const aiSubPageRoutes = await createAiSubPageRoutes(baseUrl, aiPath);
 
-  const gameRoutes = GAMES.map((game) => ({
+  const gameRoutes = GAMES.filter((g) => !g.hidden).map((game) => ({
     url: toCanonicalSiteUrl(`/games/${game.slug}`),
     lastModified: new Date(),
     changeFrequency: 'monthly',

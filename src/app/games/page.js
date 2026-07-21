@@ -5,10 +5,12 @@ import HighScoreBadge from '@/app/components/games/HighScoreBadge';
 export const metadata = {
     title: 'Aiyu Arcade | Insert Coin',
     description:
-        'Nine retro time-killers built into the portfolio: Byte Runner 3D, Tetris, Snake, Breakout, Space Invaders, Pong, Flappy Byte, Doom, and Tic-Tac-Toe.',
+        'Retro time-killers built into the portfolio: Byte Runner 3D, Moto Rush, Tetris, Snake, Breakout, Space Invaders, Pong, Flappy Byte, and Tic-Tac-Toe.',
 };
 
 export default function GamesPage() {
+    const visibleGames = GAMES.filter((game) => !game.hidden);
+
     return (
         <main>
             <header className="mb-10 text-center">
@@ -17,7 +19,7 @@ export default function GamesPage() {
                 </p>
                 <h1 className="arc-title mb-5">AIYU ARCADE</h1>
                 <p className="arc-subtitle mx-auto max-w-2xl">
-                    NINE CABINETS. ZERO QUARTERS REQUIRED.
+                    RETRO CABINETS. ZERO QUARTERS REQUIRED.
                     <br />
                     HIGH SCORES LIVE IN YOUR BROWSER — DEFEND THEM.
                 </p>
@@ -32,7 +34,7 @@ export default function GamesPage() {
                 aria-label="Game cabinets"
                 className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3"
             >
-                {GAMES.map((game) => (
+                {visibleGames.map((game) => (
                     <Link
                         key={game.slug}
                         href={`/games/${game.slug}`}

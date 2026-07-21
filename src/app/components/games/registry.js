@@ -86,6 +86,7 @@ export const GAMES = [
         controls: 'W/S move · A/D strafe · ◀ ▶ turn · FIRE shoot · USE doors · ⏎ menus · desktop: click + arrows/ctrl',
         scored: false,
         badge: 'SHAREWARE',
+        hidden: true,
     },
     {
         slug: 'tic-tac-toe',
@@ -98,8 +99,10 @@ export const GAMES = [
     },
 ];
 
-export function getGame(slug) {
-    return GAMES.find((game) => game.slug === slug) || null;
+export function getGame(slug, includeHidden = false) {
+    const game = GAMES.find((g) => g.slug === slug) || null;
+    if (game && game.hidden && !includeHidden) return null;
+    return game;
 }
 
 export function highScoreKey(slug) {

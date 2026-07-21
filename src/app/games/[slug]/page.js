@@ -4,7 +4,7 @@ import GameShell from '@/app/components/games/GameShell';
 import GameLoader from '@/app/components/games/GameLoader';
 
 export function generateStaticParams() {
-    return GAMES.map((game) => ({ slug: game.slug }));
+    return GAMES.filter((game) => !game.hidden).map((game) => ({ slug: game.slug }));
 }
 
 export async function generateMetadata({ params }) {

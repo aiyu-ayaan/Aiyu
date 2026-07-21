@@ -100,7 +100,7 @@ export default async function SitemapPage() {
                 <section>
                     <h2 className="mb-4 text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Arcade Games</h2>
                     <ul className="space-y-2">
-                        {GAMES.map(game => (
+                        {GAMES.filter((g) => !g.hidden).map(game => (
                             <li key={game.slug}>
                                 <Link href={`/games/${game.slug}`} className="hover:underline" style={{ color: 'var(--text-secondary)' }}>
                                     {game.title}
