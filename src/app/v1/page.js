@@ -7,6 +7,7 @@ import WebMCPTools from "../components/agent/WebMCPTools";
 import { getHomePageData, getConfigData } from "@/lib/dataFetchers";
 import { generateWebsiteSchema, generatePersonSchema, generateOrganizationSchema } from "@/app/schema";
 import { getSiteUrl } from '@/lib/siteUrl';
+import { getSocialMeta, applySocialOverrides } from '@/lib/socialMeta';
 
 const FuturisticResume = dynamic(() => import("../components/landing/FuturisticResume"), {
   loading: () => <div className="h-screen" />,
@@ -17,15 +18,14 @@ const GamePortfolio = dynamic(() => import("../components/landing/GamePortfolio"
 export const revalidate = 0;
 
 export async function generateMetadata() {
-  const config = await getConfigData();
+  const [config, social] = await Promise.all([getConfigData(), getSocialMeta()]);
 
   const baseName = config?.siteTitle || config?.logoText || 'Portfolio';
   const siteTitle = `${baseName} | ${config?.profession || 'Software Engineer'} Portfolio`;
   const baseUrl = getSiteUrl();
   const siteDescription = config?.siteDescription || 'Professional portfolio showcasing projects, blogs, and expertise.';
-  const ogImage = (typeof config?.ogImage === 'string' ? config.ogImage : typeof config?.ogImage?.value === 'string' && config.ogImage.value.length > 0 ? config.ogImage.value : null) || `${baseUrl}/og-image.png`;
 
-  return {
+  const base = {
     title: siteTitle,
     description: siteDescription,
     keywords: ['portfolio', 'developer', 'projects', 'blogs', 'web development', config?.profession || 'full stack', 'freelance'].join(', '),
@@ -34,14 +34,6 @@ export async function generateMetadata() {
       description: siteDescription,
       url: baseUrl,
       type: 'website',
-      images: [
-        {
-          url: ogImage,
-          width: 1200,
-          height: 630,
-          alt: baseName,
-        },
-      ],
       locale: 'en_US',
       siteName: siteTitle,
     },
@@ -49,12 +41,13 @@ export async function generateMetadata() {
       card: 'summary_large_image',
       title: siteTitle,
       description: siteDescription,
-      images: [ogImage],
     },
     alternates: {
       canonical: baseUrl,
     },
   };
+
+  return applySocialOverrides(base, social, '/', { baseUrl, fallbackImage: config?.ogImage });
 }
 
 export default async function Home() {

@@ -1,21 +1,17 @@
 import Deployments from '../../components/deployments/Deployments';
 import { getConfigData, getDeploymentsData } from '@/lib/dataFetchers';
 import { getSiteUrl } from '@/lib/siteUrl';
+import { getSocialMeta, applySocialOverrides } from '@/lib/socialMeta';
 
 export const revalidate = 0;
 
 export async function generateMetadata() {
-    const config = await getConfigData();
+    const [config, social] = await Promise.all([getConfigData(), getSocialMeta()]);
     const baseName = config?.siteTitle || config?.logoText || 'Portfolio';
     const baseUrl = getSiteUrl();
     const description = 'Browse the apps and services currently hosted by this portfolio.';
-    const ogImage = (typeof config?.ogImage === 'string'
-        ? config.ogImage
-        : typeof config?.ogImage?.value === 'string' && config.ogImage.value.length > 0
-            ? config.ogImage.value
-            : null) || `${baseUrl}/og-image.png`;
 
-    return {
+    const base = {
         title: `${baseName} | Apps`,
         description,
         keywords: ['apps', 'hosted applications', 'services', 'production apps', config?.profession || 'developer'].join(', '),
@@ -35,18 +31,18 @@ export async function generateMetadata() {
             description,
             url: `${baseUrl}/apps`,
             type: 'website',
-            images: [{ url: ogImage, width: 1200, height: 630 }],
         },
         twitter: {
             card: 'summary_large_image',
             title: `${baseName} | Apps`,
             description,
-            images: [ogImage],
         },
         alternates: {
             canonical: `${baseUrl}/apps`,
         },
     };
+
+    return applySocialOverrides(base, social, '/apps', { baseUrl, fallbackImage: config?.ogImage });
 }
 
 export default async function AppsPage() {
