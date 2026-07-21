@@ -61,6 +61,16 @@ export default [
     },
   },
   {
-    ignores: [".next/*", "node_modules/*", "dist/*", "public/*"],
+    ignores: [
+      ".next/**",
+      "node_modules/**",
+      "dist/**",
+      "public/**",
+      ".claude/**",
+      ".agents/**",
+      ".codex/**",
+      ".codegraph/**",
+      "**/*.tmp.mjs"
+    ],
   },
 ];
