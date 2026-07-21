@@ -128,16 +128,11 @@ RUN apt-get update \
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Memory hygiene for small VPSes. Without a cap V8 sizes its old-space off the
-# HOST's total RAM (~half of it) and collects lazily, so idle RSS creeps toward
-# 700MB+. 384MB heap is ample for this app; sharp/libvips buffers live outside
-# the V8 heap so image optimization is unaffected. MALLOC_ARENA_MAX stops
-# glibc from creating a malloc arena per thread (sharp + libuv threads), which
-# otherwise fragments RSS on Debian. VIPS_CONCURRENCY bounds the libvips
-# worker pool; optimized images are cached on disk after first render.
-ENV NODE_OPTIONS="--max-old-space-size=384"
-ENV MALLOC_ARENA_MAX=2
-ENV VIPS_CONCURRENCY=2
+# Full-host profile: no artificial caps. V8 sizes its old-space off the host's
+# total RAM, sharp/libvips scale their worker pool to the available cores, and
+# glibc uses its default per-core arena count. Set NODE_OPTIONS /
+# MALLOC_ARENA_MAX / VIPS_CONCURRENCY at deploy time only if you must bound a
+# shared host.
 
 # Create a non-root user
 RUN groupadd --system --gid 1001 nodejs \
