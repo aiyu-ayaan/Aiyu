@@ -5,7 +5,7 @@ import HighScoreBadge from '@/app/components/games/HighScoreBadge';
 export const metadata = {
     title: 'Aiyu Arcade | Insert Coin',
     description:
-        'Eight retro time-killers built into the portfolio: Byte Runner 3D, Tetris, Snake, Breakout, Space Invaders, Pong, Flappy Byte, and Tic-Tac-Toe.',
+        'Nine retro time-killers built into the portfolio: Byte Runner 3D, Tetris, Snake, Breakout, Space Invaders, Pong, Flappy Byte, Doom, and Tic-Tac-Toe.',
 };
 
 export default function GamesPage() {
@@ -17,7 +17,7 @@ export default function GamesPage() {
                 </p>
                 <h1 className="arc-title mb-5">AIYU ARCADE</h1>
                 <p className="arc-subtitle mx-auto max-w-2xl">
-                    EIGHT CABINETS. ZERO QUARTERS REQUIRED.
+                    NINE CABINETS. ZERO QUARTERS REQUIRED.
                     <br />
                     HIGH SCORES LIVE IN YOUR BROWSER — DEFEND THEM.
                 </p>

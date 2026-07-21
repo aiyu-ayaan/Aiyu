@@ -24,6 +24,7 @@ const CABINETS = {
     'tetris': dynamic(() => import('./cabinets/Tetris'), { ssr: false, loading: loadingScreen }),
     'pong': dynamic(() => import('./cabinets/Pong'), { ssr: false, loading: loadingScreen }),
     'flappy-byte': dynamic(() => import('./cabinets/FlappyByte'), { ssr: false, loading: loadingScreen }),
+    'doom': dynamic(() => import('./cabinets/Doom'), { ssr: false, loading: loadingScreen }),
 };
 
 export default function GameLoader({ slug }) {

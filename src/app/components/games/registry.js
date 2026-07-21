@@ -78,6 +78,15 @@ export const GAMES = [
         scored: true,
     },
     {
+        slug: 'doom',
+        title: 'DOOM',
+        icon: '👹',
+        color: 'var(--arc-red)',
+        tagline: 'Raycast the halls of hell. Strafe the maze, blast the demons, clear the wave — ammo is short, they are not.',
+        controls: 'W/S move · A/D strafe · ◀ ▶ or arrows turn · SPACE / click fire · drag to look',
+        scored: true,
+    },
+    {
         slug: 'tic-tac-toe',
         title: 'TIC-TAC-TOE',
         icon: '⭕',
