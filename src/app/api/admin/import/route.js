@@ -218,6 +218,7 @@ export async function POST(request) {
             { modelKey: 'notificationConfig', key: 'notificationConfig' },
             { modelKey: 'analyticsEvent', key: 'analyticsEvents' },
             { modelKey: 'analyticsDaily', key: 'analyticsDaily' },
+            { modelKey: 'aiLog', key: 'aiLogs' },
         ];
 
         // Restore database collections (preserving original ids from the backup).

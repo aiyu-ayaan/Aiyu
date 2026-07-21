@@ -1,25 +1,138 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { FaDownload, FaUpload, FaDatabase, FaExclamationTriangle, FaCheckCircle, FaServer, FaTrash, FaChartLine } from 'react-icons/fa';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FaDownload, FaUpload, FaDatabase, FaExclamationTriangle, FaCheckCircle, FaServer, FaTrash, FaChartLine, FaTimes } from 'react-icons/fa';
 import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
+
+// Backup collections grouped for the selection popup. Keys match the export
+// route's COLLECTION_PRODUCERS / import route's `key` fields. `__images` is a
+// pseudo-item mapping to the includeImages toggle (gallery asset files).
+const EXPORT_SECTIONS = [
+    {
+        title: 'Site Content',
+        accent: 'amber',
+        items: [
+            { key: 'about', label: 'About' },
+            { key: 'blogs', label: 'Blogs' },
+            { key: 'config', label: 'Config' },
+            { key: 'gallery', label: 'Gallery' },
+            { key: 'header', label: 'Header' },
+            { key: 'home', label: 'Home' },
+            { key: 'aiPage', label: 'AI Page' },
+            { key: 'resumeStudio', label: 'Resume Studio' },
+            { key: 'projects', label: 'Projects' },
+            { key: 'deployments', label: 'Deployments' },
+            { key: 'socials', label: 'Socials' },
+            { key: 'themes', label: 'Themes' },
+        ],
+    },
+    {
+        title: 'AI Hub',
+        accent: 'cyan',
+        items: [
+            { key: 'aiSkillCategories', label: 'Skill Categories' },
+            { key: 'aiSkills', label: 'Skills' },
+            { key: 'aiRecommendations', label: 'Recommendations' },
+            { key: 'aiCredits', label: 'Credits' },
+            { key: 'aiPrompts', label: 'Prompts' },
+        ],
+    },
+    {
+        title: 'AI Usage History',
+        accent: 'emerald',
+        items: [
+            { key: 'aiLogs', label: 'Usage Logs (prompts, responses, tokens)' },
+        ],
+    },
+    {
+        title: 'Analytics',
+        accent: 'purple',
+        items: [
+            { key: 'analyticsEvents', label: 'Events' },
+            { key: 'analyticsDaily', label: 'Daily Rollups' },
+        ],
+    },
+    {
+        title: 'System',
+        accent: 'cyan',
+        items: [
+            { key: 'crons', label: 'Cron Jobs' },
+            { key: 'ads', label: 'Ads' },
+            { key: 'notificationConfig', label: 'Notification Config' },
+        ],
+    },
+    {
+        title: 'Sensitive',
+        accent: 'red',
+        items: [
+            { key: 'github', label: 'GitHub' },
+            { key: 'contactMessages', label: 'Contact Messages' },
+        ],
+    },
+    {
+        title: 'Assets',
+        accent: 'amber',
+        items: [
+            { key: '__images', label: 'Gallery Image Files' },
+        ],
+    },
+];
+
+const ALL_EXPORT_KEYS = EXPORT_SECTIONS.flatMap((s) => s.items.map((i) => i.key));
+
+const ACCENT_TEXT = {
+    amber: 'text-amber-400',
+    cyan: 'text-cyan-400',
+    emerald: 'text-emerald-400',
+    purple: 'text-purple-400',
+    red: 'text-red-400',
+};
 
 export default function DatabaseManager() {
     const { confirm } = useAdminFeedback();
     const [isLoading, setIsLoading] = useState(false);
     const [message, setMessage] = useState(null);
     const [importFile, setImportFile] = useState(null);
+    const [showExportModal, setShowExportModal] = useState(false);
+    // Every collection selected by default (a full backup).
+    const [selection, setSelection] = useState(() =>
+        Object.fromEntries(ALL_EXPORT_KEYS.map((k) => [k, true]))
+    );
+
+    const selectedCount = useMemo(
+        () => ALL_EXPORT_KEYS.filter((k) => selection[k]).length,
+        [selection]
+    );
+
+    const toggleKey = (key) =>
+        setSelection((prev) => ({ ...prev, [key]: !prev[key] }));
+
+    const toggleSection = (items, value) =>
+        setSelection((prev) => {
+            const next = { ...prev };
+            for (const item of items) next[item.key] = value;
+            return next;
+        });
+
+    const setAll = (value) =>
+        setSelection(Object.fromEntries(ALL_EXPORT_KEYS.map((k) => [k, value])));
 
     const handleExport = async () => {
+        const dbKeys = ALL_EXPORT_KEYS.filter((k) => k !== '__images' && selection[k]);
+        if (dbKeys.length === 0 && !selection.__images) {
+            setMessage({ type: 'error', text: 'NOTHING_SELECTED' });
+            return;
+        }
+
         try {
+            setShowExportModal(false);
             setIsLoading(true);
             setMessage({ type: 'info', text: 'GENERATING_ZIP_ARCHIVE...' });
 
-            // Always include Github and Contact data by default
             const queryParams = new URLSearchParams();
-            queryParams.append('includeGithub', 'true');
-            queryParams.append('includeContact', 'true');
+            queryParams.append('collections', dbKeys.join(','));
+            if (!selection.__images) queryParams.append('includeImages', 'false');
 
             const response = await fetch(`/api/admin/export?${queryParams.toString()}`);
 
@@ -222,11 +335,11 @@ export default function DatabaseManager() {
                         </div>
 
                         <p className="text-slate-400 mb-8 text-sm leading-relaxed">
-                            Generate a complete ZIP archive of the system state. Includes all database collections, app records, and gallery image assets for full restoration capability.
+                            Generate a ZIP archive of the system state. Choose exactly which collections — including AI usage history — and gallery assets to include.
                         </p>
 
                         <button
-                            onClick={handleExport}
+                            onClick={() => setShowExportModal(true)}
                             disabled={isLoading}
                             className="w-full bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 hover:border-amber-500/40 text-amber-400 font-bold py-4 px-4 rounded-xl transition-all flex items-center justify-center gap-3 uppercase tracking-wider text-sm disabled:opacity-50 disabled:cursor-not-allowed group/btn"
                         >
@@ -235,7 +348,7 @@ export default function DatabaseManager() {
                             ) : (
                                 <>
                                     <FaServer className="group-hover/btn:scale-110 transition-transform" />
-                                    INITIATE_DUMP
+                                    CONFIGURE_DUMP
                                 </>
                             )}
                         </button>
@@ -381,6 +494,128 @@ export default function DatabaseManager() {
                     </div>
                 </motion.div>
             </div>
+
+            {/* Export selection popup */}
+            <AnimatePresence>
+                {showExportModal && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+                        onClick={() => setShowExportModal(false)}
+                    >
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.96, y: 12 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.96, y: 12 }}
+                            transition={{ type: 'spring', stiffness: 300, damping: 26 }}
+                            className="w-full max-w-2xl max-h-[85vh] flex flex-col bg-slate-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {/* Header */}
+                            <div className="flex items-center justify-between gap-4 p-5 border-b border-white/10 shrink-0">
+                                <div className="flex items-center gap-3">
+                                    <FaDownload className="text-amber-500/80" size={18} />
+                                    <div>
+                                        <h3 className="text-white font-bold tracking-tight">Configure Backup</h3>
+                                        <p className="text-slate-400 text-xs font-mono">
+                                            {selectedCount} / {ALL_EXPORT_KEYS.length} SELECTED
+                                        </p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => setShowExportModal(false)}
+                                    className="p-2 text-slate-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                                    aria-label="Close"
+                                >
+                                    <FaTimes />
+                                </button>
+                            </div>
+
+                            {/* Bulk actions */}
+                            <div className="flex items-center gap-2 px-5 py-3 border-b border-white/5 shrink-0">
+                                <button
+                                    onClick={() => setAll(true)}
+                                    className="text-xs font-mono uppercase tracking-wider px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 transition-colors"
+                                >
+                                    Select all
+                                </button>
+                                <button
+                                    onClick={() => setAll(false)}
+                                    className="text-xs font-mono uppercase tracking-wider px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 transition-colors"
+                                >
+                                    Deselect all
+                                </button>
+                            </div>
+
+                            {/* Sections */}
+                            <div className="overflow-y-auto p-5 space-y-5">
+                                {EXPORT_SECTIONS.map((section) => {
+                                    const total = section.items.length;
+                                    const checked = section.items.filter((i) => selection[i.key]).length;
+                                    const allOn = checked === total;
+                                    return (
+                                        <div key={section.title}>
+                                            <div className="flex items-center justify-between mb-2">
+                                                <h4 className={`text-xs font-mono uppercase tracking-widest ${ACCENT_TEXT[section.accent]}`}>
+                                                    {section.title}
+                                                </h4>
+                                                <button
+                                                    onClick={() => toggleSection(section.items, !allOn)}
+                                                    className="text-[10px] font-mono uppercase tracking-wider text-slate-500 hover:text-slate-300 transition-colors"
+                                                >
+                                                    {allOn ? 'Clear' : 'All'}
+                                                </button>
+                                            </div>
+                                            <div className="grid sm:grid-cols-2 gap-2">
+                                                {section.items.map((item) => {
+                                                    const on = !!selection[item.key];
+                                                    return (
+                                                        <label
+                                                            key={item.key}
+                                                            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border cursor-pointer transition-all text-sm ${on
+                                                                ? 'bg-white/5 border-white/15 text-white'
+                                                                : 'bg-transparent border-white/5 text-slate-500 hover:border-white/10'
+                                                                }`}
+                                                        >
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={on}
+                                                                onChange={() => toggleKey(item.key)}
+                                                                className="accent-amber-500 w-4 h-4 shrink-0"
+                                                            />
+                                                            <span className="leading-tight">{item.label}</span>
+                                                        </label>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Footer */}
+                            <div className="flex items-center justify-end gap-3 p-5 border-t border-white/10 shrink-0">
+                                <button
+                                    onClick={() => setShowExportModal(false)}
+                                    className="px-4 py-2.5 rounded-xl text-sm font-mono uppercase tracking-wider text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleExport}
+                                    disabled={selectedCount === 0}
+                                    className="bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 hover:border-amber-500/40 text-amber-400 font-bold py-2.5 px-5 rounded-xl transition-all flex items-center gap-3 uppercase tracking-wider text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                                >
+                                    <FaServer />
+                                    Initiate dump
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

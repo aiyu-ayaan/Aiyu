@@ -6,6 +6,58 @@ import archiver from "archiver";
 import { join } from "path";
 import { readFile, access, readdir } from "fs/promises";
 
+// One producer per backup collection. Each is only awaited when the collection
+// is selected, so deselected collections cost zero queries. Insertion order
+// here is the order collections appear in the archive/manifest.
+const COLLECTION_PRODUCERS = {
+    about: async () => toClientList('about', await prisma.about.findMany()),
+    blogs: async () => toClientList('blog', await prisma.blog.findMany()),
+    config: async () => toClientList('config', await prisma.config.findMany()),
+    gallery: async () => toClientList('gallery', await prisma.gallery.findMany()),
+    header: async () => toClientList('header', await prisma.header.findMany()),
+    home: async () => toClientList('home', await prisma.home.findMany()),
+    aiPage: async () => toClientList('aiPage', await prisma.aiPage.findMany()),
+    // Resume Studio singleton: LaTeX source, snapshots, ideas, settings.
+    resumeStudio: async () => toClientList('resumeStudio', await prisma.resumeStudio.findMany()),
+    // The AI Hub's section content (skills / recommendations / credits /
+    // prompts) lives in these relational tables, not the aiPage json blob
+    // — they must be backed up too or the /ai page restores empty.
+    aiSkillCategories: async () => toClientList('aiSkillCategory', await prisma.aiSkillCategory.findMany()),
+    aiSkills: async () => toClientList('aiSkill', await prisma.aiSkill.findMany()),
+    aiRecommendations: async () => toClientList('aiRecommendation', await prisma.aiRecommendation.findMany()),
+    aiCredits: async () => toClientList('aiCredit', await prisma.aiCredit.findMany()),
+    aiPrompts: async () => toClientList('aiPrompt', await prisma.aiPrompt.findMany()),
+    projects: async () => toClientList('project', await prisma.project.findMany()),
+    deployments: async () => toClientList('deployment', await prisma.deployment.findMany()),
+    socials: async () => toClientList('social', await prisma.social.findMany()),
+    themes: async () => toClientList('theme', await prisma.theme.findMany()),
+    crons: async () => toClientList('cron', await prisma.cron.findMany()).map(cron => {
+        const cleanCron = { ...cron };
+        delete cleanCron.webhookEnv;
+        delete cleanCron.lastRun;
+        delete cleanCron.lastRunStatus;
+        delete cleanCron.lastRunLog;
+        return cleanCron;
+    }),
+    // Ads secrets live inside the json data blob, so they are fully backed up.
+    ads: async () => toClientList('ads', await prisma.ads.findMany()),
+    notificationConfig: async () => toClientList('notificationConfig', await prisma.notificationConfig.findMany()),
+    analyticsEvents: async () => toClientList('analyticsEvent', await prisma.analyticsEvent.findMany()),
+    analyticsDaily: async () => toClientList('analyticsDaily', await prisma.analyticsDaily.findMany()),
+    // AI usage history: every provider call logged with prompt/response/tokens.
+    aiLogs: async () => toClientList('aiLog', await prisma.aiLog.findMany()),
+    github: async () => toClientList('github', await prisma.gitHub.findMany()),
+    contactMessages: async () => toClientList('contactMessage', await prisma.contactMessage.findMany()),
+};
+
+// Legacy no-`collections` callers keep the old opt-in behavior for sensitive
+// collections: excluded unless their flag is set.
+const LEGACY_FLAGS = {
+    github: 'includeGithub',
+    contactMessages: 'includeContact',
+    aiLogs: 'includeAiUsage',
+};
+
 export async function GET(request) {
     try {
         const session = await getSession();
@@ -15,66 +67,32 @@ export async function GET(request) {
         }
 
         const { searchParams } = new URL(request.url);
-        const includeGithub = searchParams.get('includeGithub') === 'true';
-        const includeContact = searchParams.get('includeContact') === 'true';
+        const includeImages = searchParams.get('includeImages') !== 'false';
 
-        const crons = toClientList('cron', await prisma.cron.findMany()).map(cron => {
-            const cleanCron = { ...cron };
-            delete cleanCron.webhookEnv;
-            delete cleanCron.lastRun;
-            delete cleanCron.lastRunStatus;
-            delete cleanCron.lastRunLog;
-            return cleanCron;
-        });
+        // `collections=a,b,c` is the authoritative allow-list when present.
+        // Without it, fall back to legacy behavior (all except flag-gated ones).
+        const rawCollections = searchParams.get('collections');
+        const selected = rawCollections
+            ? new Set(rawCollections.split(',').map(s => s.trim()).filter(Boolean))
+            : null;
 
-        // Ads secrets live inside the json data blob, so they are fully backed up.
-        const ads = toClientList('ads', await prisma.ads.findMany());
-
-        // Fetch NotificationConfig
-        const notificationConfig = toClientList('notificationConfig', await prisma.notificationConfig.findMany());
-
-        // Build the database export data
-        const data = {
-            about: toClientList('about', await prisma.about.findMany()),
-            blogs: toClientList('blog', await prisma.blog.findMany()),
-            config: toClientList('config', await prisma.config.findMany()),
-            gallery: toClientList('gallery', await prisma.gallery.findMany()),
-            header: toClientList('header', await prisma.header.findMany()),
-            home: toClientList('home', await prisma.home.findMany()),
-            aiPage: toClientList('aiPage', await prisma.aiPage.findMany()),
-            // Resume Studio singleton: LaTeX source, snapshots, ideas, settings.
-            resumeStudio: toClientList('resumeStudio', await prisma.resumeStudio.findMany()),
-            // The AI Hub's section content (skills / recommendations / credits /
-            // prompts) lives in these relational tables, not the aiPage json blob
-            // — they must be backed up too or the /ai page restores empty.
-            aiSkillCategories: toClientList('aiSkillCategory', await prisma.aiSkillCategory.findMany()),
-            aiSkills: toClientList('aiSkill', await prisma.aiSkill.findMany()),
-            aiRecommendations: toClientList('aiRecommendation', await prisma.aiRecommendation.findMany()),
-            aiCredits: toClientList('aiCredit', await prisma.aiCredit.findMany()),
-            aiPrompts: toClientList('aiPrompt', await prisma.aiPrompt.findMany()),
-            projects: toClientList('project', await prisma.project.findMany()),
-            deployments: toClientList('deployment', await prisma.deployment.findMany()),
-            socials: toClientList('social', await prisma.social.findMany()),
-            themes: toClientList('theme', await prisma.theme.findMany()),
-            crons,
-            ads,
-            notificationConfig,
-            analyticsEvents: toClientList('analyticsEvent', await prisma.analyticsEvent.findMany()),
-            analyticsDaily: toClientList('analyticsDaily', await prisma.analyticsDaily.findMany()),
-            exportedAt: new Date().toISOString(),
+        const isSelected = (key) => {
+            if (selected) return selected.has(key);
+            const flag = LEGACY_FLAGS[key];
+            if (flag) return searchParams.get(flag) === 'true';
+            return true;
         };
 
-        if (includeGithub) {
-            data.github = toClientList('github', await prisma.gitHub.findMany());
-        }
-
-        if (includeContact) {
-            data.contactMessages = toClientList('contactMessage', await prisma.contactMessage.findMany());
+        // Build the database export data (only selected collections are queried).
+        const data = { exportedAt: new Date().toISOString() };
+        for (const [key, produce] of Object.entries(COLLECTION_PRODUCERS)) {
+            if (!isSelected(key)) continue;
+            data[key] = await produce();
         }
 
         // Collect all image filenames from gallery entries
         const imageFiles = new Set();
-        if (data.gallery && data.gallery.length > 0) {
+        if (includeImages && data.gallery && data.gallery.length > 0) {
             for (const item of data.gallery) {
                 // Extract filename from URL like /api/uploads/filename.ext
                 if (item.src) {
@@ -117,28 +135,30 @@ export async function GET(request) {
         }
 
         // Add image files from public/uploads/
-        const uploadsDir = join(process.cwd(), 'public', 'uploads');
-        let uploadEntries = [];
-        try {
-            uploadEntries = await readdir(uploadsDir, { withFileTypes: true });
-        } catch {
-            uploadEntries = [];
-        }
-
-        for (const entry of uploadEntries) {
-            if (!entry.isFile()) continue;
-            imageFiles.add(entry.name);
-        }
-
-        for (const filename of imageFiles) {
-            const filePath = join(uploadsDir, filename);
+        if (includeImages) {
+            const uploadsDir = join(process.cwd(), 'public', 'uploads');
+            let uploadEntries = [];
             try {
-                await access(filePath);
-                const fileBuffer = await readFile(filePath);
-                archive.append(fileBuffer, { name: `uploads/${filename}` });
+                uploadEntries = await readdir(uploadsDir, { withFileTypes: true });
             } catch {
-                // File doesn't exist locally, skip it
-                console.warn(`[EXPORT] Skipping missing file: ${filename}`);
+                uploadEntries = [];
+            }
+
+            for (const entry of uploadEntries) {
+                if (!entry.isFile()) continue;
+                imageFiles.add(entry.name);
+            }
+
+            for (const filename of imageFiles) {
+                const filePath = join(uploadsDir, filename);
+                try {
+                    await access(filePath);
+                    const fileBuffer = await readFile(filePath);
+                    archive.append(fileBuffer, { name: `uploads/${filename}` });
+                } catch {
+                    // File doesn't exist locally, skip it
+                    console.warn(`[EXPORT] Skipping missing file: ${filename}`);
+                }
             }
         }
 
