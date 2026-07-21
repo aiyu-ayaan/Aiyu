@@ -1,5 +1,36 @@
 # Changelog
 
+## [4.9.1](https://github.com/aiyu-ayaan/Aiyu/compare/v4.9.0...v4.9.1) (2026-07-21)
+
+### Features
+
+* Hide Doom from arcade menu and sitemaps
+* Wire social overrides for v2 pages
+* Wire social overrides for classic v1 pages
+* Add /admin/social page for per-page social metadata
+* Run real Doom in the arcade via js-dos
+* Add Doom raycaster cabinet to the arcade
+* Add Doom soundtrack and modern WASD touch pad styles
+* Implement export selection modal and enhance backup functionality
+* Add database seeding functionality and update entrypoint script
+
+### Bug Fixes
+
+* : Fix release is done
+* Resolve remaining no-useless-assignment errors in ArcadePopup
+* Initialize dismissed variable to false to prevent errors
+* Resolve ESLint configuration and ArcadePopup warnings
+* Restore wdosbox.js glue so Doom finishes loading
+
+### Other Changes
+
+* Add implementation plan for wiring social overrides
+* Design spec for per-page metadata overrides
+* Vendor js-dos runtime and shareware Doom bundle
+* Remove postgres CPU/memory caps from local and replication compose
+* Drop Node heap and libvips caps from runtime image
+* Remove CPU/memory caps from production compose
+
 ## [4.9.0](https://github.com/aiyu-ayaan/Aiyu/compare/v4.8.1...v4.9.0) (2026-07-18)
 
 ### Features
