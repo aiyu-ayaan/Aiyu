@@ -23,32 +23,16 @@ const AI_HUB_KEYWORDS = [
     'OpenRouter',
     'Gemini',
 ];
-
-function resolveOgImage(config, baseUrl) {
-    const raw =
-        typeof config?.ogImage === 'string'
-            ? config.ogImage
-            : typeof config?.ogImage?.value === 'string'
-              ? config.ogImage.value
-              : '';
-    const trimmed = raw.trim();
-    if (!trimmed) return `${baseUrl}/og-image.png`;
-    try {
-        return new URL(trimmed, baseUrl).toString();
-    } catch {
-        return `${baseUrl}/og-image.png`;
-    }
-}
+import { getSocialMeta, applySocialOverrides } from '@/lib/socialMeta';
 
 export async function generateMetadata() {
-    const config = await getConfigData();
+    const [config, social] = await Promise.all([getConfigData(), getSocialMeta()]);
     const baseName = config?.siteTitle || config?.logoText || 'Portfolio';
     const baseUrl = getSiteUrl();
     const url = `${baseUrl}${v2PublicPath(config, '/ai')}`;
     const title = `${baseName} | AI Hub`;
-    const ogImage = resolveOgImage(config, baseUrl);
 
-    return {
+    const base = {
         title,
         description: AI_HUB_DESCRIPTION,
         keywords: AI_HUB_KEYWORDS,
@@ -58,20 +42,11 @@ export async function generateMetadata() {
             url,
             type: 'website',
             siteName: baseName,
-            images: [
-                {
-                    url: ogImage,
-                    width: 1200,
-                    height: 630,
-                    alt: `${baseName} — AI Hub`,
-                },
-            ],
         },
         twitter: {
             card: 'summary_large_image',
             title,
             description: AI_HUB_DESCRIPTION,
-            images: [ogImage],
         },
         robots: {
             index: true,
@@ -82,6 +57,8 @@ export async function generateMetadata() {
             canonical: url,
         },
     };
+
+    return applySocialOverrides(base, social, '/ai', { baseUrl, fallbackImage: config?.ogImage });
 }
 
 export default async function AiHubPage() {

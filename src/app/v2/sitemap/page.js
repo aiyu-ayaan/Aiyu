@@ -64,7 +64,7 @@ export default async function SitemapV2Page() {
         {
             label: '// arcade',
             accent: 'var(--accent-pink)',
-            items: GAMES.map((game) => ({ name: game.title, href: v2PublicPath(config, `/games/${game.slug}`) })),
+            items: GAMES.filter((g) => !g.hidden).map((game) => ({ name: game.title, href: v2PublicPath(config, `/games/${game.slug}`) })),
         },
         {
             label: '// writing',

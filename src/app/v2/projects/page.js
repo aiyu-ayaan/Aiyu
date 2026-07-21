@@ -3,16 +3,17 @@ import BreadcrumbSchema from '../../components/shared/BreadcrumbSchema';
 import { getConfigData, getProjectsData } from '@/lib/dataFetchers';
 import { getSiteUrl } from '@/lib/siteUrl';
 import { v2PublicPath } from '@/lib/siteVersion';
+import { getSocialMeta, applySocialOverrides } from '@/lib/socialMeta';
 
 export const revalidate = 0;
 
 export async function generateMetadata() {
-    const config = await getConfigData();
+    const [config, social] = await Promise.all([getConfigData(), getSocialMeta()]);
     const baseName = config?.siteTitle || config?.logoText || 'Portfolio';
     const baseUrl = getSiteUrl();
     const description = 'The complete project archive, year by year — V2 edition.';
 
-    return {
+    const base = {
         title: `${baseName} | Projects`,
         description,
         openGraph: {
@@ -25,6 +26,8 @@ export async function generateMetadata() {
             canonical: `${baseUrl}${v2PublicPath(config, '/projects')}`,
         },
     };
+
+    return applySocialOverrides(base, social, '/projects', { baseUrl, fallbackImage: config?.ogImage });
 }
 
 export default async function ProjectsV2Page() {

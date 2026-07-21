@@ -3,16 +3,17 @@ import BreadcrumbSchema from '../../components/shared/BreadcrumbSchema';
 import { getConfigData } from '@/lib/dataFetchers';
 import { getSiteUrl } from '@/lib/siteUrl';
 import { v2PublicPath } from '@/lib/siteVersion';
+import { getSocialMeta, applySocialOverrides } from '@/lib/socialMeta';
 
 export const revalidate = 0;
 
 export async function generateMetadata() {
-    const config = await getConfigData();
+    const [config, social] = await Promise.all([getConfigData(), getSocialMeta()]);
     const baseName = config?.siteTitle || config?.logoText || 'Portfolio';
     const baseUrl = getSiteUrl();
     const description = 'Open source contributions, repositories, and GitHub statistics — V2 edition.';
 
-    return {
+    const base = {
         title: `${baseName} | GitHub`,
         description,
         openGraph: {
@@ -25,6 +26,8 @@ export async function generateMetadata() {
             canonical: `${baseUrl}${v2PublicPath(config, '/github')}`,
         },
     };
+
+    return applySocialOverrides(base, social, '/github', { baseUrl, fallbackImage: config?.ogImage });
 }
 
 export default async function GitHubV2Page() {

@@ -8,18 +8,19 @@ import { getHomePageData, getConfigData } from "@/lib/dataFetchers";
 import { generateWebsiteSchema, generatePersonSchema, generateOrganizationSchema } from "@/app/schema";
 import { getSiteUrl } from '@/lib/siteUrl';
 import { v2PublicPath } from '@/lib/siteVersion';
+import { getSocialMeta, applySocialOverrides } from '@/lib/socialMeta';
 
 export const revalidate = 0;
 
 export async function generateMetadata() {
-  const config = await getConfigData();
+  const [config, social] = await Promise.all([getConfigData(), getSocialMeta()]);
 
   const baseName = config?.siteTitle || config?.logoText || 'Portfolio';
   const siteTitle = `${baseName} | ${config?.profession || 'Software Engineer'} Portfolio`;
   const baseUrl = getSiteUrl();
   const siteDescription = config?.siteDescription || 'Professional portfolio showcasing projects, blogs, and expertise.';
 
-  return {
+  const base = {
     title: siteTitle,
     description: siteDescription,
     openGraph: {
@@ -34,6 +35,8 @@ export async function generateMetadata() {
       canonical: `${baseUrl}${v2PublicPath(config, '')}`,
     },
   };
+
+  return applySocialOverrides(base, social, '/', { baseUrl, fallbackImage: config?.ogImage });
 }
 
 export default async function HomeV2() {
