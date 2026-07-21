@@ -38,8 +38,8 @@ export default function ArcadePopup() {
     useEffect(() => {
         if (typeof window === 'undefined') return;
 
-        let dismissed = false;
-        let v2PopupPending = false;
+        let dismissed;
+        let v2PopupPending;
         try {
             dismissed = window.localStorage.getItem(DISMISS_KEY) === '1';
             v2PopupPending = window.localStorage.getItem(V2_POPUP_DISMISS_KEY) !== '1';
