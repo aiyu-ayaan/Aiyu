@@ -18,12 +18,65 @@ const formatDate = (dateValue) => {
     return parsedDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 };
 
+const ROW_GAP = 20; // px — matches the Tailwind gap-5 used between rows/cells
+
+/**
+ * Justified-rows packing (the Flickr / Google Photos algorithm).
+ *
+ * CSS `columns` masonry fills column-by-column, so image 2 lands under image 1
+ * instead of beside it — reading order gets scrambled and column bottoms end
+ * ragged. Here we instead walk the images left-to-right, accumulating them into
+ * a row until the row (laid out at a target height) would overflow the
+ * container, then solve for the exact height that makes the row's scaled widths
+ * + gaps fill the width precisely. Order is preserved and every row edge is flush.
+ *
+ * The last row keeps the target height (left-aligned) unless it naturally
+ * overflows, so a lone trailing photo isn't stretched grotesquely wide.
+ */
+const buildJustifiedRows = (items, containerWidth) => {
+    if (!containerWidth || items.length === 0) return [];
+
+    const targetHeight = containerWidth < 640 ? 210 : containerWidth < 1024 ? 260 : 300;
+    const rows = [];
+    let current = [];
+    let aspectSum = 0;
+
+    const aspectOf = (image) => {
+        const w = Number(image?.width) > 0 ? Number(image.width) : 4;
+        const h = Number(image?.height) > 0 ? Number(image.height) : 3;
+        return w / h;
+    };
+
+    items.forEach((entry) => {
+        const aspect = aspectOf(entry.image);
+        current.push({ ...entry, aspect });
+        aspectSum += aspect;
+
+        const gaps = (current.length - 1) * ROW_GAP;
+        if (aspectSum * targetHeight + gaps >= containerWidth) {
+            const height = (containerWidth - gaps) / aspectSum;
+            rows.push({ items: current, height });
+            current = [];
+            aspectSum = 0;
+        }
+    });
+
+    if (current.length > 0) {
+        const gaps = (current.length - 1) * ROW_GAP;
+        const naturalWidth = aspectSum * targetHeight + gaps;
+        const height = naturalWidth > containerWidth ? (containerWidth - gaps) / aspectSum : targetHeight;
+        rows.push({ items: current, height, isLast: true });
+    }
+
+    return rows;
+};
+
 /**
  * /v2/gallery — nothing but the pictures. The v1 page wraps the grid in
  * stats, search, and orientation filters; here the photographs ARE the page:
- * a full-bleed masonry wall with no entrance animation (photos just appear),
- * captioned only on hover, opening into a bare-bones lightbox (arrows, esc,
- * click-out — no chrome competing with the image).
+ * a full-bleed justified photo wall with no entrance animation (photos just
+ * appear), captioned only on hover, opening into a bare-bones lightbox (arrows,
+ * esc, click-out — no chrome competing with the image).
  */
 const GalleryV2 = ({ initialImages, initialConfig }) => {
     const images = useMemo(() => (Array.isArray(initialImages) ? initialImages : []), [initialImages]);
@@ -31,12 +84,33 @@ const GalleryV2 = ({ initialImages, initialConfig }) => {
     const [selectedIndex, setSelectedIndex] = useState(-1);
 
     const sectionRef = useRef(null);
+    const gridRef = useRef(null);
+    const [containerWidth, setContainerWidth] = useState(0);
     const { prefersReducedMotion } = useDevicePerformance();
 
     const visibleImages = useMemo(
         () => images.filter((image, index) => !brokenImageIds.has(image?._id || `${image?.src}-${index}`)),
         [images, brokenImageIds]
     );
+
+    // Measure the grid's live width so justified rows re-solve on resize.
+    // Until the first measurement lands (SSR / no-JS), a CSS-columns fallback
+    // renders below so images still appear immediately.
+    useEffect(() => {
+        const el = gridRef.current;
+        if (!el || typeof ResizeObserver === 'undefined') return;
+        const observer = new ResizeObserver((entries) => {
+            for (const entry of entries) setContainerWidth(entry.contentRect.width);
+        });
+        observer.observe(el);
+        setContainerWidth(el.clientWidth);
+        return () => observer.disconnect();
+    }, []);
+
+    const rows = useMemo(() => {
+        const entries = visibleImages.map((image, index) => ({ image, index }));
+        return buildJustifiedRows(entries, containerWidth);
+    }, [visibleImages, containerWidth]);
 
     const selectedImage = selectedIndex >= 0 ? visibleImages[selectedIndex] : null;
 
@@ -83,6 +157,50 @@ const GalleryV2 = ({ initialImages, initialConfig }) => {
         }));
     }, [visibleImages]);
 
+    // Shared photo card. `justified` fills its wrapper's fixed row height;
+    // otherwise it self-sizes to the image aspect ratio (columns fallback).
+    const renderPhoto = (image, index, justified) => {
+        const imageKey = image?._id || `${image?.src}-${index}`;
+        const aspectRatio =
+            Number(image?.width) > 0 && Number(image?.height) > 0
+                ? `${image.width} / ${image.height}`
+                : '4 / 3';
+        const dateLabel = formatDate(image?.createdAt);
+
+        return (
+            <button
+                type="button"
+                onClick={() => openLightbox(index)}
+                className={`group relative block w-full cursor-zoom-in overflow-hidden rounded-lg ${justified ? 'h-full' : ''}`}
+                style={{ border: '1px solid var(--hairline)' }}
+                aria-label={image?.description || `Photograph ${index + 1}`}
+            >
+                <span className="relative block h-full w-full" style={justified ? undefined : { aspectRatio }}>
+                    <Image
+                        src={image?.thumbnail || image?.src}
+                        alt={image?.description || 'Gallery photograph'}
+                        fill
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        className="object-cover transition-transform duration-700 group-hover:scale-[1.04]"
+                        loading={index < 3 ? 'eager' : 'lazy'}
+                        priority={index < 2}
+                        unoptimized
+                        onError={() => markBroken(imageKey)}
+                    />
+                </span>
+
+                <figcaption
+                    className="pointer-events-none absolute inset-x-0 bottom-0 flex items-baseline justify-between gap-3 bg-gradient-to-t from-black/80 to-transparent px-4 pb-3 pt-10 text-left opacity-100 transition-opacity duration-300 sm:opacity-0 sm:group-hover:opacity-100"
+                >
+                    <span className="line-clamp-1 min-w-0 font-mono text-xs text-white/90">
+                        {String(index + 1).padStart(3, '0')}{image?.description ? ` — ${image.description}` : ''}
+                    </span>
+                    {dateLabel && <span className="shrink-0 font-mono text-[0.65rem] uppercase tracking-wider text-white/60">{dateLabel}</span>}
+                </figcaption>
+            </button>
+        );
+    };
+
     return (
         <div ref={sectionRef} className="relative overflow-hidden">
             <div className="mx-auto w-full max-w-7xl px-6 pb-24 pt-32 sm:pt-40 lg:px-10">
@@ -118,57 +236,35 @@ const GalleryV2 = ({ initialImages, initialConfig }) => {
                     </p>
                 </div>
 
-                {visibleImages.length > 0 ? (
-                    <div className="columns-1 gap-5 sm:columns-2 lg:columns-3">
-                        {visibleImages.map((image, index) => {
-                            const imageKey = image?._id || `${image?.src}-${index}`;
-                            const aspectRatio =
-                                Number(image?.width) > 0 && Number(image?.height) > 0
-                                    ? `${image.width} / ${image.height}`
-                                    : '4 / 3';
-                            const dateLabel = formatDate(image?.createdAt);
-
-                            return (
-                                <figure key={imageKey} className="mb-5 break-inside-avoid">
-                                    <button
-                                        type="button"
-                                        onClick={() => openLightbox(index)}
-                                        className="group relative block w-full cursor-zoom-in overflow-hidden rounded-lg"
-                                        style={{ border: '1px solid var(--hairline)' }}
-                                        aria-label={image?.description || `Photograph ${index + 1}`}
-                                    >
-                                        <span className="relative block w-full" style={{ aspectRatio }}>
-                                            <Image
-                                                src={image?.thumbnail || image?.src}
-                                                alt={image?.description || 'Gallery photograph'}
-                                                fill
-                                                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                                                className="object-cover transition-transform duration-700 group-hover:scale-[1.04]"
-                                                loading={index < 3 ? 'eager' : 'lazy'}
-                                                priority={index < 2}
-                                                unoptimized
-                                                onError={() => markBroken(imageKey)}
-                                            />
-                                        </span>
-
-                                        <figcaption
-                                            className="pointer-events-none absolute inset-x-0 bottom-0 flex items-baseline justify-between gap-3 bg-gradient-to-t from-black/80 to-transparent px-4 pb-3 pt-10 text-left opacity-100 transition-opacity duration-300 sm:opacity-0 sm:group-hover:opacity-100"
-                                        >
-                                            <span className="line-clamp-1 min-w-0 font-mono text-xs text-white/90">
-                                                {String(index + 1).padStart(3, '0')}{image?.description ? ` — ${image.description}` : ''}
-                                            </span>
-                                            {dateLabel && <span className="shrink-0 font-mono text-[0.65rem] uppercase tracking-wider text-white/60">{dateLabel}</span>}
-                                        </figcaption>
-                                    </button>
+                <div ref={gridRef}>
+                    {visibleImages.length === 0 ? (
+                        <p data-v2="rise" className="py-20 font-mono text-sm" style={{ color: 'var(--text-tertiary)' }}>
+                            $ ls ~/gallery → empty. Photographs land here once uploaded from the admin panel.
+                        </p>
+                    ) : rows.length > 0 ? (
+                        // Justified rows — measured, order-preserving, flush edges.
+                        <div className="flex flex-col gap-5">
+                            {rows.map((row, rowIndex) => (
+                                <div key={rowIndex} className="flex gap-5" style={{ height: `${row.height}px` }}>
+                                    {row.items.map(({ image, index, aspect }) => (
+                                        <div key={image?._id || `${image?.src}-${index}`} style={{ width: `${aspect * row.height}px`, flex: '0 0 auto' }}>
+                                            {renderPhoto(image, index, true)}
+                                        </div>
+                                    ))}
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        // Pre-measure / no-JS fallback: CSS-columns masonry so images appear immediately.
+                        <div className="columns-1 gap-5 sm:columns-2 lg:columns-3">
+                            {visibleImages.map((image, index) => (
+                                <figure key={image?._id || `${image?.src}-${index}`} className="mb-5 break-inside-avoid">
+                                    {renderPhoto(image, index, false)}
                                 </figure>
-                            );
-                        })}
-                    </div>
-                ) : (
-                    <p data-v2="rise" className="py-20 font-mono text-sm" style={{ color: 'var(--text-tertiary)' }}>
-                        $ ls ~/gallery → empty. Photographs land here once uploaded from the admin panel.
-                    </p>
-                )}
+                            ))}
+                        </div>
+                    )}
+                </div>
             </div>
 
             {selectedIndex >= 0 && (
