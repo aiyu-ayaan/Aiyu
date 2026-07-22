@@ -74,9 +74,10 @@ const buildJustifiedRows = (items, containerWidth) => {
 /**
  * /v2/gallery — nothing but the pictures. The v1 page wraps the grid in
  * stats, search, and orientation filters; here the photographs ARE the page:
- * a full-bleed justified photo wall with no entrance animation (photos just
- * appear), captioned only on hover, opening into a bare-bones lightbox (arrows,
- * esc, click-out — no chrome competing with the image).
+ * a full-bleed justified photo wall where photos spawn in with a quiet
+ * left-to-right cascade as each row enters view (skipped under reduced-motion),
+ * captioned only on hover, opening into a bare-bones lightbox (arrows, esc,
+ * click-out — no chrome competing with the image).
  */
 const GalleryV2 = ({ initialImages, initialConfig }) => {
     const images = useMemo(() => (Array.isArray(initialImages) ? initialImages : []), [initialImages]);
@@ -111,6 +112,50 @@ const GalleryV2 = ({ initialImages, initialConfig }) => {
         const entries = visibleImages.map((image, index) => ({ image, index }));
         return buildJustifiedRows(entries, containerWidth);
     }, [visibleImages, containerWidth]);
+
+    // Spawn-in reveal: each photo fades + rises the first time it scrolls into
+    // view, cascading left-to-right within its row. One shared observer; keys
+    // persist in state so a reflow (resize) never re-triggers the animation.
+    const [revealedKeys, setRevealedKeys] = useState(() => new Set());
+    const revealObserverRef = useRef(null);
+
+    useEffect(() => {
+        if (prefersReducedMotion || typeof IntersectionObserver === 'undefined') return undefined;
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    if (!entry.isIntersecting) return;
+                    const key = entry.target.getAttribute('data-reveal-key');
+                    if (key) setRevealedKeys((prev) => (prev.has(key) ? prev : new Set(prev).add(key)));
+                    observer.unobserve(entry.target);
+                });
+            },
+            { rootMargin: '0px 0px -8% 0px', threshold: 0.05 }
+        );
+        revealObserverRef.current = observer;
+        return () => {
+            observer.disconnect();
+            revealObserverRef.current = null;
+        };
+    }, [prefersReducedMotion]);
+
+    const registerReveal = useCallback((node) => {
+        if (node && revealObserverRef.current) revealObserverRef.current.observe(node);
+    }, []);
+
+    const revealStyle = useCallback(
+        (key, order) => {
+            if (prefersReducedMotion) return undefined;
+            const shown = revealedKeys.has(key);
+            return {
+                opacity: shown ? 1 : 0,
+                transform: shown ? 'none' : 'translateY(16px)',
+                transition: 'opacity 0.6s ease, transform 0.7s cubic-bezier(0.22, 1, 0.36, 1)',
+                transitionDelay: shown ? `${Math.min(order, 6) * 55}ms` : '0ms',
+            };
+        },
+        [prefersReducedMotion, revealedKeys]
+    );
 
     const selectedImage = selectedIndex >= 0 ? visibleImages[selectedIndex] : null;
 
@@ -246,11 +291,19 @@ const GalleryV2 = ({ initialImages, initialConfig }) => {
                         <div className="flex flex-col gap-5">
                             {rows.map((row, rowIndex) => (
                                 <div key={rowIndex} className="flex gap-5" style={{ height: `${row.height}px` }}>
-                                    {row.items.map(({ image, index, aspect }) => (
-                                        <div key={image?._id || `${image?.src}-${index}`} style={{ width: `${aspect * row.height}px`, flex: '0 0 auto' }}>
-                                            {renderPhoto(image, index, true)}
-                                        </div>
-                                    ))}
+                                    {row.items.map(({ image, index, aspect }, itemIndex) => {
+                                        const key = image?._id || `${image?.src}-${index}`;
+                                        return (
+                                            <div
+                                                key={key}
+                                                ref={registerReveal}
+                                                data-reveal-key={key}
+                                                style={{ width: `${aspect * row.height}px`, flex: '0 0 auto', ...revealStyle(key, itemIndex) }}
+                                            >
+                                                {renderPhoto(image, index, true)}
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             ))}
                         </div>
