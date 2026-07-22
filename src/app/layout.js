@@ -97,6 +97,7 @@ import { isAdminViewer } from "@/lib/adminPresence";
 import ClientEnhancements from "./components/shared/ClientEnhancements";
 import DynamicLiveCommitStream from "./components/shared/DynamicLiveCommitStream";
 import BootLoader from "./components/shared/BootLoader";
+import WebMCPTools from "./components/agent/WebMCPTools";
 
 export default async function RootLayout({ children }) {
   const config = await getConfigData();
@@ -230,6 +231,7 @@ export default async function RootLayout({ children }) {
         <ThemeProvider>
           <div className="relative z-0">
             <ClientEnhancements />
+            <WebMCPTools />
             <DynamicLiveCommitStream />
             {children}
           </div>
