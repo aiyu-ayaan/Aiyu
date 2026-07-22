@@ -463,7 +463,84 @@ export function getOAuthIssuerMetadata() {
         scopes_supported: ['public:read', 'contact:write', 'admin:read', 'admin:write'],
         token_endpoint_auth_methods_supported: ['none'],
         service_documentation: toAbsoluteSiteUrl('/docs/api'),
+        // Agent registration metadata (auth.md / WorkOS agent_auth). Aiyu issues
+        // long-lived bearer tokens for agent write access manually from the
+        // /admin/mcp console rather than via dynamic client registration, so
+        // register_uri points agents at that flow and its docs.
+        agent_auth: {
+            enabled: true,
+            registration_metadata: toAbsoluteSiteUrl('/auth.md'),
+            register_uri: toAbsoluteSiteUrl('/admin/mcp'),
+            identity_types_supported: ['agent', 'admin'],
+            credential_types_supported: ['bearer_token', 'session_cookie'],
+            bearer_methods_supported: ['header'],
+            claims_uri: toAbsoluteSiteUrl('/.well-known/oauth-protected-resource'),
+            revocation_uri: toAbsoluteSiteUrl('/admin/mcp'),
+            documentation_uri: toAbsoluteSiteUrl('/docs/mcp'),
+        },
     };
+}
+
+export function getAuthMarkdown() {
+    const base = toAbsoluteSiteUrl('');
+
+    return `# Agent Authentication — Aiyu
+
+This document describes how AI agents register for and use credentials with the
+Aiyu portfolio API. It follows the auth.md convention. Machine-readable metadata
+lives in the OAuth discovery documents linked below.
+
+- Issuer / authorization server: ${toAbsoluteSiteUrl('/.well-known/oauth-authorization-server')}
+- Protected resource metadata: ${toAbsoluteSiteUrl('/.well-known/oauth-protected-resource')}
+- API documentation: ${toAbsoluteSiteUrl('/docs/api')}
+- MCP integration guide: ${toAbsoluteSiteUrl('/docs/mcp')}
+
+## Access Tiers
+
+- **Public reads** — All \`GET\` endpoints under \`/api\` are open. No credential
+  is required. Start here; most portfolio content is readable without auth.
+- **Agent writes** — Write endpoints (\`POST\`/\`PUT\`/\`DELETE\`) under
+  \`/api/ai/*\` and MCP write tools require a bearer token.
+- **Admin** — Routes under \`/api/admin\` require an interactive admin session
+  cookie and are not available to autonomous agents.
+
+## Identity Types
+
+- \`agent\` — An autonomous client acting via a bearer token.
+- \`admin\` — The site owner, via an interactive session cookie.
+
+## Credential Types
+
+- \`bearer_token\` — Presented as \`Authorization: Bearer <token>\`. This is the
+  credential agents use for write access.
+- \`session_cookie\` — Interactive admin sessions only.
+
+## Registration
+
+Aiyu does not offer dynamic client registration. Agent bearer tokens are minted
+by the site owner in the admin MCP console:
+
+1. Owner opens ${toAbsoluteSiteUrl('/admin/mcp')} and enables **write access**.
+2. Owner mints a write token and shares it with the agent operator out of band.
+3. The agent sends the token on every write request:
+
+   \`\`\`http
+   POST ${base}/api/ai/skills/items
+   Authorization: Bearer <token>
+   Content-Type: application/json
+   \`\`\`
+
+## Revocation
+
+Tokens are revoked by regenerating or disabling write access in
+${toAbsoluteSiteUrl('/admin/mcp')}. A revoked token is rejected immediately.
+
+## Claims & Scopes
+
+Supported scopes: \`public:read\`, \`contact:write\`, \`admin:read\`,
+\`admin:write\`. Per-resource claims are published at
+${toAbsoluteSiteUrl('/.well-known/oauth-protected-resource')}.
+`;
 }
 
 export function getProtectedResourceMetadata() {
