@@ -1,6 +1,7 @@
 "use client";
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import Link from 'next/link';
+import { Loader2, Power, RotateCcw } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
 import { ExplorerIcon, VSCodeIcon, ChromeIcon, SettingsIcon, ThisPCIcon, EdgeIcon, PhotosIcon, GitHubIcon, TaskManagerIcon, TerminalIcon, NotepadIcon, CalculatorIcon, WhiteboardIcon, GetStartedIcon } from './icons';
 import Window from './Window';
@@ -154,6 +155,49 @@ export default function Desktop({ wallpaper, config = {} }) {
     const [startOpen, setStartOpen] = useState(false);
     const [widgetsOpen, setWidgetsOpen] = useState(false);
     const [menu, setMenu] = useState(null); // { x, y } desktop context menu
+    const [systemState, setSystemState] = useState('normal'); // 'normal' | 'restarting' | 'shutting_down' | 'powered_off'
+    const [countdown, setCountdown] = useState(5);
+
+    const handleRestart = useCallback(() => {
+        setSystemState('restarting');
+        try {
+            if (typeof window !== 'undefined') {
+                sessionStorage.clear();
+            }
+        } catch {
+            // ignore session storage clearance errors
+        }
+        setTimeout(() => {
+            if (typeof window !== 'undefined') {
+                window.location.reload();
+            }
+        }, 1800);
+    }, []);
+
+    const handleShutdown = useCallback(() => {
+        setSystemState('shutting_down');
+        setCountdown(5);
+    }, []);
+
+    useEffect(() => {
+        if (systemState !== 'shutting_down') return;
+        const timer = setInterval(() => {
+            setCountdown((prev) => {
+                if (prev <= 1) {
+                    clearInterval(timer);
+                    try {
+                        window.close();
+                    } catch {
+                        // ignore tab close block
+                    }
+                    setSystemState('powered_off');
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+        return () => clearInterval(timer);
+    }, [systemState]);
 
     const focus = useCallback((id) => {
         setTopZ((z) => {
@@ -343,7 +387,16 @@ export default function Desktop({ wallpaper, config = {} }) {
 
             {/* Start menu */}
             <AnimatePresence>
-                {startOpen && <StartMenu apps={apps} onOpen={openApp} onClose={() => setStartOpen(false)} config={config} />}
+                {startOpen && (
+                    <StartMenu
+                        apps={apps}
+                        onOpen={openApp}
+                        onClose={() => setStartOpen(false)}
+                        config={config}
+                        onRestart={handleRestart}
+                        onShutdown={handleShutdown}
+                    />
+                )}
             </AnimatePresence>
 
             {/* Widgets Panel */}
@@ -363,6 +416,47 @@ export default function Desktop({ wallpaper, config = {} }) {
                 onOpen={openApp}
                 onTaskClick={taskClick}
             />
+
+            {/* Fullscreen System Overlays */}
+            {systemState === 'restarting' && (
+                <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#005a9e] text-white animate-in fade-in duration-200">
+                    <Loader2 className="h-12 w-12 animate-spin text-white mb-4" />
+                    <div className="text-xl font-bold tracking-tight">Restarting</div>
+                    <div className="mt-2 text-xs text-white/70">Cleaning cache & rebooting Aiyu OS...</div>
+                </div>
+            )}
+
+            {systemState === 'shutting_down' && (
+                <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#0d0d11] text-white animate-in fade-in duration-200">
+                    <div className="relative mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-red-500/10 border border-red-500/30">
+                        <Power className="h-8 w-8 text-red-500 animate-pulse" />
+                        <div className="absolute -top-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-red-600 font-bold text-xs shadow">
+                            {countdown}
+                        </div>
+                    </div>
+                    <div className="text-xl font-bold tracking-tight">Shutting down</div>
+                    <div className="mt-2 text-xs text-white/60">Stopping desktop processes in {countdown} seconds...</div>
+                </div>
+            )}
+
+            {systemState === 'powered_off' && (
+                <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black text-neutral-300 animate-in fade-in duration-300 p-6 text-center">
+                    <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-neutral-900 border border-neutral-800 text-neutral-500">
+                        <Power className="h-8 w-8" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-white mb-2">Aiyu OS is Shut Down</h2>
+                    <p className="max-w-md text-xs text-neutral-400 leading-relaxed mb-8">
+                        It is now safe to close your browser tab. All desktop processes have ended.
+                    </p>
+                    <button
+                        onClick={() => setSystemState('normal')}
+                        className="flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-bold text-white hover:bg-blue-500 transition-colors shadow-lg"
+                    >
+                        <RotateCcw className="h-4 w-4" />
+                        <span>Power On / Reboot</span>
+                    </button>
+                </div>
+            )}
         </div>
     );
 }

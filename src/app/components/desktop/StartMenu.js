@@ -1,6 +1,6 @@
 "use client";
 import React, { useMemo, useState } from 'react';
-import { Search, Power, ChevronRight, ChevronLeft, ExternalLink, X } from 'lucide-react';
+import { Search, Power, ChevronRight, ChevronLeft, ExternalLink, X, RotateCcw, LogOut, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
@@ -59,6 +59,8 @@ export default function StartMenu({ apps = [], onOpen, onClose, config = {}, onR
     const [q, setQ] = useState('');
     const [showAllApps, setShowAllApps] = useState(false);
     const [imgError, setImgError] = useState(false);
+    const [showPowerMenu, setShowPowerMenu] = useState(false);
+    const [confirmAction, setConfirmAction] = useState(null);
 
     const siteTitle = config?.siteTitle || config?.authorName || 'Aiyu';
     const faviconUrl = config?.hasCustomFavicon ? '/api/favicon' : '/favicon.ico';
@@ -290,7 +292,7 @@ export default function StartMenu({ apps = [], onOpen, onClose, config = {}, onR
                                 <img
                                     src={faviconUrl}
                                     alt="Favicon"
-                                    className="h-5 w-5 object-contain"
+                                    className="h-full w-full object-cover rounded-full"
                                     onError={() => setImgError(true)}
                                 />
                             ) : (
@@ -300,7 +302,7 @@ export default function StartMenu({ apps = [], onOpen, onClose, config = {}, onR
                         <span className="text-xs font-semibold text-white/90 truncate max-w-[130px]">{siteTitle}</span>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="relative flex items-center gap-2">
                         <Link
                             href="/"
                             onClick={onClose}
@@ -311,16 +313,117 @@ export default function StartMenu({ apps = [], onOpen, onClose, config = {}, onR
                         </Link>
 
                         <button
-                            onClick={onClose}
-                            className="flex h-8 w-8 items-center justify-center rounded-lg text-white/70 transition hover:bg-red-500/20 hover:text-red-400"
-                            title="Sign out / Power"
-                            aria-label="Power"
+                            onClick={() => setShowPowerMenu((v) => !v)}
+                            className={`flex h-8 w-8 items-center justify-center rounded-lg transition ${
+                                showPowerMenu
+                                    ? 'bg-red-500/30 text-red-400 border border-red-500/40'
+                                    : 'text-white/70 hover:bg-white/10 hover:text-white'
+                            }`}
+                            title="Power Options"
+                            aria-label="Power Options"
                         >
                             <Power className="h-4 w-4" />
                         </button>
+
+                        {/* Windows 11 Power Options Flyout */}
+                        {showPowerMenu && (
+                            <div className="absolute right-0 bottom-10 z-[120] w-48 rounded-xl border border-white/15 bg-[#25252a]/95 p-1.5 shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-bottom-2 duration-150">
+                                <button
+                                    onClick={() => {
+                                        setShowPowerMenu(false);
+                                        setConfirmAction('restart');
+                                    }}
+                                    className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-medium text-white/90 hover:bg-white/10 hover:text-white transition-colors"
+                                >
+                                    <RotateCcw className="h-4 w-4 text-blue-400" />
+                                    <div className="text-left">
+                                        <div className="font-semibold">Restart</div>
+                                        <div className="text-[10px] text-white/50">Refresh OS & clear cache</div>
+                                    </div>
+                                </button>
+
+                                <button
+                                    onClick={() => {
+                                        setShowPowerMenu(false);
+                                        setConfirmAction('shutdown');
+                                    }}
+                                    className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-medium text-white/90 hover:bg-red-500/20 hover:text-red-300 transition-colors"
+                                >
+                                    <Power className="h-4 w-4 text-red-400" />
+                                    <div className="text-left">
+                                        <div className="font-semibold">Shut down</div>
+                                        <div className="text-[10px] text-white/50">Close OS & browser tab</div>
+                                    </div>
+                                </button>
+
+                                <div className="my-1 h-px bg-white/10" />
+
+                                <Link
+                                    href="/"
+                                    onClick={onClose}
+                                    className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-medium text-white/70 hover:bg-white/10 hover:text-white transition-colors"
+                                >
+                                    <LogOut className="h-4 w-4 text-amber-400" />
+                                    <div className="text-left">
+                                        <div className="font-semibold">Sign out</div>
+                                        <div className="text-[10px] text-white/50">Return to site home</div>
+                                    </div>
+                                </Link>
+                            </div>
+                        )}
                     </div>
                 </div>
             </motion.div>
+
+            {/* Confirmation Warning Modal */}
+            {confirmAction && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-in fade-in duration-150">
+                    <div className="w-full max-w-sm rounded-2xl border border-white/20 bg-[#232328] p-6 shadow-2xl text-center">
+                        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                            <AlertTriangle className="h-6 w-6" />
+                        </div>
+
+                        <h3 className="text-base font-bold text-white mb-2">
+                            {confirmAction === 'restart' ? 'Restart Aiyu OS?' : 'Shut down Aiyu OS?'}
+                        </h3>
+
+                        <p className="text-xs text-white/70 leading-relaxed mb-6">
+                            {confirmAction === 'restart'
+                                ? 'Are you sure you want to restart? Unsaved window states will be reset, session caches will be cleaned, and the OS will reboot.'
+                                : 'Are you sure you want to shut down? Desktop processes will be stopped and your browser tab will close in 5 seconds.'}
+                        </p>
+
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setConfirmAction(null)}
+                                className="flex-1 rounded-xl border border-white/15 bg-white/5 py-2.5 text-xs font-semibold text-white/80 hover:bg-white/10 transition-colors"
+                            >
+                                Cancel
+                            </button>
+
+                            <button
+                                onClick={() => {
+                                    const action = confirmAction;
+                                    setConfirmAction(null);
+                                    onClose();
+                                    if (action === 'restart') {
+                                        onRestart?.();
+                                    } else if (action === 'shutdown') {
+                                        onShutdown?.();
+                                    }
+                                }}
+                                className={`flex-1 rounded-xl py-2.5 text-xs font-bold text-white transition-colors shadow ${
+                                    confirmAction === 'restart'
+                                        ? 'bg-blue-600 hover:bg-blue-500'
+                                        : 'bg-red-600 hover:bg-red-500'
+                                }`}
+                            >
+                                {confirmAction === 'restart' ? 'Restart' : 'Shut down'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 }
