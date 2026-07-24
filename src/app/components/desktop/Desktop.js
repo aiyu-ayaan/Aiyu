@@ -292,6 +292,73 @@ export default function Desktop({ wallpaper, config = {} }) {
         setWindows((ws) => ws.map((w) => (w.id === id ? { ...w, x, y } : w)));
     }, []);
 
+    const resizeWin = useCallback((id, x, y, w, h) => {
+        setWindows((ws) => ws.map((win) => (win.id === id ? { ...win, x, y, w, h, maximized: false } : win)));
+    }, []);
+
+    const snapWin = useCallback((id, zone) => {
+        if (typeof window === 'undefined') return;
+        const workW = window.innerWidth;
+        const workH = window.innerHeight - 48;
+
+        let x = 0, y = 0, w = workW, h = workH;
+
+        switch (zone) {
+            case 'left-50':
+                x = 0; y = 0; w = Math.floor(workW * 0.5); h = workH;
+                break;
+            case 'right-50':
+                x = Math.floor(workW * 0.5); y = 0; w = Math.floor(workW * 0.5); h = workH;
+                break;
+            case 'left-60':
+                x = 0; y = 0; w = Math.floor(workW * 0.6); h = workH;
+                break;
+            case 'right-40':
+                x = Math.floor(workW * 0.6); y = 0; w = Math.floor(workW * 0.4); h = workH;
+                break;
+            case 'col3-left':
+                x = 0; y = 0; w = Math.floor(workW / 3); h = workH;
+                break;
+            case 'col3-center':
+                x = Math.floor(workW / 3); y = 0; w = Math.floor(workW / 3); h = workH;
+                break;
+            case 'col3-right':
+                x = Math.floor((workW / 3) * 2); y = 0; w = Math.floor(workW / 3); h = workH;
+                break;
+            case 'grid-tl':
+                x = 0; y = 0; w = Math.floor(workW * 0.5); h = Math.floor(workH * 0.5);
+                break;
+            case 'grid-tr':
+                x = Math.floor(workW * 0.5); y = 0; w = Math.floor(workW * 0.5); h = Math.floor(workH * 0.5);
+                break;
+            case 'grid-bl':
+                x = 0; y = Math.floor(workH * 0.5); w = Math.floor(workW * 0.5); h = Math.floor(workH * 0.5);
+                break;
+            case 'grid-br':
+                x = Math.floor(workW * 0.5); y = Math.floor(workH * 0.5); w = Math.floor(workW * 0.5); h = Math.floor(workH * 0.5);
+                break;
+            case 'top-50':
+                x = 0; y = 0; w = workW; h = Math.floor(workH * 0.5);
+                break;
+            case 'bottom-50':
+                x = 0; y = Math.floor(workH * 0.5); w = workW; h = Math.floor(workH * 0.5);
+                break;
+            case 'priority-left':
+                x = 0; y = 0; w = Math.floor(workW * 0.6); h = workH;
+                break;
+            case 'priority-tr':
+                x = Math.floor(workW * 0.6); y = 0; w = Math.floor(workW * 0.4); h = Math.floor(workH * 0.5);
+                break;
+            case 'priority-br':
+                x = Math.floor(workW * 0.6); y = Math.floor(workH * 0.5); w = Math.floor(workW * 0.4); h = Math.floor(workH * 0.5);
+                break;
+            default:
+                break;
+        }
+
+        setWindows((ws) => ws.map((win) => (win.id === id ? { ...win, x, y, w, h, maximized: false } : win)));
+    }, []);
+
     // Taskbar click: toggle minimize if active, else focus.
     const taskClick = useCallback(
         (key) => {
@@ -383,6 +450,8 @@ export default function Desktop({ wallpaper, config = {} }) {
                         onMinimize={minimizeWin}
                         onToggleMaximize={toggleMax}
                         onMove={moveWin}
+                        onResize={resizeWin}
+                        onSnap={snapWin}
                     >
                         {appMap[win.appKey]?.render({ wallpaper, config, openApp, windows, closeWin: () => closeWin(win.id), payload: win.payload })}
                     </Window>
