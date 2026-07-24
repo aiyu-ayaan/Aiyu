@@ -98,10 +98,9 @@ export default function WidgetsFeed({ openApp }) {
     }
 
     return (
-        <div className="flex flex-col h-full select-none">
-            {/* Scrollable Staggered Grid */}
-            <div className="flex-1 overflow-y-auto min-h-0 pr-0.5 pb-2">
-                <div className="grid grid-cols-2 gap-2.5 items-start">
+        <div className="select-none pb-4">
+            {/* Staggered Grid */}
+            <div className="grid grid-cols-2 gap-2.5 items-start">
                     {/* Left column */}
                     <div className="flex flex-col gap-2.5">
                         {leftCol.map((item) => (
@@ -122,7 +121,6 @@ export default function WidgetsFeed({ openApp }) {
                         <Loader2 className="h-4 w-4 animate-spin text-blue-500/60" />
                     </div>
                 )}
-            </div>
         </div>
     );
 }
