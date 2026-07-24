@@ -1,11 +1,11 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import { Wifi, Volume2, BatteryFull, Search } from 'lucide-react';
-import { StartIcon } from './icons';
+import { StartIcon, WidgetsIcon } from './icons';
 
 // Windows 11 style bottom taskbar: centered app icons, Start button, and a
 // system tray with live clock.
-export default function Taskbar({ apps, windows, activeId, onStart, startOpen, onOpen, onTaskClick }) {
+export default function Taskbar({ apps, windows, activeId, onStart, startOpen, widgetsOpen, onToggleWidgets, onOpen, onTaskClick }) {
     const [now, setNow] = useState(() => new Date());
 
     useEffect(() => {
@@ -21,8 +21,21 @@ export default function Taskbar({ apps, windows, activeId, onStart, startOpen, o
 
     return (
         <div className="absolute inset-x-0 bottom-0 z-50 flex h-12 items-center justify-between bg-[#e9e9ec]/80 px-2 backdrop-blur-2xl dark:bg-[#1c1c1f]/80">
-            {/* Left spacer for symmetry */}
-            <div className="w-40" />
+            {/* Left cluster: Widgets & Winget button */}
+            <div className="flex w-40 items-center justify-start pl-1">
+                <button
+                    onClick={onToggleWidgets}
+                    className={`flex h-10 items-center gap-2 rounded-md px-2.5 transition-colors hover:bg-black/5 dark:hover:bg-white/10 ${
+                        widgetsOpen ? 'bg-black/5 dark:bg-white/10' : ''
+                    }`}
+                    aria-label="Widgets & Winget"
+                    title="Widgets & Winget"
+                >
+                    <WidgetsIcon className="h-5 w-5 drop-shadow-sm" />
+                    <span className="hidden text-xs font-medium opacity-80 sm:inline">Widgets</span>
+                </button>
+            </div>
+
 
             {/* Center cluster */}
             <div className="flex items-center gap-1">

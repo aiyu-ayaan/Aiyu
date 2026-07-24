@@ -240,3 +240,16 @@ export function WhiteboardIcon({ className }) {
         </svg>
     );
 }
+
+// Windows 11 Widgets icon (blue/white split card icon)
+export function WidgetsIcon({ className }) {
+    return (
+        <svg className={className} viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <rect x="2" y="2" width="28" height="28" rx="5" fill="#2563EB" />
+            <rect x="5" y="5" width="10" height="22" rx="2" fill="#FFFFFF" />
+            <rect x="17" y="5" width="10" height="10" rx="2" fill="#60A5FA" />
+            <rect x="17" y="17" width="10" height="10" rx="2" fill="#93C5FD" />
+        </svg>
+    );
+}
+

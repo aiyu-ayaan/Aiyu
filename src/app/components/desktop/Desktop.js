@@ -5,6 +5,7 @@ import { ExplorerIcon, VSCodeIcon, ChromeIcon, SettingsIcon, ThisPCIcon, EdgeIco
 import Window from './Window';
 import Taskbar from './Taskbar';
 import StartMenu from './StartMenu';
+import WidgetsPanel from './WidgetsPanel';
 import FileExplorer from './apps/FileExplorer';
 import CodeEditor from './apps/CodeEditor';
 import Browser from './apps/Browser';
@@ -114,6 +115,7 @@ export default function Desktop({ wallpaper, config = {} }) {
     const [activeId, setActiveId] = useState(null);
     const [topZ, setTopZ] = useState(10);
     const [startOpen, setStartOpen] = useState(false);
+    const [widgetsOpen, setWidgetsOpen] = useState(false);
     const [menu, setMenu] = useState(null); // { x, y } desktop context menu
 
     const focus = useCallback((id) => {
@@ -130,6 +132,7 @@ export default function Desktop({ wallpaper, config = {} }) {
             const app = appMap[key];
             if (!app) return;
             setStartOpen(false);
+            setWidgetsOpen(false);
             // If already open, focus the existing window (and refresh its payload
             // so e.g. opening a new image reuses the running Photos window).
             setWindows((ws) => {
@@ -302,12 +305,17 @@ export default function Desktop({ wallpaper, config = {} }) {
             {/* Start menu */}
             {startOpen && <StartMenu apps={apps} onOpen={openApp} onClose={() => setStartOpen(false)} />}
 
+            {/* Widgets Panel */}
+            <WidgetsPanel open={widgetsOpen} onClose={() => setWidgetsOpen(false)} openApp={openApp} />
+
             {/* Taskbar */}
             <Taskbar
                 apps={apps}
                 windows={windows}
                 activeId={activeId}
                 startOpen={startOpen}
+                widgetsOpen={widgetsOpen}
+                onToggleWidgets={() => setWidgetsOpen((v) => !v)}
                 onStart={() => setStartOpen((v) => !v)}
                 onOpen={openApp}
                 onTaskClick={taskClick}
