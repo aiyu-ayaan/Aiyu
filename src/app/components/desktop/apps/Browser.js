@@ -1,6 +1,6 @@
 "use client";
 import React, { useMemo, useRef, useState, useEffect } from 'react';
-import { ArrowLeft, ArrowRight, RotateCw, Lock, Star, X, Plus, Home } from 'lucide-react';
+import { ArrowLeft, ArrowRight, RotateCw, Lock, Star, X, Plus, Home, ExternalLink, ShieldCheck, Copy, Globe, AlertCircle, Check } from 'lucide-react';
 
 const QUICK_LINKS = [
     { label: 'Home', path: '/' },
@@ -10,6 +10,20 @@ const QUICK_LINKS = [
     { label: 'About', path: '/about' },
     { label: 'Resume', path: '/resume' },
 ];
+
+function isExternalUrl(url) {
+    if (!url) return false;
+    if (url.startsWith('/')) return false;
+    try {
+        const parsed = new URL(url);
+        if (typeof window !== 'undefined' && parsed.origin === window.location.origin) {
+            return false;
+        }
+        return true;
+    } catch {
+        return false;
+    }
+}
 
 // Normalize what the user typed in the address bar into a real URL.
 function toUrl(input) {
@@ -24,9 +38,9 @@ function toUrl(input) {
 export default function Browser({ payload }) {
     const [tabs, setTabs] = useState(() => {
         if (payload?.url) {
-            return [{ id: 1, title: payload.title || payload.url, url: payload.url }];
+            return [{ id: 1, title: payload.title || payload.url, url: payload.url, forceEmbed: false }];
         }
-        return [{ id: 1, title: 'New tab', url: '' }];
+        return [{ id: 1, title: 'New tab', url: '', forceEmbed: false }];
     });
     const [activeId, setActiveId] = useState(1);
     const [address, setAddress] = useState(() => payload?.url || '');
@@ -46,7 +60,7 @@ export default function Browser({ payload }) {
                 return prev;
             }
             const newId = nextId.current++;
-            const newTab = { id: newId, title: targetTitle, url: targetUrl };
+            const newTab = { id: newId, title: targetTitle, url: targetUrl, forceEmbed: false };
             setActiveId(newId);
             setAddress(targetUrl);
             return [...prev, newTab];
@@ -56,8 +70,12 @@ export default function Browser({ payload }) {
     const active = tabs.find((t) => t.id === activeId) || tabs[0];
 
     const navigate = (url, title) => {
-        setTabs((prev) => prev.map((t) => (t.id === activeId ? { ...t, url, title: title || url || 'New tab' } : t)));
+        setTabs((prev) => prev.map((t) => (t.id === activeId ? { ...t, url, title: title || url || 'New tab', forceEmbed: false } : t)));
         setAddress(url && !url.startsWith('/') ? url : url || '');
+    };
+
+    const toggleForceEmbed = () => {
+        setTabs((prev) => prev.map((t) => (t.id === activeId ? { ...t, forceEmbed: !t.forceEmbed } : t)));
     };
 
     const go = (e) => {
@@ -68,7 +86,7 @@ export default function Browser({ payload }) {
 
     const addTab = () => {
         const id = nextId.current++;
-        setTabs((prev) => [...prev, { id, title: 'New tab', url: '' }]);
+        setTabs((prev) => [...prev, { id, title: 'New tab', url: '', forceEmbed: false }]);
         setActiveId(id);
         setAddress('');
     };
@@ -78,7 +96,7 @@ export default function Browser({ payload }) {
         setTabs((prev) => {
             const next = prev.filter((t) => t.id !== id);
             if (next.length === 0) {
-                const fresh = { id: nextId.current++, title: 'New tab', url: '' };
+                const fresh = { id: nextId.current++, title: 'New tab', url: '', forceEmbed: false };
                 setActiveId(fresh.id);
                 setAddress('');
                 return [fresh];
@@ -96,6 +114,8 @@ export default function Browser({ payload }) {
         if (active?.url) return active.url;
         return '';
     }, [address, active]);
+
+    const isExternal = isExternalUrl(active?.url);
 
     return (
         <div className="flex h-full w-full flex-col bg-[#dee1e6] dark:bg-[#202124]">
@@ -154,16 +174,94 @@ export default function Browser({ payload }) {
             {/* Viewport */}
             <div className="min-h-0 flex-1 bg-white dark:bg-[#202124]">
                 {active?.url ? (
-                    <iframe
-                        ref={frameRef}
-                        src={active.url}
-                        title={active.title}
-                        className="h-full w-full border-0"
-                        sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
-                    />
+                    isExternal && !active.forceEmbed ? (
+                        <ExternalTabPreview url={active.url} title={active.title} onForceEmbed={toggleForceEmbed} />
+                    ) : (
+                        <iframe
+                            ref={frameRef}
+                            src={active.url}
+                            title={active.title}
+                            className="h-full w-full border-0"
+                            sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
+                        />
+                    )
                 ) : (
                     <NewTab onOpen={(l) => navigate(l.path, l.label)} />
                 )}
+            </div>
+        </div>
+    );
+}
+
+function ExternalTabPreview({ url, title, onForceEmbed }) {
+    const [copied, setCopied] = useState(false);
+
+    const handleCopy = () => {
+        try {
+            navigator.clipboard.writeText(url);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        } catch {
+            // ignore clipboard errors
+        }
+    };
+
+    let domain = url;
+    try {
+        domain = new URL(url).hostname;
+    } catch {
+        // fallback
+    }
+
+    return (
+        <div className="flex h-full flex-col items-center justify-center p-6 text-neutral-800 dark:text-neutral-100 bg-[#f8f9fa] dark:bg-[#1e1e22]">
+            <div className="w-full max-w-md rounded-2xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#28282d] p-6 shadow-xl text-center space-y-4">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-500 border border-blue-500/20 shadow-sm">
+                    <Globe className="h-7 w-7" />
+                </div>
+
+                <div>
+                    <div className="inline-flex items-center gap-1.5 rounded-full bg-blue-500/10 px-3 py-1 text-[11px] font-semibold text-blue-500 mb-2">
+                        <ShieldCheck className="h-3.5 w-3.5" />
+                        <span>External Web Protection</span>
+                    </div>
+                    <h3 className="text-lg font-bold tracking-tight text-neutral-900 dark:text-white">{title || domain}</h3>
+                    <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400 font-mono truncate px-2">{url}</p>
+                </div>
+
+                <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 text-[11px] text-amber-600 dark:text-amber-300 leading-relaxed text-left flex items-start gap-2">
+                    <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                    <span>
+                        Security headers (<code>X-Frame-Options</code>) set by <strong>{domain}</strong> prevent embedding inside an iframe window. Click below to launch securely.
+                    </span>
+                </div>
+
+                <div className="flex flex-col gap-2 pt-2">
+                    <button
+                        onClick={() => window.open(url, '_blank', 'noopener,noreferrer')}
+                        className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-blue-500 transition shadow"
+                    >
+                        <ExternalLink className="h-4 w-4" />
+                        <span>Open {domain} in New Window</span>
+                    </button>
+
+                    <div className="flex gap-2">
+                        <button
+                            onClick={handleCopy}
+                            className="flex-1 flex items-center justify-center gap-1.5 rounded-xl border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 py-2 text-xs font-medium hover:bg-black/10 dark:hover:bg-white/10 transition"
+                        >
+                            {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+                            <span>{copied ? 'Copied!' : 'Copy Link'}</span>
+                        </button>
+
+                        <button
+                            onClick={onForceEmbed}
+                            className="flex-1 flex items-center justify-center gap-1.5 rounded-xl border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 py-2 text-xs font-medium hover:bg-black/10 dark:hover:bg-white/10 transition text-neutral-500 dark:text-neutral-400"
+                        >
+                            <span>Try Embed Anyway</span>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     );
