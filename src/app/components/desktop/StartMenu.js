@@ -93,7 +93,10 @@ export default function StartMenu({ apps = [], onOpen, onClose, config = {}, onR
     }, [allSearchableItems, query]);
 
     const handleAppClick = (item) => {
-        if (item.external) {
+        if (item.key === 'contact' || item.title === 'Mail') {
+            window.open('/contact-us', '_blank', 'noopener,noreferrer');
+            onClose();
+        } else if (item.external) {
             onOpen('browser', { url: item.external, title: item.title });
             onClose();
         } else if (item.action) {
