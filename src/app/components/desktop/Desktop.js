@@ -357,7 +357,16 @@ export default function Desktop({ wallpaper, config = {} }) {
                     onClick={(e) => e.stopPropagation()}
                     className="flex flex-col items-center gap-1 rounded p-2 text-center hover:bg-white/10 transition-transform active:scale-95"
                 >
-                    <EdgeIcon className="h-8 w-8 drop-shadow" />
+                    <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full drop-shadow">
+                        <img
+                            src={config?.hasCustomFavicon ? '/api/favicon' : '/favicon.ico'}
+                            alt="Portfolio"
+                            className="h-full w-full object-cover"
+                            onError={(e) => {
+                                e.currentTarget.src = '/favicon.ico';
+                            }}
+                        />
+                    </div>
                     <span className="text-[11px] leading-tight [text-shadow:0_1px_2px_rgba(0,0,0,0.6)]">Portfolio</span>
                 </Link>
             </div>
