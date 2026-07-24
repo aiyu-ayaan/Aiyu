@@ -293,6 +293,23 @@ export default function Desktop({ wallpaper, config = {} }) {
     }, []);
 
     const [snapAssist, setSnapAssist] = useState(null); // { targetZone, snappedId }
+    const [snapFlyoutTarget, setSnapFlyoutTarget] = useState(null); // { winId, rect }
+    const snapFlyoutTimerRef = useRef(null);
+
+    const openSnapFlyout = useCallback((winId, rect) => {
+        if (snapFlyoutTimerRef.current) clearTimeout(snapFlyoutTimerRef.current);
+        setSnapFlyoutTarget({ winId, rect });
+    }, []);
+
+    const closeSnapFlyout = useCallback(() => {
+        snapFlyoutTimerRef.current = setTimeout(() => {
+            setSnapFlyoutTarget(null);
+        }, 300);
+    }, []);
+
+    const keepSnapFlyout = useCallback(() => {
+        if (snapFlyoutTimerRef.current) clearTimeout(snapFlyoutTimerRef.current);
+    }, []);
 
     const resizeWin = useCallback((id, x, y, w, h) => {
         setWindows((ws) => ws.map((win) => (win.id === id ? { ...win, x, y, w, h, maximized: false } : win)));
@@ -428,6 +445,11 @@ export default function Desktop({ wallpaper, config = {} }) {
         return windows.filter((w) => w.id !== snapAssist.snappedId && !w.minimized);
     }, [snapAssist, windows]);
 
+    const snapFlyoutOthers = useMemo(() => {
+        if (!snapFlyoutTarget) return [];
+        return windows.filter((w) => w.id !== snapFlyoutTarget.winId && !w.minimized);
+    }, [snapFlyoutTarget, windows]);
+
     return (
         <div
             className="relative h-screen w-screen select-none overflow-hidden text-white"
@@ -489,10 +511,241 @@ export default function Desktop({ wallpaper, config = {} }) {
                         onMove={moveWin}
                         onResize={resizeWin}
                         onSnap={snapWin}
+                        onOpenSnapFlyout={openSnapFlyout}
+                        onCloseSnapFlyout={closeSnapFlyout}
+                        windows={windows}
                     >
                         {appMap[win.appKey]?.render({ wallpaper, config, openApp, windows, closeWin: () => closeWin(win.id), payload: win.payload })}
                     </Window>
                 ))}
+            </AnimatePresence>
+
+            {/* Desktop Root Level Windows 11 Snap Layouts Flyout (fixed z-[9999]) */}
+            <AnimatePresence>
+                {snapFlyoutTarget && (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: -6 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: -6 }}
+                        transition={{ duration: 0.12 }}
+                        className="fixed z-[9999] w-64 rounded-xl border border-white/20 bg-[#25252b]/98 p-3 shadow-2xl backdrop-blur-2xl text-white select-none"
+                        style={{
+                            left: Math.min(
+                                snapFlyoutTarget.rect.right - 256,
+                                (typeof window !== 'undefined' ? window.innerWidth : 1000) - 270
+                            ),
+                            top: snapFlyoutTarget.rect.bottom + 4,
+                        }}
+                        onMouseEnter={keepSnapFlyout}
+                        onMouseLeave={closeSnapFlyout}
+                    >
+                        <div className="text-[11px] font-semibold text-white/60 mb-2 px-1">
+                            Snap Layouts
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-2.5">
+                            {/* Preset 1: 50/50 Split */}
+                            <div className="flex flex-col gap-1 rounded-lg border border-white/10 p-1.5 bg-black/20 hover:border-blue-400/50 transition">
+                                <div className="grid grid-cols-2 gap-1 h-9">
+                                    <button
+                                        onClick={() => {
+                                            snapWin(snapFlyoutTarget.winId, 'left-50');
+                                            setSnapFlyoutTarget(null);
+                                        }}
+                                        className="rounded bg-white/15 hover:bg-blue-600 transition"
+                                        title="Snap Left 50%"
+                                    />
+                                    <button
+                                        onClick={() => {
+                                            snapWin(snapFlyoutTarget.winId, 'right-50');
+                                            setSnapFlyoutTarget(null);
+                                        }}
+                                        className="rounded bg-white/15 hover:bg-blue-600 transition"
+                                        title="Snap Right 50%"
+                                    />
+                                </div>
+                                <span className="text-[9px] text-center text-white/40">50 / 50</span>
+                            </div>
+
+                            {/* Preset 2: 60/40 Split */}
+                            <div className="flex flex-col gap-1 rounded-lg border border-white/10 p-1.5 bg-black/20 hover:border-blue-400/50 transition">
+                                <div className="flex gap-1 h-9">
+                                    <button
+                                        onClick={() => {
+                                            snapWin(snapFlyoutTarget.winId, 'left-60');
+                                            setSnapFlyoutTarget(null);
+                                        }}
+                                        className="w-[60%] rounded bg-white/15 hover:bg-blue-600 transition"
+                                        title="Snap Left 60%"
+                                    />
+                                    <button
+                                        onClick={() => {
+                                            snapWin(snapFlyoutTarget.winId, 'right-40');
+                                            setSnapFlyoutTarget(null);
+                                        }}
+                                        className="w-[40%] rounded bg-white/15 hover:bg-blue-600 transition"
+                                        title="Snap Right 40%"
+                                    />
+                                </div>
+                                <span className="text-[9px] text-center text-white/40">60 / 40</span>
+                            </div>
+
+                            {/* Preset 3: 3 Columns */}
+                            <div className="flex flex-col gap-1 rounded-lg border border-white/10 p-1.5 bg-black/20 hover:border-blue-400/50 transition">
+                                <div className="grid grid-cols-3 gap-1 h-9">
+                                    <button
+                                        onClick={() => {
+                                            snapWin(snapFlyoutTarget.winId, 'col3-left');
+                                            setSnapFlyoutTarget(null);
+                                        }}
+                                        className="rounded bg-white/15 hover:bg-blue-600 transition"
+                                        title="Snap Left Column"
+                                    />
+                                    <button
+                                        onClick={() => {
+                                            snapWin(snapFlyoutTarget.winId, 'col3-center');
+                                            setSnapFlyoutTarget(null);
+                                        }}
+                                        className="rounded bg-white/15 hover:bg-blue-600 transition"
+                                        title="Snap Center Column"
+                                    />
+                                    <button
+                                        onClick={() => {
+                                            snapWin(snapFlyoutTarget.winId, 'col3-right');
+                                            setSnapFlyoutTarget(null);
+                                        }}
+                                        className="rounded bg-white/15 hover:bg-blue-600 transition"
+                                        title="Snap Right Column"
+                                    />
+                                </div>
+                                <span className="text-[9px] text-center text-white/40">3 Columns</span>
+                            </div>
+
+                            {/* Preset 4: 2x2 Grid */}
+                            <div className="flex flex-col gap-1 rounded-lg border border-white/10 p-1.5 bg-black/20 hover:border-blue-400/50 transition">
+                                <div className="grid grid-cols-2 gap-1 h-9">
+                                    <button
+                                        onClick={() => {
+                                            snapWin(snapFlyoutTarget.winId, 'grid-tl');
+                                            setSnapFlyoutTarget(null);
+                                        }}
+                                        className="rounded bg-white/15 hover:bg-blue-600 transition h-4"
+                                        title="Top Left"
+                                    />
+                                    <button
+                                        onClick={() => {
+                                            snapWin(snapFlyoutTarget.winId, 'grid-tr');
+                                            setSnapFlyoutTarget(null);
+                                        }}
+                                        className="rounded bg-white/15 hover:bg-blue-600 transition h-4"
+                                        title="Top Right"
+                                    />
+                                    <button
+                                        onClick={() => {
+                                            snapWin(snapFlyoutTarget.winId, 'grid-bl');
+                                            setSnapFlyoutTarget(null);
+                                        }}
+                                        className="rounded bg-white/15 hover:bg-blue-600 transition h-4"
+                                        title="Bottom Left"
+                                    />
+                                    <button
+                                        onClick={() => {
+                                            snapWin(snapFlyoutTarget.winId, 'grid-br');
+                                            setSnapFlyoutTarget(null);
+                                        }}
+                                        className="rounded bg-white/15 hover:bg-blue-600 transition h-4"
+                                        title="Bottom Right"
+                                    />
+                                </div>
+                                <span className="text-[9px] text-center text-white/40">2 x 2 Grid</span>
+                            </div>
+
+                            {/* Preset 5: Priority Split */}
+                            <div className="flex flex-col gap-1 rounded-lg border border-white/10 p-1.5 bg-black/20 hover:border-blue-400/50 transition">
+                                <div className="flex gap-1 h-9">
+                                    <button
+                                        onClick={() => {
+                                            snapWin(snapFlyoutTarget.winId, 'priority-left');
+                                            setSnapFlyoutTarget(null);
+                                        }}
+                                        className="w-[60%] rounded bg-white/15 hover:bg-blue-600 transition"
+                                        title="Priority Main"
+                                    />
+                                    <div className="w-[40%] flex flex-col gap-1">
+                                        <button
+                                            onClick={() => {
+                                                snapWin(snapFlyoutTarget.winId, 'priority-tr');
+                                                setSnapFlyoutTarget(null);
+                                            }}
+                                            className="h-4 rounded bg-white/15 hover:bg-blue-600 transition"
+                                            title="Side Top"
+                                        />
+                                        <button
+                                            onClick={() => {
+                                                snapWin(snapFlyoutTarget.winId, 'priority-br');
+                                                setSnapFlyoutTarget(null);
+                                            }}
+                                            className="h-4 rounded bg-white/15 hover:bg-blue-600 transition"
+                                            title="Side Bottom"
+                                        />
+                                    </div>
+                                </div>
+                                <span className="text-[9px] text-center text-white/40">Priority</span>
+                            </div>
+
+                            {/* Preset 6: Top / Bottom */}
+                            <div className="flex flex-col gap-1 rounded-lg border border-white/10 p-1.5 bg-black/20 hover:border-blue-400/50 transition">
+                                <div className="flex flex-col gap-1 h-9">
+                                    <button
+                                        onClick={() => {
+                                            snapWin(snapFlyoutTarget.winId, 'top-50');
+                                            setSnapFlyoutTarget(null);
+                                        }}
+                                        className="h-4 rounded bg-white/15 hover:bg-blue-600 transition"
+                                        title="Top 50%"
+                                    />
+                                    <button
+                                        onClick={() => {
+                                            snapWin(snapFlyoutTarget.winId, 'bottom-50');
+                                            setSnapFlyoutTarget(null);
+                                        }}
+                                        className="h-4 rounded bg-white/15 hover:bg-blue-600 transition"
+                                        title="Bottom 50%"
+                                    />
+                                </div>
+                                <span className="text-[9px] text-center text-white/40">Top / Bottom</span>
+                            </div>
+                        </div>
+
+                        {/* Open Windows Suggestions */}
+                        {snapFlyoutOthers.length > 0 && (
+                            <div className="mt-2.5 pt-2 border-t border-white/10">
+                                <div className="text-[10px] font-semibold text-white/50 mb-1.5 px-0.5">
+                                    Open Windows ({snapFlyoutOthers.length})
+                                </div>
+                                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 custom-scrollbar" data-lenis-prevent>
+                                    {snapFlyoutOthers.map((other) => {
+                                        const OtherIcon = other.icon;
+                                        return (
+                                            <button
+                                                key={other.id}
+                                                onClick={() => {
+                                                    setSnapFlyoutTarget(null);
+                                                    focus(other.id);
+                                                }}
+                                                className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2 py-1 hover:bg-blue-600/30 hover:border-blue-400/50 transition shrink-0"
+                                                title={`Switch to ${other.title}`}
+                                            >
+                                                {OtherIcon && <OtherIcon className="h-3.5 w-3.5 text-blue-400" />}
+                                                <span className="text-[10px] font-medium truncate max-w-[90px] text-white/90">{other.title}</span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+                    </motion.div>
+                )}
             </AnimatePresence>
 
             {/* Windows 11 Snap Assist Overlay */}

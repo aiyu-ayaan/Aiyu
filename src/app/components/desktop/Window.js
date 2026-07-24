@@ -14,6 +14,8 @@ export default function Window({
     onMove,
     onResize,
     onSnap,
+    onOpenSnapFlyout,
+    onCloseSnapFlyout,
     windows = [],
     children,
 }) {
@@ -134,19 +136,23 @@ export default function Window({
         return () => window.removeEventListener('keydown', onKey);
     }, [active, win.maximized, win.id, onToggleMaximize]);
 
-    const handleMouseEnterMaximize = () => {
+    const handleMouseEnterMaximize = (e) => {
         if (snapTimeoutRef.current) clearTimeout(snapTimeoutRef.current);
-        setSnapFlyoutOpen(true);
+        const rect = e.currentTarget.getBoundingClientRect();
+        if (onOpenSnapFlyout) {
+            onOpenSnapFlyout(win.id, {
+                right: rect.right,
+                bottom: rect.bottom,
+                left: rect.left,
+                top: rect.top,
+            });
+        }
     };
 
-    const otherOpenWindows = React.useMemo(() => {
-        return windows.filter((w) => w.id !== win.id && !w.minimized);
-    }, [windows, win.id]);
-
     const handleMouseLeaveMaximize = () => {
-        snapTimeoutRef.current = setTimeout(() => {
-            setSnapFlyoutOpen(false);
-        }, 300);
+        if (onCloseSnapFlyout) {
+            onCloseSnapFlyout();
+        }
     };
 
     const handleSelectSnap = (zone) => {
@@ -282,179 +288,6 @@ export default function Window({
                             >
                                 {win.maximized ? <Copy className="h-3.5 w-3.5" /> : <Square className="h-3 w-3" />}
                             </button>
-
-                            {/* Windows 11 Snap Layouts Flyout Menu */}
-                            <AnimatePresence>
-                                {snapFlyoutOpen && (
-                                    <motion.div
-                                        initial={{ opacity: 0, scale: 0.95, y: -6 }}
-                                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                                        exit={{ opacity: 0, scale: 0.95, y: -6 }}
-                                        transition={{ duration: 0.12 }}
-                                        className="absolute right-0 top-10 z-[9999] w-64 rounded-xl border border-white/20 bg-[#25252b]/98 p-3 shadow-2xl backdrop-blur-2xl text-white select-none"
-                                        onMouseEnter={handleMouseEnterMaximize}
-                                        onMouseLeave={handleMouseLeaveMaximize}
-                                    >
-                                        <div className="text-[11px] font-semibold text-white/60 mb-2 px-1">
-                                            Snap Layouts
-                                        </div>
-
-                                        <div className="grid grid-cols-3 gap-2.5">
-                                            {/* Preset 1: 50/50 Split */}
-                                            <div className="flex flex-col gap-1 rounded-lg border border-white/10 p-1.5 bg-black/20 hover:border-blue-400/50 transition">
-                                                <div className="grid grid-cols-2 gap-1 h-9">
-                                                    <button
-                                                        onClick={() => handleSelectSnap('left-50')}
-                                                        className="rounded bg-white/15 hover:bg-blue-600 transition"
-                                                        title="Snap Left 50%"
-                                                    />
-                                                    <button
-                                                        onClick={() => handleSelectSnap('right-50')}
-                                                        className="rounded bg-white/15 hover:bg-blue-600 transition"
-                                                        title="Snap Right 50%"
-                                                    />
-                                                </div>
-                                                <span className="text-[9px] text-center text-white/40">50 / 50</span>
-                                            </div>
-
-                                            {/* Preset 2: 60/40 Split */}
-                                            <div className="flex flex-col gap-1 rounded-lg border border-white/10 p-1.5 bg-black/20 hover:border-blue-400/50 transition">
-                                                <div className="flex gap-1 h-9">
-                                                    <button
-                                                        onClick={() => handleSelectSnap('left-60')}
-                                                        className="w-[60%] rounded bg-white/15 hover:bg-blue-600 transition"
-                                                        title="Snap Left 60%"
-                                                    />
-                                                    <button
-                                                        onClick={() => handleSelectSnap('right-40')}
-                                                        className="w-[40%] rounded bg-white/15 hover:bg-blue-600 transition"
-                                                        title="Snap Right 40%"
-                                                    />
-                                                </div>
-                                                <span className="text-[9px] text-center text-white/40">60 / 40</span>
-                                            </div>
-
-                                            {/* Preset 3: 3 Columns */}
-                                            <div className="flex flex-col gap-1 rounded-lg border border-white/10 p-1.5 bg-black/20 hover:border-blue-400/50 transition">
-                                                <div className="grid grid-cols-3 gap-1 h-9">
-                                                    <button
-                                                        onClick={() => handleSelectSnap('col3-left')}
-                                                        className="rounded bg-white/15 hover:bg-blue-600 transition"
-                                                        title="Snap Left Column"
-                                                    />
-                                                    <button
-                                                        onClick={() => handleSelectSnap('col3-center')}
-                                                        className="rounded bg-white/15 hover:bg-blue-600 transition"
-                                                        title="Snap Center Column"
-                                                    />
-                                                    <button
-                                                        onClick={() => handleSelectSnap('col3-right')}
-                                                        className="rounded bg-white/15 hover:bg-blue-600 transition"
-                                                        title="Snap Right Column"
-                                                    />
-                                                </div>
-                                                <span className="text-[9px] text-center text-white/40">3 Columns</span>
-                                            </div>
-
-                                            {/* Preset 4: 2x2 Grid */}
-                                            <div className="flex flex-col gap-1 rounded-lg border border-white/10 p-1.5 bg-black/20 hover:border-blue-400/50 transition">
-                                                <div className="grid grid-cols-2 gap-1 h-9">
-                                                    <button
-                                                        onClick={() => handleSelectSnap('grid-tl')}
-                                                        className="rounded bg-white/15 hover:bg-blue-600 transition h-4"
-                                                        title="Top Left"
-                                                    />
-                                                    <button
-                                                        onClick={() => handleSelectSnap('grid-tr')}
-                                                        className="rounded bg-white/15 hover:bg-blue-600 transition h-4"
-                                                        title="Top Right"
-                                                    />
-                                                    <button
-                                                        onClick={() => handleSelectSnap('grid-bl')}
-                                                        className="rounded bg-white/15 hover:bg-blue-600 transition h-4"
-                                                        title="Bottom Left"
-                                                    />
-                                                    <button
-                                                        onClick={() => handleSelectSnap('grid-br')}
-                                                        className="rounded bg-white/15 hover:bg-blue-600 transition h-4"
-                                                        title="Bottom Right"
-                                                    />
-                                                </div>
-                                                <span className="text-[9px] text-center text-white/40">2 x 2 Grid</span>
-                                            </div>
-
-                                            {/* Preset 5: Priority Split */}
-                                            <div className="flex flex-col gap-1 rounded-lg border border-white/10 p-1.5 bg-black/20 hover:border-blue-400/50 transition">
-                                                <div className="flex gap-1 h-9">
-                                                    <button
-                                                        onClick={() => handleSelectSnap('priority-left')}
-                                                        className="w-[60%] rounded bg-white/15 hover:bg-blue-600 transition"
-                                                        title="Priority Main"
-                                                    />
-                                                    <div className="w-[40%] flex flex-col gap-1">
-                                                        <button
-                                                            onClick={() => handleSelectSnap('priority-tr')}
-                                                            className="h-4 rounded bg-white/15 hover:bg-blue-600 transition"
-                                                            title="Side Top"
-                                                        />
-                                                        <button
-                                                            onClick={() => handleSelectSnap('priority-br')}
-                                                            className="h-4 rounded bg-white/15 hover:bg-blue-600 transition"
-                                                            title="Side Bottom"
-                                                        />
-                                                    </div>
-                                                </div>
-                                                <span className="text-[9px] text-center text-white/40">Priority</span>
-                                            </div>
-
-                                            {/* Preset 6: Top / Bottom */}
-                                            <div className="flex flex-col gap-1 rounded-lg border border-white/10 p-1.5 bg-black/20 hover:border-blue-400/50 transition">
-                                                <div className="flex flex-col gap-1 h-9">
-                                                    <button
-                                                        onClick={() => handleSelectSnap('top-50')}
-                                                        className="h-4 rounded bg-white/15 hover:bg-blue-600 transition"
-                                                        title="Top 50%"
-                                                    />
-                                                    <button
-                                                        onClick={() => handleSelectSnap('bottom-50')}
-                                                        className="h-4 rounded bg-white/15 hover:bg-blue-600 transition"
-                                                        title="Bottom 50%"
-                                                    />
-                                                </div>
-                                                <span className="text-[9px] text-center text-white/40">Top / Bottom</span>
-                                            </div>
-
-                                            {/* Open Windows Suggestions */}
-                                            {otherOpenWindows.length > 0 && (
-                                                <div className="col-span-3 mt-2 pt-2 border-t border-white/10">
-                                                    <div className="text-[10px] font-semibold text-white/50 mb-1.5 px-0.5">
-                                                        Open Windows ({otherOpenWindows.length})
-                                                    </div>
-                                                    <div className="flex items-center gap-1.5 overflow-x-auto pb-1 custom-scrollbar">
-                                                        {otherOpenWindows.map((other) => {
-                                                            const OtherIcon = other.icon;
-                                                            return (
-                                                                <button
-                                                                    key={other.id}
-                                                                    onClick={() => {
-                                                                        setSnapFlyoutOpen(false);
-                                                                        onFocus(other.id);
-                                                                    }}
-                                                                    className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2 py-1 hover:bg-blue-600/30 hover:border-blue-400/50 transition shrink-0"
-                                                                    title={`Switch to ${other.title}`}
-                                                                >
-                                                                    {OtherIcon && <OtherIcon className="h-3.5 w-3.5 text-blue-400" />}
-                                                                    <span className="text-[10px] font-medium truncate max-w-[90px] text-white/90">{other.title}</span>
-                                                                </button>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
                         </div>
 
                         <button
