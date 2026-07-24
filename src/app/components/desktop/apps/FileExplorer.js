@@ -114,7 +114,7 @@ export default function FileExplorer({ openApp }) {
                 </div>
 
                 {/* Content */}
-                <div className="min-h-0 flex-1 overflow-y-auto p-4">
+                <div data-lenis-prevent className="min-h-0 flex-1 overflow-y-auto p-4 custom-scrollbar">
                     {loading ? (
                         <div className="flex h-full items-center justify-center opacity-60">
                             <Loader2 className="h-5 w-5 animate-spin" />
