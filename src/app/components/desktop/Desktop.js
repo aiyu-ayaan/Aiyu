@@ -1,5 +1,5 @@
 "use client";
-import React, { useCallback, useState, useEffect, useMemo } from 'react';
+import React, { useCallback, useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { Loader2, Power, RotateCcw } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
