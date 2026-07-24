@@ -36,7 +36,17 @@ const ROW_GAP = 20; // px — matches the Tailwind gap-5 used between rows/cells
 const buildJustifiedRows = (items, containerWidth) => {
     if (!containerWidth || items.length === 0) return [];
 
-    const targetHeight = containerWidth < 640 ? 210 : containerWidth < 1024 ? 260 : 300;
+    // Mobile: one photo per row, full-bleed, each at its own aspect height.
+    if (containerWidth < 640) {
+        return items.map((entry) => {
+            const w = Number(entry.image?.width) > 0 ? Number(entry.image.width) : 4;
+            const h = Number(entry.image?.height) > 0 ? Number(entry.image.height) : 3;
+            const aspect = w / h;
+            return { items: [{ ...entry, aspect }], height: containerWidth / aspect };
+        });
+    }
+
+    const targetHeight = containerWidth < 1024 ? 260 : 300;
     const rows = [];
     let current = [];
     let aspectSum = 0;
@@ -235,12 +245,12 @@ const GalleryV2 = ({ initialImages, initialConfig }) => {
                 </span>
 
                 <figcaption
-                    className="pointer-events-none absolute inset-x-0 bottom-0 flex items-baseline justify-between gap-3 bg-gradient-to-t from-black/80 to-transparent px-4 pb-3 pt-10 text-left opacity-100 transition-opacity duration-300 sm:opacity-0 sm:group-hover:opacity-100"
+                    className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col gap-0.5 bg-gradient-to-t from-black/85 via-black/40 to-transparent px-3 pb-2.5 pt-10 text-left opacity-100 transition-opacity duration-300 sm:px-4 sm:pb-3 sm:opacity-0 sm:group-hover:opacity-100"
                 >
-                    <span className="line-clamp-1 min-w-0 font-mono text-xs text-white/90">
+                    <span className="line-clamp-1 font-mono text-[0.7rem] leading-tight text-white/90 sm:text-xs">
                         {String(index + 1).padStart(3, '0')}{image?.description ? ` — ${image.description}` : ''}
                     </span>
-                    {dateLabel && <span className="shrink-0 font-mono text-[0.65rem] uppercase tracking-wider text-white/60">{dateLabel}</span>}
+                    {dateLabel && <span className="font-mono text-[0.6rem] uppercase tracking-wider text-white/55 sm:text-[0.65rem]">{dateLabel}</span>}
                 </figcaption>
             </button>
         );
