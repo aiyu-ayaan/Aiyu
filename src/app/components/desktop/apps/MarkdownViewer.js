@@ -51,6 +51,8 @@ export default function MarkdownViewer({ payload, openApp }) {
         };
     }, []);
 
+    const [fullBlogMap, setFullBlogMap] = useState({});
+
     useEffect(() => {
         if (payload?.slug) {
             setActiveSlug(payload.slug);
@@ -59,10 +61,33 @@ export default function MarkdownViewer({ payload, openApp }) {
         }
     }, [payload]);
 
+    useEffect(() => {
+        if (!activeSlug) return;
+        let alive = true;
+        async function fetchSingle() {
+            try {
+                const res = await fetch(`/api/blogs/${encodeURIComponent(activeSlug)}`);
+                if (res.ok) {
+                    const json = await res.json();
+                    if (alive && json.success && json.data) {
+                        setFullBlogMap((prev) => ({ ...prev, [activeSlug]: json.data }));
+                    }
+                }
+            } catch {
+                // ignore
+            }
+        }
+        fetchSingle();
+        return () => {
+            alive = false;
+        };
+    }, [activeSlug]);
+
     const activeBlog = useMemo(() => {
-        if (!activeSlug && blogs.length > 0) return blogs[0];
+        if (activeSlug && fullBlogMap[activeSlug]) return fullBlogMap[activeSlug];
+        if (!activeSlug && blogs.length > 0) return fullBlogMap[blogs[0].slug] || blogs[0];
         return blogs.find((b) => b.slug === activeSlug) || payload?.blog || blogs[0];
-    }, [blogs, activeSlug, payload]);
+    }, [blogs, activeSlug, fullBlogMap, payload]);
 
     const filteredBlogs = useMemo(() => {
         if (!query.trim()) return blogs;

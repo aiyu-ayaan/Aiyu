@@ -65,11 +65,11 @@ function normalizeBlogPayload(body = {}) {
     };
 }
 
-function toPublicBlogList(blogs, maxLength = 500) {
+function toPublicBlogList(blogs, maxLength = undefined) {
     if (!Array.isArray(blogs)) return [];
     return blogs.map((blog) => ({
         ...blog,
-        content: typeof blog?.content === 'string' ? blog.content.slice(0, maxLength) : '',
+        content: typeof blog?.content === 'string' && maxLength ? blog.content.slice(0, maxLength) : (blog?.content || ''),
     }));
 }
 

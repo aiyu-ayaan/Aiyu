@@ -115,21 +115,39 @@ export async function resolveBlogByIdentifier(_model, identifier) {
         return null;
     }
 
+    // 1. Exact slug match
     const bySlug = await prisma.blog.findFirst({ where: { slug: normalizedIdentifier } });
     if (bySlug) {
         return toClient('blog', bySlug);
     }
 
+    // 2. Case-insensitive slug match
+    const bySlugInsensitive = await prisma.blog.findFirst({
+        where: { slug: { equals: normalizedIdentifier, mode: 'insensitive' } }
+    });
+    if (bySlugInsensitive) {
+        return toClient('blog', bySlugInsensitive);
+    }
+
+    // 3. ID match
     const byId = await prisma.blog.findUnique({ where: { id: normalizedIdentifier } });
     if (byId) {
         return ensureBlogSlugForDocument(null, toClient('blog', byId));
     }
 
-    // Legacy rows without a stored slug: match on the derived fallback slug.
-    const sluglessBlogs = await prisma.blog.findMany({ where: { slug: '' } });
-    const matchedBlog = toClientList('blog', sluglessBlogs).find(
-        (entry) => getBlogSlug(entry) === normalizedIdentifier
+    // 4. Robust fallback: match by derived slug or title slugification across all rows
+    const allBlogs = await prisma.blog.findMany();
+    const clientBlogs = toClientList('blog', allBlogs);
+    const matchedBlog = clientBlogs.find(
+        (entry) =>
+            getBlogSlug(entry) === normalizedIdentifier ||
+            entry.slug === normalizedIdentifier ||
+            entry._id === normalizedIdentifier ||
+            generateSlug(entry.title) === normalizedIdentifier ||
+            (entry.slug && normalizedIdentifier.startsWith(entry.slug)) ||
+            (entry.slug && entry.slug.startsWith(normalizedIdentifier))
     );
+
     if (!matchedBlog) {
         return null;
     }
