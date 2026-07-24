@@ -161,7 +161,7 @@ export default function StartMenu({ apps = [], onOpen, onClose, config = {}, onR
                 </div>
 
                 {/* Main Content Area */}
-                <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+                <div data-lenis-prevent className="min-h-0 flex-1 overflow-y-auto pr-1 custom-scrollbar">
                     {query ? (
                         /* Search Results View */
                         <div className="space-y-4">
@@ -209,24 +209,29 @@ export default function StartMenu({ apps = [], onOpen, onClose, config = {}, onR
                     ) : showAllApps ? (
                         /* All Apps List View */
                         <div>
-                            <div className="mb-4 flex items-center justify-between border-b border-white/10 pb-2">
+                            <div className="mb-4 flex items-center justify-between border-b border-white/10 pb-2 sticky top-0 bg-[#1e1e24] z-10 py-1">
                                 <button
                                     onClick={() => setShowAllApps(false)}
                                     className="flex items-center gap-1.5 text-xs font-medium text-blue-400 hover:underline"
                                 >
                                     <ChevronLeft className="h-4 w-4" /> Back
                                 </button>
-                                <span className="text-xs font-semibold uppercase tracking-wider text-white/50">All Apps</span>
+                                <span className="text-xs font-semibold uppercase tracking-wider text-white/50">
+                                    All Apps ({allSearchableItems.length})
+                                </span>
                             </div>
-                            <div className="space-y-1">
+                            <div data-lenis-prevent className="space-y-1 pr-1">
                                 {allSearchableItems.map((a, idx) => (
                                     <button
                                         key={idx}
                                         onClick={() => handleAppClick(a)}
                                         className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left hover:bg-white/10 transition"
                                     >
-                                        <a.icon className="h-6 w-6 shrink-0" />
-                                        <span className="text-xs font-medium text-white/90">{a.title}</span>
+                                        <a.icon className="h-6 w-6 shrink-0 text-blue-400" />
+                                        <div className="min-w-0 flex-1">
+                                            <div className="text-xs font-medium text-white/90 truncate">{a.title}</div>
+                                            {a.sub && <div className="text-[10px] text-white/40 truncate">{a.sub}</div>}
+                                        </div>
                                     </button>
                                 ))}
                             </div>
