@@ -28,21 +28,24 @@ export default function WidgetsPanel({ open, onClose, openApp }) {
         <>
             {/* Backdrop */}
             <div
-                className={`fixed top-0 left-0 right-0 h-[calc(100vh-48px)] z-40 bg-black/20 backdrop-blur-[2px] transition-opacity duration-250 ${
+                className={`fixed inset-x-0 top-0 z-40 bg-black/20 backdrop-blur-[2px] transition-opacity duration-250 ${
                     visible ? 'opacity-100' : 'opacity-0'
                 }`}
+                style={{ height: 'calc(100vh - 48px)' }}
                 onClick={onClose}
             />
 
             {/* Panel */}
             <div
-                className={`fixed top-0 left-0 z-45 flex h-[calc(100vh-48px)] w-full max-w-[440px] flex-col border-r border-white/10 bg-[#161618]/95 text-white shadow-2xl shadow-black/40 backdrop-blur-2xl transition-all duration-250 ease-out ${
+                data-lenis-prevent
+                className={`fixed top-0 left-0 z-45 flex w-full max-w-[440px] flex-col overflow-hidden border-r border-white/10 bg-[#161618]/95 text-white shadow-2xl shadow-black/40 backdrop-blur-2xl transition-all duration-250 ease-out ${
                     visible ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0'
                 }`}
+                style={{ height: 'calc(100vh - 48px)', maxHeight: 'calc(100vh - 48px)' }}
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}
-                <div className="flex items-center justify-between border-b border-white/8 px-4 py-3 shrink-0">
+                <div className="flex items-center justify-between border-b border-white/8 px-4 py-3 shrink-0 h-[57px]">
                     <div className="flex items-center gap-2.5">
                         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600/25 text-blue-400 border border-blue-500/25">
                             <LayoutGrid className="h-4 w-4" />
@@ -63,7 +66,11 @@ export default function WidgetsPanel({ open, onClose, openApp }) {
                 </div>
 
                 {/* Content Body */}
-                <div className="flex-1 overflow-y-auto p-3 min-h-0">
+                <div
+                    data-lenis-prevent
+                    className="w-full overflow-y-auto p-3 custom-scrollbar"
+                    style={{ height: 'calc(100vh - 105px)', maxHeight: 'calc(100vh - 105px)' }}
+                >
                     <WidgetsFeed openApp={openApp} />
                 </div>
             </div>
