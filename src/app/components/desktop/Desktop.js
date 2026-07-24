@@ -503,7 +503,7 @@ export default function Desktop({ wallpaper, config = {} }) {
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}
                         transition={{ duration: 0.15, ease: 'easeOut' }}
-                        className="absolute z-[55] flex flex-col items-center justify-center p-6 bg-[#1a1a20]/80 backdrop-blur-2xl border border-white/20 rounded-2xl shadow-2xl overflow-hidden"
+                        className="absolute z-[9999] flex flex-col items-center justify-center p-6 bg-[#1a1a20]/90 backdrop-blur-2xl border border-white/20 rounded-2xl shadow-2xl overflow-hidden"
                         style={{
                             left: getZoneRect(snapAssist.targetZone).left + 12,
                             top: getZoneRect(snapAssist.targetZone).top + 12,
@@ -516,19 +516,20 @@ export default function Desktop({ wallpaper, config = {} }) {
                                 <span className="text-xs font-bold uppercase tracking-wider text-blue-400">
                                     Snap Assist
                                 </span>
-                                <span className="text-[10px] text-white/50">• Select an open window</span>
+                                <span className="text-[10px] text-white/60">• Select an open app to snap side-by-side</span>
                             </div>
                             <button
                                 onClick={() => setSnapAssist(null)}
                                 className="text-[11px] font-medium text-white/60 hover:text-white px-2 py-0.5 rounded-md hover:bg-white/10 transition"
                             >
-                                Skip
+                                Skip (Esc)
                             </button>
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full flex-1 overflow-y-auto custom-scrollbar p-1" data-lenis-prevent>
                             {snapAssistOthers.map((w) => {
                                 const Icon = w.icon;
+                                const category = getAppCategoryLabel(w.appKey);
                                 return (
                                     <button
                                         key={w.id}
@@ -536,14 +537,17 @@ export default function Desktop({ wallpaper, config = {} }) {
                                             snapWin(w.id, snapAssist.targetZone);
                                             setSnapAssist(null);
                                         }}
-                                        className="group flex flex-col items-center justify-between rounded-xl border border-white/15 bg-white/10 p-3 hover:border-blue-400 hover:bg-blue-600/30 transition shadow-lg text-left h-28"
+                                        className="group flex flex-col justify-between rounded-xl border border-white/15 bg-white/10 p-3.5 hover:border-blue-400 hover:bg-blue-600/30 transition shadow-lg text-left h-28"
                                     >
-                                        <div className="flex items-center gap-2.5 w-full">
-                                            {Icon && <Icon className="h-5 w-5 text-blue-400 group-hover:scale-110 transition shrink-0" />}
-                                            <span className="text-xs font-bold truncate text-white">{w.title}</span>
+                                        <div className="flex items-center gap-3 w-full">
+                                            {Icon && <Icon className="h-6 w-6 text-blue-400 group-hover:scale-110 transition shrink-0" />}
+                                            <div className="min-w-0 flex-1">
+                                                <div className="text-xs font-bold truncate text-white">{w.title}</div>
+                                                <div className="text-[10px] text-white/50 truncate font-medium">{category}</div>
+                                            </div>
                                         </div>
-                                        <div className="w-full flex-1 mt-2 rounded-lg bg-black/40 border border-white/10 flex items-center justify-center text-[10px] text-white/50 group-hover:text-blue-300 font-medium transition">
-                                            Click to snap here
+                                        <div className="w-full mt-2 rounded-lg bg-black/40 border border-white/10 py-1 text-center text-[10px] text-white/60 group-hover:text-white group-hover:bg-blue-600/40 font-medium transition">
+                                            Snap to layout
                                         </div>
                                     </button>
                                 );
@@ -675,5 +679,24 @@ function getZoneRect(zone) {
         case 'priority-br': return { left: Math.floor(workW * 0.6), top: Math.floor(workH * 0.5), width: Math.floor(workW * 0.4), height: Math.floor(workH * 0.5) };
         default: return { left: Math.floor(workW * 0.5), top: 0, width: Math.floor(workW * 0.5), height: workH };
     }
+}
+
+function getAppCategoryLabel(appKey) {
+    const map = {
+        browser: 'Web Browser',
+        markdown: 'Document Reader',
+        code: 'Code Editor',
+        explorer: 'File Manager',
+        photos: 'Image Gallery',
+        terminal: 'Terminal Shell',
+        notepad: 'Text Editor',
+        calculator: 'Calculator Utility',
+        whiteboard: 'Canvas & Board',
+        getstarted: 'Getting Started',
+        taskmanager: 'System Manager',
+        settings: 'System Settings',
+        github: 'GitHub Client',
+    };
+    return map[appKey] || 'Application';
 }
 

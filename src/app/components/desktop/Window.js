@@ -291,7 +291,7 @@ export default function Window({
                                         animate={{ opacity: 1, scale: 1, y: 0 }}
                                         exit={{ opacity: 0, scale: 0.95, y: -6 }}
                                         transition={{ duration: 0.12 }}
-                                        className="absolute right-0 top-10 z-[100] w-64 rounded-xl border border-white/20 bg-[#25252b]/95 p-3 shadow-2xl backdrop-blur-2xl text-white select-none"
+                                        className="absolute right-0 top-10 z-[9999] w-64 rounded-xl border border-white/20 bg-[#25252b]/98 p-3 shadow-2xl backdrop-blur-2xl text-white select-none"
                                         onMouseEnter={handleMouseEnterMaximize}
                                         onMouseLeave={handleMouseLeaveMaximize}
                                     >
