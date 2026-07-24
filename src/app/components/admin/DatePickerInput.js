@@ -122,6 +122,7 @@ export default function DatePickerInput({
     required = false,
     className = '',
     name = '',
+    position = 'auto', // 'auto' | 'up' | 'down'
 }) {
     const [isOpen, setIsOpen] = useState(false);
     const [mounted, setMounted] = useState(false);
@@ -129,7 +130,7 @@ export default function DatePickerInput({
     const inputRef = useRef(null);
     const popoverRef = useRef(null);
 
-    const [popoverPos, setPopoverPos] = useState({ top: 0, left: 0 });
+    const [popoverCoords, setPopoverCoords] = useState({ top: 0, left: 0, width: 340 });
 
     const style = ACCENT_STYLES[accentColor] || ACCENT_STYLES.cyan;
     const currentYear = new Date().getFullYear();
@@ -152,30 +153,36 @@ export default function DatePickerInput({
         setMounted(true);
     }, []);
 
-    const updatePosition = () => {
-        if (inputRef.current) {
-            const rect = inputRef.current.getBoundingClientRect();
-            const popoverWidth = 360;
-            const popoverHeight = mode === 'range' ? 340 : 240;
+    const calculatePosition = () => {
+        if (!inputRef.current) return;
+        const rect = inputRef.current.getBoundingClientRect();
+        const popoverWidth = Math.min(340, window.innerWidth - 32);
+        const popoverHeight = mode === 'range' ? 320 : 210;
 
-            let top = rect.bottom + 8;
-            if (rect.bottom + popoverHeight > window.innerHeight - 12 && rect.top > popoverHeight + 12) {
-                top = rect.top - popoverHeight - 8;
+        let openUpward = position === 'up';
+        if (position === 'auto') {
+            const spaceBelow = window.innerHeight - rect.bottom;
+            if (spaceBelow < popoverHeight + 20 && rect.top > popoverHeight + 20) {
+                openUpward = true;
             }
-
-            let left = rect.left;
-            if (left + popoverWidth > window.innerWidth - 16) {
-                left = window.innerWidth - popoverWidth - 16;
-            }
-            if (left < 16) left = 16;
-
-            setPopoverPos({ top, left });
         }
+
+        let top = openUpward
+            ? rect.top + window.scrollY - popoverHeight - 6
+            : rect.bottom + window.scrollY + 6;
+
+        let left = rect.left + window.scrollX;
+        if (left + popoverWidth > window.innerWidth - 16) {
+            left = window.innerWidth - popoverWidth - 16;
+        }
+        if (left < 16) left = 16;
+
+        setPopoverCoords({ top, left, width: popoverWidth });
     };
 
-    // Sync state and position when popover opens
-    useEffect(() => {
-        if (isOpen) {
+    const handleToggle = () => {
+        if (!isOpen) {
+            calculatePosition();
             if (mode === 'range') {
                 const parsed = parseRangeString(value);
                 setStartMonth(parsed.startMonth);
@@ -188,19 +195,25 @@ export default function DatePickerInput({
                 setSingleMonth(parsed.month);
                 setSingleYear(parsed.year);
             }
+        }
+        setIsOpen(!isOpen);
+    };
 
-            updatePosition();
-            const handleScrollOrResize = () => updatePosition();
-            window.addEventListener('scroll', handleScrollOrResize, true);
-            window.addEventListener('resize', handleScrollOrResize);
+    // Update position on scroll or resize
+    useEffect(() => {
+        if (isOpen) {
+            calculatePosition();
+            const handleScrollResize = () => calculatePosition();
+            window.addEventListener('scroll', handleScrollResize, true);
+            window.addEventListener('resize', handleScrollResize);
             return () => {
-                window.removeEventListener('scroll', handleScrollOrResize, true);
-                window.removeEventListener('resize', handleScrollOrResize);
+                window.removeEventListener('scroll', handleScrollResize, true);
+                window.removeEventListener('resize', handleScrollResize);
             };
         }
-    }, [isOpen, value, mode]);
+    }, [isOpen, mode]);
 
-    // Close popover when clicking outside container AND popover
+    // Close when clicking outside both container & popover
     useEffect(() => {
         const handleClickOutside = (e) => {
             if (
@@ -231,7 +244,7 @@ export default function DatePickerInput({
             <div ref={inputRef} className="relative flex items-center group/picker">
                 <button
                     type="button"
-                    onClick={() => setIsOpen(!isOpen)}
+                    onClick={handleToggle}
                     className={`absolute left-2.5 p-1 rounded-md text-slate-400 hover:${style.text} transition-colors z-10 flex items-center justify-center`}
                     title="Open Date Picker"
                 >
@@ -258,18 +271,19 @@ export default function DatePickerInput({
                 )}
             </div>
 
-            {/* Portal Popover */}
+            {/* Portal Popover with z-[99999] floating above footers */}
             {isOpen && mounted && createPortal(
                 <div
                     ref={popoverRef}
                     style={{
-                        position: 'fixed',
-                        top: `${popoverPos.top}px`,
-                        left: `${popoverPos.left}px`,
+                        position: 'absolute',
+                        top: `${popoverCoords.top}px`,
+                        left: `${popoverCoords.left}px`,
+                        width: `${popoverCoords.width}px`,
                     }}
-                    className="z-[9999] w-80 sm:w-96 bg-slate-900/95 border border-white/20 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.8)] backdrop-blur-2xl p-4 text-slate-200 animate-in fade-in zoom-in-95 duration-150"
+                    className="z-[99999] bg-slate-900/95 border border-white/20 rounded-2xl shadow-[0_25px_60px_rgba(0,0,0,0.9)] backdrop-blur-2xl p-4 text-slate-200 animate-in fade-in zoom-in-95 duration-150"
                 >
-                    <div className="flex items-center justify-between border-b border-white/10 pb-3 mb-3">
+                    <div className="flex items-center justify-between border-b border-white/10 pb-2.5 mb-3">
                         <div className="flex items-center gap-2">
                             <CalendarIcon className={`w-4 h-4 ${style.text}`} />
                             <span className="text-xs font-mono font-bold uppercase tracking-wider text-slate-300">
@@ -281,15 +295,15 @@ export default function DatePickerInput({
                             onClick={() => setIsOpen(false)}
                             className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors"
                         >
-                            <X size={16} />
+                            <X size={15} />
                         </button>
                     </div>
 
                     {mode === 'range' ? (
-                        <div className="space-y-4">
+                        <div className="space-y-3">
                             {/* Start Section */}
                             <div>
-                                <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1.5 font-bold">
+                                <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1 font-bold">
                                     Start Period
                                 </label>
                                 <div className="grid grid-cols-2 gap-2">
@@ -325,11 +339,11 @@ export default function DatePickerInput({
 
                             {/* End Section */}
                             <div>
-                                <div className="flex items-center justify-between mb-1.5">
+                                <div className="flex items-center justify-between mb-1">
                                     <label className="block text-[10px] font-mono uppercase text-slate-400 font-bold">
                                         End Period
                                     </label>
-                                    <label className="flex items-center gap-1.5 cursor-pointer text-xs font-mono text-slate-300 hover:text-white">
+                                    <label className="flex items-center gap-1.5 cursor-pointer text-[11px] font-mono text-slate-300 hover:text-white">
                                         <input
                                             type="checkbox"
                                             checked={isPresent}
@@ -375,7 +389,7 @@ export default function DatePickerInput({
                                         </select>
                                     </div>
                                 ) : (
-                                    <div className={`p-2.5 rounded-lg border border-dashed border-white/10 ${style.bg} ${style.text} text-xs font-mono font-bold flex items-center justify-center gap-2`}>
+                                    <div className={`p-2 rounded-lg border border-dashed border-white/10 ${style.bg} ${style.text} text-xs font-mono font-bold flex items-center justify-center gap-2`}>
                                         <Clock size={14} /> Currently Active (Present)
                                     </div>
                                 )}
@@ -393,7 +407,7 @@ export default function DatePickerInput({
                                         setIsPresent(true);
                                         applyRangeSelection(nowM, nowY, endMonth, endYear, true);
                                     }}
-                                    className="px-2.5 py-1 text-[10px] font-mono bg-white/5 hover:bg-white/10 rounded-md text-slate-300 transition-colors"
+                                    className="px-2 py-1 text-[10px] font-mono bg-white/5 hover:bg-white/10 rounded text-slate-300 transition-colors"
                                 >
                                     Current - Present
                                 </button>
@@ -408,7 +422,7 @@ export default function DatePickerInput({
                                         setIsPresent(false);
                                         applyRangeSelection('Jan', nowY, 'Dec', nowY, false);
                                     }}
-                                    className="px-2.5 py-1 text-[10px] font-mono bg-white/5 hover:bg-white/10 rounded-md text-slate-300 transition-colors"
+                                    className="px-2 py-1 text-[10px] font-mono bg-white/5 hover:bg-white/10 rounded text-slate-300 transition-colors"
                                 >
                                     Full Year {new Date().getFullYear()}
                                 </button>
@@ -416,9 +430,9 @@ export default function DatePickerInput({
                         </div>
                     ) : (
                         /* Single Mode */
-                        <div className="space-y-4">
+                        <div className="space-y-3">
                             <div>
-                                <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1.5 font-bold">
+                                <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1 font-bold">
                                     Month & Year
                                 </label>
                                 <div className="grid grid-cols-2 gap-2">
@@ -463,7 +477,7 @@ export default function DatePickerInput({
                                         setSingleYear(nowY);
                                         applySingleSelection(nowM, nowY);
                                     }}
-                                    className="px-2.5 py-1 text-[10px] font-mono bg-white/5 hover:bg-white/10 rounded-md text-slate-300 transition-colors"
+                                    className="px-2 py-1 text-[10px] font-mono bg-white/5 hover:bg-white/10 rounded text-slate-300 transition-colors"
                                 >
                                     Current Month
                                 </button>
@@ -473,7 +487,7 @@ export default function DatePickerInput({
                                         const nowY = String(new Date().getFullYear());
                                         onChange(nowY);
                                     }}
-                                    className="px-2.5 py-1 text-[10px] font-mono bg-white/5 hover:bg-white/10 rounded-md text-slate-300 transition-colors"
+                                    className="px-2 py-1 text-[10px] font-mono bg-white/5 hover:bg-white/10 rounded text-slate-300 transition-colors"
                                 >
                                     Year Only ({new Date().getFullYear()})
                                 </button>
@@ -481,11 +495,11 @@ export default function DatePickerInput({
                         </div>
                     )}
 
-                    <div className="mt-4 pt-3 border-t border-white/10 flex justify-end">
+                    <div className="mt-3 pt-2 border-t border-white/10 flex justify-end">
                         <button
                             type="button"
                             onClick={() => setIsOpen(false)}
-                            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${style.activeBtn}`}
+                            className={`w-full sm:w-auto px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${style.activeBtn}`}
                         >
                             Confirm Selection
                         </button>
