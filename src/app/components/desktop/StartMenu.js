@@ -34,7 +34,7 @@ const PINNED_APPS = [
     { key: 'github', title: 'GitHub', icon: GitHubIcon, external: 'https://github.com/aiyu-ayaan' },
     { key: 'linkedin', title: 'LinkedIn', icon: LinkedInIcon, external: 'https://www.linkedin.com/in/aiyu/' },
     { key: 'instagram', title: 'Instagram', icon: InstagramIcon, external: 'https://www.instagram.com/aiyu.dev_/' },
-    { key: 'coffee', title: 'Buy me a coffee', icon: CoffeeIcon, external: 'https://buymeacoffee.com/aiyu' },
+    { key: 'coffee', title: 'Buy me a coffee', icon: CoffeeIcon, external: 'https://buymeacoffee.com/aiyuayaan' },
     { key: 'settings', title: 'Settings', icon: SettingsIcon },
     { key: 'games', title: 'Unescape', icon: UnescapeIcon, external: '/games' },
     { key: 'code', title: 'Notepad', icon: NotepadIcon },
