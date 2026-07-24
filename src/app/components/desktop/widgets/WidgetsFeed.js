@@ -1,16 +1,17 @@
 "use client";
-import React, { useState, useEffect, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, ExternalLink, Bot, Cpu, Zap, Code, Terminal, Folder, Loader2, Newspaper, Image as ImageIcon, Rocket, AppWindow, MoreHorizontal, Sparkles, Globe } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { ExternalLink, Bot, Cpu, Zap, Code, Terminal, Folder, Loader2, Newspaper, Image as ImageIcon, Rocket, AppWindow, MoreHorizontal, Sparkles, Globe } from 'lucide-react';
 import { WIDGET_ITEMS as FALLBACK_ITEMS } from './data/widgetItems';
 
-const ITEMS_PER_PAGE = 10;
+const BATCH_SIZE = 8;
 
 const ICON_MAP = { Bot, Cpu, Zap, Code, Terminal, Folder };
 
 export default function WidgetsFeed({ openApp }) {
-    const [page, setPage] = useState(1);
     const [items, setItems] = useState(FALLBACK_ITEMS);
     const [loading, setLoading] = useState(true);
+    const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
+    const sentinelRef = useRef(null);
 
     useEffect(() => {
         let isMounted = true;
@@ -33,24 +34,38 @@ export default function WidgetsFeed({ openApp }) {
         return () => { isMounted = false; };
     }, []);
 
-    const totalPages = Math.max(1, Math.ceil(items.length / ITEMS_PER_PAGE));
-    const currentPage = Math.min(page, totalPages);
+    // Infinite scroll — load more when sentinel enters viewport
+    const loadMore = useCallback(() => {
+        setVisibleCount((prev) => Math.min(prev + BATCH_SIZE, items.length));
+    }, [items.length]);
 
-    const currentItems = useMemo(() => {
-        const start = (currentPage - 1) * ITEMS_PER_PAGE;
-        return items.slice(start, start + ITEMS_PER_PAGE);
-    }, [items, currentPage]);
+    useEffect(() => {
+        const sentinel = sentinelRef.current;
+        if (!sentinel) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting) loadMore();
+            },
+            { rootMargin: '200px' }
+        );
+        observer.observe(sentinel);
+        return () => observer.disconnect();
+    }, [loadMore, loading]);
+
+    const visibleItems = useMemo(() => items.slice(0, visibleCount), [items, visibleCount]);
+    const hasMore = visibleCount < items.length;
 
     // Distribute into 2 columns for staggered masonry
     const { leftCol, rightCol } = useMemo(() => {
         const left = [];
         const right = [];
-        currentItems.forEach((item, i) => {
+        visibleItems.forEach((item, i) => {
             if (i % 2 === 0) left.push(item);
             else right.push(item);
         });
         return { leftCol: left, rightCol: right };
-    }, [currentItems]);
+    }, [visibleItems]);
 
     const handleCardClick = (item) => {
         if (item.url) {
@@ -100,49 +115,14 @@ export default function WidgetsFeed({ openApp }) {
                         ))}
                     </div>
                 </div>
-            </div>
 
-            {/* Pagination Bar */}
-            {totalPages > 1 && (
-                <div className="flex items-center justify-between border-t border-white/8 pt-2.5 mt-1 text-xs text-neutral-400 shrink-0">
-                    <span className="text-[11px] font-medium tabular-nums">
-                        {currentPage}/{totalPages} · {items.length} items
-                    </span>
-
-                    <div className="flex items-center gap-1.5">
-                        <button
-                            onClick={() => setPage((p) => Math.max(1, p - 1))}
-                            disabled={currentPage === 1}
-                            className="flex h-6 w-6 items-center justify-center rounded-md bg-white/8 hover:bg-white/15 disabled:opacity-25 transition-colors"
-                            aria-label="Previous Page"
-                        >
-                            <ChevronLeft className="h-3.5 w-3.5" />
-                        </button>
-
-                        <div className="flex items-center gap-0.5 px-0.5">
-                            {Array.from({ length: Math.min(totalPages, 7) }).map((_, idx) => (
-                                <button
-                                    key={idx}
-                                    onClick={() => setPage(idx + 1)}
-                                    className={`rounded-full transition-all duration-200 ${
-                                        currentPage === idx + 1 ? 'h-2 w-5 bg-blue-500' : 'h-1.5 w-1.5 bg-white/25 hover:bg-white/50'
-                                    }`}
-                                    aria-label={`Page ${idx + 1}`}
-                                />
-                            ))}
-                        </div>
-
-                        <button
-                            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                            disabled={currentPage === totalPages}
-                            className="flex h-6 w-6 items-center justify-center rounded-md bg-white/8 hover:bg-white/15 disabled:opacity-25 transition-colors"
-                            aria-label="Next Page"
-                        >
-                            <ChevronRight className="h-3.5 w-3.5" />
-                        </button>
+                {/* Scroll sentinel — triggers loading next batch */}
+                {hasMore && (
+                    <div ref={sentinelRef} className="flex items-center justify-center py-4">
+                        <Loader2 className="h-4 w-4 animate-spin text-blue-500/60" />
                     </div>
-                </div>
-            )}
+                )}
+            </div>
         </div>
     );
 }
