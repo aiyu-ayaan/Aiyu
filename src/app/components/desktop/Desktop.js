@@ -1,7 +1,7 @@
 "use client";
-import React, { useCallback, useState, useEffect, useMemo, useRef } from 'react';
+import React, { useCallback, useState, useEffect, useMemo, useRef, useLayoutEffect } from 'react';
 import Link from 'next/link';
-import { Loader2, Power, RotateCcw } from 'lucide-react';
+import { Loader2, Power, RotateCcw, RefreshCw } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ExplorerIcon, VSCodeIcon, ChromeIcon, SettingsIcon, ThisPCIcon, EdgeIcon, PhotosIcon, GitHubIcon, TaskManagerIcon, TerminalIcon, NotepadIcon, CalculatorIcon, WhiteboardIcon, GetStartedIcon } from './icons';
 import Window from './Window';
@@ -121,6 +121,8 @@ const buildApps = () => [
                 closeWin={ctx.closeWin}
                 openApp={ctx.openApp}
                 config={ctx.config}
+                toggleStart={ctx.toggleStart}
+                openStartMenu={ctx.openStartMenu}
             />
         ),
     },
@@ -130,7 +132,7 @@ const buildApps = () => [
         icon: SettingsIcon,
         w: 760,
         h: 520,
-        render: (ctx) => <Settings wallpaper={ctx.wallpaper} config={ctx.config} />,
+        render: (ctx) => <Settings wallpaper={ctx.wallpaper} setWallpaper={ctx.setWallpaper} config={ctx.config} payload={ctx.payload} />,
     },
     {
         key: 'about',
@@ -138,7 +140,7 @@ const buildApps = () => [
         icon: ThisPCIcon,
         w: 620,
         h: 520,
-        render: () => <AboutThisPC />,
+        render: (ctx) => <AboutThisPC config={ctx.config} />,
     },
     {
         key: 'getstarted',
@@ -155,7 +157,8 @@ const BLOOM =
 
 let uid = 1;
 
-export default function Desktop({ wallpaper, config = {} }) {
+export default function Desktop({ wallpaper: initialWallpaper, config = {} }) {
+    const [wallpaper, setWallpaper] = useState(initialWallpaper);
     const apps = React.useMemo(() => buildApps(), []);
     const appMap = React.useMemo(() => Object.fromEntries(apps.map((a) => [a.key, a])), [apps]);
 
@@ -165,6 +168,34 @@ export default function Desktop({ wallpaper, config = {} }) {
     const [startOpen, setStartOpen] = useState(false);
     const [widgetsOpen, setWidgetsOpen] = useState(false);
     const [menu, setMenu] = useState(null); // { x, y } desktop context menu
+    const menuRef = useRef(null);
+    const [menuPos, setMenuPos] = useState(null);
+
+    useLayoutEffect(() => {
+        if (!menu) {
+            setMenuPos(null);
+            return;
+        }
+        if (menuRef.current) {
+            const rect = menuRef.current.getBoundingClientRect();
+            const winW = window.innerWidth;
+            const winH = window.innerHeight;
+
+            let left = menu.x;
+            let top = menu.y;
+
+            if (left + rect.width > winW - 8) {
+                left = Math.max(8, winW - rect.width - 8);
+            }
+            if (top + rect.height > winH - 8) {
+                top = Math.max(8, top - rect.height);
+            }
+            if (left < 8) left = 8;
+            if (top < 8) top = 8;
+
+            setMenuPos({ left, top });
+        }
+    }, [menu]);
     const [systemState, setSystemState] = useState('normal'); // 'normal' | 'restarting' | 'shutting_down' | 'powered_off'
     const [countdown, setCountdown] = useState(5);
 
@@ -515,7 +546,17 @@ export default function Desktop({ wallpaper, config = {} }) {
                         onCloseSnapFlyout={closeSnapFlyout}
                         windows={windows}
                     >
-                        {appMap[win.appKey]?.render({ wallpaper, config, openApp, windows, closeWin: () => closeWin(win.id), payload: win.payload })}
+                        {appMap[win.appKey]?.render({
+                            wallpaper,
+                            setWallpaper,
+                            config,
+                            openApp,
+                            windows,
+                            closeWin: () => closeWin(win.id),
+                            payload: win.payload,
+                            toggleStart: () => setStartOpen((v) => !v),
+                            openStartMenu: () => setStartOpen(true),
+                        })}
                     </Window>
                 ))}
             </AnimatePresence>
@@ -813,15 +854,22 @@ export default function Desktop({ wallpaper, config = {} }) {
             {/* Desktop right-click menu */}
             {menu && (
                 <div
-                    className="absolute z-[60] w-48 rounded-lg border border-white/15 bg-[#f3f3f3]/95 py-1 text-sm text-neutral-800 shadow-xl backdrop-blur-xl dark:bg-[#2a2a2e]/95 dark:text-neutral-100 animate-in fade-in zoom-in-95 duration-100"
-                    style={{ left: Math.min(menu.x, (typeof window !== 'undefined' ? window.innerWidth : 9999) - 200), top: menu.y }}
+                    ref={menuRef}
+                    className="absolute z-[60] w-52 rounded-xl border border-white/20 bg-[#f3f3f3]/90 p-1 text-sm text-neutral-800 shadow-2xl backdrop-blur-2xl dark:bg-[#202024]/90 dark:text-neutral-100 animate-in fade-in zoom-in-95 duration-100"
+                    style={{
+                        left: menuPos ? menuPos.left : Math.max(8, Math.min(menu.x, (typeof window !== 'undefined' ? window.innerWidth : 9999) - 210)),
+                        top: menuPos ? menuPos.top : ((typeof window !== 'undefined' && menu.y + 220 > window.innerHeight) ? Math.max(8, menu.y - 220) : menu.y)
+                    }}
                     onClick={(e) => e.stopPropagation()}
+                    onContextMenu={(e) => e.stopPropagation()}
                 >
-                    <MenuItem label="Open File Explorer" onClick={() => { openApp('explorer'); setMenu(null); }} />
-                    <MenuItem label="View source (VS Code)" onClick={() => { openApp('code'); setMenu(null); }} />
+                    <MenuItem icon={ExplorerIcon} label="Open File Explorer" onClick={() => { openApp('explorer'); setMenu(null); }} />
+                    <MenuItem icon={VSCodeIcon} label="View source (VS Code)" onClick={() => { openApp('code'); setMenu(null); }} />
+                    <MenuItem icon={TerminalIcon} label="Terminal" onClick={() => { openApp('terminal'); setMenu(null); }} />
+                    <MenuItem icon={TaskManagerIcon} label="Task Manager" onClick={() => { openApp('taskmanager'); setMenu(null); }} />
                     <div className="my-1 h-px bg-black/10 dark:bg-white/10" />
-                    <MenuItem label="Personalize" onClick={() => { openApp('settings'); setMenu(null); }} />
-                    <MenuItem label="Refresh" onClick={() => { setMenu(null); if (typeof window !== 'undefined') window.location.reload(); }} />
+                    <MenuItem icon={SettingsIcon} label="Personalize" onClick={() => { openApp('settings', { pane: 'personalization' }); setMenu(null); }} />
+                    <MenuItem icon={RefreshCw} label="Refresh" onClick={() => { setMenu(null); if (typeof window !== 'undefined') window.location.reload(); }} />
                 </div>
             )}
 
@@ -901,10 +949,14 @@ export default function Desktop({ wallpaper, config = {} }) {
     );
 }
 
-function MenuItem({ label, onClick }) {
+function MenuItem({ label, icon: Icon, onClick }) {
     return (
-        <button onClick={onClick} className="block w-full px-3 py-1.5 text-left hover:bg-blue-500/15">
-            {label}
+        <button
+            onClick={onClick}
+            className="flex items-center gap-2.5 w-full px-2.5 py-1.5 text-left text-sm font-medium rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+        >
+            {Icon && <Icon className="h-4 w-4 text-blue-500 dark:text-blue-400 shrink-0 drop-shadow-sm" />}
+            <span>{label}</span>
         </button>
     );
 }

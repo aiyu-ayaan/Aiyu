@@ -139,17 +139,20 @@ export default function Window({
     const handleMouseEnterMaximize = (e) => {
         if (snapTimeoutRef.current) clearTimeout(snapTimeoutRef.current);
         const rect = e.currentTarget.getBoundingClientRect();
-        if (onOpenSnapFlyout) {
-            onOpenSnapFlyout(win.id, {
-                right: rect.right,
-                bottom: rect.bottom,
-                left: rect.left,
-                top: rect.top,
-            });
-        }
+        snapTimeoutRef.current = setTimeout(() => {
+            if (onOpenSnapFlyout) {
+                onOpenSnapFlyout(win.id, {
+                    right: rect.right,
+                    bottom: rect.bottom,
+                    left: rect.left,
+                    top: rect.top,
+                });
+            }
+        }, 500);
     };
 
     const handleMouseLeaveMaximize = () => {
+        if (snapTimeoutRef.current) clearTimeout(snapTimeoutRef.current);
         if (onCloseSnapFlyout) {
             onCloseSnapFlyout();
         }
@@ -185,6 +188,10 @@ export default function Window({
             }`}
             style={{ ...style, zIndex: win.z }}
             onMouseDown={() => onFocus(win.id)}
+            onContextMenu={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            }}
             role="dialog"
             aria-label={win.title}
         >

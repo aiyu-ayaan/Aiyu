@@ -28,6 +28,10 @@ export default function WidgetsPanel({ open, onClose, openApp }) {
                 className="fixed top-0 left-0 z-45 flex w-full max-w-[440px] flex-col overflow-hidden border-r border-white/10 bg-[#161618]/95 text-white shadow-2xl shadow-black/40 backdrop-blur-2xl"
                 style={{ height: 'calc(100vh - 48px)', maxHeight: 'calc(100vh - 48px)' }}
                 onClick={(e) => e.stopPropagation()}
+                onContextMenu={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }}
             >
                 {/* Header */}
                 <div className="flex items-center justify-between border-b border-white/8 px-4 py-3 shrink-0 h-[57px]">

@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect, useRef } from 'react';
 import { Terminal as TerminalIcon } from 'lucide-react';
+import { useDeviceName } from '../useDeviceName';
 
 const INITIAL_HISTORY = [
     { type: 'output', text: 'Aiyu OS PowerShell [Version 10.0.22631.3007]' },
@@ -11,6 +12,7 @@ const INITIAL_HISTORY = [
 ];
 
 export default function Terminal({ openApp, config = {} }) {
+    const [deviceName] = useDeviceName(config);
     const [history, setHistory] = useState(INITIAL_HISTORY);
     const [input, setInput] = useState('');
     const [cmdHistory, setCmdHistory] = useState([]);
@@ -83,8 +85,8 @@ export default function Terminal({ openApp, config = {} }) {
                     ];
                 } else if (arg === 'portfolio.config') {
                     response = [
-                        `Device: ${config.deviceName || 'AIYU-PORTFOLIO'}`,
-                        `OS Version: ${config.osVersion || '4.9.2'}`,
+                        `Device: ${deviceName}`,
+                        `OS Version: ${config.desktopOsVersion || config.osVersion || '4.9.2'}`,
                         'Environment: Web Desktop Container',
                     ];
                 } else if (!arg) {
@@ -100,14 +102,14 @@ export default function Terminal({ openApp, config = {} }) {
 
             case 'ver':
             case 'version':
-                response = [`Aiyu OS 11 Pro [Version ${config.osVersion || '4.9.2'}]`];
+                response = [`Aiyu OS 11 Pro [Version ${config.desktopOsVersion || config.osVersion || '4.9.2'}]`];
                 break;
 
             case 'sysinfo':
                 response = [
                     ' OS Name:                   Aiyu OS 11 Pro',
-                    ` OS Version:                ${config.osVersion || '4.9.2'}`,
-                    ` Device Name:               ${config.deviceName || 'AIYU-PORTFOLIO'}`,
+                    ` OS Version:                ${config.desktopOsVersion || config.osVersion || '4.9.2'}`,
+                    ` Device Name:               ${deviceName}`,
                     ' System Manufacturer:       Aiyu Web Systems',
                     ' Processor:                 Web Concurrency Engine',
                     ' Total Physical Memory:    8,192 MB',

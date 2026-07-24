@@ -17,6 +17,8 @@ import {
     Monitor,
 } from 'lucide-react';
 
+import { useDeviceName } from '../useDeviceName';
+
 const TABS = [
     { key: 'processes', label: 'Processes', icon: Activity },
     { key: 'performance', label: 'Performance', icon: Cpu },
@@ -41,7 +43,8 @@ const STARTUP_APPS = [
     { name: 'GitHub Desktop Service', publisher: 'GitHub, Inc.', status: 'Disabled', impact: 'None' },
 ];
 
-export default function TaskManager({ windows = [], closeWin, openApp, config = {} }) {
+export default function TaskManager({ windows = [], closeWin, openApp, config = {}, toggleStart, openStartMenu }) {
+    const [deviceName] = useDeviceName(config);
     const [tab, setTab] = useState('processes');
     const [selectedId, setSelectedId] = useState(null);
     const [filterQuery, setFilterQuery] = useState('');
@@ -121,7 +124,7 @@ export default function TaskManager({ windows = [], closeWin, openApp, config = 
                     <div>
                         <div className="font-semibold text-sm">Task Manager</div>
                         <div className="text-[10px] opacity-60">
-                            {config.deviceName || 'AIYU-PORTFOLIO'} · {runningAppProcesses.length} active apps
+                            {deviceName} · {runningAppProcesses.length} active apps
                         </div>
                     </div>
                 </div>
@@ -129,7 +132,15 @@ export default function TaskManager({ windows = [], closeWin, openApp, config = 
                 {/* Actions */}
                 <div className="flex items-center gap-2">
                     <button
-                        onClick={() => openApp?.('explorer')}
+                        onClick={() => {
+                            if (openStartMenu) {
+                                openStartMenu();
+                            } else if (toggleStart) {
+                                toggleStart();
+                            } else {
+                                openApp?.('explorer');
+                            }
+                        }}
                         className="flex items-center gap-1.5 rounded border border-black/10 bg-black/5 px-2.5 py-1 font-medium hover:bg-black/10 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10"
                     >
                         <Plus className="h-3.5 w-3.5" /> Run new task
@@ -194,7 +205,7 @@ export default function TaskManager({ windows = [], closeWin, openApp, config = 
                         cpuHistory={cpuHistory}
                         memHistory={memHistory}
                         coresCount={coresCount}
-                        deviceName={config.deviceName || 'AIYU-PORTFOLIO'}
+                        deviceName={deviceName}
                     />
                 )}
 

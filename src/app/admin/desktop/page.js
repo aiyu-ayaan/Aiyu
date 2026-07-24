@@ -29,7 +29,7 @@ const PRESET_WALLPAPERS = [
 
 export default function AdminDesktopPage() {
     const [wallpaper, setWallpaper] = useState('');
-    const [deviceName, setDeviceName] = useState('AIYU-PORTFOLIO');
+    const [deviceName, setDeviceName] = useState('AiyuOS');
     const [osVersion, setOsVersion] = useState('4.9.2');
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -50,7 +50,7 @@ export default function AdminDesktopPage() {
             if (res.ok) {
                 const data = await res.json();
                 setWallpaper(data.desktopWallpaper || '');
-                setDeviceName(data.desktopDeviceName || 'AIYU-PORTFOLIO');
+                setDeviceName(data.desktopDeviceName || 'AiyuOS');
                 setOsVersion(data.desktopOsVersion || '4.9.2');
             }
         } catch (err) {
@@ -237,7 +237,7 @@ export default function AdminDesktopPage() {
                                     type="text"
                                     value={deviceName}
                                     onChange={(e) => setDeviceName(e.target.value)}
-                                    placeholder="AIYU-PORTFOLIO"
+                                    placeholder="AiyuOS"
                                     className="w-full bg-slate-950/80 border border-slate-700 focus:border-blue-500 rounded-xl px-4 py-2.5 text-sm text-slate-200 outline-none transition-colors"
                                 />
                             </div>

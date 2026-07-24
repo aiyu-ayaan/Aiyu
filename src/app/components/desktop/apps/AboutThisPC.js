@@ -2,11 +2,16 @@
 import React, { useEffect, useState } from 'react';
 import { Cpu, Globe } from 'lucide-react';
 
+import { useDeviceName } from '../useDeviceName';
+
 // A playful "About" pane styled after Windows System > About.
-export default function AboutThisPC() {
+export default function AboutThisPC({ config = {} }) {
     const [ua, setUa] = useState('');
     const [cores, setCores] = useState('—');
     const [screen, setScreen] = useState('');
+
+    const [deviceName] = useDeviceName(config);
+    const osVersion = config?.desktopOsVersion || config?.osVersion || '4.9.2';
 
     useEffect(() => {
         setUa(navigator.userAgent);
@@ -15,12 +20,12 @@ export default function AboutThisPC() {
     }, []);
 
     const rows = [
-        ['Device name', 'AIYU-PORTFOLIO'],
+        ['Device name', deviceName],
         ['Processor', `Web Runtime · ${cores} logical cores`],
         ['Installed RAM', 'Streamed from the cloud'],
         ['Display', screen || '—'],
         ['Edition', 'Aiyu OS 11 Pro (Portfolio Edition)'],
-        ['Version', '4.9.2'],
+        ['Version', osVersion],
         ['Rendered by', 'Next.js + React'],
     ];
 

@@ -136,6 +136,10 @@ export default function StartMenu({ apps = [], onOpen, onClose, config = {}, onR
                 className="fixed bottom-16 left-1/2 z-[90] flex h-[620px] w-[min(94vw,560px)] -translate-x-1/2 flex-col justify-between overflow-hidden rounded-2xl border border-white/15 bg-[#1c1c1f]/90 p-6 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7)] backdrop-blur-3xl text-white select-none"
                 role="menu"
                 onClick={(e) => e.stopPropagation()}
+                onContextMenu={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }}
             >
                 {/* Top Search bar */}
                 <div className="relative mb-5 shrink-0">
