@@ -6,10 +6,10 @@ import { createPublicCacheHeaders, RESPONSE_CACHE } from '@/lib/httpCache';
 export async function GET() {
     try {
         const [blogsRaw, galleryRaw, projectsRaw, deploymentsRaw] = await Promise.all([
-            prisma.blog.findMany({ where: { published: true }, orderBy: { createdAt: 'desc' }, take: 8 }).catch(() => []),
-            prisma.gallery.findMany({ orderBy: [{ isPinned: 'desc' }, { createdAt: 'desc' }], take: 8 }).catch(() => []),
-            prisma.project.findMany({ orderBy: { displayOrder: 'asc' }, take: 8 }).catch(() => []),
-            prisma.deployment.findMany({ orderBy: { displayOrder: 'asc' }, take: 8 }).catch(() => []),
+            prisma.blog.findMany({ where: { published: true }, orderBy: { createdAt: 'desc' }, take: 10 }).catch(() => []),
+            prisma.gallery.findMany({ orderBy: [{ isPinned: 'desc' }, { createdAt: 'desc' }], take: 10 }).catch(() => []),
+            prisma.project.findMany({ orderBy: { displayOrder: 'asc' }, take: 10 }).catch(() => []),
+            prisma.deployment.findMany({ orderBy: { displayOrder: 'asc' }, take: 10 }).catch(() => []),
         ]);
 
         const blogs = toClientList('blog', blogsRaw);
@@ -19,16 +19,18 @@ export async function GET() {
 
         const items = [];
 
-        // 1. Format Blogs from DB
+        // 1. Format Blogs from DB (with social image / cover image)
         blogs.forEach((b) => {
             items.push({
                 id: `blog-${b._id || b.id}`,
                 type: 'blog',
                 category: 'Blogs',
                 title: b.title,
+                image: b.socialImage || b.image || null,
                 excerpt: b.excerpt || b.seoDescription || 'Read full article on portfolio.',
                 date: b.date || (b.createdAt ? new Date(b.createdAt).toLocaleDateString() : '2026'),
                 readTime: '4 min read',
+                tags: Array.isArray(b.tags) ? b.tags : [],
                 url: `/blogs/${b.slug || b._id || b.id}`,
             });
         });
@@ -54,6 +56,7 @@ export async function GET() {
                 type: 'project',
                 category: 'Projects',
                 title: p.name,
+                image: p.image || null,
                 description: p.description,
                 techStack: Array.isArray(p.techStack) ? p.techStack : ['React', 'Next.js'],
                 status: p.status || 'Active',
@@ -68,6 +71,7 @@ export async function GET() {
                 type: 'app',
                 category: 'Apps',
                 title: d.name,
+                image: d.image || null,
                 description: d.description,
                 icon: 'Code',
                 appKey: 'browser',
