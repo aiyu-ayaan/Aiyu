@@ -42,6 +42,9 @@ model Blog {
   date              String
   published         Boolean  @default(false)
   isAutomated       Boolean  @default(false)
+  isFlagged         Boolean  @default(false)
+  flagReason        String   @default("")
+  reviewStatus      String   @default("CLEAN")
   createdAt         DateTime @default(now())
   updatedAt         DateTime @default(now()) @updatedAt
 
@@ -53,6 +56,7 @@ model Blog {
   // NOTE: case-insensitive title uniqueness + the full-text search trigger/GIN
   // index are added by the companion raw-SQL migration (see migrations).
   @@index([published, createdAt])
+  @@index([isFlagged, createdAt])
   @@index([createdAt])
   @@index([slug])
   @@index([updatedAt])

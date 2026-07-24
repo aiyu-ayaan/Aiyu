@@ -65,7 +65,7 @@ const RELATIONAL_COLUMNS = {
     'title', 'slug', 'content', 'image', 'imageAlt', 'excerpt', 'seoTitle',
     'seoDescription', 'canonicalUrl', 'keywords', 'socialTitle', 'socialDescription',
     'socialImage', 'socialImageAlt', 'noIndex', 'tags', 'date', 'published',
-    'isAutomated', 'createdAt', 'updatedAt',
+    'isAutomated', 'isFlagged', 'flagReason', 'reviewStatus', 'createdAt', 'updatedAt',
   ],
   project: [
     'name', 'slug', 'techStack', 'year', 'status', 'projectType', 'description',
