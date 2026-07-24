@@ -35,6 +35,7 @@ const SocialMetaForm = () => {
     const [libraryLoading, setLibraryLoading] = useState(false);
     const [libraryError, setLibraryError] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
+    const [activeCategory, setActiveCategory] = useState('All');
     const pickerApplyRef = useRef(null);
 
 
@@ -517,6 +518,47 @@ const SocialMetaForm = () => {
                             </button>
                         </div>
 
+                        {/* Filter Categories Chips */}
+                        {library.length > 0 && !libraryLoading && !libraryError && (
+                            <div className="flex flex-wrap gap-2 mb-4 border-b border-white/5 pb-3">
+                                {(() => {
+                                    const dynamicCategories = Array.from(
+                                        new Set(library.flatMap((item) => item.references || []))
+                                    ).sort();
+                                    const allFilterCategories = ['All', ...dynamicCategories, 'Unreferenced'];
+
+                                    return allFilterCategories.map((category) => {
+                                        const isActive = activeCategory === category;
+                                        const count = library.filter((item) => {
+                                            if (category === 'All') return true;
+                                            if (category === 'Unreferenced') return !item.isReferenced || item.references.length === 0;
+                                            return item.references && item.references.includes(category);
+                                        }).length;
+
+                                        if (count === 0 && !isActive) return null;
+
+                                        return (
+                                            <button
+                                                key={category}
+                                                type="button"
+                                                onClick={() => setActiveCategory(category)}
+                                                className={`px-3 py-1 rounded-full text-xs font-mono font-bold tracking-wider transition-all flex items-center gap-1.5 border ${
+                                                    isActive
+                                                        ? 'bg-cyan-500 text-slate-950 border-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.3)]'
+                                                        : 'bg-slate-950/40 text-slate-400 border-white/5 hover:border-white/10 hover:text-slate-200'
+                                                }`}
+                                            >
+                                                {category.toUpperCase()}
+                                                <span className={`text-[10px] font-medium ${isActive ? 'text-slate-800' : 'text-slate-500'}`}>
+                                                    ({count})
+                                                </span>
+                                            </button>
+                                        );
+                                    });
+                                })()}
+                            </div>
+                        )}
+
                         {/* Library Content */}
                         <div className="flex-1 overflow-y-auto min-h-0 pr-1">
                             {libraryLoading ? (
@@ -538,9 +580,14 @@ const SocialMetaForm = () => {
                             ) : (
                                 <>
                                     {(() => {
-                                        const filtered = library.filter((item) =>
-                                            item.filename.toLowerCase().includes(searchQuery.toLowerCase())
-                                        );
+                                        const filtered = library.filter((item) => {
+                                            const matchesSearch = item.filename.toLowerCase().includes(searchQuery.toLowerCase());
+                                            if (!matchesSearch) return false;
+
+                                            if (activeCategory === 'All') return true;
+                                            if (activeCategory === 'Unreferenced') return !item.isReferenced || item.references.length === 0;
+                                            return item.references && item.references.includes(activeCategory);
+                                        });
                                         if (filtered.length === 0) {
                                             return (
                                                 <div className="h-64 flex flex-col items-center justify-center text-slate-500 font-mono text-center p-4">
