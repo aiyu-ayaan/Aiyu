@@ -1,5 +1,39 @@
 # Changelog
 
+## [4.9.3](https://github.com/aiyu-ayaan/Aiyu/compare/v4.9.2...v4.9.3) (2026-07-24)
+
+### Features
+
+* Add date picker and default top-spawning for new projects
+* Integrate date pickers and top-spawning items in about form
+* Add reusable dark-themed DatePickerInput component
+* Display posted timestamp with time in admin blog table
+* Add blog review engine controls, filter tabs, and review workflow to admin
+* Integrate review engine with blog creation and update APIs
+* Add blog review engine pattern matching and heuristics
+* Add review engine schema fields to Blog model
+* Implement sorting functionality for blog list and add views count to blog data
+* Enhance mobile layout for images and improve figcaption styling
+* Add dynamic reference category filters in image library picker
+* Add existing-image library picker to social metadata form
+* Implement boot handoff signal for landing animations
+
+### Bug Fixes
+
+* : Fix release is done
+* Unclip popovers from card glow background containers
+* Auto-flip popover upwards when near bottom of viewport and float with z-[99999]
+* Use React Portal and smart positioning to fix date picker clipping and z-index issues
+* Resolve ESLint variable assignment warning in DatePickerInput
+
+### Other Changes
+
+* Merge branch 'master' of https://github.com/aiyu-ayaan/Aiyu
+* Add implementation plan for blog review engine
+* Add design spec for blog review engine
+* Async-load syntax highlighter languages in editor + api-reference
+* Async-load syntax highlighter languages on demand
+
 ## [4.9.2](https://github.com/aiyu-ayaan/Aiyu/compare/v4.9.1...v4.9.2) (2026-07-22)
 
 ### Features
