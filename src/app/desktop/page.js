@@ -15,14 +15,18 @@ export const DEFAULT_WALLPAPER =
 
 export default async function DesktopPage() {
     let wallpaper = DEFAULT_WALLPAPER;
+    let configObj = {};
     try {
         const config = await getSingleton(prisma, 'config');
-        if (config?.desktopWallpaper && typeof config.desktopWallpaper === 'string') {
-            wallpaper = config.desktopWallpaper.trim();
+        if (config) {
+            configObj = config;
+            if (config.desktopWallpaper && typeof config.desktopWallpaper === 'string') {
+                wallpaper = config.desktopWallpaper.trim();
+            }
         }
     } catch {
         // Fall back to the default bloom if config is unavailable.
     }
 
-    return <Desktop wallpaper={wallpaper} />;
+    return <Desktop wallpaper={wallpaper} config={configObj} />;
 }

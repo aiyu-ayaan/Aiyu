@@ -1,7 +1,7 @@
 "use client";
 import React, { useCallback, useState } from 'react';
 import Link from 'next/link';
-import { ExplorerIcon, VSCodeIcon, ChromeIcon, SettingsIcon, ThisPCIcon, EdgeIcon } from './icons';
+import { ExplorerIcon, VSCodeIcon, ChromeIcon, SettingsIcon, ThisPCIcon, EdgeIcon, PhotosIcon, GitHubIcon } from './icons';
 import Window from './Window';
 import Taskbar from './Taskbar';
 import StartMenu from './StartMenu';
@@ -10,8 +10,13 @@ import CodeEditor from './apps/CodeEditor';
 import Browser from './apps/Browser';
 import Settings from './apps/Settings';
 import AboutThisPC from './apps/AboutThisPC';
+import Photos from './apps/Photos';
+import GitHub from './apps/GitHub';
 
-// App registry. `render` receives desktop-level props (e.g. wallpaper).
+// App registry. `render` receives a desktop context: { wallpaper, config,
+// openApp, payload }. `payload` is per-window data (e.g. the image list Photos
+// should show). Apps with `hidden: true` are launchable but not shown as a
+// desktop icon (they open via other apps, e.g. Photos from File Explorer).
 const buildApps = () => [
     {
         key: 'explorer',
@@ -19,7 +24,15 @@ const buildApps = () => [
         icon: ExplorerIcon,
         w: 820,
         h: 540,
-        render: () => <FileExplorer />,
+        render: (ctx) => <FileExplorer openApp={ctx.openApp} />,
+    },
+    {
+        key: 'photos',
+        title: 'Photos',
+        icon: PhotosIcon,
+        w: 860,
+        h: 600,
+        render: (ctx) => <Photos payload={ctx.payload} />,
     },
     {
         key: 'code',
@@ -38,12 +51,20 @@ const buildApps = () => [
         render: () => <Browser />,
     },
     {
+        key: 'github',
+        title: 'GitHub',
+        icon: GitHubIcon,
+        w: 900,
+        h: 600,
+        render: () => <GitHub />,
+    },
+    {
         key: 'settings',
         title: 'Settings',
         icon: SettingsIcon,
-        w: 720,
-        h: 500,
-        render: (props) => <Settings wallpaper={props.wallpaper} />,
+        w: 760,
+        h: 520,
+        render: (ctx) => <Settings wallpaper={ctx.wallpaper} config={ctx.config} />,
     },
     {
         key: 'about',
@@ -60,7 +81,7 @@ const BLOOM =
 
 let uid = 1;
 
-export default function Desktop({ wallpaper }) {
+export default function Desktop({ wallpaper, config = {} }) {
     const apps = React.useMemo(() => buildApps(), []);
     const appMap = React.useMemo(() => Object.fromEntries(apps.map((a) => [a.key, a])), [apps]);
 
@@ -80,18 +101,25 @@ export default function Desktop({ wallpaper }) {
     }, []);
 
     const openApp = useCallback(
-        (key) => {
+        (key, payload) => {
             const app = appMap[key];
             if (!app) return;
             setStartOpen(false);
-            // If already open, focus the existing window instead of duplicating.
+            // If already open, focus the existing window (and refresh its payload
+            // so e.g. opening a new image reuses the running Photos window).
             setWindows((ws) => {
                 const existing = ws.find((w) => w.appKey === key);
                 if (existing) {
                     setActiveId(existing.id);
                     setTopZ((z) => {
                         const next = z + 1;
-                        setWindows((cur) => cur.map((w) => (w.id === existing.id ? { ...w, z: next, minimized: false } : w)));
+                        setWindows((cur) =>
+                            cur.map((w) =>
+                                w.id === existing.id
+                                    ? { ...w, z: next, minimized: false, payload: payload ?? w.payload }
+                                    : w
+                            )
+                        );
                         return next;
                     });
                     return ws;
@@ -117,6 +145,7 @@ export default function Desktop({ wallpaper }) {
                         z: nextZ,
                         minimized: false,
                         maximized: false,
+                        payload,
                     },
                 ];
             });
@@ -165,8 +194,10 @@ export default function Desktop({ wallpaper }) {
 
     const desktopIcons = [
         { key: 'explorer', label: 'File Explorer', icon: ExplorerIcon },
+        { key: 'photos', label: 'Photos', icon: PhotosIcon },
         { key: 'code', label: 'Visual Studio Code', icon: VSCodeIcon },
         { key: 'browser', label: 'Google Chrome', icon: ChromeIcon },
+        { key: 'github', label: 'GitHub', icon: GitHubIcon },
         { key: 'settings', label: 'Settings', icon: SettingsIcon },
         { key: 'about', label: 'This PC', icon: ThisPCIcon },
     ];
@@ -221,7 +252,7 @@ export default function Desktop({ wallpaper }) {
                     onToggleMaximize={toggleMax}
                     onMove={moveWin}
                 >
-                    {appMap[win.appKey]?.render({ wallpaper })}
+                    {appMap[win.appKey]?.render({ wallpaper, config, openApp, payload: win.payload })}
                 </Window>
             ))}
 

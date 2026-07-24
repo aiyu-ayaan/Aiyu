@@ -26,7 +26,7 @@ const NAV = [
 const blogFileName = (blog) =>
     `${(blog.slug || blog.title || 'untitled').toString().slice(0, 40).replace(/\s+/g, '-').toLowerCase()}.md`;
 
-export default function FileExplorer() {
+export default function FileExplorer({ openApp }) {
     const [folder, setFolder] = useState('home');
     const [gallery, setGallery] = useState([]);
     const [blogs, setBlogs] = useState([]);
@@ -127,11 +127,17 @@ export default function FileExplorer() {
                         />
                     ) : folder === 'pictures' ? (
                         <IconGrid>
-                            {filteredGallery.map((g) => (
+                            {filteredGallery.map((g, idx) => (
                                 <FileTile
-                                    key={g._id || g.src}
+                                    key={g._id || g.src || idx}
                                     label={g.description || 'image'}
-                                    onOpen={() => setPreview({ type: 'image', item: g })}
+                                    onOpen={() => {
+                                        if (openApp) {
+                                            openApp('photos', { images: filteredGallery, index: idx });
+                                        } else {
+                                            setPreview({ type: 'image', item: g });
+                                        }
+                                    }}
                                     thumb={g.thumbnail || g.src}
                                 />
                             ))}

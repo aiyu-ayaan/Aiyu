@@ -40,6 +40,8 @@ const PUBLIC_CONFIG_KEYS = [
     'galleryTitle',
     'gallerySubtitle',
     'desktopWallpaper',
+    'desktopDeviceName',
+    'desktopOsVersion',
     'defaultSiteVersion',
     'activeTheme',
     'activeThemeVariant',

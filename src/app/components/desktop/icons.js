@@ -78,6 +78,39 @@ export function EdgeIcon({ className }) {
     );
 }
 
+// Windows Photos — colorful photo tile with a mountain + sun.
+export function PhotosIcon({ className }) {
+    return (
+        <svg className={className} viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <rect x="4" y="7" width="40" height="34" rx="5" fill="#F5F6FA" />
+            <rect x="4" y="7" width="40" height="34" rx="5" fill="url(#ph_g)" fillOpacity="0.12" />
+            <path d="M8 34l9-11 7 8 5-6 11 13H8z" fill="#37B24D" />
+            <path d="M24 39l6-8 11 10a2 2 0 0 1-1.7 1H24z" fill="#2F9E44" />
+            <circle cx="33" cy="16" r="4.5" fill="#FFD43B" />
+            <rect x="4" y="7" width="40" height="34" rx="5" stroke="#C7CAD1" strokeWidth="1.2" />
+            <defs>
+                <linearGradient id="ph_g" x1="4" y1="7" x2="44" y2="41" gradientUnits="userSpaceOnUse">
+                    <stop stopColor="#4da3ff" />
+                    <stop offset="1" stopColor="#8b5cf6" />
+                </linearGradient>
+            </defs>
+        </svg>
+    );
+}
+
+// GitHub — the Octocat mark (single dark fill, inverts on dark surfaces via currentColor fallback baked to #24292f).
+export function GitHubIcon({ className }) {
+    return (
+        <svg className={className} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path
+                fill="#1B1F23"
+                className="dark:fill-white"
+                d="M12 .5C5.7.5.5 5.7.5 12c0 5.1 3.3 9.4 7.9 10.9.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.4-3.9-1.4-.5-1.3-1.3-1.7-1.3-1.7-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 .1.8 1.7 2.6 1.2.1-.7.4-1.2.7-1.5-2.6-.3-5.3-1.3-5.3-5.8 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17 4.6 18 4.9 18 4.9c.6 1.6.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.5-2.7 5.5-5.3 5.8.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6 4.6-1.5 7.9-5.8 7.9-10.9C23.5 5.7 18.3.5 12 .5z"
+            />
+        </svg>
+    );
+}
+
 // The Windows 11 Start flag — four blue tiles.
 export function StartIcon({ className }) {
     return (
