@@ -292,6 +292,8 @@ export default function Desktop({ wallpaper, config = {} }) {
         setWindows((ws) => ws.map((w) => (w.id === id ? { ...w, x, y } : w)));
     }, []);
 
+    const [snapAssist, setSnapAssist] = useState(null); // { targetZone, snappedId }
+
     const resizeWin = useCallback((id, x, y, w, h) => {
         setWindows((ws) => ws.map((win) => (win.id === id ? { ...win, x, y, w, h, maximized: false } : win)));
     }, []);
@@ -356,7 +358,37 @@ export default function Desktop({ wallpaper, config = {} }) {
                 break;
         }
 
-        setWindows((ws) => ws.map((win) => (win.id === id ? { ...win, x, y, w, h, maximized: false } : win)));
+        setWindows((ws) => {
+            const nextWs = ws.map((win) => (win.id === id ? { ...win, x, y, w, h, maximized: false } : win));
+            const others = nextWs.filter((win) => win.id !== id && !win.minimized);
+
+            if (others.length > 0) {
+                const compMap = {
+                    'left-50': 'right-50',
+                    'right-50': 'left-50',
+                    'left-60': 'right-40',
+                    'right-40': 'left-60',
+                    'col3-left': 'col3-center',
+                    'col3-center': 'col3-right',
+                    'col3-right': 'col3-left',
+                    'grid-tl': 'grid-tr',
+                    'grid-tr': 'grid-tl',
+                    'grid-bl': 'grid-br',
+                    'grid-br': 'grid-bl',
+                    'top-50': 'bottom-50',
+                    'bottom-50': 'top-50',
+                    'priority-left': 'priority-tr',
+                    'priority-tr': 'priority-br',
+                    'priority-br': 'priority-tr',
+                };
+                const targetZone = compMap[zone] || 'right-50';
+                setSnapAssist({ targetZone, snappedId: id });
+            } else {
+                setSnapAssist(null);
+            }
+
+            return nextWs;
+        });
     }, []);
 
     // Taskbar click: toggle minimize if active, else focus.
@@ -390,6 +422,11 @@ export default function Desktop({ wallpaper, config = {} }) {
         { key: 'settings', label: 'Settings', icon: SettingsIcon },
         { key: 'about', label: 'This PC', icon: ThisPCIcon },
     ];
+
+    const snapAssistOthers = useMemo(() => {
+        if (!snapAssist) return [];
+        return windows.filter((w) => w.id !== snapAssist.snappedId && !w.minimized);
+    }, [snapAssist, windows]);
 
     return (
         <div
@@ -456,6 +493,64 @@ export default function Desktop({ wallpaper, config = {} }) {
                         {appMap[win.appKey]?.render({ wallpaper, config, openApp, windows, closeWin: () => closeWin(win.id), payload: win.payload })}
                     </Window>
                 ))}
+            </AnimatePresence>
+
+            {/* Windows 11 Snap Assist Overlay */}
+            <AnimatePresence>
+                {snapAssist && snapAssistOthers.length > 0 && (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        transition={{ duration: 0.15, ease: 'easeOut' }}
+                        className="absolute z-[55] flex flex-col items-center justify-center p-6 bg-[#1a1a20]/80 backdrop-blur-2xl border border-white/20 rounded-2xl shadow-2xl overflow-hidden"
+                        style={{
+                            left: getZoneRect(snapAssist.targetZone).left + 12,
+                            top: getZoneRect(snapAssist.targetZone).top + 12,
+                            width: Math.max(280, getZoneRect(snapAssist.targetZone).width - 24),
+                            height: Math.max(200, getZoneRect(snapAssist.targetZone).height - 24),
+                        }}
+                    >
+                        <div className="flex items-center justify-between w-full mb-4 px-1 shrink-0">
+                            <div className="flex items-center gap-2">
+                                <span className="text-xs font-bold uppercase tracking-wider text-blue-400">
+                                    Snap Assist
+                                </span>
+                                <span className="text-[10px] text-white/50">• Select an open window</span>
+                            </div>
+                            <button
+                                onClick={() => setSnapAssist(null)}
+                                className="text-[11px] font-medium text-white/60 hover:text-white px-2 py-0.5 rounded-md hover:bg-white/10 transition"
+                            >
+                                Skip
+                            </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full flex-1 overflow-y-auto custom-scrollbar p-1" data-lenis-prevent>
+                            {snapAssistOthers.map((w) => {
+                                const Icon = w.icon;
+                                return (
+                                    <button
+                                        key={w.id}
+                                        onClick={() => {
+                                            snapWin(w.id, snapAssist.targetZone);
+                                            setSnapAssist(null);
+                                        }}
+                                        className="group flex flex-col items-center justify-between rounded-xl border border-white/15 bg-white/10 p-3 hover:border-blue-400 hover:bg-blue-600/30 transition shadow-lg text-left h-28"
+                                    >
+                                        <div className="flex items-center gap-2.5 w-full">
+                                            {Icon && <Icon className="h-5 w-5 text-blue-400 group-hover:scale-110 transition shrink-0" />}
+                                            <span className="text-xs font-bold truncate text-white">{w.title}</span>
+                                        </div>
+                                        <div className="w-full flex-1 mt-2 rounded-lg bg-black/40 border border-white/10 flex items-center justify-center text-[10px] text-white/50 group-hover:text-blue-300 font-medium transition">
+                                            Click to snap here
+                                        </div>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </motion.div>
+                )}
             </AnimatePresence>
 
             {/* Desktop right-click menu */}
@@ -555,5 +650,30 @@ function MenuItem({ label, onClick }) {
             {label}
         </button>
     );
+}
+
+function getZoneRect(zone) {
+    if (typeof window === 'undefined') return { left: 10, top: 10, width: 300, height: 300 };
+    const workW = window.innerWidth;
+    const workH = window.innerHeight - 48;
+
+    switch (zone) {
+        case 'right-50': return { left: Math.floor(workW * 0.5), top: 0, width: Math.floor(workW * 0.5), height: workH };
+        case 'left-50': return { left: 0, top: 0, width: Math.floor(workW * 0.5), height: workH };
+        case 'right-40': return { left: Math.floor(workW * 0.6), top: 0, width: Math.floor(workW * 0.4), height: workH };
+        case 'left-60': return { left: 0, top: 0, width: Math.floor(workW * 0.6), height: workH };
+        case 'col3-center': return { left: Math.floor(workW / 3), top: 0, width: Math.floor(workW / 3), height: workH };
+        case 'col3-right': return { left: Math.floor((workW / 3) * 2), top: 0, width: Math.floor(workW / 3), height: workH };
+        case 'col3-left': return { left: 0, top: 0, width: Math.floor(workW / 3), height: workH };
+        case 'grid-tr': return { left: Math.floor(workW * 0.5), top: 0, width: Math.floor(workW * 0.5), height: Math.floor(workH * 0.5) };
+        case 'grid-tl': return { left: 0, top: 0, width: Math.floor(workW * 0.5), height: Math.floor(workH * 0.5) };
+        case 'grid-br': return { left: Math.floor(workW * 0.5), top: Math.floor(workH * 0.5), width: Math.floor(workW * 0.5), height: Math.floor(workH * 0.5) };
+        case 'grid-bl': return { left: 0, top: Math.floor(workH * 0.5), width: Math.floor(workW * 0.5), height: Math.floor(workH * 0.5) };
+        case 'bottom-50': return { left: 0, top: Math.floor(workH * 0.5), width: workW, height: Math.floor(workH * 0.5) };
+        case 'top-50': return { left: 0, top: 0, width: workW, height: Math.floor(workH * 0.5) };
+        case 'priority-tr': return { left: Math.floor(workW * 0.6), top: 0, width: Math.floor(workW * 0.4), height: Math.floor(workH * 0.5) };
+        case 'priority-br': return { left: Math.floor(workW * 0.6), top: Math.floor(workH * 0.5), width: Math.floor(workW * 0.4), height: Math.floor(workH * 0.5) };
+        default: return { left: Math.floor(workW * 0.5), top: 0, width: Math.floor(workW * 0.5), height: workH };
+    }
 }
 

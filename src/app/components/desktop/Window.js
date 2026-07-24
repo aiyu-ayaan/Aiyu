@@ -14,6 +14,7 @@ export default function Window({
     onMove,
     onResize,
     onSnap,
+    windows = [],
     children,
 }) {
     const dragRef = useRef(null);
@@ -137,6 +138,10 @@ export default function Window({
         if (snapTimeoutRef.current) clearTimeout(snapTimeoutRef.current);
         setSnapFlyoutOpen(true);
     };
+
+    const otherOpenWindows = React.useMemo(() => {
+        return windows.filter((w) => w.id !== win.id && !w.minimized);
+    }, [windows, win.id]);
 
     const handleMouseLeaveMaximize = () => {
         snapTimeoutRef.current = setTimeout(() => {
@@ -418,6 +423,34 @@ export default function Window({
                                                 </div>
                                                 <span className="text-[9px] text-center text-white/40">Top / Bottom</span>
                                             </div>
+
+                                            {/* Open Windows Suggestions */}
+                                            {otherOpenWindows.length > 0 && (
+                                                <div className="col-span-3 mt-2 pt-2 border-t border-white/10">
+                                                    <div className="text-[10px] font-semibold text-white/50 mb-1.5 px-0.5">
+                                                        Open Windows ({otherOpenWindows.length})
+                                                    </div>
+                                                    <div className="flex items-center gap-1.5 overflow-x-auto pb-1 custom-scrollbar">
+                                                        {otherOpenWindows.map((other) => {
+                                                            const OtherIcon = other.icon;
+                                                            return (
+                                                                <button
+                                                                    key={other.id}
+                                                                    onClick={() => {
+                                                                        setSnapFlyoutOpen(false);
+                                                                        onFocus(other.id);
+                                                                    }}
+                                                                    className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2 py-1 hover:bg-blue-600/30 hover:border-blue-400/50 transition shrink-0"
+                                                                    title={`Switch to ${other.title}`}
+                                                                >
+                                                                    {OtherIcon && <OtherIcon className="h-3.5 w-3.5 text-blue-400" />}
+                                                                    <span className="text-[10px] font-medium truncate max-w-[90px] text-white/90">{other.title}</span>
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     </motion.div>
                                 )}
