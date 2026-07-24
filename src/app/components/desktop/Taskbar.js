@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Wifi, Volume2, VolumeX, BatteryFull, Search, Bluetooth, Moon, Sun, Settings, Plane, ChevronLeft, ChevronRight, Bell } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { StartIcon, WidgetsIcon } from './icons';
@@ -10,6 +10,7 @@ export default function Taskbar({ apps, windows, activeId, onStart, startOpen, w
     const [now, setNow] = useState(() => new Date());
     const [quickOpen, setQuickOpen] = useState(false);
     const [calendarOpen, setCalendarOpen] = useState(false);
+    const trayRef = useRef(null);
 
     // Quick Settings states
     const [wifiOn, setWifiOn] = useState(true);
@@ -28,6 +29,21 @@ export default function Taskbar({ apps, windows, activeId, onStart, startOpen, w
         const t = setInterval(() => setNow(new Date()), 1000 * 20);
         return () => clearInterval(t);
     }, []);
+
+    // Dismiss flyouts when clicking outside
+    useEffect(() => {
+        if (!quickOpen && !calendarOpen) return;
+
+        const handleClickOutside = (e) => {
+            if (trayRef.current && !trayRef.current.contains(e.target)) {
+                setQuickOpen(false);
+                setCalendarOpen(false);
+            }
+        };
+
+        window.addEventListener('pointerdown', handleClickOutside);
+        return () => window.removeEventListener('pointerdown', handleClickOutside);
+    }, [quickOpen, calendarOpen]);
 
     const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const date = now.toLocaleDateString([], { month: 'numeric', day: 'numeric', year: 'numeric' });
@@ -107,7 +123,7 @@ export default function Taskbar({ apps, windows, activeId, onStart, startOpen, w
             </div>
 
             {/* System tray */}
-            <div className="relative flex w-40 items-center justify-end gap-1.5 pr-2 text-neutral-700 dark:text-neutral-200">
+            <div ref={trayRef} className="relative flex w-40 items-center justify-end gap-1.5 pr-2 text-neutral-700 dark:text-neutral-200">
                 {/* Quick Settings Button */}
                 <motion.button
                     whileTap={{ scale: 0.94 }}
