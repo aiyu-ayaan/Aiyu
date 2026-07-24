@@ -1,5 +1,25 @@
 # Changelog
 
+## [4.9.2](https://github.com/aiyu-ayaan/Aiyu/compare/v4.9.1...v4.9.2) (2026-07-22)
+
+### Features
+
+* Staggered spawn-in reveal for justified photos
+* Justified-rows layout for v2 photo wall
+* Serve /auth.md and publish agent_auth registration metadata
+* Mount WebMCP tools site-wide via root layout
+
+### Bug Fixes
+
+* : Fix release is done
+* Use sudo for docker compose commands to ensure proper permissions
+
+### Other Changes
+
+* Bump deps, patch 10 audit vulns, fix unit-test CI
+* Merge branch 'master' of https://github.com/aiyu-ayaan/Aiyu
+* Add DNS-AID zone template and rollout guide
+
 ## [4.9.1](https://github.com/aiyu-ayaan/Aiyu/compare/v4.9.0...v4.9.1) (2026-07-21)
 
 ### Features
