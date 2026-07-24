@@ -92,11 +92,11 @@ export default function Browser({ payload }) {
 
     const navigate = (url, title) => {
         setTabs((prev) => prev.map((t) => (t.id === activeId ? { ...t, url, title: title || url || 'New tab', forceEmbed: false } : t)));
-        setAddress(url && !url.startsWith('/') ? url : url || '');
+        setAddress(url || '');
     };
 
-    const toggleForceEmbed = () => {
-        setTabs((prev) => prev.map((t) => (t.id === activeId ? { ...t, forceEmbed: !t.forceEmbed } : t)));
+    const toggleForceEmbedForId = (id) => {
+        setTabs((prev) => prev.map((t) => (t.id === id ? { ...t, forceEmbed: !t.forceEmbed } : t)));
     };
 
     const go = (e) => {
@@ -123,8 +123,9 @@ export default function Browser({ payload }) {
                 return [fresh];
             }
             if (id === activeId) {
-                setActiveId(next[next.length - 1].id);
-                setAddress('');
+                const targetTab = next[next.length - 1];
+                setActiveId(targetTab.id);
+                setAddress(targetTab.url || '');
             }
             return next;
         });
@@ -136,9 +137,6 @@ export default function Browser({ payload }) {
         return '';
     }, [address, active]);
 
-    const isExternal = isExternalUrl(active?.url);
-    const specialType = getSpecialRouteType(active?.url);
-
     return (
         <div className="flex h-full w-full flex-col bg-[#dee1e6] dark:bg-[#202124]">
             {/* Tab strip */}
@@ -148,7 +146,7 @@ export default function Browser({ payload }) {
                         key={t.id}
                         onClick={() => {
                             setActiveId(t.id);
-                            setAddress(t.url && !t.url.startsWith('/') ? t.url : '');
+                            setAddress(t.url || '');
                         }}
                         className={`group flex h-8 max-w-[180px] items-center gap-2 rounded-t-lg px-3 text-xs ${
                             t.id === activeId
@@ -193,27 +191,40 @@ export default function Browser({ payload }) {
                 </form>
             </div>
 
-            {/* Viewport */}
-            <div className="min-h-0 flex-1 bg-white dark:bg-[#202124]">
-                {active?.url ? (
-                    specialType === 'desktop' ? (
-                        <DesktopRecursionPreview onGoHome={() => navigate('/', 'Home')} />
-                    ) : specialType === 'admin' ? (
-                        <AdminRoutePreview url={active.url} title={active.title} />
-                    ) : isExternal && !active.forceEmbed ? (
-                        <ExternalTabPreview url={active.url} title={active.title} onForceEmbed={toggleForceEmbed} />
-                    ) : (
-                        <iframe
-                            ref={frameRef}
-                            src={active.url}
-                            title={active.title}
-                            className="h-full w-full border-0"
-                            sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-downloads"
-                        />
-                    )
-                ) : (
-                    <NewTab onOpen={(l) => navigate(l.path, l.label)} />
-                )}
+            {/* Viewport with Keep-Alive Tab Persistence */}
+            <div className="relative min-h-0 flex-1 bg-white dark:bg-[#202124]">
+                {tabs.map((t) => {
+                    const isSelected = t.id === activeId;
+                    const isExt = isExternalUrl(t.url);
+                    const specType = getSpecialRouteType(t.url);
+
+                    return (
+                        <div
+                            key={t.id}
+                            className={`absolute inset-0 h-full w-full ${isSelected ? 'block z-10' : 'hidden z-0'}`}
+                        >
+                            {t.url ? (
+                                specType === 'desktop' ? (
+                                    <DesktopRecursionPreview onGoHome={() => navigate('/', 'Home')} />
+                                ) : specType === 'admin' ? (
+                                    <AdminRoutePreview url={t.url} title={t.title} />
+                                ) : isExt && !t.forceEmbed ? (
+                                    <ExternalTabPreview url={t.url} title={t.title} onForceEmbed={() => toggleForceEmbedForId(t.id)} />
+                                ) : (
+                                    <iframe
+                                        ref={isSelected ? frameRef : null}
+                                        src={t.url}
+                                        title={t.title}
+                                        className="h-full w-full border-0"
+                                        sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-downloads"
+                                    />
+                                )
+                            ) : (
+                                <NewTab onOpen={(l) => navigate(l.path, l.label)} />
+                            )}
+                        </div>
+                    );
+                })}
             </div>
         </div>
     );
