@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import { Wifi, Volume2, BatteryFull, Search } from 'lucide-react';
+import { StartIcon } from './icons';
 
 // Windows 11 style bottom taskbar: centered app icons, Start button, and a
 // system tray with live clock.
@@ -33,7 +34,7 @@ export default function Taskbar({ apps, windows, activeId, onStart, startOpen, o
                     }`}
                     aria-label="Start"
                 >
-                    <WinLogo />
+                    <StartIcon className="h-6 w-6" />
                 </button>
 
                 <button className="flex h-10 w-10 items-center justify-center rounded-md hover:bg-black/5 dark:hover:bg-white/10" aria-label="Search">
@@ -77,15 +78,5 @@ export default function Taskbar({ apps, windows, activeId, onStart, startOpen, o
                 </div>
             </div>
         </div>
-    );
-}
-
-function WinLogo() {
-    return (
-        <span className="grid h-5 w-5 grid-cols-2 grid-rows-2 gap-[2px]">
-            {[0, 1, 2, 3].map((i) => (
-                <span key={i} className="rounded-[1px] bg-[#0078d4]" />
-            ))}
-        </span>
     );
 }

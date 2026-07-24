@@ -1,7 +1,7 @@
 "use client";
 import React, { useCallback, useState } from 'react';
-import { FolderOpen, Code2, Compass, Settings as SettingsIcon, Info, Globe } from 'lucide-react';
 import Link from 'next/link';
+import { ExplorerIcon, VSCodeIcon, ChromeIcon, SettingsIcon, ThisPCIcon, EdgeIcon } from './icons';
 import Window from './Window';
 import Taskbar from './Taskbar';
 import StartMenu from './StartMenu';
@@ -16,23 +16,23 @@ const buildApps = () => [
     {
         key: 'explorer',
         title: 'File Explorer',
-        icon: FolderOpen,
+        icon: ExplorerIcon,
         w: 820,
         h: 540,
         render: () => <FileExplorer />,
     },
     {
         key: 'code',
-        title: 'VS Code',
-        icon: Code2,
+        title: 'Visual Studio Code',
+        icon: VSCodeIcon,
         w: 900,
         h: 580,
         render: () => <CodeEditor />,
     },
     {
         key: 'browser',
-        title: 'Chrome',
-        icon: Compass,
+        title: 'Google Chrome',
+        icon: ChromeIcon,
         w: 940,
         h: 600,
         render: () => <Browser />,
@@ -47,8 +47,8 @@ const buildApps = () => [
     },
     {
         key: 'about',
-        title: 'About This PC',
-        icon: Info,
+        title: 'This PC',
+        icon: ThisPCIcon,
         w: 620,
         h: 520,
         render: () => <AboutThisPC />,
@@ -164,11 +164,11 @@ export default function Desktop({ wallpaper }) {
     );
 
     const desktopIcons = [
-        { key: 'explorer', label: 'File Explorer', icon: FolderOpen },
-        { key: 'code', label: 'VS Code', icon: Code2 },
-        { key: 'browser', label: 'Chrome', icon: Compass },
+        { key: 'explorer', label: 'File Explorer', icon: ExplorerIcon },
+        { key: 'code', label: 'Visual Studio Code', icon: VSCodeIcon },
+        { key: 'browser', label: 'Google Chrome', icon: ChromeIcon },
         { key: 'settings', label: 'Settings', icon: SettingsIcon },
-        { key: 'about', label: 'About This PC', icon: Info },
+        { key: 'about', label: 'This PC', icon: ThisPCIcon },
     ];
 
     return (
@@ -204,7 +204,7 @@ export default function Desktop({ wallpaper }) {
                     onClick={(e) => e.stopPropagation()}
                     className="flex flex-col items-center gap-1 rounded p-2 text-center hover:bg-white/10"
                 >
-                    <Globe className="h-8 w-8 drop-shadow" />
+                    <EdgeIcon className="h-8 w-8 drop-shadow" />
                     <span className="text-[11px] leading-tight [text-shadow:0_1px_2px_rgba(0,0,0,0.6)]">Portfolio</span>
                 </Link>
             </div>
