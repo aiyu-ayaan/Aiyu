@@ -58,6 +58,7 @@ export default function Taskbar({ apps, windows, activeId, onStart, startOpen, w
                 <motion.button
                     whileTap={{ scale: 0.92 }}
                     whileHover={{ scale: 1.05 }}
+                    onClick={onStart}
                     className="flex h-10 w-10 items-center justify-center rounded-md hover:bg-black/5 dark:hover:bg-white/10"
                     aria-label="Search"
                 >
