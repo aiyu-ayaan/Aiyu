@@ -68,9 +68,8 @@ export default function WidgetsFeed({ openApp }) {
     }, [visibleItems]);
 
     const handleCardClick = (item) => {
-        if (item.url) {
-            const targetUrl = item.url.startsWith('/') ? `${window.location.origin}${item.url}` : item.url;
-            window.open(targetUrl, '_blank', 'noopener,noreferrer');
+        if (item.url && openApp) {
+            openApp('browser', { url: item.url, title: item.title });
         } else if (item.appKey && openApp) {
             openApp(item.appKey, item.payload);
         }

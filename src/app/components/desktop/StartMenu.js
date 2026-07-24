@@ -94,7 +94,7 @@ export default function StartMenu({ apps = [], onOpen, onClose, config = {}, onR
 
     const handleAppClick = (item) => {
         if (item.external) {
-            window.open(item.external, '_blank');
+            onOpen('browser', { url: item.external, title: item.title });
             onClose();
         } else if (item.action) {
             onOpen(item.action);
@@ -305,14 +305,16 @@ export default function StartMenu({ apps = [], onOpen, onClose, config = {}, onR
                     </div>
 
                     <div className="relative flex items-center gap-2">
-                        <Link
-                            href="/"
-                            onClick={onClose}
+                        <button
+                            onClick={() => {
+                                onOpen('browser', { url: '/', title: 'Site Home' });
+                                onClose();
+                            }}
                             className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs text-white/60 transition hover:bg-white/10 hover:text-white"
-                            title="Exit to site"
+                            title="Open Site in Chrome"
                         >
                             Site <ExternalLink className="h-3.5 w-3.5" />
-                        </Link>
+                        </button>
 
                         <button
                             onClick={() => setShowPowerMenu((v) => !v)}

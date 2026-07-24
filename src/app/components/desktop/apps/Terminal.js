@@ -116,14 +116,18 @@ export default function Terminal({ openApp, config = {} }) {
 
             case 'open':
                 if (!arg) {
-                    response = ['Usage: open <app_name> (e.g. open photos, open settings, open code)'];
+                    response = ['Usage: open <app_name_or_url> (e.g. open photos, open https://github.com)'];
                 } else {
                     const target = arg.toLowerCase();
-                    if (['photos', 'settings', 'code', 'explorer', 'github', 'browser', 'taskmanager', 'about'].includes(target)) {
+                    if (/^https?:\/\//i.test(arg) || arg.includes('.')) {
+                        openApp?.('browser', { url: arg, title: arg });
+                        response = [`Opening '${arg}' in Google Chrome...`];
+                    } else if (['photos', 'settings', 'code', 'explorer', 'github', 'browser', 'taskmanager', 'about', 'notepad', 'calculator', 'whiteboard', 'getstarted'].includes(target)) {
                         openApp?.(target);
                         response = [`Launching ${target}...`];
                     } else {
-                        response = [`App '${arg}' not found. Try: photos, settings, code, explorer, github, browser, taskmanager`];
+                        openApp?.('browser', { url: arg, title: arg });
+                        response = [`Opening '${arg}' in Google Chrome...`];
                     }
                 }
                 break;
