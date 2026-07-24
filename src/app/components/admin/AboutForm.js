@@ -538,8 +538,10 @@ const AboutForm = () => {
             )}
 
             {/* Basic Info Section */}
-            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 sm:p-6 md:p-8 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
+            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 sm:p-6 md:p-8 relative group">
+                <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-[100px] transition-opacity opacity-50 group-hover:opacity-100" />
+                </div>
 
                 <h2 className="text-sm font-mono text-cyan-500/70 uppercase tracking-widest mb-8 flex items-center gap-4">
                     Core Metadata
@@ -601,8 +603,10 @@ const AboutForm = () => {
             </div>
 
             {/* Skills Section */}
-            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 sm:p-6 md:p-8 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-green-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
+            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 sm:p-6 md:p-8 relative group">
+                <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-green-500/5 rounded-full blur-[100px] transition-opacity opacity-50 group-hover:opacity-100" />
+                </div>
 
                 <div className="flex justify-between items-center mb-8 relative z-10">
                     <h2 className="text-sm font-mono text-green-500/70 uppercase tracking-widest flex items-center gap-4">
@@ -709,8 +713,10 @@ const AboutForm = () => {
             </div>
 
             {/* Experience Section */}
-            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 sm:p-6 md:p-8 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
+            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 sm:p-6 md:p-8 relative group">
+                <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/5 rounded-full blur-[100px] transition-opacity opacity-50 group-hover:opacity-100" />
+                </div>
 
                 <div className="flex justify-between items-center mb-8 relative z-10">
                     <h2 className="text-sm font-mono text-orange-500/70 uppercase tracking-widest flex items-center gap-4">
@@ -813,8 +819,10 @@ const AboutForm = () => {
             </div>
 
             {/* Education Section */}
-            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 sm:p-6 md:p-8 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
+            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 sm:p-6 md:p-8 relative group">
+                <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/5 rounded-full blur-[100px] transition-opacity opacity-50 group-hover:opacity-100" />
+                </div>
 
                 <div className="flex justify-between items-center mb-8 relative z-10">
                     <h2 className="text-sm font-mono text-purple-500/70 uppercase tracking-widest flex items-center gap-4">
@@ -900,8 +908,10 @@ const AboutForm = () => {
             </div>
 
             {/* Certifications Section */}
-            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 sm:p-6 md:p-8 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
+            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 sm:p-6 md:p-8 relative group">
+                <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-500/5 rounded-full blur-[100px] transition-opacity opacity-50 group-hover:opacity-100" />
+                </div>
 
                 <div className="flex justify-between items-center mb-8 relative z-10">
                     <h2 className="text-sm font-mono text-yellow-500/70 uppercase tracking-widest flex items-center gap-4">
