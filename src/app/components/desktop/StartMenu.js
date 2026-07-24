@@ -27,7 +27,7 @@ import {
 const PINNED_APPS = [
     { key: 'browser', title: 'Browser', icon: EdgeIcon },
     { key: 'about', title: 'Get Started', icon: GetStartedIcon },
-    { key: 'settings', title: 'Task Manager', icon: TaskManagerIcon },
+    { key: 'taskmanager', title: 'Task Manager', icon: TaskManagerIcon },
     { key: 'contact', title: 'Mail', icon: MailIcon, external: '/contact-us' },
     { key: 'settings', title: 'Settings', icon: SettingsIcon },
     { key: 'games', title: 'Unescape', icon: UnescapeIcon, external: '/games' },

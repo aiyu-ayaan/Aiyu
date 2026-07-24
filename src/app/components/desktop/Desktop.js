@@ -1,7 +1,7 @@
 "use client";
 import React, { useCallback, useState } from 'react';
 import Link from 'next/link';
-import { ExplorerIcon, VSCodeIcon, ChromeIcon, SettingsIcon, ThisPCIcon, EdgeIcon, PhotosIcon, GitHubIcon } from './icons';
+import { ExplorerIcon, VSCodeIcon, ChromeIcon, SettingsIcon, ThisPCIcon, EdgeIcon, PhotosIcon, GitHubIcon, TaskManagerIcon } from './icons';
 import Window from './Window';
 import Taskbar from './Taskbar';
 import StartMenu from './StartMenu';
@@ -12,6 +12,7 @@ import Settings from './apps/Settings';
 import AboutThisPC from './apps/AboutThisPC';
 import Photos from './apps/Photos';
 import GitHub from './apps/GitHub';
+import TaskManager from './apps/TaskManager';
 
 // App registry. `render` receives a desktop context: { wallpaper, config,
 // openApp, payload }. `payload` is per-window data (e.g. the image list Photos
@@ -57,6 +58,21 @@ const buildApps = () => [
         w: 900,
         h: 600,
         render: () => <GitHub />,
+    },
+    {
+        key: 'taskmanager',
+        title: 'Task Manager',
+        icon: TaskManagerIcon,
+        w: 840,
+        h: 560,
+        render: (ctx) => (
+            <TaskManager
+                windows={ctx.windows}
+                closeWin={ctx.closeWin}
+                openApp={ctx.openApp}
+                config={ctx.config}
+            />
+        ),
     },
     {
         key: 'settings',
@@ -255,7 +271,7 @@ export default function Desktop({ wallpaper, config = {} }) {
                     onToggleMaximize={toggleMax}
                     onMove={moveWin}
                 >
-                    {appMap[win.appKey]?.render({ wallpaper, config, openApp, payload: win.payload })}
+                    {appMap[win.appKey]?.render({ wallpaper, config, openApp, windows, closeWin, payload: win.payload })}
                 </Window>
             ))}
 
