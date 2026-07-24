@@ -3,6 +3,12 @@ import { prisma } from '@/lib/prisma';
 import { toClientList } from '@/lib/serialize';
 import { createPublicCacheHeaders, RESPONSE_CACHE } from '@/lib/httpCache';
 
+/** Convert empty-string or whitespace-only URLs to null */
+function cleanUrl(val) {
+    if (!val || typeof val !== 'string' || val.trim() === '') return null;
+    return val;
+}
+
 export async function GET() {
     try {
         const [blogsRaw, galleryRaw, projectsRaw, deploymentsRaw] = await Promise.all([
@@ -17,16 +23,20 @@ export async function GET() {
         const projects = toClientList('project', projectsRaw);
         const deployments = toClientList('deployment', deploymentsRaw);
 
-        const items = [];
+        // Collect items by type, then interleave for variety in staggered grid
+        const blogItems = [];
+        const imageItems = [];
+        const projectItems = [];
+        const appItems = [];
 
         // 1. Format Blogs from DB (with social image / cover image)
         blogs.forEach((b) => {
-            items.push({
+            blogItems.push({
                 id: `blog-${b._id || b.id}`,
                 type: 'blog',
                 category: 'Blogs',
                 title: b.title,
-                image: b.socialImage || b.image || null,
+                image: cleanUrl(b.socialImage) || cleanUrl(b.image),
                 excerpt: b.excerpt || b.seoDescription || 'Read full article on portfolio.',
                 date: b.date || (b.createdAt ? new Date(b.createdAt).toLocaleDateString() : '2026'),
                 readTime: '4 min read',
@@ -37,26 +47,28 @@ export async function GET() {
 
         // 2. Format Images from DB
         gallery.forEach((g, idx) => {
-            items.push({
+            const src = cleanUrl(g.src);
+            if (!src) return; // skip gallery items with no image
+            imageItems.push({
                 id: `img-${g._id || g.id}`,
                 type: 'image',
                 category: 'Images',
                 title: g.description || `Portfolio Shot ${idx + 1}`,
-                src: g.src,
+                src,
                 description: g.description || 'Portfolio gallery artwork.',
-                url: g.src,
+                url: src,
                 badge: g.isPinned ? 'Pinned' : 'Photo',
             });
         });
 
         // 3. Format Projects from DB
         projects.forEach((p) => {
-            items.push({
+            projectItems.push({
                 id: `proj-${p._id || p.id}`,
                 type: 'project',
                 category: 'Projects',
                 title: p.name,
-                image: p.image || null,
+                image: cleanUrl(p.image),
                 description: p.description,
                 techStack: Array.isArray(p.techStack) ? p.techStack : ['React', 'Next.js'],
                 status: p.status || 'Active',
@@ -66,18 +78,28 @@ export async function GET() {
 
         // 4. Format Apps / Deployments from DB
         deployments.forEach((d) => {
-            items.push({
+            appItems.push({
                 id: `app-${d._id || d.id}`,
                 type: 'app',
                 category: 'Apps',
                 title: d.name,
-                image: d.image || null,
+                image: cleanUrl(d.image),
                 description: d.description,
                 icon: 'Code',
                 appKey: 'browser',
                 url: d.hostedUrl || d.blogLink || `/apps/${d.slug || d._id}`,
             });
         });
+
+        // Interleave items from different categories for a mixed staggered feed
+        const buckets = [imageItems, blogItems, projectItems, appItems];
+        const items = [];
+        const maxLen = Math.max(...buckets.map((b) => b.length));
+        for (let i = 0; i < maxLen; i++) {
+            for (const bucket of buckets) {
+                if (i < bucket.length) items.push(bucket[i]);
+            }
+        }
 
         // 5. Default Desktop Apps shortcuts if deployments are few
         if (deployments.length < 3) {
