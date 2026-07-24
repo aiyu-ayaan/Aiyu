@@ -39,6 +39,7 @@ const PUBLIC_CONFIG_KEYS = [
     'projectsSubtitle',
     'galleryTitle',
     'gallerySubtitle',
+    'desktopWallpaper',
     'defaultSiteVersion',
     'activeTheme',
     'activeThemeVariant',

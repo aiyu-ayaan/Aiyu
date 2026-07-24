@@ -23,6 +23,20 @@ const nextConfig = {
   // output: 'export' // Disabled to allow dynamic API routes
   output: standaloneOutput,
   trailingSlash: false,
+
+  // The /desktop VS Code app streams a whitelist of source files at runtime via
+  // /api/desktop/source. Standalone output tree-shakes `src/**` away, so trace
+  // those exact files in for the source route (it degrades gracefully if absent).
+  outputFileTracingIncludes: {
+    '/api/desktop/source': [
+      './src/app/desktop/**',
+      './src/app/components/desktop/**',
+      './src/app/api/desktop/source/route.js',
+      './src/app/api/config/route.js',
+      './prisma/schema.prisma',
+    ],
+  },
+
   allowedDevOrigins: ['192.168.31.54', '192.168.1.102'],
   assetPrefix: isProduction && cdnUrl ? cdnUrl : undefined,
 

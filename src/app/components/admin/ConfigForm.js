@@ -20,6 +20,7 @@ const ConfigForm = () => {
         blogsSubtitle: '',
         galleryTitle: '',
         gallerySubtitle: '',
+        desktopWallpaper: '',
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -103,6 +104,7 @@ const ConfigForm = () => {
                         blogsSubtitle: data.blogsSubtitle || 'Thoughts, tutorials, and updates on web development and technology.',
                         galleryTitle: data.galleryTitle || 'Gallery',
                         gallerySubtitle: data.gallerySubtitle || 'A visual journey through my lens.',
+                        desktopWallpaper: data.desktopWallpaper || '',
                     });
                 }
             }
@@ -232,6 +234,45 @@ const ConfigForm = () => {
             </div>
 
 
+
+            {/* Desktop (Aiyu OS) Section */}
+            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 md:p-8 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
+
+                <h2 className="text-sm font-mono text-blue-400/70 uppercase tracking-widest mb-8 flex items-center gap-4">
+                    Desktop / Aiyu OS
+                    <div className="h-px bg-blue-500/10 flex-grow" />
+                </h2>
+
+                <div className="space-y-6 relative z-10">
+                    <div>
+                        <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Wallpaper URL</label>
+                        <div className="flex flex-col gap-4 md:flex-row md:items-start">
+                            <div className="flex-1">
+                                <input
+                                    type="text"
+                                    name="desktopWallpaper"
+                                    value={formData.desktopWallpaper}
+                                    onChange={handleChange}
+                                    placeholder="https://… or /uploads/wallpaper.webp"
+                                    className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-blue-300 font-mono focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 outline-none transition-all placeholder:text-slate-700"
+                                />
+                                <p className="text-xs text-slate-500 mt-2 font-mono">
+                                    {'// Background for the /desktop experience. Leave blank for the default Windows-style bloom.'}
+                                </p>
+                            </div>
+                            <div
+                                className="h-24 w-40 shrink-0 rounded-lg border border-white/10 bg-cover bg-center"
+                                style={
+                                    formData.desktopWallpaper
+                                        ? { backgroundImage: `url(${formData.desktopWallpaper})` }
+                                        : { background: 'radial-gradient(140% 120% at 28% 18%, #58a6ff 0%, #2f7be0 28%, #1e4fb0 52%, #122a7a 74%, #0a1550 100%)' }
+                                }
+                            />
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             {/* Page Headers Section */}
             <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 md:p-8 relative overflow-hidden group">
