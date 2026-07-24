@@ -118,8 +118,34 @@ export async function GET(request) {
 
         if (isAdminAll) {
             const blogs = toClientList('blog', await prisma.blog.findMany({ where, orderBy: { createdAt: 'desc' } }));
+            
+            // Get views count for each blog from the AnalyticsDaily rollup
+            const viewsRollup = await prisma.analyticsDaily.groupBy({
+                by: ['entityId'],
+                where: {
+                    type: 'entity_view',
+                    entityType: 'blog',
+                    entityId: { in: blogs.map(b => b._id) }
+                },
+                _sum: {
+                    views: true
+                }
+            });
+
+            const viewsMap = {};
+            viewsRollup.forEach(row => {
+                if (row.entityId) {
+                    viewsMap[row.entityId] = row._sum.views || 0;
+                }
+            });
+
+            const blogsWithViews = blogs.map(blog => ({
+                ...blog,
+                views: viewsMap[blog._id] || 0
+            }));
+
             return NextResponse.json(
-                { success: true, data: blogs },
+                { success: true, data: blogsWithViews },
                 {
                     headers: {
                         'x-response-time-ms': String(Date.now() - startedAt),

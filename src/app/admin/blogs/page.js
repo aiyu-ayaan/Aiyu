@@ -8,6 +8,91 @@ export default function AdminBlogsPage() {
     const { confirm } = useAdminFeedback();
     const [blogs, setBlogs] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [sortConfig, setSortConfig] = useState({ key: null, direction: 'desc' });
+
+    const requestSort = (key) => {
+        let direction = 'asc';
+        if (sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+        } else if (sortConfig.key === key && sortConfig.direction === 'desc') {
+            setSortConfig({ key: null, direction: 'desc' });
+            return;
+        }
+        setSortConfig({ key, direction });
+    };
+
+    const sortedBlogs = React.useMemo(() => {
+        let sortableBlogs = [...blogs];
+        if (sortConfig.key !== null) {
+            sortableBlogs.sort((a, b) => {
+                let aVal = a[sortConfig.key];
+                let bVal = b[sortConfig.key];
+
+                if (sortConfig.key === 'views') {
+                    aVal = aVal || 0;
+                    bVal = bVal || 0;
+                }
+
+                if (sortConfig.key === 'published') {
+                    aVal = a.published !== false ? 1 : 0;
+                    bVal = b.published !== false ? 1 : 0;
+                }
+
+                if (sortConfig.key === 'date') {
+                    aVal = new Date(a.date || a.createdAt).getTime();
+                    bVal = new Date(b.date || b.createdAt).getTime();
+                    if (Number.isNaN(aVal)) aVal = 0;
+                    if (Number.isNaN(bVal)) bVal = 0;
+                }
+
+                if (typeof aVal === 'string' && typeof bVal === 'string') {
+                    return sortConfig.direction === 'asc'
+                        ? aVal.localeCompare(bVal)
+                        : bVal.localeCompare(aVal);
+                }
+
+                if (aVal < bVal) {
+                    return sortConfig.direction === 'asc' ? -1 : 1;
+                }
+                if (aVal > bVal) {
+                    return sortConfig.direction === 'asc' ? 1 : -1;
+                }
+                return 0;
+            });
+        }
+        return sortableBlogs;
+    }, [blogs, sortConfig]);
+
+    const renderSortableHeader = (label, sortKey, alignRight = false) => {
+        const isSorted = sortConfig.key === sortKey;
+        return (
+            <th
+                onClick={() => requestSort(sortKey)}
+                className={`px-6 py-5 cursor-pointer hover:bg-white/[0.03] hover:text-white transition-colors group select-none ${
+                    alignRight ? 'text-right' : ''
+                }`}
+            >
+                <div className={`flex items-center gap-1.5 ${alignRight ? 'justify-end' : ''}`}>
+                    <span>{label}</span>
+                    <span
+                        className={`transition-all duration-200 ${
+                            isSorted ? 'text-cyan-400 opacity-100' : 'opacity-0 group-hover:opacity-40'
+                        }`}
+                    >
+                        {isSorted && sortConfig.direction === 'desc' ? (
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                            </svg>
+                        ) : (
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" />
+                            </svg>
+                        )}
+                    </span>
+                </div>
+            </th>
+        );
+    };
 
     useEffect(() => {
         fetchBlogs();
@@ -104,19 +189,23 @@ export default function AdminBlogsPage() {
                     <table className="w-full text-left border-collapse">
                         <thead className="bg-white/5 border-b border-white/10 text-xs uppercase tracking-wider text-slate-400 font-medium">
                             <tr>
-                                <th className="px-6 py-5">Transmission Title</th>
-                                <th className="px-6 py-5">Timestamp</th>
-                                <th className="px-6 py-5">Signal Status</th>
-                                <th className="px-6 py-5 text-right">Controls</th>
+                                {renderSortableHeader('Transmission Title', 'title')}
+                                {renderSortableHeader('Timestamp', 'date')}
+                                {renderSortableHeader('Views', 'views')}
+                                {renderSortableHeader('Signal Status', 'published')}
+                                <th className="px-6 py-5 text-right select-none">Controls</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5 text-sm">
-                            {blogs.map((blog) => (
+                            {sortedBlogs.map((blog) => (
                                 <tr key={blog._id} className="group hover:bg-white/[0.02] transition-colors">
                                     <td className="px-6 py-5 font-semibold text-slate-200 group-hover:text-cyan-400 transition-colors">
                                         {blog.title}
                                     </td>
                                     <td className="px-6 py-5 text-slate-500 font-mono">{blog.date}</td>
+                                    <td className="px-6 py-5 text-slate-400 font-mono">
+                                        {blog.views != null ? blog.views.toLocaleString() : '0'}
+                                    </td>
                                     <td className="px-6 py-5">
                                         <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${blog.published !== false
                                             ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
@@ -147,7 +236,7 @@ export default function AdminBlogsPage() {
                             ))}
                             {blogs.length === 0 && (
                                 <tr>
-                                    <td colSpan="4" className="px-6 py-12 text-center text-slate-500">
+                                    <td colSpan="5" className="px-6 py-12 text-center text-slate-500">
                                         No transmissions intercepted. Initialize new sequence.
                                     </td>
                                 </tr>
