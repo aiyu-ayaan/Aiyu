@@ -59,6 +59,9 @@ function normalizeBlogPayload(body = {}) {
         keywords: body.keywords !== undefined ? normalizeStringList(body.keywords) : body.keywords,
         noIndex: hasNoIndex ? body.noIndex === true : body.noIndex,
         published: hasPublished ? body.published === true : body.published,
+        isFlagged: body.isFlagged !== undefined ? Boolean(body.isFlagged) : undefined,
+        flagReason: body.flagReason !== undefined ? String(body.flagReason) : undefined,
+        reviewStatus: body.reviewStatus !== undefined ? String(body.reviewStatus) : undefined,
     };
 }
 

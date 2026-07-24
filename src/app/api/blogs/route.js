@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { toClient, toClientList, fromClient } from "@/lib/serialize";
+import { toClient, toClientList, fromClient, getSingleton } from "@/lib/serialize";
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import cache, { CACHE_KEYS, CACHE_TTL, createCacheDebugHeaders } from '@/lib/cache';
@@ -9,6 +9,7 @@ import { validateBearerBlogToken } from '@/lib/blogApiAuth';
 import { revalidatePath } from 'next/cache';
 import { getSiteUrl } from '@/lib/siteUrl';
 import { autoPing } from '@/lib/autoIndexing';
+import { evaluateBlogForReview } from '@/lib/blogReviewEngine';
 
 const DEFAULT_BLOG_PAGE_SIZE = 6;
 const MAX_BLOG_PAGE_SIZE = 24;
@@ -272,12 +273,23 @@ export async function POST(request) {
             );
         }
 
+        // Fetch site configuration for review engine settings
+        const config = await getSingleton(prisma, 'config') || {};
+        const reviewResult = evaluateBlogForReview(body, config);
+
         // Use provided published status or default to false (Draft)
+        // If flagged by review engine, force published: false (CEASE status) and populate flag metadata
+        const initialPublished = body.published !== undefined ? body.published : false;
+        const finalPublished = reviewResult.isFlagged ? false : initialPublished;
+
         const blogData = {
             ...body,
             slug: await createUniqueBlogSlug(null, body.title),
-            published: body.published !== undefined ? body.published : false,
-            isAutomated: !isSessionValid
+            published: finalPublished,
+            isAutomated: !isSessionValid,
+            isFlagged: reviewResult.isFlagged,
+            flagReason: reviewResult.flagReason,
+            reviewStatus: reviewResult.reviewStatus,
         };
 
         const blog = await prisma.blog.create({ data: fromClient('blog', blogData, { keepId: false }) });
