@@ -60,13 +60,13 @@ export async function POST(request) {
         const payload = { ...body };
 
         if (!Number.isFinite(payload.displayOrder)) {
-            const maxOrderedProject = await prisma.project.findFirst({
-                orderBy: { displayOrder: 'desc' },
+            const minOrderedProject = await prisma.project.findFirst({
+                orderBy: { displayOrder: 'asc' },
                 select: { displayOrder: true },
             });
 
-            payload.displayOrder = Number.isFinite(maxOrderedProject?.displayOrder)
-                ? maxOrderedProject.displayOrder + 1
+            payload.displayOrder = Number.isFinite(minOrderedProject?.displayOrder)
+                ? minOrderedProject.displayOrder - 1
                 : 0;
         }
 

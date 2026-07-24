@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { Loader2, Save, Terminal, Code, Layers, Calendar, Link as LinkIcon, Image as ImageIcon, FileText, CheckCircle, Activity, Sparkles, Wand2, Upload, X } from 'lucide-react';
 import Toast from './Toast';
 import BlogLinkInput from './BlogLinkInput';
+import DatePickerInput from './DatePickerInput';
 
 const getStatusState = (status) => {
     const safeStatus = String(status || '').trim().toLowerCase();
@@ -271,18 +272,14 @@ const ProjectForm = ({ initialData, isEdit = false }) => {
                             </div>
                             <div>
                                 <label className="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-2">Timeline / Year</label>
-                                <div className="relative group/input">
-                                    <Calendar className="absolute left-4 top-3.5 text-slate-400 group-focus-within/input:text-cyan-400 transition-colors" size={18} />
-                                    <input
-                                        type="text"
-                                        name="year"
-                                        value={formData.year}
-                                        onChange={handleChange}
-                                        className="w-full bg-slate-950/50 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-slate-200 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-600 font-mono"
-                                        required
-                                        placeholder="2024"
-                                    />
-                                </div>
+                                <DatePickerInput
+                                    value={formData.year}
+                                    onChange={(val) => setFormData((prev) => ({ ...prev, year: val }))}
+                                    mode="single"
+                                    accentColor="cyan"
+                                    placeholder="2024"
+                                    required
+                                />
                             </div>
                         </div>
 
