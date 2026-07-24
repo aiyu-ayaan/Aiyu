@@ -850,8 +850,8 @@ const AboutForm = () => {
                                         <div className="p-1">✕</div>
                                     </button>
 
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end w-full pr-8">
-                                        <div className="w-full">
+                                    <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end w-full pr-8">
+                                        <div className="md:col-span-4">
                                             <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Institution</label>
                                             <input
                                                 type="text"
@@ -861,7 +861,7 @@ const AboutForm = () => {
                                                 required
                                             />
                                         </div>
-                                        <div className="w-full">
+                                        <div className="md:col-span-4">
                                             <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Degree / Major</label>
                                             <input
                                                 type="text"
@@ -871,7 +871,7 @@ const AboutForm = () => {
                                                 required
                                             />
                                         </div>
-                                        <div className="w-full">
+                                        <div className="md:col-span-3">
                                             <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Years</label>
                                             <DatePickerInput
                                                 value={edu.duration}
@@ -882,7 +882,7 @@ const AboutForm = () => {
                                                 required
                                             />
                                         </div>
-                                        <div className="w-full">
+                                        <div className="md:col-span-1">
                                             <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Grade</label>
                                             <input
                                                 type="text"

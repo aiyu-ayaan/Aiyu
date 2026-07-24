@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Calendar as CalendarIcon, X, Clock } from 'lucide-react';
 
 const MONTHS = [
@@ -123,7 +124,12 @@ export default function DatePickerInput({
     name = '',
 }) {
     const [isOpen, setIsOpen] = useState(false);
+    const [mounted, setMounted] = useState(false);
     const containerRef = useRef(null);
+    const inputRef = useRef(null);
+    const popoverRef = useRef(null);
+
+    const [popoverPos, setPopoverPos] = useState({ top: 0, left: 0 });
 
     const style = ACCENT_STYLES[accentColor] || ACCENT_STYLES.cyan;
     const currentYear = new Date().getFullYear();
@@ -142,7 +148,32 @@ export default function DatePickerInput({
     const [singleMonth, setSingleMonth] = useState(singleData.month);
     const [singleYear, setSingleYear] = useState(singleData.year);
 
-    // Sync when popover opens
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    const updatePosition = () => {
+        if (inputRef.current) {
+            const rect = inputRef.current.getBoundingClientRect();
+            const popoverWidth = 360;
+            const popoverHeight = mode === 'range' ? 340 : 240;
+
+            let top = rect.bottom + 8;
+            if (rect.bottom + popoverHeight > window.innerHeight - 12 && rect.top > popoverHeight + 12) {
+                top = rect.top - popoverHeight - 8;
+            }
+
+            let left = rect.left;
+            if (left + popoverWidth > window.innerWidth - 16) {
+                left = window.innerWidth - popoverWidth - 16;
+            }
+            if (left < 16) left = 16;
+
+            setPopoverPos({ top, left });
+        }
+    };
+
+    // Sync state and position when popover opens
     useEffect(() => {
         if (isOpen) {
             if (mode === 'range') {
@@ -157,13 +188,27 @@ export default function DatePickerInput({
                 setSingleMonth(parsed.month);
                 setSingleYear(parsed.year);
             }
+
+            updatePosition();
+            const handleScrollOrResize = () => updatePosition();
+            window.addEventListener('scroll', handleScrollOrResize, true);
+            window.addEventListener('resize', handleScrollOrResize);
+            return () => {
+                window.removeEventListener('scroll', handleScrollOrResize, true);
+                window.removeEventListener('resize', handleScrollOrResize);
+            };
         }
     }, [isOpen, value, mode]);
 
-    // Close popover when clicking outside
+    // Close popover when clicking outside container AND popover
     useEffect(() => {
         const handleClickOutside = (e) => {
-            if (containerRef.current && !containerRef.current.contains(e.target)) {
+            if (
+                containerRef.current &&
+                !containerRef.current.contains(e.target) &&
+                popoverRef.current &&
+                !popoverRef.current.contains(e.target)
+            ) {
                 setIsOpen(false);
             }
         };
@@ -183,14 +228,14 @@ export default function DatePickerInput({
 
     return (
         <div ref={containerRef} className={`relative w-full ${className}`}>
-            <div className="relative flex items-center group/picker">
+            <div ref={inputRef} className="relative flex items-center group/picker">
                 <button
                     type="button"
                     onClick={() => setIsOpen(!isOpen)}
-                    className={`absolute left-3 p-1 rounded-md text-slate-400 hover:${style.text} transition-colors z-10 flex items-center justify-center`}
+                    className={`absolute left-2.5 p-1 rounded-md text-slate-400 hover:${style.text} transition-colors z-10 flex items-center justify-center`}
                     title="Open Date Picker"
                 >
-                    <CalendarIcon size={16} />
+                    <CalendarIcon size={15} />
                 </button>
                 <input
                     type="text"
@@ -199,23 +244,31 @@ export default function DatePickerInput({
                     onChange={(e) => onChange(e.target.value)}
                     placeholder={placeholder || (mode === 'range' ? 'e.g. Jun 2025 - Present' : 'e.g. July 2026')}
                     required={required}
-                    className={`w-full bg-slate-950/50 border border-white/10 rounded-xl py-2.5 pl-10 pr-10 text-slate-200 focus:outline-none transition-all placeholder:text-slate-600 text-sm font-mono ${style.border} ${style.ring}`}
+                    className={`w-full bg-slate-950/50 border border-white/10 rounded-xl py-2.5 pl-8 pr-7 text-slate-200 focus:outline-none transition-all placeholder:text-slate-600 text-xs sm:text-sm font-mono ${style.border} ${style.ring}`}
                 />
                 {value && (
                     <button
                         type="button"
                         onClick={() => onChange('')}
-                        className="absolute right-3 text-slate-500 hover:text-slate-300 p-1"
+                        className="absolute right-2 text-slate-500 hover:text-slate-300 p-1"
                         title="Clear field"
                     >
-                        <X size={14} />
+                        <X size={13} />
                     </button>
                 )}
             </div>
 
-            {/* Popover */}
-            {isOpen && (
-                <div className="absolute left-0 top-full mt-2 z-50 w-80 sm:w-96 bg-slate-900/95 border border-white/15 rounded-2xl shadow-2xl backdrop-blur-2xl p-4 text-slate-200 animate-in fade-in zoom-in-95 duration-150">
+            {/* Portal Popover */}
+            {isOpen && mounted && createPortal(
+                <div
+                    ref={popoverRef}
+                    style={{
+                        position: 'fixed',
+                        top: `${popoverPos.top}px`,
+                        left: `${popoverPos.left}px`,
+                    }}
+                    className="z-[9999] w-80 sm:w-96 bg-slate-900/95 border border-white/20 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.8)] backdrop-blur-2xl p-4 text-slate-200 animate-in fade-in zoom-in-95 duration-150"
+                >
                     <div className="flex items-center justify-between border-b border-white/10 pb-3 mb-3">
                         <div className="flex items-center gap-2">
                             <CalendarIcon className={`w-4 h-4 ${style.text}`} />
@@ -437,7 +490,8 @@ export default function DatePickerInput({
                             Confirm Selection
                         </button>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );
