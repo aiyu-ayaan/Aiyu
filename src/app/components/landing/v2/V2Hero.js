@@ -6,6 +6,7 @@ import { FaArrowDown, FaGithub, FaSatelliteDish } from 'react-icons/fa6';
 import TypewriterEffect from '../../shared/TypewriterEffect';
 import useDevicePerformance from '../../../hooks/useDevicePerformance';
 import { useV2Fx } from './gsap3d';
+import { BOOT_READY_EVENT, isBootReady } from '../../shared/bootSignal';
 
 /**
  * V2 hero: a pinned 3D stage. The name, role line, and floating glass shards sit
@@ -44,7 +45,11 @@ const V2Hero = ({ data }) => {
             // a time-based intro and a scrubbed timeline makes the scrub
             // capture/fight the intro's hidden start values (shards vanished
             // after a scroll round-trip). Disjoint targets can't conflict.
-            const intro = gsap.timeline({ defaults: { ease: 'expo.out' } });
+            //
+            // Built paused: the boot splash covers the hero for ~3s, so playing
+            // now would burn the entrance behind the overlay. It starts on the
+            // boot-ready handoff (or immediately if the splash was skipped).
+            const intro = gsap.timeline({ defaults: { ease: 'expo.out' }, paused: true });
             intro
                 .from(scope.querySelectorAll('.v2-hero-line'), {
                     autoAlpha: 0,
@@ -65,6 +70,18 @@ const V2Hero = ({ data }) => {
                     stagger: 0.08,
                 }, '-=0.95')
                 .from(scope.querySelector('.v2-hero-cue-in'), { autoAlpha: 0, y: -14, duration: 0.6 }, '-=0.4');
+
+            // Start on the boot handoff. If the splash already finished (or was
+            // skipped for this tab), the flag is set — play right away.
+            let teardownIntro;
+            if (isBootReady()) {
+                intro.play();
+            } else {
+                const startIntro = () => intro.play();
+                window.addEventListener(BOOT_READY_EVENT, startIntro, { once: true });
+                // Returned to useV2Fx as teardown (unmount before the handoff).
+                teardownIntro = () => window.removeEventListener(BOOT_READY_EVENT, startIntro);
+            }
 
             // Fly-through: pin the stage and dolly the camera as the user scrolls.
             const fly = gsap.timeline({
@@ -121,6 +138,8 @@ const V2Hero = ({ data }) => {
                     repeat: -1,
                 });
             });
+
+            return teardownIntro;
         },
     });
 

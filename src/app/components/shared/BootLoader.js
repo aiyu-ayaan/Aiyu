@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { signalBootReady } from "./bootSignal";
 
 /**
  * V2 editorial boot screen shown only when this is the *only* open instance
@@ -36,6 +37,22 @@ const BOOT_LINES = [
   "calibrating depth stage",
 ];
 
+// "hello" across scripts — cycled in the headline while the boot screen plays.
+// lang attr lets the browser pick the right font/shaping per script.
+const HELLOS = [
+  { text: "Hello", lang: "en" },
+  { text: "नमस्ते", lang: "hi" },
+  { text: "Hola", lang: "es" },
+  { text: "Bonjour", lang: "fr" },
+  { text: "こんにちは", lang: "ja" },
+  { text: "你好", lang: "zh" },
+  { text: "Привет", lang: "ru" },
+  { text: "مرحبا", lang: "ar" },
+];
+// Greeting cadence: word enters, dwells, exits, then the next swaps in.
+const HELLO_DWELL_MS = 340; // time between one word entering and the next
+const HELLO_EXIT_MS = 150; // exit animation length before the swap
+
 const HEARTBEAT_KEY = "aiyu:lastSeen";
 const HEARTBEAT_MS = 1500;
 
@@ -53,6 +70,28 @@ export default function BootLoader() {
   const [exiting, setExiting] = useState(false);
   const [completedLines, setCompletedLines] = useState(0);
   const [progress, setProgress] = useState(0);
+  const [helloIndex, setHelloIndex] = useState(0);
+  const [helloPhase, setHelloPhase] = useState("in"); // "in" | "out"
+
+  // Cycle the greeting while the boot screen is up. Two-phase: the current word
+  // plays its exit, then the next word swaps in (keyed remount replays enter).
+  // Honours reduced-motion by holding on the first word (no flicker).
+  useEffect(() => {
+    if (!visible) return;
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+    let swapTimer = 0;
+    const id = window.setInterval(() => {
+      setHelloPhase("out");
+      swapTimer = window.setTimeout(() => {
+        setHelloIndex((i) => (i + 1) % HELLOS.length);
+        setHelloPhase("in");
+      }, HELLO_EXIT_MS);
+    }, HELLO_DWELL_MS);
+    return () => {
+      window.clearInterval(id);
+      window.clearTimeout(swapTimer);
+    };
+  }, [visible]);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -112,6 +151,7 @@ export default function BootLoader() {
         channel.onmessage = answerPing;
       }
       setVisible(false);
+      signalBootReady();
       return teardownPresence;
     }
 
@@ -121,6 +161,9 @@ export default function BootLoader() {
       window.cancelAnimationFrame(raf);
       window.clearTimeout(safety);
       setExiting(true);
+      // Hand off to the landing animation as the overlay begins its fade, so the
+      // hero intro plays into view rather than behind the cover.
+      signalBootReady();
       const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
       exitTimer = window.setTimeout(() => setVisible(false), reduceMotion ? 0 : 700);
     };
@@ -137,6 +180,7 @@ export default function BootLoader() {
           window.clearTimeout(safety);
           root.setAttribute("data-booted", "1");
           setExiting(true);
+          signalBootReady();
           exitTimer = window.setTimeout(() => setVisible(false), 180);
         }
       };
@@ -157,8 +201,11 @@ export default function BootLoader() {
       };
     }
 
-    const stepMs = lite ? 170 : 300;
-    const totalMs = stepMs * (BOOT_LINES.length + 1);
+    const stepMs = lite ? 220 : 300;
+    // Run long enough that every greeting gets its turn (plus a short tail so
+    // the last word is readable before the exit fade).
+    const greetingsMs = HELLOS.length * HELLO_DWELL_MS + 400;
+    const totalMs = Math.max(stepMs * (BOOT_LINES.length + 1), greetingsMs);
     const startedAt = performance.now();
 
     const tick = (now) => {
@@ -216,9 +263,17 @@ export default function BootLoader() {
           </span>
 
           <p className="boot2-eyebrow">/00 — boot sequence</p>
-          <h1 className="boot2-title">
-            Setting
-            <span className="boot2-title__accent"> the stage.</span>
+          <h1 className="boot2-title" aria-label="Hello">
+            <span className="boot2-hello__slot">
+              <span
+                key={helloIndex}
+                lang={HELLOS[helloIndex].lang}
+                className={`boot2-title__accent boot2-hello boot2-hello--${helloPhase}`}
+              >
+                {HELLOS[helloIndex].text}
+              </span>
+            </span>
+            <span className="boot2-title__dot">.</span>
           </h1>
 
           <ul className="boot2-manifest" aria-hidden="true">

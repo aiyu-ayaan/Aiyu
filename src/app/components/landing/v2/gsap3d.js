@@ -191,11 +191,16 @@ export function useV2Fx(scopeRef, { reducedMotion = false, extra, dependencies =
             animateV2Depth(scope, { reducedMotion: reduced });
             animateV2Tilt(scope, { reducedMotion: reduced });
 
+            let extraCleanup;
             if (typeof extra === 'function') {
-                extra({ gsap, ScrollTrigger, scope, reducedMotion: reduced });
+                extraCleanup = extra({ gsap, ScrollTrigger, scope, reducedMotion: reduced });
             }
 
             refreshScrollTriggersSoon();
+
+            // Let bespoke timelines register their own teardown (e.g. an event
+            // listener that waits for the boot handoff before playing).
+            if (typeof extraCleanup === 'function') return extraCleanup;
         },
         { scope: scopeRef, dependencies: [reducedMotion, ...dependencies] }
     );

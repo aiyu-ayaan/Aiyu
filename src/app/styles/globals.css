@@ -1098,7 +1098,10 @@ html[data-booted="1"] #boot-screen {
 }
 
 .boot2-title {
-  max-width: 12ch;
+  display: flex;
+  align-items: baseline;
+  max-width: 16ch;
+  min-height: 1.1em;
   font-size: clamp(2.6rem, 8vw, 5.6rem);
   font-weight: 700;
   letter-spacing: -0.04em;
@@ -1112,6 +1115,42 @@ html[data-booted="1"] #boot-screen {
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+}
+
+/* Cycling greeting. The slot clips vertical motion so each word rises in and
+   lifts out cleanly; the word itself gets a phase class driven from React. */
+.boot2-hello__slot {
+  display: inline-block;
+  overflow: hidden;
+  padding: 0.06em 0.02em; /* headroom for blur so glyphs don't clip */
+  vertical-align: top;
+}
+
+.boot2-hello {
+  display: inline-block;
+  will-change: transform, opacity, filter;
+}
+
+.boot2-hello--in {
+  animation: boot2-hello-in 0.18s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.boot2-hello--out {
+  animation: boot2-hello-out 0.14s cubic-bezier(0.55, 0, 0.9, 0.55) both;
+}
+
+.boot2-title__dot {
+  color: var(--accent-pink);
+}
+
+@keyframes boot2-hello-in {
+  0% { opacity: 0; transform: translateY(0.5em); filter: blur(5px); }
+  100% { opacity: 1; transform: none; filter: blur(0); }
+}
+
+@keyframes boot2-hello-out {
+  0% { opacity: 1; transform: none; filter: blur(0); }
+  100% { opacity: 0; transform: translateY(-0.45em); filter: blur(5px); }
 }
 
 @keyframes boot2-rise {
@@ -1245,8 +1284,12 @@ html[data-perf="lite"] .boot2-ghost {
   .boot2-cursor,
   .boot2-eyebrow,
   .boot2-title,
+  .boot2-hello,
+  .boot2-hello--in,
+  .boot2-hello--out,
   .boot2-manifest__row {
     animation: none !important;
   }
+  .boot2-hello { filter: none; opacity: 1; transform: none; }
 }
 
