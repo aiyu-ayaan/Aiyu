@@ -4,6 +4,34 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
 
+function formatBlogTimestamp(blog) {
+    if (!blog) return '';
+    const dateStr = blog.date || '';
+    if (blog.createdAt) {
+        try {
+            const dateObj = new Date(blog.createdAt);
+            if (!isNaN(dateObj.getTime())) {
+                const timeStr = dateObj.toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true,
+                });
+                return dateStr ? `${dateStr} • ${timeStr}` : dateObj.toLocaleString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true,
+                });
+            }
+        } catch {
+            // fallback to dateStr
+        }
+    }
+    return dateStr;
+}
+
 export default function AdminBlogsPage() {
     const { confirm } = useAdminFeedback();
     const [blogs, setBlogs] = useState([]);
@@ -308,7 +336,9 @@ export default function AdminBlogsPage() {
                                                 )}
                                             </div>
                                         </td>
-                                        <td className="px-6 py-5 text-slate-500 font-mono">{blog.date}</td>
+                                        <td className="px-6 py-5 text-slate-500 font-mono text-xs whitespace-nowrap">
+                                            {formatBlogTimestamp(blog)}
+                                        </td>
                                         <td className="px-6 py-5 text-slate-400 font-mono">
                                             {blog.views != null ? blog.views.toLocaleString() : '0'}
                                         </td>
