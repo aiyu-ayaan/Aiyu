@@ -56,7 +56,7 @@ function toUrl(input) {
     return `https://www.google.com/search?q=${encodeURIComponent(raw)}`;
 }
 
-export default function Browser({ payload }) {
+export default function Browser({ payload, closeWin }) {
     const [tabs, setTabs] = useState(() => {
         if (payload?.url) {
             return [{ id: 1, title: payload.title || payload.url, url: payload.url, forceEmbed: false }];
@@ -117,6 +117,7 @@ export default function Browser({ payload }) {
         setTabs((prev) => {
             const next = prev.filter((t) => t.id !== id);
             if (next.length === 0) {
+                if (closeWin) closeWin();
                 const fresh = { id: nextId.current++, title: 'New tab', url: '', forceEmbed: false };
                 setActiveId(fresh.id);
                 setAddress('');

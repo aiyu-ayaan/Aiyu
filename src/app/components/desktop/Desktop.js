@@ -81,7 +81,7 @@ const buildApps = () => [
         icon: ChromeIcon,
         w: 940,
         h: 600,
-        render: (ctx) => <Browser payload={ctx.payload} />,
+        render: (ctx) => <Browser payload={ctx.payload} closeWin={ctx.closeWin} />,
     },
     {
         key: 'github',
@@ -365,7 +365,7 @@ export default function Desktop({ wallpaper, config = {} }) {
                         onToggleMaximize={toggleMax}
                         onMove={moveWin}
                     >
-                        {appMap[win.appKey]?.render({ wallpaper, config, openApp, windows, closeWin, payload: win.payload })}
+                        {appMap[win.appKey]?.render({ wallpaper, config, openApp, windows, closeWin: () => closeWin(win.id), payload: win.payload })}
                     </Window>
                 ))}
             </AnimatePresence>
