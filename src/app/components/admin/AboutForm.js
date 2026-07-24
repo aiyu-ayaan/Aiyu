@@ -7,6 +7,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { getIconNames, IconList } from '@/lib/iconLibrary';
 import { Sparkles, Loader2, Wand2, Plus } from 'lucide-react';
 import Toast from './Toast';
+import DatePickerInput from './DatePickerInput';
 
 // Helper for Icon Preview
 const IconPreview = ({ name }) => {
@@ -307,7 +308,7 @@ const AboutForm = () => {
     const addSkill = () => {
         setFormData((prev) => ({
             ...prev,
-            skills: [...prev.skills, { _id: `temp-${Date.now()}`, name: '', level: 50, icon: '' }],
+            skills: [{ _id: `temp-${Date.now()}`, name: '', level: 50, icon: '' }, ...prev.skills],
         }));
     };
 
@@ -334,7 +335,7 @@ const AboutForm = () => {
     const addExperience = () => {
         setFormData((prev) => ({
             ...prev,
-            experiences: [...prev.experiences, { _id: `temp-${Date.now()}`, company: '', role: '', duration: '', description: '' }],
+            experiences: [{ _id: `temp-${Date.now()}`, company: '', role: '', duration: '', description: '' }, ...prev.experiences],
         }));
     };
 
@@ -355,7 +356,7 @@ const AboutForm = () => {
     const addEducation = () => {
         setFormData((prev) => ({
             ...prev,
-            education: [...prev.education, { _id: `temp-${Date.now()}`, institution: '', degree: '', duration: '', cgpa: '' }],
+            education: [{ _id: `temp-${Date.now()}`, institution: '', degree: '', duration: '', cgpa: '' }, ...prev.education],
         }));
     };
 
@@ -380,7 +381,7 @@ const AboutForm = () => {
     const addCertification = () => {
         setFormData((prev) => ({
             ...prev,
-            certifications: [...prev.certifications, { _id: `temp-${Date.now()}`, name: '', issuer: '', date: '', url: '', skills: [] }],
+            certifications: [{ _id: `temp-${Date.now()}`, name: '', issuer: '', date: '', url: '', skills: [] }, ...prev.certifications],
         }));
     };
 
@@ -767,12 +768,12 @@ const AboutForm = () => {
                                         </div>
                                         <div className="md:col-span-2">
                                             <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Timeline</label>
-                                            <input
-                                                type="text"
+                                            <DatePickerInput
                                                 value={exp.duration}
-                                                onChange={(e) => handleExperienceChange(index, 'duration', e.target.value)}
-                                                className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-2.5 text-slate-200 focus:border-orange-500/50 outline-none text-sm font-mono"
-                                                placeholder="e.g. 2020 - Present"
+                                                onChange={(val) => handleExperienceChange(index, 'duration', val)}
+                                                mode="range"
+                                                accentColor="orange"
+                                                placeholder="e.g. Jun 2025 - Present"
                                                 required
                                             />
                                         </div>
@@ -872,11 +873,12 @@ const AboutForm = () => {
                                         </div>
                                         <div className="w-full">
                                             <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Years</label>
-                                            <input
-                                                type="text"
+                                            <DatePickerInput
                                                 value={edu.duration}
-                                                onChange={(e) => handleEducationChange(index, 'duration', e.target.value)}
-                                                className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-2.5 text-slate-200 focus:border-purple-500/50 outline-none text-sm font-mono text-center"
+                                                onChange={(val) => handleEducationChange(index, 'duration', val)}
+                                                mode="range"
+                                                accentColor="purple"
+                                                placeholder="e.g. Aug 2023 - May 2025"
                                                 required
                                             />
                                         </div>
@@ -958,11 +960,12 @@ const AboutForm = () => {
                                         </div>
                                         <div>
                                             <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Date of Issue</label>
-                                            <input
-                                                type="text"
+                                            <DatePickerInput
                                                 value={cert.date}
-                                                onChange={(e) => handleCertificationChange(index, 'date', e.target.value)}
-                                                className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-2.5 text-slate-200 focus:border-yellow-500/50 outline-none text-sm font-mono"
+                                                onChange={(val) => handleCertificationChange(index, 'date', val)}
+                                                mode="single"
+                                                accentColor="yellow"
+                                                placeholder="e.g. July 2026"
                                                 required
                                             />
                                         </div>
