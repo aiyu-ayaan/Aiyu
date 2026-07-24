@@ -11,7 +11,9 @@ import dynamic from 'next/dynamic';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 
-const SyntaxHighlighter = dynamic(() => import('react-syntax-highlighter').then(mod => mod.Prism), { ssr: false });
+// PrismAsyncLight async-loads only the languages used, instead of bundling the
+// full ~200-language Prism build into the admin editor chunk.
+const SyntaxHighlighter = dynamic(() => import('react-syntax-highlighter/dist/esm/prism-async-light'), { ssr: false });
 
 // Helper: insert text at cursor position in textarea
 function insertAtCursor(textarea, before, after = '', placeholder = '') {

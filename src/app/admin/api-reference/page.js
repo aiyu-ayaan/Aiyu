@@ -6,8 +6,10 @@ import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackP
 import dynamic from 'next/dynamic';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
+// PrismAsyncLight async-loads only the languages used, instead of bundling the
+// full ~200-language Prism build into this admin page chunk.
 const SyntaxHighlighter = dynamic(
-    () => import('react-syntax-highlighter').then((module) => module.Prism),
+    () => import('react-syntax-highlighter/dist/esm/prism-async-light'),
     { ssr: false }
 );
 
