@@ -20,7 +20,7 @@ export default function Taskbar({ apps, windows, activeId, onStart, startOpen, o
     const pinned = apps.filter((a) => a.key !== 'start');
 
     return (
-        <div className="absolute inset-x-0 bottom-0 z-30 flex h-12 items-center justify-between bg-[#e9e9ec]/80 px-2 backdrop-blur-2xl dark:bg-[#1c1c1f]/80">
+        <div className="absolute inset-x-0 bottom-0 z-50 flex h-12 items-center justify-between bg-[#e9e9ec]/80 px-2 backdrop-blur-2xl dark:bg-[#1c1c1f]/80">
             {/* Left spacer for symmetry */}
             <div className="w-40" />
 

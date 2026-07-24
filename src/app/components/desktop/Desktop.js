@@ -129,8 +129,11 @@ export default function Desktop({ wallpaper, config = {} }) {
                 const nextZ = topZ + 1;
                 setTopZ(nextZ);
                 setActiveId(id);
-                const w = Math.min(app.w, typeof window !== 'undefined' ? window.innerWidth - 40 : app.w);
-                const h = Math.min(app.h, typeof window !== 'undefined' ? window.innerHeight - 90 : app.h);
+                const maxWorkW = typeof window !== 'undefined' ? window.innerWidth - 30 : app.w;
+                const maxWorkH = typeof window !== 'undefined' ? window.innerHeight - 48 - 30 : app.h;
+                const w = Math.min(app.w, maxWorkW);
+                const h = Math.min(app.h, maxWorkH);
+                const y = Math.min(40 + offset, Math.max(0, maxWorkH - h));
                 return [
                     ...ws,
                     {
@@ -139,7 +142,7 @@ export default function Desktop({ wallpaper, config = {} }) {
                         title: app.title,
                         icon: app.icon,
                         x: 80 + offset,
-                        y: 40 + offset,
+                        y,
                         w,
                         h,
                         z: nextZ,

@@ -41,7 +41,8 @@ export default function Window({
             const dx = e.clientX - dragRef.current.startX;
             const dy = e.clientY - dragRef.current.startY;
             const nextX = dragRef.current.originX + dx;
-            const nextY = Math.max(0, dragRef.current.originY + dy);
+            const maxWorkHeight = (typeof window !== 'undefined' ? window.innerHeight : 800) - 48;
+            const nextY = Math.min(Math.max(0, dragRef.current.originY + dy), Math.max(0, maxWorkHeight - 36));
             onMove(win.id, nextX, nextY);
         },
         [win.id, onMove]
@@ -64,7 +65,7 @@ export default function Window({
     }, [active, win.maximized, win.id, onToggleMaximize]);
 
     const style = win.maximized
-        ? { inset: 0, width: '100%', height: '100%', borderRadius: 0 }
+        ? { left: 0, top: 0, width: '100%', height: 'calc(100vh - 48px)', borderRadius: 0 }
         : { left: win.x, top: win.y, width: win.w, height: win.h };
 
     const Icon = win.icon;
