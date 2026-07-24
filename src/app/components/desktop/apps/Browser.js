@@ -1,5 +1,5 @@
 "use client";
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useMemo, useRef, useState, useEffect } from 'react';
 import { ArrowLeft, ArrowRight, RotateCw, Lock, Star, X, Plus, Home } from 'lucide-react';
 
 const QUICK_LINKS = [
@@ -21,12 +21,37 @@ function toUrl(input) {
     return `https://www.google.com/search?q=${encodeURIComponent(raw)}`;
 }
 
-export default function Browser() {
-    const [tabs, setTabs] = useState([{ id: 1, title: 'New tab', url: '' }]);
+export default function Browser({ payload }) {
+    const [tabs, setTabs] = useState(() => {
+        if (payload?.url) {
+            return [{ id: 1, title: payload.title || payload.url, url: payload.url }];
+        }
+        return [{ id: 1, title: 'New tab', url: '' }];
+    });
     const [activeId, setActiveId] = useState(1);
-    const [address, setAddress] = useState('');
+    const [address, setAddress] = useState(() => payload?.url || '');
     const frameRef = useRef(null);
     const nextId = useRef(2);
+
+    useEffect(() => {
+        if (!payload?.url) return;
+        const targetUrl = payload.url;
+        const targetTitle = payload.title || payload.url;
+
+        setTabs((prev) => {
+            const existing = prev.find((t) => t.url === targetUrl);
+            if (existing) {
+                setActiveId(existing.id);
+                setAddress(existing.url);
+                return prev;
+            }
+            const newId = nextId.current++;
+            const newTab = { id: newId, title: targetTitle, url: targetUrl };
+            setActiveId(newId);
+            setAddress(targetUrl);
+            return [...prev, newTab];
+        });
+    }, [payload]);
 
     const active = tabs.find((t) => t.id === activeId) || tabs[0];
 

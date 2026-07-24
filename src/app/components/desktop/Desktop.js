@@ -81,7 +81,7 @@ const buildApps = () => [
         icon: ChromeIcon,
         w: 940,
         h: 600,
-        render: () => <Browser />,
+        render: (ctx) => <Browser payload={ctx.payload} />,
     },
     {
         key: 'github',
