@@ -23,8 +23,12 @@ import useDevicePerformance from '../../hooks/useDevicePerformance';
 import { useSectionFx } from '../shared/gsapScroll';
 import '../../styles/blog-detail.css';
 
+// PrismAsyncLight ships a minimal base and async-loads each language grammar
+// on demand, instead of the full Prism build which bundles ~200 languages
+// (~1MB refractor chunk) into the blog page. Only the languages a post
+// actually uses get fetched.
 const SyntaxHighlighter = dynamic(
-  () => import('react-syntax-highlighter').then((module) => module.Prism),
+  () => import('react-syntax-highlighter/dist/esm/prism-async-light'),
   { ssr: false, loading: () => <div style={{ minHeight: '200px' }} /> }
 );
 
