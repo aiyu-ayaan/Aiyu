@@ -27,8 +27,8 @@ import {
 
 // Windows 11 Start menu pinned apps list including footer socials (Store/Discord/Twitter/Spotify removed per request).
 const PINNED_APPS = [
-    { key: 'browser', title: 'Browser', icon: EdgeIcon },
-    { key: 'about', title: 'Get Started', icon: GetStartedIcon },
+    { key: 'browser', title: 'Google Chrome', icon: ChromeIcon },
+    { key: 'getstarted', title: 'Get Started', icon: GetStartedIcon },
     { key: 'taskmanager', title: 'Task Manager', icon: TaskManagerIcon },
     { key: 'contact', title: 'Mail', icon: MailIcon, external: '/contact-us' },
     { key: 'github', title: 'GitHub', icon: GitHubIcon, external: 'https://github.com/aiyu-ayaan' },

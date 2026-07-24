@@ -2,7 +2,7 @@
 import React, { useCallback, useState } from 'react';
 import Link from 'next/link';
 import { AnimatePresence } from 'framer-motion';
-import { ExplorerIcon, VSCodeIcon, ChromeIcon, SettingsIcon, ThisPCIcon, EdgeIcon, PhotosIcon, GitHubIcon, TaskManagerIcon, TerminalIcon, NotepadIcon, CalculatorIcon, WhiteboardIcon } from './icons';
+import { ExplorerIcon, VSCodeIcon, ChromeIcon, SettingsIcon, ThisPCIcon, EdgeIcon, PhotosIcon, GitHubIcon, TaskManagerIcon, TerminalIcon, NotepadIcon, CalculatorIcon, WhiteboardIcon, GetStartedIcon } from './icons';
 import Window from './Window';
 import Taskbar from './Taskbar';
 import StartMenu from './StartMenu';
@@ -19,6 +19,7 @@ import Terminal from './apps/Terminal';
 import Notepad from './apps/Notepad';
 import Calculator from './apps/Calculator';
 import Whiteboard from './apps/Whiteboard';
+import GetStarted from './apps/GetStarted';
 
 // App registry. `render` receives a desktop context: { wallpaper, config,
 // openApp, payload }. `payload` is per-window data (e.g. the image list Photos
@@ -127,6 +128,14 @@ const buildApps = () => [
         w: 620,
         h: 520,
         render: () => <AboutThisPC />,
+    },
+    {
+        key: 'getstarted',
+        title: 'Get Started',
+        icon: GetStartedIcon,
+        w: 780,
+        h: 540,
+        render: (ctx) => <GetStarted openApp={ctx.openApp} />,
     },
 ];
 

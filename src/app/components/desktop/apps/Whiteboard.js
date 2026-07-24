@@ -154,7 +154,9 @@ export default function Whiteboard() {
         setIsDrawing(false);
         try {
             canvas.releasePointerCapture(e.pointerId);
-        } catch {}
+        } catch {
+            // ignore pointer capture release if pointer is not captured
+        }
         saveState();
     };
 
