@@ -15,42 +15,44 @@ import {
     MailIcon,
     NotepadIcon,
     CalculatorIcon,
-    SpotifyIcon,
     TerminalIcon,
     GetStartedIcon,
     TaskManagerIcon,
     CoffeeIcon,
     UnescapeIcon,
     WhiteboardIcon,
+    LinkedInIcon,
+    InstagramIcon,
 } from './icons';
 
-// Windows 11 Start menu pinned apps list (matching Win11 layout, Store/Discord/Twitter removed per request).
+// Windows 11 Start menu pinned apps list including footer socials (Store/Discord/Twitter/Spotify removed per request).
 const PINNED_APPS = [
     { key: 'browser', title: 'Browser', icon: EdgeIcon },
     { key: 'about', title: 'Get Started', icon: GetStartedIcon },
     { key: 'taskmanager', title: 'Task Manager', icon: TaskManagerIcon },
     { key: 'contact', title: 'Mail', icon: MailIcon, external: '/contact-us' },
+    { key: 'github', title: 'GitHub', icon: GitHubIcon, external: 'https://github.com/aiyu-ayaan' },
+    { key: 'linkedin', title: 'LinkedIn', icon: LinkedInIcon, external: 'https://www.linkedin.com/in/aiyu/' },
+    { key: 'instagram', title: 'Instagram', icon: InstagramIcon, external: 'https://www.instagram.com/aiyu.dev_/' },
+    { key: 'coffee', title: 'Buy me a coffee', icon: CoffeeIcon, external: 'https://buymeacoffee.com' },
     { key: 'settings', title: 'Settings', icon: SettingsIcon },
     { key: 'games', title: 'Unescape', icon: UnescapeIcon, external: '/games' },
-    { key: 'coffee', title: 'Buy me a coffee', icon: CoffeeIcon, external: 'https://buymeacoffee.com' },
     { key: 'code', title: 'Notepad', icon: NotepadIcon },
     { key: 'whiteboard', title: 'Whiteboard', icon: WhiteboardIcon, external: 'https://excalidraw.com' },
     { key: 'calculator', title: 'Calculator', icon: CalculatorIcon, action: 'settings' },
-    { key: 'spotify', title: 'Spotify', icon: SpotifyIcon, external: 'https://spotify.com' },
     { key: 'explorer', title: 'File Explorer', icon: ExplorerIcon },
     { key: 'terminal', title: 'Terminal', icon: TerminalIcon },
-    { key: 'github', title: 'GitHub', icon: GitHubIcon },
     { key: 'photos', title: 'Photos', icon: PhotosIcon },
-    { key: 'code', title: 'VS Code', icon: VSCodeIcon },
+    { key: 'vscode', title: 'VS Code', icon: VSCodeIcon },
 ];
 
 const RECOMMENDED_ITEMS = [
+    { title: 'LinkedIn', sub: 'Professional Network', icon: LinkedInIcon, key: 'linkedin', external: 'https://www.linkedin.com/in/aiyu/' },
+    { title: 'Instagram', sub: 'Social & Media', icon: InstagramIcon, key: 'instagram', external: 'https://www.instagram.com/aiyu.dev_/' },
+    { title: 'GitHub', sub: 'Repositories & Code', icon: GitHubIcon, key: 'github', external: 'https://github.com/aiyu-ayaan' },
     { title: 'Mail', sub: 'Contact & Messages', icon: MailIcon, key: 'contact', external: '/contact-us' },
     { title: 'Terminal', sub: 'CLI & Shell', icon: TerminalIcon, key: 'terminal' },
     { title: 'File Explorer', sub: 'Pictures & Documents', icon: ExplorerIcon, key: 'explorer' },
-    { title: 'GitHub', sub: 'Repositories & Code', icon: GitHubIcon, key: 'github' },
-    { title: 'Spotify', sub: 'Audio Player', icon: SpotifyIcon, external: 'https://spotify.com' },
-    { title: 'Photos', sub: 'Gallery & Media', icon: PhotosIcon, key: 'photos' },
 ];
 
 export default function StartMenu({ apps = [], onOpen, onClose }) {

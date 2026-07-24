@@ -165,17 +165,36 @@ export function CalculatorIcon({ className }) {
     );
 }
 
-// Spotify — bright green circle with music waves.
-export function SpotifyIcon({ className }) {
+// LinkedIn — blue badge with 'in' mark.
+export function LinkedInIcon({ className }) {
     return (
         <svg className={className} viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <circle cx="24" cy="24" r="21" fill="#1DB954" />
-            <path d="M12 18c8-2.5 17-1.5 24 2.5" stroke="#000" strokeWidth="3.5" strokeLinecap="round" />
-            <path d="M14 24c6.5-2 14-1 19.5 2" stroke="#000" strokeWidth="3" strokeLinecap="round" />
-            <path d="M15 30c5.5-1.5 11.5-.5 16 2" stroke="#000" strokeWidth="2.5" strokeLinecap="round" />
+            <rect x="4" y="4" width="40" height="40" rx="8" fill="#0A66C2" />
+            <path d="M14 19h5v16h-5V19zM16.5 11.5a3 3 0 1 1 0 6 3 3 0 0 1 0-6zM23 19h4.8v2.3h.1c.7-1.3 2.4-2.7 4.9-2.7 5.2 0 6.2 3.4 6.2 7.9V35h-5v-7.6c0-1.8 0-4.1-2.5-4.1-2.5 0-2.9 2-2.9 4V35h-5V19z" fill="#FFF" />
         </svg>
     );
 }
+
+// Instagram — colorful gradient camera tile.
+export function InstagramIcon({ className }) {
+    return (
+        <svg className={className} viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <rect x="4" y="4" width="40" height="40" rx="10" fill="url(#ig_g)" />
+            <rect x="13" y="13" width="22" height="22" rx="6" stroke="#FFF" strokeWidth="2.5" />
+            <circle cx="24" cy="24" r="5.5" stroke="#FFF" strokeWidth="2.5" />
+            <circle cx="30.5" cy="17.5" r="1.5" fill="#FFF" />
+            <defs>
+                <linearGradient id="ig_g" x1="4" y1="40" x2="40" y2="4" gradientUnits="userSpaceOnUse">
+                    <stop stopColor="#FEE440" />
+                    <stop offset="0.3" stopColor="#FA709A" />
+                    <stop offset="0.65" stopColor="#962FBF" />
+                    <stop offset="1" stopColor="#4E54C8" />
+                </linearGradient>
+            </defs>
+        </svg>
+    );
+}
+
 
 // Terminal — dark window with prompt.
 export function TerminalIcon({ className }) {
