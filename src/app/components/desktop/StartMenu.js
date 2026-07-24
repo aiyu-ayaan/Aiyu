@@ -37,7 +37,7 @@ const PINNED_APPS = [
     { key: 'coffee', title: 'Buy me a coffee', icon: CoffeeIcon, external: 'https://buymeacoffee.com/aiyuayaan' },
     { key: 'settings', title: 'Settings', icon: SettingsIcon },
     { key: 'games', title: 'Unescape', icon: UnescapeIcon, external: '/games' },
-    { key: 'code', title: 'Notepad', icon: NotepadIcon },
+    { key: 'notepad', title: 'Notepad', icon: NotepadIcon },
     { key: 'whiteboard', title: 'Whiteboard', icon: WhiteboardIcon, external: 'https://excalidraw.com' },
     { key: 'calculator', title: 'Calculator', icon: CalculatorIcon, action: 'settings' },
     { key: 'explorer', title: 'File Explorer', icon: ExplorerIcon },

@@ -2,7 +2,7 @@
 import React, { useCallback, useState } from 'react';
 import Link from 'next/link';
 import { AnimatePresence } from 'framer-motion';
-import { ExplorerIcon, VSCodeIcon, ChromeIcon, SettingsIcon, ThisPCIcon, EdgeIcon, PhotosIcon, GitHubIcon, TaskManagerIcon, TerminalIcon } from './icons';
+import { ExplorerIcon, VSCodeIcon, ChromeIcon, SettingsIcon, ThisPCIcon, EdgeIcon, PhotosIcon, GitHubIcon, TaskManagerIcon, TerminalIcon, NotepadIcon } from './icons';
 import Window from './Window';
 import Taskbar from './Taskbar';
 import StartMenu from './StartMenu';
@@ -16,6 +16,7 @@ import Photos from './apps/Photos';
 import GitHub from './apps/GitHub';
 import TaskManager from './apps/TaskManager';
 import Terminal from './apps/Terminal';
+import Notepad from './apps/Notepad';
 
 // App registry. `render` receives a desktop context: { wallpaper, config,
 // openApp, payload }. `payload` is per-window data (e.g. the image list Photos
@@ -45,6 +46,14 @@ const buildApps = () => [
         w: 900,
         h: 580,
         render: () => <CodeEditor />,
+    },
+    {
+        key: 'notepad',
+        title: 'Notepad',
+        icon: NotepadIcon,
+        w: 720,
+        h: 500,
+        render: () => <Notepad />,
     },
     {
         key: 'browser',
