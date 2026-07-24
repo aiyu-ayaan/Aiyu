@@ -1,8 +1,8 @@
 "use client";
-import React, { useCallback, useState, useEffect } from 'react';
+import React, { useCallback, useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { Loader2, Power, RotateCcw } from 'lucide-react';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { ExplorerIcon, VSCodeIcon, ChromeIcon, SettingsIcon, ThisPCIcon, EdgeIcon, PhotosIcon, GitHubIcon, TaskManagerIcon, TerminalIcon, NotepadIcon, CalculatorIcon, WhiteboardIcon, GetStartedIcon } from './icons';
 import Window from './Window';
 import Taskbar from './Taskbar';
