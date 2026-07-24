@@ -1,6 +1,6 @@
 "use client";
 import React, { useMemo, useRef, useState, useEffect } from 'react';
-import { ArrowLeft, ArrowRight, RotateCw, Lock, Star, X, Plus, Home, ExternalLink, ShieldCheck, Copy, Globe, AlertCircle, Check } from 'lucide-react';
+import { ArrowLeft, ArrowRight, RotateCw, Lock, Star, X, Plus, Home, ExternalLink, ShieldCheck, Copy, Globe, AlertCircle, Check, ShieldAlert, AppWindow } from 'lucide-react';
 
 const QUICK_LINKS = [
     { label: 'Home', path: '/' },
@@ -23,6 +23,27 @@ function isExternalUrl(url) {
     } catch {
         return false;
     }
+}
+
+function getSpecialRouteType(url) {
+    if (!url) return null;
+    let path = url;
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+        try {
+            path = new URL(url).pathname;
+        } catch {
+            path = url;
+        }
+    }
+    const cleanPath = path.toLowerCase().split('?')[0].split('#')[0];
+
+    if (cleanPath === '/desktop' || cleanPath.startsWith('/desktop/')) {
+        return 'desktop';
+    }
+    if (cleanPath === '/admin' || cleanPath.startsWith('/admin/')) {
+        return 'admin';
+    }
+    return null;
 }
 
 // Normalize what the user typed in the address bar into a real URL.
@@ -116,6 +137,7 @@ export default function Browser({ payload }) {
     }, [address, active]);
 
     const isExternal = isExternalUrl(active?.url);
+    const specialType = getSpecialRouteType(active?.url);
 
     return (
         <div className="flex h-full w-full flex-col bg-[#dee1e6] dark:bg-[#202124]">
@@ -174,7 +196,11 @@ export default function Browser({ payload }) {
             {/* Viewport */}
             <div className="min-h-0 flex-1 bg-white dark:bg-[#202124]">
                 {active?.url ? (
-                    isExternal && !active.forceEmbed ? (
+                    specialType === 'desktop' ? (
+                        <DesktopRecursionPreview onGoHome={() => navigate('/', 'Home')} />
+                    ) : specialType === 'admin' ? (
+                        <AdminRoutePreview url={active.url} title={active.title} />
+                    ) : isExternal && !active.forceEmbed ? (
                         <ExternalTabPreview url={active.url} title={active.title} onForceEmbed={toggleForceEmbed} />
                     ) : (
                         <iframe
@@ -291,6 +317,75 @@ function NewTab({ onOpen }) {
             <p className="max-w-sm text-center text-[11px] opacity-40">
                 Tip: external sites may refuse to load in a frame. Internal portfolio pages open instantly.
             </p>
+        </div>
+    );
+}
+
+function DesktopRecursionPreview({ onGoHome }) {
+    return (
+        <div className="flex h-full flex-col items-center justify-center p-6 text-neutral-800 dark:text-neutral-100 bg-[#f8f9fa] dark:bg-[#1e1e22]">
+            <div className="w-full max-w-md rounded-2xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#28282d] p-6 shadow-xl text-center space-y-4">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 shadow-sm">
+                    <AppWindow className="h-7 w-7" />
+                </div>
+
+                <div>
+                    <div className="inline-flex items-center gap-1.5 rounded-full bg-indigo-500/10 px-3 py-1 text-[11px] font-semibold text-indigo-500 mb-2">
+                        <ShieldAlert className="h-3.5 w-3.5" />
+                        <span>System Protected Route</span>
+                    </div>
+                    <h3 className="text-lg font-bold tracking-tight text-neutral-900 dark:text-white">Desktop Environment</h3>
+                    <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">The Web Desktop environment cannot be nested inside itself.</p>
+                </div>
+
+                <div className="pt-2">
+                    <button
+                        onClick={onGoHome}
+                        className="w-full flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-indigo-500 transition shadow"
+                    >
+                        <Home className="h-4 w-4" />
+                        <span>Return to Site Home (/)</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function AdminRoutePreview({ url, title }) {
+    return (
+        <div className="flex h-full flex-col items-center justify-center p-6 text-neutral-800 dark:text-neutral-100 bg-[#f8f9fa] dark:bg-[#1e1e22]">
+            <div className="w-full max-w-md rounded-2xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#28282d] p-6 shadow-xl text-center space-y-4">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-500 border border-amber-500/20 shadow-sm">
+                    <Lock className="h-7 w-7" />
+                </div>
+
+                <div>
+                    <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-3 py-1 text-[11px] font-semibold text-amber-500 mb-2">
+                        <ShieldCheck className="h-3.5 w-3.5" />
+                        <span>Protected Admin Route</span>
+                    </div>
+                    <h3 className="text-lg font-bold tracking-tight text-neutral-900 dark:text-white">{title || 'Admin Control Panel'}</h3>
+                    <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400 font-mono truncate px-2">{url}</p>
+                </div>
+
+                <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 text-[11px] text-amber-600 dark:text-amber-300 leading-relaxed text-left flex items-start gap-2">
+                    <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                    <span>
+                        For security and session protection, administrative routes require opening in a dedicated browser tab.
+                    </span>
+                </div>
+
+                <div className="pt-2">
+                    <button
+                        onClick={() => window.open(url, '_blank', 'noopener,noreferrer')}
+                        className="w-full flex items-center justify-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-amber-500 transition shadow"
+                    >
+                        <ExternalLink className="h-4 w-4" />
+                        <span>Open Admin Dashboard in New Tab</span>
+                    </button>
+                </div>
+            </div>
         </div>
     );
 }

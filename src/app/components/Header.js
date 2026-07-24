@@ -67,7 +67,14 @@ export default memo(function Header({ data, logoText, socialData, config }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [isTerminalOutputOpen, setIsTerminalOutputOpen] = useState(false);
+  const [isDesktopFrame, setIsDesktopFrame] = useState(false);
   const overflowRestoreRef = useRef({ body: null, html: null });
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.self !== window.top) {
+      setIsDesktopFrame(true);
+    }
+  }, []);
   const { scrollYProgress } = useScroll();
   const progressScaleX = useSpring(scrollYProgress, {
     stiffness: 100,
@@ -129,6 +136,8 @@ export default memo(function Header({ data, logoText, socialData, config }) {
   useEffect(() => {
     setIsMenuOpen(false);
   }, [pathname]);
+
+  if (isDesktopFrame) return null;
 
   return (
     <>
