@@ -16,7 +16,7 @@ const V2Footer = ({ name, config, socialData, packageVersion }) => {
         { href: v2PublicPath(config, '/blogs'), label: 'writing' },
         { href: v2PublicPath(config, '/github'), label: 'github' },
         { href: v2PublicPath(config, '/sitemap'), label: 'sitemap' },
-        { href: '/v1', label: 'classic home' },
+        { href: '/desktop', label: 'desktop mode' },
         { href: v2PublicPath(config, '/contact-us'), label: 'contact' },
     ];
     const socials = (socialData || [])

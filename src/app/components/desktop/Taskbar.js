@@ -52,7 +52,7 @@ export default function Taskbar({ apps, windows, activeId, onStart, startOpen, w
     const pinned = apps.filter((a) => a.key !== 'start');
 
     return (
-        <div className="absolute inset-x-0 bottom-0 z-50 flex h-12 items-center justify-between px-2 win-acrylic win-acrylic-noise win-acrylic-highlight overflow-hidden bg-[#e8e8ee]/65 dark:bg-[#1a1a1f]/70 border-t border-white/25 dark:border-white/8">
+        <div className="absolute inset-x-0 bottom-0 z-50 flex h-12 items-center justify-between px-2 win-acrylic win-acrylic-noise win-acrylic-highlight bg-[#e8e8ee]/65 dark:bg-[#1a1a1f]/70 border-t border-white/25 dark:border-white/8">
             {/* Left cluster: Widgets & Winget button */}
             <div className="flex w-40 items-center justify-start pl-1">
                 <motion.button
