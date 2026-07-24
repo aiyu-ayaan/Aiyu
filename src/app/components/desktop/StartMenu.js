@@ -38,7 +38,7 @@ const PINNED_APPS = [
     { key: 'settings', title: 'Settings', icon: SettingsIcon },
     { key: 'games', title: 'Unescape', icon: UnescapeIcon, external: '/games' },
     { key: 'notepad', title: 'Notepad', icon: NotepadIcon },
-    { key: 'whiteboard', title: 'Whiteboard', icon: WhiteboardIcon, external: 'https://excalidraw.com' },
+    { key: 'whiteboard', title: 'Whiteboard', icon: WhiteboardIcon },
     { key: 'calculator', title: 'Calculator', icon: CalculatorIcon },
     { key: 'explorer', title: 'File Explorer', icon: ExplorerIcon },
     { key: 'terminal', title: 'Terminal', icon: TerminalIcon },

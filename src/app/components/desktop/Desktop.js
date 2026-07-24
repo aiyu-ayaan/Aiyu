@@ -2,7 +2,7 @@
 import React, { useCallback, useState } from 'react';
 import Link from 'next/link';
 import { AnimatePresence } from 'framer-motion';
-import { ExplorerIcon, VSCodeIcon, ChromeIcon, SettingsIcon, ThisPCIcon, EdgeIcon, PhotosIcon, GitHubIcon, TaskManagerIcon, TerminalIcon, NotepadIcon, CalculatorIcon } from './icons';
+import { ExplorerIcon, VSCodeIcon, ChromeIcon, SettingsIcon, ThisPCIcon, EdgeIcon, PhotosIcon, GitHubIcon, TaskManagerIcon, TerminalIcon, NotepadIcon, CalculatorIcon, WhiteboardIcon } from './icons';
 import Window from './Window';
 import Taskbar from './Taskbar';
 import StartMenu from './StartMenu';
@@ -18,6 +18,7 @@ import TaskManager from './apps/TaskManager';
 import Terminal from './apps/Terminal';
 import Notepad from './apps/Notepad';
 import Calculator from './apps/Calculator';
+import Whiteboard from './apps/Whiteboard';
 
 // App registry. `render` receives a desktop context: { wallpaper, config,
 // openApp, payload }. `payload` is per-window data (e.g. the image list Photos
@@ -63,6 +64,14 @@ const buildApps = () => [
         w: 360,
         h: 520,
         render: () => <Calculator />,
+    },
+    {
+        key: 'whiteboard',
+        title: 'Whiteboard',
+        icon: WhiteboardIcon,
+        w: 880,
+        h: 580,
+        render: () => <Whiteboard />,
     },
     {
         key: 'browser',
