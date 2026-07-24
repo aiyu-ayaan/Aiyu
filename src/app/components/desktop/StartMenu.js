@@ -1,6 +1,6 @@
 "use client";
 import React, { useMemo, useState } from 'react';
-import { Search, Power, ChevronRight, ChevronLeft, ExternalLink, X, RotateCcw, LogOut, AlertTriangle } from 'lucide-react';
+import { Search, Power, ChevronRight, ChevronLeft, ExternalLink, X, RotateCcw, LogOut, AlertTriangle, BookOpen } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
@@ -44,6 +44,7 @@ const PINNED_APPS = [
     { key: 'terminal', title: 'Terminal', icon: TerminalIcon },
     { key: 'photos', title: 'Photos', icon: PhotosIcon },
     { key: 'vscode', title: 'VS Code', icon: VSCodeIcon },
+    { key: 'markdown', title: 'Markdown Viewer', icon: BookOpen },
 ];
 
 const RECOMMENDED_ITEMS = [

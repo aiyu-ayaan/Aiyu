@@ -21,6 +21,8 @@ import Notepad from './apps/Notepad';
 import Calculator from './apps/Calculator';
 import Whiteboard from './apps/Whiteboard';
 import GetStarted from './apps/GetStarted';
+import MarkdownViewer from './apps/MarkdownViewer';
+import { FileText } from 'lucide-react';
 
 // App registry. `render` receives a desktop context: { wallpaper, config,
 // openApp, payload }. `payload` is per-window data (e.g. the image list Photos
@@ -82,6 +84,14 @@ const buildApps = () => [
         w: 940,
         h: 600,
         render: (ctx) => <Browser payload={ctx.payload} closeWin={ctx.closeWin} />,
+    },
+    {
+        key: 'markdown',
+        title: 'Markdown Viewer',
+        icon: FileText,
+        w: 920,
+        h: 620,
+        render: (ctx) => <MarkdownViewer payload={ctx.payload} openApp={ctx.openApp} />,
     },
     {
         key: 'github',
