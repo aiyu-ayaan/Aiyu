@@ -122,3 +122,121 @@ export function StartIcon({ className }) {
         </svg>
     );
 }
+
+// Mail — blue envelope icon.
+export function MailIcon({ className }) {
+    return (
+        <svg className={className} viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <rect x="4" y="10" width="40" height="28" rx="4" fill="#0078D4" />
+            <path d="M4 12l20 14L44 12" stroke="#FFFFFF" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+    );
+}
+
+// Notepad — cyan notebook icon.
+export function NotepadIcon({ className }) {
+    return (
+        <svg className={className} viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <rect x="8" y="6" width="32" height="36" rx="4" fill="#2088B6" />
+            <path d="M8 14h32v28H8z" fill="#FFFFFF" opacity="0.9" />
+            <rect x="14" y="20" width="20" height="2.5" rx="1" fill="#0078D4" />
+            <rect x="14" y="26" width="16" height="2.5" rx="1" fill="#0078D4" />
+            <rect x="14" y="32" width="12" height="2.5" rx="1" fill="#0078D4" />
+        </svg>
+    );
+}
+
+// Calculator — classic Win11 blue calculator.
+export function CalculatorIcon({ className }) {
+    return (
+        <svg className={className} viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <rect x="8" y="5" width="32" height="38" rx="5" fill="#505050" />
+            <rect x="12" y="9" width="24" height="9" rx="2" fill="#8CE0FF" />
+            <circle cx="16" cy="24" r="3" fill="#D2D2D2" />
+            <circle cx="24" cy="24" r="3" fill="#D2D2D2" />
+            <circle cx="32" cy="24" r="3" fill="#0078D4" />
+            <circle cx="16" cy="32" r="3" fill="#D2D2D2" />
+            <circle cx="24" cy="32" r="3" fill="#D2D2D2" />
+            <circle cx="32" cy="32" r="3" fill="#0078D4" />
+            <circle cx="16" cy="38" r="2.5" fill="#D2D2D2" />
+            <circle cx="24" cy="38" r="2.5" fill="#D2D2D2" />
+            <circle cx="32" cy="38" r="2.5" fill="#0078D4" />
+        </svg>
+    );
+}
+
+// Spotify — bright green circle with music waves.
+export function SpotifyIcon({ className }) {
+    return (
+        <svg className={className} viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <circle cx="24" cy="24" r="21" fill="#1DB954" />
+            <path d="M12 18c8-2.5 17-1.5 24 2.5" stroke="#000" strokeWidth="3.5" strokeLinecap="round" />
+            <path d="M14 24c6.5-2 14-1 19.5 2" stroke="#000" strokeWidth="3" strokeLinecap="round" />
+            <path d="M15 30c5.5-1.5 11.5-.5 16 2" stroke="#000" strokeWidth="2.5" strokeLinecap="round" />
+        </svg>
+    );
+}
+
+// Terminal — dark window with prompt.
+export function TerminalIcon({ className }) {
+    return (
+        <svg className={className} viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <rect x="4" y="8" width="40" height="32" rx="4" fill="#1E1E1E" stroke="#444" strokeWidth="1.5" />
+            <path d="M12 18l6 5-6 5" stroke="#4EC9B0" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+            <line x1="22" y1="28" x2="32" y2="28" stroke="#DCDCDC" strokeWidth="2.5" strokeLinecap="round" />
+        </svg>
+    );
+}
+
+// Get Started — compass star badge.
+export function GetStartedIcon({ className }) {
+    return (
+        <svg className={className} viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <circle cx="24" cy="24" r="21" fill="#0078D4" />
+            <path d="M24 10l4 10 10 4-10 4-4 10-4-10-10-4 10-4z" fill="#FFF" />
+        </svg>
+    );
+}
+
+// Task Manager — pulse gauge.
+export function TaskManagerIcon({ className }) {
+    return (
+        <svg className={className} viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <rect x="4" y="8" width="40" height="32" rx="4" fill="#2B2D30" />
+            <path d="M8 26h8l4-10 6 18 5-12 4 4h9" stroke="#0078D4" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+    );
+}
+
+// Coffee — yellow cup.
+export function CoffeeIcon({ className }) {
+    return (
+        <svg className={className} viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <rect x="4" y="4" width="40" height="40" rx="8" fill="#FFDD00" />
+            <path d="M14 18h16v12a6 6 0 0 1-6 6h-4a6 6 0 0 1-6-6V18z" fill="#000" />
+            <path d="M30 20h4a4 4 0 0 1 0 8h-4v-8z" fill="#000" />
+        </svg>
+    );
+}
+
+// Unescape — arcade gamepad.
+export function UnescapeIcon({ className }) {
+    return (
+        <svg className={className} viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <rect x="4" y="10" width="40" height="28" rx="8" fill="#6C5CE7" />
+            <circle cx="16" cy="24" r="3" fill="#FFF" />
+            <circle cx="32" cy="21" r="2.5" fill="#FF7675" />
+            <circle cx="36" cy="27" r="2.5" fill="#74B9FF" />
+        </svg>
+    );
+}
+
+// Whiteboard — blue board with pen.
+export function WhiteboardIcon({ className }) {
+    return (
+        <svg className={className} viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <rect x="6" y="8" width="36" height="28" rx="3" fill="#0078D4" />
+            <path d="M12 24l12-10 12 10" stroke="#FFF" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+    );
+}
