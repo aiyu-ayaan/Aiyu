@@ -1,6 +1,7 @@
 "use client";
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Minus, Square, X, Copy } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 // A single draggable Win11-style window. Position/size live in the parent so the
 // window manager can persist z-order and maximize state; this component owns the
@@ -70,12 +71,24 @@ export default function Window({
 
     const Icon = win.icon;
 
+    const animateState = win.minimized
+        ? { opacity: 0, scale: 0.82, y: 60, filter: 'blur(4px)', pointerEvents: 'none' }
+        : { opacity: 1, scale: 1, y: 0, filter: 'blur(0px)', pointerEvents: 'auto' };
+
     return (
-        <div
+        <motion.div
+            initial={{ opacity: 0, scale: 0.92, y: 16, filter: 'blur(4px)' }}
+            animate={animateState}
+            exit={{ opacity: 0, scale: 0.92, y: 12, filter: 'blur(4px)' }}
+            transition={
+                dragging
+                    ? { duration: 0 }
+                    : { duration: 0.22, ease: [0.16, 1, 0.3, 1] }
+            }
             className={`absolute flex flex-col overflow-hidden rounded-lg border border-white/15 bg-[#f3f3f3] text-neutral-900 shadow-2xl transition-shadow dark:bg-[#202020] dark:text-neutral-100 ${
-                active ? 'shadow-black/50' : 'shadow-black/25'
-            } ${win.minimized ? 'pointer-events-none opacity-0' : 'opacity-100'}`}
-            style={{ ...style, zIndex: win.z, transitionProperty: dragging ? 'none' : undefined }}
+                active ? 'shadow-black/50 ring-1 ring-white/20' : 'shadow-black/25 opacity-95'
+            }`}
+            style={{ ...style, zIndex: win.z }}
             onMouseDown={() => onFocus(win.id)}
             role="dialog"
             aria-label={win.title}
@@ -96,21 +109,21 @@ export default function Window({
                 <div className="flex h-full" data-noswipe>
                     <button
                         onClick={() => onMinimize(win.id)}
-                        className="flex h-full w-11 items-center justify-center hover:bg-black/10 dark:hover:bg-white/10"
+                        className="flex h-full w-11 items-center justify-center hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
                         aria-label="Minimize"
                     >
                         <Minus className="h-4 w-4" />
                     </button>
                     <button
                         onClick={() => onToggleMaximize(win.id)}
-                        className="flex h-full w-11 items-center justify-center hover:bg-black/10 dark:hover:bg-white/10"
+                        className="flex h-full w-11 items-center justify-center hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
                         aria-label="Maximize"
                     >
                         {win.maximized ? <Copy className="h-3.5 w-3.5" /> : <Square className="h-3 w-3" />}
                     </button>
                     <button
                         onClick={() => onClose(win.id)}
-                        className="flex h-full w-11 items-center justify-center hover:bg-red-600 hover:text-white"
+                        className="flex h-full w-11 items-center justify-center hover:bg-red-600 hover:text-white transition-colors"
                         aria-label="Close"
                     >
                         <X className="h-4 w-4" />
@@ -120,6 +133,7 @@ export default function Window({
 
             {/* Body */}
             <div className="min-h-0 flex-1 overflow-hidden bg-white dark:bg-[#1b1b1b]">{children}</div>
-        </div>
+        </motion.div>
     );
 }
+

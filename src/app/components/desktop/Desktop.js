@@ -1,6 +1,7 @@
 "use client";
 import React, { useCallback, useState } from 'react';
 import Link from 'next/link';
+import { AnimatePresence } from 'framer-motion';
 import { ExplorerIcon, VSCodeIcon, ChromeIcon, SettingsIcon, ThisPCIcon, EdgeIcon, PhotosIcon, GitHubIcon, TaskManagerIcon, TerminalIcon } from './icons';
 import Window from './Window';
 import Taskbar from './Taskbar';
@@ -255,7 +256,7 @@ export default function Desktop({ wallpaper, config = {} }) {
                             // On touch/coarse pointers a single tap opens.
                             if (window.matchMedia?.('(pointer: coarse)').matches) openApp(d.key);
                         }}
-                        className="flex flex-col items-center gap-1 rounded p-2 text-center hover:bg-white/10 focus:bg-white/15"
+                        className="flex flex-col items-center gap-1 rounded p-2 text-center hover:bg-white/10 focus:bg-white/15 transition-transform active:scale-95"
                     >
                         <d.icon className="h-8 w-8 drop-shadow" />
                         <span className="text-[11px] leading-tight drop-shadow [text-shadow:0_1px_2px_rgba(0,0,0,0.6)]">{d.label}</span>
@@ -264,7 +265,7 @@ export default function Desktop({ wallpaper, config = {} }) {
                 <Link
                     href="/"
                     onClick={(e) => e.stopPropagation()}
-                    className="flex flex-col items-center gap-1 rounded p-2 text-center hover:bg-white/10"
+                    className="flex flex-col items-center gap-1 rounded p-2 text-center hover:bg-white/10 transition-transform active:scale-95"
                 >
                     <EdgeIcon className="h-8 w-8 drop-shadow" />
                     <span className="text-[11px] leading-tight [text-shadow:0_1px_2px_rgba(0,0,0,0.6)]">Portfolio</span>
@@ -272,25 +273,27 @@ export default function Desktop({ wallpaper, config = {} }) {
             </div>
 
             {/* Windows */}
-            {windows.map((win) => (
-                <Window
-                    key={win.id}
-                    win={win}
-                    active={win.id === activeId}
-                    onFocus={focus}
-                    onClose={closeWin}
-                    onMinimize={minimizeWin}
-                    onToggleMaximize={toggleMax}
-                    onMove={moveWin}
-                >
-                    {appMap[win.appKey]?.render({ wallpaper, config, openApp, windows, closeWin, payload: win.payload })}
-                </Window>
-            ))}
+            <AnimatePresence>
+                {windows.map((win) => (
+                    <Window
+                        key={win.id}
+                        win={win}
+                        active={win.id === activeId}
+                        onFocus={focus}
+                        onClose={closeWin}
+                        onMinimize={minimizeWin}
+                        onToggleMaximize={toggleMax}
+                        onMove={moveWin}
+                    >
+                        {appMap[win.appKey]?.render({ wallpaper, config, openApp, windows, closeWin, payload: win.payload })}
+                    </Window>
+                ))}
+            </AnimatePresence>
 
             {/* Desktop right-click menu */}
             {menu && (
                 <div
-                    className="absolute z-[60] w-48 rounded-lg border border-white/15 bg-[#f3f3f3]/95 py-1 text-sm text-neutral-800 shadow-xl backdrop-blur-xl dark:bg-[#2a2a2e]/95 dark:text-neutral-100"
+                    className="absolute z-[60] w-48 rounded-lg border border-white/15 bg-[#f3f3f3]/95 py-1 text-sm text-neutral-800 shadow-xl backdrop-blur-xl dark:bg-[#2a2a2e]/95 dark:text-neutral-100 animate-in fade-in zoom-in-95 duration-100"
                     style={{ left: Math.min(menu.x, (typeof window !== 'undefined' ? window.innerWidth : 9999) - 200), top: menu.y }}
                     onClick={(e) => e.stopPropagation()}
                 >
@@ -303,10 +306,14 @@ export default function Desktop({ wallpaper, config = {} }) {
             )}
 
             {/* Start menu */}
-            {startOpen && <StartMenu apps={apps} onOpen={openApp} onClose={() => setStartOpen(false)} />}
+            <AnimatePresence>
+                {startOpen && <StartMenu apps={apps} onOpen={openApp} onClose={() => setStartOpen(false)} />}
+            </AnimatePresence>
 
             {/* Widgets Panel */}
-            <WidgetsPanel open={widgetsOpen} onClose={() => setWidgetsOpen(false)} openApp={openApp} />
+            <AnimatePresence>
+                {widgetsOpen && <WidgetsPanel open={widgetsOpen} onClose={() => setWidgetsOpen(false)} openApp={openApp} />}
+            </AnimatePresence>
 
             {/* Taskbar */}
             <Taskbar
@@ -331,3 +338,4 @@ function MenuItem({ label, onClick }) {
         </button>
     );
 }
+

@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Search, Power, ChevronRight, ChevronLeft, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import {
     ExplorerIcon,
     VSCodeIcon,
@@ -76,10 +77,21 @@ export default function StartMenu({ apps = [], onOpen, onClose }) {
     return (
         <>
             {/* Backdrop layer */}
-            <div className="fixed inset-0 z-[80]" onClick={onClose} />
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
+                className="fixed inset-0 z-[80]"
+                onClick={onClose}
+            />
 
             {/* Win11 Start Menu Modal */}
-            <div
+            <motion.div
+                initial={{ opacity: 0, y: 24, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 16, scale: 0.96 }}
+                transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
                 className="fixed bottom-16 left-1/2 z-[90] flex h-[620px] w-[min(94vw,560px)] -translate-x-1/2 flex-col justify-between overflow-hidden rounded-2xl border border-white/15 bg-[#1c1c1f]/90 p-6 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7)] backdrop-blur-3xl text-white select-none"
                 role="menu"
                 onClick={(e) => e.stopPropagation()}
@@ -216,7 +228,7 @@ export default function StartMenu({ apps = [], onOpen, onClose }) {
                         </button>
                     </div>
                 </div>
-            </div>
+            </motion.div>
         </>
     );
 }

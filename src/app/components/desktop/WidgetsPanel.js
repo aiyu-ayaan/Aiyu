@@ -1,46 +1,31 @@
 "use client";
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { X, LayoutGrid } from 'lucide-react';
+import { motion } from 'framer-motion';
 import WidgetsFeed from './widgets/WidgetsFeed';
 
 export default function WidgetsPanel({ open, onClose, openApp }) {
-    // Animate in/out with a slight delay to allow CSS transition
-    const [visible, setVisible] = useState(false);
-    const [mounted, setMounted] = useState(false);
-
-    useEffect(() => {
-        if (open) {
-            setMounted(true);
-            // Small delay so the DOM mounts before the transition class is applied
-            requestAnimationFrame(() => {
-                requestAnimationFrame(() => setVisible(true));
-            });
-        } else {
-            setVisible(false);
-            const timeout = setTimeout(() => setMounted(false), 250);
-            return () => clearTimeout(timeout);
-        }
-    }, [open]);
-
-    if (!mounted) return null;
-
     return (
         <>
             {/* Backdrop */}
-            <div
-                className={`fixed inset-x-0 top-0 z-40 bg-black/20 backdrop-blur-[2px] transition-opacity duration-250 ${
-                    visible ? 'opacity-100' : 'opacity-0'
-                }`}
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="fixed inset-x-0 top-0 z-40 bg-black/20 backdrop-blur-[2px]"
                 style={{ height: 'calc(100vh - 48px)' }}
                 onClick={onClose}
             />
 
             {/* Panel */}
-            <div
+            <motion.div
                 data-lenis-prevent
-                className={`fixed top-0 left-0 z-45 flex w-full max-w-[440px] flex-col overflow-hidden border-r border-white/10 bg-[#161618]/95 text-white shadow-2xl shadow-black/40 backdrop-blur-2xl transition-all duration-250 ease-out ${
-                    visible ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0'
-                }`}
+                initial={{ x: '-100%', opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: '-100%', opacity: 0 }}
+                transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                className="fixed top-0 left-0 z-45 flex w-full max-w-[440px] flex-col overflow-hidden border-r border-white/10 bg-[#161618]/95 text-white shadow-2xl shadow-black/40 backdrop-blur-2xl"
                 style={{ height: 'calc(100vh - 48px)', maxHeight: 'calc(100vh - 48px)' }}
                 onClick={(e) => e.stopPropagation()}
             >
@@ -73,7 +58,8 @@ export default function WidgetsPanel({ open, onClose, openApp }) {
                 >
                     <WidgetsFeed openApp={openApp} />
                 </div>
-            </div>
+            </motion.div>
         </>
     );
 }
+
