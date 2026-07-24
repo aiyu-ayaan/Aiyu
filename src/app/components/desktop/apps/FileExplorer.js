@@ -149,7 +149,13 @@ export default function FileExplorer({ openApp }) {
                                 <FileTile
                                     key={b._id || b.slug}
                                     label={blogFileName(b)}
-                                    onOpen={() => setPreview({ type: 'blog', item: b })}
+                                    onOpen={() => {
+                                        if (openApp) {
+                                            openApp('markdown', { slug: b.slug, blog: b });
+                                        } else {
+                                            setPreview({ type: 'blog', item: b });
+                                        }
+                                    }}
                                     icon={FileText}
                                 />
                             ))}
