@@ -21,8 +21,22 @@ export default function AdminBlogsPage() {
         setSortConfig({ key, direction });
     };
 
+    const [filterTab, setFilterTab] = useState('all');
+
+    const filteredBlogs = React.useMemo(() => {
+        let list = [...blogs];
+        if (filterTab === 'flagged') {
+            list = list.filter((b) => b.isFlagged || b.reviewStatus === 'FLAGGED');
+        } else if (filterTab === 'ceased') {
+            list = list.filter((b) => b.published === false && !b.isFlagged && b.reviewStatus !== 'FLAGGED');
+        } else if (filterTab === 'active') {
+            list = list.filter((b) => b.published !== false && !b.isFlagged);
+        }
+        return list;
+    }, [blogs, filterTab]);
+
     const sortedBlogs = React.useMemo(() => {
-        let sortableBlogs = [...blogs];
+        let sortableBlogs = [...filteredBlogs];
         if (sortConfig.key !== null) {
             sortableBlogs.sort((a, b) => {
                 let aVal = a[sortConfig.key];
@@ -61,7 +75,7 @@ export default function AdminBlogsPage() {
             });
         }
         return sortableBlogs;
-    }, [blogs, sortConfig]);
+    }, [filteredBlogs, sortConfig]);
 
     const renderSortableHeader = (label, sortKey, alignRight = false) => {
         const isSorted = sortConfig.key === sortKey;
@@ -133,6 +147,33 @@ export default function AdminBlogsPage() {
         }
     };
 
+    const approveBlog = async (id, shouldBroadcast = true) => {
+        try {
+            const res = await fetch(`/api/blogs/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    isFlagged: false,
+                    flagReason: '',
+                    reviewStatus: 'APPROVED',
+                    published: shouldBroadcast,
+                }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                setBlogs(blogs.map(blog =>
+                    blog._id === id
+                        ? { ...blog, isFlagged: false, flagReason: '', reviewStatus: 'APPROVED', published: shouldBroadcast }
+                        : blog
+                ));
+            }
+        } catch (error) {
+            console.error('Failed to approve blog:', error);
+        }
+    };
+
     const deleteBlog = async (id) => {
         if (!(await confirm({
             title: 'Delete blog?',
@@ -153,6 +194,10 @@ export default function AdminBlogsPage() {
             console.error('Failed to delete blog:', error);
         }
     };
+
+    const flaggedCount = blogs.filter((b) => b.isFlagged || b.reviewStatus === 'FLAGGED').length;
+    const ceasedCount = blogs.filter((b) => b.published === false && !b.isFlagged && b.reviewStatus !== 'FLAGGED').length;
+    const activeCount = blogs.filter((b) => b.published !== false && !b.isFlagged).length;
 
     if (loading) return <div className="p-4 md:p-8 text-center text-white">Loading...</div>;
 
@@ -184,6 +229,55 @@ export default function AdminBlogsPage() {
                 </div>
             </div>
 
+            {/* Filter Tabs */}
+            <div className="flex flex-wrap items-center gap-2 mb-6 border-b border-white/10 pb-4">
+                <button
+                    onClick={() => setFilterTab('all')}
+                    className={`px-4 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all ${
+                        filterTab === 'all'
+                            ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-[0_0_15px_rgba(34,211,238,0.15)]'
+                            : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white border border-white/5'
+                    }`}
+                >
+                    All ({blogs.length})
+                </button>
+                <button
+                    onClick={() => setFilterTab('flagged')}
+                    className={`px-4 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all flex items-center gap-2 ${
+                        filterTab === 'flagged'
+                            ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 shadow-[0_0_15px_rgba(244,63,94,0.15)]'
+                            : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white border border-white/5'
+                    }`}
+                >
+                    <span>Flagged for Review</span>
+                    {flaggedCount > 0 && (
+                        <span className="px-1.5 py-0.5 text-[10px] rounded-full bg-rose-500 text-white font-bold animate-pulse">
+                            {flaggedCount}
+                        </span>
+                    )}
+                </button>
+                <button
+                    onClick={() => setFilterTab('ceased')}
+                    className={`px-4 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all ${
+                        filterTab === 'ceased'
+                            ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                            : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white border border-white/5'
+                    }`}
+                >
+                    Ceased / Draft ({ceasedCount})
+                </button>
+                <button
+                    onClick={() => setFilterTab('active')}
+                    className={`px-4 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all ${
+                        filterTab === 'active'
+                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                            : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white border border-white/5'
+                    }`}
+                >
+                    Broadcast Active ({activeCount})
+                </button>
+            </div>
+
             <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
@@ -197,43 +291,80 @@ export default function AdminBlogsPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5 text-sm">
-                            {sortedBlogs.map((blog) => (
-                                <tr key={blog._id} className="group hover:bg-white/[0.02] transition-colors">
-                                    <td className="px-6 py-5 font-semibold text-slate-200 group-hover:text-cyan-400 transition-colors">
-                                        {blog.title}
-                                    </td>
-                                    <td className="px-6 py-5 text-slate-500 font-mono">{blog.date}</td>
-                                    <td className="px-6 py-5 text-slate-400 font-mono">
-                                        {blog.views != null ? blog.views.toLocaleString() : '0'}
-                                    </td>
-                                    <td className="px-6 py-5">
-                                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${blog.published !== false
-                                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                                            : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
-                                            }`}>
-                                            <span className={`w-1.5 h-1.5 rounded-full ${blog.published !== false ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-                                            {blog.published !== false ? 'Broadcast Active' : 'Draft / Offline'}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-5 text-right flex items-center justify-end gap-3 opacity-60 group-hover:opacity-100 transition-opacity">
-                                        <button
-                                            onClick={() => togglePublish(blog._id, blog.published !== false)}
-                                            className={`${blog.published !== false ? 'text-amber-400 hover:text-amber-300' : 'text-emerald-400 hover:text-emerald-300'} transition-colors text-xs uppercase font-bold tracking-wider`}
-                                        >
-                                            {blog.published !== false ? 'Cease' : 'Broadcast'}
-                                        </button>
-                                        <Link href={`/admin/blogs/${blog._id}`} className="text-cyan-400 hover:text-cyan-300 transition-colors text-xs uppercase font-bold tracking-wider">
-                                            Edit
-                                        </Link>
-                                        <button
-                                            onClick={() => deleteBlog(blog._id)}
-                                            className="text-red-400 hover:text-red-300 transition-colors text-xs uppercase font-bold tracking-wider"
-                                        >
-                                            Delete
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
+                            {sortedBlogs.map((blog) => {
+                                const isFlagged = blog.isFlagged || blog.reviewStatus === 'FLAGGED';
+                                return (
+                                    <tr key={blog._id} className="group hover:bg-white/[0.02] transition-colors">
+                                        <td className="px-6 py-5 font-semibold text-slate-200 group-hover:text-cyan-400 transition-colors">
+                                            <div>
+                                                <span>{blog.title}</span>
+                                                {isFlagged && blog.flagReason && (
+                                                    <div className="mt-1 text-xs font-normal text-rose-400/90 flex items-center gap-1">
+                                                        <span className="font-mono text-[10px] bg-rose-500/20 px-1.5 py-0.5 rounded border border-rose-500/30 uppercase font-semibold">
+                                                            REASON:
+                                                        </span>
+                                                        <span>{blog.flagReason}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-5 text-slate-500 font-mono">{blog.date}</td>
+                                        <td className="px-6 py-5 text-slate-400 font-mono">
+                                            {blog.views != null ? blog.views.toLocaleString() : '0'}
+                                        </td>
+                                        <td className="px-6 py-5">
+                                            {isFlagged ? (
+                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-500/20 text-rose-300 border border-rose-500/40">
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping" />
+                                                    Ceased (Flagged for Review)
+                                                </span>
+                                            ) : (
+                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${blog.published !== false
+                                                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                                                    : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                                                    }`}>
+                                                    <span className={`w-1.5 h-1.5 rounded-full ${blog.published !== false ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                                                    {blog.published !== false ? 'Broadcast Active' : 'Ceased / Offline'}
+                                                </span>
+                                            )}
+                                        </td>
+                                        <td className="px-6 py-5 text-right flex items-center justify-end gap-3 opacity-60 group-hover:opacity-100 transition-opacity">
+                                            {isFlagged ? (
+                                                <>
+                                                    <button
+                                                        onClick={() => approveBlog(blog._id, true)}
+                                                        className="text-emerald-400 hover:text-emerald-300 transition-colors text-xs uppercase font-bold tracking-wider bg-emerald-500/10 border border-emerald-500/20 px-2 py-1 rounded"
+                                                    >
+                                                        Approve & Broadcast
+                                                    </button>
+                                                    <button
+                                                        onClick={() => approveBlog(blog._id, false)}
+                                                        className="text-slate-400 hover:text-slate-200 transition-colors text-xs uppercase font-bold tracking-wider"
+                                                    >
+                                                        Dismiss Flag
+                                                    </button>
+                                                </>
+                                            ) : (
+                                                <button
+                                                    onClick={() => togglePublish(blog._id, blog.published !== false)}
+                                                    className={`${blog.published !== false ? 'text-amber-400 hover:text-amber-300' : 'text-emerald-400 hover:text-emerald-300'} transition-colors text-xs uppercase font-bold tracking-wider`}
+                                                >
+                                                    {blog.published !== false ? 'Cease' : 'Broadcast'}
+                                                </button>
+                                            )}
+                                            <Link href={`/admin/blogs/${blog._id}`} className="text-cyan-400 hover:text-cyan-300 transition-colors text-xs uppercase font-bold tracking-wider">
+                                                Edit
+                                            </Link>
+                                            <button
+                                                onClick={() => deleteBlog(blog._id)}
+                                                className="text-red-400 hover:text-red-300 transition-colors text-xs uppercase font-bold tracking-wider"
+                                            >
+                                                Delete
+                                            </button>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                             {blogs.length === 0 && (
                                 <tr>
                                     <td colSpan="5" className="px-6 py-12 text-center text-slate-500">

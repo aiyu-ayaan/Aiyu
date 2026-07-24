@@ -15,7 +15,9 @@ export default function BlogConfigPage() {
         blogsSubtitle: 'Thoughts, tutorials, and updates on web development and technology.',
         isBlogAutomated: false,
         blogAutomationMessage: 'Automated via API',
-        showBlogViewCount: false
+        showBlogViewCount: false,
+        enableBlogReviewEngine: true,
+        customTestKeywords: ''
     });
 
     const showToast = (message, success = true) => {
@@ -34,7 +36,9 @@ export default function BlogConfigPage() {
                         blogsSubtitle: data.blogsSubtitle || '',
                         isBlogAutomated: !!data.isBlogAutomated,
                         blogAutomationMessage: data.blogAutomationMessage || '',
-                        showBlogViewCount: !!data.showBlogViewCount
+                        showBlogViewCount: !!data.showBlogViewCount,
+                        enableBlogReviewEngine: data.enableBlogReviewEngine !== false,
+                        customTestKeywords: data.customTestKeywords || ''
                     });
                 }
             } catch (error) {
@@ -144,16 +148,38 @@ export default function BlogConfigPage() {
                             </p>
                         </div>
 
-                        {config.isBlogAutomated && (
-                            <div>
-                                <label className="block text-sm font-medium text-slate-300 mb-2">Automation Hover Message</label>
+                        <div className="border-t border-slate-700/50 pt-6">
+                            <label className="flex items-center gap-3 cursor-pointer">
+                                <div className="relative">
+                                    <input
+                                        type="checkbox"
+                                        className="sr-only"
+                                        checked={config.enableBlogReviewEngine}
+                                        onChange={(e) => setConfig({ ...config, enableBlogReviewEngine: e.target.checked })}
+                                    />
+                                    <div className={`block w-10 h-6 rounded-full transition-colors ${config.enableBlogReviewEngine ? 'bg-cyan-500' : 'bg-slate-700'}`}></div>
+                                    <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${config.enableBlogReviewEngine ? 'translate-x-4' : ''}`}></div>
+                                </div>
+                                <span className="text-sm font-medium text-slate-300">Enable Automated Blog Review Engine</span>
+                            </label>
+                            <p className="mt-2 ml-[52px] text-xs text-slate-500">
+                                Automatically scans newly created/submitted blogs for test patterns, demo indicators, or spam heuristics. Flagged blogs are set to CEASE status for admin approval.
+                            </p>
+                        </div>
+
+                        {config.enableBlogReviewEngine && (
+                            <div className="border-t border-slate-700/50 pt-6">
+                                <label className="block text-sm font-medium text-slate-300 mb-2">Custom Test Keywords & Blacklisted Patterns</label>
                                 <textarea
-                                    value={config.blogAutomationMessage}
-                                    onChange={(e) => setConfig({ ...config, blogAutomationMessage: e.target.value })}
-                                    placeholder="Explain how posts are automated..."
-                                    rows="2"
-                                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-cyan-500 transition-colors resize-none"
+                                    value={config.customTestKeywords}
+                                    onChange={(e) => setConfig({ ...config, customTestKeywords: e.target.value })}
+                                    placeholder="Enter custom keywords separated by commas or lines (e.g. test post, internal preview, staging draft)"
+                                    rows="3"
+                                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-cyan-500 transition-colors resize-none text-sm"
                                 />
+                                <p className="mt-1.5 text-xs text-slate-500">
+                                    In addition to built-in patterns (test, demo, sample, lorem ipsum, foo bar), any post containing these keywords will automatically trigger CEASE status and review flagging.
+                                </p>
                             </div>
                         )}
 
