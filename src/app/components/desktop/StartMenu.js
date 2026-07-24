@@ -287,12 +287,14 @@ export default function StartMenu({ apps = [], onOpen, onClose, config = {}, onR
                 {/* Footer Bar */}
                 <div className="mt-4 flex shrink-0 items-center justify-between border-t border-white/10 pt-3">
                     <div className="flex items-center gap-2.5 rounded-lg px-2 py-1 transition hover:bg-white/10" title={siteTitle}>
-                        <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 font-bold text-white shadow shrink-0 border border-white/20">
+                        <div className={`flex h-8 w-8 items-center justify-center overflow-hidden rounded-full font-bold text-white shadow shrink-0 ${
+                            !imgError ? 'bg-transparent' : 'bg-gradient-to-br from-blue-500 to-indigo-600 border border-white/20'
+                        }`}>
                             {!imgError ? (
                                 <img
                                     src={faviconUrl}
                                     alt="Favicon"
-                                    className="h-full w-full object-cover rounded-full"
+                                    className="h-full w-full object-cover"
                                     onError={() => setImgError(true)}
                                 />
                             ) : (
