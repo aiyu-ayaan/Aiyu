@@ -28,7 +28,7 @@ export default function WidgetsPanel({ open, onClose, openApp }) {
         <>
             {/* Backdrop */}
             <div
-                className={`fixed inset-0 bottom-12 z-40 bg-black/20 backdrop-blur-[2px] transition-opacity duration-250 ${
+                className={`fixed top-0 left-0 right-0 h-[calc(100vh-48px)] z-40 bg-black/20 backdrop-blur-[2px] transition-opacity duration-250 ${
                     visible ? 'opacity-100' : 'opacity-0'
                 }`}
                 onClick={onClose}
@@ -36,7 +36,7 @@ export default function WidgetsPanel({ open, onClose, openApp }) {
 
             {/* Panel */}
             <div
-                className={`fixed bottom-12 left-0 top-0 z-45 flex w-full max-w-[440px] flex-col border-r border-white/10 bg-[#161618]/95 text-white shadow-2xl shadow-black/40 backdrop-blur-2xl transition-all duration-250 ease-out ${
+                className={`fixed top-0 left-0 z-45 flex h-[calc(100vh-48px)] w-full max-w-[440px] flex-col border-r border-white/10 bg-[#161618]/95 text-white shadow-2xl shadow-black/40 backdrop-blur-2xl transition-all duration-250 ease-out ${
                     visible ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0'
                 }`}
                 onClick={(e) => e.stopPropagation()}
