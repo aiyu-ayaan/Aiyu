@@ -172,12 +172,7 @@ export default function DatePickerInput({
     }, []);
 
     const applyRangeSelection = (sM = startMonth, sY = startYear, eM = endMonth, eY = endYear, pres = isPresent) => {
-        let result = '';
-        if (pres) {
-            result = `${sM} ${sY} - Present`;
-        } else {
-            result = `${sM} ${sY} - ${eM} ${eY}`;
-        }
+        const result = pres ? `${sM} ${sY} - Present` : `${sM} ${sY} - ${eM} ${eY}`;
         onChange(result);
     };
 
