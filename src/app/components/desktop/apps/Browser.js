@@ -182,7 +182,7 @@ export default function Browser({ payload }) {
                             src={active.url}
                             title={active.title}
                             className="h-full w-full border-0"
-                            sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
+                            sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-downloads"
                         />
                     )
                 ) : (
