@@ -37,7 +37,7 @@ const PINNED_APPS = [
     { key: 'calculator', title: 'Calculator', icon: CalculatorIcon, action: 'settings' },
     { key: 'spotify', title: 'Spotify', icon: SpotifyIcon, external: 'https://spotify.com' },
     { key: 'explorer', title: 'File Explorer', icon: ExplorerIcon },
-    { key: 'terminal', title: 'Terminal', icon: TerminalIcon, external: '/admin/terminal' },
+    { key: 'terminal', title: 'Terminal', icon: TerminalIcon },
     { key: 'github', title: 'GitHub', icon: GitHubIcon },
     { key: 'photos', title: 'Photos', icon: PhotosIcon },
     { key: 'code', title: 'VS Code', icon: VSCodeIcon },
@@ -45,7 +45,7 @@ const PINNED_APPS = [
 
 const RECOMMENDED_ITEMS = [
     { title: 'Mail', sub: 'Contact & Messages', icon: MailIcon, key: 'contact', external: '/contact-us' },
-    { title: 'Terminal', sub: 'CLI & Shell', icon: TerminalIcon, key: 'terminal', external: '/admin/terminal' },
+    { title: 'Terminal', sub: 'CLI & Shell', icon: TerminalIcon, key: 'terminal' },
     { title: 'File Explorer', sub: 'Pictures & Documents', icon: ExplorerIcon, key: 'explorer' },
     { title: 'GitHub', sub: 'Repositories & Code', icon: GitHubIcon, key: 'github' },
     { title: 'Spotify', sub: 'Audio Player', icon: SpotifyIcon, external: 'https://spotify.com' },

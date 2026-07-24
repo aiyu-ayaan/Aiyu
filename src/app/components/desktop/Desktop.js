@@ -1,7 +1,7 @@
 "use client";
 import React, { useCallback, useState } from 'react';
 import Link from 'next/link';
-import { ExplorerIcon, VSCodeIcon, ChromeIcon, SettingsIcon, ThisPCIcon, EdgeIcon, PhotosIcon, GitHubIcon, TaskManagerIcon } from './icons';
+import { ExplorerIcon, VSCodeIcon, ChromeIcon, SettingsIcon, ThisPCIcon, EdgeIcon, PhotosIcon, GitHubIcon, TaskManagerIcon, TerminalIcon } from './icons';
 import Window from './Window';
 import Taskbar from './Taskbar';
 import StartMenu from './StartMenu';
@@ -13,6 +13,7 @@ import AboutThisPC from './apps/AboutThisPC';
 import Photos from './apps/Photos';
 import GitHub from './apps/GitHub';
 import TaskManager from './apps/TaskManager';
+import Terminal from './apps/Terminal';
 
 // App registry. `render` receives a desktop context: { wallpaper, config,
 // openApp, payload }. `payload` is per-window data (e.g. the image list Photos
@@ -58,6 +59,14 @@ const buildApps = () => [
         w: 900,
         h: 600,
         render: () => <GitHub />,
+    },
+    {
+        key: 'terminal',
+        title: 'Terminal',
+        icon: TerminalIcon,
+        w: 800,
+        h: 500,
+        render: (ctx) => <Terminal openApp={ctx.openApp} config={ctx.config} />,
     },
     {
         key: 'taskmanager',

@@ -123,16 +123,9 @@ function PersonalizationPane({ wallpaper }) {
             </div>
 
             <div className="rounded-lg border border-black/10 bg-white p-4 text-sm dark:border-white/10 dark:bg-white/5">
-                <p className="mb-3 opacity-80">
-                    The desktop wallpaper and device details are managed from the admin Desktop panel. Set an image URL
-                    there to personalize this background.
+                <p className="opacity-80">
+                    Background wallpaper is configured for your system. Use presets or customize options in your system environment.
                 </p>
-                <Link
-                    href="/admin/desktop"
-                    className="inline-flex items-center gap-1.5 rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
-                >
-                    Open Desktop Settings <ExternalLink className="h-3.5 w-3.5" />
-                </Link>
             </div>
         </div>
     );
