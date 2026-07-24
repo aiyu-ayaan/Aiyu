@@ -569,7 +569,7 @@ export default function Desktop({ wallpaper: initialWallpaper, config = {} }) {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: -6 }}
                         transition={{ duration: 0.12 }}
-                        className="fixed z-[9999] w-64 rounded-xl border border-white/20 bg-[#25252b]/98 p-3 shadow-2xl backdrop-blur-2xl text-white select-none"
+                        className="fixed z-[9999] w-64 rounded-xl p-3 text-white select-none win-acrylic win-acrylic-noise win-acrylic-highlight overflow-hidden bg-[#f0f0f5]/70 dark:bg-[#22222b]/80 border border-white/25 dark:border-white/12 shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
                         style={{
                             left: Math.min(
                                 snapFlyoutTarget.rect.right - 256,
@@ -797,7 +797,7 @@ export default function Desktop({ wallpaper: initialWallpaper, config = {} }) {
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}
                         transition={{ duration: 0.15, ease: 'easeOut' }}
-                        className="absolute z-[9999] flex flex-col items-center justify-center p-6 bg-[#1a1a20]/90 backdrop-blur-2xl border border-white/20 rounded-2xl shadow-2xl overflow-hidden"
+                        className="absolute z-[9999] flex flex-col items-center justify-center p-6 rounded-2xl overflow-hidden win-acrylic win-acrylic-noise win-acrylic-highlight bg-[#f0f0f5]/65 dark:bg-[#1a1a20]/80 border border-white/25 dark:border-white/15 shadow-[0_8px_32px_rgba(0,0,0,0.45)]"
                         style={{
                             left: getZoneRect(snapAssist.targetZone).left + 12,
                             top: getZoneRect(snapAssist.targetZone).top + 12,
@@ -855,7 +855,7 @@ export default function Desktop({ wallpaper: initialWallpaper, config = {} }) {
             {menu && (
                 <div
                     ref={menuRef}
-                    className="absolute z-[60] w-52 rounded-xl border border-white/20 bg-[#f3f3f3]/90 p-1 text-sm text-neutral-800 shadow-2xl backdrop-blur-2xl dark:bg-[#202024]/90 dark:text-neutral-100 animate-in fade-in zoom-in-95 duration-100"
+                    className="absolute z-[60] w-52 rounded-xl p-1 text-sm text-neutral-800 dark:text-neutral-100 animate-in fade-in zoom-in-95 duration-100 win-acrylic win-acrylic-noise win-acrylic-highlight overflow-hidden bg-[#f3f3f3]/65 dark:bg-[#1e1e24]/75 border border-white/25 dark:border-white/12 shadow-[0_8px_32px_rgba(0,0,0,0.35)]"
                     style={{
                         left: menuPos ? menuPos.left : Math.max(8, Math.min(menu.x, (typeof window !== 'undefined' ? window.innerWidth : 9999) - 210)),
                         top: menuPos ? menuPos.top : ((typeof window !== 'undefined' && menu.y + 220 > window.innerHeight) ? Math.max(8, menu.y - 220) : menu.y)

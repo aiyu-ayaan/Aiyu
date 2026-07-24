@@ -133,7 +133,7 @@ export default function StartMenu({ apps = [], onOpen, onClose, config = {}, onR
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 16, scale: 0.96 }}
                 transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-                className="fixed bottom-16 left-1/2 z-[90] flex h-[620px] w-[min(94vw,560px)] -translate-x-1/2 flex-col justify-between overflow-hidden rounded-2xl border border-white/15 bg-[#1c1c1f]/90 p-6 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7)] backdrop-blur-3xl text-white select-none"
+                className="fixed bottom-16 left-1/2 z-[90] flex h-[620px] w-[min(94vw,560px)] -translate-x-1/2 flex-col justify-between overflow-hidden rounded-2xl p-6 text-white select-none win-acrylic win-acrylic-noise win-acrylic-highlight bg-[#f0f0f5]/65 dark:bg-[#1c1c21]/75 border border-white/25 dark:border-white/12 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7)]"
                 role="menu"
                 onClick={(e) => e.stopPropagation()}
                 onContextMenu={(e) => {
@@ -213,7 +213,7 @@ export default function StartMenu({ apps = [], onOpen, onClose, config = {}, onR
                     ) : showAllApps ? (
                         /* All Apps List View */
                         <div>
-                            <div className="mb-4 flex items-center justify-between border-b border-white/10 pb-2 sticky top-0 bg-[#1e1e24] z-10 py-1">
+                            <div className="mb-4 flex items-center justify-between border-b border-white/10 pb-2 sticky top-0 bg-[#1e1e24]/80 z-10 py-1 win-acrylic">
                                 <button
                                     onClick={() => setShowAllApps(false)}
                                     className="flex items-center gap-1.5 text-xs font-medium text-blue-400 hover:underline"
@@ -344,7 +344,7 @@ export default function StartMenu({ apps = [], onOpen, onClose, config = {}, onR
 
                         {/* Windows 11 Power Options Flyout */}
                         {showPowerMenu && (
-                            <div className="absolute right-0 bottom-10 z-[120] w-48 rounded-xl border border-white/15 bg-[#25252a]/95 p-1.5 shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-bottom-2 duration-150">
+                            <div className="absolute right-0 bottom-10 z-[120] w-48 rounded-xl p-1.5 animate-in fade-in slide-in-from-bottom-2 duration-150 win-acrylic win-acrylic-noise win-acrylic-highlight overflow-hidden bg-[#f0f0f5]/70 dark:bg-[#22222a]/80 border border-white/25 dark:border-white/12 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
                                 <button
                                     onClick={() => {
                                         setShowPowerMenu(false);
@@ -395,7 +395,7 @@ export default function StartMenu({ apps = [], onOpen, onClose, config = {}, onR
             {/* Confirmation Warning Modal */}
             {confirmAction && (
                 <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-in fade-in duration-150">
-                    <div className="w-full max-w-sm rounded-2xl border border-white/20 bg-[#232328] p-6 shadow-2xl text-center">
+                    <div className="w-full max-w-sm rounded-2xl p-6 text-center win-acrylic win-acrylic-noise win-acrylic-highlight relative overflow-hidden bg-[#f0f0f5]/70 dark:bg-[#232328]/85 border border-white/25 dark:border-white/15 shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
                         <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">
                             <AlertTriangle className="h-6 w-6" />
                         </div>

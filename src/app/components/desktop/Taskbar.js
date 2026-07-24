@@ -52,7 +52,7 @@ export default function Taskbar({ apps, windows, activeId, onStart, startOpen, w
     const pinned = apps.filter((a) => a.key !== 'start');
 
     return (
-        <div className="absolute inset-x-0 bottom-0 z-50 flex h-12 items-center justify-between bg-[#e9e9ec]/80 px-2 backdrop-blur-2xl dark:bg-[#1c1c1f]/80">
+        <div className="absolute inset-x-0 bottom-0 z-50 flex h-12 items-center justify-between px-2 win-acrylic win-acrylic-noise win-acrylic-highlight overflow-hidden bg-[#e8e8ee]/65 dark:bg-[#1a1a1f]/70 border-t border-white/25 dark:border-white/8">
             {/* Left cluster: Widgets & Winget button */}
             <div className="flex w-40 items-center justify-start pl-1">
                 <motion.button
@@ -169,7 +169,7 @@ export default function Taskbar({ apps, windows, activeId, onStart, startOpen, w
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: 10, scale: 0.96 }}
                             transition={{ duration: 0.15, ease: 'easeOut' }}
-                            className="absolute right-2 bottom-14 z-[100] w-80 rounded-2xl border border-white/15 bg-[#202025]/95 p-4 shadow-2xl backdrop-blur-2xl text-white select-none"
+                            className="absolute right-2 bottom-14 z-[100] w-80 rounded-2xl p-4 text-white select-none win-acrylic win-acrylic-noise win-acrylic-highlight overflow-hidden bg-[#f0f0f5]/70 dark:bg-[#1e1e24]/80 border border-white/25 dark:border-white/12 shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
                         >
                             {/* Switches Grid */}
                             <div className="grid grid-cols-3 gap-2 mb-4">
@@ -299,7 +299,7 @@ export default function Taskbar({ apps, windows, activeId, onStart, startOpen, w
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: 10, scale: 0.96 }}
                             transition={{ duration: 0.15, ease: 'easeOut' }}
-                            className="absolute right-2 bottom-14 z-[100] w-80 rounded-2xl border border-white/15 bg-[#202025]/95 p-4 shadow-2xl backdrop-blur-2xl text-white select-none"
+                            className="absolute right-2 bottom-14 z-[100] w-80 rounded-2xl p-4 text-white select-none win-acrylic win-acrylic-noise win-acrylic-highlight overflow-hidden bg-[#f0f0f5]/70 dark:bg-[#1e1e24]/80 border border-white/25 dark:border-white/12 shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
                         >
                             {/* Date Header */}
                             <div className="flex items-center justify-between border-b border-white/10 pb-3 mb-3">

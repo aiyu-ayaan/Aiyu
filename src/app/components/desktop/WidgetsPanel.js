@@ -25,7 +25,7 @@ export default function WidgetsPanel({ open, onClose, openApp }) {
                 animate={{ x: 0, opacity: 1 }}
                 exit={{ x: '-100%', opacity: 0 }}
                 transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-                className="fixed top-0 left-0 z-45 flex w-full max-w-[440px] flex-col overflow-hidden border-r border-white/10 bg-[#161618]/95 text-white shadow-2xl shadow-black/40 backdrop-blur-2xl"
+                className="fixed top-0 left-0 z-45 flex w-full max-w-[440px] flex-col overflow-hidden text-white win-acrylic win-acrylic-noise win-acrylic-highlight bg-[#f0f0f5]/60 dark:bg-[#161618]/75 border-r border-white/20 dark:border-white/8 shadow-[0_8px_40px_rgba(0,0,0,0.45)]"
                 style={{ height: 'calc(100vh - 48px)', maxHeight: 'calc(100vh - 48px)' }}
                 onClick={(e) => e.stopPropagation()}
                 onContextMenu={(e) => {

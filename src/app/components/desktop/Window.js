@@ -183,8 +183,8 @@ export default function Window({
                     ? { duration: 0 }
                     : { duration: 0.22, ease: [0.16, 1, 0.3, 1] }
             }
-            className={`absolute flex flex-col overflow-visible rounded-lg border border-white/15 bg-[#f3f3f3] text-neutral-900 shadow-2xl transition-shadow dark:bg-[#202020] dark:text-neutral-100 ${
-                active ? 'shadow-black/50 ring-1 ring-white/20' : 'shadow-black/25 opacity-95'
+            className={`absolute flex flex-col overflow-visible rounded-lg border border-white/20 dark:border-white/10 bg-[#f3f3f3]/95 text-neutral-900 shadow-2xl transition-shadow dark:bg-[#1e1e1e]/95 dark:text-neutral-100 ${
+                active ? 'shadow-black/50 ring-1 ring-white/25 dark:ring-white/12' : 'shadow-black/25 opacity-[0.97]'
             }`}
             style={{ ...style, zIndex: win.z }}
             onMouseDown={() => onFocus(win.id)}
@@ -261,7 +261,7 @@ export default function Window({
             <div className="flex h-full w-full flex-col overflow-hidden rounded-lg">
                 {/* Title bar */}
                 <div
-                    className="flex h-9 shrink-0 items-center justify-between bg-white/70 backdrop-blur dark:bg-white/5"
+                    className="flex h-9 shrink-0 items-center justify-between win-mica bg-white/50 dark:bg-white/[0.06] border-b border-white/15 dark:border-white/[0.06]"
                     onPointerDown={startDrag}
                     onPointerMove={onDrag}
                     onPointerUp={endDrag}
