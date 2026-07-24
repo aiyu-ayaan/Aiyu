@@ -55,9 +55,13 @@ const RECOMMENDED_ITEMS = [
     { title: 'File Explorer', sub: 'Pictures & Documents', icon: ExplorerIcon, key: 'explorer' },
 ];
 
-export default function StartMenu({ apps = [], onOpen, onClose }) {
+export default function StartMenu({ apps = [], onOpen, onClose, config = {}, onRestart, onShutdown }) {
     const [q, setQ] = useState('');
     const [showAllApps, setShowAllApps] = useState(false);
+    const [imgError, setImgError] = useState(false);
+
+    const siteTitle = config?.siteTitle || config?.authorName || 'Aiyu';
+    const faviconUrl = config?.hasCustomFavicon ? '/api/favicon' : '/favicon.ico';
 
     // Build unified app list for search
     const allSearchableItems = useMemo(() => {
@@ -280,11 +284,20 @@ export default function StartMenu({ apps = [], onOpen, onClose }) {
 
                 {/* Footer Bar */}
                 <div className="mt-4 flex shrink-0 items-center justify-between border-t border-white/10 pt-3">
-                    <div className="flex items-center gap-2.5 rounded-lg px-2 py-1 transition hover:bg-white/10">
-                        <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 font-bold text-white shadow">
-                            A
+                    <div className="flex items-center gap-2.5 rounded-lg px-2 py-1 transition hover:bg-white/10" title={siteTitle}>
+                        <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 font-bold text-white shadow shrink-0 border border-white/20">
+                            {!imgError ? (
+                                <img
+                                    src={faviconUrl}
+                                    alt="Favicon"
+                                    className="h-5 w-5 object-contain"
+                                    onError={() => setImgError(true)}
+                                />
+                            ) : (
+                                siteTitle.charAt(0).toUpperCase()
+                            )}
                         </div>
-                        <span className="text-xs font-semibold text-white/90">Blue Edge</span>
+                        <span className="text-xs font-semibold text-white/90 truncate max-w-[130px]">{siteTitle}</span>
                     </div>
 
                     <div className="flex items-center gap-2">

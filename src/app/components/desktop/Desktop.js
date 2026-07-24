@@ -343,7 +343,7 @@ export default function Desktop({ wallpaper, config = {} }) {
 
             {/* Start menu */}
             <AnimatePresence>
-                {startOpen && <StartMenu apps={apps} onOpen={openApp} onClose={() => setStartOpen(false)} />}
+                {startOpen && <StartMenu apps={apps} onOpen={openApp} onClose={() => setStartOpen(false)} config={config} />}
             </AnimatePresence>
 
             {/* Widgets Panel */}
