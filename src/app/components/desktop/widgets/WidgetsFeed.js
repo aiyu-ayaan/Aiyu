@@ -3,7 +3,7 @@ import React, { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, ExternalLink, Bot, Cpu, Zap, Code, Terminal, Folder } from 'lucide-react';
 import { WIDGET_ITEMS, CATEGORIES } from './data/widgetItems';
 
-const ITEMS_PER_PAGE = 6;
+const ITEMS_PER_PAGE = 8;
 
 const ICON_MAP = { Bot, Cpu, Zap, Code, Terminal, Folder };
 
@@ -24,6 +24,9 @@ export default function WidgetsFeed({ openApp }) {
         return filteredItems.slice(start, start + ITEMS_PER_PAGE);
     }, [filteredItems, currentPage]);
 
+    const leftCol = useMemo(() => currentItems.filter((_, i) => i % 2 === 0), [currentItems]);
+    const rightCol = useMemo(() => currentItems.filter((_, i) => i % 2 === 1), [currentItems]);
+
     const handleCategoryChange = (cat) => {
         setSelectedCategory(cat);
         setPage(1);
@@ -32,14 +35,14 @@ export default function WidgetsFeed({ openApp }) {
     return (
         <div className="flex flex-col gap-3 h-full justify-between">
             {/* Category Filter Pills */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs scrollbar-none">
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs no-scrollbar">
                 {CATEGORIES.map((cat) => (
                     <button
                         key={cat}
                         onClick={() => handleCategoryChange(cat)}
                         className={`whitespace-nowrap rounded-full px-3 py-1 transition-all ${
                             selectedCategory === cat
-                                ? 'bg-blue-600 text-white font-medium shadow-sm'
+                                ? 'bg-blue-600 text-white font-medium shadow-md shadow-blue-600/30'
                                 : 'bg-white/10 text-neutral-300 hover:bg-white/15 hover:text-white'
                         }`}
                     >
@@ -48,16 +51,23 @@ export default function WidgetsFeed({ openApp }) {
                 ))}
             </div>
 
-            {/* Staggered 2-Column Masonry Grid */}
-            <div className="grid grid-cols-2 gap-3 items-start flex-1 min-h-[360px]">
-                {currentItems.map((item) => (
-                    <WidgetCard key={item.id} item={item} openApp={openApp} />
-                ))}
+            {/* Integrated Stacked 2-Column Masonry Grid */}
+            <div className="grid grid-cols-2 gap-3 items-start flex-1 min-h-[380px]">
+                <div className="flex flex-col gap-3">
+                    {leftCol.map((item) => (
+                        <WidgetCard key={item.id} item={item} openApp={openApp} />
+                    ))}
+                </div>
+                <div className="flex flex-col gap-3">
+                    {rightCol.map((item) => (
+                        <WidgetCard key={item.id} item={item} openApp={openApp} />
+                    ))}
+                </div>
             </div>
 
             {/* Pagination Controls */}
             <div className="flex items-center justify-between border-t border-white/10 pt-3 text-xs text-neutral-300">
-                <span className="text-[11px] text-neutral-400">
+                <span className="text-[11px] text-neutral-400 font-medium">
                     Page {currentPage} of {totalPages} ({filteredItems.length} items)
                 </span>
 
@@ -108,7 +118,7 @@ function WidgetCard({ item, openApp }) {
                 >
                     <div className="relative aspect-video w-full overflow-hidden rounded-lg">
                         <img src={item.src} alt={item.title} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
-                        <span className="absolute top-1.5 left-1.5 rounded-md bg-black/60 px-1.5 py-0.5 text-[10px] font-medium backdrop-blur-md">
+                        <span className="absolute top-1.5 left-1.5 rounded-md bg-black/70 px-1.5 py-0.5 text-[10px] font-semibold text-white backdrop-blur-md border border-white/10">
                             {item.badge}
                         </span>
                     </div>
@@ -123,7 +133,7 @@ function WidgetCard({ item, openApp }) {
             return (
                 <div
                     onClick={() => openApp && openApp('browser', { url: item.url })}
-                    className="group cursor-pointer rounded-xl border border-white/10 bg-white/5 p-3 transition-all hover:bg-white/10 hover:border-blue-500/40 hover:shadow-lg flex flex-col justify-between min-h-[140px]"
+                    className="group cursor-pointer rounded-xl border border-white/10 bg-white/5 p-3 transition-all hover:bg-white/10 hover:border-blue-500/40 hover:shadow-lg flex flex-col justify-between"
                 >
                     <div>
                         <div className="flex items-center justify-between text-[10px] text-blue-400 font-medium">
@@ -133,7 +143,7 @@ function WidgetCard({ item, openApp }) {
                         <h4 className="mt-1 text-xs font-semibold leading-snug line-clamp-2 group-hover:text-blue-300">{item.title}</h4>
                         <p className="mt-1 text-[10px] text-neutral-400 line-clamp-2">{item.excerpt}</p>
                     </div>
-                    <span className="mt-2 text-[10px] text-neutral-500">{item.date}</span>
+                    <span className="mt-2 text-[10px] text-neutral-500 font-mono">{item.date}</span>
                 </div>
             );
 
@@ -144,8 +154,8 @@ function WidgetCard({ item, openApp }) {
                     onClick={() => openApp && openApp(item.appKey)}
                     className="group cursor-pointer rounded-xl border border-white/10 bg-white/5 p-3 transition-all hover:bg-white/10 hover:border-blue-500/40 hover:shadow-lg flex items-start gap-2.5"
                 >
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-500/20 text-blue-400 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                        <IconComponent className="h-5 w-5" />
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-500/20 text-blue-400 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                        <IconComponent className="h-4.5 w-4.5" />
                     </div>
                     <div className="min-w-0 flex-1">
                         <h4 className="text-xs font-semibold leading-tight group-hover:text-blue-400">{item.title}</h4>
@@ -163,7 +173,7 @@ function WidgetCard({ item, openApp }) {
                 >
                     <div>
                         <div className="flex items-center justify-between text-[10px]">
-                            <span className="rounded bg-blue-500/20 px-1.5 py-0.5 font-medium text-blue-400">{item.status}</span>
+                            <span className="rounded-md bg-blue-500/20 px-1.5 py-0.5 font-medium text-blue-400 border border-blue-500/30">{item.status}</span>
                         </div>
                         <h4 className="mt-1.5 text-xs font-semibold leading-tight group-hover:text-blue-300">{item.title}</h4>
                         <p className="mt-1 text-[10px] text-neutral-400 line-clamp-2">{item.description}</p>
@@ -181,12 +191,12 @@ function WidgetCard({ item, openApp }) {
         case 'skill': {
             const IconComp = ICON_MAP[item.icon] || Zap;
             return (
-                <div className="rounded-xl border border-white/10 bg-gradient-to-br from-blue-900/20 to-purple-900/20 p-3 transition-all hover:border-purple-500/40 hover:shadow-lg">
+                <div className="rounded-xl border border-purple-500/20 bg-gradient-to-br from-blue-950/40 via-neutral-900/50 to-purple-950/40 p-3 transition-all hover:border-purple-500/50 hover:shadow-lg">
                     <div className="flex items-center justify-between">
-                        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-purple-500/20 text-purple-400">
+                        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-purple-500/20 text-purple-400 border border-purple-500/30">
                             <IconComp className="h-4 w-4" />
                         </div>
-                        <span className="rounded-full bg-purple-500/20 px-2 py-0.5 text-[9px] font-semibold text-purple-300">
+                        <span className="rounded-full bg-purple-500/20 px-2 py-0.5 text-[9px] font-semibold text-purple-300 border border-purple-500/30">
                             {item.level}
                         </span>
                     </div>
