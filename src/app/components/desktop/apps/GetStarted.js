@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Compass, BookOpen, Terminal, Sparkles, Monitor, Command, ArrowRight, CheckCircle } from 'lucide-react';
 import { useDeviceMode } from '../../../context/DeviceModeContext';
+import { APP_VERSION } from '@/lib/version';
 
 const getWikiSections = (isMobile, openApp) => [
     {
@@ -174,7 +175,7 @@ export default function GetStarted({ openApp }) {
 
                 {!isMobile && (
                     <div className="rounded-lg border border-white/10 bg-black/20 p-2.5 text-center text-[10px] text-white/50">
-                        <div>Aiyu OS v4.9.2</div>
+                        <div>Aiyu OS v{APP_VERSION}</div>
                         <div>Windows 11 Web Edition</div>
                     </div>
                 )}

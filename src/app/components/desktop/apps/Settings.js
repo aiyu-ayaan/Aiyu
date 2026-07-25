@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useDeviceName } from '../useDeviceName';
 import { useDeviceMode } from '@/app/context/DeviceModeContext';
+import { APP_VERSION } from '@/lib/version';
 
 const PRESET_WALLPAPERS = [
     {
@@ -56,7 +57,7 @@ export default function Settings({ wallpaper, setWallpaper, config = {}, payload
     const [pane, setPane] = useState(payload?.pane || 'system');
     const sys = useSystemInfo();
     const [deviceName, setDeviceName] = useDeviceName(config);
-    const osVersion = config.desktopOsVersion || config.osVersion || '4.9.2';
+    const osVersion = config.desktopOsVersion || config.osVersion || APP_VERSION;
 
     useEffect(() => {
         if (payload?.pane) {
@@ -264,7 +265,7 @@ function ThemePane() {
 
     const modes = [
         { id: 'auto', label: 'Auto (Responsive)' },
-        { id: 'mobile', label: 'Mobile (Windows Phone)' },
+        { id: 'mobile', label: 'Mobile (Windows Phone)', alpha: true },
         { id: 'tablet', label: 'Tablet (Surface)' },
         { id: 'desktop', label: 'Desktop (Windows 11)' },
     ];
@@ -299,10 +300,20 @@ function ThemePane() {
                                 onChange={() => setDeviceMode(m.id)}
                                 className="w-4 h-4 text-blue-600 focus:ring-blue-500"
                             />
-                            <span className="text-sm font-medium">{m.label}</span>
+                            <span className="text-sm font-medium flex items-center gap-2">
+                                {m.label}
+                                {m.alpha && (
+                                    <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                                        Alpha Phase
+                                    </span>
+                                )}
+                            </span>
                         </label>
                     ))}
                 </div>
+                <p className="mt-2.5 text-xs text-amber-600 dark:text-amber-400 opacity-90">
+                    * Note: Mobile UI is currently in Alpha phase. Some features and layouts are under active development.
+                </p>
             </div>
 
             <div>
@@ -344,7 +355,19 @@ function AboutPane({ sys, deviceName, osVersion, onRename }) {
         ['Installed RAM', sys.memory],
         ['Display', sys.screen],
         ['Edition', 'Aiyu OS 11 Pro (Portfolio Edition)'],
-        ['Version', osVersion],
+        ['Version', (
+            <a
+                key="version-link"
+                href="https://github.com/aiyu-ayaan/Aiyu/blob/master/package.json"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline"
+                title="Linked to package.json version"
+            >
+                <span>{osVersion}</span>
+                <ExternalLink className="h-3 w-3" />
+            </a>
+        )],
         ['Platform', sys.platform],
         ['Rendered by', 'Next.js + React'],
     ];

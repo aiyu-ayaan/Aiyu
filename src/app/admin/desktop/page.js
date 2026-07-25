@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Monitor, Image as ImageIcon, Save, RefreshCw, ExternalLink, Check, Laptop, ShieldCheck } from 'lucide-react';
 import Toast from '@/app/components/admin/Toast';
+import { APP_VERSION } from '@/lib/version';
 
 const PRESET_WALLPAPERS = [
     {
@@ -30,7 +31,7 @@ const PRESET_WALLPAPERS = [
 export default function AdminDesktopPage() {
     const [wallpaper, setWallpaper] = useState('');
     const [deviceName, setDeviceName] = useState('AiyuOS');
-    const [osVersion, setOsVersion] = useState('4.9.2');
+    const [osVersion, setOsVersion] = useState(APP_VERSION);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [toast, setToast] = useState(null);
@@ -51,7 +52,7 @@ export default function AdminDesktopPage() {
                 const data = await res.json();
                 setWallpaper(data.desktopWallpaper || '');
                 setDeviceName(data.desktopDeviceName || 'AiyuOS');
-                setOsVersion(data.desktopOsVersion || '4.9.2');
+                setOsVersion(data.desktopOsVersion || APP_VERSION);
             }
         } catch (err) {
             console.error('Failed to load desktop config:', err);

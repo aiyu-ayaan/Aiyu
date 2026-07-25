@@ -1,8 +1,8 @@
 "use client";
 import React, { useEffect, useState } from 'react';
-import { Cpu, Globe } from 'lucide-react';
-
+import { Cpu, Globe, ExternalLink } from 'lucide-react';
 import { useDeviceName } from '../useDeviceName';
+import { APP_VERSION } from '@/lib/version';
 
 // A playful "About" pane styled after Windows System > About.
 export default function AboutThisPC({ config = {} }) {
@@ -11,7 +11,7 @@ export default function AboutThisPC({ config = {} }) {
     const [screen, setScreen] = useState('');
 
     const [deviceName] = useDeviceName(config);
-    const osVersion = config?.desktopOsVersion || config?.osVersion || '4.9.2';
+    const osVersion = config?.desktopOsVersion || config?.osVersion || APP_VERSION;
 
     useEffect(() => {
         setUa(navigator.userAgent);
@@ -25,7 +25,19 @@ export default function AboutThisPC({ config = {} }) {
         ['Installed RAM', 'Streamed from the cloud'],
         ['Display', screen || '—'],
         ['Edition', 'Aiyu OS 11 Pro (Portfolio Edition)'],
-        ['Version', osVersion],
+        ['Version', (
+            <a
+                key="version-link"
+                href="https://github.com/aiyu-ayaan/Aiyu/blob/master/package.json"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline"
+                title="Linked to package.json version"
+            >
+                <span>{osVersion}</span>
+                <ExternalLink className="h-3 w-3" />
+            </a>
+        )],
         ['Rendered by', 'Next.js + React'],
     ];
 

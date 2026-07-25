@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Terminal as TerminalIcon } from 'lucide-react';
 import { useDeviceName } from '../useDeviceName';
 import { useDeviceMode } from '../../../context/DeviceModeContext';
+import { APP_VERSION } from '@/lib/version';
 
 const INITIAL_HISTORY = [
     { type: 'output', text: 'Aiyu OS PowerShell [Version 10.0.22631.3007]' },
@@ -88,7 +89,7 @@ export default function Terminal({ openApp, config = {} }) {
                 } else if (arg === 'portfolio.config') {
                     response = [
                         `Device: ${deviceName}`,
-                        `OS Version: ${config.desktopOsVersion || config.osVersion || '4.9.2'}`,
+                        `OS Version: ${config.desktopOsVersion || config.osVersion || APP_VERSION}`,
                         'Environment: Web Desktop Container',
                     ];
                 } else if (!arg) {
@@ -104,13 +105,13 @@ export default function Terminal({ openApp, config = {} }) {
 
             case 'ver':
             case 'version':
-                response = [`Aiyu OS 11 Pro [Version ${config.desktopOsVersion || config.osVersion || '4.9.2'}]`];
+                response = [`Aiyu OS 11 Pro [Version ${config.desktopOsVersion || config.osVersion || APP_VERSION}]`];
                 break;
 
             case 'sysinfo':
                 response = [
                     ' OS Name:                   Aiyu OS 11 Pro',
-                    ` OS Version:                ${config.desktopOsVersion || config.osVersion || '4.9.2'}`,
+                    ` OS Version:                ${config.desktopOsVersion || config.osVersion || APP_VERSION}`,
                     ` Device Name:               ${deviceName}`,
                     ' System Manufacturer:       Aiyu Web Systems',
                     ' Processor:                 Web Concurrency Engine',

@@ -110,9 +110,11 @@ export default function MobilePhoneShell({ apps, windows, activeWindowId, openAp
     const [searchQuery, setSearchQuery] = useState("");
     const [letterPickerOpen, setLetterPickerOpen] = useState(false);
     const [notificationDrawerOpen, setNotificationDrawerOpen] = useState(false);
+    const [showAlphaBanner, setShowAlphaBanner] = useState(true);
     const [wifi, setWifi] = useState(true);
     const [cellular, setCellular] = useState(true);
     const [notifications, setNotifications] = useState([
+        { id: 'alpha-notice', title: "System Notice", body: "Mobile UI is currently in Alpha phase.", time: "Just now" },
         { id: 1, title: "Welcome to Aiyu OS", body: "Windows Phone Metro theme active", time: "Just now" },
         { id: 2, title: "Photos", body: "3 new portfolio photos available", time: "5m ago" },
         { id: 3, title: "System", body: "All desktop processes running smooth", time: "12m ago" }
@@ -207,6 +209,23 @@ export default function MobilePhoneShell({ apps, windows, activeWindowId, openAp
                     <ChevronDown size={12} className="text-white/40" />
                 </div>
             </div>
+
+            {/* Alpha Phase Notification Banner */}
+            {showAlphaBanner && (
+                <div className="relative z-40 bg-amber-500/20 border-b border-amber-500/30 px-3 py-1.5 text-[11px] text-amber-200 flex items-center justify-between backdrop-blur-md shrink-0">
+                    <div className="flex items-center gap-2">
+                        <Sparkles className="h-3.5 w-3.5 text-amber-400 shrink-0 animate-pulse" />
+                        <span><strong>Mobile UI Alpha:</strong> Mobile UI is currently in Alpha phase.</span>
+                    </div>
+                    <button 
+                        onClick={() => setShowAlphaBanner(false)}
+                        className="p-1 hover:bg-white/10 rounded text-amber-300 hover:text-white transition-colors"
+                        title="Dismiss notice"
+                    >
+                        <X size={14} />
+                    </button>
+                </div>
+            )}
 
             {/* Slide-Down Notification Drawer / Action Center */}
             <AnimatePresence>
@@ -350,7 +369,12 @@ export default function MobilePhoneShell({ apps, windows, activeWindowId, openAp
                             className="absolute inset-0 overflow-y-auto px-4 pb-16 pt-2 hide-scrollbar"
                         >
                             <div className="flex items-center justify-between mt-4 mb-6 px-1">
-                                <h1 className="text-4xl font-light tracking-tight text-white/90">start</h1>
+                                <div className="flex items-baseline gap-2.5">
+                                    <h1 className="text-4xl font-light tracking-tight text-white/90">start</h1>
+                                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                                        Alpha Phase
+                                    </span>
+                                </div>
                                 <button 
                                     onClick={() => setView("apps")} 
                                     className="p-2 rounded-full hover:bg-white/10 text-white/80 transition-colors"
