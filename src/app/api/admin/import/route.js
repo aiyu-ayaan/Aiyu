@@ -221,6 +221,22 @@ export async function POST(request) {
             { modelKey: 'aiLog', key: 'aiLogs' },
         ];
 
+        // Preflight: refuse to restore into a database whose schema is behind the
+        // running code. Without this, the transaction below aborts with a cryptic
+        // "column does not exist" Prisma error mid-restore. A cheap SELECT of the
+        // newest schema columns detects drift before anything is touched.
+        try {
+            await prisma.blog.findFirst({ select: { id: true, isFlagged: true, reviewStatus: true } });
+        } catch (driftError) {
+            if (driftError?.code === 'P2022' || driftError?.code === 'P2021') {
+                return NextResponse.json({
+                    success: false,
+                    error: "Database schema is out of date (pending migrations). Run `prisma migrate deploy` (or restart the container with RUN_MIGRATIONS=true) and retry. No data was changed.",
+                }, { status: 409 });
+            }
+            throw driftError;
+        }
+
         // Restore database collections atomically inside a transaction (preserving original ids from the backup).
         const results = {};
         await prisma.$transaction(async (tx) => {
@@ -278,6 +294,15 @@ export async function POST(request) {
         return NextResponse.json({ success: true, results });
     } catch (error) {
         console.error("Import error:", error);
+        // Schema drift surfaced mid-transaction (e.g. a model the preflight does
+        // not cover). The transaction already rolled back — say so explicitly so
+        // the admin knows nothing was lost.
+        if (error?.code === 'P2022' || error?.code === 'P2021') {
+            return NextResponse.json({
+                success: false,
+                error: "Restore aborted: database schema is out of date (pending migrations). All changes were rolled back — no data was lost. Run `prisma migrate deploy` and retry.",
+            }, { status: 409 });
+        }
         return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 }

@@ -358,11 +358,11 @@ function AboutPane({ sys, deviceName, osVersion, onRename }) {
         ['Version', (
             <a
                 key="version-link"
-                href="https://github.com/aiyu-ayaan/Aiyu/blob/master/package.json"
+                href="https://github.com/aiyu-ayaan/Aiyu"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline"
-                title="Linked to package.json version"
+                title="View GitHub Repository"
             >
                 <span>{osVersion}</span>
                 <ExternalLink className="h-3 w-3" />

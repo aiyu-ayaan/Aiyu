@@ -11,10 +11,26 @@ set -e
 
 if [ "${RUN_MIGRATIONS}" = "true" ] && [ -n "${DATABASE_URL}" ]; then
   echo "[entrypoint] Applying Prisma migrations (migrate deploy)..."
-  if node /app/prisma-cli/node_modules/prisma/build/index.js migrate deploy --schema=/app/prisma/schema.prisma; then
+  MIGRATED=false
+  # The database container may still be booting; retry before giving up.
+  for attempt in 1 2 3 4 5; do
+    if node /app/prisma-cli/node_modules/prisma/build/index.js migrate deploy --schema=/app/prisma/schema.prisma; then
+      MIGRATED=true
+      break
+    fi
+    echo "[entrypoint] migrate deploy attempt ${attempt} failed; retrying in 5s..." >&2
+    sleep 5
+  done
+  if [ "${MIGRATED}" = "true" ]; then
     echo "[entrypoint] Migrations applied."
+  elif [ "${ALLOW_MIGRATION_FAILURE}" = "true" ]; then
+    echo "[entrypoint] WARNING: migrate deploy failed; starting app anyway (ALLOW_MIGRATION_FAILURE=true)." >&2
   else
-    echo "[entrypoint] WARNING: migrate deploy failed; starting app anyway." >&2
+    # Starting the app against a drifted schema makes every query on new
+    # columns fail (data looks deleted, restores abort). Fail loudly instead.
+    echo "[entrypoint] FATAL: migrate deploy failed. Refusing to start against a drifted schema." >&2
+    echo "[entrypoint] Set ALLOW_MIGRATION_FAILURE=true to override (not recommended)." >&2
+    exit 1
   fi
 fi
 
