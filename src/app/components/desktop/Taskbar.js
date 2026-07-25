@@ -1,12 +1,24 @@
 "use client";
 import React, { useEffect, useState, useRef } from 'react';
-import { Wifi, Volume2, VolumeX, BatteryFull, Search, Bluetooth, Moon, Sun, Settings, Plane, ChevronLeft, ChevronRight, Bell } from 'lucide-react';
+import { Wifi, WifiOff, Volume2, VolumeX, BatteryFull, Search, Bluetooth, Moon, Sun, Settings, Plane, ChevronLeft, ChevronRight, Bell } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { StartIcon, WidgetsIcon } from './icons';
 
 // Windows 11 style bottom taskbar: centered app icons, Start button, and a
 // system tray with live clock.
-export default function Taskbar({ apps, windows, activeId, onStart, startOpen, widgetsOpen, onToggleWidgets, onOpen, onTaskClick }) {
+export default function Taskbar({
+    apps,
+    windows,
+    activeId,
+    onStart,
+    startOpen,
+    widgetsOpen,
+    onToggleWidgets,
+    onOpen,
+    onTaskClick,
+    systemSettings: extSystemSettings,
+    onUpdateSystemSettings,
+}) {
     // Starts null: rendering the real clock during SSR made the server HTML
     // disagree with the client on every load ("12:15 PM" vs "12:16 PM"), and
     // React responded by throwing away and regenerating the tray subtree.
@@ -15,15 +27,44 @@ export default function Taskbar({ apps, windows, activeId, onStart, startOpen, w
     const [calendarOpen, setCalendarOpen] = useState(false);
     const trayRef = useRef(null);
 
-    // Quick Settings states
-    const [wifiOn, setWifiOn] = useState(true);
-    const [btOn, setBtOn] = useState(true);
-    const [nightLightOn, setNightLightOn] = useState(false);
-    const [focusOn, setFocusOn] = useState(false);
-    const [airplaneOn, setAirplaneOn] = useState(false);
-    const [volume, setVolume] = useState(80);
-    const [brightness, setBrightness] = useState(100);
-    const [isMuted, setIsMuted] = useState(false);
+    // Fallback internal states
+    const [localSettings, setLocalSettings] = useState({
+        wifiOn: true,
+        btOn: true,
+        nightLightOn: false,
+        focusOn: false,
+        airplaneOn: false,
+        volume: 80,
+        brightness: 100,
+        isMuted: false,
+    });
+
+    const settings = extSystemSettings || localSettings;
+    const updateSettings = (updates) => {
+        if (onUpdateSystemSettings) {
+            onUpdateSystemSettings(updates);
+        } else {
+            setLocalSettings((prev) => ({ ...prev, ...updates }));
+        }
+    };
+
+    const handleToggleWifi = () => {
+        const next = !settings.wifiOn;
+        if (next) {
+            updateSettings({ wifiOn: true, airplaneOn: false });
+        } else {
+            updateSettings({ wifiOn: false });
+        }
+    };
+
+    const handleToggleAirplane = () => {
+        const next = !settings.airplaneOn;
+        if (next) {
+            updateSettings({ airplaneOn: true, wifiOn: false });
+        } else {
+            updateSettings({ airplaneOn: false });
+        }
+    };
 
     // Calendar state
     const [calDate, setCalDate] = useState(() => new Date());
@@ -140,8 +181,14 @@ export default function Taskbar({ apps, windows, activeId, onStart, startOpen, w
                     }`}
                     title="Quick Settings (Wi-Fi, Sound, Battery)"
                 >
-                    <Wifi className={`h-4 w-4 ${wifiOn ? 'text-blue-400' : 'opacity-40'}`} />
-                    {isMuted || volume === 0 ? (
+                    {settings.airplaneOn ? (
+                        <Plane className="h-4 w-4 text-blue-400" />
+                    ) : !settings.wifiOn ? (
+                        <WifiOff className="h-4 w-4 text-red-400 opacity-60" />
+                    ) : (
+                        <Wifi className="h-4 w-4 text-blue-400" />
+                    )}
+                    {settings.isMuted || settings.volume === 0 ? (
                         <VolumeX className="h-4 w-4 text-red-400" />
                     ) : (
                         <Volume2 className="h-4 w-4 text-white/90" />
@@ -178,29 +225,29 @@ export default function Taskbar({ apps, windows, activeId, onStart, startOpen, w
                             {/* Switches Grid */}
                             <div className="grid grid-cols-3 gap-2 mb-4">
                                 <button
-                                    onClick={() => setWifiOn((v) => !v)}
+                                    onClick={handleToggleWifi}
                                     className={`flex flex-col items-center justify-center gap-1 rounded-xl p-2.5 transition ${
-                                        wifiOn ? 'bg-blue-600 text-white' : 'bg-white/5 text-white/60 hover:bg-white/10'
+                                        settings.wifiOn ? 'bg-blue-600 text-white' : 'bg-white/5 text-white/60 hover:bg-white/10'
                                     }`}
                                 >
-                                    <Wifi className="h-5 w-5" />
-                                    <span className="text-[10px] font-medium truncate max-w-full">{wifiOn ? 'Aiyu-WiFi' : 'Off'}</span>
+                                    {settings.wifiOn ? <Wifi className="h-5 w-5" /> : <WifiOff className="h-5 w-5 opacity-60" />}
+                                    <span className="text-[10px] font-medium truncate max-w-full">{settings.wifiOn ? 'Aiyu-WiFi' : 'Off'}</span>
                                 </button>
 
                                 <button
-                                    onClick={() => setBtOn((v) => !v)}
+                                    onClick={() => updateSettings({ btOn: !settings.btOn })}
                                     className={`flex flex-col items-center justify-center gap-1 rounded-xl p-2.5 transition ${
-                                        btOn ? 'bg-blue-600 text-white' : 'bg-white/5 text-white/60 hover:bg-white/10'
+                                        settings.btOn ? 'bg-blue-600 text-white' : 'bg-white/5 text-white/60 hover:bg-white/10'
                                     }`}
                                 >
                                     <Bluetooth className="h-5 w-5" />
-                                    <span className="text-[10px] font-medium truncate max-w-full">{btOn ? 'Bluetooth' : 'Off'}</span>
+                                    <span className="text-[10px] font-medium truncate max-w-full">{settings.btOn ? 'Bluetooth' : 'Off'}</span>
                                 </button>
 
                                 <button
-                                    onClick={() => setNightLightOn((v) => !v)}
+                                    onClick={() => updateSettings({ nightLightOn: !settings.nightLightOn })}
                                     className={`flex flex-col items-center justify-center gap-1 rounded-xl p-2.5 transition ${
-                                        nightLightOn ? 'bg-amber-600 text-white' : 'bg-white/5 text-white/60 hover:bg-white/10'
+                                        settings.nightLightOn ? 'bg-amber-600 text-white' : 'bg-white/5 text-white/60 hover:bg-white/10'
                                     }`}
                                 >
                                     <Moon className="h-5 w-5" />
@@ -208,9 +255,9 @@ export default function Taskbar({ apps, windows, activeId, onStart, startOpen, w
                                 </button>
 
                                 <button
-                                    onClick={() => setFocusOn((v) => !v)}
+                                    onClick={() => updateSettings({ focusOn: !settings.focusOn })}
                                     className={`flex flex-col items-center justify-center gap-1 rounded-xl p-2.5 transition ${
-                                        focusOn ? 'bg-purple-600 text-white' : 'bg-white/5 text-white/60 hover:bg-white/10'
+                                        settings.focusOn ? 'bg-purple-600 text-white' : 'bg-white/5 text-white/60 hover:bg-white/10'
                                     }`}
                                 >
                                     <Bell className="h-5 w-5" />
@@ -218,9 +265,9 @@ export default function Taskbar({ apps, windows, activeId, onStart, startOpen, w
                                 </button>
 
                                 <button
-                                    onClick={() => setAirplaneOn((v) => !v)}
+                                    onClick={handleToggleAirplane}
                                     className={`flex flex-col items-center justify-center gap-1 rounded-xl p-2.5 transition ${
-                                        airplaneOn ? 'bg-blue-600 text-white' : 'bg-white/5 text-white/60 hover:bg-white/10'
+                                        settings.airplaneOn ? 'bg-blue-600 text-white' : 'bg-white/5 text-white/60 hover:bg-white/10'
                                     }`}
                                 >
                                     <Plane className="h-5 w-5" />
@@ -241,23 +288,22 @@ export default function Taskbar({ apps, windows, activeId, onStart, startOpen, w
                                 {/* Volume Slider */}
                                 <div className="flex items-center gap-3">
                                     <button
-                                        onClick={() => setIsMuted((m) => !m)}
+                                        onClick={() => updateSettings({ isMuted: !settings.isMuted })}
                                         className="text-white/80 hover:text-white transition"
                                     >
-                                        {isMuted || volume === 0 ? <VolumeX className="h-4 w-4 text-red-400" /> : <Volume2 className="h-4 w-4" />}
+                                        {settings.isMuted || settings.volume === 0 ? <VolumeX className="h-4 w-4 text-red-400" /> : <Volume2 className="h-4 w-4" />}
                                     </button>
                                     <input
                                         type="range"
                                         min="0"
                                         max="100"
-                                        value={isMuted ? 0 : volume}
+                                        value={settings.isMuted ? 0 : settings.volume}
                                         onChange={(e) => {
-                                            setVolume(Number(e.target.value));
-                                            setIsMuted(false);
+                                            updateSettings({ volume: Number(e.target.value), isMuted: false });
                                         }}
                                         className="flex-1 accent-blue-500 cursor-pointer h-1.5 rounded-lg bg-white/20"
                                     />
-                                    <span className="text-[10px] font-mono text-white/60 w-7 text-right">{isMuted ? 0 : volume}%</span>
+                                    <span className="text-[10px] font-mono text-white/60 w-7 text-right">{settings.isMuted ? 0 : settings.volume}%</span>
                                 </div>
 
                                 {/* Brightness Slider */}
@@ -267,11 +313,11 @@ export default function Taskbar({ apps, windows, activeId, onStart, startOpen, w
                                         type="range"
                                         min="10"
                                         max="100"
-                                        value={brightness}
-                                        onChange={(e) => setBrightness(Number(e.target.value))}
+                                        value={settings.brightness}
+                                        onChange={(e) => updateSettings({ brightness: Number(e.target.value) })}
                                         className="flex-1 accent-blue-500 cursor-pointer h-1.5 rounded-lg bg-white/20"
                                     />
-                                    <span className="text-[10px] font-mono text-white/60 w-7 text-right">{brightness}%</span>
+                                    <span className="text-[10px] font-mono text-white/60 w-7 text-right">{settings.brightness}%</span>
                                 </div>
                             </div>
 
