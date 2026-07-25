@@ -228,6 +228,19 @@ export async function initCronRunner() {
             console.log('[CRON SERVICE] Seeded: Google Drive Automated Backup');
         }
 
+        const gdrivePurgeJob = await prisma.cron.findFirst({ where: { action: 'gdrive_purge' } });
+        if (!gdrivePurgeJob) {
+            await prisma.cron.create({ data: {
+                name: 'Google Drive Auto-Delete Purge',
+                type: 'system',
+                schedule: '0 3 * * *', // Daily at 3:00 AM
+                enabled: false,
+                action: 'gdrive_purge',
+                nextRun: getNextCronRun('0 3 * * *', new Date(), timeZone)
+            } });
+            console.log('[CRON SERVICE] Seeded: Google Drive Auto-Delete Purge');
+        }
+
 
         // Self-heal and recalculate missing or outdated nextRun timestamps
         const now = new Date();
@@ -473,8 +486,15 @@ export async function executeCronJob(job) {
                 const timeStr = now.toTimeString().split(' ')[0].replace(/:/g, '-');
                 const filename = `auto_backup_${dateStr}_${timeStr}.zip`;
                 const uploadRes = await uploadBackupToDrive(zipBuffer, filename);
+                attemptLogOutput = `Google Drive automated backup completed successfully. File: ${filename} (ID: ${uploadRes.id}).`;
+            } else if (job.action === 'gdrive_purge') {
+                const config = await getGDriveConfig();
+                const isConnected = Boolean(config.isConnected || config.refreshToken || config.accessToken);
+                if (!isConnected) {
+                    throw new Error('Google Drive account is not connected. Connect Google Drive in Database Admin to enable automated purge.');
+                }
                 const cleanResult = await cleanOldDriveBackups(config.retentionMonths || 1);
-                attemptLogOutput = `Google Drive automated backup completed successfully. File: ${filename} (ID: ${uploadRes.id}). Cleaned ${cleanResult.deletedCount} old backup(s).`;
+                attemptLogOutput = `Google Drive auto-delete purge completed successfully. Purged ${cleanResult.deletedCount} expired backup file(s) older than ${config.retentionMonths || 1} month(s).`;
             } else if (job.action === 'webhook') {
                 const cachedData = {};
                 cachedData.env = {};

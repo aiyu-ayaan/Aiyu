@@ -156,10 +156,12 @@ export default function DatabaseManager() {
     const [copiedCallback, setCopiedCallback] = useState(false);
     const [showClientSecret, setShowClientSecret] = useState(false);
     const [gdriveCron, setGdriveCron] = useState({
-        enabled: false,
-        schedule: '0 0 * * *',
-        nextRun: null,
-        cronId: null,
+        backupEnabled: false,
+        backupSchedule: '0 0 * * *',
+        backupNextRun: null,
+        purgeEnabled: false,
+        purgeSchedule: '0 3 * * *',
+        purgeNextRun: null,
         loading: false,
     });
 
@@ -219,24 +221,21 @@ export default function DatabaseManager() {
 
     const fetchGDriveCronStatus = useCallback(async () => {
         try {
-            setGdriveCron((prev) => ({ ...prev, loading: true }));
             const res = await fetch('/api/admin/gdrive/cron');
             if (res.ok) {
                 const data = await res.json();
-                if (data.success) {
-                    setGdriveCron({
-                        enabled: Boolean(data.enabled),
-                        schedule: data.schedule || '0 0 * * *',
-                        nextRun: data.nextRun || null,
-                        cronId: data.cronId || null,
-                        loading: false,
-                    });
-                }
+                setGdriveCron({
+                    backupEnabled: Boolean(data.backup?.enabled || data.enabled),
+                    backupSchedule: data.backup?.schedule || '0 0 * * *',
+                    backupNextRun: data.backup?.nextRun || null,
+                    purgeEnabled: Boolean(data.purge?.enabled),
+                    purgeSchedule: data.purge?.schedule || '0 3 * * *',
+                    purgeNextRun: data.purge?.nextRun || null,
+                    loading: false,
+                });
             }
         } catch (err) {
             console.error('Failed to fetch GDrive cron status:', err);
-        } finally {
-            setGdriveCron((prev) => ({ ...prev, loading: false }));
         }
     }, []);
 
@@ -258,29 +257,28 @@ export default function DatabaseManager() {
         }
     }, [fetchGDriveStatus, fetchGDriveConfig, fetchGDriveCronStatus]);
 
-    const handleToggleGDriveCron = async () => {
-        const nextState = !gdriveCron.enabled;
+    const handleToggleGDriveCron = async (actionTarget = 'gdrive_backup') => {
+        const isPurge = actionTarget === 'gdrive_purge';
+        const currentEnabled = isPurge ? gdriveCron.purgeEnabled : gdriveCron.backupEnabled;
+        const nextState = !currentEnabled;
+
         try {
             setGdriveCron((prev) => ({ ...prev, loading: true }));
             const res = await fetch('/api/admin/gdrive/cron', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ enabled: nextState }),
+                body: JSON.stringify({ action: actionTarget, enabled: nextState }),
             });
             const data = await res.json();
             if (!res.ok || !data.success) {
-                throw new Error(data.error || 'Failed to update automated backup schedule');
+                throw new Error(data.error || 'Failed to update cron schedule');
             }
-            setGdriveCron({
-                enabled: Boolean(data.enabled),
-                schedule: data.schedule || '0 0 * * *',
-                nextRun: data.nextRun || null,
-                cronId: data.cronId || null,
-                loading: false,
-            });
+            await fetchGDriveCronStatus();
             setMessage({
                 type: 'success',
-                text: nextState ? 'AUTOMATED_DAILY_BACKUP_ENABLED' : 'AUTOMATED_DAILY_BACKUP_DISABLED',
+                text: isPurge
+                    ? (nextState ? 'AUTO_DELETE_PURGE_CRON_ENABLED' : 'AUTO_DELETE_PURGE_CRON_DISABLED')
+                    : (nextState ? 'AUTOMATED_DAILY_BACKUP_ENABLED' : 'AUTOMATED_DAILY_BACKUP_DISABLED'),
             });
         } catch (err) {
             setMessage({ type: 'error', text: err.message });
@@ -825,14 +823,22 @@ export default function DatabaseManager() {
                             </p>
                         )}
 
-                        {/* Dedicated Automated Backup Schedule (Cron) row */}
-                        <div className="bg-slate-950/60 border border-white/5 rounded-xl p-4 mb-4 space-y-3">
-                            <div className="flex items-center justify-between gap-2 flex-wrap">
+                        {/* Dedicated Automated Backup & Purge Schedule (Cron) box */}
+                        <div className="bg-slate-950/60 border border-white/5 rounded-xl p-4 mb-4 space-y-4">
+                            <div className="flex items-center justify-between gap-2 flex-wrap pb-1 border-b border-white/5">
                                 <div className="flex items-center gap-2">
                                     <FaClock className="text-cyan-400" size={14} />
                                     <span className="text-xs font-mono font-bold text-slate-200 uppercase tracking-wider">
                                         Automated Daily Schedule
                                     </span>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowGDriveModal(true)}
+                                        title="Configure Google Drive API & Retention Settings"
+                                        className="p-1 rounded-md text-slate-400 hover:text-cyan-400 hover:bg-slate-800 transition-colors"
+                                    >
+                                        <FaCog size={13} />
+                                    </button>
                                 </div>
                                 <Link
                                     href="/admin/config/crons"
@@ -842,41 +848,91 @@ export default function DatabaseManager() {
                                 </Link>
                             </div>
 
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+                            {/* Cron Job 1: Automated Daily Backup */}
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                 <div>
-                                    <div className="text-xs font-mono text-slate-400">
-                                        Schedule: <span className="text-slate-200 font-semibold">Daily at Midnight ({gdriveCron.schedule})</span>
+                                    <div className="text-xs font-mono text-slate-300 font-bold flex items-center gap-1.5">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+                                        Auto-Backup Cron ({gdriveCron.backupSchedule})
                                     </div>
-                                    {gdriveCron.enabled && gdriveCron.nextRun && (
-                                        <div className="text-[11px] font-mono text-emerald-400 mt-1 flex items-center gap-1.5">
+                                    <div className="text-[11px] font-mono text-slate-400 mt-0.5">
+                                        Runs daily at midnight
+                                    </div>
+                                    {gdriveCron.backupEnabled && gdriveCron.backupNextRun && (
+                                        <div className="text-[10px] font-mono text-emerald-400 mt-1 flex items-center gap-1.5">
                                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                                            Next Run: {formatDate(gdriveCron.nextRun)}
+                                            Next: {formatDate(gdriveCron.backupNextRun)}
                                         </div>
                                     )}
                                 </div>
 
                                 <button
                                     type="button"
-                                    onClick={handleToggleGDriveCron}
+                                    onClick={() => handleToggleGDriveCron('gdrive_backup')}
                                     disabled={gdriveCron.loading || !gdriveStatus?.isConnected}
                                     title={!gdriveStatus?.isConnected ? 'Connect Google Drive to enable automated backups' : ''}
-                                    className={`px-3 py-1.5 rounded-lg font-mono text-xs font-bold transition-all flex items-center justify-center gap-2 shrink-0 border ${
-                                        gdriveCron.enabled
+                                    className={`px-3 py-1.5 rounded-lg font-mono text-[11px] font-bold transition-all flex items-center justify-center gap-2 shrink-0 border ${
+                                        gdriveCron.backupEnabled
                                             ? 'bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/30 text-emerald-400'
                                             : 'bg-slate-800/80 hover:bg-slate-800 border-white/10 text-slate-400 hover:text-slate-200'
                                     } disabled:opacity-40 disabled:cursor-not-allowed`}
                                 >
                                     {gdriveCron.loading ? (
                                         <FaSync className="animate-spin text-cyan-400" size={12} />
-                                    ) : gdriveCron.enabled ? (
+                                    ) : gdriveCron.backupEnabled ? (
                                         <>
                                             <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                                            DISABLE_AUTOMATIC_BACKUP
+                                            BACKUP_CRON: ENABLED
                                         </>
                                     ) : (
                                         <>
                                             <span className="w-2 h-2 rounded-full bg-slate-500" />
-                                            ENABLE_AUTOMATIC_BACKUP
+                                            BACKUP_CRON: OFF
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+
+                            {/* Cron Job 2: Auto-Delete Purge */}
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-white/5">
+                                <div>
+                                    <div className="text-xs font-mono text-slate-300 font-bold flex items-center gap-1.5">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                                        Auto-Delete Purge Cron ({gdriveCron.purgeSchedule})
+                                    </div>
+                                    <div className="text-[11px] font-mono text-slate-400 mt-0.5">
+                                        Threshold: &gt; {gdriveStatus?.retentionMonths || 1} Month{(gdriveStatus?.retentionMonths || 1) > 1 ? 's' : ''} Old
+                                    </div>
+                                    {gdriveCron.purgeEnabled && gdriveCron.purgeNextRun && (
+                                        <div className="text-[10px] font-mono text-amber-400 mt-1 flex items-center gap-1.5">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                                            Next: {formatDate(gdriveCron.purgeNextRun)}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={() => handleToggleGDriveCron('gdrive_purge')}
+                                    disabled={gdriveCron.loading || !gdriveStatus?.isConnected}
+                                    title={!gdriveStatus?.isConnected ? 'Connect Google Drive to enable auto-delete purge' : ''}
+                                    className={`px-3 py-1.5 rounded-lg font-mono text-[11px] font-bold transition-all flex items-center justify-center gap-2 shrink-0 border ${
+                                        gdriveCron.purgeEnabled
+                                            ? 'bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/30 text-amber-400'
+                                            : 'bg-slate-800/80 hover:bg-slate-800 border-white/10 text-slate-400 hover:text-slate-200'
+                                    } disabled:opacity-40 disabled:cursor-not-allowed`}
+                                >
+                                    {gdriveCron.loading ? (
+                                        <FaSync className="animate-spin text-amber-400" size={12} />
+                                    ) : gdriveCron.purgeEnabled ? (
+                                        <>
+                                            <span className="w-2 h-2 rounded-full bg-amber-400" />
+                                            PURGE_CRON: ENABLED
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span className="w-2 h-2 rounded-full bg-slate-500" />
+                                            PURGE_CRON: OFF
                                         </>
                                     )}
                                 </button>

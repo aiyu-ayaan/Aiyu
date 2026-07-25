@@ -11,19 +11,35 @@ export async function GET() {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
-    const job = await prisma.cron.findFirst({ where: { action: 'gdrive_backup' } });
+    const backupJob = await prisma.cron.findFirst({ where: { action: 'gdrive_backup' } });
+    const purgeJob = await prisma.cron.findFirst({ where: { action: 'gdrive_purge' } });
 
     return NextResponse.json({
       success: true,
-      enabled: job ? job.enabled : false,
-      schedule: job ? job.schedule : '0 0 * * *',
-      lastRun: job ? job.lastRun : null,
-      nextRun: job ? job.nextRun : null,
-      cronId: job ? job.id : null,
+      backup: {
+        enabled: backupJob ? backupJob.enabled : false,
+        schedule: backupJob ? backupJob.schedule : '0 0 * * *',
+        lastRun: backupJob ? backupJob.lastRun : null,
+        nextRun: backupJob ? backupJob.nextRun : null,
+        cronId: backupJob ? backupJob.id : null,
+      },
+      purge: {
+        enabled: purgeJob ? purgeJob.enabled : false,
+        schedule: purgeJob ? purgeJob.schedule : '0 3 * * *',
+        lastRun: purgeJob ? purgeJob.lastRun : null,
+        nextRun: purgeJob ? purgeJob.nextRun : null,
+        cronId: purgeJob ? purgeJob.id : null,
+      },
+      // Legacy compatibility keys for backup
+      enabled: backupJob ? backupJob.enabled : false,
+      schedule: backupJob ? backupJob.schedule : '0 0 * * *',
+      lastRun: backupJob ? backupJob.lastRun : null,
+      nextRun: backupJob ? backupJob.nextRun : null,
+      cronId: backupJob ? backupJob.id : null,
     });
   } catch (error) {
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to fetch Google Drive backup cron status' },
+      { success: false, error: error.message || 'Failed to fetch Google Drive cron status' },
       { status: 500 }
     );
   }
@@ -37,24 +53,27 @@ export async function POST(request) {
     }
 
     const body = await request.json().catch(() => ({}));
-    const { enabled, schedule } = body;
+    const { action = 'gdrive_backup', enabled, schedule } = body;
+    const targetAction = action === 'gdrive_purge' ? 'gdrive_purge' : 'gdrive_backup';
+    const defaultSchedule = targetAction === 'gdrive_purge' ? '0 3 * * *' : '0 0 * * *';
+    const defaultName = targetAction === 'gdrive_purge' ? 'Google Drive Auto-Delete Purge' : 'Google Drive Automated Backup';
 
-    let job = await prisma.cron.findFirst({ where: { action: 'gdrive_backup' } });
+    let job = await prisma.cron.findFirst({ where: { action: targetAction } });
     const config = await getSingleton(prisma, 'config');
     const timeZone = config?.defaultTimezone || 'UTC';
 
-    const cronSchedule = schedule || job?.schedule || '0 0 * * *';
+    const cronSchedule = schedule || job?.schedule || defaultSchedule;
     const isEnabled = enabled !== undefined ? Boolean(enabled) : (job ? job.enabled : false);
     const nextRun = isEnabled ? getNextCronRun(cronSchedule, new Date(), timeZone) : null;
 
     if (!job) {
       job = await prisma.cron.create({
         data: {
-          name: 'Google Drive Automated Backup',
+          name: defaultName,
           type: 'system',
           schedule: cronSchedule,
           enabled: isEnabled,
-          action: 'gdrive_backup',
+          action: targetAction,
           nextRun,
         },
       });
@@ -71,6 +90,7 @@ export async function POST(request) {
 
     return NextResponse.json({
       success: true,
+      action: targetAction,
       enabled: job.enabled,
       schedule: job.schedule,
       lastRun: job.lastRun,
@@ -79,7 +99,7 @@ export async function POST(request) {
     });
   } catch (error) {
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to update Google Drive backup cron status' },
+      { success: false, error: error.message || 'Failed to update Google Drive cron status' },
       { status: 500 }
     );
   }
