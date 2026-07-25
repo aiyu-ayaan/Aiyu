@@ -1,13 +1,47 @@
 "use client";
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { Wifi, WifiOff, Volume2, VolumeX, BatteryFull, Search, Bluetooth, Moon, Sun, Settings, Plane, ChevronLeft, ChevronRight, Bell, Smartphone, Tablet, Monitor as MonitorIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { StartIcon, WidgetsIcon } from './icons';
 import { useDeviceMode } from '@/app/context/DeviceModeContext';
 
+// The clock owns its own ticking state so the 20s tick repaints two lines of
+// text instead of the whole taskbar (every pinned app button, the tray and any
+// open flyout).
+//
+// Starts null: rendering the real clock during SSR made the server HTML
+// disagree with the client on every load ("12:15 PM" vs "12:16 PM"), and React
+// responded by throwing away and regenerating the tray subtree.
+const TrayClock = React.memo(function TrayClock({ open, onToggle }) {
+    const [now, setNow] = useState(null);
+
+    useEffect(() => {
+        setNow(new Date());
+        const t = setInterval(() => setNow(new Date()), 1000 * 20);
+        return () => clearInterval(t);
+    }, []);
+
+    const time = now ? now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--';
+    const date = now ? now.toLocaleDateString([], { month: 'numeric', day: 'numeric', year: 'numeric' }) : '--/--/----';
+
+    return (
+        <motion.button
+            whileTap={{ scale: 0.94 }}
+            onClick={onToggle}
+            className={`rounded-md px-2 py-1 text-right text-[11px] leading-tight transition-colors hover:bg-black/5 dark:hover:bg-white/10 ${
+                open ? 'bg-black/10 dark:bg-white/15' : ''
+            }`}
+            title="Calendar & Notifications"
+        >
+            <div className="font-semibold text-white/90">{time}</div>
+            <div className="opacity-70">{date}</div>
+        </motion.button>
+    );
+});
+
 // Windows 11 style bottom taskbar: centered app icons, Start button, and a
 // system tray with live clock.
-export default function Taskbar({
+function Taskbar({
     apps,
     windows,
     activeId,
@@ -22,10 +56,6 @@ export default function Taskbar({
 }) {
     const { deviceMode, setDeviceMode } = useDeviceMode();
 
-    // Starts null: rendering the real clock during SSR made the server HTML
-    // disagree with the client on every load ("12:15 PM" vs "12:16 PM"), and
-    // React responded by throwing away and regenerating the tray subtree.
-    const [now, setNow] = useState(null);
     const [quickOpen, setQuickOpen] = useState(false);
     const [calendarOpen, setCalendarOpen] = useState(false);
     const trayRef = useRef(null);
@@ -72,10 +102,11 @@ export default function Taskbar({
     // Calendar state
     const [calDate, setCalDate] = useState(() => new Date());
 
-    useEffect(() => {
-        setNow(new Date());
-        const t = setInterval(() => setNow(new Date()), 1000 * 20);
-        return () => clearInterval(t);
+    // Stable identity so the memoized TrayClock is not re-rendered by unrelated
+    // taskbar state.
+    const toggleCalendar = useCallback(() => {
+        setCalendarOpen((v) => !v);
+        setQuickOpen(false);
     }, []);
 
     // Dismiss flyouts when clicking outside
@@ -93,11 +124,25 @@ export default function Taskbar({
         return () => window.removeEventListener('pointerdown', handleClickOutside);
     }, [quickOpen, calendarOpen]);
 
-    const time = now ? now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--';
-    const date = now ? now.toLocaleDateString([], { month: 'numeric', day: 'numeric', year: 'numeric' }) : '--/--/----';
+    // Only read by the calendar flyout's "today" ring. Constructed per render
+    // instead of shared with the clock, so the clock's tick stays local to
+    // TrayClock.
+    const today = new Date();
 
     // Pinned apps always show; open windows get an "active" underline.
-    const pinned = apps.filter((a) => a.key !== 'start');
+    const pinned = useMemo(() => apps.filter((a) => a.key !== 'start'), [apps]);
+
+    // One pass over the window list instead of scanning it once per pinned app.
+    const taskState = useMemo(() => {
+        const map = new Map();
+        for (const w of windows) {
+            const entry = map.get(w.appKey) || { open: false, active: false };
+            entry.open = true;
+            if (w.id === activeId && !w.minimized) entry.active = true;
+            map.set(w.appKey, entry);
+        }
+        return map;
+    }, [windows, activeId]);
 
     return (
         <div className="absolute inset-x-0 bottom-0 z-50 flex h-12 items-center justify-between px-2 win-acrylic win-acrylic-noise win-acrylic-highlight bg-[#e8e8ee]/65 dark:bg-[#1a1a1f]/70 border-t border-white/25 dark:border-white/8">
@@ -145,9 +190,9 @@ export default function Taskbar({
                 </motion.button>
 
                 {pinned.map((a) => {
-                    const openWins = windows.filter((w) => w.appKey === a.key && !w.closed);
-                    const isOpen = openWins.length > 0;
-                    const isActive = openWins.some((w) => w.id === activeId && !w.minimized);
+                    const state = taskState.get(a.key);
+                    const isOpen = Boolean(state?.open);
+                    const isActive = Boolean(state?.active);
                     return (
                         <motion.button
                             key={a.key}
@@ -225,20 +270,7 @@ export default function Taskbar({
                 </motion.button>
 
                 {/* Clock & Date Button */}
-                <motion.button
-                    whileTap={{ scale: 0.94 }}
-                    onClick={() => {
-                        setCalendarOpen((v) => !v);
-                        setQuickOpen(false);
-                    }}
-                    className={`rounded-md px-2 py-1 text-right text-[11px] leading-tight transition-colors hover:bg-black/5 dark:hover:bg-white/10 ${
-                        calendarOpen ? 'bg-black/10 dark:bg-white/15' : ''
-                    }`}
-                    title="Calendar & Notifications"
-                >
-                    <div className="font-semibold text-white/90">{time}</div>
-                    <div className="opacity-70">{date}</div>
-                </motion.button>
+                <TrayClock open={calendarOpen} onToggle={toggleCalendar} />
 
                 {/* Quick Settings Flyout Panel */}
                 <AnimatePresence>
@@ -421,10 +453,9 @@ export default function Taskbar({
                                 {Array.from({ length: new Date(calDate.getFullYear(), calDate.getMonth() + 1, 0).getDate() }).map((_, i) => {
                                     const dayNum = i + 1;
                                     const isToday =
-                                        now &&
-                                        dayNum === now.getDate() &&
-                                        calDate.getMonth() === now.getMonth() &&
-                                        calDate.getFullYear() === now.getFullYear();
+                                        dayNum === today.getDate() &&
+                                        calDate.getMonth() === today.getMonth() &&
+                                        calDate.getFullYear() === today.getFullYear();
 
                                     return (
                                         <button
@@ -459,4 +490,9 @@ export default function Taskbar({
         </div>
     );
 }
+
+// The taskbar is a sibling of every window, so without memoization desktop
+// state that it does not read (context menu, snap flyout, wallpaper, power
+// overlays) re-rendered it too.
+export default React.memo(Taskbar);
 
