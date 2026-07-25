@@ -7,6 +7,9 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ExplorerIcon, VSCodeIcon, ChromeIcon, SettingsIcon, ThisPCIcon, PhotosIcon, GitHubIcon, TaskManagerIcon, TerminalIcon, NotepadIcon, CalculatorIcon, WhiteboardIcon, GetStartedIcon } from './icons';
 import Window from './Window';
 import Taskbar from './Taskbar';
+import { useDeviceMode } from '@/app/context/DeviceModeContext';
+import MobilePhoneShell from './MobilePhoneShell';
+import TabletSurfaceShell from './TabletSurfaceShell';
 
 // Everything below the shell (window chrome + taskbar) is split out of the
 // initial /desktop bundle. Nothing here can render before a user opens it, and
@@ -241,6 +244,7 @@ const WindowSurface = React.memo(function WindowSurface({
 });
 
 export default function Desktop({ wallpaper: initialWallpaper, config = EMPTY_CONFIG }) {
+    const { effectiveMode } = useDeviceMode();
     const [wallpaper, setWallpaper] = useState(initialWallpaper);
 
     // Reactive System Settings
@@ -594,6 +598,36 @@ export default function Desktop({ wallpaper: initialWallpaper, config = EMPTY_CO
         if (!snapFlyoutTarget) return [];
         return windows.filter((w) => w.id !== snapFlyoutTarget.winId && !w.minimized);
     }, [snapFlyoutTarget, windows]);
+
+    if (effectiveMode === 'mobile') {
+        return (
+            <MobilePhoneShell
+                apps={APPS}
+                windows={windows}
+                activeWindowId={activeId}
+                openApp={openApp}
+                closeWin={closeWin}
+                focusWindow={focus}
+                config={config}
+                wallpaper={wallpaper}
+            />
+        );
+    }
+
+    if (effectiveMode === 'tablet') {
+        return (
+            <TabletSurfaceShell
+                apps={APPS}
+                windows={windows}
+                activeWindowId={activeId}
+                openApp={openApp}
+                closeWin={closeWin}
+                focusWindow={focus}
+                config={config}
+                wallpaper={wallpaper}
+            />
+        );
+    }
 
     return (
         <div

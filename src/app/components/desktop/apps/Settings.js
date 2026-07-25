@@ -14,8 +14,10 @@ import {
     Edit2,
     Check,
     X,
+    Smartphone,
 } from 'lucide-react';
 import { useDeviceName } from '../useDeviceName';
+import { useDeviceMode } from '@/app/context/DeviceModeContext';
 
 const PRESET_WALLPAPERS = [
     {
@@ -43,6 +45,7 @@ const PRESET_WALLPAPERS = [
 const SECTIONS = [
     { key: 'system', label: 'System', icon: Monitor },
     { key: 'personalization', label: 'Personalization', icon: Palette },
+    { key: 'theme', label: 'Device & Theme', icon: Smartphone },
     { key: 'about', label: 'About', icon: Info },
 ];
 
@@ -99,6 +102,7 @@ export default function Settings({ wallpaper, setWallpaper, config = {}, payload
                 <div className="max-w-4xl space-y-6">
                     {pane === 'system' && <SystemPane sys={sys} deviceName={deviceName} osVersion={osVersion} onRename={setDeviceName} />}
                     {pane === 'personalization' && <PersonalizationPane wallpaper={wallpaper} setWallpaper={setWallpaper} />}
+                    {pane === 'theme' && <ThemePane />}
                     {pane === 'about' && <AboutPane sys={sys} deviceName={deviceName} osVersion={osVersion} onRename={setDeviceName} />}
                 </div>
             </div>
@@ -249,6 +253,70 @@ function PersonalizationPane({ wallpaper, setWallpaper }) {
                             </button>
                         );
                     })}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function ThemePane() {
+    const { deviceMode, setDeviceMode, accentColor, setAccentColor } = useDeviceMode();
+
+    const modes = [
+        { id: 'auto', label: 'Auto (Responsive)' },
+        { id: 'mobile', label: 'Mobile (Windows Phone)' },
+        { id: 'tablet', label: 'Tablet (Surface)' },
+        { id: 'desktop', label: 'Desktop (Windows 11)' },
+    ];
+
+    const colors = [
+        { id: 'lumia-cyan', name: 'Lumia Cyan', hex: '#00abf0' },
+        { id: 'crimson', name: 'Crimson', hex: '#e51400' },
+        { id: 'cobalt', name: 'Cobalt', hex: '#0050ef' },
+        { id: 'emerald', name: 'Emerald', hex: '#008a00' },
+        { id: 'magenta', name: 'Magenta', hex: '#d80073' },
+        { id: 'amber', name: 'Amber', hex: '#f0a30a' },
+        { id: 'violet', name: 'Violet', hex: '#76608a' },
+    ];
+
+    return (
+        <div className="space-y-8">
+            <div>
+                <h2 className="mb-1 text-xl font-semibold">Device & UI Theme</h2>
+                <p className="text-sm opacity-60">Control layout behavior and accent colors</p>
+            </div>
+
+            <div>
+                <h3 className="mb-3 text-sm font-semibold opacity-90">Device Mode</h3>
+                <div className="flex flex-col gap-2">
+                    {modes.map((m) => (
+                        <label key={m.id} className="flex items-center gap-3 cursor-pointer">
+                            <input
+                                type="radio"
+                                name="deviceMode"
+                                value={m.id}
+                                checked={deviceMode === m.id}
+                                onChange={() => setDeviceMode(m.id)}
+                                className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                            />
+                            <span className="text-sm font-medium">{m.label}</span>
+                        </label>
+                    ))}
+                </div>
+            </div>
+
+            <div>
+                <h3 className="mb-3 text-sm font-semibold opacity-90">Accent Color</h3>
+                <div className="flex flex-wrap gap-3">
+                    {colors.map((c) => (
+                        <button
+                            key={c.id}
+                            title={c.name}
+                            onClick={() => setAccentColor(c.id)}
+                            className={`w-10 h-10 rounded-full border-2 transition-transform ${accentColor === c.id ? 'border-white scale-110 shadow-lg' : 'border-transparent hover:scale-105'}`}
+                            style={{ backgroundColor: c.hex }}
+                        />
+                    ))}
                 </div>
             </div>
         </div>

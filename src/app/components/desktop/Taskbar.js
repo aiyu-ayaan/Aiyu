@@ -1,8 +1,9 @@
 "use client";
 import React, { useEffect, useState, useRef } from 'react';
-import { Wifi, WifiOff, Volume2, VolumeX, BatteryFull, Search, Bluetooth, Moon, Sun, Settings, Plane, ChevronLeft, ChevronRight, Bell } from 'lucide-react';
+import { Wifi, WifiOff, Volume2, VolumeX, BatteryFull, Search, Bluetooth, Moon, Sun, Settings, Plane, ChevronLeft, ChevronRight, Bell, Smartphone, Tablet, Monitor as MonitorIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { StartIcon, WidgetsIcon } from './icons';
+import { useDeviceMode } from '@/app/context/DeviceModeContext';
 
 // Windows 11 style bottom taskbar: centered app icons, Start button, and a
 // system tray with live clock.
@@ -19,6 +20,8 @@ export default function Taskbar({
     systemSettings: extSystemSettings,
     onUpdateSystemSettings,
 }) {
+    const { deviceMode, setDeviceMode } = useDeviceMode();
+
     // Starts null: rendering the real clock during SSR made the server HTML
     // disagree with the client on every load ("12:15 PM" vs "12:16 PM"), and
     // React responded by throwing away and regenerating the tray subtree.
@@ -169,6 +172,31 @@ export default function Taskbar({
 
             {/* System tray */}
             <div ref={trayRef} className="relative flex w-40 items-center justify-end gap-1.5 pr-2 text-neutral-700 dark:text-neutral-200">
+                {/* Device Mode Toggle Button */}
+                <motion.button
+                    whileTap={{ scale: 0.94 }}
+                    onClick={() => {
+                        const modes = ['auto', 'mobile', 'tablet', 'desktop'];
+                        const nextIndex = (modes.indexOf(deviceMode) + 1) % modes.length;
+                        setDeviceMode(modes[nextIndex]);
+                    }}
+                    className={`flex items-center justify-center rounded-md px-2 py-1.5 transition-colors hover:bg-black/5 dark:hover:bg-white/10`}
+                    title={`Device Mode: ${deviceMode.charAt(0).toUpperCase() + deviceMode.slice(1)}`}
+                >
+                    {deviceMode === 'mobile' ? (
+                        <Smartphone className="h-4 w-4 text-white/90" />
+                    ) : deviceMode === 'tablet' ? (
+                        <Tablet className="h-4 w-4 text-white/90" />
+                    ) : deviceMode === 'desktop' ? (
+                        <MonitorIcon className="h-4 w-4 text-white/90" />
+                    ) : (
+                        <div className="flex items-center gap-[2px]">
+                            <MonitorIcon className="h-4 w-4 text-white/90" />
+                            <span className="text-[9px] font-bold text-white/70 bg-black/30 px-0.5 rounded">A</span>
+                        </div>
+                    )}
+                </motion.button>
+
                 {/* Quick Settings Button */}
                 <motion.button
                     whileTap={{ scale: 0.94 }}
