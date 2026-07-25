@@ -1,6 +1,6 @@
 "use client";
 import React, { useMemo, useRef, useState, useEffect } from 'react';
-import { ArrowLeft, ArrowRight, RotateCw, Lock, Star, X, Plus, Home, ExternalLink, ShieldCheck, Copy, Globe, AlertCircle, Check, ShieldAlert, AppWindow } from 'lucide-react';
+import { ArrowLeft, ArrowRight, RotateCw, Lock, Star, X, Plus, Home, ExternalLink, ShieldCheck, Copy, Globe, AlertCircle, Check, ShieldAlert, AppWindow, WifiOff } from 'lucide-react';
 
 const QUICK_LINKS = [
     { label: 'Home', path: '/' },
@@ -56,7 +56,7 @@ function toUrl(input) {
     return `https://www.google.com/search?q=${encodeURIComponent(raw)}`;
 }
 
-export default function Browser({ payload, closeWin }) {
+export default function Browser({ payload, closeWin, isOffline }) {
     const [tabs, setTabs] = useState(() => {
         if (payload?.url) {
             return [{ id: 1, title: payload.title || payload.url, url: payload.url, forceEmbed: false }];
@@ -204,7 +204,9 @@ export default function Browser({ payload, closeWin }) {
                             key={t.id}
                             className={`absolute inset-0 h-full w-full ${isSelected ? 'block z-10' : 'hidden z-0'}`}
                         >
-                            {t.url ? (
+                            {isOffline ? (
+                                <OfflinePreview onRetry={() => navigate(t.url || '/', t.title || 'Home')} />
+                            ) : t.url ? (
                                 specType === 'desktop' ? (
                                     <DesktopRecursionPreview onGoHome={() => navigate('/', 'Home')} />
                                 ) : specType === 'admin' ? (
@@ -395,6 +397,45 @@ function AdminRoutePreview({ url, title }) {
                     >
                         <ExternalLink className="h-4 w-4" />
                         <span>Open Admin Dashboard in New Tab</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function OfflinePreview({ onRetry }) {
+    return (
+        <div className="flex h-full flex-col items-center justify-center p-6 text-neutral-800 dark:text-neutral-100 bg-white dark:bg-[#202124] select-none">
+            <div className="w-full max-w-md space-y-6 text-left">
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 shadow-sm border border-neutral-200 dark:border-neutral-700">
+                    <WifiOff className="h-8 w-8 text-neutral-500 dark:text-neutral-400" />
+                </div>
+
+                <div>
+                    <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-white">
+                        No internet
+                    </h1>
+                    <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400 font-medium">
+                        Try:
+                    </p>
+                    <ul className="mt-2 list-disc list-inside text-sm text-neutral-600 dark:text-neutral-400 space-y-1.5 pl-1">
+                        <li>Checking the network cables, modem, and router</li>
+                        <li>Reconnecting to Wi-Fi</li>
+                        <li>Turning off Airplane mode</li>
+                    </ul>
+                </div>
+
+                <div className="pt-2">
+                    <div className="text-xs font-mono uppercase tracking-wider text-neutral-400 dark:text-neutral-500 mb-4">
+                        ERR_INTERNET_DISCONNECTED
+                    </div>
+
+                    <button
+                        onClick={onRetry}
+                        className="rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-bold text-white hover:bg-blue-500 transition shadow"
+                    >
+                        Try again
                     </button>
                 </div>
             </div>
