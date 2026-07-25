@@ -21,7 +21,15 @@ import { v2PublicPath } from '@/lib/siteVersion';
 const V2Header = ({ logoText = '< aiyu />', data, config, socialData }) => {
     const pathname = usePathname();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [isDesktopFrame, setIsDesktopFrame] = useState(false);
     const overflowRestoreRef = useRef({ body: null, html: null });
+
+    useEffect(() => {
+        if (typeof window !== 'undefined' && window.self !== window.top) {
+            setIsDesktopFrame(true);
+        }
+    }, []);
+
     // Reading surfaces stay quiet — no terminal row on the blog index/details.
     // Blogs answer at /v2/blogs normally and at /blogs when v2 is the admin
     // default (proxy rewrite keeps the classic URL), so match both.
@@ -105,6 +113,8 @@ const V2Header = ({ logoText = '< aiyu />', data, config, socialData }) => {
     }, [isMenuOpen]);
 
     const brackets = (active) => ({ color: active ? 'var(--accent-cyan)' : 'var(--text-muted)' });
+
+    if (isDesktopFrame) return null;
 
     return (
         <>

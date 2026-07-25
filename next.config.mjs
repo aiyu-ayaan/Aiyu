@@ -23,6 +23,20 @@ const nextConfig = {
   // output: 'export' // Disabled to allow dynamic API routes
   output: standaloneOutput,
   trailingSlash: false,
+
+  // The /desktop VS Code app streams a whitelist of source files at runtime via
+  // /api/desktop/source. Standalone output tree-shakes `src/**` away, so trace
+  // those exact files in for the source route (it degrades gracefully if absent).
+  outputFileTracingIncludes: {
+    '/api/desktop/source': [
+      './src/app/desktop/**',
+      './src/app/components/desktop/**',
+      './src/app/api/desktop/source/route.js',
+      './src/app/api/config/route.js',
+      './prisma/schema.prisma',
+    ],
+  },
+
   allowedDevOrigins: ['192.168.31.54', '192.168.1.102'],
   assetPrefix: isProduction && cdnUrl ? cdnUrl : undefined,
 
@@ -175,13 +189,13 @@ const nextConfig = {
       "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self'",
-      "frame-ancestors 'none'",
+      "frame-ancestors 'self'",
     ];
     const securityHeaders = [
       { key: 'Content-Security-Policy', value: cspDirectives.join('; ') },
       { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
       { key: 'X-Content-Type-Options', value: 'nosniff' },
-      { key: 'X-Frame-Options', value: 'DENY' },
+      { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
       { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
     ];
 

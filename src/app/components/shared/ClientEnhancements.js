@@ -178,8 +178,8 @@ export default function ClientEnhancements() {
     useEffect(() => {
         if (typeof window === "undefined") return;
 
-        // Skip Lenis on administrative panels
-        if (pathname.startsWith('/admin')) {
+        // Skip Lenis on administrative panels and desktop environment
+        if (pathname.startsWith('/admin') || pathname.startsWith('/desktop')) {
             return;
         }
 

@@ -64,6 +64,78 @@
   color: var(--text-tertiary);
 }
 
+/* ============================================================
+   Windows 11 Fluent Acrylic & Mica Material System
+   These classes are used by the /desktop shell components
+   (Taskbar, Window titlebar, Start Menu, Widgets, context menus).
+   ============================================================ */
+
+/* Primary acrylic: heavy blur + saturation boost + transparent tint.
+   Used on taskbar, start menu, flyout panels. */
+.win-acrylic {
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+}
+
+/* Mica material: lighter backdrop blur for window chrome/titlebars.
+   Less aggressive than acrylic; shows subtle wallpaper tint. */
+.win-mica {
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+}
+
+/* Micro-noise texture overlay — mimics the physical grain of
+   real Windows 11 Acrylic surfaces. Apply as a pseudo-element. */
+.win-acrylic-noise::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  z-index: 1;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 128px 128px;
+  mix-blend-mode: overlay;
+}
+
+/* Specular top-edge highlight — gives the frosted glass a lit edge. */
+.win-acrylic-highlight {
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
+}
+
+:is(.dark, [data-theme="dark"]) .win-acrylic-highlight {
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+}
+
+/* backdrop-filter forces the compositor to re-blur everything behind these
+   surfaces, and the taskbar/flyouts sit on top of the whole desktop. Honour the
+   OS transparency preference: drop the blur, the noise blend and the specular
+   edge, and fall back to an opaque tint. */
+@media (prefers-reduced-transparency: reduce) {
+
+  .win-acrylic,
+  .win-mica {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background-color: #eeeef2;
+  }
+
+  :is(.dark, [data-theme="dark"]) .win-acrylic,
+  :is(.dark, [data-theme="dark"]) .win-mica {
+    background-color: #1a1a1f;
+  }
+
+  .win-acrylic-noise::before {
+    display: none;
+  }
+
+  .win-acrylic-highlight {
+    box-shadow: none;
+  }
+}
+
 /* Glass surfaces */
 .glass-panel {
   position: relative;
@@ -601,10 +673,26 @@ body,
   display: none !important;
 }
 
-*::-webkit-scrollbar {
-  width: 0 !important;
-  height: 0 !important;
-  display: none !important;
+/* Custom scrollbar utility */
+.custom-scrollbar {
+  -ms-overflow-style: auto !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: rgba(255, 255, 255, 0.25) transparent !important;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px !important;
+  height: 6px !important;
+  display: block !important;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.25) !important;
+  border-radius: 9999px !important;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent !important;
 }
 
 /* Revive Scrollbars for Admin Screens */
