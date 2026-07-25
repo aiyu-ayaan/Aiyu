@@ -24,8 +24,123 @@ const buildProjectsMarkdown = () => {
   return `# Engineering Projects & Showcase\n\nA collection of featured mobile apps, web backends, open-source libraries, and developer tools built by ${name}.\n\n---\n\n${projectEntries}`;
 };
 
-const buildAIMarkdown = () => {
-  return `# AI Assistant & LLM Studio [BETA]\n\nAn intelligent conversational workspace integrated into Aiyu OS.\n\n## Capabilities & Features\n- **Multi-Model Orchestration**: Supports Gemini, OpenAI, Claude, and local LLM endpoints via Model Context Protocol (MCP).\n- **Automated Workflows**: Smart code generation, document summarization, refactoring, and natural language shell commands.\n- **Developer Tools**: Code execution, live context evaluation, and prompt engineering workspace.\n\n## System Specs\n- **Engine**: Next.js Server Actions + API Proxy\n- **Protocol**: MCP (Model Context Protocol) 1.0\n- **Status**: Active Beta\n`;
+const buildAiOverviewMarkdown = () => {
+  return `# AI Hub & Intelligent Systems Overview
+
+> **"Building with intelligence."**
+> A living map of how I design, ship, and run AI-powered software — the stacks I trust, the credits I mine, and the prompts I reach for.
+
+## Core Technical Focus Areas
+- ⚡ **RAG Pipelines**: Retrieval-Augmented Generation with vector embeddings and grounded citation.
+- 🤖 **Multi-Agent Orchestration**: Coordinating autonomous specialized agents with task breakdown and verification.
+- 🎯 **Prompt Engineering**: System prompt architecture, few-shot prompting, and strict output schemas.
+- 🔌 **MCP Servers**: Model Context Protocol integration for connecting LLMs to custom tools and databases.
+- ⚙️ **Fine-Tuning & Quantization**: Adapting open models for localized, domain-specific inference.
+
+## Telemetry & Infrastructure
+- **API Proxy**: Next.js Server Actions with cached telemetry logging.
+- **Provider Gateways**: Groq Cloud, OpenRouter, Google AI Studio, and Ollama local daemon.
+- **Status**: Live Production & Continuous Beta Testing.
+
+Click **Open Page** to open the interactive AI Hub on the web (\`/v2/ai\`).
+`;
+};
+
+const buildAiSkillsMarkdown = () => {
+  return `# AI Agent Skills & Specializations
+
+A catalog of agent capabilities and skills configured for autonomous workflows.
+
+## 🎨 Motion & Animation
+- **GSAP Core**: Framework-agnostic JavaScript animation — tweens, easing, stagger, and reduced-motion aware timelines.
+- **GSAP for React**: \`useGSAP\` hook with refs, context, and automatic cleanup inside React and Next.js.
+- **ScrollTrigger**: Scroll-linked animation: pinning, scrub, parallax, and trigger-driven reveals.
+
+## 📐 Design & Visualization
+- **UI/UX Pro Max**: Design intelligence across 67 styles, 96 palettes, and font pairings to plan and review interfaces.
+- **Data Viz**: Accessible, system-consistent charts and dashboards reading cleanly in light and dark mode.
+- **Artifact Design**: Design fundamentals for self-contained, theme-aware web artifacts.
+
+## ⚡ Engineering & Performance
+- **Architecture Patterns**: Structural guidance for organizing code, boundaries, and data flow.
+- **Web Performance**: Bundle, render, and runtime optimization to keep pages fast across device tiers.
+- **SQL Query Optimization**: Rewriting slow queries, indexing, and query plans for database access.
+
+## 🛠️ Workflow & Review
+- **Code Review**: Automated code diff analysis for correctness, security, and performance.
+- **Verify**: End-to-end observation of real behavior before shipping code.
+- **Run**: Automated app execution to confirm changes in production environments.
+`;
+};
+
+const buildRecommendedStackMarkdown = () => {
+  return `# Recommended AI Stack & Tools
+
+Production-tested AI tools, model gateways, and generative UI frameworks.
+
+## 🚀 Model Providers & Gateways
+1. **Groq Cloud** (Rating: ⭐⭐⭐⭐⭐)
+   - *Blurb*: Absurdly fast inference for open models (Llama 3, Mixtral). When latency is critical, nothing else comes close on free tier.
+   - *Tags*: \`low-latency\`, \`free-tier\`, \`open-source\`
+
+2. **OpenRouter** (Rating: ⭐⭐⭐⭐⭐)
+   - *Blurb*: One API key for every major LLM provider. Ideal for A/B-testing models without rewriting client code.
+   - *Tags*: \`gateway\`, \`multi-model\`, \`cheap-api\`
+
+3. **Ollama** (Rating: ⭐⭐⭐⭐)
+   - *Blurb*: Local models running with a single CLI command. My default for private prototyping and zero-cost iteration.
+   - *Tags*: \`local\`, \`private\`, \`open-source\`
+
+4. **v0.dev** (Rating: ⭐⭐⭐⭐)
+   - *Blurb*: Generative UI framework outputting clean React + Tailwind CSS components natively.
+   - *Tags*: \`generative-ui\`, \`react\`, \`prototyping\`
+`;
+};
+
+const buildFreeCreditsMarkdown = () => {
+  return `# Free AI Credits & Free Tiers Guide
+
+Where to obtain real AI model inference without adding a credit card.
+
+| Provider | Offer Summary | Requirements | Highlights |
+|---|---|---|---|
+| **Google AI Studio** | Gemini 2.0 Flash / Flash-Lite with high daily quota | No Card Required | Best free-to-quality ratio |
+| **Groq Cloud** | Free Llama 3 & Mixtral at record token speed | No Card Required | Fastest tokens/sec at $0 |
+| **OpenRouter** | Free variants of select models (\`:free\` suffix) | No Card Required | Unified multi-provider access |
+| **GitHub Models** | GPT-4o, Claude, Llama 3 inference under GitHub account | No Card Required | Great for developer PAT testing |
+| **Hugging Face** | Serverless Inference API + community Spaces | No Card Required | Enormous model catalog |
+`;
+};
+
+const buildPromptLibraryMarkdown = () => {
+  return `# Production System Prompt Library
+
+A curated collection of system prompts ready for deployment.
+
+---
+
+### 1. TypeScript Agent Developer
+**Role**: Engineering  
+\`\`\`text
+You are a senior TypeScript engineer. Write strictly-typed, production-grade code with no \`any\`. Prefer composition over inheritance, small pure functions, and exhaustive error handling. Explain trade-offs briefly, then output the final code in a single block.
+\`\`\`
+
+---
+
+### 2. SEO Blog Outline Generator
+**Role**: Content & SEO  
+\`\`\`text
+Act as an SEO strategist. Given a topic, produce a search-intent-driven outline: one H1, 5–7 H2 sections with target keywords, an FAQ block sourced from People-Also-Ask patterns, and a meta description under 155 characters. Prioritize clarity over keyword stuffing.
+\`\`\`
+
+---
+
+### 3. Grounded RAG Answerer
+**Role**: Information Retrieval  
+\`\`\`text
+Answer ONLY from the provided <context>. If the context is insufficient, say so explicitly — never fabricate. Cite the source id in [brackets] after each claim. Keep answers concise and structured.
+\`\`\`
+`;
 };
 
 const buildAppsMarkdown = () => {
@@ -33,7 +148,7 @@ const buildAppsMarkdown = () => {
 };
 
 const buildHelloMarkdown = () => {
-  return `# Hello World - Welcome to Aiyu OS\n\nHello and welcome! I am **${name}**, software developer and web craftsman.\n\n## Quick Navigation Folders\n- 📁 **about**: Detailed biography, experience, and skill tree.\n- 🤖 **ai**: Interactive AI Assistant.\n- 📄 **resume**: Full professional resume & CV.\n- 🚀 **projects**: Highlighted projects portfolio.\n- 📱 **apps**: Interactive web applications suite.\n- ✍️ **blogs**: Engineering posts and articles.\n\nEnjoy exploring the interactive desktop!\n`;
+  return `# Hello World - Welcome to Aiyu OS\n\nHello and welcome! I am **${name}**, software developer and web craftsman.\n\n## Quick Navigation Folders\n- 📁 **about**: Detailed biography, experience, and skill tree.\n- 🤖 **ai**: Interactive AI Assistant & LLM Hub.\n- 📄 **resume**: Full professional resume & CV.\n- 🚀 **projects**: Highlighted projects portfolio.\n- 📱 **apps**: Interactive web applications suite.\n- ✍️ **blogs**: Engineering posts and articles.\n\nEnjoy exploring the interactive desktop!\n`;
 };
 
 const buildGithubMarkdown = () => {
@@ -63,19 +178,67 @@ export const FOLDERS_DATA = [
   {
     folderKey: 'ai',
     folderName: 'ai',
-    description: 'AI Assistant & LLM Capabilities',
+    description: 'AI Hub, Agent Skills, Prompts & Free Credits',
     files: [
       {
-        _id: 'file-ai-assistant',
-        slug: 'ai',
-        title: 'ai-assistant',
-        fileName: 'ai-assistant.md',
+        _id: 'file-ai-overview',
+        slug: 'ai-overview',
+        title: 'ai-overview',
+        fileName: 'ai-overview.md',
         route: '/v2/ai',
         category: 'ai',
         date: 'BETA Feature',
         readingTime: 2,
-        excerpt: 'AI Assistant overview, Model Context Protocol integration, and workspace features.',
-        content: buildAIMarkdown(),
+        excerpt: 'AI Hub overview, RAG pipelines, multi-agent orchestration, and live telemetry.',
+        content: buildAiOverviewMarkdown(),
+      },
+      {
+        _id: 'file-ai-skills',
+        slug: 'ai-skills',
+        title: 'ai-skills',
+        fileName: 'ai-skills.md',
+        route: '/v2/ai/skills',
+        category: 'ai',
+        date: 'Agent Skills',
+        readingTime: 3,
+        excerpt: 'Catalog of AI agent skills across Motion, Design, Engineering, and Workflow.',
+        content: buildAiSkillsMarkdown(),
+      },
+      {
+        _id: 'file-recommended-stack',
+        slug: 'recommended-stack',
+        title: 'recommended-stack',
+        fileName: 'recommended-stack.md',
+        route: '/v2/ai/recommendations',
+        category: 'ai',
+        date: 'Stack Guide',
+        readingTime: 2,
+        excerpt: 'Production-tested AI tools (Groq, OpenRouter, Ollama, v0.dev) with ratings.',
+        content: buildRecommendedStackMarkdown(),
+      },
+      {
+        _id: 'file-free-credits',
+        slug: 'free-credits',
+        title: 'free-credits',
+        fileName: 'free-credits.md',
+        route: '/v2/ai/credits',
+        category: 'ai',
+        date: 'Free Inference',
+        readingTime: 2,
+        excerpt: 'Guide to free AI inference tiers and API keys (Google AI Studio, Groq Cloud, GitHub Models).',
+        content: buildFreeCreditsMarkdown(),
+      },
+      {
+        _id: 'file-prompt-library',
+        slug: 'prompt-library',
+        title: 'prompt-library',
+        fileName: 'prompt-library.md',
+        route: '/v2/ai/prompts',
+        category: 'ai',
+        date: 'Prompts',
+        readingTime: 3,
+        excerpt: 'Production system prompts for TypeScript engineering, SEO outlines, and grounded RAG.',
+        content: buildPromptLibraryMarkdown(),
       },
     ],
   },
