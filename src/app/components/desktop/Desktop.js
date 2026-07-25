@@ -359,8 +359,15 @@ export default function Desktop({ wallpaper: initialWallpaper, config = EMPTY_CO
 
     const focus = useCallback(
         (id) => {
+            if (!id) {
+                setActiveId(null);
+                return;
+            }
             const target = windowsRef.current.find((w) => w.id === id);
-            if (!target) return;
+            if (!target) {
+                setActiveId(null);
+                return;
+            }
             setActiveId(id);
             // Already frontmost and visible — clicking inside it should not
             // re-render the desktop at all.
@@ -426,6 +433,7 @@ export default function Desktop({ wallpaper: initialWallpaper, config = EMPTY_CO
     const closeWin = useCallback(
         (id) => {
             setWins((ws) => ws.filter((w) => w.id !== id));
+            setActiveId((curr) => (curr === id ? null : curr));
         },
         [setWins]
     );

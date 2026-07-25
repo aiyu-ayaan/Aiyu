@@ -151,21 +151,24 @@ export default function MobilePhoneShell({ apps, windows, activeWindowId, openAp
     const handleBack = () => {
         if (activeWindowId) {
             closeWin(activeWindowId);
+            if (focusWindow) focusWindow(null);
         } else if (view === "apps" || view === "task_switcher") {
             setView("start");
         }
     };
 
     const handleHome = () => {
-        if (activeWindowId && focusWindow) {
-            focusWindow(null);
-        }
+        if (focusWindow) focusWindow(null);
         setView("start");
     };
 
     const handleTaskSwitcher = () => {
-        if (view === "task_switcher") setView("start");
-        else setView("task_switcher");
+        if (view === "task_switcher") {
+            setView("start");
+        } else {
+            if (focusWindow) focusWindow(null);
+            setView("task_switcher");
+        }
     };
 
     const handleAppClick = (appKey) => {
