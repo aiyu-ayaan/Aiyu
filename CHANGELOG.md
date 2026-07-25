@@ -1,5 +1,130 @@
 # Changelog
 
+## [5.0.0](https://github.com/aiyu-ayaan/Aiyu/compare/v4.9.3...v5.0.0) (2026-07-25)
+
+### ⚠ BREAKING CHANGES
+
+* : Major release wtih automatic backup and new Desktop ui
+* Stop the taskbar clock from breaking hydration
+
+### Features
+
+* Add separate auto-backup and auto-delete purge cron jobs with settings gear controls
+* Set auto-delete to disabled by default with toggle control
+* Add auto-delete retention policy (1-12 months, default 1 month) for cloud backups
+* Add automated backup cron toggle to database admin page
+* Add API route to control automated backup cron schedule
+* Add automated google drive backup system cron task
+* Add dynamic gdrive card, setup modal, and cloud backup UI to admin database page
+* Implement google drive OAuth and backup API endpoints
+* Add encrypted gdrive config and OAuth helper utilities
+* Add mobile slide-down Notification Drawer and Action Center
+* Optimize all desktop apps for mobile pivot and tablet split views
+* Integrate mobile, tablet, and desktop shells into Desktop manager
+* Add TabletSurfaceShell with Surface touch layout and snap assist
+* Add MobilePhoneShell with Windows Phone Metro theme and live tiles
+* Add DeviceModeContext for auto and manual device mode switching
+* Add resume.pdf embedded viewer support and remove Header Links tab
+* Extract full AI Hub sections into ai folder markdown files
+* Create page-specific folders fetching full content into markdown files
+* Separate header menu items into dedicated folder and add category filters
+* Add header menu md files and lazy load markdown engine
+* Add realistic chrome-style offline no-internet page
+* Update taskbar system tray icons and quick settings interlocking
+* Lift system settings state and add night light overlay
+* Update V2Hero to include desktop mode prompt and enhance footer links
+* Implement Windows 11 acrylic and mica styles for UI components
+* Implement device name management and update UI components for consistency
+* Implement Windows 11 Snap Assist open window suggestions and side-by-side snapping
+* Add 8-direction mouse drag window resizing and Windows 11 Snap Layouts flyout
+* Render all registered apps in Start menu All Apps view
+* Route File Explorer blog files to open in Markdown Viewer app
+* Add native Markdown Viewer app with Open on Web action
+* Automatically close Chrome window when closing the last open tab
+* Hide headers on desktop framed pages and protect /desktop and /admin routes in Chrome app
+* Route all Start menu, Widgets, and Terminal links into Chrome app tabs
+* Upgrade Chrome app to handle incoming payloads and auto-open new tabs
+* Make taskbar system tray Quick Settings and Calendar/Clock interactive with Win11 flyout panels
+* Add Power Options flyout with warning dialog and 5s shutdown overlay
+* Update Start menu profile to display dynamic site title and favicon
+* Add Get Started wiki app and rename Browser to Google Chrome
+* Add native Windows 11 Whiteboard app
+* Add native Windows 11 Calculator app
+* Add native Windows 11 Notepad app
+* Add footer social links to StartMenu and remove Spotify
+* Add open, close, minimize, and restore animations for desktop apps
+* Enhance WidgetsPanel with custom scrollbar and improved layout
+* Replace manual pagination with automatic infinite scroll
+* Scrollable staggered masonry widget feed with pagination
+* Redesign widgets board cards matching Windows 11 design with blog social images
+* Fetch real portfolio & database items for widgets board and open links in new tab on click
+* Implement interactive winget package manager tab in widget panel
+* Implement staggered masonry widget feed with mixed content, category filters, and pagination
+* Add left taskbar widget button and slide-out panel shell
+* Add interactive desktop Terminal app and remove admin panel redirects from Settings and Start menu
+* Implement standalone Windows 11 Task Manager app with live process management and performance graphs
+* Redesign Start menu to match Windows 11 layout with Pinned grid, Recommended items, All apps toggle, and profile footer
+* Add Photos app, GitHub app, Settings app, and admin desktop panel
+* Set default wallpaper image
+* Use native-style Windows app icons
+* Add Windows 11 style /desktop experience
+
+### Bug Fixes
+
+* Bind the OAuth callback to a single-use state nonce
+* Clear WingetPanel install timers when the panel unmounts
+* Resolve toClientList .then error and enable dedicated auto-delete purge cron job
+* Wrap site mobile navigation drawer in AnimatePresence for smooth mounting and pointer events
+* Update focus and closeWin handlers to clear activeId when navigating back or home
+* Enhance Windows Phone Metro Live Tiles, alphabetical list alignment, and navigation bar
+* Set fixed viewport bounds and align app property rendering for mobile and tablet shells
+* Replace Github with GitHubIcon in MobilePhoneShell
+* Enhance close window functionality to handle specific target IDs
+* Add missing useRef import in Desktop.js
+* Move Snap Layouts flyout to desktop root level to fix clipping in Photos app
+* Fix Snap Assist z-index stacking overlap and add intelligent app categorization
+* Add missing useMemo and motion imports in Desktop.js
+* Resolve blog 404s with fallback slug matching and render full blog content in Markdown Viewer
+* Fix mouse wheel scrolling inside File Explorer and desktop panels
+* Update Portfolio desktop icon to display site favicon
+* Dismiss Quick Settings and Calendar flyout panels on click outside
+* Implement keep-alive multi-iframe tab persistence for instant Chrome tab switching
+* Open Mail app in a new browser tab as an explicit exception
+* Allow same-origin iframe embedding in next.config.mjs for internal pages
+* Resolve external iframe security blocks in Chrome app with smart launch cards
+* Remove background gradient behind Start menu profile favicon
+* Update Buy me a coffee link to exact URL https://buymeacoffee.com/aiyuayaan
+* Update Buy me a coffee link to direct profile URL
+* Connect taskbar search button and implement unified app search with Enter launch
+* Fix scrolling and taskbar overlap in widgets panel using explicit viewport-height calculations
+* Fix taskbar overlapping widgets panel and enable scrolling
+* Restrict window boundaries and maximize height to remain above taskbar
+
+### Other Changes
+
+* Merge branch 'feature/interactive-window'
+* Skip the boot splash on /desktop
+* Move mobile and tablet shell clocks into their own component
+* Isolate the taskbar clock tick and memoize the taskbar
+* Track only the device-mode breakpoint band, not viewport width
+* Add automated cron backup implementation plan
+* Update implementation progress ledger
+* Add Google Drive OAuth 2.0 implementation plan
+* Add Google Drive OAuth 2.0 cloud backup design specification
+* Finalize mobile and tablet mode implementation
+* Add mobile and tablet mode implementation plan
+* Add mobile and tablet mode design specification
+* Rename Markdown Viewer sidebar header to Documents
+* Rename Documents to Blogs and remove This PC option
+* Add implementation plan for tray icons, night light, and offline mode
+* Add design spec for tray icons, night light, and browser offline mode
+* Idle Task Manager timer, preload wallpaper, prune dead acrylic CSS
+* Stop dragging a window from re-rendering the whole desktop
+* Lazy-load desktop apps, Start menu and Widgets panel
+* Trim RSC config payload to keys the shell actually uses
+* Implement tight stacked masonry layout and remove winget section
+* Add design spec and implementation plan for desktop widgets and winget
+
 ## [4.9.3](https://github.com/aiyu-ayaan/Aiyu/compare/v4.9.2...v4.9.3) (2026-07-24)
 
 ### Features
