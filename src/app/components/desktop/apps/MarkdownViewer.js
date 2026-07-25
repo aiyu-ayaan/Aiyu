@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import remarkGfm from 'remark-gfm';
-import { HEADER_MD_FILES } from '@/app/data/headerMdFiles';
+import { FOLDERS_DATA } from '@/app/data/folderMdData';
 import {
     FileText,
     Search,
@@ -18,6 +18,8 @@ import {
     ExternalLink,
 } from 'lucide-react';
 
+const ALL_FOLDER_FILES = FOLDERS_DATA.flatMap((f) => f.files);
+
 const ReactMarkdown = dynamic(() => import('react-markdown'), {
     ssr: false,
     loading: () => (
@@ -29,11 +31,11 @@ const ReactMarkdown = dynamic(() => import('react-markdown'), {
 });
 
 export default function MarkdownViewer({ payload, openApp }) {
-    const [blogs, setBlogs] = useState(HEADER_MD_FILES);
+    const [blogs, setBlogs] = useState(ALL_FOLDER_FILES);
     const [loading, setLoading] = useState(true);
-    const [activeSlug, setActiveSlug] = useState(() => payload?.slug || payload?.blog?.slug || 'hello');
+    const [activeSlug, setActiveSlug] = useState(() => payload?.slug || payload?.blog?.slug || 'about-me');
     const [query, setQuery] = useState('');
-    const [filterCategory, setFilterCategory] = useState('all'); // 'all' | 'header' | 'blogs'
+    const [filterCategory, setFilterCategory] = useState('all');
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [copied, setCopied] = useState(false);
 
@@ -45,7 +47,7 @@ export default function MarkdownViewer({ payload, openApp }) {
                 if (res.ok) {
                     const data = await res.json();
                     if (alive && data.success && Array.isArray(data.data)) {
-                        const merged = [...HEADER_MD_FILES, ...data.data];
+                        const merged = [...ALL_FOLDER_FILES, ...data.data];
                         setBlogs(merged);
                         if (!activeSlug && merged.length > 0) {
                             setActiveSlug(merged[0].slug || '');

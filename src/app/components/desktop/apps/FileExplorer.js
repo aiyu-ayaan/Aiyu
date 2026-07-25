@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { HEADER_MD_FILES } from '@/app/data/headerMdFiles';
+import { FOLDERS_DATA } from '@/app/data/folderMdData';
 import {
     ChevronRight,
     Folder,
@@ -13,7 +13,12 @@ import {
     Loader2,
     X,
     Globe,
-    Menu,
+    Bot,
+    User,
+    FileCheck,
+    FolderGit2,
+    Layers,
+    Sparkles,
 } from 'lucide-react';
 
 const ReactMarkdown = dynamic(() => import('react-markdown'), {
@@ -23,12 +28,16 @@ const ReactMarkdown = dynamic(() => import('react-markdown'), {
 
 const NAV = [
     { key: 'home', label: 'Home', icon: Home },
-    { key: 'pictures', label: 'Pictures', icon: ImageIcon },
-    { key: 'blogs', label: 'Blogs', icon: FileText },
-    { key: 'menu', label: 'Header Links', icon: Menu },
+    { key: 'about', label: 'about', icon: User },
+    { key: 'ai', label: 'ai', icon: Bot },
+    { key: 'resume', label: 'resume', icon: FileCheck },
+    { key: 'projects', label: 'projects', icon: FolderGit2 },
+    { key: 'apps', label: 'apps', icon: Layers },
+    { key: 'blogs', label: 'blogs', icon: FileText },
+    { key: 'hello', label: 'hello', icon: Sparkles },
+    { key: 'pictures', label: 'pictures', icon: ImageIcon },
 ];
 
-// Turn a blog record into a fake .md file entry.
 const blogFileName = (blog) =>
     blog.fileName || `${(blog.slug || blog.title || 'untitled').toString().slice(0, 40).replace(/\s+/g, '-').toLowerCase()}.md`;
 
@@ -38,7 +47,7 @@ export default function FileExplorer({ openApp }) {
     const [blogs, setBlogs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [query, setQuery] = useState('');
-    const [preview, setPreview] = useState(null); // { type:'image', item } | { type:'blog', item }
+    const [preview, setPreview] = useState(null);
 
     useEffect(() => {
         let alive = true;
@@ -60,9 +69,15 @@ export default function FileExplorer({ openApp }) {
         };
     }, []);
 
+    const currentFolderMeta = useMemo(() => {
+        return FOLDERS_DATA.find((f) => f.folderKey === folder);
+    }, [folder]);
+
     const pathLabel = useMemo(() => {
-        const map = { home: 'Home', pictures: 'Pictures', blogs: 'Blogs', menu: 'Header Links' };
-        return map[folder] || 'Home';
+        if (folder === 'home') return 'Home';
+        if (folder === 'pictures') return 'Home > pictures';
+        if (folder === 'blogs') return 'Home > blogs';
+        return `Home > ${folder}`;
     }, [folder]);
 
     const filteredGallery = gallery.filter((g) =>
@@ -71,14 +86,18 @@ export default function FileExplorer({ openApp }) {
     const filteredBlogs = blogs.filter((b) =>
         !query || (b.title || '').toLowerCase().includes(query.toLowerCase())
     );
-    const filteredMenuFiles = HEADER_MD_FILES.filter((m) =>
-        !query || (m.title || '').toLowerCase().includes(query.toLowerCase()) || (m.fileName || '').toLowerCase().includes(query.toLowerCase())
-    );
+    const filteredFolderFiles = useMemo(() => {
+        if (!currentFolderMeta) return [];
+        return currentFolderMeta.files.filter(
+            (f) => !query || (f.title || '').toLowerCase().includes(query.toLowerCase()) || (f.fileName || '').toLowerCase().includes(query.toLowerCase())
+        );
+    }, [currentFolderMeta, query]);
 
     return (
         <div className="flex h-full w-full text-sm text-neutral-800 dark:text-neutral-200">
             {/* Sidebar */}
             <aside className="hidden w-48 shrink-0 overflow-y-auto border-r border-black/10 bg-[#f8f8f8] p-2 dark:border-white/10 dark:bg-[#252525] sm:block">
+                <div className="mb-2 px-2 text-[10px] font-bold uppercase tracking-wider text-neutral-400">Folders</div>
                 {NAV.map((n) => (
                     <button
                         key={n.key}
@@ -86,8 +105,8 @@ export default function FileExplorer({ openApp }) {
                             setFolder(n.key);
                             setPreview(null);
                         }}
-                        className={`mb-0.5 flex w-full items-center gap-2 rounded px-2 py-1.5 text-left ${
-                            folder === n.key ? 'bg-blue-500/15 text-blue-600 dark:text-blue-300' : 'hover:bg-black/5 dark:hover:bg-white/5'
+                        className={`mb-0.5 flex w-full items-center gap-2 rounded px-2 py-1.5 text-left transition ${
+                            folder === n.key ? 'bg-blue-500/15 font-semibold text-blue-600 dark:text-blue-300' : 'hover:bg-black/5 dark:hover:bg-white/5'
                         }`}
                     >
                         <n.icon className="h-4 w-4" />
@@ -133,7 +152,6 @@ export default function FileExplorer({ openApp }) {
                             onOpen={setFolder}
                             galleryCount={gallery.length}
                             blogCount={blogs.length}
-                            menuCount={HEADER_MD_FILES.length}
                         />
                     ) : folder === 'pictures' ? (
                         <IconGrid>
@@ -153,25 +171,7 @@ export default function FileExplorer({ openApp }) {
                             ))}
                             {filteredGallery.length === 0 && <Empty label="No pictures" />}
                         </IconGrid>
-                    ) : folder === 'menu' ? (
-                        <IconGrid>
-                            {filteredMenuFiles.map((m) => (
-                                <FileTile
-                                    key={m._id || m.slug}
-                                    label={blogFileName(m)}
-                                    onOpen={() => {
-                                        if (openApp) {
-                                            openApp('markdown', { slug: m.slug, blog: m });
-                                        } else {
-                                            setPreview({ type: 'blog', item: m });
-                                        }
-                                    }}
-                                    icon={FileText}
-                                />
-                            ))}
-                            {filteredMenuFiles.length === 0 && <Empty label="No menu files" />}
-                        </IconGrid>
-                    ) : (
+                    ) : folder === 'blogs' ? (
                         <IconGrid>
                             {filteredBlogs.map((b) => (
                                 <FileTile
@@ -189,6 +189,26 @@ export default function FileExplorer({ openApp }) {
                             ))}
                             {filteredBlogs.length === 0 && <Empty label="No blogs" />}
                         </IconGrid>
+                    ) : currentFolderMeta ? (
+                        <IconGrid>
+                            {filteredFolderFiles.map((f) => (
+                                <FileTile
+                                    key={f._id || f.slug}
+                                    label={blogFileName(f)}
+                                    onOpen={() => {
+                                        if (openApp) {
+                                            openApp('markdown', { slug: f.slug, blog: f });
+                                        } else {
+                                            setPreview({ type: 'blog', item: f });
+                                        }
+                                    }}
+                                    icon={FileText}
+                                />
+                            ))}
+                            {filteredFolderFiles.length === 0 && <Empty label={`No files in ${folder}`} />}
+                        </IconGrid>
+                    ) : (
+                        <Empty label="Folder not found" />
                     )}
                 </div>
 
@@ -199,9 +219,9 @@ export default function FileExplorer({ openApp }) {
                             ? `${filteredGallery.length} items`
                             : folder === 'blogs'
                             ? `${filteredBlogs.length} items`
-                            : folder === 'menu'
-                            ? `${filteredMenuFiles.length} items`
-                            : `${gallery.length + blogs.length + HEADER_MD_FILES.length} items`}
+                            : currentFolderMeta
+                            ? `${filteredFolderFiles.length} item(s)`
+                            : `${FOLDERS_DATA.length + 2} folders`}
                     </span>
                     <span>Aiyu OS File Explorer</span>
                 </div>
@@ -212,29 +232,44 @@ export default function FileExplorer({ openApp }) {
     );
 }
 
-function HomeView({ onOpen, galleryCount, blogCount, menuCount }) {
-    const cards = [
-        { key: 'pictures', label: 'Pictures', sub: `${galleryCount} items`, icon: ImageIcon },
-        { key: 'blogs', label: 'Blogs', sub: `${blogCount} blogs`, icon: FileText },
-        { key: 'menu', label: 'Header Links', sub: `${menuCount} md files`, icon: Menu },
-    ];
+function HomeView({ onOpen, galleryCount, blogCount }) {
     return (
         <div>
-            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide opacity-60">Quick access</h3>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                {cards.map((c) => (
+            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide opacity-60">System Folders</h3>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+                {FOLDERS_DATA.map((f) => (
                     <button
-                        key={c.key}
-                        onClick={() => onOpen(c.key)}
-                        className="flex items-center gap-3 rounded-lg border border-black/10 bg-white p-3 text-left hover:border-blue-400 hover:bg-blue-500/5 dark:border-white/10 dark:bg-white/5"
+                        key={f.folderKey}
+                        onClick={() => onOpen(f.folderKey)}
+                        className="flex items-center gap-3 rounded-lg border border-black/10 bg-white p-3 text-left hover:border-blue-400 hover:bg-blue-500/5 dark:border-white/10 dark:bg-white/5 transition"
                     >
-                        <Folder className="h-8 w-8 text-yellow-500" />
+                        <Folder className="h-8 w-8 text-amber-500 shrink-0" />
                         <div className="min-w-0">
-                            <div className="truncate text-sm font-medium">{c.label}</div>
-                            <div className="truncate text-xs opacity-60">{c.sub}</div>
+                            <div className="truncate text-sm font-semibold">{f.folderName}</div>
+                            <div className="truncate text-xs opacity-60">{f.description}</div>
                         </div>
                     </button>
                 ))}
+                <button
+                    onClick={() => onOpen('blogs')}
+                    className="flex items-center gap-3 rounded-lg border border-black/10 bg-white p-3 text-left hover:border-blue-400 hover:bg-blue-500/5 dark:border-white/10 dark:bg-white/5 transition"
+                >
+                    <Folder className="h-8 w-8 text-blue-500 shrink-0" />
+                    <div className="min-w-0">
+                        <div className="truncate text-sm font-semibold">blogs</div>
+                        <div className="truncate text-xs opacity-60">{blogCount} blog posts</div>
+                    </div>
+                </button>
+                <button
+                    onClick={() => onOpen('pictures')}
+                    className="flex items-center gap-3 rounded-lg border border-black/10 bg-white p-3 text-left hover:border-blue-400 hover:bg-blue-500/5 dark:border-white/10 dark:bg-white/5 transition"
+                >
+                    <Folder className="h-8 w-8 text-cyan-500 shrink-0" />
+                    <div className="min-w-0">
+                        <div className="truncate text-sm font-semibold">pictures</div>
+                        <div className="truncate text-xs opacity-60">{galleryCount} items</div>
+                    </div>
+                </button>
             </div>
         </div>
     );
