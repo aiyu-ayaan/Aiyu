@@ -285,11 +285,11 @@ export async function uploadBackupToDrive(zipBuffer, filename) {
 
 /**
  * Purges Google Drive backup files older than the specified retentionMonths cutoff.
- * Only deletes files if autoDeleteEnabled is true in configuration.
+ * Only deletes files if autoDeleteEnabled is true in configuration or forceRun is true.
  */
-export async function cleanOldDriveBackups(overrideRetentionMonths) {
+export async function cleanOldDriveBackups(overrideRetentionMonths, forceRun = false) {
   const config = await getGDriveConfig();
-  if (!config.autoDeleteEnabled) {
+  if (!config.autoDeleteEnabled && !forceRun) {
     return { deletedCount: 0, deletedFiles: [], skipped: true };
   }
 

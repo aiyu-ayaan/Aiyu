@@ -341,14 +341,17 @@ const COLLECTION_PRODUCERS = {
     deployments: async () => toClientList('deployment', await prisma.deployment.findMany()),
     socials: async () => toClientList('social', await prisma.social.findMany()),
     themes: async () => toClientList('theme', await prisma.theme.findMany()),
-    crons: async () => toClientList('cron', await prisma.cron.findMany()).then((crons) => crons.map((cron) => {
-        const cleanCron = { ...cron };
-        delete cleanCron.webhookEnv;
-        delete cleanCron.lastRun;
-        delete cleanCron.lastRunStatus;
-        delete cleanCron.lastRunLog;
-        return cleanCron;
-    })),
+    crons: async () => {
+        const cronList = toClientList('cron', await prisma.cron.findMany());
+        return cronList.map((cron) => {
+            const cleanCron = { ...cron };
+            delete cleanCron.webhookEnv;
+            delete cleanCron.lastRun;
+            delete cleanCron.lastRunStatus;
+            delete cleanCron.lastRunLog;
+            return cleanCron;
+        });
+    },
     ads: async () => toClientList('ads', await prisma.ads.findMany()),
     notificationConfig: async () => toClientList('notificationConfig', await prisma.notificationConfig.findMany()),
     analyticsEvents: async () => toClientList('analyticsEvent', await prisma.analyticsEvent.findMany()),
@@ -493,7 +496,7 @@ export async function executeCronJob(job) {
                 if (!isConnected) {
                     throw new Error('Google Drive account is not connected. Connect Google Drive in Database Admin to enable automated purge.');
                 }
-                const cleanResult = await cleanOldDriveBackups(config.retentionMonths || 1);
+                const cleanResult = await cleanOldDriveBackups(config.retentionMonths || 1, true);
                 attemptLogOutput = `Google Drive auto-delete purge completed successfully. Purged ${cleanResult.deletedCount} expired backup file(s) older than ${config.retentionMonths || 1} month(s).`;
             } else if (job.action === 'webhook') {
                 const cachedData = {};
