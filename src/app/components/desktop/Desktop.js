@@ -1,28 +1,43 @@
 "use client";
 import React, { useCallback, useState, useEffect, useMemo, useRef, useLayoutEffect } from 'react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { Loader2, Power, RotateCcw, RefreshCw } from 'lucide-react';
+import { Loader2, Power, RotateCcw, RefreshCw, FileText } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ExplorerIcon, VSCodeIcon, ChromeIcon, SettingsIcon, ThisPCIcon, EdgeIcon, PhotosIcon, GitHubIcon, TaskManagerIcon, TerminalIcon, NotepadIcon, CalculatorIcon, WhiteboardIcon, GetStartedIcon } from './icons';
+import { ExplorerIcon, VSCodeIcon, ChromeIcon, SettingsIcon, ThisPCIcon, PhotosIcon, GitHubIcon, TaskManagerIcon, TerminalIcon, NotepadIcon, CalculatorIcon, WhiteboardIcon, GetStartedIcon } from './icons';
 import Window from './Window';
 import Taskbar from './Taskbar';
-import StartMenu from './StartMenu';
-import WidgetsPanel from './WidgetsPanel';
-import FileExplorer from './apps/FileExplorer';
-import CodeEditor from './apps/CodeEditor';
-import Browser from './apps/Browser';
-import Settings from './apps/Settings';
-import AboutThisPC from './apps/AboutThisPC';
-import Photos from './apps/Photos';
-import GitHub from './apps/GitHub';
-import TaskManager from './apps/TaskManager';
-import Terminal from './apps/Terminal';
-import Notepad from './apps/Notepad';
-import Calculator from './apps/Calculator';
-import Whiteboard from './apps/Whiteboard';
-import GetStarted from './apps/GetStarted';
-import MarkdownViewer from './apps/MarkdownViewer';
-import { FileText } from 'lucide-react';
+
+// Everything below the shell (window chrome + taskbar) is split out of the
+// initial /desktop bundle. Nothing here can render before a user opens it, and
+// several are heavy on their own (CodeEditor pulls the Prism highlighter,
+// MarkdownViewer the markdown pipeline, Whiteboard a canvas engine), so keeping
+// them in the entry chunk cost every visitor JS they would likely never run.
+const appLoading = () => (
+    <div className="flex h-full w-full items-center justify-center bg-white dark:bg-[#1b1b1b]">
+        <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
+    </div>
+);
+
+const lazyApp = (loader) => dynamic(loader, { ssr: false, loading: appLoading });
+
+const StartMenu = dynamic(() => import('./StartMenu'), { ssr: false });
+const WidgetsPanel = dynamic(() => import('./WidgetsPanel'), { ssr: false });
+
+const FileExplorer = lazyApp(() => import('./apps/FileExplorer'));
+const CodeEditor = lazyApp(() => import('./apps/CodeEditor'));
+const Browser = lazyApp(() => import('./apps/Browser'));
+const Settings = lazyApp(() => import('./apps/Settings'));
+const AboutThisPC = lazyApp(() => import('./apps/AboutThisPC'));
+const Photos = lazyApp(() => import('./apps/Photos'));
+const GitHub = lazyApp(() => import('./apps/GitHub'));
+const TaskManager = lazyApp(() => import('./apps/TaskManager'));
+const Terminal = lazyApp(() => import('./apps/Terminal'));
+const Notepad = lazyApp(() => import('./apps/Notepad'));
+const Calculator = lazyApp(() => import('./apps/Calculator'));
+const Whiteboard = lazyApp(() => import('./apps/Whiteboard'));
+const GetStarted = lazyApp(() => import('./apps/GetStarted'));
+const MarkdownViewer = lazyApp(() => import('./apps/MarkdownViewer'));
 
 // App registry. `render` receives a desktop context: { wallpaper, config,
 // openApp, payload }. `payload` is per-window data (e.g. the image list Photos
