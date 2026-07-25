@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     Wifi, Battery, Volume2, Search, Grid, X, Maximize, Columns, LayoutTemplate,
@@ -8,6 +8,7 @@ import {
     AppWindow, Plus, Minus
 } from "lucide-react";
 import { useDeviceMode } from "../../context/DeviceModeContext";
+import { ShellClockStacked } from "./ShellClock";
 
 const accentThemeMap = {
     "lumia-cyan": "bg-[#00abf0] text-white",
@@ -31,19 +32,11 @@ const accentColors = [
 
 export default function TabletSurfaceShell({ apps, windows, activeWindowId, openApp, closeWin, focusWindow, config, wallpaper }) {
     const { deviceMode, setDeviceMode, accentColor, setAccentColor } = useDeviceMode();
-    const [time, setTime] = useState(new Date());
     const [startOpen, setStartOpen] = useState(false);
     const [quickActionOpen, setQuickActionOpen] = useState(false);
     const [snapState, setSnapState] = useState({}); // { [windowId]: 'maximized' | 'left' | 'right' }
 
     const accentClass = accentThemeMap[accentColor] || accentThemeMap["lumia-cyan"];
-
-    useEffect(() => {
-        const timer = setInterval(() => setTime(new Date()), 1000);
-        return () => clearInterval(timer);
-    }, []);
-
-    const timeString = time.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
 
     const handleWindowAction = (winId, action) => {
         setSnapState(prev => ({
@@ -386,10 +379,7 @@ export default function TabletSurfaceShell({ apps, windows, activeWindowId, open
                             <Volume2 size={16} />
                             <Battery size={16} />
                         </div>
-                        <div className="flex flex-col items-end text-xs font-semibold leading-tight text-white">
-                            <span>{timeString.split(' ')[0]}</span>
-                            <span>{timeString.split(' ')[1]}</span>
-                        </div>
+                        <ShellClockStacked className="flex flex-col items-end text-xs font-semibold leading-tight text-white" />
                     </button>
                 </div>
             </div>

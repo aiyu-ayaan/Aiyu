@@ -38,6 +38,7 @@ import {
     WhiteboardIcon
 } from "./icons";
 import { useDeviceMode } from "../../context/DeviceModeContext";
+import { ShellClock } from "./ShellClock";
 
 const accentThemeMap = {
     "lumia-cyan": "bg-[#00abf0] text-white",
@@ -105,7 +106,6 @@ function LiveTile({ title, icon: Icon, onClick, accentClass, wide = false, flipC
 
 export default function MobilePhoneShell({ apps, windows, activeWindowId, openApp, closeWin, focusWindow, config, wallpaper }) {
     const { accentColor, setAccentColor, setDeviceMode, effectiveMode } = useDeviceMode();
-    const [time, setTime] = useState(new Date());
     const [view, setView] = useState("start"); // "start", "apps", "task_switcher"
     const [searchQuery, setSearchQuery] = useState("");
     const [letterPickerOpen, setLetterPickerOpen] = useState(false);
@@ -119,13 +119,6 @@ export default function MobilePhoneShell({ apps, windows, activeWindowId, openAp
     ]);
 
     const accentClass = accentThemeMap[accentColor] || defaultAccentClass;
-
-    useEffect(() => {
-        const timer = setInterval(() => setTime(new Date()), 1000);
-        return () => clearInterval(timer);
-    }, []);
-
-    const timeString = time.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
 
     const activeAppWindow = activeWindowId ? windows.find((w) => w.id === activeWindowId) : null;
     const activeApp = activeAppWindow ? apps.find((a) => (a.key || a.id) === (activeAppWindow.appKey || activeAppWindow.appId)) : null;
@@ -204,7 +197,7 @@ export default function MobilePhoneShell({ apps, windows, activeWindowId, openAp
                 title="Tap to toggle Notification Center"
             >
                 <div className="flex flex-row items-center space-x-2">
-                    <span>{timeString}</span>
+                    <ShellClock />
                     <span className="text-white/60 font-semibold">{config?.deviceName || "AIYU-PHONE"}</span>
                 </div>
                 <div className="flex flex-row items-center space-x-2 text-white/80">
