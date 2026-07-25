@@ -1,25 +1,28 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     Battery,
     Wifi,
+    WifiOff,
     Signal,
     ChevronLeft,
+    ChevronDown,
+    ChevronUp,
     Search,
     X,
     Image as ImageIcon,
     FileText,
-    Globe,
     Settings as SettingsLucideIcon,
-    Activity,
-    Calculator as CalculatorLucideIcon,
-    PenTool,
     Home,
     Layers,
     ArrowRight,
-    Sparkles
+    Sparkles,
+    Moon,
+    Smartphone,
+    Bell,
+    Trash2
 } from "lucide-react";
 import {
     ExplorerIcon,
@@ -101,11 +104,19 @@ function LiveTile({ title, icon: Icon, onClick, accentClass, wide = false, flipC
 }
 
 export default function MobilePhoneShell({ apps, windows, activeWindowId, openApp, closeWin, focusWindow, config, wallpaper }) {
-    const { accentColor } = useDeviceMode();
+    const { accentColor, setAccentColor, setDeviceMode, effectiveMode } = useDeviceMode();
     const [time, setTime] = useState(new Date());
     const [view, setView] = useState("start"); // "start", "apps", "task_switcher"
     const [searchQuery, setSearchQuery] = useState("");
     const [letterPickerOpen, setLetterPickerOpen] = useState(false);
+    const [notificationDrawerOpen, setNotificationDrawerOpen] = useState(false);
+    const [wifi, setWifi] = useState(true);
+    const [cellular, setCellular] = useState(true);
+    const [notifications, setNotifications] = useState([
+        { id: 1, title: "Welcome to Aiyu OS", body: "Windows Phone Metro theme active", time: "Just now" },
+        { id: 2, title: "Photos", body: "3 new portfolio photos available", time: "5m ago" },
+        { id: 3, title: "System", body: "All desktop processes running smooth", time: "12m ago" }
+    ]);
 
     const accentClass = accentThemeMap[accentColor] || defaultAccentClass;
 
@@ -186,18 +197,151 @@ export default function MobilePhoneShell({ apps, windows, activeWindowId, openAp
                 />
             )}
 
-            {/* Top Phone Status Bar */}
-            <div className="h-6 flex items-center justify-between px-3 text-[10px] font-medium z-50 bg-black/90 shrink-0 border-b border-white/5">
+            {/* Top Phone Status Bar (Clickable Notification Bar) */}
+            <div 
+                onClick={() => setNotificationDrawerOpen((prev) => !prev)}
+                className="h-7 flex items-center justify-between px-3 text-[10px] font-medium z-50 bg-black/90 shrink-0 border-b border-white/10 cursor-pointer hover:bg-white/5 transition-colors select-none"
+                title="Tap to toggle Notification Center"
+            >
                 <div className="flex flex-row items-center space-x-2">
                     <span>{timeString}</span>
                     <span className="text-white/60 font-semibold">{config?.deviceName || "AIYU-PHONE"}</span>
                 </div>
-                <div className="flex flex-row items-center space-x-1.5 text-white/80">
+                <div className="flex flex-row items-center space-x-2 text-white/80">
+                    {wifi ? <Wifi size={12} /> : <WifiOff size={12} className="text-red-400" />}
                     <Signal size={12} />
-                    <Wifi size={12} />
                     <Battery size={12} />
+                    <ChevronDown size={12} className="text-white/40" />
                 </div>
             </div>
+
+            {/* Slide-Down Notification Drawer / Action Center */}
+            <AnimatePresence>
+                {notificationDrawerOpen && (
+                    <>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute inset-0 bg-black/65 backdrop-blur-sm z-40"
+                            onClick={() => setNotificationDrawerOpen(false)}
+                        />
+                        <motion.div
+                            initial={{ y: "-100%" }}
+                            animate={{ y: 0 }}
+                            exit={{ y: "-100%" }}
+                            transition={{ type: "spring", damping: 25, stiffness: 220 }}
+                            className="absolute top-7 left-0 right-0 z-50 bg-neutral-900/95 border-b border-white/15 p-4 shadow-2xl rounded-b-2xl text-white max-h-[80vh] overflow-y-auto"
+                        >
+                            {/* Drawer Header */}
+                            <div className="flex items-center justify-between mb-4 pb-2 border-b border-white/10 text-xs">
+                                <div className="flex items-center gap-2 font-semibold text-gray-300">
+                                    <Bell size={14} className="text-blue-400" />
+                                    <span>Action Center & Notifications</span>
+                                </div>
+                                <button 
+                                    onClick={() => setNotificationDrawerOpen(false)} 
+                                    className="p-1 hover:bg-white/10 rounded text-gray-400 hover:text-white"
+                                >
+                                    <ChevronUp size={18} />
+                                </button>
+                            </div>
+
+                            {/* Quick Toggles */}
+                            <div className="grid grid-cols-4 gap-2 mb-4">
+                                <button 
+                                    onClick={() => setWifi(!wifi)} 
+                                    className={`p-2.5 rounded-xl flex flex-col items-center gap-1 text-[11px] font-medium transition-all ${
+                                        wifi ? accentClass : 'bg-neutral-800 text-gray-400'
+                                    }`}
+                                >
+                                    {wifi ? <Wifi size={18} /> : <WifiOff size={18} />}
+                                    <span>Wi-Fi</span>
+                                </button>
+
+                                <button 
+                                    onClick={() => setCellular(!cellular)} 
+                                    className={`p-2.5 rounded-xl flex flex-col items-center gap-1 text-[11px] font-medium transition-all ${
+                                        cellular ? accentClass : 'bg-neutral-800 text-gray-400'
+                                    }`}
+                                >
+                                    <Signal size={18} />
+                                    <span>Signal</span>
+                                </button>
+
+                                <button 
+                                    onClick={() => setDeviceMode('tablet')} 
+                                    className="p-2.5 rounded-xl flex flex-col items-center gap-1 text-[11px] font-medium bg-neutral-800 text-gray-300 hover:bg-neutral-700 transition-colors"
+                                >
+                                    <Smartphone size={18} />
+                                    <span>Tablet</span>
+                                </button>
+
+                                <button 
+                                    onClick={() => setDeviceMode('desktop')} 
+                                    className="p-2.5 rounded-xl flex flex-col items-center gap-1 text-[11px] font-medium bg-neutral-800 text-gray-300 hover:bg-neutral-700 transition-colors"
+                                >
+                                    <Moon size={18} />
+                                    <span>Desktop</span>
+                                </button>
+                            </div>
+
+                            {/* Accent Color Quick Select */}
+                            <div className="mb-4 bg-neutral-950/60 p-3 rounded-xl border border-white/5">
+                                <div className="text-[11px] font-medium text-gray-400 mb-2">Accent Theme</div>
+                                <div className="flex gap-2.5 overflow-x-auto pb-1 hide-scrollbar">
+                                    {['lumia-cyan', 'crimson', 'cobalt', 'emerald', 'magenta', 'amber', 'violet'].map((color) => (
+                                        <button
+                                            key={color}
+                                            onClick={() => setAccentColor(color)}
+                                            className={`w-7 h-7 rounded-full border-2 transition-transform ${
+                                                accentColor === color ? 'border-white scale-110 shadow-lg' : 'border-transparent opacity-80 hover:opacity-100'
+                                            }`}
+                                            style={{
+                                                backgroundColor: color === 'lumia-cyan' ? '#00abf0' :
+                                                                 color === 'crimson' ? '#e51400' :
+                                                                 color === 'cobalt' ? '#0050ef' :
+                                                                 color === 'emerald' ? '#008a00' :
+                                                                 color === 'magenta' ? '#d80073' :
+                                                                 color === 'amber' ? '#f0a30a' : '#76608a'
+                                            }}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* System Notifications */}
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between text-[11px] text-gray-400 font-medium px-1">
+                                    <span>Notifications ({notifications.length})</span>
+                                    {notifications.length > 0 && (
+                                        <button 
+                                            onClick={() => setNotifications([])} 
+                                            className="hover:text-white flex items-center gap-1 text-xs"
+                                        >
+                                            <Trash2 size={12} />
+                                            <span>Clear All</span>
+                                        </button>
+                                    )}
+                                </div>
+                                {notifications.length === 0 ? (
+                                    <div className="text-xs text-gray-500 py-4 text-center">No new notifications</div>
+                                ) : (
+                                    notifications.map((n) => (
+                                        <div key={n.id} className="p-3 rounded-xl bg-neutral-800/80 border border-white/5 flex items-start justify-between text-xs">
+                                            <div>
+                                                <div className="font-semibold text-white mb-0.5">{n.title}</div>
+                                                <div className="text-gray-400 text-[11px]">{n.body}</div>
+                                            </div>
+                                            <span className="text-[10px] text-gray-500 shrink-0 ml-2">{n.time}</span>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </motion.div>
+                    </>
+                )}
+            </AnimatePresence>
 
             {/* Main Content Area */}
             <div className="flex-1 relative overflow-hidden">
