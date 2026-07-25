@@ -1,11 +1,16 @@
 import { prisma } from '@/lib/prisma';
-import { getSingleton } from '@/lib/serialize';
+import { getSingleton, toClientList } from '@/lib/serialize';
 import { executeUnreferencedCleanup, executeWebPMigration } from '@/lib/storageAudit';
 import { runUptimeChecks } from '@/lib/uptime';
 import { pruneSessions, SESSION_RETENTION_DAYS } from '@/lib/auth';
 import { sendNotification } from './notificationService';
 import { decrypt } from '@/lib/encryption';
 import { compileTemplate, EXECUTION_ROW_LIMIT } from './cronTemplate';
+import { getGDriveConfig, uploadBackupToDrive } from '@/lib/gdrive';
+import archiver from 'archiver';
+import { join } from 'path';
+import { readFile, access, readdir } from 'fs/promises';
+
 
 // Execution-time template options: bounded row cap, no shared preview cache
 // (webhooks must see fresh data, not a sampled/cached snapshot).
@@ -210,6 +215,20 @@ export async function initCronRunner() {
             console.log('[CRON SERVICE] Seeded: Expired Session Cleanup');
         }
 
+        const gdriveJob = await prisma.cron.findFirst({ where: { action: 'gdrive_backup' } });
+        if (!gdriveJob) {
+            await prisma.cron.create({ data: {
+                name: 'Google Drive Automated Backup',
+                type: 'system',
+                schedule: '0 0 * * *', // Daily at midnight
+                enabled: false,
+                action: 'gdrive_backup',
+                nextRun: getNextCronRun('0 0 * * *', new Date(), timeZone)
+            } });
+            console.log('[CRON SERVICE] Seeded: Google Drive Automated Backup');
+        }
+
+
         // Self-heal and recalculate missing or outdated nextRun timestamps
         const now = new Date();
         const jobsToHeal = await prisma.cron.findMany({
@@ -291,6 +310,114 @@ function safeLogJson(value, env = {}) {
     return redactEnvSecrets(JSON.stringify(value, null, 2), env);
 }
 
+const COLLECTION_PRODUCERS = {
+    about: async () => toClientList('about', await prisma.about.findMany()),
+    blogs: async () => toClientList('blog', await prisma.blog.findMany()),
+    config: async () => toClientList('config', await prisma.config.findMany()),
+    gallery: async () => toClientList('gallery', await prisma.gallery.findMany()),
+    header: async () => toClientList('header', await prisma.header.findMany()),
+    home: async () => toClientList('home', await prisma.home.findMany()),
+    aiPage: async () => toClientList('aiPage', await prisma.aiPage.findMany()),
+    resumeStudio: async () => toClientList('resumeStudio', await prisma.resumeStudio.findMany()),
+    aiSkillCategories: async () => toClientList('aiSkillCategory', await prisma.aiSkillCategory.findMany()),
+    aiSkills: async () => toClientList('aiSkill', await prisma.aiSkill.findMany()),
+    aiRecommendations: async () => toClientList('aiRecommendation', await prisma.aiRecommendation.findMany()),
+    aiCredits: async () => toClientList('aiCredit', await prisma.aiCredit.findMany()),
+    aiPrompts: async () => toClientList('aiPrompt', await prisma.aiPrompt.findMany()),
+    projects: async () => toClientList('project', await prisma.project.findMany()),
+    deployments: async () => toClientList('deployment', await prisma.deployment.findMany()),
+    socials: async () => toClientList('social', await prisma.social.findMany()),
+    themes: async () => toClientList('theme', await prisma.theme.findMany()),
+    crons: async () => toClientList('cron', await prisma.cron.findMany()).then((crons) => crons.map((cron) => {
+        const cleanCron = { ...cron };
+        delete cleanCron.webhookEnv;
+        delete cleanCron.lastRun;
+        delete cleanCron.lastRunStatus;
+        delete cleanCron.lastRunLog;
+        return cleanCron;
+    })),
+    ads: async () => toClientList('ads', await prisma.ads.findMany()),
+    notificationConfig: async () => toClientList('notificationConfig', await prisma.notificationConfig.findMany()),
+    analyticsEvents: async () => toClientList('analyticsEvent', await prisma.analyticsEvent.findMany()),
+    analyticsDaily: async () => toClientList('analyticsDaily', await prisma.analyticsDaily.findMany()),
+    aiLogs: async () => toClientList('aiLog', await prisma.aiLog.findMany()),
+    github: async () => toClientList('github', await prisma.gitHub.findMany()),
+    contactMessages: async () => toClientList('contactMessage', await prisma.contactMessage.findMany()),
+};
+
+async function createExportZipBuffer() {
+    const data = { exportedAt: new Date().toISOString() };
+    for (const [key, produce] of Object.entries(COLLECTION_PRODUCERS)) {
+        data[key] = await produce();
+    }
+
+    const archive = archiver('zip', { zlib: { level: 5 } });
+    const { exportedAt, ...collections } = data;
+
+    const manifest = {
+        format: 'split-v2',
+        exportedAt,
+        collections: Object.keys(collections),
+        counts: Object.fromEntries(
+            Object.entries(collections).map(([key, value]) => [
+                key,
+                Array.isArray(value) ? value.length : 1,
+            ])
+        ),
+    };
+    archive.append(JSON.stringify(manifest, null, 2), { name: 'manifest.json' });
+
+    for (const [key, value] of Object.entries(collections)) {
+        archive.append(JSON.stringify(value, null, 2), { name: `data/${key}.json` });
+    }
+
+    const imageFiles = new Set();
+    if (data.gallery && data.gallery.length > 0) {
+        for (const item of data.gallery) {
+            if (item.src) {
+                const srcFilename = item.src.split('/').pop();
+                if (srcFilename) imageFiles.add(srcFilename);
+            }
+            if (item.thumbnail) {
+                const thumbFilename = item.thumbnail.split('/').pop();
+                if (thumbFilename) imageFiles.add(thumbFilename);
+            }
+        }
+    }
+
+    const uploadsDir = join(process.cwd(), 'public', 'uploads');
+    let uploadEntries = [];
+    try {
+        uploadEntries = await readdir(uploadsDir, { withFileTypes: true });
+    } catch {
+        // uploads directory missing or unreadable
+    }
+
+    for (const entry of uploadEntries) {
+        if (!entry.isFile()) continue;
+        imageFiles.add(entry.name);
+    }
+
+    for (const filename of imageFiles) {
+        const filePath = join(uploadsDir, filename);
+        try {
+            await access(filePath);
+            const fileBuffer = await readFile(filePath);
+            archive.append(fileBuffer, { name: `uploads/${filename}` });
+        } catch {
+            // Skip missing file
+        }
+    }
+
+    return new Promise((resolve, reject) => {
+        const chunks = [];
+        archive.on('data', (chunk) => chunks.push(chunk));
+        archive.on('end', () => resolve(Buffer.concat(chunks)));
+        archive.on('error', (err) => reject(err));
+        archive.finalize();
+    });
+}
+
 export async function executeCronJob(job) {
     const startTime = Date.now();
     let status = 'success';
@@ -334,6 +461,19 @@ export async function executeCronJob(job) {
                 const deleted = await pruneSessions();
                 attemptLogOutput = `Session cleanup completed in ${Date.now() - attemptStartTime}ms.\n` +
                             `Deleted ${deleted} inactive session(s) older than ${SESSION_RETENTION_DAYS} day(s).`;
+            } else if (job.action === 'gdrive_backup') {
+                const config = await getGDriveConfig();
+                const isConnected = Boolean(config.isConnected || config.refreshToken || config.accessToken);
+                if (!isConnected) {
+                    throw new Error('Google Drive account is not connected. Connect Google Drive in Database Admin to enable automated backups.');
+                }
+                const zipBuffer = await createExportZipBuffer();
+                const now = new Date();
+                const dateStr = now.toISOString().split('T')[0];
+                const timeStr = now.toTimeString().split(' ')[0].replace(/:/g, '-');
+                const filename = `auto_backup_${dateStr}_${timeStr}.zip`;
+                const uploadRes = await uploadBackupToDrive(zipBuffer, filename);
+                attemptLogOutput = `Google Drive automated backup completed successfully. File: ${filename} (ID: ${uploadRes.id})`;
             } else if (job.action === 'webhook') {
                 const cachedData = {};
                 cachedData.env = {};
