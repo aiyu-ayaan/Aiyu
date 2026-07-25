@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Search, Download, CheckCircle2, Terminal, Play, Package } from 'lucide-react';
 
 const PACKAGES = [
@@ -21,6 +21,21 @@ export default function WingetPanel({ openApp }) {
     const [installing, setInstalling] = useState(null);
     const [progress, setProgress] = useState(0);
     const [installed, setInstalled] = useState(['git', 'node']);
+
+    // The panel lives inside the Widgets flyout, which unmounts as soon as the
+    // user closes it — mid-install if they want. Without these refs the install
+    // interval (and its trailing completion timeout) kept ticking against an
+    // unmounted tree for the rest of the session.
+    const installTimersRef = useRef({ interval: null, timeout: null });
+
+    useEffect(
+        () => () => {
+            const timers = installTimersRef.current;
+            if (timers.interval) clearInterval(timers.interval);
+            if (timers.timeout) clearTimeout(timers.timeout);
+        },
+        []
+    );
 
     const filtered = PACKAGES.filter(
         (p) =>
@@ -46,7 +61,9 @@ export default function WingetPanel({ openApp }) {
             setProgress(Math.min(100, p));
             if (p >= 100) {
                 clearInterval(interval);
-                setTimeout(() => {
+                installTimersRef.current.interval = null;
+                installTimersRef.current.timeout = setTimeout(() => {
+                    installTimersRef.current.timeout = null;
                     setInstalling(null);
                     setInstalled((prev) => [...prev, pkg.id]);
                     setLogs((prev) => [
@@ -57,6 +74,7 @@ export default function WingetPanel({ openApp }) {
                 }, 400);
             }
         }, 300);
+        installTimersRef.current.interval = interval;
     };
 
     return (
