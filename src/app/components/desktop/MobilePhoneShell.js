@@ -13,7 +13,6 @@ import {
     Image as ImageIcon,
     FileText,
     Code,
-    Github,
     Globe,
     Settings,
     TerminalSquare,
@@ -25,6 +24,7 @@ import {
     Layers,
     ArrowRight
 } from "lucide-react";
+import { GitHubIcon } from "./icons";
 import { useDeviceMode } from "../../context/DeviceModeContext";
 
 const accentThemeMap = {
@@ -204,7 +204,7 @@ export default function MobilePhoneShell({ apps, windows, activeWindowId, openAp
                                 />
                                 <LiveTile 
                                     title="GitHub" 
-                                    icon={Github} 
+                                    icon={GitHubIcon} 
                                     onClick={() => handleAppClick("github")} 
                                     accentClass={accentClass}
                                     flipContent={<div className="text-sm">2 PRs</div>}
