@@ -1,5 +1,6 @@
 import ReactDOM from 'react-dom';
 import Desktop from '@/app/components/desktop/Desktop';
+import { DeviceModeProvider } from '@/app/context/DeviceModeContext';
 import { prisma } from '@/lib/prisma';
 import { getSingleton } from '@/lib/serialize';
 
@@ -54,5 +55,9 @@ export default async function DesktopPage() {
         ReactDOM.preload(wallpaper, { as: 'image', fetchPriority: 'high' });
     }
 
-    return <Desktop wallpaper={wallpaper} config={configObj} />;
+    return (
+        <DeviceModeProvider>
+            <Desktop wallpaper={wallpaper} config={configObj} />
+        </DeviceModeProvider>
+    );
 }
