@@ -13,6 +13,7 @@ import {
     Loader2,
     X,
     Globe,
+    Menu,
 } from 'lucide-react';
 
 const ReactMarkdown = dynamic(() => import('react-markdown'), {
@@ -24,6 +25,7 @@ const NAV = [
     { key: 'home', label: 'Home', icon: Home },
     { key: 'pictures', label: 'Pictures', icon: ImageIcon },
     { key: 'blogs', label: 'Blogs', icon: FileText },
+    { key: 'menu', label: 'Header Links', icon: Menu },
 ];
 
 // Turn a blog record into a fake .md file entry.
@@ -33,7 +35,7 @@ const blogFileName = (blog) =>
 export default function FileExplorer({ openApp }) {
     const [folder, setFolder] = useState('home');
     const [gallery, setGallery] = useState([]);
-    const [blogs, setBlogs] = useState(HEADER_MD_FILES);
+    const [blogs, setBlogs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [query, setQuery] = useState('');
     const [preview, setPreview] = useState(null); // { type:'image', item } | { type:'blog', item }
@@ -48,7 +50,7 @@ export default function FileExplorer({ openApp }) {
                 ]);
                 if (!alive) return;
                 setGallery(g?.data || []);
-                setBlogs([...HEADER_MD_FILES, ...(b?.data || [])]);
+                setBlogs(b?.data || []);
             } finally {
                 if (alive) setLoading(false);
             }
@@ -59,7 +61,7 @@ export default function FileExplorer({ openApp }) {
     }, []);
 
     const pathLabel = useMemo(() => {
-        const map = { home: 'Home', pictures: 'Pictures', blogs: 'Blogs' };
+        const map = { home: 'Home', pictures: 'Pictures', blogs: 'Blogs', menu: 'Header Links' };
         return map[folder] || 'Home';
     }, [folder]);
 
@@ -68,6 +70,9 @@ export default function FileExplorer({ openApp }) {
     );
     const filteredBlogs = blogs.filter((b) =>
         !query || (b.title || '').toLowerCase().includes(query.toLowerCase())
+    );
+    const filteredMenuFiles = HEADER_MD_FILES.filter((m) =>
+        !query || (m.title || '').toLowerCase().includes(query.toLowerCase()) || (m.fileName || '').toLowerCase().includes(query.toLowerCase())
     );
 
     return (
@@ -128,6 +133,7 @@ export default function FileExplorer({ openApp }) {
                             onOpen={setFolder}
                             galleryCount={gallery.length}
                             blogCount={blogs.length}
+                            menuCount={HEADER_MD_FILES.length}
                         />
                     ) : folder === 'pictures' ? (
                         <IconGrid>
@@ -146,6 +152,24 @@ export default function FileExplorer({ openApp }) {
                                 />
                             ))}
                             {filteredGallery.length === 0 && <Empty label="No pictures" />}
+                        </IconGrid>
+                    ) : folder === 'menu' ? (
+                        <IconGrid>
+                            {filteredMenuFiles.map((m) => (
+                                <FileTile
+                                    key={m._id || m.slug}
+                                    label={blogFileName(m)}
+                                    onOpen={() => {
+                                        if (openApp) {
+                                            openApp('markdown', { slug: m.slug, blog: m });
+                                        } else {
+                                            setPreview({ type: 'blog', item: m });
+                                        }
+                                    }}
+                                    icon={FileText}
+                                />
+                            ))}
+                            {filteredMenuFiles.length === 0 && <Empty label="No menu files" />}
                         </IconGrid>
                     ) : (
                         <IconGrid>
@@ -175,7 +199,9 @@ export default function FileExplorer({ openApp }) {
                             ? `${filteredGallery.length} items`
                             : folder === 'blogs'
                             ? `${filteredBlogs.length} items`
-                            : `${gallery.length + blogs.length} items`}
+                            : folder === 'menu'
+                            ? `${filteredMenuFiles.length} items`
+                            : `${gallery.length + blogs.length + HEADER_MD_FILES.length} items`}
                     </span>
                     <span>Aiyu OS File Explorer</span>
                 </div>
@@ -186,10 +212,11 @@ export default function FileExplorer({ openApp }) {
     );
 }
 
-function HomeView({ onOpen, galleryCount, blogCount }) {
+function HomeView({ onOpen, galleryCount, blogCount, menuCount }) {
     const cards = [
         { key: 'pictures', label: 'Pictures', sub: `${galleryCount} items`, icon: ImageIcon },
         { key: 'blogs', label: 'Blogs', sub: `${blogCount} blogs`, icon: FileText },
+        { key: 'menu', label: 'Header Links', sub: `${menuCount} md files`, icon: Menu },
     ];
     return (
         <div>

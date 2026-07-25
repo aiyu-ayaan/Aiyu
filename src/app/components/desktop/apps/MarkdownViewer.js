@@ -33,6 +33,7 @@ export default function MarkdownViewer({ payload, openApp }) {
     const [loading, setLoading] = useState(true);
     const [activeSlug, setActiveSlug] = useState(() => payload?.slug || payload?.blog?.slug || 'hello');
     const [query, setQuery] = useState('');
+    const [filterCategory, setFilterCategory] = useState('all'); // 'all' | 'header' | 'blogs'
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [copied, setCopied] = useState(false);
 
@@ -62,6 +63,24 @@ export default function MarkdownViewer({ payload, openApp }) {
             alive = false;
         };
     }, []);
+
+    const filteredBlogs = useMemo(() => {
+        let result = blogs;
+        if (filterCategory === 'header') {
+            result = result.filter((b) => b.category === 'Header Menu');
+        } else if (filterCategory === 'blogs') {
+            result = result.filter((b) => b.category !== 'Header Menu');
+        }
+        if (!query.trim()) return result;
+        const q = query.toLowerCase();
+        return result.filter(
+            (b) =>
+                (b.title || '').toLowerCase().includes(q) ||
+                (b.category || '').toLowerCase().includes(q) ||
+                (b.slug || '').toLowerCase().includes(q) ||
+                (b.fileName || '').toLowerCase().includes(q)
+        );
+    }, [blogs, query, filterCategory]);
 
     const [fullBlogMap, setFullBlogMap] = useState({});
 
@@ -100,18 +119,6 @@ export default function MarkdownViewer({ payload, openApp }) {
         if (!activeSlug && blogs.length > 0) return fullBlogMap[blogs[0].slug] || blogs[0];
         return blogs.find((b) => b.slug === activeSlug) || payload?.blog || blogs[0];
     }, [blogs, activeSlug, fullBlogMap, payload]);
-
-    const filteredBlogs = useMemo(() => {
-        if (!query.trim()) return blogs;
-        const q = query.toLowerCase();
-        return blogs.filter(
-            (b) =>
-                (b.title || '').toLowerCase().includes(q) ||
-                (b.category || '').toLowerCase().includes(q) ||
-                (b.slug || '').toLowerCase().includes(q)
-        );
-    }, [blogs, query]);
-
     const handleCopyMarkdown = () => {
         if (!activeBlog) return;
         const rawContent = `# ${activeBlog.title || ''}\n\n${activeBlog.content || activeBlog.excerpt || ''}`;
@@ -154,8 +161,8 @@ export default function MarkdownViewer({ payload, openApp }) {
                         </span>
                     </div>
 
-                    {/* Search Bar */}
-                    <div className="p-2.5">
+                    {/* Search Bar & Category Filters */}
+                    <div className="p-2.5 space-y-2 border-b border-black/10 dark:border-white/10">
                         <div className="relative flex items-center">
                             <Search className="absolute left-2.5 h-3.5 w-3.5 opacity-40" />
                             <input
@@ -164,6 +171,26 @@ export default function MarkdownViewer({ payload, openApp }) {
                                 placeholder="Search documents..."
                                 className="w-full rounded-lg bg-black/5 dark:bg-white/5 pl-8 pr-3 py-1.5 text-xs outline-none focus:ring-1 focus:ring-blue-500/50"
                             />
+                        </div>
+
+                        <div className="flex items-center gap-1 text-[11px]">
+                            {[
+                                { id: 'all', label: 'All' },
+                                { id: 'header', label: 'Header Links' },
+                                { id: 'blogs', label: 'Blogs' },
+                            ].map((tab) => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setFilterCategory(tab.id)}
+                                    className={`flex-1 rounded py-1 font-medium transition text-center ${
+                                        filterCategory === tab.id
+                                            ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400 font-semibold'
+                                            : 'text-neutral-500 hover:bg-black/5 dark:hover:bg-white/5'
+                                    }`}
+                                >
+                                    {tab.label}
+                                </button>
+                            ))}
                         </div>
                     </div>
 
