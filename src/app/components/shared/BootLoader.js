@@ -13,6 +13,7 @@ import { signalBootReady } from "./bootSignal";
  *   - Reload of the same tab          -> skip.
  *   - Blog routes (/blogs, /blogs/[id], /v1|/v2 prefixed) -> always skip.
  *   - Admin panel (/admin/*)          -> always skip (tools shouldn't wait).
+ *   - Desktop shell (/desktop/*)      -> always skip (it boots its own UI).
  *
  * Presence is detected two ways:
  *   1. A localStorage heartbeat ("aiyu:lastSeen"), read synchronously in the
@@ -145,7 +146,8 @@ export default function BootLoader() {
     };
 
     // Pre-paint already decided to skip (another instance alive, or a blog /
-    // admin route). Keep answering pings so other tabs detect us, but never show.
+    // admin / desktop route). Keep answering pings so other tabs detect us, but
+    // never show.
     if (root.getAttribute("data-booted") === "1") {
       if (channel) {
         channel.onmessage = answerPing;
