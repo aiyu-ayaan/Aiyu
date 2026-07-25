@@ -98,7 +98,7 @@ const buildApps = () => [
         icon: ChromeIcon,
         w: 940,
         h: 600,
-        render: (ctx) => <Browser payload={ctx.payload} closeWin={ctx.closeWin} />,
+        render: (ctx) => <Browser payload={ctx.payload} closeWin={ctx.closeWin} isOffline={ctx.isOffline} />,
     },
     {
         key: 'markdown',
@@ -182,7 +182,6 @@ const DESKTOP_ICONS = [
     { key: 'browser', label: 'Google Chrome', icon: ChromeIcon },
     { key: 'github', label: 'GitHub', icon: GitHubIcon },
     { key: 'settings', label: 'Settings', icon: SettingsIcon },
-    { key: 'about', label: 'This PC', icon: ThisPCIcon },
 ];
 
 let uid = 1;
@@ -206,6 +205,9 @@ const WindowSurface = React.memo(function WindowSurface({
     closeWin,
     toggleStart,
     openStartMenu,
+    systemSettings,
+    updateSystemSettings,
+    isOffline,
 }) {
     const closeSelf = useCallback(
         (targetId) => {
@@ -229,14 +231,33 @@ const WindowSurface = React.memo(function WindowSurface({
             payload,
             toggleStart,
             openStartMenu,
+            systemSettings,
+            updateSystemSettings,
+            isOffline,
         }),
-        [wallpaper, setWallpaper, config, openApp, windows, closeSelf, payload, toggleStart, openStartMenu]
+        [wallpaper, setWallpaper, config, openApp, windows, closeSelf, payload, toggleStart, openStartMenu, systemSettings, updateSystemSettings, isOffline]
     );
     return app ? app.render(ctx) : null;
 });
 
 export default function Desktop({ wallpaper: initialWallpaper, config = EMPTY_CONFIG }) {
     const [wallpaper, setWallpaper] = useState(initialWallpaper);
+
+    // Reactive System Settings
+    const [systemSettings, setSystemSettings] = useState({
+        wifiOn: true,
+        airplaneOn: false,
+        nightLightOn: false,
+        brightness: 100,
+        volume: 80,
+        isMuted: false,
+    });
+
+    const updateSystemSettings = useCallback((updates) => {
+        setSystemSettings((prev) => ({ ...prev, ...updates }));
+    }, []);
+
+    const isOffline = !systemSettings.wifiOn || systemSettings.airplaneOn;
 
     const [windows, setWindows] = useState([]);
     const [activeId, setActiveId] = useState(null);
@@ -652,6 +673,9 @@ export default function Desktop({ wallpaper: initialWallpaper, config = EMPTY_CO
                             closeWin={closeWin}
                             toggleStart={toggleStart}
                             openStartMenu={openStartMenu}
+                            systemSettings={systemSettings}
+                            updateSystemSettings={updateSystemSettings}
+                            isOffline={isOffline}
                         />
                     </Window>
                 ))}

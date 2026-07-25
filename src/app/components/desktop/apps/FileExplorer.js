@@ -18,8 +18,7 @@ import {
 const NAV = [
     { key: 'home', label: 'Home', icon: Home },
     { key: 'pictures', label: 'Pictures', icon: ImageIcon },
-    { key: 'blogs', label: 'Documents', icon: FileText },
-    { key: 'pc', label: 'This PC', icon: Monitor },
+    { key: 'blogs', label: 'Blogs', icon: FileText },
 ];
 
 // Turn a blog record into a fake .md file entry.
@@ -55,7 +54,7 @@ export default function FileExplorer({ openApp }) {
     }, []);
 
     const pathLabel = useMemo(() => {
-        const map = { home: 'Home', pictures: 'This PC > Pictures', blogs: 'This PC > Documents > Blogs', pc: 'This PC' };
+        const map = { home: 'Home', pictures: 'Pictures', blogs: 'Blogs' };
         return map[folder] || 'Home';
     }, [folder]);
 
@@ -119,7 +118,7 @@ export default function FileExplorer({ openApp }) {
                         <div className="flex h-full items-center justify-center opacity-60">
                             <Loader2 className="h-5 w-5 animate-spin" />
                         </div>
-                    ) : folder === 'home' || folder === 'pc' ? (
+                    ) : folder === 'home' ? (
                         <HomeView
                             onOpen={setFolder}
                             galleryCount={gallery.length}
@@ -159,7 +158,7 @@ export default function FileExplorer({ openApp }) {
                                     icon={FileText}
                                 />
                             ))}
-                            {filteredBlogs.length === 0 && <Empty label="No documents" />}
+                            {filteredBlogs.length === 0 && <Empty label="No blogs" />}
                         </IconGrid>
                     )}
                 </div>
@@ -185,7 +184,7 @@ export default function FileExplorer({ openApp }) {
 function HomeView({ onOpen, galleryCount, blogCount }) {
     const cards = [
         { key: 'pictures', label: 'Pictures', sub: `${galleryCount} items`, icon: ImageIcon },
-        { key: 'blogs', label: 'Documents', sub: `${blogCount} blogs`, icon: FileText },
+        { key: 'blogs', label: 'Blogs', sub: `${blogCount} blogs`, icon: FileText },
     ];
     return (
         <div>

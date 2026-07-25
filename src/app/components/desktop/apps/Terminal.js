@@ -69,7 +69,7 @@ export default function Terminal({ openApp, config = {} }) {
                     '',
                     'Mode          LastWriteTime         Length Name',
                     '----          -------------         ------ ----',
-                    'd-----  7/25/2026   00:00 AM                Documents',
+                    'd-----  7/25/2026   00:00 AM                Blogs',
                     'd-----  7/25/2026   00:00 AM                Pictures',
                     'd-----  7/25/2026   00:00 AM                Projects',
                     '-a----  7/25/2026   00:00 AM           1024 welcome.txt',

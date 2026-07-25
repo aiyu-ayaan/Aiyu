@@ -53,7 +53,7 @@ const RECOMMENDED_ITEMS = [
     { title: 'GitHub', sub: 'Repositories & Code', icon: GitHubIcon, key: 'github', external: 'https://github.com/aiyu-ayaan' },
     { title: 'Mail', sub: 'Contact & Messages', icon: MailIcon, key: 'contact', external: '/contact-us' },
     { title: 'Terminal', sub: 'CLI & Shell', icon: TerminalIcon, key: 'terminal' },
-    { title: 'File Explorer', sub: 'Pictures & Documents', icon: ExplorerIcon, key: 'explorer' },
+    { title: 'File Explorer', sub: 'Pictures & Blogs', icon: ExplorerIcon, key: 'explorer' },
 ];
 
 export default function StartMenu({ apps = [], onOpen, onClose, config = {}, onRestart, onShutdown }) {
