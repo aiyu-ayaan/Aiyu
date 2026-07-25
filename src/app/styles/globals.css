@@ -109,15 +109,31 @@
   box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
 }
 
-/* Reduce acrylic on low-power devices */
-html[data-perf="lite"] .win-acrylic,
-html[data-perf="lite"] .win-mica {
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-}
+/* backdrop-filter forces the compositor to re-blur everything behind these
+   surfaces, and the taskbar/flyouts sit on top of the whole desktop. Honour the
+   OS transparency preference: drop the blur, the noise blend and the specular
+   edge, and fall back to an opaque tint. */
+@media (prefers-reduced-transparency: reduce) {
 
-html[data-perf="lite"] .win-acrylic-noise::before {
-  display: none;
+  .win-acrylic,
+  .win-mica {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background-color: #eeeef2;
+  }
+
+  :is(.dark, [data-theme="dark"]) .win-acrylic,
+  :is(.dark, [data-theme="dark"]) .win-mica {
+    background-color: #1a1a1f;
+  }
+
+  .win-acrylic-noise::before {
+    display: none;
+  }
+
+  .win-acrylic-highlight {
+    box-shadow: none;
+  }
 }
 
 /* Glass surfaces */

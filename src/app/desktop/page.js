@@ -1,3 +1,4 @@
+import ReactDOM from 'react-dom';
 import Desktop from '@/app/components/desktop/Desktop';
 import { prisma } from '@/lib/prisma';
 import { getSingleton } from '@/lib/serialize';
@@ -45,6 +46,12 @@ export default async function DesktopPage() {
         }
     } catch {
         // Fall back to the default bloom if config is unavailable.
+    }
+
+    // The wallpaper is the LCP element but is applied as a CSS background on a
+    // client component, so the preload scanner cannot see it until hydration.
+    if (wallpaper) {
+        ReactDOM.preload(wallpaper, { as: 'image', fetchPriority: 'high' });
     }
 
     return <Desktop wallpaper={wallpaper} config={configObj} />;

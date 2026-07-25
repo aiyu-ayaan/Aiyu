@@ -63,9 +63,15 @@ export default function TaskManager({ windows = [], closeWin, openApp, config = 
         }
     }, []);
 
-    // Periodic live performance graph updates
+    // Periodic live performance graph updates. Only the Performance pane reads
+    // these, so the timer stays parked while another tab is showing or the
+    // browser tab is in the background — otherwise it re-rendered Task Manager
+    // every 1.5s for the entire life of the window.
     useEffect(() => {
-        const interval = setInterval(() => {
+        if (tab !== 'performance') return;
+
+        let interval = null;
+        const tick = () => {
             const nextCpu = Math.floor(12 + Math.random() * 25);
             const nextMem = Math.floor(42 + Math.random() * 8);
 
@@ -74,24 +80,47 @@ export default function TaskManager({ windows = [], closeWin, openApp, config = 
 
             setCpuHistory((prev) => [...prev.slice(1), nextCpu]);
             setMemHistory((prev) => [...prev.slice(1), nextMem]);
-        }, 1500);
-        return () => clearInterval(interval);
-    }, []);
+        };
 
-    // Map open window instances into process entries
+        const start = () => {
+            if (interval) return;
+            interval = setInterval(tick, 1500);
+        };
+        const stop = () => {
+            if (!interval) return;
+            clearInterval(interval);
+            interval = null;
+        };
+        const onVisibility = () => (document.hidden ? stop() : start());
+
+        onVisibility();
+        document.addEventListener('visibilitychange', onVisibility);
+        return () => {
+            stop();
+            document.removeEventListener('visibilitychange', onVisibility);
+        };
+    }, [tab]);
+
+    // Map open window instances into process entries. The per-process figures
+    // are derived from the window id rather than Math.random(), so they stay put
+    // instead of re-rolling (and re-rendering the whole table) every time a
+    // window is moved, focused or minimized.
     const runningAppProcesses = useMemo(() => {
-        return windows.map((w) => ({
-            id: w.id,
-            isWindow: true,
-            name: w.title || 'App Window',
-            appKey: w.appKey,
-            icon: w.icon,
-            cpu: (Math.random() * 2.5 + 0.3).toFixed(1),
-            mem: (Math.random() * 60 + 80).toFixed(1),
-            disk: 0.0,
-            net: 0.1,
-            category: 'Apps',
-        }));
+        return windows.map((w) => {
+            const seed = (w.id * 2654435761) % 1000 / 1000;
+            return {
+                id: w.id,
+                isWindow: true,
+                name: w.title || 'App Window',
+                appKey: w.appKey,
+                icon: w.icon,
+                cpu: (seed * 2.5 + 0.3).toFixed(1),
+                mem: (seed * 60 + 80).toFixed(1),
+                disk: 0.0,
+                net: 0.1,
+                category: 'Apps',
+            };
+        });
     }, [windows]);
 
     const handleEndTask = () => {
