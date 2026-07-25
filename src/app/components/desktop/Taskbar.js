@@ -7,7 +7,10 @@ import { StartIcon, WidgetsIcon } from './icons';
 // Windows 11 style bottom taskbar: centered app icons, Start button, and a
 // system tray with live clock.
 export default function Taskbar({ apps, windows, activeId, onStart, startOpen, widgetsOpen, onToggleWidgets, onOpen, onTaskClick }) {
-    const [now, setNow] = useState(() => new Date());
+    // Starts null: rendering the real clock during SSR made the server HTML
+    // disagree with the client on every load ("12:15 PM" vs "12:16 PM"), and
+    // React responded by throwing away and regenerating the tray subtree.
+    const [now, setNow] = useState(null);
     const [quickOpen, setQuickOpen] = useState(false);
     const [calendarOpen, setCalendarOpen] = useState(false);
     const trayRef = useRef(null);
@@ -26,6 +29,7 @@ export default function Taskbar({ apps, windows, activeId, onStart, startOpen, w
     const [calDate, setCalDate] = useState(() => new Date());
 
     useEffect(() => {
+        setNow(new Date());
         const t = setInterval(() => setNow(new Date()), 1000 * 20);
         return () => clearInterval(t);
     }, []);
@@ -45,8 +49,8 @@ export default function Taskbar({ apps, windows, activeId, onStart, startOpen, w
         return () => window.removeEventListener('pointerdown', handleClickOutside);
     }, [quickOpen, calendarOpen]);
 
-    const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const date = now.toLocaleDateString([], { month: 'numeric', day: 'numeric', year: 'numeric' });
+    const time = now ? now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--';
+    const date = now ? now.toLocaleDateString([], { month: 'numeric', day: 'numeric', year: 'numeric' }) : '--/--/----';
 
     // Pinned apps always show; open windows get an "active" underline.
     const pinned = apps.filter((a) => a.key !== 'start');
@@ -343,6 +347,7 @@ export default function Taskbar({ apps, windows, activeId, onStart, startOpen, w
                                 {Array.from({ length: new Date(calDate.getFullYear(), calDate.getMonth() + 1, 0).getDate() }).map((_, i) => {
                                     const dayNum = i + 1;
                                     const isToday =
+                                        now &&
                                         dayNum === now.getDate() &&
                                         calDate.getMonth() === now.getMonth() &&
                                         calDate.getFullYear() === now.getFullYear();
