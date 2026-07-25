@@ -28,6 +28,7 @@ import {
     FaHistory,
     FaCog,
     FaSignOutAlt,
+    FaClock,
 } from 'react-icons/fa';
 import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
 
@@ -154,6 +155,13 @@ export default function DatabaseManager() {
     const [expandedGuideStep, setExpandedGuideStep] = useState(null);
     const [copiedCallback, setCopiedCallback] = useState(false);
     const [showClientSecret, setShowClientSecret] = useState(false);
+    const [gdriveCron, setGdriveCron] = useState({
+        enabled: false,
+        schedule: '0 0 * * *',
+        nextRun: null,
+        cronId: null,
+        loading: false,
+    });
 
     const selectedCount = useMemo(
         () => ALL_EXPORT_KEYS.filter((k) => selection[k]).length,
@@ -207,9 +215,33 @@ export default function DatabaseManager() {
         }
     }, []);
 
+    const fetchGDriveCronStatus = useCallback(async () => {
+        try {
+            setGdriveCron((prev) => ({ ...prev, loading: true }));
+            const res = await fetch('/api/admin/gdrive/cron');
+            if (res.ok) {
+                const data = await res.json();
+                if (data.success) {
+                    setGdriveCron({
+                        enabled: Boolean(data.enabled),
+                        schedule: data.schedule || '0 0 * * *',
+                        nextRun: data.nextRun || null,
+                        cronId: data.cronId || null,
+                        loading: false,
+                    });
+                }
+            }
+        } catch (err) {
+            console.error('Failed to fetch GDrive cron status:', err);
+        } finally {
+            setGdriveCron((prev) => ({ ...prev, loading: false }));
+        }
+    }, []);
+
     useEffect(() => {
         fetchGDriveStatus();
         fetchGDriveConfig();
+        fetchGDriveCronStatus();
 
         if (typeof window !== 'undefined') {
             const params = new URLSearchParams(window.location.search);
@@ -222,7 +254,37 @@ export default function DatabaseManager() {
                 window.history.replaceState({}, '', window.location.pathname);
             }
         }
-    }, [fetchGDriveStatus, fetchGDriveConfig]);
+    }, [fetchGDriveStatus, fetchGDriveConfig, fetchGDriveCronStatus]);
+
+    const handleToggleGDriveCron = async () => {
+        const nextState = !gdriveCron.enabled;
+        try {
+            setGdriveCron((prev) => ({ ...prev, loading: true }));
+            const res = await fetch('/api/admin/gdrive/cron', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ enabled: nextState }),
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success) {
+                throw new Error(data.error || 'Failed to update automated backup schedule');
+            }
+            setGdriveCron({
+                enabled: Boolean(data.enabled),
+                schedule: data.schedule || '0 0 * * *',
+                nextRun: data.nextRun || null,
+                cronId: data.cronId || null,
+                loading: false,
+            });
+            setMessage({
+                type: 'success',
+                text: nextState ? 'AUTOMATED_DAILY_BACKUP_ENABLED' : 'AUTOMATED_DAILY_BACKUP_DISABLED',
+            });
+        } catch (err) {
+            setMessage({ type: 'error', text: err.message });
+            setGdriveCron((prev) => ({ ...prev, loading: false }));
+        }
+    };
 
     const toggleKey = (key) =>
         setSelection((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -720,7 +782,7 @@ export default function DatabaseManager() {
                         </div>
 
                         {gdriveStatus?.isConnected && gdriveStatus?.user ? (
-                            <div className="bg-slate-950/60 border border-white/5 rounded-xl p-3.5 mb-6 flex items-center gap-3">
+                            <div className="bg-slate-950/60 border border-white/5 rounded-xl p-3.5 mb-4 flex items-center gap-3">
                                 {gdriveStatus.user.picture ? (
                                     /* eslint-disable-next-html-element-for-img */
                                     <img
@@ -743,10 +805,68 @@ export default function DatabaseManager() {
                                 </div>
                             </div>
                         ) : (
-                            <p className="text-slate-400 mb-6 text-sm leading-relaxed">
+                            <p className="text-slate-400 mb-4 text-sm leading-relaxed">
                                 Store automated and on-demand database snapshots securely in your Google Drive cloud storage.
                             </p>
                         )}
+
+                        {/* Dedicated Automated Backup Schedule (Cron) row */}
+                        <div className="bg-slate-950/60 border border-white/5 rounded-xl p-4 mb-4 space-y-3">
+                            <div className="flex items-center justify-between gap-2 flex-wrap">
+                                <div className="flex items-center gap-2">
+                                    <FaClock className="text-cyan-400" size={14} />
+                                    <span className="text-xs font-mono font-bold text-slate-200 uppercase tracking-wider">
+                                        Automated Daily Schedule
+                                    </span>
+                                </div>
+                                <Link
+                                    href="/admin/config/crons"
+                                    className="text-[11px] font-mono text-cyan-400 hover:text-cyan-300 flex items-center gap-1 hover:underline"
+                                >
+                                    [ ⏰ MANAGE IN CRON DASHBOARD ]
+                                </Link>
+                            </div>
+
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+                                <div>
+                                    <div className="text-xs font-mono text-slate-400">
+                                        Schedule: <span className="text-slate-200 font-semibold">Daily at Midnight ({gdriveCron.schedule})</span>
+                                    </div>
+                                    {gdriveCron.enabled && gdriveCron.nextRun && (
+                                        <div className="text-[11px] font-mono text-emerald-400 mt-1 flex items-center gap-1.5">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                            Next Run: {formatDate(gdriveCron.nextRun)}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={handleToggleGDriveCron}
+                                    disabled={gdriveCron.loading || !gdriveStatus?.isConnected}
+                                    title={!gdriveStatus?.isConnected ? 'Connect Google Drive to enable automated backups' : ''}
+                                    className={`px-3 py-1.5 rounded-lg font-mono text-xs font-bold transition-all flex items-center justify-center gap-2 shrink-0 border ${
+                                        gdriveCron.enabled
+                                            ? 'bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/30 text-emerald-400'
+                                            : 'bg-slate-800/80 hover:bg-slate-800 border-white/10 text-slate-400 hover:text-slate-200'
+                                    } disabled:opacity-40 disabled:cursor-not-allowed`}
+                                >
+                                    {gdriveCron.loading ? (
+                                        <FaSync className="animate-spin text-cyan-400" size={12} />
+                                    ) : gdriveCron.enabled ? (
+                                        <>
+                                            <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                                            DISABLE_AUTOMATIC_BACKUP
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span className="w-2 h-2 rounded-full bg-slate-500" />
+                                            ENABLE_AUTOMATIC_BACKUP
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     <div className="relative z-10 space-y-2 pt-2">
