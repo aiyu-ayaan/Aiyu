@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { getVersionedPath } from '@/lib/siteVersion';
 import { useEffect, useRef, useState, memo } from 'react';
 import clsx from 'clsx';
-import { motion, useScroll, useSpring, useTransform } from 'framer-motion';
+import { AnimatePresence, motion, useScroll, useSpring, useTransform } from 'framer-motion';
 import { ArrowUpRight, Menu, Search, X } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import { useTheme } from '../context/ThemeContext';
@@ -358,115 +358,118 @@ export default memo(function Header({ data, logoText, socialData, config }) {
         </div>
       </header>
 
-       <motion.aside
-         className="fixed inset-0 z-[110] md:hidden overflow-y-auto"
-         style={{
-           backgroundColor: theme === 'dark' ? 'rgba(8, 10, 14, 0.9)' : 'rgba(248, 250, 252, 0.9)',
-           backdropFilter: 'blur(20px)',
-           pointerEvents: isMenuOpen ? 'auto' : 'none',
-         }}
-         initial={{ opacity: 0, y: '-4%' }}
-         animate={{
-           opacity: isBlogsRoute ? 0 : (isMenuOpen ? 1 : 0),
-           y: isBlogsRoute ? '-4%' : (isMenuOpen ? '0%' : '-4%'),
-         }}
-         transition={{ duration: 0.22, ease: 'easeOut' }}
-       >
-         <div className="mx-auto mt-4 flex min-h-[calc(100dvh-2rem)] w-[92%] max-w-xl flex-col rounded-2xl border p-4" style={{ borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)', backgroundColor: 'color-mix(in srgb, var(--bg-surface) 88%, transparent)' }}>
-          <div className="mb-4 flex items-center justify-between">
-            <span
-              className="text-lg font-semibold tracking-tight"
-              style={{ color: 'var(--text-bright)' }}
-            >
-              {displayLogo}
-            </span>
-            <button
-              type="button"
-              onClick={() => setIsMenuOpen(false)}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full border"
-              style={{
-                borderColor: 'color-mix(in srgb, var(--border-secondary) 70%, transparent)',
-                color: 'var(--text-primary)',
-                backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 72%, transparent)',
-              }}
-              aria-label="Close menu"
-            >
-              <X size={18} />
-            </button>
-          </div>
+      <AnimatePresence>
+        {isMenuOpen && !isBlogsRoute && (
+          <motion.aside
+            key="mobile-nav-drawer"
+            className="fixed inset-0 z-[110] md:hidden overflow-y-auto"
+            style={{
+              backgroundColor: theme === 'dark' ? 'rgba(8, 10, 14, 0.95)' : 'rgba(248, 250, 252, 0.95)',
+              backdropFilter: 'blur(20px)',
+            }}
+            initial={{ opacity: 0, y: '-4%' }}
+            animate={{ opacity: 1, y: '0%' }}
+            exit={{ opacity: 0, y: '-4%' }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+          >
+            <div className="mx-auto mt-4 flex min-h-[calc(100dvh-2rem)] w-[92%] max-w-xl flex-col rounded-2xl border p-4" style={{ borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)', backgroundColor: 'color-mix(in srgb, var(--bg-surface) 88%, transparent)' }}>
+             <div className="mb-4 flex items-center justify-between">
+               <span
+                 className="text-lg font-semibold tracking-tight"
+                 style={{ color: 'var(--text-bright)' }}
+               >
+                 {displayLogo}
+               </span>
+               <button
+                 type="button"
+                 onClick={() => setIsMenuOpen(false)}
+                 className="inline-flex h-9 w-9 items-center justify-center rounded-full border"
+                 style={{
+                   borderColor: 'color-mix(in srgb, var(--border-secondary) 70%, transparent)',
+                   color: 'var(--text-primary)',
+                   backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 72%, transparent)',
+                 }}
+                 aria-label="Close menu"
+               >
+                 <X size={18} />
+               </button>
+             </div>
 
-          <div className="flex flex-col gap-2">
-            {visibleNavLinks.map((link, index) => {
-              const versionedHref = getVersionedPath(pathname, link.href);
-              const isActive = isRouteMatch(pathname, versionedHref);
-              return (
-                <motion.div
-                  key={link.name}
-                  initial={{ opacity: 0, x: -18 }}
-                  animate={{ opacity: isMenuOpen ? 1 : 0, x: isMenuOpen ? 0 : -18 }}
-                  transition={{ delay: 0.04 * index }}
-                >
-                  <Link
-                    href={versionedHref}
-                    target={link.target}
-                    onClick={() => setIsMenuOpen(false)}
-                    className="flex items-center justify-between rounded-xl border px-4 py-3 text-base font-medium"
-                    style={{
-                      borderColor: isActive
-                        ? 'var(--hairline-strong)'
-                        : 'var(--hairline)',
-                      color: isActive ? 'var(--text-bright)' : 'var(--text-secondary)',
-                      backgroundColor: isActive
-                        ? 'color-mix(in srgb, var(--text-bright) 10%, transparent)'
-                        : 'var(--surface-tile)',
-                    }}
-                  >
-                  <span className="inline-flex items-center gap-2">
-                    <span>{link.name}</span>
-                    {link.beta === true && (
-                      <span
-                        className="rounded-full border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
-                        style={{
-                          borderColor: 'color-mix(in srgb, var(--accent-orange) 55%, var(--border-secondary))',
-                          color: 'var(--accent-orange-bright)',
-                          backgroundColor: 'color-mix(in srgb, var(--accent-orange) 12%, transparent)',
-                        }}
-                      >
-                        Beta
-                      </span>
-                    )}
-                  </span>
-                  <ArrowUpRight size={15} />
-                </Link>
-              </motion.div>
-              );
-            })}
-          </div>
+             <div className="flex flex-col gap-2">
+               {visibleNavLinks.map((link, index) => {
+                 const versionedHref = getVersionedPath(pathname, link.href);
+                 const isActive = isRouteMatch(pathname, versionedHref);
+                 return (
+                   <motion.div
+                     key={link.name}
+                     initial={{ opacity: 0, x: -18 }}
+                     animate={{ opacity: 1, x: 0 }}
+                     transition={{ delay: 0.04 * index }}
+                   >
+                     <Link
+                       href={versionedHref}
+                       target={link.target}
+                       onClick={() => setIsMenuOpen(false)}
+                       className="flex items-center justify-between rounded-xl border px-4 py-3 text-base font-medium"
+                       style={{
+                         borderColor: isActive
+                           ? 'var(--hairline-strong)'
+                           : 'var(--hairline)',
+                         color: isActive ? 'var(--text-bright)' : 'var(--text-secondary)',
+                         backgroundColor: isActive
+                           ? 'color-mix(in srgb, var(--text-bright) 10%, transparent)'
+                           : 'var(--surface-tile)',
+                       }}
+                     >
+                     <span className="inline-flex items-center gap-2">
+                       <span>{link.name}</span>
+                       {link.beta === true && (
+                         <span
+                           className="rounded-full border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
+                           style={{
+                             borderColor: 'color-mix(in srgb, var(--accent-orange) 55%, var(--border-secondary))',
+                             color: 'var(--accent-orange-bright)',
+                             backgroundColor: 'color-mix(in srgb, var(--accent-orange) 12%, transparent)',
+                           }}
+                         >
+                           Beta
+                         </span>
+                       )}
+                     </span>
+                     <ArrowUpRight size={15} />
+                   </Link>
+                 </motion.div>
+                 );
+               })}
+             </div>
 
-          <div className="mt-auto space-y-4 pt-6">
-            <div className="rounded-xl border p-3" style={{ borderColor: 'color-mix(in srgb, var(--border-secondary) 70%, transparent)', backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 75%, transparent)' }}>
-              <p className="mb-3 text-xs uppercase tracking-[0.14em]" style={{ color: 'var(--text-tertiary)' }}>
-                Theme Mode
-              </p>
-              <ThemeToggle />
-            </div>
+             <div className="mt-auto space-y-4 pt-6">
+               <div className="rounded-xl border p-3" style={{ borderColor: 'color-mix(in srgb, var(--border-secondary) 70%, transparent)', backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 75%, transparent)' }}>
+                 <p className="mb-3 text-xs uppercase tracking-[0.14em]" style={{ color: 'var(--text-tertiary)' }}>
+                   Theme Mode
+                 </p>
+                 <ThemeToggle />
+               </div>
 
-            <Link href={getVersionedPath(pathname, contactLink?.href || '/contact-us')}>
-              <button
-                type="button"
-                className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold"
-                style={{
-                  background: 'linear-gradient(180deg, color-mix(in srgb, var(--apple-blue) 92%, white), var(--apple-blue))',
-                  color: '#ffffff',
-                }}
-              >
-                <span>{contactLink?.name || 'contact-me'}</span>
-                <ArrowUpRight size={15} />
-              </button>
-            </Link>
-          </div>
-        </div>
-      </motion.aside>
+               <Link href={getVersionedPath(pathname, contactLink?.href || '/contact-us')}>
+                 <button
+                   type="button"
+                   onClick={() => setIsMenuOpen(false)}
+                   className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold"
+                   style={{
+                     background: 'linear-gradient(180deg, color-mix(in srgb, var(--apple-blue) 92%, white), var(--apple-blue))',
+                     color: '#ffffff',
+                   }}
+                 >
+                   <span>{contactLink?.name || 'contact-me'}</span>
+                   <ArrowUpRight size={15} />
+                 </button>
+               </Link>
+             </div>
+           </div>
+         </motion.aside>
+        )}
+      </AnimatePresence>
     </>
   );
 });
