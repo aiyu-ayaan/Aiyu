@@ -889,7 +889,7 @@ jobs:
             cd docker/Aiyu/ || { echo "Failed to navigate to docker/Aiyu/"; exit 1; }
 
             echo "Pulling rebuilt image (same tag, new digest)..."
-            docker compose pull || { echo "Failed to pull image"; exit 1; }
+            sudo docker compose pull || { echo "Failed to pull image"; exit 1; }
 
             # --force-recreate ensures containers restart even though the tag
             # string is unchanged (only its digest moved).
