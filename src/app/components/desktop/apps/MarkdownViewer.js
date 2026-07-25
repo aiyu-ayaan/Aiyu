@@ -149,7 +149,7 @@ export default function MarkdownViewer({ payload, openApp }) {
                     <div className="p-3 border-b border-black/10 dark:border-white/10 flex items-center justify-between">
                         <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
                             <BookOpen className="h-4 w-4 text-blue-500" />
-                            <span>Blogs</span>
+                            <span>Documents</span>
                         </div>
                         <span className="text-[10px] rounded-full bg-blue-500/10 px-2 py-0.5 font-mono text-blue-500 font-semibold">
                             {blogs.length}
