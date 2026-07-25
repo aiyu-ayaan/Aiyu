@@ -10,6 +10,19 @@
 set -e
 
 if [ "${RUN_MIGRATIONS}" = "true" ] && [ -n "${DATABASE_URL}" ]; then
+  # Sanity check: the image must ship the migration history. An empty or
+  # missing migrations folder makes `migrate deploy` report success while
+  # applying nothing, silently drifting the database behind the client
+  # (this happened when a copy bug nested prisma/ inside itself).
+  if ! ls /app/prisma/migrations/*/migration.sql >/dev/null 2>&1; then
+    if [ "${ALLOW_MIGRATION_FAILURE}" = "true" ]; then
+      echo "[entrypoint] WARNING: /app/prisma/migrations is missing or empty; continuing (ALLOW_MIGRATION_FAILURE=true)." >&2
+    else
+      echo "[entrypoint] FATAL: /app/prisma/migrations is missing or empty — image is broken; migrate deploy would no-op and drift the schema." >&2
+      exit 1
+    fi
+  fi
+
   echo "[entrypoint] Applying Prisma migrations (migrate deploy)..."
   MIGRATED=false
   # The database container may still be booting; retry before giving up.

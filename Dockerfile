@@ -67,11 +67,17 @@ RUN DATABASE_URL="postgresql://dummy:dummy@dummy:5432/dummy?schema=public" \
 #     deployments — ~54MB never read by a Node server.
 #   * @prisma/engines is the dev-time engine downloader (schema engine +
 #     another copy of the query engine, ~36MB); the runtime never touches it.
+#   * prisma is copied with `prisma/.` (contents-merge) — NOT `cp -a prisma`.
+#     outputFileTracingIncludes traces prisma/schema.prisma into the standalone
+#     tree, so /out/prisma may already exist; `cp -a prisma` would then NEST the
+#     directory (/out/prisma/prisma), leaving migrations invisible to
+#     `migrate deploy` at container start (schema drift in prod).
 RUN mkdir -p /out/.next/static /out/public \
     && cp -a .next/standalone/. /out/ \
     && cp -a .next/static/. /out/.next/static/ \
     && cp -a public/. /out/public/ \
-    && cp -a prisma /out/prisma \
+    && mkdir -p /out/prisma \
+    && cp -a prisma/. /out/prisma/ \
     && mkdir -p /out/node_modules/@prisma \
     && rm -rf /out/node_modules/.prisma \
               /out/node_modules/@prisma/client \

@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { getDelegate, fromClient } from "@/lib/serialize";
 import { getSession } from "@/lib/auth";
+import { runMigrateDeploy } from "@/lib/autoMigrate";
 import { NextResponse } from "next/server";
 import cache from "@/lib/cache";
 import AdmZip from "adm-zip";
@@ -221,20 +222,39 @@ export async function POST(request) {
             { modelKey: 'aiLog', key: 'aiLogs' },
         ];
 
-        // Preflight: refuse to restore into a database whose schema is behind the
-        // running code. Without this, the transaction below aborts with a cryptic
-        // "column does not exist" Prisma error mid-restore. A cheap SELECT of the
-        // newest schema columns detects drift before anything is touched.
+        // Preflight: detect a database whose schema is behind the running code.
+        // Without this, the transaction below aborts with a cryptic "column does
+        // not exist" Prisma error mid-restore. A cheap SELECT of the newest
+        // schema columns detects drift before anything is touched; on drift we
+        // self-heal by running `prisma migrate deploy` and re-checking.
         try {
             await prisma.blog.findFirst({ select: { id: true, isFlagged: true, reviewStatus: true } });
         } catch (driftError) {
-            if (driftError?.code === 'P2022' || driftError?.code === 'P2021') {
+            if (driftError?.code !== 'P2022' && driftError?.code !== 'P2021') {
+                throw driftError;
+            }
+
+            console.warn("[IMPORT] Schema drift detected; running prisma migrate deploy...");
+            const migration = await runMigrateDeploy();
+            console.warn(`[IMPORT] migrate deploy ${migration.ok ? 'succeeded' : 'FAILED'}:\n${migration.output}`);
+
+            let healed = false;
+            if (migration.ok) {
+                try {
+                    await prisma.blog.findFirst({ select: { id: true, isFlagged: true, reviewStatus: true } });
+                    healed = true;
+                } catch {
+                    healed = false;
+                }
+            }
+
+            if (!healed) {
                 return NextResponse.json({
                     success: false,
-                    error: "Database schema is out of date (pending migrations). Run `prisma migrate deploy` (or restart the container with RUN_MIGRATIONS=true) and retry. No data was changed.",
+                    error: "Database schema is out of date and automatic migration failed. Run `prisma migrate deploy` manually and retry. No data was changed.",
+                    migrationOutput: migration.output,
                 }, { status: 409 });
             }
-            throw driftError;
         }
 
         // Restore database collections atomically inside a transaction (preserving original ids from the backup).
