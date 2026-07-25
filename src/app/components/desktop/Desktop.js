@@ -207,7 +207,16 @@ const WindowSurface = React.memo(function WindowSurface({
     toggleStart,
     openStartMenu,
 }) {
-    const closeSelf = useCallback(() => closeWin(winId), [closeWin, winId]);
+    const closeSelf = useCallback(
+        (targetId) => {
+            if (targetId && typeof targetId !== 'object') {
+                closeWin(targetId);
+            } else {
+                closeWin(winId);
+            }
+        },
+        [closeWin, winId]
+    );
     const app = APP_MAP[appKey];
     const ctx = useMemo(
         () => ({
