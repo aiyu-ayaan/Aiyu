@@ -149,7 +149,7 @@ export default function DatabaseManager() {
     const [gdriveStatus, setGdriveStatus] = useState(null);
     const [gdriveFiles, setGdriveFiles] = useState([]);
     const [showGDriveModal, setShowGDriveModal] = useState(false);
-    const [gdriveConfigForm, setGdriveConfigForm] = useState({ clientId: '', clientSecret: '' });
+    const [gdriveConfigForm, setGdriveConfigForm] = useState({ clientId: '', clientSecret: '', retentionMonths: 1 });
     const [gdriveLoading, setGdriveLoading] = useState(false);
     const [showDriveHistory, setShowDriveHistory] = useState(false);
     const [expandedGuideStep, setExpandedGuideStep] = useState(null);
@@ -208,6 +208,7 @@ export default function DatabaseManager() {
                 setGdriveConfigForm({
                     clientId: data.clientId || '',
                     clientSecret: '',
+                    retentionMonths: data.retentionMonths || 1,
                 });
             }
         } catch (err) {
@@ -763,22 +764,28 @@ export default function DatabaseManager() {
                                 <FaGoogle className="text-cyan-400" size={20} />
                                 <h2 className="text-sm font-mono text-cyan-400 uppercase tracking-widest">Google Drive</h2>
                             </div>
-                            {gdriveStatus?.isConnected ? (
-                                <span className="px-2.5 py-1 rounded-full text-[10px] font-mono uppercase font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 shrink-0">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                                    CONNECTED
+                            <div className="flex items-center gap-2 flex-wrap justify-end">
+                                <span className="px-2.5 py-1 rounded-full text-[10px] font-mono uppercase font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 flex items-center gap-1.5 shrink-0">
+                                    <FaTrash size={10} />
+                                    Auto-Purge: &gt; {gdriveStatus?.retentionMonths || 1} Month{(gdriveStatus?.retentionMonths || 1) > 1 ? 's' : ''} Old
                                 </span>
-                            ) : gdriveStatus?.isConfigured ? (
-                                <span className="px-2.5 py-1 rounded-full text-[10px] font-mono uppercase font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30 flex items-center gap-1.5 shrink-0">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-                                    DISCONNECTED
-                                </span>
-                            ) : (
-                                <span className="px-2.5 py-1 rounded-full text-[10px] font-mono uppercase font-bold bg-slate-800 text-slate-400 border border-slate-700 flex items-center gap-1.5 shrink-0">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-slate-500" />
-                                    NOT_CONFIGURED
-                                </span>
-                            )}
+                                {gdriveStatus?.isConnected ? (
+                                    <span className="px-2.5 py-1 rounded-full text-[10px] font-mono uppercase font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 shrink-0">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                        CONNECTED
+                                    </span>
+                                ) : gdriveStatus?.isConfigured ? (
+                                    <span className="px-2.5 py-1 rounded-full text-[10px] font-mono uppercase font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30 flex items-center gap-1.5 shrink-0">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                                        DISCONNECTED
+                                    </span>
+                                ) : (
+                                    <span className="px-2.5 py-1 rounded-full text-[10px] font-mono uppercase font-bold bg-slate-800 text-slate-400 border border-slate-700 flex items-center gap-1.5 shrink-0">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-slate-500" />
+                                        NOT_CONFIGURED
+                                    </span>
+                                )}
+                            </div>
                         </div>
 
                         {gdriveStatus?.isConnected && gdriveStatus?.user ? (
@@ -1197,6 +1204,30 @@ export default function DatabaseManager() {
                                                 {showClientSecret ? <FaEyeSlash size={14} /> : <FaEye size={14} />}
                                             </button>
                                         </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs font-mono text-slate-400 uppercase mb-1.5">
+                                            Backup Retention Policy
+                                        </label>
+                                        <select
+                                            value={gdriveConfigForm.retentionMonths || 1}
+                                            onChange={(e) => setGdriveConfigForm((prev) => ({ ...prev, retentionMonths: parseInt(e.target.value, 10) }))}
+                                            className="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-2.5 text-white font-mono text-sm focus:outline-none focus:border-cyan-500 transition-colors"
+                                        >
+                                            <option value={1}>1 Month (Default)</option>
+                                            <option value={2}>2 Months</option>
+                                            <option value={3}>3 Months</option>
+                                            <option value={4}>4 Months</option>
+                                            <option value={5}>5 Months</option>
+                                            <option value={6}>6 Months</option>
+                                            <option value={7}>7 Months</option>
+                                            <option value={8}>8 Months</option>
+                                            <option value={9}>9 Months</option>
+                                            <option value={10}>10 Months</option>
+                                            <option value={11}>11 Months</option>
+                                            <option value={12}>12 Months</option>
+                                        </select>
                                     </div>
 
                                     {/* Dynamic Redirect URL Box */}

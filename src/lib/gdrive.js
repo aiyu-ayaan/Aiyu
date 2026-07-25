@@ -33,6 +33,12 @@ export async function getGDriveConfig() {
     }
   }
 
+  const rawRetention = rawConfig.retentionMonths;
+  config.retentionMonths = Math.min(
+    12,
+    Math.max(1, parseInt(rawRetention || 1, 10))
+  );
+
   return config;
 }
 
@@ -57,6 +63,16 @@ export async function saveGDriveConfig(updates = {}) {
       } else {
         updatedGDrive[field] = null;
       }
+    }
+  }
+
+  if (Object.prototype.hasOwnProperty.call(updates, 'retentionMonths')) {
+    const val = updates.retentionMonths;
+    if (val !== undefined && val !== null && val !== '') {
+      updatedGDrive.retentionMonths = Math.min(
+        12,
+        Math.max(1, parseInt(val, 10))
+      );
     }
   }
 
@@ -257,7 +273,29 @@ export async function uploadBackupToDrive(zipBuffer, filename) {
     );
   }
 
-  return await res.json();
+  const uploadedFile = await res.json();
+  await cleanOldDriveBackups(config.retentionMonths || 1);
+  return uploadedFile;
+}
+
+/**
+ * Purges Google Drive backup files older than the specified retentionMonths cutoff.
+ */
+export async function cleanOldDriveBackups(retentionMonths = 1) {
+  const cutoff = new Date(
+    Date.now() - retentionMonths * 30 * 24 * 60 * 60 * 1000
+  );
+  const files = await listDriveBackups();
+  const expired = files.filter((f) => new Date(f.createdTime) < cutoff);
+
+  for (const f of expired) {
+    await deleteDriveBackup(f.id);
+  }
+
+  return {
+    deletedCount: expired.length,
+    deletedFiles: expired.map((f) => f.name),
+  };
 }
 
 /**

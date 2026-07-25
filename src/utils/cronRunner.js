@@ -6,7 +6,7 @@ import { pruneSessions, SESSION_RETENTION_DAYS } from '@/lib/auth';
 import { sendNotification } from './notificationService';
 import { decrypt } from '@/lib/encryption';
 import { compileTemplate, EXECUTION_ROW_LIMIT } from './cronTemplate';
-import { getGDriveConfig, uploadBackupToDrive } from '@/lib/gdrive';
+import { getGDriveConfig, uploadBackupToDrive, cleanOldDriveBackups } from '@/lib/gdrive';
 import archiver from 'archiver';
 import { join } from 'path';
 import { readFile, access, readdir } from 'fs/promises';
@@ -473,7 +473,8 @@ export async function executeCronJob(job) {
                 const timeStr = now.toTimeString().split(' ')[0].replace(/:/g, '-');
                 const filename = `auto_backup_${dateStr}_${timeStr}.zip`;
                 const uploadRes = await uploadBackupToDrive(zipBuffer, filename);
-                attemptLogOutput = `Google Drive automated backup completed successfully. File: ${filename} (ID: ${uploadRes.id})`;
+                const cleanResult = await cleanOldDriveBackups(config.retentionMonths || 1);
+                attemptLogOutput = `Google Drive automated backup completed successfully. File: ${filename} (ID: ${uploadRes.id}). Cleaned ${cleanResult.deletedCount} old backup(s).`;
             } else if (job.action === 'webhook') {
                 const cachedData = {};
                 cachedData.env = {};

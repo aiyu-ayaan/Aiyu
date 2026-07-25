@@ -21,6 +21,7 @@ export async function GET() {
       isConnected,
       user: config.user || null,
       clientId: config.clientId || null,
+      retentionMonths: config.retentionMonths || 1,
       updatedAt: configRecord?.updatedAt || null,
     });
   } catch (error) {

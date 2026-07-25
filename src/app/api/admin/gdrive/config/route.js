@@ -21,6 +21,7 @@ export async function GET(request) {
       callbackUrl,
       isConfigured,
       isConnected,
+      retentionMonths: config.retentionMonths || 1,
     });
   } catch (error) {
     return NextResponse.json(
@@ -38,11 +39,12 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { clientId, clientSecret } = body || {};
+    const { clientId, clientSecret, retentionMonths } = body || {};
 
     const updates = {};
     if (clientId !== undefined) updates.clientId = clientId;
     if (clientSecret !== undefined) updates.clientSecret = clientSecret;
+    if (retentionMonths !== undefined) updates.retentionMonths = retentionMonths;
 
     const config = await saveGDriveConfig(updates);
     const isConfigured = Boolean(config.clientId && config.clientSecret);
@@ -50,6 +52,7 @@ export async function POST(request) {
     return NextResponse.json({
       success: true,
       isConfigured,
+      retentionMonths: config.retentionMonths || 1,
     });
   } catch (error) {
     return NextResponse.json(
