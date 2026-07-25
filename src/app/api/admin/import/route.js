@@ -221,21 +221,25 @@ export async function POST(request) {
             { modelKey: 'aiLog', key: 'aiLogs' },
         ];
 
-        // Restore database collections (preserving original ids from the backup).
+        // Restore database collections atomically inside a transaction (preserving original ids from the backup).
         const results = {};
-        for (const { modelKey, key } of models) {
-            if (jsonData[key] && Array.isArray(jsonData[key])) {
-                const delegate = getDelegate(prisma, modelKey);
-                await delegate.deleteMany();
-                if (jsonData[key].length > 0) {
-                    const rows = jsonData[key].map((doc) => fromClient(modelKey, doc, { keepId: true }));
-                    await delegate.createMany({ data: rows });
+        await prisma.$transaction(async (tx) => {
+            for (const { modelKey, key } of models) {
+                if (jsonData[key] && Array.isArray(jsonData[key])) {
+                    const delegate = getDelegate(tx, modelKey);
+                    await delegate.deleteMany();
+                    if (jsonData[key].length > 0) {
+                        const rows = jsonData[key].map((doc) => fromClient(modelKey, doc, { keepId: true }));
+                        await delegate.createMany({ data: rows });
+                    }
+                    results[key] = { count: jsonData[key].length, status: 'imported' };
+                } else {
+                    results[key] = { status: 'skipped', reason: 'missing_or_invalid' };
                 }
-                results[key] = { count: jsonData[key].length, status: 'imported' };
-            } else {
-                results[key] = { status: 'skipped', reason: 'missing_or_invalid' };
             }
-        }
+        }, {
+            timeout: 60000,
+        });
 
         // Restore image files from ZIP
         let imagesRestored = 0;
