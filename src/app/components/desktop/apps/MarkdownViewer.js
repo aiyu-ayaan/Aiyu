@@ -35,7 +35,6 @@ export default function MarkdownViewer({ payload, openApp }) {
     const [loading, setLoading] = useState(true);
     const [activeSlug, setActiveSlug] = useState(() => payload?.slug || payload?.blog?.slug || 'about-me');
     const [query, setQuery] = useState('');
-    const [filterCategory, setFilterCategory] = useState('all');
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [copied, setCopied] = useState(false);
 
@@ -67,22 +66,16 @@ export default function MarkdownViewer({ payload, openApp }) {
     }, []);
 
     const filteredBlogs = useMemo(() => {
-        let result = blogs;
-        if (filterCategory === 'header') {
-            result = result.filter((b) => b.category === 'Header Menu');
-        } else if (filterCategory === 'blogs') {
-            result = result.filter((b) => b.category !== 'Header Menu');
-        }
-        if (!query.trim()) return result;
+        if (!query.trim()) return blogs;
         const q = query.toLowerCase();
-        return result.filter(
+        return blogs.filter(
             (b) =>
                 (b.title || '').toLowerCase().includes(q) ||
                 (b.category || '').toLowerCase().includes(q) ||
                 (b.slug || '').toLowerCase().includes(q) ||
                 (b.fileName || '').toLowerCase().includes(q)
         );
-    }, [blogs, query, filterCategory]);
+    }, [blogs, query]);
 
     const [fullBlogMap, setFullBlogMap] = useState({});
 
@@ -156,15 +149,15 @@ export default function MarkdownViewer({ payload, openApp }) {
                     <div className="p-3 border-b border-black/10 dark:border-white/10 flex items-center justify-between">
                         <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
                             <BookOpen className="h-4 w-4 text-blue-500" />
-                            <span>Blogs & Menu Docs</span>
+                            <span>Blogs</span>
                         </div>
                         <span className="text-[10px] rounded-full bg-blue-500/10 px-2 py-0.5 font-mono text-blue-500 font-semibold">
                             {blogs.length}
                         </span>
                     </div>
 
-                    {/* Search Bar & Category Filters */}
-                    <div className="p-2.5 space-y-2 border-b border-black/10 dark:border-white/10">
+                    {/* Search Bar */}
+                    <div className="p-2.5 border-b border-black/10 dark:border-white/10">
                         <div className="relative flex items-center">
                             <Search className="absolute left-2.5 h-3.5 w-3.5 opacity-40" />
                             <input
@@ -173,26 +166,6 @@ export default function MarkdownViewer({ payload, openApp }) {
                                 placeholder="Search documents..."
                                 className="w-full rounded-lg bg-black/5 dark:bg-white/5 pl-8 pr-3 py-1.5 text-xs outline-none focus:ring-1 focus:ring-blue-500/50"
                             />
-                        </div>
-
-                        <div className="flex items-center gap-1 text-[11px]">
-                            {[
-                                { id: 'all', label: 'All' },
-                                { id: 'header', label: 'Header Links' },
-                                { id: 'blogs', label: 'Blogs' },
-                            ].map((tab) => (
-                                <button
-                                    key={tab.id}
-                                    onClick={() => setFilterCategory(tab.id)}
-                                    className={`flex-1 rounded py-1 font-medium transition text-center ${
-                                        filterCategory === tab.id
-                                            ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400 font-semibold'
-                                            : 'text-neutral-500 hover:bg-black/5 dark:hover:bg-white/5'
-                                    }`}
-                                >
-                                    {tab.label}
-                                </button>
-                            ))}
                         </div>
                     </div>
 
@@ -280,52 +253,71 @@ export default function MarkdownViewer({ payload, openApp }) {
                     </div>
                 </div>
 
-                {/* Markdown Reader Body */}
-                <div className="flex-1 overflow-y-auto p-6 sm:p-8 custom-scrollbar select-text">
+                {/* Reader Body */}
+                <div className="flex-1 overflow-y-auto p-4 sm:p-6 custom-scrollbar select-text">
                     {activeBlog ? (
-                        <div className="mx-auto max-w-3xl space-y-6">
-                            {/* Article Header Card */}
-                            <div className="border-b border-black/10 dark:border-white/10 pb-6 space-y-3">
-                                {activeBlog.category && (
-                                    <div className="inline-flex items-center gap-1.5 rounded-full bg-blue-500/10 px-3 py-1 text-xs font-semibold text-blue-500">
-                                        <Tag className="h-3 w-3" />
-                                        <span>{activeBlog.category}</span>
-                                    </div>
-                                )}
-
-                                <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight leading-tight text-neutral-900 dark:text-white">
-                                    {activeBlog.title}
-                                </h1>
-
-                                <div className="flex flex-wrap items-center gap-4 text-xs text-neutral-500 dark:text-neutral-400 font-medium">
-                                    {activeBlog.date && (
-                                        <div className="flex items-center gap-1.5">
-                                            <Calendar className="h-3.5 w-3.5" />
-                                            <span>{activeBlog.date}</span>
+                        activeBlog.isPdf || activeBlog.fileName?.endsWith('.pdf') ? (
+                            <div className="h-full w-full flex flex-col space-y-4">
+                                <div className="flex items-center justify-between rounded-xl bg-blue-500/10 p-3 text-xs font-medium text-blue-600 dark:text-blue-300">
+                                    <span>Viewing Embedded PDF: {activeBlog.fileName || 'resume.pdf'}</span>
+                                    <button
+                                        onClick={handleOpenOnWeb}
+                                        className="rounded bg-blue-600 px-3 py-1 text-xs font-bold text-white hover:bg-blue-500 transition"
+                                    >
+                                        Open Full PDF
+                                    </button>
+                                </div>
+                                <iframe
+                                    src={activeBlog.pdfUrl || activeBlog.route || '/api/resume'}
+                                    title={activeBlog.title || 'PDF Document'}
+                                    className="flex-1 w-full border-none rounded-xl bg-neutral-900 min-h-[500px]"
+                                />
+                            </div>
+                        ) : (
+                            <div className="mx-auto max-w-3xl space-y-6">
+                                {/* Article Header Card */}
+                                <div className="border-b border-black/10 dark:border-white/10 pb-6 space-y-3">
+                                    {activeBlog.category && (
+                                        <div className="inline-flex items-center gap-1.5 rounded-full bg-blue-500/10 px-3 py-1 text-xs font-semibold text-blue-500">
+                                            <Tag className="h-3 w-3" />
+                                            <span>{activeBlog.category}</span>
                                         </div>
                                     )}
-                                    {activeBlog.readingTime && (
-                                        <div className="flex items-center gap-1.5">
-                                            <Clock className="h-3.5 w-3.5" />
-                                            <span>{activeBlog.readingTime} min read</span>
-                                        </div>
+
+                                    <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight leading-tight text-neutral-900 dark:text-white">
+                                        {activeBlog.title}
+                                    </h1>
+
+                                    <div className="flex flex-wrap items-center gap-4 text-xs text-neutral-500 dark:text-neutral-400 font-medium">
+                                        {activeBlog.date && (
+                                            <div className="flex items-center gap-1.5">
+                                                <Calendar className="h-3.5 w-3.5" />
+                                                <span>{activeBlog.date}</span>
+                                            </div>
+                                        )}
+                                        {activeBlog.readingTime && (
+                                            <div className="flex items-center gap-1.5">
+                                                <Clock className="h-3.5 w-3.5" />
+                                                <span>{activeBlog.readingTime} min read</span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {activeBlog.excerpt && (
+                                        <p className="text-sm italic text-neutral-600 dark:text-neutral-300 bg-black/5 dark:bg-white/5 p-3 rounded-xl border-l-4 border-blue-500">
+                                            {activeBlog.excerpt}
+                                        </p>
                                     )}
                                 </div>
 
-                                {activeBlog.excerpt && (
-                                    <p className="text-sm italic text-neutral-600 dark:text-neutral-300 bg-black/5 dark:bg-white/5 p-3 rounded-xl border-l-4 border-blue-500">
-                                        {activeBlog.excerpt}
-                                    </p>
-                                )}
+                                {/* Markdown Rendered Content */}
+                                <article className="prose prose-neutral dark:prose-invert max-w-none prose-headings:font-bold prose-a:text-blue-500 prose-img:rounded-xl">
+                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                        {activeBlog.content || activeBlog.excerpt || '*No markdown content available.*'}
+                                    </ReactMarkdown>
+                                </article>
                             </div>
-
-                            {/* Markdown Rendered Content */}
-                            <article className="prose prose-neutral dark:prose-invert max-w-none prose-headings:font-bold prose-a:text-blue-500 prose-img:rounded-xl">
-                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                    {activeBlog.content || activeBlog.excerpt || '*No markdown content available.*'}
-                                </ReactMarkdown>
-                            </article>
-                        </div>
+                        )
                     ) : (
                         <div className="flex h-full flex-col items-center justify-center text-neutral-400 gap-3">
                             <BookOpen className="h-10 w-10 opacity-30" />

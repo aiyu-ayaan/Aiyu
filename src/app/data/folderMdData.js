@@ -25,122 +25,23 @@ const buildProjectsMarkdown = () => {
 };
 
 const buildAiOverviewMarkdown = () => {
-  return `# AI Hub & Intelligent Systems Overview
-
-> **"Building with intelligence."**
-> A living map of how I design, ship, and run AI-powered software — the stacks I trust, the credits I mine, and the prompts I reach for.
-
-## Core Technical Focus Areas
-- ⚡ **RAG Pipelines**: Retrieval-Augmented Generation with vector embeddings and grounded citation.
-- 🤖 **Multi-Agent Orchestration**: Coordinating autonomous specialized agents with task breakdown and verification.
-- 🎯 **Prompt Engineering**: System prompt architecture, few-shot prompting, and strict output schemas.
-- 🔌 **MCP Servers**: Model Context Protocol integration for connecting LLMs to custom tools and databases.
-- ⚙️ **Fine-Tuning & Quantization**: Adapting open models for localized, domain-specific inference.
-
-## Telemetry & Infrastructure
-- **API Proxy**: Next.js Server Actions with cached telemetry logging.
-- **Provider Gateways**: Groq Cloud, OpenRouter, Google AI Studio, and Ollama local daemon.
-- **Status**: Live Production & Continuous Beta Testing.
-
-Click **Open Page** to open the interactive AI Hub on the web (\`/v2/ai\`).
-`;
+  return `# AI Hub & Intelligent Systems Overview\n\n> **"Building with intelligence."**\n> A living map of how I design, ship, and run AI-powered software — the stacks I trust, the credits I mine, and the prompts I reach for.\n\n## Core Technical Focus Areas\n- ⚡ **RAG Pipelines**: Retrieval-Augmented Generation with vector embeddings and grounded citation.\n- 🤖 **Multi-Agent Orchestration**: Coordinating autonomous specialized agents with task breakdown and verification.\n- 🎯 **Prompt Engineering**: System prompt architecture, few-shot prompting, and strict output schemas.\n- 🔌 **MCP Servers**: Model Context Protocol integration for connecting LLMs to custom tools and databases.\n- ⚙️ **Fine-Tuning & Quantization**: Adapting open models for localized, domain-specific inference.\n\n## Telemetry & Infrastructure\n- **API Proxy**: Next.js Server Actions with cached telemetry logging.\n- **Provider Gateways**: Groq Cloud, OpenRouter, Google AI Studio, and Ollama local daemon.\n- **Status**: Live Production & Continuous Beta Testing.\n\nClick **Open Page** to open the interactive AI Hub on the web (\`/v2/ai\`).\n`;
 };
 
 const buildAiSkillsMarkdown = () => {
-  return `# AI Agent Skills & Specializations
-
-A catalog of agent capabilities and skills configured for autonomous workflows.
-
-## 🎨 Motion & Animation
-- **GSAP Core**: Framework-agnostic JavaScript animation — tweens, easing, stagger, and reduced-motion aware timelines.
-- **GSAP for React**: \`useGSAP\` hook with refs, context, and automatic cleanup inside React and Next.js.
-- **ScrollTrigger**: Scroll-linked animation: pinning, scrub, parallax, and trigger-driven reveals.
-
-## 📐 Design & Visualization
-- **UI/UX Pro Max**: Design intelligence across 67 styles, 96 palettes, and font pairings to plan and review interfaces.
-- **Data Viz**: Accessible, system-consistent charts and dashboards reading cleanly in light and dark mode.
-- **Artifact Design**: Design fundamentals for self-contained, theme-aware web artifacts.
-
-## ⚡ Engineering & Performance
-- **Architecture Patterns**: Structural guidance for organizing code, boundaries, and data flow.
-- **Web Performance**: Bundle, render, and runtime optimization to keep pages fast across device tiers.
-- **SQL Query Optimization**: Rewriting slow queries, indexing, and query plans for database access.
-
-## 🛠️ Workflow & Review
-- **Code Review**: Automated code diff analysis for correctness, security, and performance.
-- **Verify**: End-to-end observation of real behavior before shipping code.
-- **Run**: Automated app execution to confirm changes in production environments.
-`;
+  return `# AI Agent Skills & Specializations\n\nA catalog of agent capabilities and skills configured for autonomous workflows.\n\n## 🎨 Motion & Animation\n- **GSAP Core**: Framework-agnostic JavaScript animation — tweens, easing, stagger, and reduced-motion aware timelines.\n- **GSAP for React**: \`useGSAP\` hook with refs, context, and automatic cleanup inside React and Next.js.\n- **ScrollTrigger**: Scroll-linked animation: pinning, scrub, parallax, and trigger-driven reveals.\n\n## 📐 Design & Visualization\n- **UI/UX Pro Max**: Design intelligence across 67 styles, 96 palettes, and font pairings to plan and review interfaces.\n- **Data Viz**: Accessible, system-consistent charts and dashboards reading cleanly in light and dark mode.\n- **Artifact Design**: Design fundamentals for self-contained, theme-aware web artifacts.\n\n## ⚡ Engineering & Performance\n- **Architecture Patterns**: Structural guidance for organizing code, boundaries, and data flow.\n- **Web Performance**: Bundle, render, and runtime optimization to keep pages fast across device tiers.\n- **SQL Query Optimization**: Rewriting slow queries, indexing, and query plans for database access.\n\n## 🛠️ Workflow & Review\n- **Code Review**: Automated code diff analysis for correctness, security, and performance.\n- **Verify**: End-to-end observation of real behavior before shipping code.\n- **Run**: Automated app execution to confirm changes in production environments.\n`;
 };
 
 const buildRecommendedStackMarkdown = () => {
-  return `# Recommended AI Stack & Tools
-
-Production-tested AI tools, model gateways, and generative UI frameworks.
-
-## 🚀 Model Providers & Gateways
-1. **Groq Cloud** (Rating: ⭐⭐⭐⭐⭐)
-   - *Blurb*: Absurdly fast inference for open models (Llama 3, Mixtral). When latency is critical, nothing else comes close on free tier.
-   - *Tags*: \`low-latency\`, \`free-tier\`, \`open-source\`
-
-2. **OpenRouter** (Rating: ⭐⭐⭐⭐⭐)
-   - *Blurb*: One API key for every major LLM provider. Ideal for A/B-testing models without rewriting client code.
-   - *Tags*: \`gateway\`, \`multi-model\`, \`cheap-api\`
-
-3. **Ollama** (Rating: ⭐⭐⭐⭐)
-   - *Blurb*: Local models running with a single CLI command. My default for private prototyping and zero-cost iteration.
-   - *Tags*: \`local\`, \`private\`, \`open-source\`
-
-4. **v0.dev** (Rating: ⭐⭐⭐⭐)
-   - *Blurb*: Generative UI framework outputting clean React + Tailwind CSS components natively.
-   - *Tags*: \`generative-ui\`, \`react\`, \`prototyping\`
-`;
+  return `# Recommended AI Stack & Tools\n\nProduction-tested AI tools, model gateways, and generative UI frameworks.\n\n## 🚀 Model Providers & Gateways\n1. **Groq Cloud** (Rating: ⭐⭐⭐⭐⭐)\n   - *Blurb*: Absurdly fast inference for open models (Llama 3, Mixtral). When latency is critical, nothing else comes close on free tier.\n   - *Tags*: \`low-latency\`, \`free-tier\`, \`open-source\`\n\n2. **OpenRouter** (Rating: ⭐⭐⭐⭐⭐)\n   - *Blurb*: One API key for every major LLM provider. Ideal for A/B-testing models without rewriting client code.\n   - *Tags*: \`gateway\`, \`multi-model\`, \`cheap-api\`\n\n3. **Ollama** (Rating: ⭐⭐⭐⭐)\n   - *Blurb*: Local models running with a single CLI command. My default for private prototyping and zero-cost iteration.\n   - *Tags*: \`local\`, \`private\`, \`open-source\`\n\n4. **v0.dev** (Rating: ⭐⭐⭐⭐)\n   - *Blurb*: Generative UI framework outputting clean React + Tailwind CSS components natively.\n   - *Tags*: \`generative-ui\`, \`react\`, \`prototyping\`\n`;
 };
 
 const buildFreeCreditsMarkdown = () => {
-  return `# Free AI Credits & Free Tiers Guide
-
-Where to obtain real AI model inference without adding a credit card.
-
-| Provider | Offer Summary | Requirements | Highlights |
-|---|---|---|---|
-| **Google AI Studio** | Gemini 2.0 Flash / Flash-Lite with high daily quota | No Card Required | Best free-to-quality ratio |
-| **Groq Cloud** | Free Llama 3 & Mixtral at record token speed | No Card Required | Fastest tokens/sec at $0 |
-| **OpenRouter** | Free variants of select models (\`:free\` suffix) | No Card Required | Unified multi-provider access |
-| **GitHub Models** | GPT-4o, Claude, Llama 3 inference under GitHub account | No Card Required | Great for developer PAT testing |
-| **Hugging Face** | Serverless Inference API + community Spaces | No Card Required | Enormous model catalog |
-`;
+  return `# Free AI Credits & Free Tiers Guide\n\nWhere to obtain real AI model inference without adding a credit card.\n\n| Provider | Offer Summary | Requirements | Highlights |\n|---|---|---|---|\n| **Google AI Studio** | Gemini 2.0 Flash / Flash-Lite with high daily quota | No Card Required | Best free-to-quality ratio |\n| **Groq Cloud** | Free Llama 3 & Mixtral at record token speed | No Card Required | Fastest tokens/sec at $0 |\n| **OpenRouter** | Free variants of select models (\`:free\` suffix) | No Card Required | Unified multi-provider access |\n| **GitHub Models** | GPT-4o, Claude, Llama 3 inference under GitHub account | No Card Required | Great for developer PAT testing |\n| **Hugging Face** | Serverless Inference API + community Spaces | No Card Required | Enormous model catalog |\n`;
 };
 
 const buildPromptLibraryMarkdown = () => {
-  return `# Production System Prompt Library
-
-A curated collection of system prompts ready for deployment.
-
----
-
-### 1. TypeScript Agent Developer
-**Role**: Engineering  
-\`\`\`text
-You are a senior TypeScript engineer. Write strictly-typed, production-grade code with no \`any\`. Prefer composition over inheritance, small pure functions, and exhaustive error handling. Explain trade-offs briefly, then output the final code in a single block.
-\`\`\`
-
----
-
-### 2. SEO Blog Outline Generator
-**Role**: Content & SEO  
-\`\`\`text
-Act as an SEO strategist. Given a topic, produce a search-intent-driven outline: one H1, 5–7 H2 sections with target keywords, an FAQ block sourced from People-Also-Ask patterns, and a meta description under 155 characters. Prioritize clarity over keyword stuffing.
-\`\`\`
-
----
-
-### 3. Grounded RAG Answerer
-**Role**: Information Retrieval  
-\`\`\`text
-Answer ONLY from the provided <context>. If the context is insufficient, say so explicitly — never fabricate. Cite the source id in [brackets] after each claim. Keep answers concise and structured.
-\`\`\`
-`;
+  return `# Production System Prompt Library\n\nA curated collection of system prompts ready for deployment.\n\n---\n\n### 1. TypeScript Agent Developer\n**Role**: Engineering  \n\`\`\`text\nYou are a senior TypeScript engineer. Write strictly-typed, production-grade code with no \`any\`. Prefer composition over inheritance, small pure functions, and exhaustive error handling. Explain trade-offs briefly, then output the final code in a single block.\n\`\`\`\n\n---\n\n### 2. SEO Blog Outline Generator\n**Role**: Content & SEO  \n\`\`\`text\nAct as an SEO strategist. Given a topic, produce a search-intent-driven outline: one H1, 5–7 H2 sections with target keywords, an FAQ block sourced from People-Also-Ask patterns, and a meta description under 155 characters. Prioritize clarity over keyword stuffing.\n\`\`\`\n\n---\n\n### 3. Grounded RAG Answerer\n**Role**: Information Retrieval  \n\`\`\`text\nAnswer ONLY from the provided <context>. If the context is insufficient, say so explicitly — never fabricate. Cite the source id in [brackets] after each claim. Keep answers concise and structured.\n\`\`\`\n`;
 };
 
 const buildAppsMarkdown = () => {
@@ -245,20 +146,35 @@ export const FOLDERS_DATA = [
   {
     folderKey: 'resume',
     folderName: 'resume',
-    description: 'Professional Resume & CV',
+    description: 'Professional Resume (Markdown + Embedded PDF)',
     files: [
       {
-        _id: 'file-resume',
-        slug: 'resume',
+        _id: 'file-resume-md',
+        slug: 'resume-md',
         title: 'resume',
         fileName: 'resume.md',
         route: '/resume.pdf',
         external: true,
         category: 'resume',
-        date: 'PDF Document',
+        date: 'Markdown Document',
         readingTime: 2,
-        excerpt: 'Full CV & resume details including technical achievements, roles, and education.',
+        excerpt: 'Full CV & resume details including technical achievements, roles, and education in markdown format.',
         content: buildResumeMarkdown(),
+      },
+      {
+        _id: 'file-resume-pdf',
+        slug: 'resume-pdf',
+        title: 'resume',
+        fileName: 'resume.pdf',
+        isPdf: true,
+        pdfUrl: '/api/resume',
+        route: '/api/resume',
+        external: true,
+        category: 'resume',
+        date: 'PDF Document',
+        readingTime: 1,
+        excerpt: 'Official PDF Document - viewable directly inside embedded viewer or downloadable.',
+        content: `# resume.pdf\n\nOfficial PDF Document for Ayaan Ansari Resume.\n\n- **File Name**: \`resume.pdf\`\n- **Direct API Link**: \`/api/resume\`\n\nUse the embedded PDF viewer below or click **Open PDF** to view/download in full screen.`,
       },
     ],
   },

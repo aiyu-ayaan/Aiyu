@@ -304,10 +304,12 @@ function Empty({ label }) {
 }
 
 function PreviewOverlay({ preview, onClose, fileName }) {
+    const isPdfFile = preview.item?.isPdf || preview.item?.fileName?.endsWith('.pdf');
+
     const handleOpenWeb = () => {
         if (!preview.item) return;
-        const targetUrl = preview.item.route || `/blogs/${preview.item.slug}`;
-        if (preview.item.external) {
+        const targetUrl = preview.item.pdfUrl || preview.item.route || `/blogs/${preview.item.slug}`;
+        if (preview.item.external || isPdfFile) {
             window.open(targetUrl, '_blank', 'noopener,noreferrer');
         } else {
             window.open(targetUrl, '_blank');
@@ -317,17 +319,17 @@ function PreviewOverlay({ preview, onClose, fileName }) {
     return (
         <div className="absolute inset-0 z-10 flex flex-col bg-black/60 backdrop-blur-sm">
             <div className="flex items-center justify-between bg-black/40 px-4 py-2 text-white">
-                <span className="truncate text-xs">
+                <span className="truncate text-xs font-medium">
                     {preview.type === 'image' ? preview.item.description || 'Photo' : fileName}
                 </span>
                 <div className="flex items-center gap-2">
-                    {preview.type === 'blog' && (preview.item.route || preview.item.slug) && (
+                    {(preview.item?.route || preview.item?.slug || preview.item?.pdfUrl) && (
                         <button
                             onClick={handleOpenWeb}
-                            className="flex items-center gap-1 rounded bg-blue-600 px-2 py-1 text-xs font-semibold text-white hover:bg-blue-500"
+                            className="flex items-center gap-1 rounded bg-blue-600 px-2 py-1 text-xs font-semibold text-white hover:bg-blue-500 transition"
                         >
                             <Globe className="h-3 w-3" />
-                            <span>Open Page</span>
+                            <span>{isPdfFile ? 'Open PDF' : 'Open Page'}</span>
                         </button>
                     )}
                     <button onClick={onClose} className="rounded p-1 hover:bg-white/20" aria-label="Close preview">
@@ -335,10 +337,18 @@ function PreviewOverlay({ preview, onClose, fileName }) {
                     </button>
                 </div>
             </div>
-            <div className="min-h-0 flex-1 overflow-auto">
+            <div className="min-h-0 flex-1 overflow-auto bg-[#1b1b1b]">
                 {preview.type === 'image' ? (
                     <div className="flex h-full items-center justify-center p-4">
                         <img src={preview.item.src} alt={preview.item.description || ''} className="max-h-full max-w-full object-contain" />
+                    </div>
+                ) : isPdfFile ? (
+                    <div className="h-full w-full flex flex-col">
+                        <iframe
+                            src={preview.item.pdfUrl || preview.item.route || '/api/resume'}
+                            title={preview.item.title || 'PDF Document'}
+                            className="h-full w-full border-none min-h-[520px] bg-neutral-900"
+                        />
                     </div>
                 ) : (
                     <div className="mx-auto max-w-3xl bg-white p-6 text-neutral-900 dark:bg-[#1b1b1b] dark:text-neutral-100">
