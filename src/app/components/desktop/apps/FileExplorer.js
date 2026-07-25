@@ -1,19 +1,24 @@
 "use client";
 import React, { useEffect, useMemo, useState } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import dynamic from 'next/dynamic';
+import { HEADER_MD_FILES } from '@/app/data/headerMdFiles';
 import {
     ChevronRight,
     Folder,
     FileText,
     Image as ImageIcon,
     Home,
-    Monitor,
     ArrowLeft,
     Search,
     Loader2,
     X,
+    Globe,
 } from 'lucide-react';
+
+const ReactMarkdown = dynamic(() => import('react-markdown'), {
+    ssr: false,
+    loading: () => <div className="p-4 text-xs opacity-60 flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Loading reader...</div>,
+});
 
 const NAV = [
     { key: 'home', label: 'Home', icon: Home },
@@ -23,12 +28,12 @@ const NAV = [
 
 // Turn a blog record into a fake .md file entry.
 const blogFileName = (blog) =>
-    `${(blog.slug || blog.title || 'untitled').toString().slice(0, 40).replace(/\s+/g, '-').toLowerCase()}.md`;
+    blog.fileName || `${(blog.slug || blog.title || 'untitled').toString().slice(0, 40).replace(/\s+/g, '-').toLowerCase()}.md`;
 
 export default function FileExplorer({ openApp }) {
     const [folder, setFolder] = useState('home');
     const [gallery, setGallery] = useState([]);
-    const [blogs, setBlogs] = useState([]);
+    const [blogs, setBlogs] = useState(HEADER_MD_FILES);
     const [loading, setLoading] = useState(true);
     const [query, setQuery] = useState('');
     const [preview, setPreview] = useState(null); // { type:'image', item } | { type:'blog', item }
@@ -43,7 +48,7 @@ export default function FileExplorer({ openApp }) {
                 ]);
                 if (!alive) return;
                 setGallery(g?.data || []);
-                setBlogs(b?.data || []);
+                setBlogs([...HEADER_MD_FILES, ...(b?.data || [])]);
             } finally {
                 if (alive) setLoading(false);
             }
@@ -237,15 +242,36 @@ function Empty({ label }) {
 }
 
 function PreviewOverlay({ preview, onClose, fileName }) {
+    const handleOpenWeb = () => {
+        if (!preview.item) return;
+        const targetUrl = preview.item.route || `/blogs/${preview.item.slug}`;
+        if (preview.item.external) {
+            window.open(targetUrl, '_blank', 'noopener,noreferrer');
+        } else {
+            window.open(targetUrl, '_blank');
+        }
+    };
+
     return (
         <div className="absolute inset-0 z-10 flex flex-col bg-black/60 backdrop-blur-sm">
             <div className="flex items-center justify-between bg-black/40 px-4 py-2 text-white">
                 <span className="truncate text-xs">
                     {preview.type === 'image' ? preview.item.description || 'Photo' : fileName}
                 </span>
-                <button onClick={onClose} className="rounded p-1 hover:bg-white/20" aria-label="Close preview">
-                    <X className="h-4 w-4" />
-                </button>
+                <div className="flex items-center gap-2">
+                    {preview.type === 'blog' && (preview.item.route || preview.item.slug) && (
+                        <button
+                            onClick={handleOpenWeb}
+                            className="flex items-center gap-1 rounded bg-blue-600 px-2 py-1 text-xs font-semibold text-white hover:bg-blue-500"
+                        >
+                            <Globe className="h-3 w-3" />
+                            <span>Open Page</span>
+                        </button>
+                    )}
+                    <button onClick={onClose} className="rounded p-1 hover:bg-white/20" aria-label="Close preview">
+                        <X className="h-4 w-4" />
+                    </button>
+                </div>
             </div>
             <div className="min-h-0 flex-1 overflow-auto">
                 {preview.type === 'image' ? (
@@ -257,7 +283,7 @@ function PreviewOverlay({ preview, onClose, fileName }) {
                         <article className="prose prose-sm max-w-none dark:prose-invert">
                             <h1>{preview.item.title}</h1>
                             {preview.item.date && <p className="text-xs opacity-60">{preview.item.date}</p>}
-                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                            <ReactMarkdown>
                                 {preview.item.content || preview.item.excerpt || '*No content available in preview.*'}
                             </ReactMarkdown>
                         </article>

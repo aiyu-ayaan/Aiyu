@@ -1,7 +1,8 @@
 "use client";
 import React, { useState, useEffect, useMemo } from 'react';
-import ReactMarkdown from 'react-markdown';
+import dynamic from 'next/dynamic';
 import remarkGfm from 'remark-gfm';
+import { HEADER_MD_FILES } from '@/app/data/headerMdFiles';
 import {
     FileText,
     Search,
@@ -17,10 +18,20 @@ import {
     ExternalLink,
 } from 'lucide-react';
 
+const ReactMarkdown = dynamic(() => import('react-markdown'), {
+    ssr: false,
+    loading: () => (
+        <div className="flex items-center gap-2 p-4 text-xs text-neutral-400">
+            <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+            <span>Loading reader...</span>
+        </div>
+    ),
+});
+
 export default function MarkdownViewer({ payload, openApp }) {
-    const [blogs, setBlogs] = useState([]);
+    const [blogs, setBlogs] = useState(HEADER_MD_FILES);
     const [loading, setLoading] = useState(true);
-    const [activeSlug, setActiveSlug] = useState(() => payload?.slug || payload?.blog?.slug || '');
+    const [activeSlug, setActiveSlug] = useState(() => payload?.slug || payload?.blog?.slug || 'hello');
     const [query, setQuery] = useState('');
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [copied, setCopied] = useState(false);
@@ -33,9 +44,10 @@ export default function MarkdownViewer({ payload, openApp }) {
                 if (res.ok) {
                     const data = await res.json();
                     if (alive && data.success && Array.isArray(data.data)) {
-                        setBlogs(data.data);
-                        if (!activeSlug && data.data.length > 0) {
-                            setActiveSlug(data.data[0].slug || '');
+                        const merged = [...HEADER_MD_FILES, ...data.data];
+                        setBlogs(merged);
+                        if (!activeSlug && merged.length > 0) {
+                            setActiveSlug(merged[0].slug || '');
                         }
                     }
                 }
@@ -113,9 +125,17 @@ export default function MarkdownViewer({ payload, openApp }) {
     };
 
     const handleOpenOnWeb = () => {
-        if (!activeBlog || !openApp) return;
-        const webUrl = `/blogs/${activeBlog.slug}`;
-        openApp('browser', { url: webUrl, title: activeBlog.title || 'Blog Post' });
+        if (!activeBlog) return;
+        const targetUrl = activeBlog.route || `/blogs/${activeBlog.slug}`;
+        if (activeBlog.external) {
+            window.open(targetUrl, '_blank', 'noopener,noreferrer');
+            return;
+        }
+        if (openApp) {
+            openApp('browser', { url: targetUrl, title: activeBlog.title || 'Page' });
+        } else {
+            window.open(targetUrl, '_blank');
+        }
     };
 
     return (
@@ -127,7 +147,7 @@ export default function MarkdownViewer({ payload, openApp }) {
                     <div className="p-3 border-b border-black/10 dark:border-white/10 flex items-center justify-between">
                         <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
                             <BookOpen className="h-4 w-4 text-blue-500" />
-                            <span>Blog Documents</span>
+                            <span>Blogs & Menu Docs</span>
                         </div>
                         <span className="text-[10px] rounded-full bg-blue-500/10 px-2 py-0.5 font-mono text-blue-500 font-semibold">
                             {blogs.length}
