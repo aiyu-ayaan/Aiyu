@@ -170,16 +170,67 @@ const buildApps = () => [
 const BLOOM =
     'radial-gradient(140% 120% at 28% 18%, #58a6ff 0%, #2f7be0 28%, #1e4fb0 52%, #122a7a 74%, #0a1550 100%)';
 
+// The registry and its lookup map never change, so they live at module scope
+// instead of being rebuilt (and memoized) per Desktop mount.
+const APPS = buildApps();
+const APP_MAP = Object.fromEntries(APPS.map((a) => [a.key, a]));
+
+const DESKTOP_ICONS = [
+    { key: 'explorer', label: 'File Explorer', icon: ExplorerIcon },
+    { key: 'photos', label: 'Photos', icon: PhotosIcon },
+    { key: 'code', label: 'Visual Studio Code', icon: VSCodeIcon },
+    { key: 'browser', label: 'Google Chrome', icon: ChromeIcon },
+    { key: 'github', label: 'GitHub', icon: GitHubIcon },
+    { key: 'settings', label: 'Settings', icon: SettingsIcon },
+    { key: 'about', label: 'This PC', icon: ThisPCIcon },
+];
+
 let uid = 1;
 
-export default function Desktop({ wallpaper: initialWallpaper, config = {} }) {
+// Stable empty values, so a defaulted prop never invalidates a memo.
+const EMPTY_CONFIG = {};
+const EMPTY_WINDOWS = [];
+
+// Renders one window's app content. Memoized so that moving, focusing,
+// minimizing or z-shuffling windows — none of which change any of these props —
+// cannot re-render the app tree inside them.
+const WindowSurface = React.memo(function WindowSurface({
+    appKey,
+    winId,
+    payload,
+    wallpaper,
+    setWallpaper,
+    config,
+    windows,
+    openApp,
+    closeWin,
+    toggleStart,
+    openStartMenu,
+}) {
+    const closeSelf = useCallback(() => closeWin(winId), [closeWin, winId]);
+    const app = APP_MAP[appKey];
+    const ctx = useMemo(
+        () => ({
+            wallpaper,
+            setWallpaper,
+            config,
+            openApp,
+            windows,
+            closeWin: closeSelf,
+            payload,
+            toggleStart,
+            openStartMenu,
+        }),
+        [wallpaper, setWallpaper, config, openApp, windows, closeSelf, payload, toggleStart, openStartMenu]
+    );
+    return app ? app.render(ctx) : null;
+});
+
+export default function Desktop({ wallpaper: initialWallpaper, config = EMPTY_CONFIG }) {
     const [wallpaper, setWallpaper] = useState(initialWallpaper);
-    const apps = React.useMemo(() => buildApps(), []);
-    const appMap = React.useMemo(() => Object.fromEntries(apps.map((a) => [a.key, a])), [apps]);
 
     const [windows, setWindows] = useState([]);
     const [activeId, setActiveId] = useState(null);
-    const [topZ, setTopZ] = useState(10);
     const [startOpen, setStartOpen] = useState(false);
     const [widgetsOpen, setWidgetsOpen] = useState(false);
     const [menu, setMenu] = useState(null); // { x, y } desktop context menu
@@ -255,88 +306,124 @@ export default function Desktop({ wallpaper: initialWallpaper, config = {} }) {
         return () => clearInterval(timer);
     }, [systemState]);
 
-    const focus = useCallback((id) => {
-        setTopZ((z) => {
-            const next = z + 1;
-            setWindows((ws) => ws.map((w) => (w.id === id ? { ...w, z: next, minimized: false } : w)));
+    // Mirror of `windows` for read-during-event-handler access, so handlers can
+    // inspect the current list without taking it as a dependency (which would
+    // give every callback a new identity on each window change and defeat the
+    // memoized Window / WindowSurface below).
+    const windowsRef = useRef(windows);
+    const setWins = useCallback((updater) => {
+        setWindows((ws) => {
+            const next = updater(ws);
+            windowsRef.current = next;
             return next;
         });
-        setActiveId(id);
     }, []);
+
+    // Top z-index lives in a ref: it is never rendered on its own, and as state
+    // it forced an extra Desktop render per focus.
+    const topZRef = useRef(10);
+
+    const focus = useCallback(
+        (id) => {
+            const target = windowsRef.current.find((w) => w.id === id);
+            if (!target) return;
+            setActiveId(id);
+            // Already frontmost and visible — clicking inside it should not
+            // re-render the desktop at all.
+            if (!target.minimized && target.z === topZRef.current) return;
+            const next = ++topZRef.current;
+            setWins((ws) => ws.map((w) => (w.id === id ? { ...w, z: next, minimized: false } : w)));
+        },
+        [setWins]
+    );
 
     const openApp = useCallback(
         (key, payload) => {
-            const app = appMap[key];
+            const app = APP_MAP[key];
             if (!app) return;
             setStartOpen(false);
             setWidgetsOpen(false);
+            const nextZ = ++topZRef.current;
+
             // If already open, focus the existing window (and refresh its payload
             // so e.g. opening a new image reuses the running Photos window).
-            setWindows((ws) => {
-                const existing = ws.find((w) => w.appKey === key);
-                if (existing) {
-                    setActiveId(existing.id);
-                    setTopZ((z) => {
-                        const next = z + 1;
-                        setWindows((cur) =>
-                            cur.map((w) =>
-                                w.id === existing.id
-                                    ? { ...w, z: next, minimized: false, payload: payload ?? w.payload }
-                                    : w
-                            )
-                        );
-                        return next;
-                    });
-                    return ws;
-                }
-                const id = uid++;
-                const offset = (ws.length % 5) * 28;
-                const nextZ = topZ + 1;
-                setTopZ(nextZ);
-                setActiveId(id);
-                const maxWorkW = typeof window !== 'undefined' ? window.innerWidth - 30 : app.w;
-                const maxWorkH = typeof window !== 'undefined' ? window.innerHeight - 48 - 30 : app.h;
-                const w = Math.min(app.w, maxWorkW);
-                const h = Math.min(app.h, maxWorkH);
-                const y = Math.min(40 + offset, Math.max(0, maxWorkH - h));
-                return [
-                    ...ws,
-                    {
-                        id,
-                        appKey: key,
-                        title: app.title,
-                        icon: app.icon,
-                        x: 80 + offset,
-                        y,
-                        w,
-                        h,
-                        z: nextZ,
-                        minimized: false,
-                        maximized: false,
-                        payload,
-                    },
-                ];
-            });
+            const existing = windowsRef.current.find((w) => w.appKey === key);
+            if (existing) {
+                setActiveId(existing.id);
+                setWins((ws) =>
+                    ws.map((w) =>
+                        w.id === existing.id
+                            ? { ...w, z: nextZ, minimized: false, payload: payload ?? w.payload }
+                            : w
+                    )
+                );
+                return;
+            }
+
+            const id = uid++;
+            const offset = (windowsRef.current.length % 5) * 28;
+            const maxWorkW = window.innerWidth - 30;
+            const maxWorkH = window.innerHeight - 48 - 30;
+            const w = Math.min(app.w, maxWorkW);
+            const h = Math.min(app.h, maxWorkH);
+            const y = Math.min(40 + offset, Math.max(0, maxWorkH - h));
+            setActiveId(id);
+            setWins((ws) => [
+                ...ws,
+                {
+                    id,
+                    appKey: key,
+                    title: app.title,
+                    icon: app.icon,
+                    x: 80 + offset,
+                    y,
+                    w,
+                    h,
+                    z: nextZ,
+                    minimized: false,
+                    maximized: false,
+                    payload,
+                },
+            ]);
         },
-        [appMap, topZ]
+        [setWins]
     );
 
-    const closeWin = useCallback((id) => {
-        setWindows((ws) => ws.filter((w) => w.id !== id));
-    }, []);
+    const closeWin = useCallback(
+        (id) => {
+            setWins((ws) => ws.filter((w) => w.id !== id));
+        },
+        [setWins]
+    );
 
-    const minimizeWin = useCallback((id) => {
-        setWindows((ws) => ws.map((w) => (w.id === id ? { ...w, minimized: true } : w)));
-        setActiveId(null);
-    }, []);
+    const minimizeWin = useCallback(
+        (id) => {
+            setWins((ws) => ws.map((w) => (w.id === id ? { ...w, minimized: true } : w)));
+            setActiveId(null);
+        },
+        [setWins]
+    );
 
-    const toggleMax = useCallback((id) => {
-        setWindows((ws) => ws.map((w) => (w.id === id ? { ...w, maximized: !w.maximized } : w)));
-    }, []);
+    const toggleMax = useCallback(
+        (id) => {
+            setWins((ws) => ws.map((w) => (w.id === id ? { ...w, maximized: !w.maximized } : w)));
+        },
+        [setWins]
+    );
 
-    const moveWin = useCallback((id, x, y) => {
-        setWindows((ws) => ws.map((w) => (w.id === id ? { ...w, x, y } : w)));
-    }, []);
+    // Called once on pointerup; Window paints the intermediate frames itself.
+    const moveWin = useCallback(
+        (id, x, y) => {
+            setWins((ws) => ws.map((w) => (w.id === id ? { ...w, x, y } : w)));
+        },
+        [setWins]
+    );
+
+    const toggleStart = useCallback(() => setStartOpen((v) => !v), []);
+    const openStartMenu = useCallback(() => setStartOpen(true), []);
+    const closeStartMenu = useCallback(() => setStartOpen(false), []);
+    const toggleWidgets = useCallback(() => setWidgetsOpen((v) => !v), []);
+    const closeWidgets = useCallback(() => setWidgetsOpen(false), []);
 
     const [snapAssist, setSnapAssist] = useState(null); // { targetZone, snappedId }
     const [snapFlyoutTarget, setSnapFlyoutTarget] = useState(null); // { winId, rect }
@@ -357,12 +444,14 @@ export default function Desktop({ wallpaper: initialWallpaper, config = {} }) {
         if (snapFlyoutTimerRef.current) clearTimeout(snapFlyoutTimerRef.current);
     }, []);
 
-    const resizeWin = useCallback((id, x, y, w, h) => {
-        setWindows((ws) => ws.map((win) => (win.id === id ? { ...win, x, y, w, h, maximized: false } : win)));
-    }, []);
+    const resizeWin = useCallback(
+        (id, x, y, w, h) => {
+            setWins((ws) => ws.map((win) => (win.id === id ? { ...win, x, y, w, h, maximized: false } : win)));
+        },
+        [setWins]
+    );
 
     const snapWin = useCallback((id, zone) => {
-        if (typeof window === 'undefined') return;
         const workW = window.innerWidth;
         const workH = window.innerHeight - 48;
 
@@ -421,70 +510,50 @@ export default function Desktop({ wallpaper: initialWallpaper, config = {} }) {
                 break;
         }
 
-        setWindows((ws) => {
-            const nextWs = ws.map((win) => (win.id === id ? { ...win, x, y, w, h, maximized: false } : win));
-            const others = nextWs.filter((win) => win.id !== id && !win.minimized);
+        setWins((ws) => ws.map((win) => (win.id === id ? { ...win, x, y, w, h, maximized: false } : win)));
 
-            if (others.length > 0) {
-                const compMap = {
-                    'left-50': 'right-50',
-                    'right-50': 'left-50',
-                    'left-60': 'right-40',
-                    'right-40': 'left-60',
-                    'col3-left': 'col3-center',
-                    'col3-center': 'col3-right',
-                    'col3-right': 'col3-left',
-                    'grid-tl': 'grid-tr',
-                    'grid-tr': 'grid-tl',
-                    'grid-bl': 'grid-br',
-                    'grid-br': 'grid-bl',
-                    'top-50': 'bottom-50',
-                    'bottom-50': 'top-50',
-                    'priority-left': 'priority-tr',
-                    'priority-tr': 'priority-br',
-                    'priority-br': 'priority-tr',
-                };
-                const targetZone = compMap[zone] || 'right-50';
-                setSnapAssist({ targetZone, snappedId: id });
-            } else {
-                setSnapAssist(null);
-            }
-
-            return nextWs;
-        });
-    }, []);
+        const others = windowsRef.current.filter((win) => win.id !== id && !win.minimized);
+        if (others.length > 0) {
+            const compMap = {
+                'left-50': 'right-50',
+                'right-50': 'left-50',
+                'left-60': 'right-40',
+                'right-40': 'left-60',
+                'col3-left': 'col3-center',
+                'col3-center': 'col3-right',
+                'col3-right': 'col3-left',
+                'grid-tl': 'grid-tr',
+                'grid-tr': 'grid-tl',
+                'grid-bl': 'grid-br',
+                'grid-br': 'grid-bl',
+                'top-50': 'bottom-50',
+                'bottom-50': 'top-50',
+                'priority-left': 'priority-tr',
+                'priority-tr': 'priority-br',
+                'priority-br': 'priority-tr',
+            };
+            setSnapAssist({ targetZone: compMap[zone] || 'right-50', snappedId: id });
+        } else {
+            setSnapAssist(null);
+        }
+    }, [setWins]);
 
     // Taskbar click: toggle minimize if active, else focus.
     const taskClick = useCallback(
         (key) => {
-            setWindows((ws) => {
-                const win = ws.find((w) => w.appKey === key);
-                if (!win) return ws;
-                if (win.id === activeId && !win.minimized) {
-                    setActiveId(null);
-                    return ws.map((w) => (w.id === win.id ? { ...w, minimized: true } : w));
-                }
-                setActiveId(win.id);
-                setTopZ((z) => {
-                    const next = z + 1;
-                    setWindows((cur) => cur.map((w) => (w.id === win.id ? { ...w, z: next, minimized: false } : w)));
-                    return next;
-                });
-                return ws;
-            });
+            const win = windowsRef.current.find((w) => w.appKey === key);
+            if (!win) return;
+            if (win.id === activeId && !win.minimized) {
+                setActiveId(null);
+                setWins((ws) => ws.map((w) => (w.id === win.id ? { ...w, minimized: true } : w)));
+                return;
+            }
+            const next = ++topZRef.current;
+            setActiveId(win.id);
+            setWins((ws) => ws.map((w) => (w.id === win.id ? { ...w, z: next, minimized: false } : w)));
         },
-        [activeId]
+        [activeId, setWins]
     );
-
-    const desktopIcons = [
-        { key: 'explorer', label: 'File Explorer', icon: ExplorerIcon },
-        { key: 'photos', label: 'Photos', icon: PhotosIcon },
-        { key: 'code', label: 'Visual Studio Code', icon: VSCodeIcon },
-        { key: 'browser', label: 'Google Chrome', icon: ChromeIcon },
-        { key: 'github', label: 'GitHub', icon: GitHubIcon },
-        { key: 'settings', label: 'Settings', icon: SettingsIcon },
-        { key: 'about', label: 'This PC', icon: ThisPCIcon },
-    ];
 
     const snapAssistOthers = useMemo(() => {
         if (!snapAssist) return [];
@@ -509,7 +578,7 @@ export default function Desktop({ wallpaper: initialWallpaper, config = {} }) {
         >
             {/* Desktop icons */}
             <div className="absolute left-3 top-3 grid w-20 auto-rows-max gap-1">
-                {desktopIcons.map((d) => (
+                {DESKTOP_ICONS.map((d) => (
                     <button
                         key={d.key}
                         onDoubleClick={() => openApp(d.key)}
@@ -556,22 +625,25 @@ export default function Desktop({ wallpaper: initialWallpaper, config = {} }) {
                         onToggleMaximize={toggleMax}
                         onMove={moveWin}
                         onResize={resizeWin}
-                        onSnap={snapWin}
                         onOpenSnapFlyout={openSnapFlyout}
                         onCloseSnapFlyout={closeSnapFlyout}
-                        windows={windows}
                     >
-                        {appMap[win.appKey]?.render({
-                            wallpaper,
-                            setWallpaper,
-                            config,
-                            openApp,
-                            windows,
-                            closeWin: () => closeWin(win.id),
-                            payload: win.payload,
-                            toggleStart: () => setStartOpen((v) => !v),
-                            openStartMenu: () => setStartOpen(true),
-                        })}
+                        <WindowSurface
+                            appKey={win.appKey}
+                            winId={win.id}
+                            payload={win.payload}
+                            wallpaper={wallpaper}
+                            setWallpaper={setWallpaper}
+                            config={config}
+                            // Task Manager is the only app that reads the window
+                            // list; handing it to the others would invalidate
+                            // their memo on every window change.
+                            windows={win.appKey === 'taskmanager' ? windows : EMPTY_WINDOWS}
+                            openApp={openApp}
+                            closeWin={closeWin}
+                            toggleStart={toggleStart}
+                            openStartMenu={openStartMenu}
+                        />
                     </Window>
                 ))}
             </AnimatePresence>
@@ -892,9 +964,9 @@ export default function Desktop({ wallpaper: initialWallpaper, config = {} }) {
             <AnimatePresence>
                 {startOpen && (
                     <StartMenu
-                        apps={apps}
+                        apps={APPS}
                         onOpen={openApp}
-                        onClose={() => setStartOpen(false)}
+                        onClose={closeStartMenu}
                         config={config}
                         onRestart={handleRestart}
                         onShutdown={handleShutdown}
@@ -904,18 +976,18 @@ export default function Desktop({ wallpaper: initialWallpaper, config = {} }) {
 
             {/* Widgets Panel */}
             <AnimatePresence>
-                {widgetsOpen && <WidgetsPanel open={widgetsOpen} onClose={() => setWidgetsOpen(false)} openApp={openApp} />}
+                {widgetsOpen && <WidgetsPanel open={widgetsOpen} onClose={closeWidgets} openApp={openApp} />}
             </AnimatePresence>
 
             {/* Taskbar */}
             <Taskbar
-                apps={apps}
+                apps={APPS}
                 windows={windows}
                 activeId={activeId}
                 startOpen={startOpen}
                 widgetsOpen={widgetsOpen}
-                onToggleWidgets={() => setWidgetsOpen((v) => !v)}
-                onStart={() => setStartOpen((v) => !v)}
+                onToggleWidgets={toggleWidgets}
+                onStart={toggleStart}
                 onOpen={openApp}
                 onTaskClick={taskClick}
             />

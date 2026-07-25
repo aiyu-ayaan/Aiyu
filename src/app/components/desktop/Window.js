@@ -1,10 +1,20 @@
 "use client";
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Minus, Square, X, Copy } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
+
+const MIN_W = 320;
+const MIN_H = 200;
+const TASKBAR_H = 48;
 
 // A single draggable & resizable Win11-style window with Snap Layouts.
-export default function Window({
+//
+// Drag and resize deliberately bypass React: a pointermove that went through
+// setState would re-render the whole Desktop tree (every open window plus its
+// app content) 60-120 times a second. Instead the geometry is written straight
+// to this node's style inside a rAF and committed to Desktop state once, on
+// pointerup.
+function Window({
     win,
     active,
     onFocus,
@@ -13,53 +23,99 @@ export default function Window({
     onToggleMaximize,
     onMove,
     onResize,
-    onSnap,
     onOpenSnapFlyout,
     onCloseSnapFlyout,
-    windows = [],
     children,
 }) {
+    const nodeRef = useRef(null);
     const dragRef = useRef(null);
     const resizeRef = useRef(null);
-    const [dragging, setDragging] = useState(false);
-    const [resizing, setResizing] = useState(false);
-    const [snapFlyoutOpen, setSnapFlyoutOpen] = useState(false);
+    const frameRef = useRef(0);
+    const pendingRef = useRef(null);
+    const [interacting, setInteracting] = useState(false);
     const snapTimeoutRef = useRef(null);
+
+    // Coalesce pointermove geometry into one style write per frame.
+    const flush = useCallback(() => {
+        frameRef.current = 0;
+        const node = nodeRef.current;
+        const next = pendingRef.current;
+        if (!node || !next) return;
+        node.style.left = `${next.x}px`;
+        node.style.top = `${next.y}px`;
+        if (next.w != null) {
+            node.style.width = `${next.w}px`;
+            node.style.height = `${next.h}px`;
+        }
+    }, []);
+
+    const schedule = useCallback(
+        (geometry) => {
+            pendingRef.current = geometry;
+            if (frameRef.current) return;
+            frameRef.current = requestAnimationFrame(flush);
+        },
+        [flush]
+    );
+
+    useEffect(
+        () => () => {
+            if (frameRef.current) cancelAnimationFrame(frameRef.current);
+            if (snapTimeoutRef.current) clearTimeout(snapTimeoutRef.current);
+        },
+        []
+    );
 
     const startDrag = useCallback(
         (e) => {
             if (win.maximized) return;
             if (e.target.closest('[data-noswipe]')) return;
             onFocus(win.id);
-            const startX = e.clientX;
-            const startY = e.clientY;
-            const originX = win.x;
-            const originY = win.y;
-            dragRef.current = { startX, startY, originX, originY };
-            setDragging(true);
+            dragRef.current = {
+                startX: e.clientX,
+                startY: e.clientY,
+                originX: win.x,
+                originY: win.y,
+                x: win.x,
+                y: win.y,
+            };
+            setInteracting(true);
             e.currentTarget.setPointerCapture?.(e.pointerId);
         },
-        [win, onFocus]
+        [win.maximized, win.id, win.x, win.y, onFocus]
     );
 
     const onDrag = useCallback(
         (e) => {
-            if (!dragRef.current) return;
-            const dx = e.clientX - dragRef.current.startX;
-            const dy = e.clientY - dragRef.current.startY;
-            const nextX = dragRef.current.originX + dx;
-            const maxWorkHeight = (typeof window !== 'undefined' ? window.innerHeight : 800) - 48;
-            const nextY = Math.min(Math.max(0, dragRef.current.originY + dy), Math.max(0, maxWorkHeight - 36));
-            onMove(win.id, nextX, nextY);
+            const drag = dragRef.current;
+            if (!drag) return;
+            const maxWorkHeight = window.innerHeight - TASKBAR_H;
+            drag.x = drag.originX + (e.clientX - drag.startX);
+            drag.y = Math.min(
+                Math.max(0, drag.originY + (e.clientY - drag.startY)),
+                Math.max(0, maxWorkHeight - 36)
+            );
+            schedule({ x: drag.x, y: drag.y });
+        },
+        [schedule]
+    );
+
+    const endDrag = useCallback(
+        (e) => {
+            const drag = dragRef.current;
+            dragRef.current = null;
+            setInteracting(false);
+            e.currentTarget.releasePointerCapture?.(e.pointerId);
+            if (!drag) return;
+            if (frameRef.current) {
+                cancelAnimationFrame(frameRef.current);
+                frameRef.current = 0;
+            }
+            pendingRef.current = null;
+            if (drag.x !== drag.originX || drag.y !== drag.originY) onMove(win.id, drag.x, drag.y);
         },
         [win.id, onMove]
     );
-
-    const endDrag = useCallback((e) => {
-        dragRef.current = null;
-        setDragging(false);
-        e.currentTarget.releasePointerCapture?.(e.pointerId);
-    }, []);
 
     // Pointer-down handler for 8 resize handles
     const startResize = useCallback(
@@ -67,23 +123,30 @@ export default function Window({
             e.stopPropagation();
             if (win.maximized) return;
             onFocus(win.id);
-            const startX = e.clientX;
-            const startY = e.clientY;
-            const originX = win.x;
-            const originY = win.y;
-            const originW = win.w;
-            const originH = win.h;
-            resizeRef.current = { handle, startX, startY, originX, originY, originW, originH };
-            setResizing(true);
+            resizeRef.current = {
+                handle,
+                startX: e.clientX,
+                startY: e.clientY,
+                originX: win.x,
+                originY: win.y,
+                originW: win.w,
+                originH: win.h,
+                x: win.x,
+                y: win.y,
+                w: win.w,
+                h: win.h,
+            };
+            setInteracting(true);
             e.currentTarget.setPointerCapture?.(e.pointerId);
         },
-        [win, onFocus]
+        [win.maximized, win.id, win.x, win.y, win.w, win.h, onFocus]
     );
 
     const onResizePointer = useCallback(
         (e) => {
-            if (!resizeRef.current || !onResize) return;
-            const { handle, startX, startY, originX, originY, originW, originH } = resizeRef.current;
+            const state = resizeRef.current;
+            if (!state) return;
+            const { handle, startX, startY, originX, originY, originW, originH } = state;
             const dx = e.clientX - startX;
             const dy = e.clientY - startY;
 
@@ -92,45 +155,59 @@ export default function Window({
             let nextW = originW;
             let nextH = originH;
 
-            const minW = 320;
-            const minH = 200;
-
             if (handle.includes('e')) {
-                nextW = Math.max(minW, originW + dx);
+                nextW = Math.max(MIN_W, originW + dx);
             }
             if (handle.includes('s')) {
-                nextH = Math.max(minH, originH + dy);
+                nextH = Math.max(MIN_H, originH + dy);
             }
             if (handle.includes('w')) {
                 const possibleW = originW - dx;
-                if (possibleW >= minW) {
+                if (possibleW >= MIN_W) {
                     nextW = possibleW;
                     nextX = originX + dx;
                 }
             }
             if (handle.includes('n')) {
                 const possibleH = originH - dy;
-                if (possibleH >= minH) {
+                if (possibleH >= MIN_H) {
                     nextH = possibleH;
                     nextY = originY + dy;
                 }
             }
 
-            onResize(win.id, nextX, nextY, nextW, nextH);
+            state.x = nextX;
+            state.y = nextY;
+            state.w = nextW;
+            state.h = nextH;
+            schedule({ x: nextX, y: nextY, w: nextW, h: nextH });
+        },
+        [schedule]
+    );
+
+    const endResize = useCallback(
+        (e) => {
+            const state = resizeRef.current;
+            resizeRef.current = null;
+            setInteracting(false);
+            e.currentTarget.releasePointerCapture?.(e.pointerId);
+            if (!state || !onResize) return;
+            if (frameRef.current) {
+                cancelAnimationFrame(frameRef.current);
+                frameRef.current = 0;
+            }
+            pendingRef.current = null;
+            if (state.w !== state.originW || state.h !== state.originH || state.x !== state.originX || state.y !== state.originY) {
+                onResize(win.id, state.x, state.y, state.w, state.h);
+            }
         },
         [win.id, onResize]
     );
 
-    const endResize = useCallback((e) => {
-        resizeRef.current = null;
-        setResizing(false);
-        e.currentTarget.releasePointerCapture?.(e.pointerId);
-    }, []);
-
     useEffect(() => {
-        if (!active) return;
+        if (!active || !win.maximized) return;
         const onKey = (e) => {
-            if (e.key === 'Escape' && win.maximized) onToggleMaximize(win.id);
+            if (e.key === 'Escape') onToggleMaximize(win.id);
         };
         window.addEventListener('keydown', onKey);
         return () => window.removeEventListener('keydown', onKey);
@@ -158,35 +235,30 @@ export default function Window({
         }
     };
 
-    const handleSelectSnap = (zone) => {
-        setSnapFlyoutOpen(false);
-        if (onSnap) onSnap(win.id, zone);
-    };
-
     const style = win.maximized
-        ? { left: 0, top: 0, width: '100%', height: 'calc(100vh - 48px)', borderRadius: 0 }
+        ? { left: 0, top: 0, width: '100%', height: `calc(100vh - ${TASKBAR_H}px)`, borderRadius: 0 }
         : { left: win.x, top: win.y, width: win.w, height: win.h };
 
     const Icon = win.icon;
 
+    // Only opacity/transform are animated. Animating `filter: blur()` forced a
+    // full re-raster of the window's entire app content on every frame of the
+    // open, close and minimize transitions.
     const animateState = win.minimized
-        ? { opacity: 0, scale: 0.82, y: 60, filter: 'blur(4px)', pointerEvents: 'none' }
-        : { opacity: 1, scale: 1, y: 0, filter: 'blur(0px)', pointerEvents: 'auto' };
+        ? { opacity: 0, scale: 0.82, y: 60, pointerEvents: 'none' }
+        : { opacity: 1, scale: 1, y: 0, pointerEvents: 'auto' };
 
     return (
         <motion.div
-            initial={{ opacity: 0, scale: 0.92, y: 16, filter: 'blur(4px)' }}
+            ref={nodeRef}
+            initial={{ opacity: 0, scale: 0.92, y: 16 }}
             animate={animateState}
-            exit={{ opacity: 0, scale: 0.92, y: 12, filter: 'blur(4px)' }}
-            transition={
-                dragging || resizing
-                    ? { duration: 0 }
-                    : { duration: 0.22, ease: [0.16, 1, 0.3, 1] }
-            }
+            exit={{ opacity: 0, scale: 0.92, y: 12 }}
+            transition={interacting ? { duration: 0 } : { duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
             className={`absolute flex flex-col overflow-visible rounded-lg border border-white/20 dark:border-white/10 bg-[#f3f3f3]/95 text-neutral-900 shadow-2xl transition-shadow dark:bg-[#1e1e1e]/95 dark:text-neutral-100 ${
                 active ? 'shadow-black/50 ring-1 ring-white/25 dark:ring-white/12' : 'shadow-black/25 opacity-[0.97]'
             }`}
-            style={{ ...style, zIndex: win.z }}
+            style={{ ...style, zIndex: win.z, willChange: interacting ? 'left, top, width, height' : 'auto' }}
             onMouseDown={() => onFocus(win.id)}
             onContextMenu={(e) => {
                 e.preventDefault();
@@ -265,6 +337,7 @@ export default function Window({
                     onPointerDown={startDrag}
                     onPointerMove={onDrag}
                     onPointerUp={endDrag}
+                    onPointerCancel={endDrag}
                     onDoubleClick={() => onToggleMaximize(win.id)}
                     style={{ cursor: win.maximized ? 'default' : 'grab', touchAction: 'none' }}
                 >
@@ -313,3 +386,7 @@ export default function Window({
         </motion.div>
     );
 }
+
+// Windows are siblings in one flat list, so without memoization focusing or
+// moving any window re-rendered all of them and all of their app content.
+export default React.memo(Window);
