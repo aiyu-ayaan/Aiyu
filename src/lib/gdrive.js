@@ -1,6 +1,11 @@
 import { prisma } from '@/lib/prisma';
 import { encrypt, decrypt } from '@/lib/encryption';
 
+// Single-use CSRF nonce for the OAuth handshake, set by /api/admin/gdrive/auth
+// and verified by /api/admin/gdrive/callback.
+export const OAUTH_STATE_COOKIE = 'gdrive_oauth_state';
+export const OAUTH_STATE_MAX_AGE = 600; // seconds
+
 const CONFIG_FIELDS = [
   'clientId',
   'clientSecret',

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 
 process.env.JWT_SECRET = 'test-jwt-secret-key-for-gdrive-routes-tests';
 
@@ -14,6 +14,9 @@ const { mockGetSession, mockGDrive, mockPublicOrigin, mockPrismaConfig } = vi.ho
       listDriveBackups: vi.fn(),
       downloadDriveBackup: vi.fn(),
       deleteDriveBackup: vi.fn(),
+      cleanOldDriveBackups: vi.fn(),
+      OAUTH_STATE_COOKIE: 'gdrive_oauth_state',
+      OAUTH_STATE_MAX_AGE: 600,
     },
     mockPublicOrigin: vi.fn().mockReturnValue('http://localhost:3000'),
     mockPrismaConfig: {
@@ -81,6 +84,8 @@ describe('Google Drive API Routes', () => {
         callbackUrl: 'http://localhost:3000/api/admin/gdrive/callback',
         isConfigured: true,
         isConnected: true,
+        retentionMonths: 1,
+        autoDeleteEnabled: false,
       });
     });
 
@@ -98,7 +103,12 @@ describe('Google Drive API Routes', () => {
       const res = await postConfig(req);
       expect(res.status).toBe(200);
       const data = await res.json();
-      expect(data).toEqual({ success: true, isConfigured: true });
+      expect(data).toEqual({
+        success: true,
+        isConfigured: true,
+        retentionMonths: 1,
+        autoDeleteEnabled: false,
+      });
       expect(mockGDrive.saveGDriveConfig).toHaveBeenCalledWith({
         clientId: 'new_client',
         clientSecret: 'new_secret',
@@ -132,14 +142,49 @@ describe('Google Drive API Routes', () => {
       expect(redirectUrl.searchParams.get('prompt')).toBe('consent');
       expect(redirectUrl.searchParams.get('response_type')).toBe('code');
       expect(redirectUrl.searchParams.get('scope')).toContain('https://www.googleapis.com/auth/drive.file');
+
+      // The CSRF nonce must travel in the URL and be pinned in a cookie the
+      // callback can compare against.
+      const state = redirectUrl.searchParams.get('state');
+      expect(state).toMatch(/^[a-f0-9]{64}$/);
+      expect(res.cookies.get('gdrive_oauth_state')?.value).toBe(state);
     });
   });
 
   describe('3. /api/admin/gdrive/callback', () => {
+    const STATE = 'a'.repeat(64);
+
+    // The callback reads a cookie, so it needs a NextRequest rather than a bare
+    // Request.
+    const callbackRequest = (query, { state = STATE } = {}) => {
+      const req = new NextRequest(`http://localhost:3000/api/admin/gdrive/callback?${query}`);
+      if (state !== null) req.cookies.set('gdrive_oauth_state', state);
+      return req;
+    };
+
     it('GET redirects with error if code is missing or error is present', async () => {
-      const res = await getCallback(new Request('http://localhost:3000/api/admin/gdrive/callback?error=access_denied'));
+      const res = await getCallback(callbackRequest('error=access_denied'));
       expect(res.status).toBe(307);
       expect(res.headers.get('location')).toBe('http://localhost:3000/admin/database?gdrive_error=access_denied');
+    });
+
+    it('GET rejects a code whose state does not match the cookie', async () => {
+      const res = await getCallback(
+        callbackRequest(`code=oauth_code_123&state=${'b'.repeat(64)}`)
+      );
+      expect(res.status).toBe(307);
+      expect(res.headers.get('location')).toBe('http://localhost:3000/admin/database?gdrive_error=invalid_state');
+      expect(global.fetch).not.toHaveBeenCalled();
+      expect(mockGDrive.saveGDriveConfig).not.toHaveBeenCalled();
+    });
+
+    it('GET rejects a code with no state cookie at all', async () => {
+      const res = await getCallback(
+        callbackRequest(`code=oauth_code_123&state=${STATE}`, { state: null })
+      );
+      expect(res.status).toBe(307);
+      expect(res.headers.get('location')).toBe('http://localhost:3000/admin/database?gdrive_error=invalid_state');
+      expect(mockGDrive.saveGDriveConfig).not.toHaveBeenCalled();
     });
 
     it('GET exchanges code for tokens and redirects to success', async () => {
@@ -164,7 +209,7 @@ describe('Google Drive API Routes', () => {
         json: async () => ({ email: 'admin@aiyu.com' }),
       });
 
-      const res = await getCallback(new Request('http://localhost:3000/api/admin/gdrive/callback?code=oauth_code_123'));
+      const res = await getCallback(callbackRequest(`code=oauth_code_123&state=${STATE}`));
       expect(res.status).toBe(307);
       expect(res.headers.get('location')).toBe('http://localhost:3000/admin/database?gdrive=connected');
       expect(mockGDrive.saveGDriveConfig).toHaveBeenCalledWith(
@@ -174,6 +219,8 @@ describe('Google Drive API Routes', () => {
           user: 'admin@aiyu.com',
         })
       );
+      // Nonce consumed, so the same callback URL cannot be replayed.
+      expect(res.cookies.get('gdrive_oauth_state')?.value).toBe('');
     });
   });
 
@@ -197,6 +244,8 @@ describe('Google Drive API Routes', () => {
         user: 'user@test.com',
         clientId: 'c1',
         updatedAt: new Date('2026-01-01T00:00:00Z').toISOString(),
+        retentionMonths: 1,
+        autoDeleteEnabled: false,
       });
     });
   });

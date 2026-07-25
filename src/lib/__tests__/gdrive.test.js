@@ -50,6 +50,8 @@ describe('Google Drive Helper Module (gdrive.js)', () => {
         tokenExpiry: null,
         user: null,
         folderId: null,
+        retentionMonths: 1,
+        autoDeleteEnabled: false,
       });
     });
 
