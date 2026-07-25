@@ -68,7 +68,7 @@ export default function TabletSurfaceShell({ apps, windows, activeWindowId, open
     };
 
     return (
-        <div className="w-full h-full flex flex-col bg-gray-900 text-white font-sans overflow-hidden relative">
+        <div className="fixed inset-0 w-screen h-screen flex flex-col bg-gray-900 text-white font-sans overflow-hidden z-50">
             {wallpaper && (
                 <div 
                     className="absolute inset-0 w-full h-full bg-cover bg-center pointer-events-none"
@@ -80,9 +80,6 @@ export default function TabletSurfaceShell({ apps, windows, activeWindowId, open
             <div className="flex-1 relative overflow-hidden">
                 {/* Windows */}
                 {windows.map((win) => {
-                    const app = apps.find(a => a.id === win.appId);
-                    if (!app) return null;
-
                     const state = snapState[win.id] || 'maximized';
                     const isActive = activeWindowId === win.id;
 
@@ -95,6 +92,11 @@ export default function TabletSurfaceShell({ apps, windows, activeWindowId, open
                         layoutClasses = "absolute top-0 right-0 h-full w-1/2 border-l border-gray-700/50 shadow-xl transition-all duration-300 ease-in-out";
                     }
 
+                    const appKey = win.appKey || win.appId;
+                    const app = apps.find(a => (a.key || a.id) === appKey);
+                    const appTitle = win.title || app?.title || app?.name || "App";
+                    const AppIcon = win.icon || app?.icon;
+
                     return (
                         <div 
                             key={win.id}
@@ -105,12 +107,14 @@ export default function TabletSurfaceShell({ apps, windows, activeWindowId, open
                             {/* Touch Title Bar */}
                             <div className={`h-12 flex items-center justify-between px-3 shrink-0 ${isActive ? 'bg-gray-100' : 'bg-gray-50'}`}>
                                 <div className="flex items-center gap-2">
-                                    {app.icon && typeof app.icon === "string" ? (
-                                        <img src={app.icon} alt={app.name} className="w-6 h-6" />
+                                    {AppIcon && typeof AppIcon === "function" ? (
+                                        <AppIcon className="w-6 h-6 text-blue-500" />
+                                    ) : AppIcon && typeof AppIcon === "string" ? (
+                                        <img src={AppIcon} alt={appTitle} className="w-6 h-6" />
                                     ) : (
                                         <AppWindow size={20} className="text-gray-500" />
                                     )}
-                                    <span className="font-semibold text-sm">{app.name}</span>
+                                    <span className="font-semibold text-sm">{appTitle}</span>
                                 </div>
                                 <div className="flex items-center gap-1">
                                     <button onClick={() => handleWindowAction(win.id, 'left')} className="p-2 hover:bg-gray-200 rounded text-gray-600" title="Snap Left">
@@ -128,14 +132,25 @@ export default function TabletSurfaceShell({ apps, windows, activeWindowId, open
                                 </div>
                             </div>
                             {/* App Content */}
-                            <div className="flex-1 relative overflow-hidden">
-                                {app.component ? React.createElement(app.component, {
-                                    windowId: win.id,
-                                    app,
+                            <div className="flex-1 relative overflow-hidden bg-white dark:bg-[#1b1b1b]">
+                                {typeof win.render === 'function' ? win.render({
+                                    openApp,
+                                    closeWin: () => closeWin(win.id),
                                     config,
-                                    isMobile: false
+                                    wallpaper,
+                                    payload: win.payload,
+                                    isMobile: false,
+                                    isTablet: true,
+                                }) : typeof app?.render === 'function' ? app.render({
+                                    openApp,
+                                    closeWin: () => closeWin(win.id),
+                                    config,
+                                    wallpaper,
+                                    payload: win.payload,
+                                    isMobile: false,
+                                    isTablet: true,
                                 }) : (
-                                    <div className="p-4">Content for {app.name}</div>
+                                    <div className="p-4">Content for {appTitle}</div>
                                 )}
                             </div>
                         </div>
@@ -164,22 +179,29 @@ export default function TabletSurfaceShell({ apps, windows, activeWindowId, open
 
                                 <h3 className="text-sm font-semibold mb-4 px-2">Pinned</h3>
                                 <div className="grid grid-cols-4 sm:grid-cols-6 gap-4">
-                                    {apps.slice(0, 12).map((app) => (
-                                        <button 
-                                            key={app.id}
-                                            onClick={() => handleAppLaunch(app.id)}
-                                            className="flex flex-col items-center gap-2 p-2 hover:bg-white/10 rounded-xl transition-colors"
-                                        >
-                                            <div className={`w-14 h-14 rounded-lg flex items-center justify-center shadow-sm ${accentClass}`}>
-                                                {app.icon && typeof app.icon === "string" ? (
-                                                    <img src={app.icon} alt={app.name} className="w-8 h-8" />
-                                                ) : (
-                                                    <Grid size={24} />
-                                                )}
-                                            </div>
-                                            <span className="text-xs text-center truncate w-full">{app.name}</span>
-                                        </button>
-                                    ))}
+                                    {apps.slice(0, 12).map((appItem) => {
+                                        const itemKey = appItem.key || appItem.id;
+                                        const itemTitle = appItem.title || appItem.name || 'App';
+                                        const ItemIcon = appItem.icon;
+                                        return (
+                                            <button 
+                                                key={itemKey}
+                                                onClick={() => handleAppLaunch(itemKey)}
+                                                className="flex flex-col items-center gap-2 p-2 hover:bg-white/10 rounded-xl transition-colors"
+                                            >
+                                                <div className={`w-14 h-14 rounded-lg flex items-center justify-center shadow-sm ${accentClass}`}>
+                                                    {ItemIcon && typeof ItemIcon === "function" ? (
+                                                        <ItemIcon className="w-8 h-8 text-white" />
+                                                    ) : ItemIcon && typeof ItemIcon === "string" ? (
+                                                        <img src={ItemIcon} alt={itemTitle} className="w-8 h-8" />
+                                                    ) : (
+                                                        <Grid size={24} />
+                                                    )}
+                                                </div>
+                                                <span className="text-xs text-center truncate w-full">{itemTitle}</span>
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                             </div>
                             

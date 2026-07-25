@@ -102,12 +102,17 @@ export default function MobilePhoneShell({ apps, windows, activeWindowId, openAp
     const timeString = time.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
 
     const activeAppWindow = activeWindowId ? windows.find((w) => w.id === activeWindowId) : null;
-    const activeApp = activeAppWindow ? apps.find((a) => a.id === activeAppWindow.appId) : null;
+    const activeApp = activeAppWindow ? apps.find((a) => (a.key || a.id) === (activeAppWindow.appKey || activeAppWindow.appId)) : null;
 
     // Derived variables for Apps View
-    const sortedApps = [...apps].sort((a, b) => a.name.localeCompare(b.name));
+    const sortedApps = [...(apps || [])].sort((a, b) => {
+        const nameA = a.title || a.name || '';
+        const nameB = b.title || b.name || '';
+        return nameA.localeCompare(nameB);
+    });
     const groupedApps = sortedApps.reduce((acc, app) => {
-        const firstLetter = app.name[0].toUpperCase();
+        const name = app.title || app.name || 'App';
+        const firstLetter = name[0] ? name[0].toUpperCase() : '#';
         if (!acc[firstLetter]) acc[firstLetter] = [];
         acc[firstLetter].push(app);
         return acc;
@@ -139,7 +144,7 @@ export default function MobilePhoneShell({ apps, windows, activeWindowId, openAp
     };
 
     return (
-        <div className="w-full h-full flex flex-col bg-black text-white font-sans overflow-hidden relative">
+        <div className="fixed inset-0 w-screen h-screen flex flex-col bg-black text-white font-sans overflow-hidden z-50">
             {/* Background image if provided, else solid black is typical WP */}
             {wallpaper && (
                 <div 
@@ -256,20 +261,27 @@ export default function MobilePhoneShell({ apps, windows, activeWindowId, openAp
                                         {letter}
                                     </button>
                                     <div className="space-y-4 ml-14">
-                                        {groupedApps[letter].map((app) => (
-                                            <div 
-                                                key={app.id} 
-                                                className="flex items-center gap-4 cursor-pointer text-xl font-light hover:text-gray-300"
-                                                onClick={() => handleAppClick(app.id)}
-                                            >
-                                                {app.icon && typeof app.icon === "string" ? (
-                                                    <img src={app.icon} alt={app.name} className="w-8 h-8" />
-                                                ) : (
-                                                    <div className={`w-8 h-8 ${accentClass}`} />
-                                                )}
-                                                <span>{app.name}</span>
-                                            </div>
-                                        ))}
+                                        {groupedApps[letter].map((app) => {
+                                            const appKey = app.key || app.id;
+                                            const appName = app.title || app.name || 'App';
+                                            const AppIcon = app.icon;
+                                            return (
+                                                <div 
+                                                    key={appKey} 
+                                                    className="flex items-center gap-4 cursor-pointer text-xl font-light hover:text-gray-300"
+                                                    onClick={() => handleAppClick(appKey)}
+                                                >
+                                                    {AppIcon && typeof AppIcon === "function" ? (
+                                                        <AppIcon className="w-8 h-8" />
+                                                    ) : AppIcon && typeof AppIcon === "string" ? (
+                                                        <img src={AppIcon} alt={appName} className="w-8 h-8" />
+                                                    ) : (
+                                                        <div className={`w-8 h-8 ${accentClass}`} />
+                                                    )}
+                                                    <span>{appName}</span>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             ))}
@@ -288,11 +300,14 @@ export default function MobilePhoneShell({ apps, windows, activeWindowId, openAp
                                 <div className="text-gray-500 w-full text-center">No recent apps</div>
                             )}
                             {windows.map((win) => {
-                                const app = apps.find(a => a.id === win.appId);
+                                const appKey = win.appKey || win.appId;
+                                const app = apps.find(a => (a.key || a.id) === appKey);
+                                const appTitle = win.title || app?.title || app?.name || "App";
+                                const AppIcon = win.icon || app?.icon;
                                 return (
                                     <motion.div 
                                         key={win.id}
-                                        className="shrink-0 w-64 h-96 bg-gray-900 border border-gray-700 flex flex-col relative"
+                                        className="shrink-0 w-64 h-96 bg-gray-900 border border-gray-700 flex flex-col relative rounded-xl overflow-hidden shadow-2xl"
                                         drag="y"
                                         dragConstraints={{ top: 0, bottom: 0 }}
                                         onDragEnd={(e, info) => {
@@ -303,14 +318,19 @@ export default function MobilePhoneShell({ apps, windows, activeWindowId, openAp
                                             setView("start");
                                         }}
                                     >
-                                        <div className="p-2 flex justify-between items-center bg-gray-800">
-                                            <span className="font-semibold">{app?.name || "App"}</span>
-                                            <button onClick={(e) => { e.stopPropagation(); closeWin(win.id); }}>
+                                        <div className="p-3 flex justify-between items-center bg-gray-800 border-b border-gray-700">
+                                            <div className="flex items-center gap-2">
+                                                {AppIcon && typeof AppIcon === "function" ? (
+                                                    <AppIcon className="w-5 h-5 text-blue-400" />
+                                                ) : null}
+                                                <span className="font-semibold text-sm truncate text-white">{appTitle}</span>
+                                            </div>
+                                            <button onClick={(e) => { e.stopPropagation(); closeWin(win.id); }} className="p-1 hover:bg-white/10 rounded text-gray-400 hover:text-white">
                                                 <X size={16} />
                                             </button>
                                         </div>
-                                        <div className="flex-1 p-4 flex items-center justify-center">
-                                            <span className="text-gray-500">App Preview</span>
+                                        <div className="flex-1 p-4 flex items-center justify-center bg-gray-950/80 text-gray-500 text-xs">
+                                            Tap to view / Swipe up to close
                                         </div>
                                     </motion.div>
                                 );
@@ -318,7 +338,7 @@ export default function MobilePhoneShell({ apps, windows, activeWindowId, openAp
                         </motion.div>
                     )}
 
-                    {activeAppWindow && activeApp && (
+                    {activeAppWindow && (
                         <motion.div
                             key="active_app"
                             initial={{ opacity: 0, y: 50 }}
@@ -327,24 +347,36 @@ export default function MobilePhoneShell({ apps, windows, activeWindowId, openAp
                             className="absolute inset-0 bg-black flex flex-col z-20"
                         >
                             {/* WP Pivot Header */}
-                            <div className="px-4 py-6">
-                                <h2 className="text-sm font-semibold uppercase tracking-widest text-gray-400 mb-2">{activeApp.name}</h2>
-                                <div className="flex gap-4 text-3xl font-light overflow-x-auto whitespace-nowrap hide-scrollbar">
+                            <div className="px-4 py-4 shrink-0 bg-black">
+                                <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-1">
+                                    {activeAppWindow.title || activeApp?.title || activeApp?.name || "App"}
+                                </h2>
+                                <div className="flex gap-4 text-2xl font-light overflow-x-auto whitespace-nowrap hide-scrollbar">
                                     <span className="text-white">main</span>
                                     <span className="text-gray-500">details</span>
                                     <span className="text-gray-500">settings</span>
                                 </div>
                             </div>
                             {/* App Content Area */}
-                            <div className="flex-1 relative overflow-hidden bg-white text-black">
-                                {activeApp.component ? React.createElement(activeApp.component, {
-                                    windowId: activeAppWindow.id,
-                                    app: activeApp,
+                            <div className="flex-1 relative overflow-hidden bg-white dark:bg-[#1b1b1b]">
+                                {typeof activeAppWindow.render === "function" ? activeAppWindow.render({
+                                    openApp,
+                                    closeWin: () => closeWin(activeAppWindow.id),
                                     config,
-                                    // mocked props for desktop components
-                                    isMobile: true
+                                    wallpaper,
+                                    payload: activeAppWindow.payload,
+                                    isMobile: true,
+                                    isTablet: false,
+                                }) : typeof activeApp?.render === "function" ? activeApp.render({
+                                    openApp,
+                                    closeWin: () => closeWin(activeAppWindow.id),
+                                    config,
+                                    wallpaper,
+                                    payload: activeAppWindow.payload,
+                                    isMobile: true,
+                                    isTablet: false,
                                 }) : (
-                                    <div className="p-4">App Content Wrapper</div>
+                                    <div className="p-4 text-black dark:text-white">App Content</div>
                                 )}
                             </div>
                         </motion.div>
