@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useRef, useEffect } from 'react';
 import { PenTool, Highlighter, Eraser, Trash2, Download, Undo, Layers } from 'lucide-react';
+import { useDeviceMode } from '../../../context/DeviceModeContext';
 
 const COLORS = [
     '#ffffff', // White
@@ -15,6 +16,7 @@ const COLORS = [
 ];
 
 export default function Whiteboard() {
+    const { isMobile } = useDeviceMode();
     const canvasRef = useRef(null);
     const [tool, setTool] = useState('pen'); // 'pen', 'highlighter', 'eraser'
     const [color, setColor] = useState('#ffffff');
@@ -163,7 +165,7 @@ export default function Whiteboard() {
     return (
         <div className="flex h-full w-full flex-col bg-[#121215] text-white select-none overflow-hidden">
             {/* Top Toolbar */}
-            <div className="flex items-center justify-between border-b border-white/10 bg-[#1c1c21] px-3 py-2 shrink-0">
+            <div className={`flex items-center justify-between border-b border-white/10 bg-[#1c1c21] py-2 shrink-0 ${isMobile ? 'px-2 gap-2 overflow-x-auto no-scrollbar' : 'px-3'}`}>
                 {/* Tools */}
                 <div className="flex items-center gap-1.5">
                     <button
@@ -203,14 +205,14 @@ export default function Whiteboard() {
 
                     {/* Color Palette */}
                     {tool !== 'eraser' && (
-                        <div className="flex items-center gap-1">
+                        <div className={`flex items-center ${isMobile ? 'gap-0.5' : 'gap-1'}`}>
                             {COLORS.map((c) => (
                                 <button
                                     key={c}
                                     onClick={() => setColor(c)}
-                                    className={`h-5 w-5 rounded-full border transition-transform ${
+                                    className={`rounded-full border transition-transform ${
                                         color === c ? 'scale-125 border-white ring-2 ring-blue-500/50' : 'border-white/20 hover:scale-110'
-                                    }`}
+                                    } ${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`}
                                     style={{ backgroundColor: c }}
                                     title={c}
                                 />
@@ -222,7 +224,7 @@ export default function Whiteboard() {
                 {/* Stroke Size & Controls */}
                 <div className="flex items-center gap-3 text-xs">
                     <div className="flex items-center gap-2 text-white/70">
-                        <span>Size:</span>
+                        {!isMobile && <span>Size:</span>}
                         <input
                             type="range"
                             min="2"

@@ -1,6 +1,7 @@
 "use client";
 import React, { useMemo, useRef, useState, useEffect } from 'react';
-import { ArrowLeft, ArrowRight, RotateCw, Lock, Star, X, Plus, Home, ExternalLink, ShieldCheck, Copy, Globe, AlertCircle, Check, ShieldAlert, AppWindow, WifiOff } from 'lucide-react';
+import { ArrowLeft, ArrowRight, RotateCw, Lock, Star, X, Plus, Home, ExternalLink, ShieldCheck, Copy, Globe, AlertCircle, Check, ShieldAlert, AppWindow, WifiOff, LayoutGrid } from 'lucide-react';
+import { useDeviceMode } from '../../../context/DeviceModeContext';
 
 const QUICK_LINKS = [
     { label: 'Home', path: '/' },
@@ -57,6 +58,8 @@ function toUrl(input) {
 }
 
 export default function Browser({ payload, closeWin, isOffline }) {
+    const { isMobile, isTablet } = useDeviceMode();
+    const [showTabGrid, setShowTabGrid] = useState(false);
     const [tabs, setTabs] = useState(() => {
         if (payload?.url) {
             return [{ id: 1, title: payload.title || payload.url, url: payload.url, forceEmbed: false }];
@@ -141,46 +144,54 @@ export default function Browser({ payload, closeWin, isOffline }) {
     return (
         <div className="flex h-full w-full flex-col bg-[#dee1e6] dark:bg-[#202124]">
             {/* Tab strip */}
-            <div className="flex items-end gap-1 px-2 pt-1.5">
-                {tabs.map((t) => (
-                    <button
-                        key={t.id}
-                        onClick={() => {
-                            setActiveId(t.id);
-                            setAddress(t.url || '');
-                        }}
-                        className={`group flex h-8 max-w-[180px] items-center gap-2 rounded-t-lg px-3 text-xs ${
-                            t.id === activeId
-                                ? 'bg-white text-neutral-900 dark:bg-[#35363a] dark:text-white'
-                                : 'bg-black/5 text-neutral-600 hover:bg-black/10 dark:bg-white/5 dark:text-neutral-300'
-                        }`}
-                    >
-                        <span className="truncate">{t.title}</span>
-                        <span onClick={(e) => closeTab(t.id, e)} className="rounded-full p-0.5 hover:bg-black/10 dark:hover:bg-white/20">
-                            <X className="h-3 w-3" />
-                        </span>
+            {!isMobile && (
+                <div className={`flex items-end gap-1 px-2 pt-1.5 ${isTablet ? 'h-14 overflow-x-auto' : ''}`}>
+                    {tabs.map((t) => (
+                        <button
+                            key={t.id}
+                            onClick={() => {
+                                setActiveId(t.id);
+                                setAddress(t.url || '');
+                            }}
+                            className={`group flex items-center gap-2 rounded-t-lg px-3 text-xs shrink-0 ${
+                                isTablet ? 'h-12 max-w-[220px] text-sm' : 'h-8 max-w-[180px]'
+                            } ${
+                                t.id === activeId
+                                    ? 'bg-white text-neutral-900 dark:bg-[#35363a] dark:text-white'
+                                    : 'bg-black/5 text-neutral-600 hover:bg-black/10 dark:bg-white/5 dark:text-neutral-300'
+                            }`}
+                        >
+                            <span className="truncate">{t.title}</span>
+                            <span onClick={(e) => closeTab(t.id, e)} className="rounded-full p-0.5 hover:bg-black/10 dark:hover:bg-white/20">
+                                <X className={`${isTablet ? 'h-4 w-4' : 'h-3 w-3'}`} />
+                            </span>
+                        </button>
+                    ))}
+                    <button onClick={addTab} className="mb-1 rounded p-1 hover:bg-black/10 dark:hover:bg-white/10 shrink-0" aria-label="New tab">
+                        <Plus className="h-4 w-4" />
                     </button>
-                ))}
-                <button onClick={addTab} className="mb-1 rounded p-1 hover:bg-black/10 dark:hover:bg-white/10" aria-label="New tab">
-                    <Plus className="h-4 w-4" />
-                </button>
-            </div>
+                </div>
+            )}
 
             {/* Toolbar */}
-            <div className="flex items-center gap-2 bg-white px-3 py-1.5 dark:bg-[#35363a]">
-                <button onClick={() => frameRef.current?.contentWindow?.history.back()} className="rounded-full p-1.5 hover:bg-black/5 dark:hover:bg-white/10" aria-label="Back">
-                    <ArrowLeft className="h-4 w-4" />
-                </button>
-                <button onClick={() => frameRef.current?.contentWindow?.history.forward()} className="rounded-full p-1.5 hover:bg-black/5 dark:hover:bg-white/10" aria-label="Forward">
-                    <ArrowRight className="h-4 w-4" />
-                </button>
-                <button onClick={() => navigate('', 'New tab')} className="rounded-full p-1.5 hover:bg-black/5 dark:hover:bg-white/10" aria-label="Refresh">
-                    <RotateCw className="h-4 w-4" />
-                </button>
-                <button onClick={() => navigate('/', 'Home')} className="rounded-full p-1.5 hover:bg-black/5 dark:hover:bg-white/10" aria-label="Home">
-                    <Home className="h-4 w-4" />
-                </button>
-                <form onSubmit={go} className="flex flex-1 items-center gap-2 rounded-full bg-black/5 px-3 py-1.5 dark:bg-black/40">
+            <div className={`flex items-center gap-2 bg-white px-3 py-1.5 dark:bg-[#35363a] ${isMobile ? 'border-b border-black/10 dark:border-white/10' : ''}`}>
+                {!isMobile && (
+                    <>
+                        <button onClick={() => frameRef.current?.contentWindow?.history.back()} className="rounded-full p-1.5 hover:bg-black/5 dark:hover:bg-white/10" aria-label="Back">
+                            <ArrowLeft className="h-4 w-4" />
+                        </button>
+                        <button onClick={() => frameRef.current?.contentWindow?.history.forward()} className="rounded-full p-1.5 hover:bg-black/5 dark:hover:bg-white/10" aria-label="Forward">
+                            <ArrowRight className="h-4 w-4" />
+                        </button>
+                        <button onClick={() => navigate('', 'New tab')} className="rounded-full p-1.5 hover:bg-black/5 dark:hover:bg-white/10" aria-label="Refresh">
+                            <RotateCw className="h-4 w-4" />
+                        </button>
+                        <button onClick={() => navigate('/', 'Home')} className="rounded-full p-1.5 hover:bg-black/5 dark:hover:bg-white/10" aria-label="Home">
+                            <Home className="h-4 w-4" />
+                        </button>
+                    </>
+                )}
+                <form onSubmit={go} className={`flex flex-1 items-center gap-2 rounded-full bg-black/5 px-3 py-1.5 dark:bg-black/40 ${isTablet ? 'py-2 px-4 text-base' : ''}`}>
                     <Lock className="h-3.5 w-3.5 opacity-50" />
                     <input
                         value={displayAddress}
@@ -190,6 +201,11 @@ export default function Browser({ payload, closeWin, isOffline }) {
                     />
                     <Star className="h-3.5 w-3.5 opacity-40" />
                 </form>
+                {isMobile && (
+                    <button onClick={() => setShowTabGrid(true)} className="relative flex h-8 w-8 items-center justify-center rounded-md border-2 border-neutral-500 text-xs font-bold text-neutral-600 dark:border-neutral-400 dark:text-neutral-300">
+                        {tabs.length}
+                    </button>
+                )}
             </div>
 
             {/* Viewport with Keep-Alive Tab Persistence */}
@@ -229,6 +245,59 @@ export default function Browser({ payload, closeWin, isOffline }) {
                     );
                 })}
             </div>
+
+            {/* Mobile Bottom Bar */}
+            {isMobile && (
+                <div className="flex items-center justify-between border-t border-black/10 bg-white px-6 py-3 dark:border-white/10 dark:bg-[#35363a]">
+                    <button onClick={() => frameRef.current?.contentWindow?.history.back()} className="rounded-full p-2 hover:bg-black/5 dark:hover:bg-white/10" aria-label="Back">
+                        <ArrowLeft className="h-5 w-5" />
+                    </button>
+                    <button onClick={() => frameRef.current?.contentWindow?.history.forward()} className="rounded-full p-2 hover:bg-black/5 dark:hover:bg-white/10" aria-label="Forward">
+                        <ArrowRight className="h-5 w-5" />
+                    </button>
+                    <button onClick={() => navigate('', 'New tab')} className="rounded-full p-2 hover:bg-black/5 dark:hover:bg-white/10" aria-label="Refresh">
+                        <RotateCw className="h-5 w-5" />
+                    </button>
+                    <button onClick={() => navigate('/', 'Home')} className="rounded-full p-2 hover:bg-black/5 dark:hover:bg-white/10" aria-label="Home">
+                        <Home className="h-5 w-5" />
+                    </button>
+                </div>
+            )}
+
+            {/* Mobile Tab Grid Modal */}
+            {isMobile && showTabGrid && (
+                <div className="absolute inset-0 z-50 flex flex-col bg-[#dee1e6] dark:bg-[#202124]">
+                    <div className="flex items-center justify-between px-4 py-3 bg-white dark:bg-[#35363a] border-b border-black/10 dark:border-white/10">
+                        <span className="font-semibold text-sm">Tabs ({tabs.length})</span>
+                        <div className="flex gap-2">
+                            <button onClick={() => { addTab(); setShowTabGrid(false); }} className="rounded-full p-2 hover:bg-black/5 dark:hover:bg-white/10">
+                                <Plus className="h-5 w-5" />
+                            </button>
+                            <button onClick={() => setShowTabGrid(false)} className="font-medium text-blue-500 p-2">
+                                Done
+                            </button>
+                        </div>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-4 grid grid-cols-2 gap-4">
+                        {tabs.map(t => (
+                            <div key={t.id} className="flex flex-col gap-2 rounded-xl bg-white dark:bg-[#35363a] p-3 shadow-sm border border-black/5 dark:border-white/5 relative">
+                                <div className="flex items-center justify-between mb-1">
+                                    <span className="text-xs font-medium truncate">{t.title}</span>
+                                    <button onClick={(e) => closeTab(t.id, e)} className="rounded-full p-1 hover:bg-black/10 dark:hover:bg-white/20">
+                                        <X className="h-4 w-4" />
+                                    </button>
+                                </div>
+                                <button
+                                    onClick={() => { setActiveId(t.id); setAddress(t.url || ''); setShowTabGrid(false); }}
+                                    className="aspect-[3/4] w-full rounded border border-black/10 dark:border-white/10 bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center overflow-hidden"
+                                >
+                                    {t.url ? <Globe className="h-8 w-8 text-neutral-400" /> : <div className="text-2xl font-bold opacity-20">Aiyu</div>}
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

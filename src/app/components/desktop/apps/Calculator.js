@@ -1,8 +1,10 @@
 "use client";
 import React, { useState, useEffect, useCallback } from 'react';
 import { History, Trash2, Delete, Percent, Divide, X, Minus, Plus, Equal } from 'lucide-react';
+import { useDeviceMode } from '../../../context/DeviceModeContext';
 
 export default function Calculator() {
+    const { isMobile, isTablet } = useDeviceMode();
     const [display, setDisplay] = useState('0');
     const [equation, setEquation] = useState('');
     const [prevValue, setPrevValue] = useState(null);
@@ -207,9 +209,9 @@ export default function Calculator() {
                     <span className="font-semibold text-white/90">Standard</span>
                     <button
                         onClick={() => setShowHistory((v) => !v)}
-                        className={`flex items-center gap-1 rounded p-1.5 transition-colors ${
+                        className={`flex items-center gap-1 rounded transition-colors ${
                             showHistory ? 'bg-blue-600/30 text-blue-400' : 'hover:bg-white/10'
-                        }`}
+                        } ${isMobile ? 'p-2' : 'p-1.5'}`}
                         title="Toggle History"
                     >
                         <History className="h-4 w-4" />
@@ -227,16 +229,16 @@ export default function Calculator() {
                 </div>
 
                 {/* Memory bar */}
-                <div className="grid grid-cols-5 gap-1 mb-2 text-[11px] font-medium text-white/60 text-center">
-                    <button onClick={() => setMemory(0)} className="rounded py-1 hover:bg-white/10">MC</button>
-                    <button onClick={() => setDisplay(String(memory))} className="rounded py-1 hover:bg-white/10">MR</button>
-                    <button onClick={() => setMemory((m) => m + parseFloat(display))} className="rounded py-1 hover:bg-white/10">M+</button>
-                    <button onClick={() => setMemory((m) => m - parseFloat(display))} className="rounded py-1 hover:bg-white/10">M-</button>
-                    <button onClick={() => setMemory(parseFloat(display))} className="rounded py-1 hover:bg-white/10">MS</button>
+                <div className={`grid grid-cols-5 gap-1 mb-2 text-[11px] font-medium text-white/60 text-center ${isMobile ? 'py-1' : ''}`}>
+                    <button onClick={() => setMemory(0)} className={`rounded hover:bg-white/10 ${isMobile ? 'py-2' : 'py-1'}`}>MC</button>
+                    <button onClick={() => setDisplay(String(memory))} className={`rounded hover:bg-white/10 ${isMobile ? 'py-2' : 'py-1'}`}>MR</button>
+                    <button onClick={() => setMemory((m) => m + parseFloat(display))} className={`rounded hover:bg-white/10 ${isMobile ? 'py-2' : 'py-1'}`}>M+</button>
+                    <button onClick={() => setMemory((m) => m - parseFloat(display))} className={`rounded hover:bg-white/10 ${isMobile ? 'py-2' : 'py-1'}`}>M-</button>
+                    <button onClick={() => setMemory(parseFloat(display))} className={`rounded hover:bg-white/10 ${isMobile ? 'py-2' : 'py-1'}`}>MS</button>
                 </div>
 
                 {/* Buttons Grid */}
-                <div className="grid grid-cols-4 gap-1.5 flex-1 min-h-0 text-sm font-medium">
+                <div className={`grid grid-cols-4 ${isMobile ? 'gap-2' : 'gap-1.5'} flex-1 min-h-0 text-sm font-medium`}>
                     <button onClick={percentage} className="flex items-center justify-center rounded bg-white/5 hover:bg-white/10 transition-colors"><Percent className="h-4 w-4" /></button>
                     <button onClick={clearEntry} className="flex items-center justify-center rounded bg-white/5 hover:bg-white/10 transition-colors">CE</button>
                     <button onClick={clearAll} className="flex items-center justify-center rounded bg-white/5 hover:bg-white/10 transition-colors">C</button>
@@ -270,15 +272,22 @@ export default function Calculator() {
 
             {/* Optional History Sidebar */}
             {showHistory && (
-                <div className="w-56 border-l border-white/10 bg-[#161618] p-3 flex flex-col justify-between">
+                <div className={`${isMobile ? 'absolute inset-0 bg-[#161618] z-10' : 'w-56 border-l border-white/10 bg-[#161618]'} p-3 flex flex-col justify-between`}>
                     <div>
                         <div className="flex items-center justify-between text-xs font-semibold text-white/80 pb-2 border-b border-white/10 mb-2">
                             <span>History</span>
-                            {history.length > 0 && (
-                                <button onClick={() => setHistory([])} className="text-white/40 hover:text-red-400">
-                                    <Trash2 className="h-3.5 w-3.5" />
-                                </button>
-                            )}
+                            <div className="flex gap-2">
+                                {history.length > 0 && (
+                                    <button onClick={() => setHistory([])} className={`text-white/40 hover:text-red-400 ${isMobile ? 'p-2' : ''}`}>
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                    </button>
+                                )}
+                                {isMobile && (
+                                    <button onClick={() => setShowHistory(false)} className="text-white/40 hover:text-white p-2">
+                                        <X className="h-4 w-4" />
+                                    </button>
+                                )}
+                            </div>
                         </div>
                         <div className="space-y-2 overflow-y-auto max-h-[340px] pr-1 custom-scrollbar">
                             {history.length > 0 ? (

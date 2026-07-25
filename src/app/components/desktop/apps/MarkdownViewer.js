@@ -16,7 +16,9 @@ import {
     Tag,
     BookOpen,
     ExternalLink,
+    X,
 } from 'lucide-react';
+import { useDeviceMode } from '../../../context/DeviceModeContext';
 
 const ALL_FOLDER_FILES = FOLDERS_DATA.flatMap((f) => f.files);
 
@@ -31,12 +33,19 @@ const ReactMarkdown = dynamic(() => import('react-markdown'), {
 });
 
 export default function MarkdownViewer({ payload, openApp }) {
+    const { isMobile, isTablet } = useDeviceMode();
     const [blogs, setBlogs] = useState(ALL_FOLDER_FILES);
     const [loading, setLoading] = useState(true);
     const [activeSlug, setActiveSlug] = useState(() => payload?.slug || payload?.blog?.slug || 'about-me');
     const [query, setQuery] = useState('');
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [copied, setCopied] = useState(false);
+
+    useEffect(() => {
+        if (isMobile) {
+            setSidebarOpen(false);
+        }
+    }, [isMobile]);
 
     useEffect(() => {
         let alive = true;
@@ -144,16 +153,23 @@ export default function MarkdownViewer({ payload, openApp }) {
         <div className="flex h-full w-full bg-[#fcfcfd] dark:bg-[#18181b] text-neutral-800 dark:text-neutral-200 select-none">
             {/* Left Sidebar */}
             {sidebarOpen && (
-                <aside className="flex w-64 shrink-0 flex-col border-r border-black/10 dark:border-white/10 bg-[#f4f4f6] dark:bg-[#202023]">
+                <aside className={`flex flex-col border-r border-black/10 dark:border-white/10 bg-[#f4f4f6] dark:bg-[#202023] ${isMobile ? 'absolute inset-0 z-10 w-full' : 'w-64 shrink-0'}`}>
                     {/* Sidebar Header */}
                     <div className="p-3 border-b border-black/10 dark:border-white/10 flex items-center justify-between">
                         <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
                             <BookOpen className="h-4 w-4 text-blue-500" />
                             <span>Documents</span>
                         </div>
-                        <span className="text-[10px] rounded-full bg-blue-500/10 px-2 py-0.5 font-mono text-blue-500 font-semibold">
-                            {blogs.length}
-                        </span>
+                        <div className="flex items-center gap-2">
+                            <span className="text-[10px] rounded-full bg-blue-500/10 px-2 py-0.5 font-mono text-blue-500 font-semibold">
+                                {blogs.length}
+                            </span>
+                            {isMobile && (
+                                <button onClick={() => setSidebarOpen(false)} className="p-1 rounded text-neutral-500 hover:bg-black/10 dark:hover:bg-white/10">
+                                    <X className="h-4 w-4" />
+                                </button>
+                            )}
+                        </div>
                     </div>
 
                     {/* Search Bar */}
@@ -182,7 +198,10 @@ export default function MarkdownViewer({ payload, openApp }) {
                                 return (
                                     <button
                                         key={b._id || b.slug}
-                                        onClick={() => setActiveSlug(b.slug)}
+                                        onClick={() => {
+                                            setActiveSlug(b.slug);
+                                            if (isMobile) setSidebarOpen(false);
+                                        }}
                                         className={`w-full flex items-start gap-2.5 rounded-xl p-2.5 text-left transition ${
                                             isActive
                                                 ? 'bg-blue-600 text-white shadow-sm'
@@ -243,11 +262,11 @@ export default function MarkdownViewer({ payload, openApp }) {
 
                         <button
                             onClick={handleOpenOnWeb}
-                            className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-blue-500 transition shadow"
+                            className={`flex items-center gap-1.5 rounded-lg bg-blue-600 ${isMobile ? 'px-2 py-1.5' : 'px-3 py-1.5'} text-xs font-bold text-white hover:bg-blue-500 transition shadow`}
                             title="Open actual blog post in Google Chrome"
                         >
                             <Globe className="h-3.5 w-3.5" />
-                            <span>Open on Web</span>
+                            {!isMobile && <span>Open on Web</span>}
                             <ExternalLink className="h-3 w-3 opacity-70" />
                         </button>
                     </div>

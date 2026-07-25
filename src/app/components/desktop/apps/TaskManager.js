@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 
 import { useDeviceName } from '../useDeviceName';
+import { useDeviceMode } from '../../../context/DeviceModeContext';
 
 const TABS = [
     { key: 'processes', label: 'Processes', icon: Activity },
@@ -44,6 +45,7 @@ const STARTUP_APPS = [
 ];
 
 export default function TaskManager({ windows = [], closeWin, openApp, config = {}, toggleStart, openStartMenu }) {
+    const { isMobile, isTablet } = useDeviceMode();
     const [deviceName] = useDeviceName(config);
     const [tab, setTab] = useState('processes');
     const [selectedId, setSelectedId] = useState(null);
@@ -143,9 +145,9 @@ export default function TaskManager({ windows = [], closeWin, openApp, config = 
     }, [runningAppProcesses]);
 
     return (
-        <div className="flex h-full w-full flex-col bg-[#f3f3f3] text-neutral-800 dark:bg-[#202020] dark:text-neutral-100 select-none text-xs">
+        <div className={`flex h-full w-full flex-col bg-[#f3f3f3] text-neutral-800 dark:bg-[#202020] dark:text-neutral-100 select-none ${isMobile ? 'text-[10px]' : 'text-xs'}`}>
             {/* Command Bar Header */}
-            <div className="flex items-center justify-between border-b border-black/10 bg-white/70 px-4 py-2 backdrop-blur dark:border-white/10 dark:bg-[#262626]">
+            <div className={`flex items-center justify-between border-b border-black/10 bg-white/70 py-2 backdrop-blur dark:border-white/10 dark:bg-[#262626] ${isMobile ? 'px-2' : 'px-4'}`}>
                 <div className="flex items-center gap-3">
                     <div className="flex h-7 w-7 items-center justify-center rounded-md bg-blue-600 text-white">
                         <Activity className="h-4 w-4" />
@@ -187,7 +189,7 @@ export default function TaskManager({ windows = [], closeWin, openApp, config = 
             </div>
 
             {/* Navigation Tabs */}
-            <div className="flex border-b border-black/10 bg-[#eaeeea] px-2 dark:border-white/10 dark:bg-[#27272a]">
+            <div className={`flex border-b border-black/10 bg-[#eaeeea] px-2 dark:border-white/10 dark:bg-[#27272a] ${isMobile ? 'overflow-x-auto scrollbar-hide' : ''}`}>
                 {TABS.map((t) => {
                     const Icon = t.icon;
                     const isActive = tab === t.key;
@@ -222,6 +224,7 @@ export default function TaskManager({ windows = [], closeWin, openApp, config = 
                         setFilterQuery={setFilterQuery}
                         totalCpu={totalAppCpu}
                         totalMem={totalAppMem}
+                        isMobile={isMobile}
                     />
                 )}
 
@@ -235,6 +238,8 @@ export default function TaskManager({ windows = [], closeWin, openApp, config = 
                         memHistory={memHistory}
                         coresCount={coresCount}
                         deviceName={deviceName}
+                        isMobile={isMobile}
+                        isTablet={isTablet}
                     />
                 )}
 
@@ -266,6 +271,7 @@ function ProcessesPane({
     setFilterQuery,
     totalCpu,
     totalMem,
+    isMobile,
 }) {
     const filteredApps = runningApps.filter((a) =>
         a.name.toLowerCase().includes(filterQuery.toLowerCase())
@@ -288,7 +294,7 @@ function ProcessesPane({
             </div>
 
             {/* Process Table */}
-            <div className="min-h-0 flex-1 overflow-y-auto">
+            <div className={`min-h-0 flex-1 overflow-y-auto ${isMobile ? 'overflow-x-auto' : ''}`}>
                 <table className="w-full text-left border-collapse">
                     <thead className="sticky top-0 bg-[#e5e5e5] dark:bg-[#2a2a2a] text-[11px] font-semibold opacity-80 border-b border-black/10 dark:border-white/10 z-10">
                         <tr>
@@ -378,7 +384,7 @@ function ProcessesPane({
 }
 
 // 2. PERFORMANCE TAB PANE
-function PerformancePane({ subTab, setSubTab, currentCpu, currentMem, cpuHistory, memHistory, coresCount, deviceName }) {
+function PerformancePane({ subTab, setSubTab, currentCpu, currentMem, cpuHistory, memHistory, coresCount, deviceName, isMobile, isTablet }) {
     const subItems = [
         { key: 'cpu', label: 'CPU', val: `${currentCpu}%`, icon: Cpu },
         { key: 'mem', label: 'Memory', val: `${(currentMem / 100 * 8).toFixed(1)}/8.0 GB (${currentMem}%)`, icon: HardDrive },
@@ -387,9 +393,9 @@ function PerformancePane({ subTab, setSubTab, currentCpu, currentMem, cpuHistory
     ];
 
     return (
-        <div className="flex h-full w-full">
+        <div className={`flex h-full w-full ${isMobile || isTablet ? 'flex-col' : ''}`}>
             {/* Left Nav */}
-            <div className="w-48 shrink-0 overflow-y-auto border-r border-black/10 bg-[#e8e8e8] p-2 dark:border-white/10 dark:bg-[#242424]">
+            <div className={`${isMobile || isTablet ? 'w-full flex overflow-x-auto border-b' : 'w-48 shrink-0 overflow-y-auto border-r'} border-black/10 bg-[#e8e8e8] p-2 dark:border-white/10 dark:bg-[#242424] custom-scrollbar`}>
                 {subItems.map((s) => {
                     const Icon = s.icon;
                     const isActive = subTab === s.key;
@@ -397,13 +403,13 @@ function PerformancePane({ subTab, setSubTab, currentCpu, currentMem, cpuHistory
                         <button
                             key={s.key}
                             onClick={() => setSubTab(s.key)}
-                            className={`mb-1 flex w-full items-center justify-between rounded p-2 text-left transition ${
+                            className={`mb-1 flex ${isMobile || isTablet ? 'w-auto px-4 mr-2 min-w-[120px] flex-col items-center justify-center gap-1' : 'w-full items-center justify-between'} rounded p-2 text-left transition ${
                                 isActive ? 'bg-blue-600 text-white shadow' : 'hover:bg-black/5 dark:hover:bg-white/5'
                             }`}
                         >
-                            <div className="flex items-center gap-2">
+                            <div className={`flex items-center gap-2 ${isMobile || isTablet ? 'flex-col' : ''}`}>
                                 <Icon className="h-4 w-4" />
-                                <span className="font-medium">{s.label}</span>
+                                <span className={`font-medium ${isMobile || isTablet ? 'text-[11px]' : ''}`}>{s.label}</span>
                             </div>
                             <span className="text-[10px] tabular-nums opacity-80">{s.val}</span>
                         </button>
@@ -412,7 +418,7 @@ function PerformancePane({ subTab, setSubTab, currentCpu, currentMem, cpuHistory
             </div>
 
             {/* Right Graph Stage */}
-            <div className="flex min-w-0 flex-1 flex-col p-4 overflow-y-auto">
+            <div className={`flex min-w-0 flex-1 flex-col overflow-y-auto ${isMobile ? 'p-2' : 'p-4'}`}>
                 <div className="flex items-center justify-between mb-4 border-b border-black/10 pb-2 dark:border-white/10">
                     <div>
                         <h2 className="text-base font-semibold">

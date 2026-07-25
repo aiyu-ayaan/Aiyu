@@ -13,10 +13,12 @@ import {
     MapPin,
     Link as LinkIcon,
 } from 'lucide-react';
+import { useDeviceMode } from '../../../context/DeviceModeContext';
 
 // A desktop "GitHub Desktop"-style client backed by the site's own
 // /api/github/stats endpoint (profile, repos, languages, streaks, activity).
 export default function GitHub() {
+    const { isMobile, isTablet } = useDeviceMode();
     const [data, setData] = useState(null);
     const [state, setState] = useState('loading'); // loading | ok | error | unconfigured
     const [message, setMessage] = useState('');
@@ -108,13 +110,13 @@ export default function GitHub() {
                                     href={/^https?:\/\//.test(profile.blog) ? profile.blog : `https://${profile.blog}`}
                                     target="_blank"
                                     rel="noreferrer"
-                                    className="flex items-center gap-1 text-blue-400 hover:underline"
+                                    className="flex items-center gap-1 text-blue-400 hover:underline truncate"
                                 >
-                                    <LinkIcon className="h-3 w-3" /> {profile.blog}
+                                    <LinkIcon className="h-3 w-3 shrink-0" /> {profile.blog}
                                 </a>
                             )}
                             <span className="flex items-center gap-1">
-                                <Users className="h-3 w-3" /> {profile.followers} followers · {profile.following} following
+                                <Users className="h-3 w-3" /> {profile.followers} <span className={isMobile ? 'hidden' : ''}>followers</span> · {profile.following} <span className={isMobile ? 'hidden' : ''}>following</span>
                             </span>
                         </div>
                     </div>

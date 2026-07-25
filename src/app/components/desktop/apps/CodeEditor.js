@@ -13,7 +13,10 @@ import {
     GitBranch,
     Settings as SettingsIcon,
     X,
+    Menu,
+    AlignLeft
 } from 'lucide-react';
+import { useDeviceMode } from '@/app/context/DeviceModeContext';
 
 // Read-only VS Code style viewer. Reads the tree + file contents from
 // /api/desktop/source (strict server-side allowlist — nothing is editable).
@@ -24,6 +27,13 @@ export default function CodeEditor() {
     const [activePath, setActivePath] = useState(null);
     const [cache, setCache] = useState({});
     const [loadingFile, setLoadingFile] = useState(false);
+    const { isMobile, isTablet } = useDeviceMode();
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [lineWrap, setLineWrap] = useState(false);
+
+    useEffect(() => {
+        setSidebarOpen(!isMobile);
+    }, [isMobile]);
 
     useEffect(() => {
         fetch('/api/desktop/source')
@@ -64,6 +74,11 @@ export default function CodeEditor() {
         });
     };
 
+    const handleFileOpen = (path) => {
+        openFile(path);
+        if (isMobile) setSidebarOpen(false);
+    };
+
     const active = activePath ? cache[activePath] : null;
 
     return (
@@ -79,24 +94,42 @@ export default function CodeEditor() {
             </div>
 
             {/* Explorer */}
-            <aside className="hidden w-56 shrink-0 flex-col overflow-y-auto border-r border-black/40 bg-[#252526] sm:flex">
-                <div className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wider opacity-60">Explorer — Aiyu</div>
-                <div className="pb-4 text-xs">
-                    <TreeView
-                        nodes={tree}
-                        depth={0}
-                        expanded={expanded}
-                        setExpanded={setExpanded}
-                        onOpen={openFile}
-                        activePath={activePath}
-                    />
-                </div>
-            </aside>
+            {(sidebarOpen || !isMobile) && (
+                <aside className={`${isMobile ? 'absolute inset-y-0 left-0 z-20 shadow-2xl' : 'flex'} w-64 sm:w-56 shrink-0 flex-col overflow-y-auto border-r border-black/40 bg-[#252526] transition-all duration-300`}
+                       style={{ display: sidebarOpen ? 'flex' : 'none' }}>
+                    <div className="flex items-center justify-between px-3 py-2 text-[11px] font-semibold uppercase tracking-wider opacity-60">
+                        <span>Explorer — Aiyu</span>
+                        {isMobile && (
+                            <button onClick={() => setSidebarOpen(false)} className="rounded p-1 hover:bg-white/10">
+                                <X className="h-3.5 w-3.5" />
+                            </button>
+                        )}
+                    </div>
+                    <div className="pb-4 text-xs">
+                        <TreeView
+                            nodes={tree}
+                            depth={0}
+                            expanded={expanded}
+                            setExpanded={setExpanded}
+                            onOpen={handleFileOpen}
+                            activePath={activePath}
+                        />
+                    </div>
+                </aside>
+            )}
 
             {/* Editor area */}
             <div className="flex min-w-0 flex-1 flex-col">
                 {/* Tabs */}
-                <div className="flex h-9 shrink-0 items-stretch overflow-x-auto border-b border-black/40 bg-[#252526]">
+                <div className="flex h-9 shrink-0 items-stretch overflow-x-auto border-b border-black/40 bg-[#252526] scrollbar-none">
+                    {(isMobile || isTablet) && (
+                        <button
+                            onClick={() => setSidebarOpen(!sidebarOpen)}
+                            className="flex items-center px-3 text-white/60 hover:bg-white/10 hover:text-white"
+                        >
+                            <Menu className="h-4 w-4" />
+                        </button>
+                    )}
                     {openTabs.map((path) => (
                         <button
                             key={path}
@@ -105,20 +138,26 @@ export default function CodeEditor() {
                                 activePath === path ? 'bg-[#1e1e1e] text-white' : 'bg-[#2d2d2d] opacity-70'
                             }`}
                         >
-                            <FileIcon className="h-3.5 w-3.5" />
+                            <FileIcon className="h-3.5 w-3.5 shrink-0" />
                             <span className="whitespace-nowrap">{path.split('/').pop()}</span>
                             <span onClick={(e) => closeTab(path, e)} className="rounded p-0.5 opacity-0 hover:bg-white/10 group-hover:opacity-70">
                                 <X className="h-3 w-3" />
                             </span>
                         </button>
                     ))}
-                    <div className="ml-auto flex items-center gap-1 pr-3 text-[11px] text-amber-400">
-                        <Lock className="h-3 w-3" /> Read Only
+                    <div className="ml-auto flex items-center gap-2 pr-3">
+                        <button
+                            onClick={() => setLineWrap(!lineWrap)}
+                            className={`flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] transition ${lineWrap ? 'bg-white/20 text-white' : 'text-white/50 hover:bg-white/10 hover:text-white'}`}
+                            title="Toggle Line Wrap"
+                        >
+                            <AlignLeft className="h-3 w-3" />
+                        </button>
                     </div>
                 </div>
 
                 {/* Editor */}
-                <div className="relative min-h-0 flex-1 overflow-auto">
+                <div className="relative min-h-0 flex-1 overflow-auto bg-[#1e1e1e]">
                     {!activePath ? (
                         <Welcome />
                     ) : loadingFile && !active ? (
@@ -128,9 +167,19 @@ export default function CodeEditor() {
                     ) : active?.error ? (
                         <div className="p-6 text-sm text-red-400">{active.error}</div>
                     ) : (
-                        <CodePane content={active?.content || ''} />
+                        <CodePane content={active?.content || ''} lineWrap={lineWrap} />
                     )}
                 </div>
+
+                {isMobile && activePath && (
+                    <div className="flex shrink-0 items-center justify-around border-t border-black/40 bg-[#2d2d2d] px-2 py-1.5 text-xs text-white">
+                        {['Tab', '{', '}', ';'].map((key) => (
+                            <button key={key} className="flex-1 mx-1 rounded bg-[#3d3d3d] py-1.5 text-center active:bg-[#4d4d4d]">
+                                {key}
+                            </button>
+                        ))}
+                    </div>
+                )}
 
                 {/* Status bar */}
                 <div className="flex h-6 shrink-0 items-center justify-between bg-[#007acc] px-3 text-[11px] text-white">
@@ -203,17 +252,19 @@ function TreeView({ nodes, depth, expanded, setExpanded, onOpen, activePath }) {
     );
 }
 
-function CodePane({ content }) {
+function CodePane({ content, lineWrap }) {
     const lines = content.split('\n');
     return (
-        <div className="flex min-w-max text-[13px] leading-[1.5]">
-            <div className="select-none border-r border-white/5 bg-[#1e1e1e] px-3 py-3 text-right text-[#858585]">
-                {lines.map((_, i) => (
-                    <div key={i}>{i + 1}</div>
-                ))}
-            </div>
-            <pre className="flex-1 overflow-visible px-4 py-3">
-                <code className="whitespace-pre text-[#d4d4d4]">{content}</code>
+        <div className="flex w-full min-h-full text-[13px] leading-[1.5]">
+            {!lineWrap && (
+                <div className="shrink-0 select-none border-r border-white/5 bg-[#1e1e1e] px-3 py-3 text-right text-[#858585]">
+                    {lines.map((_, i) => (
+                        <div key={i}>{i + 1}</div>
+                    ))}
+                </div>
+            )}
+            <pre className={`flex-1 px-4 py-3 ${lineWrap ? 'whitespace-pre-wrap break-all' : 'overflow-visible'}`}>
+                <code className={`text-[#d4d4d4] ${lineWrap ? 'whitespace-pre-wrap' : 'whitespace-pre'}`}>{content}</code>
             </pre>
         </div>
     );

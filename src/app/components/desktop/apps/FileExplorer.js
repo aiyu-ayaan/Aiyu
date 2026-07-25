@@ -41,7 +41,10 @@ const NAV = [
 const blogFileName = (blog) =>
     blog.fileName || `${(blog.slug || blog.title || 'untitled').toString().slice(0, 40).replace(/\s+/g, '-').toLowerCase()}.md`;
 
+import { useDeviceMode } from '@/app/context/DeviceModeContext';
+
 export default function FileExplorer({ openApp }) {
+    const { isMobile } = useDeviceMode();
     const [folder, setFolder] = useState('home');
     const [gallery, setGallery] = useState([]);
     const [blogs, setBlogs] = useState([]);
@@ -96,24 +99,26 @@ export default function FileExplorer({ openApp }) {
     return (
         <div className="flex h-full w-full text-sm text-neutral-800 dark:text-neutral-200">
             {/* Sidebar */}
-            <aside className="hidden w-48 shrink-0 overflow-y-auto border-r border-black/10 bg-[#f8f8f8] p-2 dark:border-white/10 dark:bg-[#252525] sm:block">
-                <div className="mb-2 px-2 text-[10px] font-bold uppercase tracking-wider text-neutral-400">Folders</div>
-                {NAV.map((n) => (
-                    <button
-                        key={n.key}
-                        onClick={() => {
-                            setFolder(n.key);
-                            setPreview(null);
-                        }}
-                        className={`mb-0.5 flex w-full items-center gap-2 rounded px-2 py-1.5 text-left transition ${
-                            folder === n.key ? 'bg-blue-500/15 font-semibold text-blue-600 dark:text-blue-300' : 'hover:bg-black/5 dark:hover:bg-white/5'
-                        }`}
-                    >
-                        <n.icon className="h-4 w-4" />
-                        <span className="truncate">{n.label}</span>
-                    </button>
-                ))}
-            </aside>
+            {!isMobile && (
+                <aside className="w-48 shrink-0 overflow-y-auto border-r border-black/10 bg-[#f8f8f8] p-2 dark:border-white/10 dark:bg-[#252525]">
+                    <div className="mb-2 px-2 text-[10px] font-bold uppercase tracking-wider text-neutral-400">Folders</div>
+                    {NAV.map((n) => (
+                        <button
+                            key={n.key}
+                            onClick={() => {
+                                setFolder(n.key);
+                                setPreview(null);
+                            }}
+                            className={`mb-0.5 flex w-full items-center gap-2 rounded px-2 py-1.5 text-left transition ${
+                                folder === n.key ? 'bg-blue-500/15 font-semibold text-blue-600 dark:text-blue-300' : 'hover:bg-black/5 dark:hover:bg-white/5'
+                            }`}
+                        >
+                            <n.icon className="h-4 w-4" />
+                            <span className="truncate">{n.label}</span>
+                        </button>
+                    ))}
+                </aside>
+            )}
 
             {/* Main */}
             <div className="flex min-w-0 flex-1 flex-col">
@@ -152,9 +157,10 @@ export default function FileExplorer({ openApp }) {
                             onOpen={setFolder}
                             galleryCount={gallery.length}
                             blogCount={blogs.length}
+                            isMobile={isMobile}
                         />
                     ) : folder === 'pictures' ? (
-                        <IconGrid>
+                        <IconGrid isMobile={isMobile}>
                             {filteredGallery.map((g, idx) => (
                                 <FileTile
                                     key={g._id || g.src || idx}
@@ -167,12 +173,13 @@ export default function FileExplorer({ openApp }) {
                                         }
                                     }}
                                     thumb={g.thumbnail || g.src}
+                                    isMobile={isMobile}
                                 />
                             ))}
                             {filteredGallery.length === 0 && <Empty label="No pictures" />}
                         </IconGrid>
                     ) : folder === 'blogs' ? (
-                        <IconGrid>
+                        <IconGrid isMobile={isMobile}>
                             {filteredBlogs.map((b) => (
                                 <FileTile
                                     key={b._id || b.slug}
@@ -185,12 +192,13 @@ export default function FileExplorer({ openApp }) {
                                         }
                                     }}
                                     icon={FileText}
+                                    isMobile={isMobile}
                                 />
                             ))}
                             {filteredBlogs.length === 0 && <Empty label="No blogs" />}
                         </IconGrid>
                     ) : currentFolderMeta ? (
-                        <IconGrid>
+                        <IconGrid isMobile={isMobile}>
                             {filteredFolderFiles.map((f) => (
                                 <FileTile
                                     key={f._id || f.slug}
@@ -203,6 +211,7 @@ export default function FileExplorer({ openApp }) {
                                         }
                                     }}
                                     icon={FileText}
+                                    isMobile={isMobile}
                                 />
                             ))}
                             {filteredFolderFiles.length === 0 && <Empty label={`No files in ${folder}`} />}
@@ -232,54 +241,79 @@ export default function FileExplorer({ openApp }) {
     );
 }
 
-function HomeView({ onOpen, galleryCount, blogCount }) {
+function HomeView({ onOpen, galleryCount, blogCount, isMobile }) {
     return (
         <div>
             <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide opacity-60">System Folders</h3>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+            <div className={isMobile ? "flex flex-col gap-1" : "grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4"}>
                 {FOLDERS_DATA.map((f) => (
                     <button
                         key={f.folderKey}
                         onClick={() => onOpen(f.folderKey)}
-                        className="flex items-center gap-3 rounded-lg border border-black/10 bg-white p-3 text-left hover:border-blue-400 hover:bg-blue-500/5 dark:border-white/10 dark:bg-white/5 transition"
+                        className={`flex items-center ${isMobile ? 'gap-3 px-4 py-3 hover:bg-black/5 active:bg-black/10 rounded dark:hover:bg-white/5' : 'gap-3 rounded-lg border border-black/10 bg-white p-3 text-left hover:border-blue-400 hover:bg-blue-500/5 dark:border-white/10 dark:bg-white/5 transition'}`}
                     >
-                        <Folder className="h-8 w-8 text-amber-500 shrink-0" />
-                        <div className="min-w-0">
-                            <div className="truncate text-sm font-semibold">{f.folderName}</div>
-                            <div className="truncate text-xs opacity-60">{f.description}</div>
+                        <Folder className={`${isMobile ? 'h-6 w-6' : 'h-8 w-8'} text-amber-500 shrink-0`} />
+                        <div className="min-w-0 flex-1 text-left">
+                            <div className={`truncate ${isMobile ? 'text-base' : 'text-sm'} font-semibold`}>{f.folderName}</div>
+                            {!isMobile && <div className="truncate text-xs opacity-60">{f.description}</div>}
                         </div>
+                        {isMobile && <ChevronRight className="h-4 w-4 opacity-30" />}
                     </button>
                 ))}
                 <button
                     onClick={() => onOpen('blogs')}
-                    className="flex items-center gap-3 rounded-lg border border-black/10 bg-white p-3 text-left hover:border-blue-400 hover:bg-blue-500/5 dark:border-white/10 dark:bg-white/5 transition"
+                    className={`flex items-center ${isMobile ? 'gap-3 px-4 py-3 hover:bg-black/5 active:bg-black/10 rounded dark:hover:bg-white/5' : 'gap-3 rounded-lg border border-black/10 bg-white p-3 text-left hover:border-blue-400 hover:bg-blue-500/5 dark:border-white/10 dark:bg-white/5 transition'}`}
                 >
-                    <Folder className="h-8 w-8 text-blue-500 shrink-0" />
-                    <div className="min-w-0">
-                        <div className="truncate text-sm font-semibold">blogs</div>
-                        <div className="truncate text-xs opacity-60">{blogCount} blog posts</div>
+                    <Folder className={`${isMobile ? 'h-6 w-6' : 'h-8 w-8'} text-blue-500 shrink-0`} />
+                    <div className="min-w-0 flex-1 text-left">
+                        <div className={`truncate ${isMobile ? 'text-base' : 'text-sm'} font-semibold`}>blogs</div>
+                        {!isMobile && <div className="truncate text-xs opacity-60">{blogCount} blog posts</div>}
                     </div>
+                    {isMobile && <ChevronRight className="h-4 w-4 opacity-30" />}
                 </button>
                 <button
                     onClick={() => onOpen('pictures')}
-                    className="flex items-center gap-3 rounded-lg border border-black/10 bg-white p-3 text-left hover:border-blue-400 hover:bg-blue-500/5 dark:border-white/10 dark:bg-white/5 transition"
+                    className={`flex items-center ${isMobile ? 'gap-3 px-4 py-3 hover:bg-black/5 active:bg-black/10 rounded dark:hover:bg-white/5' : 'gap-3 rounded-lg border border-black/10 bg-white p-3 text-left hover:border-blue-400 hover:bg-blue-500/5 dark:border-white/10 dark:bg-white/5 transition'}`}
                 >
-                    <Folder className="h-8 w-8 text-cyan-500 shrink-0" />
-                    <div className="min-w-0">
-                        <div className="truncate text-sm font-semibold">pictures</div>
-                        <div className="truncate text-xs opacity-60">{galleryCount} items</div>
+                    <Folder className={`${isMobile ? 'h-6 w-6' : 'h-8 w-8'} text-cyan-500 shrink-0`} />
+                    <div className="min-w-0 flex-1 text-left">
+                        <div className={`truncate ${isMobile ? 'text-base' : 'text-sm'} font-semibold`}>pictures</div>
+                        {!isMobile && <div className="truncate text-xs opacity-60">{galleryCount} items</div>}
                     </div>
+                    {isMobile && <ChevronRight className="h-4 w-4 opacity-30" />}
                 </button>
             </div>
         </div>
     );
 }
 
-function IconGrid({ children }) {
+function IconGrid({ children, isMobile }) {
+    if (isMobile) {
+        return <div className="flex flex-col gap-1">{children}</div>;
+    }
     return <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 md:grid-cols-5">{children}</div>;
 }
 
-function FileTile({ label, onOpen, thumb, icon: Icon }) {
+function FileTile({ label, onOpen, thumb, icon: Icon, isMobile }) {
+    if (isMobile) {
+        return (
+            <button
+                onClick={onOpen}
+                title={label}
+                className="group flex items-center gap-3 rounded px-4 py-3 text-left hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10"
+            >
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded bg-black/5 dark:bg-white/5">
+                    {thumb ? (
+                        <img src={thumb} alt={label} className="h-full w-full object-cover" loading="lazy" />
+                    ) : (
+                        <Icon className="h-5 w-5 text-blue-500" />
+                    )}
+                </div>
+                <span className="truncate flex-1 text-sm">{label}</span>
+                <ChevronRight className="h-4 w-4 opacity-30" />
+            </button>
+        );
+    }
     return (
         <button
             onDoubleClick={onOpen}

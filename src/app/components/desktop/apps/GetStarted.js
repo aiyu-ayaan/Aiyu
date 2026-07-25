@@ -1,8 +1,9 @@
 "use client";
 import React, { useState } from 'react';
 import { Compass, BookOpen, Terminal, Sparkles, Monitor, Command, ArrowRight, CheckCircle } from 'lucide-react';
+import { useDeviceMode } from '../../../context/DeviceModeContext';
 
-const WIKI_SECTIONS = [
+const getWikiSections = (isMobile, openApp) => [
     {
         id: 'overview',
         title: 'Welcome to Aiyu OS',
@@ -16,7 +17,7 @@ const WIKI_SECTIONS = [
                     </p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-2'} gap-3`}>
                     <div className="rounded-lg border border-white/10 bg-white/5 p-3.5">
                         <div className="flex items-center gap-2 font-semibold text-white mb-1 text-xs">
                             <Sparkles className="h-4 w-4 text-amber-400" />
@@ -123,26 +124,30 @@ const WIKI_SECTIONS = [
 ];
 
 export default function GetStarted({ openApp }) {
+    const { isMobile, isTablet } = useDeviceMode();
     const [activeSection, setActiveSection] = useState('overview');
-
+    
+    const WIKI_SECTIONS = getWikiSections(isMobile, openApp);
     const section = WIKI_SECTIONS.find((s) => s.id === activeSection) || WIKI_SECTIONS[0];
 
     return (
-        <div className="flex h-full w-full bg-[#18181c] text-white select-none overflow-hidden font-sans">
+        <div className={`flex h-full w-full bg-[#18181c] text-white select-none overflow-hidden font-sans ${isMobile ? 'flex-col' : ''}`}>
             {/* Sidebar Navigation */}
-            <div className="w-52 shrink-0 border-r border-white/10 bg-[#1f1f24] p-3 flex flex-col justify-between">
-                <div>
-                    <div className="flex items-center gap-2 px-2 py-3 mb-2 border-b border-white/10">
-                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-white shadow">
-                            <Compass className="h-4 w-4" />
+            <div className={`${isMobile ? 'w-full overflow-x-auto border-b p-2 flex-row' : 'w-52 shrink-0 border-r p-3 flex-col'} border-white/10 bg-[#1f1f24] flex justify-between`}>
+                <div className={isMobile ? 'flex gap-2 w-full' : ''}>
+                    {!isMobile && (
+                        <div className="flex items-center gap-2 px-2 py-3 mb-2 border-b border-white/10">
+                            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-white shadow">
+                                <Compass className="h-4 w-4" />
+                            </div>
+                            <div>
+                                <div className="text-xs font-bold leading-tight">Get Started</div>
+                                <div className="text-[10px] text-white/50">Wiki & Guide</div>
+                            </div>
                         </div>
-                        <div>
-                            <div className="text-xs font-bold leading-tight">Get Started</div>
-                            <div className="text-[10px] text-white/50">Wiki & Guide</div>
-                        </div>
-                    </div>
+                    )}
 
-                    <div className="space-y-1">
+                    <div className={`space-y-1 ${isMobile ? 'flex gap-2 w-full whitespace-nowrap overflow-x-auto no-scrollbar' : ''}`}>
                         {WIKI_SECTIONS.map((s) => {
                             const Icon = s.icon;
                             const isActive = s.id === activeSection;
@@ -157,24 +162,26 @@ export default function GetStarted({ openApp }) {
                                     }`}
                                 >
                                     <div className="flex items-center gap-2">
-                                        <Icon className="h-4 w-4" />
+                                        <Icon className="h-4 w-4 shrink-0" />
                                         <span>{s.title}</span>
                                     </div>
-                                    <ArrowRight className={`h-3 w-3 transition-transform ${isActive ? 'translate-x-0' : 'opacity-0'}`} />
+                                    {!isMobile && <ArrowRight className={`h-3 w-3 transition-transform ${isActive ? 'translate-x-0' : 'opacity-0'}`} />}
                                 </button>
                             );
                         })}
                     </div>
                 </div>
 
-                <div className="rounded-lg border border-white/10 bg-black/20 p-2.5 text-center text-[10px] text-white/50">
-                    <div>Aiyu OS v4.9.2</div>
-                    <div>Windows 11 Web Edition</div>
-                </div>
+                {!isMobile && (
+                    <div className="rounded-lg border border-white/10 bg-black/20 p-2.5 text-center text-[10px] text-white/50">
+                        <div>Aiyu OS v4.9.2</div>
+                        <div>Windows 11 Web Edition</div>
+                    </div>
+                )}
             </div>
 
             {/* Main Section Content */}
-            <div className="flex-1 overflow-y-auto p-5 custom-scrollbar">
+            <div className={`flex-1 overflow-y-auto ${isMobile ? 'p-3' : 'p-5'} custom-scrollbar`}>
                 <div className="flex items-center gap-2 mb-4 pb-2 border-b border-white/10">
                     <section.icon className="h-5 w-5 text-blue-400" />
                     <h2 className="text-base font-bold text-white">{section.title}</h2>

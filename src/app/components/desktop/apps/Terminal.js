@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Terminal as TerminalIcon } from 'lucide-react';
 import { useDeviceName } from '../useDeviceName';
+import { useDeviceMode } from '../../../context/DeviceModeContext';
 
 const INITIAL_HISTORY = [
     { type: 'output', text: 'Aiyu OS PowerShell [Version 10.0.22631.3007]' },
@@ -12,6 +13,7 @@ const INITIAL_HISTORY = [
 ];
 
 export default function Terminal({ openApp, config = {} }) {
+    const { isMobile, isTablet } = useDeviceMode();
     const [deviceName] = useDeviceName(config);
     const [history, setHistory] = useState(INITIAL_HISTORY);
     const [input, setInput] = useState('');
@@ -178,7 +180,7 @@ export default function Terminal({ openApp, config = {} }) {
 
     return (
         <div
-            className="flex h-full w-full flex-col bg-[#0c0c0c] text-[#cccccc] font-mono text-xs select-text p-3 overflow-hidden"
+            className={`flex h-full w-full flex-col bg-[#0c0c0c] text-[#cccccc] font-mono select-text overflow-hidden ${isMobile ? 'p-2 text-[10px]' : 'p-3 text-xs'}`}
             onClick={() => inputRef.current?.focus()}
         >
             {/* Terminal Output Stream */}

@@ -1,8 +1,10 @@
 "use client";
 import React, { useState, useRef } from 'react';
 import { FileText, Download, Upload, Trash2, ZoomIn, ZoomOut, WrapText } from 'lucide-react';
+import { useDeviceMode } from '../../../context/DeviceModeContext';
 
 export default function Notepad() {
+    const { isMobile, isTablet } = useDeviceMode();
     const [content, setContent] = useState('');
     const [fileName, setFileName] = useState('Untitled.txt');
     const [fontSize, setFontSize] = useState(14);
@@ -47,7 +49,7 @@ export default function Notepad() {
     return (
         <div className="flex h-full w-full flex-col bg-[#1f1f23] text-neutral-200 font-sans text-xs select-none">
             {/* Top Toolbar / Menu Bar */}
-            <div className="flex items-center justify-between border-b border-white/10 bg-[#28282d] px-3 py-1.5 shrink-0 select-none">
+            <div className={`flex items-center justify-between border-b border-white/10 bg-[#28282d] py-1.5 shrink-0 select-none ${isMobile ? 'px-1 overflow-x-auto no-scrollbar gap-2' : 'px-3 gap-2'}`}>
                 <div className="flex items-center gap-2">
                     <div className="flex items-center gap-1.5 rounded bg-white/5 px-2 py-1 text-[11px] font-medium text-white/90">
                         <FileText className="h-3.5 w-3.5 text-blue-400" />
@@ -63,11 +65,11 @@ export default function Notepad() {
                 <div className="flex items-center gap-1">
                     <button
                         onClick={() => fileInputRef.current?.click()}
-                        className="flex items-center gap-1.5 rounded px-2.5 py-1 text-[11px] text-white/80 hover:bg-white/10 transition-colors"
+                        className={`flex items-center gap-1.5 rounded text-[11px] text-white/80 hover:bg-white/10 transition-colors ${isMobile ? 'px-2 py-2' : 'px-2.5 py-1'}`}
                         title="Open File"
                     >
                         <Upload className="h-3.5 w-3.5" />
-                        <span>Open</span>
+                        {!isMobile && <span>Open</span>}
                     </button>
                     <input
                         ref={fileInputRef}
@@ -79,18 +81,18 @@ export default function Notepad() {
 
                     <button
                         onClick={handleDownload}
-                        className="flex items-center gap-1.5 rounded px-2.5 py-1 text-[11px] text-white/80 hover:bg-white/10 transition-colors"
+                        className={`flex items-center gap-1.5 rounded text-[11px] text-white/80 hover:bg-white/10 transition-colors ${isMobile ? 'px-2 py-2' : 'px-2.5 py-1'}`}
                         title="Save / Download File"
                     >
                         <Download className="h-3.5 w-3.5" />
-                        <span>Save</span>
+                        {!isMobile && <span>Save</span>}
                     </button>
 
                     <div className="h-4 w-px bg-white/10 mx-1" />
 
                     <button
                         onClick={() => setWordWrap((v) => !v)}
-                        className={`flex items-center gap-1 rounded px-2 py-1 text-[11px] transition-colors ${
+                        className={`flex items-center gap-1 rounded py-1 text-[11px] transition-colors ${isMobile ? 'px-2' : 'px-2'} ${
                             wordWrap ? 'bg-blue-600/30 text-blue-400 border border-blue-500/30' : 'text-white/70 hover:bg-white/10'
                         }`}
                         title="Toggle Word Wrap"
@@ -100,7 +102,7 @@ export default function Notepad() {
 
                     <button
                         onClick={() => setFontSize((s) => Math.min(28, s + 2))}
-                        className="flex items-center justify-center rounded p-1 text-white/70 hover:bg-white/10 transition-colors"
+                        className={`flex items-center justify-center rounded text-white/70 hover:bg-white/10 transition-colors ${isMobile ? 'p-2' : 'p-1'}`}
                         title="Increase Font Size"
                     >
                         <ZoomIn className="h-3.5 w-3.5" />
@@ -108,7 +110,7 @@ export default function Notepad() {
 
                     <button
                         onClick={() => setFontSize((s) => Math.max(10, s - 2))}
-                        className="flex items-center justify-center rounded p-1 text-white/70 hover:bg-white/10 transition-colors"
+                        className={`flex items-center justify-center rounded text-white/70 hover:bg-white/10 transition-colors ${isMobile ? 'p-2' : 'p-1'}`}
                         title="Decrease Font Size"
                     >
                         <ZoomOut className="h-3.5 w-3.5" />
@@ -116,7 +118,7 @@ export default function Notepad() {
 
                     <button
                         onClick={() => setContent('')}
-                        className="flex items-center justify-center rounded p-1 text-red-400 hover:bg-red-500/20 transition-colors ml-1"
+                        className={`flex items-center justify-center rounded text-red-400 hover:bg-red-500/20 transition-colors ml-1 ${isMobile ? 'p-2' : 'p-1'}`}
                         title="Clear Text"
                     >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -145,14 +147,14 @@ export default function Notepad() {
             </div>
 
             {/* Status Bar */}
-            <div className="flex h-6 items-center justify-between border-t border-white/10 bg-[#28282d] px-3 text-[10px] text-white/60 shrink-0 select-none">
-                <div className="flex items-center gap-4">
+            <div className={`flex h-6 items-center justify-between border-t border-white/10 bg-[#28282d] text-[10px] text-white/60 shrink-0 select-none ${isMobile ? 'px-1' : 'px-3'}`}>
+                <div className={`flex items-center ${isMobile ? 'gap-2' : 'gap-4'}`}>
                     <span>Ln {cursorPos.line}, Col {cursorPos.col}</span>
-                    <span>{charCount} characters</span>
+                    <span className={isMobile ? 'hidden' : ''}>{charCount} characters</span>
                     <span>{wordCount} words</span>
                 </div>
 
-                <div className="flex items-center gap-4">
+                <div className={`flex items-center ${isMobile ? 'gap-2' : 'gap-4'}`}>
                     <span>{Math.round((fontSize / 14) * 100)}%</span>
                     <span>Windows (CRLF)</span>
                     <span>UTF-8</span>
