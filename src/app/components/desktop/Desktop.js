@@ -1023,7 +1023,17 @@ export default function Desktop({ wallpaper: initialWallpaper, config = EMPTY_CO
                 onStart={toggleStart}
                 onOpen={openApp}
                 onTaskClick={taskClick}
+                systemSettings={systemSettings}
+                onUpdateSystemSettings={updateSystemSettings}
             />
+
+            {/* Night Light Warm Overlay */}
+            {systemSettings.nightLightOn && (
+                <div
+                    aria-hidden="true"
+                    className="pointer-events-none fixed inset-0 z-[9998] bg-amber-500/15 backdrop-sepia-[0.35] transition-opacity duration-300"
+                />
+            )}
 
             {/* Fullscreen System Overlays */}
             {systemState === 'restarting' && (
