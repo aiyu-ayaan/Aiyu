@@ -38,6 +38,7 @@ export async function getGDriveConfig() {
     12,
     Math.max(1, parseInt(rawRetention || 1, 10))
   );
+  config.autoDeleteEnabled = rawConfig.autoDeleteEnabled === true;
 
   return config;
 }
@@ -74,6 +75,10 @@ export async function saveGDriveConfig(updates = {}) {
         Math.max(1, parseInt(val, 10))
       );
     }
+  }
+
+  if (Object.prototype.hasOwnProperty.call(updates, 'autoDeleteEnabled')) {
+    updatedGDrive.autoDeleteEnabled = Boolean(updates.autoDeleteEnabled);
   }
 
   const newData = {
@@ -280,8 +285,15 @@ export async function uploadBackupToDrive(zipBuffer, filename) {
 
 /**
  * Purges Google Drive backup files older than the specified retentionMonths cutoff.
+ * Only deletes files if autoDeleteEnabled is true in configuration.
  */
-export async function cleanOldDriveBackups(retentionMonths = 1) {
+export async function cleanOldDriveBackups(overrideRetentionMonths) {
+  const config = await getGDriveConfig();
+  if (!config.autoDeleteEnabled) {
+    return { deletedCount: 0, deletedFiles: [], skipped: true };
+  }
+
+  const retentionMonths = overrideRetentionMonths || config.retentionMonths || 1;
   const cutoff = new Date(
     Date.now() - retentionMonths * 30 * 24 * 60 * 60 * 1000
   );

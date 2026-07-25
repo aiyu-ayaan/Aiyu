@@ -22,6 +22,7 @@ export async function GET(request) {
       isConfigured,
       isConnected,
       retentionMonths: config.retentionMonths || 1,
+      autoDeleteEnabled: config.autoDeleteEnabled === true,
     });
   } catch (error) {
     return NextResponse.json(
@@ -39,12 +40,13 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { clientId, clientSecret, retentionMonths } = body || {};
+    const { clientId, clientSecret, retentionMonths, autoDeleteEnabled } = body || {};
 
     const updates = {};
     if (clientId !== undefined) updates.clientId = clientId;
     if (clientSecret !== undefined) updates.clientSecret = clientSecret;
     if (retentionMonths !== undefined) updates.retentionMonths = retentionMonths;
+    if (autoDeleteEnabled !== undefined) updates.autoDeleteEnabled = autoDeleteEnabled;
 
     const config = await saveGDriveConfig(updates);
     const isConfigured = Boolean(config.clientId && config.clientSecret);
@@ -53,6 +55,7 @@ export async function POST(request) {
       success: true,
       isConfigured,
       retentionMonths: config.retentionMonths || 1,
+      autoDeleteEnabled: config.autoDeleteEnabled === true,
     });
   } catch (error) {
     return NextResponse.json(

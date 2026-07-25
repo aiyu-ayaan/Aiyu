@@ -149,7 +149,7 @@ export default function DatabaseManager() {
     const [gdriveStatus, setGdriveStatus] = useState(null);
     const [gdriveFiles, setGdriveFiles] = useState([]);
     const [showGDriveModal, setShowGDriveModal] = useState(false);
-    const [gdriveConfigForm, setGdriveConfigForm] = useState({ clientId: '', clientSecret: '', retentionMonths: 1 });
+    const [gdriveConfigForm, setGdriveConfigForm] = useState({ clientId: '', clientSecret: '', retentionMonths: 1, autoDeleteEnabled: false });
     const [gdriveLoading, setGdriveLoading] = useState(false);
     const [showDriveHistory, setShowDriveHistory] = useState(false);
     const [expandedGuideStep, setExpandedGuideStep] = useState(null);
@@ -209,6 +209,7 @@ export default function DatabaseManager() {
                     clientId: data.clientId || '',
                     clientSecret: '',
                     retentionMonths: data.retentionMonths || 1,
+                    autoDeleteEnabled: data.autoDeleteEnabled === true,
                 });
             }
         } catch (err) {
@@ -765,10 +766,17 @@ export default function DatabaseManager() {
                                 <h2 className="text-sm font-mono text-cyan-400 uppercase tracking-widest">Google Drive</h2>
                             </div>
                             <div className="flex items-center gap-2 flex-wrap justify-end">
-                                <span className="px-2.5 py-1 rounded-full text-[10px] font-mono uppercase font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 flex items-center gap-1.5 shrink-0">
-                                    <FaTrash size={10} />
-                                    Auto-Purge: &gt; {gdriveStatus?.retentionMonths || 1} Month{(gdriveStatus?.retentionMonths || 1) > 1 ? 's' : ''} Old
-                                </span>
+                                {gdriveStatus?.autoDeleteEnabled ? (
+                                    <span className="px-2.5 py-1 rounded-full text-[10px] font-mono uppercase font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 flex items-center gap-1.5 shrink-0">
+                                        <FaTrash size={10} />
+                                        Auto-Purge: &gt; {gdriveStatus?.retentionMonths || 1} Month{(gdriveStatus?.retentionMonths || 1) > 1 ? 's' : ''} Old
+                                    </span>
+                                ) : (
+                                    <span className="px-2.5 py-1 rounded-full text-[10px] font-mono uppercase font-bold bg-slate-800 text-slate-400 border border-slate-700 flex items-center gap-1.5 shrink-0">
+                                        <FaTrash size={10} />
+                                        Auto-Purge: OFF
+                                    </span>
+                                )}
                                 {gdriveStatus?.isConnected ? (
                                     <span className="px-2.5 py-1 rounded-full text-[10px] font-mono uppercase font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 shrink-0">
                                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -1206,28 +1214,54 @@ export default function DatabaseManager() {
                                         </div>
                                     </div>
 
-                                    <div>
-                                        <label className="block text-xs font-mono text-slate-400 uppercase mb-1.5">
-                                            Backup Retention Policy
-                                        </label>
-                                        <select
-                                            value={gdriveConfigForm.retentionMonths || 1}
-                                            onChange={(e) => setGdriveConfigForm((prev) => ({ ...prev, retentionMonths: parseInt(e.target.value, 10) }))}
-                                            className="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-2.5 text-white font-mono text-sm focus:outline-none focus:border-cyan-500 transition-colors"
-                                        >
-                                            <option value={1}>1 Month (Default)</option>
-                                            <option value={2}>2 Months</option>
-                                            <option value={3}>3 Months</option>
-                                            <option value={4}>4 Months</option>
-                                            <option value={5}>5 Months</option>
-                                            <option value={6}>6 Months</option>
-                                            <option value={7}>7 Months</option>
-                                            <option value={8}>8 Months</option>
-                                            <option value={9}>9 Months</option>
-                                            <option value={10}>10 Months</option>
-                                            <option value={11}>11 Months</option>
-                                            <option value={12}>12 Months</option>
-                                        </select>
+                                    <div className="space-y-3 pt-1 border-t border-white/5">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <label className="block text-xs font-mono text-slate-300 uppercase">
+                                                    Auto-Delete Old Backups
+                                                </label>
+                                                <p className="text-[11px] text-slate-500 font-mono">
+                                                    Disabled by default. Purges cloud backups older than retention limit.
+                                                </p>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => setGdriveConfigForm((prev) => ({ ...prev, autoDeleteEnabled: !prev.autoDeleteEnabled }))}
+                                                className={`px-3 py-1.5 rounded-lg font-mono text-xs uppercase font-bold transition-all ${
+                                                    gdriveConfigForm.autoDeleteEnabled
+                                                        ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
+                                                        : 'bg-slate-800 text-slate-400 border border-slate-700'
+                                                }`}
+                                            >
+                                                {gdriveConfigForm.autoDeleteEnabled ? 'ENABLED' : 'DISABLED (OFF)'}
+                                            </button>
+                                        </div>
+
+                                        {gdriveConfigForm.autoDeleteEnabled && (
+                                            <div>
+                                                <label className="block text-xs font-mono text-slate-400 uppercase mb-1.5">
+                                                    Purge Retention Threshold
+                                                </label>
+                                                <select
+                                                    value={gdriveConfigForm.retentionMonths || 1}
+                                                    onChange={(e) => setGdriveConfigForm((prev) => ({ ...prev, retentionMonths: parseInt(e.target.value, 10) }))}
+                                                    className="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-2.5 text-white font-mono text-sm focus:outline-none focus:border-cyan-500 transition-colors"
+                                                >
+                                                    <option value={1}>1 Month (Default)</option>
+                                                    <option value={2}>2 Months</option>
+                                                    <option value={3}>3 Months</option>
+                                                    <option value={4}>4 Months</option>
+                                                    <option value={5}>5 Months</option>
+                                                    <option value={6}>6 Months</option>
+                                                    <option value={7}>7 Months</option>
+                                                    <option value={8}>8 Months</option>
+                                                    <option value={9}>9 Months</option>
+                                                    <option value={10}>10 Months</option>
+                                                    <option value={11}>11 Months</option>
+                                                    <option value={12}>12 Months</option>
+                                                </select>
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Dynamic Redirect URL Box */}

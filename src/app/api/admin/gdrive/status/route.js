@@ -22,6 +22,7 @@ export async function GET() {
       user: config.user || null,
       clientId: config.clientId || null,
       retentionMonths: config.retentionMonths || 1,
+      autoDeleteEnabled: config.autoDeleteEnabled === true,
       updatedAt: configRecord?.updatedAt || null,
     });
   } catch (error) {
