@@ -1,5 +1,25 @@
 # Changelog
 
+## [5.0.1](https://github.com/aiyu-ayaan/Aiyu/compare/v5.0.0...v5.0.1) (2026-07-29)
+
+### Features
+
+* Introduce APP_VERSION constant for consistent OS versioning across components
+
+### Bug Fixes
+
+* : Fix release done
+* Fix(blog) : Fix the blog's test detection system
+* Improve database migration handling and update repository links in UI components
+* Use sudo for docker compose pull to ensure proper permissions
+
+### Other Changes
+
+* !hotfix : Fixing database changes
+* !hotfix : Fixing the blog database issue
+* Merge branch 'master' of https://github.com/aiyu-ayaan/Aiyu
+* !hotfix : restore collections atomically in transaction and add blog review fields
+
 ## [5.0.0](https://github.com/aiyu-ayaan/Aiyu/compare/v4.9.3...v5.0.0) (2026-07-25)
 
 ### ⚠ BREAKING CHANGES
