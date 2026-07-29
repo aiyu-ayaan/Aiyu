@@ -37,6 +37,10 @@ export default function AdminBlogsPage() {
     const [blogs, setBlogs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'desc' });
+    const [page, setPage] = useState(1);
+    const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 0, hasMore: false });
+    const [counts, setCounts] = useState({ all: 0, flagged: 0, ceased: 0, active: 0 });
+    const PAGE_SIZE = 20;
 
     const requestSort = (key) => {
         let direction = 'asc';
@@ -51,20 +55,8 @@ export default function AdminBlogsPage() {
 
     const [filterTab, setFilterTab] = useState('all');
 
-    const filteredBlogs = React.useMemo(() => {
-        let list = [...blogs];
-        if (filterTab === 'flagged') {
-            list = list.filter((b) => b.isFlagged || b.reviewStatus === 'FLAGGED');
-        } else if (filterTab === 'ceased') {
-            list = list.filter((b) => b.published === false && !b.isFlagged && b.reviewStatus !== 'FLAGGED');
-        } else if (filterTab === 'active') {
-            list = list.filter((b) => b.published !== false && !b.isFlagged);
-        }
-        return list;
-    }, [blogs, filterTab]);
-
     const sortedBlogs = React.useMemo(() => {
-        let sortableBlogs = [...filteredBlogs];
+        let sortableBlogs = [...blogs];
         if (sortConfig.key !== null) {
             sortableBlogs.sort((a, b) => {
                 let aVal = a[sortConfig.key];
@@ -103,7 +95,7 @@ export default function AdminBlogsPage() {
             });
         }
         return sortableBlogs;
-    }, [filteredBlogs, sortConfig]);
+    }, [blogs, sortConfig]);
 
     const renderSortableHeader = (label, sortKey, alignRight = false) => {
         const isSorted = sortConfig.key === sortKey;
@@ -137,21 +129,29 @@ export default function AdminBlogsPage() {
     };
 
     useEffect(() => {
-        fetchBlogs();
-    }, []);
+        fetchBlogs(page, filterTab);
+    }, [page, filterTab]);
 
-    const fetchBlogs = async () => {
+    const fetchBlogs = async (targetPage = 1, targetFilter = 'all') => {
+        setLoading(true);
         try {
-            const res = await fetch('/api/blogs?all=true');
+            const res = await fetch(`/api/blogs?all=true&page=${targetPage}&limit=${PAGE_SIZE}&filter=${targetFilter}`);
             const data = await res.json();
             if (data.success) {
                 setBlogs(data.data);
+                if (data.pagination) setPagination(data.pagination);
+                if (data.counts) setCounts(data.counts);
             }
         } catch (error) {
             console.error('Failed to fetch blogs:', error);
         } finally {
             setLoading(false);
         }
+    };
+
+    const changeFilterTab = (tab) => {
+        setFilterTab(tab);
+        setPage(1);
     };
 
     const togglePublish = async (id, currentStatus) => {
@@ -216,18 +216,18 @@ export default function AdminBlogsPage() {
             });
             const data = await res.json();
             if (data.success) {
-                fetchBlogs();
+                fetchBlogs(page, filterTab);
             }
         } catch (error) {
             console.error('Failed to delete blog:', error);
         }
     };
 
-    const flaggedCount = blogs.filter((b) => b.isFlagged || b.reviewStatus === 'FLAGGED').length;
-    const ceasedCount = blogs.filter((b) => b.published === false && !b.isFlagged && b.reviewStatus !== 'FLAGGED').length;
-    const activeCount = blogs.filter((b) => b.published !== false && !b.isFlagged).length;
+    const flaggedCount = counts.flagged;
+    const ceasedCount = counts.ceased;
+    const activeCount = counts.active;
 
-    if (loading) return <div className="p-4 md:p-8 text-center text-white">Loading...</div>;
+    if (loading && blogs.length === 0) return <div className="p-4 md:p-8 text-center text-white">Loading...</div>;
 
     return (
         <div className="p-4 md:p-8 max-w-7xl mx-auto">
@@ -260,17 +260,17 @@ export default function AdminBlogsPage() {
             {/* Filter Tabs */}
             <div className="flex flex-wrap items-center gap-2 mb-6 border-b border-white/10 pb-4">
                 <button
-                    onClick={() => setFilterTab('all')}
+                    onClick={() => changeFilterTab('all')}
                     className={`px-4 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all ${
                         filterTab === 'all'
                             ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-[0_0_15px_rgba(34,211,238,0.15)]'
                             : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white border border-white/5'
                     }`}
                 >
-                    All ({blogs.length})
+                    All ({counts.all})
                 </button>
                 <button
-                    onClick={() => setFilterTab('flagged')}
+                    onClick={() => changeFilterTab('flagged')}
                     className={`px-4 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all flex items-center gap-2 ${
                         filterTab === 'flagged'
                             ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 shadow-[0_0_15px_rgba(244,63,94,0.15)]'
@@ -285,7 +285,7 @@ export default function AdminBlogsPage() {
                     )}
                 </button>
                 <button
-                    onClick={() => setFilterTab('ceased')}
+                    onClick={() => changeFilterTab('ceased')}
                     className={`px-4 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all ${
                         filterTab === 'ceased'
                             ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
@@ -295,7 +295,7 @@ export default function AdminBlogsPage() {
                     Ceased / Draft ({ceasedCount})
                 </button>
                 <button
-                    onClick={() => setFilterTab('active')}
+                    onClick={() => changeFilterTab('active')}
                     className={`px-4 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all ${
                         filterTab === 'active'
                             ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
@@ -405,6 +405,29 @@ export default function AdminBlogsPage() {
                         </tbody>
                     </table>
                 </div>
+                {pagination.totalPages > 1 && (
+                    <div className="flex items-center justify-between gap-4 px-6 py-4 border-t border-white/10 text-xs text-slate-400">
+                        <span>
+                            Page {pagination.page} of {pagination.totalPages} • {pagination.total} total
+                        </span>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                                disabled={pagination.page <= 1}
+                                className="px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed uppercase font-semibold tracking-wider transition-colors"
+                            >
+                                Prev
+                            </button>
+                            <button
+                                onClick={() => setPage((p) => (pagination.hasMore ? p + 1 : p))}
+                                disabled={!pagination.hasMore}
+                                className="px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed uppercase font-semibold tracking-wider transition-colors"
+                            >
+                                Next
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

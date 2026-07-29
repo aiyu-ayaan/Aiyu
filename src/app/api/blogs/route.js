@@ -109,6 +109,9 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const showAll = searchParams.get('all');
     const { hasPagination, page, limit } = parsePagination(searchParams);
+    const adminLimit = Math.max(1, Math.min(MAX_BLOG_PAGE_SIZE, Number.parseInt(searchParams.get('limit') || '20', 10) || 20));
+    const adminPage = Math.max(1, Number.parseInt(searchParams.get('page') || '1', 10) || 1);
+    const filterTab = searchParams.get('filter') || 'all';
     const shouldCheckSession = showAll === 'true';
     const session = shouldCheckSession ? await getSession() : null;
 
@@ -118,8 +121,27 @@ export async function GET(request) {
         const where = isAdminAll ? {} : { published: true };
 
         if (isAdminAll) {
-            const blogs = toClientList('blog', await prisma.blog.findMany({ where, orderBy: { createdAt: 'desc' } }));
-            
+            const adminWhere =
+                filterTab === 'flagged' ? { isFlagged: true }
+                : filterTab === 'ceased' ? { published: false, isFlagged: false }
+                : filterTab === 'active' ? { published: true, isFlagged: false }
+                : {};
+
+            const [totalBlogs, totalFlagged, totalCeased, totalActive, blogsRaw] = await Promise.all([
+                prisma.blog.count(),
+                prisma.blog.count({ where: { isFlagged: true } }),
+                prisma.blog.count({ where: { published: false, isFlagged: false } }),
+                prisma.blog.count({ where: { published: true, isFlagged: false } }),
+                prisma.blog.findMany({
+                    where: adminWhere,
+                    orderBy: { createdAt: 'desc' },
+                    skip: (adminPage - 1) * adminLimit,
+                    take: adminLimit,
+                }),
+            ]);
+
+            const blogs = toClientList('blog', blogsRaw);
+
             // Get views count for each blog from the AnalyticsDaily rollup
             const viewsRollup = await prisma.analyticsDaily.groupBy({
                 by: ['entityId'],
@@ -145,8 +167,31 @@ export async function GET(request) {
                 views: viewsMap[blog._id] || 0
             }));
 
+            const filteredTotal =
+                filterTab === 'flagged' ? totalFlagged
+                : filterTab === 'ceased' ? totalCeased
+                : filterTab === 'active' ? totalActive
+                : totalBlogs;
+            const totalPages = filteredTotal > 0 ? Math.ceil(filteredTotal / adminLimit) : 0;
+
             return NextResponse.json(
-                { success: true, data: blogsWithViews },
+                {
+                    success: true,
+                    data: blogsWithViews,
+                    pagination: {
+                        page: adminPage,
+                        limit: adminLimit,
+                        total: filteredTotal,
+                        totalPages,
+                        hasMore: adminPage < totalPages,
+                    },
+                    counts: {
+                        all: totalBlogs,
+                        flagged: totalFlagged,
+                        ceased: totalCeased,
+                        active: totalActive,
+                    },
+                },
                 {
                     headers: {
                         'x-response-time-ms': String(Date.now() - startedAt),

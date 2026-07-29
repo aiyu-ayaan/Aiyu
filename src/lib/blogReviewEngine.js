@@ -3,16 +3,25 @@
  * Evaluates blog post payloads to detect test/demo/spam posts and flag them for admin review.
  */
 
-// Default regex patterns for common test/placeholder blog posts
-const DEFAULT_TEST_PATTERNS = [
+// Strong patterns: specific enough that a single match anywhere (title or body)
+// is reliable proof of placeholder/test content — real articles don't contain these phrases.
+const STRONG_TEST_PATTERNS = [
     { pattern: /\btest\s*blogs?\b/i, label: "Matches test blog pattern" },
-    { pattern: /\b(test|testing)\b/i, label: "Contains keyword 'test'" },
-    { pattern: /\b(demo|sample)\s*(post|blog|article)?\b/i, label: "Contains demo/sample indicator" },
+    { pattern: /\b(demo|sample)\s*(post|blog|article)\b/i, label: "Contains demo/sample indicator" },
     { pattern: /\blorem\s+ipsum\b/i, label: "Contains placeholder text 'lorem ipsum'" },
     { pattern: /\bfoo\s*bar\b/i, label: "Contains dummy pattern 'foo bar'" },
     { pattern: /\b(asdf|qwerty|zxcv)\b/i, label: "Contains keyboard smash sequence" },
     { pattern: /\bhello\s+world\b/i, label: "Contains generic 'hello world'" },
-    { pattern: /\bdummy\s*(post|content|blog)?\b/i, label: "Contains 'dummy' placeholder indicator" },
+    { pattern: /\bdummy\s*(post|content|blog)\b/i, label: "Contains 'dummy' placeholder indicator" },
+];
+
+// Weak patterns: bare words that legitimate long-form content (e.g. security/testing
+// articles) can mention naturally in the body. Only trustworthy as a signal when the
+// word shows up in metadata (title/slug/tags/keywords/excerpt) rather than buried in prose.
+const WEAK_METADATA_PATTERNS = [
+    { pattern: /\b(test|testing)\b/i, label: "Contains keyword 'test'" },
+    { pattern: /\b(demo|sample)\b/i, label: "Contains demo/sample indicator" },
+    { pattern: /\bdummy\b/i, label: "Contains 'dummy' placeholder indicator" },
 ];
 
 const DUMMY_DOMAINS = ["example.com", "test.com", "foo.bar", "localhost"];
@@ -75,16 +84,30 @@ export function evaluateBlogForReview(payload = {}, config = {}) {
     const { title, content, excerpt, slug, tags, keywords, fullText } = extractSearchableText(payload);
     const reasons = [];
 
-    // 1. Check title and full text against default test patterns
-    for (const { pattern, label } of DEFAULT_TEST_PATTERNS) {
+    // 1. Strong patterns are specific enough to trust anywhere, including body content.
+    for (const { pattern, label } of STRONG_TEST_PATTERNS) {
         if (pattern.test(title)) {
             reasons.push(`Title ${label.toLowerCase()}`);
-            break; // One title match is sufficient
+            break;
         } else if (pattern.test(fullText)) {
             reasons.push(`Metadata/excerpt ${label.toLowerCase()}`);
             break;
         } else if (pattern.test(content)) {
             reasons.push(`Content ${label.toLowerCase()}`);
+            break;
+        }
+    }
+
+    // 1b. Weak patterns (bare "test", "demo", "dummy" etc.) only count as a signal in
+    // metadata (title/slug/tags/keywords/excerpt) — real articles can mention these words
+    // naturally in body prose (e.g. security posts discussing "testing"), so the body is
+    // excluded to avoid flagging legitimate content.
+    for (const { pattern, label } of WEAK_METADATA_PATTERNS) {
+        if (pattern.test(title)) {
+            reasons.push(`Title ${label.toLowerCase()}`);
+            break;
+        } else if (pattern.test(fullText)) {
+            reasons.push(`Metadata/excerpt ${label.toLowerCase()}`);
             break;
         }
     }
