@@ -305,7 +305,14 @@ export default function AdminBlogsPage() {
 
             <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
                 <div className={`overflow-x-auto transition-opacity ${loading && hasLoadedOnce ? 'opacity-50 pointer-events-none' : ''}`}>
-                    <table className="w-full text-left border-collapse">
+                    <table className="w-full text-left border-collapse table-fixed min-w-[900px]">
+                        <colgroup>
+                            <col className="w-[38%]" />
+                            <col className="w-[16%]" />
+                            <col className="w-[10%]" />
+                            <col className="w-[16%]" />
+                            <col className="w-[20%]" />
+                        </colgroup>
                         <thead className="bg-white/5 border-b border-white/10 text-xs uppercase tracking-wider text-slate-400 font-medium">
                             <tr>
                                 {renderSortableHeader('Transmission Title', 'title')}
@@ -320,15 +327,15 @@ export default function AdminBlogsPage() {
                                 const isFlagged = blog.isFlagged || blog.reviewStatus === 'FLAGGED';
                                 return (
                                     <tr key={blog._id} className="group hover:bg-white/[0.02] transition-colors">
-                                        <td className="px-6 py-5 font-semibold text-slate-200 group-hover:text-cyan-400 transition-colors">
+                                        <td className="px-6 py-5 font-semibold text-slate-200 group-hover:text-cyan-400 transition-colors overflow-hidden">
                                             <div>
-                                                <span>{blog.title}</span>
+                                                <span className="block truncate" title={blog.title}>{blog.title}</span>
                                                 {isFlagged && blog.flagReason && (
-                                                    <div className="mt-1 text-xs font-normal text-rose-400/90 flex items-center gap-1">
-                                                        <span className="font-mono text-[10px] bg-rose-500/20 px-1.5 py-0.5 rounded border border-rose-500/30 uppercase font-semibold">
+                                                    <div className="mt-1 text-xs font-normal text-rose-400/90 flex items-center gap-1 min-w-0">
+                                                        <span className="font-mono text-[10px] bg-rose-500/20 px-1.5 py-0.5 rounded border border-rose-500/30 uppercase font-semibold shrink-0">
                                                             REASON:
                                                         </span>
-                                                        <span>{blog.flagReason}</span>
+                                                        <span className="truncate" title={blog.flagReason}>{blog.flagReason}</span>
                                                     </div>
                                                 )}
                                             </div>
