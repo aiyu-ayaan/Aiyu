@@ -36,66 +36,34 @@ export default function AdminBlogsPage() {
     const { confirm } = useAdminFeedback();
     const [blogs, setBlogs] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'desc' });
     const [page, setPage] = useState(1);
     const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 0, hasMore: false });
     const [counts, setCounts] = useState({ all: 0, flagged: 0, ceased: 0, active: 0 });
     const PAGE_SIZE = 20;
+    const sentinelRef = React.useRef(null);
 
     const requestSort = (key) => {
         let direction = 'asc';
         if (sortConfig.key === key && sortConfig.direction === 'asc') {
             direction = 'desc';
         } else if (sortConfig.key === key && sortConfig.direction === 'desc') {
+            setBlogs([]);
             setSortConfig({ key: null, direction: 'desc' });
+            setPage(1);
             return;
         }
+        setBlogs([]);
         setSortConfig({ key, direction });
+        setPage(1);
     };
 
     const [filterTab, setFilterTab] = useState('all');
 
-    const sortedBlogs = React.useMemo(() => {
-        let sortableBlogs = [...blogs];
-        if (sortConfig.key !== null) {
-            sortableBlogs.sort((a, b) => {
-                let aVal = a[sortConfig.key];
-                let bVal = b[sortConfig.key];
-
-                if (sortConfig.key === 'views') {
-                    aVal = aVal || 0;
-                    bVal = bVal || 0;
-                }
-
-                if (sortConfig.key === 'published') {
-                    aVal = a.published !== false ? 1 : 0;
-                    bVal = b.published !== false ? 1 : 0;
-                }
-
-                if (sortConfig.key === 'date') {
-                    aVal = new Date(a.date || a.createdAt).getTime();
-                    bVal = new Date(b.date || b.createdAt).getTime();
-                    if (Number.isNaN(aVal)) aVal = 0;
-                    if (Number.isNaN(bVal)) bVal = 0;
-                }
-
-                if (typeof aVal === 'string' && typeof bVal === 'string') {
-                    return sortConfig.direction === 'asc'
-                        ? aVal.localeCompare(bVal)
-                        : bVal.localeCompare(aVal);
-                }
-
-                if (aVal < bVal) {
-                    return sortConfig.direction === 'asc' ? -1 : 1;
-                }
-                if (aVal > bVal) {
-                    return sortConfig.direction === 'asc' ? 1 : -1;
-                }
-                return 0;
-            });
-        }
-        return sortableBlogs;
-    }, [blogs, sortConfig]);
+    // Sorting/filtering happens server-side over the whole table now, so the
+    // fetched page arrives already in the right order.
+    const sortedBlogs = blogs;
 
     const renderSortableHeader = (label, sortKey, alignRight = false) => {
         const isSorted = sortConfig.key === sortKey;
@@ -129,16 +97,27 @@ export default function AdminBlogsPage() {
     };
 
     useEffect(() => {
-        fetchBlogs(page, filterTab);
-    }, [page, filterTab]);
+        fetchBlogs(page, filterTab, sortConfig);
+    }, [page, filterTab, sortConfig.key, sortConfig.direction]);
 
-    const fetchBlogs = async (targetPage = 1, targetFilter = 'all') => {
-        setLoading(true);
+    const fetchBlogs = async (targetPage, targetFilter, targetSort) => {
+        const append = targetPage > 1;
+        if (append) setLoadingMore(true); else setLoading(true);
         try {
-            const res = await fetch(`/api/blogs?all=true&page=${targetPage}&limit=${PAGE_SIZE}&filter=${targetFilter}`);
+            const params = new URLSearchParams({
+                all: 'true',
+                page: String(targetPage),
+                limit: String(PAGE_SIZE),
+                filter: targetFilter,
+            });
+            if (targetSort?.key) {
+                params.set('sortKey', targetSort.key);
+                params.set('sortDir', targetSort.direction);
+            }
+            const res = await fetch(`/api/blogs?${params.toString()}`);
             const data = await res.json();
             if (data.success) {
-                setBlogs(data.data);
+                setBlogs((prev) => (append ? [...prev, ...data.data] : data.data));
                 if (data.pagination) setPagination(data.pagination);
                 if (data.counts) setCounts(data.counts);
             }
@@ -146,11 +125,29 @@ export default function AdminBlogsPage() {
             console.error('Failed to fetch blogs:', error);
         } finally {
             setLoading(false);
+            setLoadingMore(false);
         }
     };
 
+    // Auto-load the next page once the sentinel row scrolls into view.
+    useEffect(() => {
+        const node = sentinelRef.current;
+        if (!node) return;
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting && pagination.hasMore && !loading && !loadingMore) {
+                    setPage((p) => p + 1);
+                }
+            },
+            { rootMargin: '200px' }
+        );
+        observer.observe(node);
+        return () => observer.disconnect();
+    }, [pagination.hasMore, loading, loadingMore]);
+
     const changeFilterTab = (tab) => {
         setFilterTab(tab);
+        setBlogs([]);
         setPage(1);
     };
 
@@ -216,7 +213,9 @@ export default function AdminBlogsPage() {
             });
             const data = await res.json();
             if (data.success) {
-                fetchBlogs(page, filterTab);
+                setBlogs([]);
+                setPage(1);
+                if (page === 1) fetchBlogs(1, filterTab, sortConfig);
             }
         } catch (error) {
             console.error('Failed to delete blog:', error);
@@ -405,29 +404,13 @@ export default function AdminBlogsPage() {
                         </tbody>
                     </table>
                 </div>
-                {pagination.totalPages > 1 && (
-                    <div className="flex items-center justify-between gap-4 px-6 py-4 border-t border-white/10 text-xs text-slate-400">
-                        <span>
-                            Page {pagination.page} of {pagination.totalPages} • {pagination.total} total
-                        </span>
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                                disabled={pagination.page <= 1}
-                                className="px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed uppercase font-semibold tracking-wider transition-colors"
-                            >
-                                Prev
-                            </button>
-                            <button
-                                onClick={() => setPage((p) => (pagination.hasMore ? p + 1 : p))}
-                                disabled={!pagination.hasMore}
-                                className="px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed uppercase font-semibold tracking-wider transition-colors"
-                            >
-                                Next
-                            </button>
-                        </div>
-                    </div>
-                )}
+                <div className="flex items-center justify-between gap-4 px-6 py-4 border-t border-white/10 text-xs text-slate-400">
+                    <span>
+                        Showing {sortedBlogs.length} of {pagination.total} total
+                    </span>
+                    {loadingMore && <span className="animate-pulse">Loading more…</span>}
+                </div>
+                {pagination.hasMore && <div ref={sentinelRef} className="h-px" />}
             </div>
         </div>
     );
