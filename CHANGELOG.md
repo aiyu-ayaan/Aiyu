@@ -1,5 +1,23 @@
 # Changelog
 
+## [5.0.2](https://github.com/aiyu-ayaan/Aiyu/compare/v5.0.1...v5.0.2) (2026-08-02)
+
+### Features
+
+* Auto-load admin blog pagination and wire server-side sort
+
+### Bug Fixes
+
+* : Fix release done
+* Widen timestamp column so it stops overlapping Views
+* Fix admin blog table column widths across sorts
+* Stop full-page reload flash on admin filter/sort change
+* Sort admin blog list server-side across full dataset
+
+### Other Changes
+
+* Merge branch 'master' of https://github.com/aiyu-ayaan/Aiyu
+
 ## [5.0.1](https://github.com/aiyu-ayaan/Aiyu/compare/v5.0.0...v5.0.1) (2026-07-29)
 
 ### Features
