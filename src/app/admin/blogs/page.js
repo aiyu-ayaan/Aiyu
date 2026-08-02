@@ -43,18 +43,17 @@ export default function AdminBlogsPage() {
     const [counts, setCounts] = useState({ all: 0, flagged: 0, ceased: 0, active: 0 });
     const PAGE_SIZE = 20;
     const sentinelRef = React.useRef(null);
+    const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
     const requestSort = (key) => {
         let direction = 'asc';
         if (sortConfig.key === key && sortConfig.direction === 'asc') {
             direction = 'desc';
         } else if (sortConfig.key === key && sortConfig.direction === 'desc') {
-            setBlogs([]);
             setSortConfig({ key: null, direction: 'desc' });
             setPage(1);
             return;
         }
-        setBlogs([]);
         setSortConfig({ key, direction });
         setPage(1);
     };
@@ -120,6 +119,7 @@ export default function AdminBlogsPage() {
                 setBlogs((prev) => (append ? [...prev, ...data.data] : data.data));
                 if (data.pagination) setPagination(data.pagination);
                 if (data.counts) setCounts(data.counts);
+                setHasLoadedOnce(true);
             }
         } catch (error) {
             console.error('Failed to fetch blogs:', error);
@@ -147,7 +147,6 @@ export default function AdminBlogsPage() {
 
     const changeFilterTab = (tab) => {
         setFilterTab(tab);
-        setBlogs([]);
         setPage(1);
     };
 
@@ -213,9 +212,8 @@ export default function AdminBlogsPage() {
             });
             const data = await res.json();
             if (data.success) {
-                setBlogs([]);
-                setPage(1);
                 if (page === 1) fetchBlogs(1, filterTab, sortConfig);
+                else setPage(1);
             }
         } catch (error) {
             console.error('Failed to delete blog:', error);
@@ -226,7 +224,7 @@ export default function AdminBlogsPage() {
     const ceasedCount = counts.ceased;
     const activeCount = counts.active;
 
-    if (loading && blogs.length === 0) return <div className="p-4 md:p-8 text-center text-white">Loading...</div>;
+    if (loading && !hasLoadedOnce) return <div className="p-4 md:p-8 text-center text-white">Loading...</div>;
 
     return (
         <div className="p-4 md:p-8 max-w-7xl mx-auto">
@@ -306,7 +304,7 @@ export default function AdminBlogsPage() {
             </div>
 
             <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
-                <div className="overflow-x-auto">
+                <div className={`overflow-x-auto transition-opacity ${loading && hasLoadedOnce ? 'opacity-50 pointer-events-none' : ''}`}>
                     <table className="w-full text-left border-collapse">
                         <thead className="bg-white/5 border-b border-white/10 text-xs uppercase tracking-wider text-slate-400 font-medium">
                             <tr>
