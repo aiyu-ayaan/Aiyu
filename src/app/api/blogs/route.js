@@ -112,6 +112,8 @@ export async function GET(request) {
     const adminLimit = Math.max(1, Math.min(MAX_BLOG_PAGE_SIZE, Number.parseInt(searchParams.get('limit') || '20', 10) || 20));
     const adminPage = Math.max(1, Number.parseInt(searchParams.get('page') || '1', 10) || 1);
     const filterTab = searchParams.get('filter') || 'all';
+    const sortKey = searchParams.get('sortKey') || '';
+    const sortDir = searchParams.get('sortDir') === 'asc' ? 'asc' : 'desc';
     const shouldCheckSession = showAll === 'true';
     const session = shouldCheckSession ? await getSession() : null;
 
@@ -127,45 +129,84 @@ export async function GET(request) {
                 : filterTab === 'active' ? { published: true, isFlagged: false }
                 : {};
 
-            const [totalBlogs, totalFlagged, totalCeased, totalActive, blogsRaw] = await Promise.all([
+            const [totalBlogs, totalFlagged, totalCeased, totalActive] = await Promise.all([
                 prisma.blog.count(),
                 prisma.blog.count({ where: { isFlagged: true } }),
                 prisma.blog.count({ where: { published: false, isFlagged: false } }),
                 prisma.blog.count({ where: { published: true, isFlagged: false } }),
-                prisma.blog.findMany({
-                    where: adminWhere,
-                    orderBy: { createdAt: 'desc' },
-                    skip: (adminPage - 1) * adminLimit,
-                    take: adminLimit,
-                }),
             ]);
 
-            const blogs = toClientList('blog', blogsRaw);
+            let blogsWithViews;
 
-            // Get views count for each blog from the AnalyticsDaily rollup
-            const viewsRollup = await prisma.analyticsDaily.groupBy({
-                by: ['entityId'],
-                where: {
-                    type: 'entity_view',
-                    entityType: 'blog',
-                    entityId: { in: blogs.map(b => b._id) }
-                },
-                _sum: {
-                    views: true
-                }
-            });
+            if (sortKey === 'views') {
+                // Views live in the AnalyticsDaily rollup, not on Blog, so sorting by
+                // views requires pulling all matching ids first, ranking them, then
+                // fetching only the page slice in that order.
+                const allMatching = await prisma.blog.findMany({ where: adminWhere, select: { id: true } });
+                const allIds = allMatching.map((b) => b.id);
 
-            const viewsMap = {};
-            viewsRollup.forEach(row => {
-                if (row.entityId) {
-                    viewsMap[row.entityId] = row._sum.views || 0;
-                }
-            });
+                const viewsRollupAll = await prisma.analyticsDaily.groupBy({
+                    by: ['entityId'],
+                    where: { type: 'entity_view', entityType: 'blog', entityId: { in: allIds } },
+                    _sum: { views: true },
+                });
+                const allViewsMap = {};
+                viewsRollupAll.forEach((row) => {
+                    if (row.entityId) allViewsMap[row.entityId] = row._sum.views || 0;
+                });
 
-            const blogsWithViews = blogs.map(blog => ({
-                ...blog,
-                views: viewsMap[blog._id] || 0
-            }));
+                const rankedIds = [...allIds].sort((a, b) => {
+                    const diff = (allViewsMap[a] || 0) - (allViewsMap[b] || 0);
+                    return sortDir === 'asc' ? diff : -diff;
+                });
+                const pageIds = rankedIds.slice((adminPage - 1) * adminLimit, (adminPage - 1) * adminLimit + adminLimit);
+
+                const pageBlogsRaw = pageIds.length
+                    ? await prisma.blog.findMany({ where: { id: { in: pageIds } } })
+                    : [];
+                const pageBlogsById = new Map(pageBlogsRaw.map((b) => [b.id, b]));
+                const orderedRaw = pageIds.map((id) => pageBlogsById.get(id)).filter(Boolean);
+
+                blogsWithViews = toClientList('blog', orderedRaw).map((blog) => ({
+                    ...blog,
+                    views: allViewsMap[blog._id] || 0,
+                }));
+            } else {
+                const orderBy =
+                    sortKey === 'title' ? { title: sortDir }
+                    : sortKey === 'date' ? { createdAt: sortDir }
+                    : sortKey === 'published' ? { published: sortDir }
+                    : { createdAt: 'desc' };
+
+                const blogsRaw = await prisma.blog.findMany({
+                    where: adminWhere,
+                    orderBy,
+                    skip: (adminPage - 1) * adminLimit,
+                    take: adminLimit,
+                });
+
+                const blogs = toClientList('blog', blogsRaw);
+
+                const viewsRollup = await prisma.analyticsDaily.groupBy({
+                    by: ['entityId'],
+                    where: {
+                        type: 'entity_view',
+                        entityType: 'blog',
+                        entityId: { in: blogs.map((b) => b._id) },
+                    },
+                    _sum: { views: true },
+                });
+
+                const viewsMap = {};
+                viewsRollup.forEach((row) => {
+                    if (row.entityId) viewsMap[row.entityId] = row._sum.views || 0;
+                });
+
+                blogsWithViews = blogs.map((blog) => ({
+                    ...blog,
+                    views: viewsMap[blog._id] || 0,
+                }));
+            }
 
             const filteredTotal =
                 filterTab === 'flagged' ? totalFlagged
