@@ -307,8 +307,8 @@ export default function AdminBlogsPage() {
                 <div className={`overflow-x-auto transition-opacity ${loading && hasLoadedOnce ? 'opacity-50 pointer-events-none' : ''}`}>
                     <table className="w-full text-left border-collapse table-fixed min-w-[900px]">
                         <colgroup>
-                            <col className="w-[38%]" />
-                            <col className="w-[16%]" />
+                            <col className="w-[32%]" />
+                            <col className="w-[22%]" />
                             <col className="w-[10%]" />
                             <col className="w-[16%]" />
                             <col className="w-[20%]" />
@@ -340,7 +340,7 @@ export default function AdminBlogsPage() {
                                                 )}
                                             </div>
                                         </td>
-                                        <td className="px-6 py-5 text-slate-500 font-mono text-xs whitespace-nowrap">
+                                        <td className="px-6 py-5 text-slate-500 font-mono text-xs whitespace-nowrap overflow-hidden text-ellipsis">
                                             {formatBlogTimestamp(blog)}
                                         </td>
                                         <td className="px-6 py-5 text-slate-400 font-mono">
