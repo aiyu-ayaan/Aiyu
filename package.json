@@ -57,7 +57,7 @@
     "eventemitter3": "^5.0.4",
     "form-data": "^4.0.5",
     "formdata-node": "^6.0.3",
-    "framer-motion": "^12.35.0",
+    "framer-motion": "^12.42.2",
     "gsap": "^3.15.0",
     "heic-convert": "^2.1.0",
     "jose": "^6.2.2",
