@@ -1,7 +1,8 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, Save, Terminal, Code, Layers, Calendar, Link as LinkIcon, Image as ImageIcon, FileText, CheckCircle, Activity, Sparkles, Wand2, Upload, X } from 'lucide-react';
+import { Loader2, Save, Terminal, Code, Layers, Calendar, Link as LinkIcon, Image as ImageIcon, FileText, CheckCircle, Activity, Sparkles, Wand2, Upload, X, GitBranch, Lock, Unlock } from 'lucide-react';
+import { SYNCABLE_FIELDS } from '@/lib/projectSyncFields';
 import Toast from './Toast';
 import BlogLinkInput from './BlogLinkInput';
 import DatePickerInput from './DatePickerInput';
@@ -51,6 +52,9 @@ const ProjectForm = ({ initialData, isEdit = false }) => {
     const [aiEnabled, setAiEnabled] = useState(false);
     const [aiGenerating, setAiGenerating] = useState(null); // 'name', 'description', 'tech'
     const [uploadingFile, setUploadingFile] = useState(false);
+    // Mirrors Project.pinnedFields. Sent explicitly on save so an unpin sticks —
+    // the API only auto-pins when the body omits this field.
+    const [pinnedFields, setPinnedFields] = useState([]);
 
     useEffect(() => {
         if (initialData) {
@@ -58,9 +62,18 @@ const ProjectForm = ({ initialData, isEdit = false }) => {
                 ...initialData,
                 techStack: initialData.techStack.join(', '),
             });
+            setPinnedFields(Array.isArray(initialData.pinnedFields) ? initialData.pinnedFields : []);
         }
         checkAiConfig();
     }, [initialData]);
+
+    const togglePinned = (field) => {
+        setPinnedFields((current) => (
+            current.includes(field)
+                ? current.filter((entry) => entry !== field)
+                : [...current, field]
+        ));
+    };
 
     const checkAiConfig = async () => {
         try {
@@ -177,10 +190,21 @@ const ProjectForm = ({ initialData, isEdit = false }) => {
         setLoading(true);
         setError('');
 
-        const payload = {
-            ...formData,
-            techStack: formData.techStack.split(',').map((item) => item.trim()),
-        };
+        const techStack = formData.techStack.split(',').map((item) => item.trim()).filter(Boolean);
+        const payload = { ...formData, techStack };
+
+        if (isSynced) {
+            // Pin anything edited in this session on top of the toggles, then send
+            // the list explicitly so an unpin actually sticks (the API only
+            // auto-pins when pinnedFields is absent). A field you unpin AND edit
+            // stays pinned — the edit is the stronger signal.
+            const edited = SYNCABLE_FIELDS.filter((field) => {
+                const next = field === 'techStack' ? techStack : formData[field];
+                const previous = initialData?.[field];
+                return JSON.stringify(next ?? '') !== JSON.stringify(previous ?? '');
+            });
+            payload.pinnedFields = [...new Set([...pinnedFields, ...edited])];
+        }
 
         try {
             const url = isEdit ? `/api/projects/${initialData._id}` : '/api/projects';
@@ -214,9 +238,52 @@ const ProjectForm = ({ initialData, isEdit = false }) => {
     };
 
     const statusState = getStatusState(formData.status);
+    const isSynced = initialData?.source === 'github';
 
     return (
         <form onSubmit={handleSubmit} className="space-y-8">
+            {isSynced && (
+                <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-4">
+                    <p className="flex flex-wrap items-center gap-2 font-mono text-xs uppercase tracking-widest text-cyan-400">
+                        <GitBranch className="h-3.5 w-3.5" aria-hidden="true" />
+                        Synced from {initialData.repoFullName}
+                        {initialData.syncedAt && (
+                            <span className="text-slate-500">
+                                · last sync {new Date(initialData.syncedAt).toLocaleDateString()}
+                            </span>
+                        )}
+                    </p>
+                    <p className="mt-2 text-xs leading-relaxed text-slate-400">
+                        Editing a field below pins it, so future syncs keep your version.
+                        Unpin one to let GitHub refresh it again.
+                    </p>
+
+                    <div className="mt-3 flex flex-wrap gap-2">
+                        {SYNCABLE_FIELDS.map((field) => {
+                            const pinned = pinnedFields.includes(field);
+                            return (
+                                <button
+                                    key={field}
+                                    type="button"
+                                    onClick={() => togglePinned(field)}
+                                    aria-pressed={pinned}
+                                    className={`inline-flex cursor-pointer items-center gap-1.5 rounded border px-2 py-1 font-mono text-[11px] transition-colors ${
+                                        pinned
+                                            ? 'border-cyan-500/40 bg-cyan-500/10 text-cyan-300'
+                                            : 'border-white/10 text-slate-500 hover:bg-white/5'
+                                    }`}
+                                >
+                                    {pinned
+                                        ? <Lock className="h-3 w-3" aria-hidden="true" />
+                                        : <Unlock className="h-3 w-3" aria-hidden="true" />}
+                                    {field}
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+
             {error && (
                 <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl flex items-center gap-3 font-mono text-sm">
                     <Activity className="w-4 h-4" />

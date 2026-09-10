@@ -16,6 +16,7 @@
  * injectable so tests never touch the network.
  */
 import { fetchWithTimeout, runWithCircuitBreaker } from '@/lib/upstreamControl';
+import { SYNCABLE_FIELDS } from '@/lib/projectSyncFields';
 
 const GITHUB_API = 'https://api.github.com';
 const GITHUB_RAW = 'https://raw.githubusercontent.com';
@@ -39,20 +40,9 @@ const README_TIMEOUT_MS = Number.parseInt(process.env.GITHUB_README_TIMEOUT_MS |
 // projects query that selects the column.
 export const README_MAX_CHARS = 120_000;
 
-/**
- * Fields a sync may write. Anything not listed here (displayOrder, blogLink,
- * slug, the admin's own image) is owned by the admin exclusively and is never
- * touched by a sync, pinned or not.
- */
-export const SYNCABLE_FIELDS = Object.freeze([
-    'name',
-    'description',
-    'techStack',
-    'year',
-    'status',
-    'projectType',
-    'codeLink',
-]);
+// Re-exported so server callers have one import for the whole sync vocabulary;
+// the list itself lives in a leaf module the client can import safely.
+export { SYNCABLE_FIELDS };
 
 /** Repo topic/language values that describe the repo, not a technology. */
 const TOPIC_STOPWORDS = new Set([

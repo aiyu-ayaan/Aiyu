@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2, CheckCircle, XCircle, ArrowLeft, BarChart2, Book, Code, Globe, User, EyeOff, Lock, Unlock, Search, GitCommit, Activity, LayoutGrid, Tags, Link2 } from 'lucide-react';
 import Link from 'next/link';
+import RepoSyncPanel from '@/app/components/admin/github/RepoSyncPanel';
 
 export default function GitHubConfigPage() {
     const router = useRouter();
@@ -526,6 +527,14 @@ export default function GitHubConfigPage() {
                     </button>
                 </div>
             </form>
+
+            {/* Repo → Project sync. Outside the config form on purpose: it has
+                its own two-step commit and must not be submitted by Enter in a
+                config field. */}
+            <div className="mt-8">
+                <RepoSyncPanel username={config.username} hiddenRepos={config.hiddenRepos} />
+            </div>
+
             {/* Notification Toast */}
             {notification && (
                 <div className={`fixed bottom-8 right-8 p-4 rounded-xl border shadow-2xl backdrop-blur-xl z-50 flex items-center gap-3 animate-in slide-in-from-bottom-5 fade-in duration-300 ${notification.success
