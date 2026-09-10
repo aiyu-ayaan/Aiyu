@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useCallback, useContext, useMemo, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AlertTriangle, CheckCircle, Info, XCircle } from "lucide-react";
 
@@ -84,8 +84,25 @@ export function useAdminFeedback() {
     return ctx;
 }
 
+/**
+ * Portals cannot be rendered on the server or during the first client render.
+ * Branching on `typeof document` makes those two passes disagree — the server
+ * emits nothing while the client immediately portals into `document.body` —
+ * which fails hydration for the whole admin layout and leaves the tree (login
+ * form included) without its event handlers until React re-renders it client
+ * side. Gate on a post-mount flag instead: it is `false` on the server AND on
+ * the first client render, so both passes match and the portal only appears
+ * once hydration has completed.
+ */
+function useMounted() {
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
+    return mounted;
+}
+
 function ToastStack({ toasts, onClose }) {
-    if (typeof document === "undefined") return null;
+    const mounted = useMounted();
+    if (!mounted) return null;
     return createPortal(
         <div className="fixed bottom-8 right-8 z-[100] flex flex-col gap-3">
             {toasts.map((t) => (
@@ -124,6 +141,7 @@ function FeedbackDialog({ dialog, onClose }) {
     const [input, setInput] = useState(defaultValue);
     const [checked, setChecked] = useState(false);
     const inputRef = useRef(null);
+    const mounted = useMounted();
 
     const accent = danger
         ? "bg-red-500/10 border-red-500/20 text-red-400"
@@ -136,7 +154,7 @@ function FeedbackDialog({ dialog, onClose }) {
     const submit = () => onClose(mode === "prompt" ? input : resolveConfirm(true));
     const cancel = () => onClose(mode === "prompt" ? null : resolveConfirm(false));
 
-    if (typeof document === "undefined") return null;
+    if (!mounted) return null;
 
     return createPortal(
         <div

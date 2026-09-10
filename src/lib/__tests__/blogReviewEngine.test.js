@@ -1,5 +1,4 @@
-import assert from 'node:assert/strict';
-import { test, describe } from 'node:test';
+import { describe, test, expect } from 'vitest';
 import { evaluateBlogForReview } from '../blogReviewEngine.js';
 
 describe('Blog Review Engine Unit Tests', () => {
@@ -14,9 +13,9 @@ describe('Blog Review Engine Unit Tests', () => {
         };
 
         const result = evaluateBlogForReview(payload);
-        assert.equal(result.isFlagged, false);
-        assert.equal(result.flagReason, '');
-        assert.equal(result.reviewStatus, 'CLEAN');
+        expect(result.isFlagged).toBe(false);
+        expect(result.flagReason).toBe('');
+        expect(result.reviewStatus).toBe('CLEAN');
     });
 
     test('should flag post with "test blog" in title', () => {
@@ -27,9 +26,9 @@ describe('Blog Review Engine Unit Tests', () => {
         };
 
         const result = evaluateBlogForReview(payload);
-        assert.equal(result.isFlagged, true);
-        assert.equal(result.reviewStatus, 'FLAGGED');
-        assert.match(result.flagReason, /test/i);
+        expect(result.isFlagged).toBe(true);
+        expect(result.reviewStatus).toBe('FLAGGED');
+        expect(result.flagReason).toMatch(/test/i);
     });
 
     test('should flag post with "lorem ipsum" in content', () => {
@@ -40,9 +39,9 @@ describe('Blog Review Engine Unit Tests', () => {
         };
 
         const result = evaluateBlogForReview(payload);
-        assert.equal(result.isFlagged, true);
-        assert.equal(result.reviewStatus, 'FLAGGED');
-        assert.match(result.flagReason, /lorem ipsum/i);
+        expect(result.isFlagged).toBe(true);
+        expect(result.reviewStatus).toBe('FLAGGED');
+        expect(result.flagReason).toMatch(/lorem ipsum/i);
     });
 
     test('should flag post with content shorter than threshold', () => {
@@ -52,9 +51,9 @@ describe('Blog Review Engine Unit Tests', () => {
         };
 
         const result = evaluateBlogForReview(payload);
-        assert.equal(result.isFlagged, true);
-        assert.equal(result.reviewStatus, 'FLAGGED');
-        assert.match(result.flagReason, /below minimum quality threshold/i);
+        expect(result.isFlagged).toBe(true);
+        expect(result.reviewStatus).toBe('FLAGGED');
+        expect(result.flagReason).toMatch(/below minimum quality threshold/i);
     });
 
     test('should flag post matching custom keywords from config', () => {
@@ -68,9 +67,9 @@ describe('Blog Review Engine Unit Tests', () => {
         };
 
         const result = evaluateBlogForReview(payload, config);
-        assert.equal(result.isFlagged, true);
-        assert.equal(result.reviewStatus, 'FLAGGED');
-        assert.match(result.flagReason, /custom test keyword/i);
+        expect(result.isFlagged).toBe(true);
+        expect(result.reviewStatus).toBe('FLAGGED');
+        expect(result.flagReason).toMatch(/custom test keyword/i);
     });
 
     test('should skip evaluation if engine is disabled in config', () => {
@@ -84,7 +83,7 @@ describe('Blog Review Engine Unit Tests', () => {
         };
 
         const result = evaluateBlogForReview(payload, config);
-        assert.equal(result.isFlagged, false);
-        assert.equal(result.reviewStatus, 'CLEAN');
+        expect(result.isFlagged).toBe(false);
+        expect(result.reviewStatus).toBe('CLEAN');
     });
 });
