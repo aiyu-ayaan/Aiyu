@@ -74,6 +74,18 @@ const nextConfig = {
         hostname: 'raw.githubusercontent.com',
       },
       {
+        // Images dragged into a README/issue on github.com are served from
+        // here, so a README-seeded project poster often points at it.
+        protocol: 'https',
+        hostname: 'user-images.githubusercontent.com',
+      },
+      {
+        // Newer equivalent of the above for repository-scoped uploads.
+        protocol: 'https',
+        hostname: 'github.com',
+        pathname: '/user-attachments/**',
+      },
+      {
         // Project poster images are served from GitHub Pages (e.g. aiyu-ayaan.github.io).
         protocol: 'https',
         hostname: '**.github.io',

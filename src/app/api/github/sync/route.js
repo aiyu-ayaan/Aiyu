@@ -27,6 +27,7 @@ import {
     fetchRepo,
     mapRepoToProject,
     mergeSyncedProject,
+    seedImageFromReadme,
 } from '@/lib/githubProjects';
 
 // One press should not be able to start an unbounded fan-out of upstream calls.
@@ -137,6 +138,21 @@ async function previewSync(request) {
             const incoming = mapRepoToProject(repo);
             const { changes, pinned } = diffSyncedProject(existing, incoming);
 
+            // Only fetch the README when a poster could actually be seeded —
+            // otherwise the preview costs an extra upstream call per repo for
+            // a result it would discard. Without this the preview would report
+            // "no changes" and the sync would still set an image.
+            if (!existing?.image && !pinned.includes('image')) {
+                const readme = await fetchReadme(fullName, {
+                    token,
+                    branch: repo.default_branch || 'main',
+                });
+                const seededImage = seedImageFromReadme(existing, readme);
+                if (seededImage) {
+                    changes.push({ field: 'image', from: existing?.image ?? null, to: seededImage });
+                }
+            }
+
             results.push({
                 repo: fullName,
                 status: existing ? 'linked' : 'new',
@@ -173,6 +189,11 @@ async function runSync(request) {
 
             // Only fields the merge allows; pinned edits are already excluded.
             const patch = mergeSyncedProject(existing, incoming);
+
+            // Seed a poster from the README's first non-badge image, but only
+            // when the project has none — a curated image always wins.
+            const seededImage = seedImageFromReadme(existing, readme);
+            if (seededImage) patch.image = seededImage;
 
             const syncMetadata = {
                 source: 'github',
@@ -215,6 +236,7 @@ async function runSync(request) {
                 projectId: client._id,
                 slug: getProjectSlug(client),
                 readme: Boolean(readme),
+                image: seededImage || null,
                 fieldsWritten: Object.keys(patch),
                 pinnedSkipped: (existing?.pinnedFields || []).filter((f) => f in incoming),
             });

@@ -16,7 +16,7 @@
  * injectable so tests never touch the network.
  */
 import { fetchWithTimeout, runWithCircuitBreaker } from '@/lib/upstreamControl';
-import { SYNCABLE_FIELDS } from '@/lib/projectSyncFields';
+import { PINNABLE_FIELDS, SEEDED_FIELDS, SYNCABLE_FIELDS } from '@/lib/projectSyncFields';
 
 const GITHUB_API = 'https://api.github.com';
 const GITHUB_RAW = 'https://raw.githubusercontent.com';
@@ -41,8 +41,8 @@ const README_TIMEOUT_MS = Number.parseInt(process.env.GITHUB_README_TIMEOUT_MS |
 export const README_MAX_CHARS = 120_000;
 
 // Re-exported so server callers have one import for the whole sync vocabulary;
-// the list itself lives in a leaf module the client can import safely.
-export { SYNCABLE_FIELDS };
+// the lists themselves live in a leaf module the client can import safely.
+export { SYNCABLE_FIELDS, SEEDED_FIELDS, PINNABLE_FIELDS };
 
 /** Repo topic/language values that describe the repo, not a technology. */
 const TOPIC_STOPWORDS = new Set([
@@ -210,7 +210,7 @@ export function mergeSyncedProject(existing, incoming) {
 export function withPinnedFields(currentPinned = [], changedFields = []) {
     const pinned = new Set(Array.isArray(currentPinned) ? currentPinned : []);
     for (const field of changedFields) {
-        if (SYNCABLE_FIELDS.includes(field)) pinned.add(field);
+        if (PINNABLE_FIELDS.includes(field)) pinned.add(field);
     }
     return [...pinned];
 }
@@ -314,6 +314,130 @@ export function absolutizeReadmeUrls(markdown, fullName, branch = 'main') {
     });
 
     return output;
+}
+
+// ─────────────────────── README hero extraction ───────────────────────
+
+/**
+ * Hosts that only ever serve status badges, shields, and one-click deploy
+ * buttons. A README's first image is almost always one of these, so host
+ * matching does most of the work of finding the real hero image.
+ */
+const BADGE_HOSTS = new Set([
+    'img.shields.io', 'shields.io', 'badgen.net', 'badge.fury.io',
+    'travis-ci.org', 'travis-ci.com', 'api.travis-ci.com',
+    'ci.appveyor.com', 'codecov.io', 'coveralls.io', 'snyk.io',
+    'api.codeclimate.com', 'david-dm.org', 'forthebadge.com',
+    'sonarcloud.io', 'api.netlify.com', 'maven-badges.herokuapp.com',
+    'isitmaintained.com', 'bestpractices.coreinfrastructure.org',
+    'deepsource.io', 'app.fossa.com', 'badge.buildkite.com',
+    'hits.seeyoufarm.com', 'visitor-badge.laobi.icu', 'visitor-badge.glitch.me',
+    'komarev.com', 'img.buymeacoffee.com', 'www.herokucdn.com',
+    'deploy.cloud.run', 'gitpod.io', 'vercel.com', 'railway.app',
+    'opencollective.com', 'jitpack.io', 'poser.pugx.org',
+]);
+
+/** Badge-shaped URL paths that appear on otherwise legitimate hosts. */
+const BADGE_PATH_PATTERNS = [
+    /\/badge(s)?\b/i,            // .../badge.svg, /badges/...
+    /badge\.(svg|png)$/i,
+    /\/actions\/workflows\//i,   // GitHub Actions workflow badges
+    /\/workflows\/[^/]+\/badge/i,
+    /\/button\.(svg|png)$/i,     // "Deploy to X" buttons
+    /\/shield/i,
+];
+
+/**
+ * Alt text that describes a badge rather than a picture. Matched as whole words
+ * so "buildings.png" or "License to Kill" screenshots are not caught by
+ * substring accidents.
+ */
+const BADGE_ALT_PATTERN = new RegExp(
+    '\\b('
+    + 'badge|shield|build|ci|cd|pipeline|coverage|codecov|licen[cs]e|version'
+    + '|downloads?|stars?|forks?|issues?|release|npm|pypi|maven|gradle|jitpack'
+    + '|sponsor|donate|patreon|discord|twitter|slack|gitter|contributors?'
+    + ')\\b',
+    'i'
+);
+
+/** Extensions that make a plausible card image. SVG is excluded: on GitHub it
+ *  is overwhelmingly a badge or icon, not a screenshot. */
+const HERO_EXTENSION = /\.(png|jpe?g|gif|webp|avif)(\?.*)?$/i;
+
+/**
+ * Whether an image reference is a badge/button rather than real artwork.
+ * Exported for tests — the badge list is the part most likely to need tuning.
+ */
+export function isBadgeImage(url, alt = '') {
+    const value = String(url || '').trim();
+    if (!value) return true;
+
+    let parsed;
+    try {
+        parsed = new URL(value);
+    } catch {
+        return true; // Unresolvable: not safe to use as a poster.
+    }
+
+    if (BADGE_HOSTS.has(parsed.hostname.toLowerCase())) return true;
+    if (BADGE_PATH_PATTERNS.some((pattern) => pattern.test(parsed.pathname))) return true;
+    if (BADGE_ALT_PATTERN.test(String(alt || ''))) return true;
+
+    return false;
+}
+
+/**
+ * The first real image in a README, to use as a project poster.
+ *
+ * Scans markdown images, reference definitions and raw <img> tags in document
+ * order and returns the first that survives the badge filters and looks like a
+ * raster image. Returns null when a README is all badges, or has no images —
+ * the common case, and not an error.
+ *
+ * Expects markdown that has already been through absolutizeReadmeUrls, so the
+ * URLs are absolute and resolvable.
+ */
+export function extractReadmeImage(markdown) {
+    const content = String(markdown || '');
+    if (!content) return null;
+
+    const candidates = [];
+
+    for (const match of content.matchAll(/!\[([^\]]*)\]\(\s*([^)\s]+)[^)]*\)/g)) {
+        candidates.push({ index: match.index, alt: match[1], url: match[2] });
+    }
+
+    for (const match of content.matchAll(/<img\b[^>]*>/gi)) {
+        const tag = match[0];
+        const src = tag.match(/\bsrc=("|')([^"']+)\1/i)?.[2];
+        if (!src) continue;
+        const alt = tag.match(/\balt=("|')([^"']*)\1/i)?.[2] || '';
+        candidates.push({ index: match.index, alt, url: src });
+    }
+
+    candidates.sort((a, b) => a.index - b.index);
+
+    for (const { url, alt } of candidates) {
+        if (!HERO_EXTENSION.test(url)) continue;
+        if (isBadgeImage(url, alt)) continue;
+        return url;
+    }
+
+    return null;
+}
+
+/**
+ * Poster to store for a synced project, or null to leave the current one.
+ *
+ * Seeding, never overwriting: an image the admin has chosen (or pinned) always
+ * wins, so re-syncing cannot swap out a curated poster for whatever currently
+ * sits at the top of the README.
+ */
+export function seedImageFromReadme(existing, readme) {
+    if (existing?.image) return null;
+    if (Array.isArray(existing?.pinnedFields) && existing.pinnedFields.includes('image')) return null;
+    return extractReadmeImage(readme);
 }
 
 /** Truncate at a line boundary so markdown is never cut mid-fence. */

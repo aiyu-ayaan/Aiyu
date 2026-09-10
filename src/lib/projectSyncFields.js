@@ -19,3 +19,14 @@ export const SYNCABLE_FIELDS = Object.freeze([
     'projectType',
     'codeLink',
 ]);
+
+/**
+ * Fields sync SEEDS but never overwrites: filled only when the project has no
+ * value yet. `image` works this way because a hero pulled out of a README is a
+ * decent default but a poor override — once you have chosen a poster, a repo
+ * edit must not replace it.
+ */
+export const SEEDED_FIELDS = Object.freeze(['image']);
+
+/** Everything the admin can pin against sync. */
+export const PINNABLE_FIELDS = Object.freeze([...SYNCABLE_FIELDS, ...SEEDED_FIELDS]);

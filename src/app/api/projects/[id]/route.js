@@ -6,7 +6,7 @@ import cache, { CACHE_TTL, createCacheDebugHeaders } from '@/lib/cache';
 import { createPublicCacheHeaders, RESPONSE_CACHE } from '@/lib/httpCache';
 import { getProjectSlug } from '@/lib/contentSlugs';
 import { autoPing } from '@/lib/autoIndexing';
-import { SYNCABLE_FIELDS, withPinnedFields } from '@/lib/githubProjects';
+import { PINNABLE_FIELDS, withPinnedFields } from '@/lib/githubProjects';
 
 export async function PUT(request, { params }) {
     const session = await getSession();
@@ -25,11 +25,11 @@ export async function PUT(request, { params }) {
         // un-pinning a field to hand it back to sync.
         const existing = await prisma.project.findUnique({
             where: { id },
-            select: { source: true, pinnedFields: true, ...Object.fromEntries(SYNCABLE_FIELDS.map((f) => [f, true])) },
+            select: { source: true, pinnedFields: true, ...Object.fromEntries(PINNABLE_FIELDS.map((f) => [f, true])) },
         });
 
         if (existing?.source === 'github' && body.pinnedFields === undefined) {
-            const changed = SYNCABLE_FIELDS.filter((field) => (
+            const changed = PINNABLE_FIELDS.filter((field) => (
                 data[field] !== undefined
                 && JSON.stringify(data[field]) !== JSON.stringify(existing[field])
             ));

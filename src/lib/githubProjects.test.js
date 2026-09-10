@@ -5,7 +5,9 @@ import {
     deriveTechStack,
     deriveYear,
     diffSyncedProject,
+    extractReadmeImage,
     fetchReadme,
+    seedImageFromReadme,
     mapRepoToProject,
     mergeSyncedProject,
     truncateReadme,
@@ -75,7 +77,110 @@ describe('withPinnedFields', () => {
     });
 
     it('ignores fields that sync never writes anyway', () => {
-        expect(withPinnedFields([], ['displayOrder', 'image'])).toEqual([]);
+        expect(withPinnedFields([], ['displayOrder', 'slug'])).toEqual([]);
+    });
+
+    it('allows pinning the seeded image so a chosen poster is never replaced', () => {
+        expect(withPinnedFields([], ['image'])).toEqual(['image']);
+    });
+});
+
+describe('extractReadmeImage', () => {
+    const RAW = 'https://raw.githubusercontent.com/aiyu-ayaan/Aiyu/main';
+
+    it('returns the first real image', () => {
+        const md = `# Aiyu\n\n![screenshot](${RAW}/docs/hero.png)\n`;
+        expect(extractReadmeImage(md)).toBe(`${RAW}/docs/hero.png`);
+    });
+
+    it('skips a wall of shields.io badges to reach the screenshot', () => {
+        const md = [
+            '# Aiyu',
+            '[![build](https://img.shields.io/badge/build-passing-green.svg)](https://ci.example.com)',
+            '[![licence](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)',
+            '[![npm](https://badgen.net/npm/v/aiyu)](https://npm.im/aiyu)',
+            '',
+            `![app screenshot](${RAW}/docs/screenshot.png)`,
+        ].join('\n');
+        expect(extractReadmeImage(md)).toBe(`${RAW}/docs/screenshot.png`);
+    });
+
+    it('skips GitHub Actions workflow badges', () => {
+        const md = [
+            '![CI](https://github.com/aiyu-ayaan/Aiyu/actions/workflows/ci.yml/badge.svg)',
+            '![tests](https://github.com/aiyu-ayaan/Aiyu/workflows/tests/badge.svg)',
+            `![demo](${RAW}/demo.gif)`,
+        ].join('\n');
+        expect(extractReadmeImage(md)).toBe(`${RAW}/demo.gif`);
+    });
+
+    it('skips deploy buttons', () => {
+        const md = [
+            '[![Deploy](https://vercel.com/button)](https://vercel.com/import)',
+            '[![Run on Heroku](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)',
+            `![cover](${RAW}/cover.jpg)`,
+        ].join('\n');
+        expect(extractReadmeImage(md)).toBe(`${RAW}/cover.jpg`);
+    });
+
+    it('finds a hero inside a raw <img> tag, which READMEs use for centering', () => {
+        const md = `<p align="center"><img src="${RAW}/banner.png" alt="Aiyu banner" width="600"></p>`;
+        expect(extractReadmeImage(md)).toBe(`${RAW}/banner.png`);
+    });
+
+    it('honours document order across markdown and HTML images', () => {
+        const md = [
+            '![badge](https://img.shields.io/badge/x-y-blue.svg)',
+            `<img src="${RAW}/first.png" alt="first">`,
+            `![second](${RAW}/second.png)`,
+        ].join('\n');
+        expect(extractReadmeImage(md)).toBe(`${RAW}/first.png`);
+    });
+
+    it('rejects badge-shaped alt text even on an unknown host', () => {
+        const md = `![build status](https://ci.internal.example/status.png)\n![real](${RAW}/real.png)`;
+        expect(extractReadmeImage(md)).toBe(`${RAW}/real.png`);
+    });
+
+    it('skips SVG, which on GitHub is nearly always a badge or icon', () => {
+        const md = `![logo](${RAW}/logo.svg)\n![shot](${RAW}/shot.png)`;
+        expect(extractReadmeImage(md)).toBe(`${RAW}/shot.png`);
+    });
+
+    it('does not mistake ordinary words for badge keywords', () => {
+        const md = `![Buildings at dusk](${RAW}/buildings.png)`;
+        expect(extractReadmeImage(md)).toBe(`${RAW}/buildings.png`);
+    });
+
+    it('returns null for a README that is only badges', () => {
+        const md = '![build](https://img.shields.io/badge/build-passing-green.svg)';
+        expect(extractReadmeImage(md)).toBeNull();
+    });
+
+    it('returns null for no README and no images', () => {
+        expect(extractReadmeImage('')).toBeNull();
+        expect(extractReadmeImage('# Title\n\nJust prose.')).toBeNull();
+    });
+
+    it('ignores relative URLs that were never absolutized', () => {
+        expect(extractReadmeImage('![x](docs/a.png)')).toBeNull();
+    });
+});
+
+describe('seedImageFromReadme', () => {
+    const md = '![shot](https://raw.githubusercontent.com/a/b/main/shot.png)';
+
+    it('seeds a poster when the project has none', () => {
+        expect(seedImageFromReadme({ image: '' }, md)).toContain('shot.png');
+        expect(seedImageFromReadme(null, md)).toContain('shot.png');
+    });
+
+    it('never replaces a poster the admin already chose', () => {
+        expect(seedImageFromReadme({ image: '/uploads/mine.webp' }, md)).toBeNull();
+    });
+
+    it('respects a pinned image even when the field is empty', () => {
+        expect(seedImageFromReadme({ image: '', pinnedFields: ['image'] }, md)).toBeNull();
     });
 });
 

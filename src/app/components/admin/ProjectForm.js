@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2, Save, Terminal, Code, Layers, Calendar, Link as LinkIcon, Image as ImageIcon, FileText, CheckCircle, Activity, Sparkles, Wand2, Upload, X, GitBranch, Lock, Unlock } from 'lucide-react';
-import { SYNCABLE_FIELDS } from '@/lib/projectSyncFields';
+import { PINNABLE_FIELDS } from '@/lib/projectSyncFields';
 import Toast from './Toast';
 import BlogLinkInput from './BlogLinkInput';
 import DatePickerInput from './DatePickerInput';
@@ -198,7 +198,7 @@ const ProjectForm = ({ initialData, isEdit = false }) => {
             // the list explicitly so an unpin actually sticks (the API only
             // auto-pins when pinnedFields is absent). A field you unpin AND edit
             // stays pinned — the edit is the stronger signal.
-            const edited = SYNCABLE_FIELDS.filter((field) => {
+            const edited = PINNABLE_FIELDS.filter((field) => {
                 const next = field === 'techStack' ? techStack : formData[field];
                 const previous = initialData?.[field];
                 return JSON.stringify(next ?? '') !== JSON.stringify(previous ?? '');
@@ -259,7 +259,7 @@ const ProjectForm = ({ initialData, isEdit = false }) => {
                     </p>
 
                     <div className="mt-3 flex flex-wrap gap-2">
-                        {SYNCABLE_FIELDS.map((field) => {
+                        {PINNABLE_FIELDS.map((field) => {
                             const pinned = pinnedFields.includes(field);
                             return (
                                 <button
