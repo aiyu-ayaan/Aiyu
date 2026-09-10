@@ -1,5 +1,51 @@
 # Changelog
 
+## [5.1.0](https://github.com/aiyu-ayaan/Aiyu/compare/v5.0.2...v5.1.0) (2026-09-10)
+
+### ⚠ BREAKING CHANGES
+
+* Add Next.js breaking changes notice and guidelines
+
+### Features
+
+* : Open Source & Community projects with GitHub sync and Aiyu OS indexing
+* Index Aiyu OS and surface repo data in widgets
+* Seed project poster from the README's first real image
+* Enrich project schema with live repository facts
+* Rebuild v2 open source section around repo data
+* Add repository sync panel and field pinning
+* Add manual GitHub repo sync endpoint
+* Add GitHub repo to Project sync engine
+* Add GitHub sync columns to Project
+
+### Bug Fixes
+
+* Render raw HTML in READMEs instead of escaping it
+* Surface repo sync from the projects page
+* Skip retries for failures that need a reconnect
+* Drop revoked refresh tokens instead of retrying them
+* Unblock PR checks — vitest collection failure and admin hydration bug (#287)
+
+### Other Changes
+
+* Bump globals from 17.6.0 to 17.12.0 (#267)
+* Bump eslint-config-next from 16.2.6 to 16.3.4 (#268)
+* Bump framer-motion from 12.38.0 to 13.2.0 (#269)
+* Bump @playwright/test from 1.61.0 to 1.63.0 (#270)
+* Bump ip-address from 10.2.0 to 10.7.0 (#273)
+* Bump undici from 7.28.0 to 7.29.1 (#274)
+* Bump nanoid from 3.3.12 to 3.3.19 (#279)
+* Bump fast-uri from 3.1.4 to 3.1.7 (#282)
+* Bump qs from 6.15.3 to 6.16.0 (#283)
+* Bump browserslist from 4.28.2 to 4.28.9 (#284)
+* Bump hono from 4.12.27 to 4.13.7 (#285)
+* Bump baseline-browser-mapping from 2.10.24 to 2.11.22 (#288)
+* Bump js-yaml from 4.3.0 to 4.3.2 (#289)
+* Bump brace-expansion from 1.1.16 to 1.1.18 (#291)
+* Bump next from 16.2.10 to 16.3.3 (#290)
+* Bump @vitest/mocker and vitest (#286)
+* Remove LOC badge from README
+
 ## [5.0.2](https://github.com/aiyu-ayaan/Aiyu/compare/v5.0.1...v5.0.2) (2026-08-02)
 
 ### Features
