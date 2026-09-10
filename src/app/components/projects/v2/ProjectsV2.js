@@ -1,380 +1,376 @@
 "use client";
 
-import React, { useMemo, useRef, useState } from 'react';
+/**
+ * /v2/projects — "Open Source & Community", the full index.
+ *
+ * Rebuilt around repo signals rather than a plain year ledger. Three ideas
+ * drive the layout:
+ *
+ *  1. Maintained work leads. Entries pushed to recently are surfaced as a
+ *     "currently maintained" band at the top, because ongoing stewardship is
+ *     the thing an open-source section is supposed to evidence — a stale repo
+ *     and a live one look identical in a date-sorted list.
+ *  2. Live data is annotation, not decoration. Stars/forks/license/last-push
+ *     sit in a mono rail (RepoMeta) under the title, in the same voice as the
+ *     rest of the editorial layout.
+ *  3. Rows link, they do not trap. Each row is an <a> to the detail page where
+ *     the README lives, so entries are shareable, crawlable, and keyboard
+ *     reachable — the previous dialog-only interaction was neither.
+ *
+ * Motion comes from useV2Fx (data-v2 attributes), the site's existing GSAP
+ * engine, which already honours prefers-reduced-motion and the lite device
+ * tier and caps stagger spread. No second animation system is introduced.
+ */
+import { useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
 import Image from 'next/image';
-import { FaArrowRight, FaSearch } from 'react-icons/fa';
-import ProjectDialog from '../ProjectDialog';
+import { FaArrowRight, FaMagnifyingGlass } from 'react-icons/fa6';
 import useDevicePerformance from '../../../hooks/useDevicePerformance';
 import { useV2Fx, refreshScrollTriggersSoon } from '../../landing/v2/gsap3d';
+import RepoMeta from './RepoMeta';
+import {
+    compareProjects,
+    formatCount,
+    hasReadme,
+    isActive,
+    isSynced,
+    normalizeStatus,
+    statusAccent,
+    sumRepoStat,
+} from './repoDisplay';
 
-const ROW_ACCENTS = ['var(--accent-cyan)', 'var(--accent-purple)', 'var(--accent-orange)', 'var(--accent-pink)'];
+const FILTERS = [
+    { id: 'all', label: 'all' },
+    { id: 'maintained', label: 'maintained' },
+    { id: 'source', label: 'open source' },
+    { id: 'archive', label: 'archive' },
+];
 
-const toPascalCase = (value) => {
-    if (!value) return '';
-    return String(value)
-        .split(' ')
-        .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-        .join(' ');
+const matchesFilter = (project, filter) => {
+    switch (filter) {
+        case 'maintained': return isActive(project);
+        case 'source': return isSynced(project);
+        case 'archive': return !isActive(project);
+        default: return true;
+    }
 };
 
-const normalizeStatus = (status) => {
-    const safeStatus = String(status || '').trim().toLowerCase();
-    if (safeStatus === 'done' || safeStatus === 'completed') return 'Done';
-    if (safeStatus === 'deferred' || safeStatus === 'deffered' || safeStatus === 'on hold') return 'Deferred';
-    if (safeStatus === 'working' || safeStatus === 'in progress') return 'Working';
-    return safeStatus ? toPascalCase(safeStatus) : 'Unknown';
-};
+const searchText = (project) => [
+    project?.name,
+    project?.description,
+    project?.projectType,
+    project?.year,
+    project?.repoData?.language,
+    project?.repoData?.license,
+    normalizeStatus(project?.status),
+    ...(project?.techStack || []),
+    ...(project?.repoData?.topics || []),
+].filter(Boolean).join(' ').toLowerCase();
 
-const extractGroupYear = (yearValue) => {
-    const safeYear = String(yearValue || '').trim();
-    if (!safeYear) return 'Unknown';
-    const parts = safeYear.split('-').map((part) => part.trim()).filter(Boolean);
-    return parts.length ? parts[parts.length - 1] : safeYear;
-};
+function EntryRow({ project, href, index }) {
+    const accent = statusAccent(project?.status);
+    const stack = (project?.techStack || []).slice(0, 4);
 
-const extractSortYear = (yearValue) => {
-    const matches = String(yearValue || '').match(/\d{4}/g);
-    if (!matches || matches.length === 0) return 0;
-    const finalYear = Number.parseInt(matches[matches.length - 1], 10);
-    return Number.isNaN(finalYear) ? 0 : finalYear;
-};
+    return (
+        <Link
+            href={href}
+            data-v2={index % 2 === 0 ? 'door-left' : 'door-right'}
+            className="group grid grid-cols-12 items-start gap-x-4 gap-y-3 py-8 sm:py-10"
+            style={{ borderBottom: '1px solid var(--hairline)' }}
+        >
+            <span
+                className="col-span-2 font-mono text-sm sm:col-span-1"
+                style={{ color: accent }}
+                aria-hidden="true"
+            >
+                {String(index + 1).padStart(2, '0')}
+            </span>
 
-const getDisplayOrderValue = (project) => {
-    const parsedOrder = Number.parseInt(project?.displayOrder, 10);
-    return Number.isNaN(parsedOrder) ? Number.MAX_SAFE_INTEGER : parsedOrder;
-};
+            <div className="col-span-10 sm:col-span-7">
+                <h3
+                    className="text-2xl font-bold tracking-tight transition-transform duration-300 group-hover:translate-x-2 sm:text-4xl"
+                    style={{ color: 'var(--text-bright)' }}
+                >
+                    {project?.name}
+                </h3>
 
-const sortProjects = (a, b) => {
-    const orderDifference = getDisplayOrderValue(a) - getDisplayOrderValue(b);
-    if (orderDifference !== 0) return orderDifference;
-    return extractSortYear(b?.year) - extractSortYear(a?.year);
-};
+                <p
+                    className="mt-2 line-clamp-2 max-w-xl text-sm leading-relaxed sm:text-base"
+                    style={{ color: 'var(--text-tertiary)' }}
+                >
+                    {project?.description || 'No description provided.'}
+                </p>
 
-const sortYearsDesc = (a, b) => {
-    const parsedA = Number.parseInt(a, 10);
-    const parsedB = Number.parseInt(b, 10);
-    if (Number.isNaN(parsedA) && Number.isNaN(parsedB)) return b.localeCompare(a);
-    if (Number.isNaN(parsedA)) return 1;
-    if (Number.isNaN(parsedB)) return -1;
-    return parsedB - parsedA;
-};
+                {isSynced(project) ? (
+                    <RepoMeta project={project} className="mt-3" />
+                ) : (
+                    <p className="mt-3 font-mono text-xs uppercase tracking-[0.15em]" style={{ color: 'var(--text-muted)' }}>
+                        {normalizeStatus(project?.status)}
+                        {project?.year ? ` · ${project.year}` : ''}
+                    </p>
+                )}
 
-const chipStyle = (active, accent = 'var(--accent-cyan)') => ({
-    color: active ? accent : 'var(--text-secondary)',
-});
+                {stack.length > 0 && (
+                    <p className="mt-2 font-mono text-xs" style={{ color: 'var(--text-muted)' }}>
+                        {stack.join(' / ')}
+                    </p>
+                )}
 
-/**
- * /v2/projects — the complete archive as an editorial index. Same data and
- * dialog as the classic projects page, but presented as year-grouped ledger
- * rows over hairline rules: mono year dividers with ghost numerals, display
- * type titles, status + stack annotations, thumbnails that lean in 3D on
- * hover. Filtering is a mono command strip instead of glass filter panels.
- */
-const ProjectsV2 = ({ data, config }) => {
-    const projects = useMemo(() => (Array.isArray(data) ? data : []), [data]);
+                {hasReadme(project) && (
+                    <p className="mt-2 font-mono text-[11px] uppercase tracking-[0.2em]" style={{ color: 'var(--accent-purple)' }}>
+                        readme →
+                    </p>
+                )}
+            </div>
 
-    const [selectedProject, setSelectedProject] = useState(null);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [selectedStatus, setSelectedStatus] = useState('All');
-    const [selectedType, setSelectedType] = useState('All');
+            <div className="col-span-10 col-start-3 sm:col-span-3 sm:col-start-9">
+                {project?.image ? (
+                    <span
+                        className="relative block h-28 overflow-hidden rounded-xl border sm:h-32"
+                        style={{ borderColor: 'var(--hairline)' }}
+                    >
+                        <Image
+                            src={project.image}
+                            alt=""
+                            fill
+                            sizes="(max-width: 640px) 90vw, 25vw"
+                            className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+                            loading="lazy"
+                            referrerPolicy="no-referrer"
+                        />
+                    </span>
+                ) : (
+                    <span
+                        aria-hidden="true"
+                        className="hidden h-28 items-center justify-center rounded-xl border font-mono text-xs uppercase tracking-[0.25em] sm:flex sm:h-32"
+                        style={{
+                            borderColor: 'var(--hairline)',
+                            color: 'var(--text-muted)',
+                            backgroundColor: `color-mix(in srgb, ${accent} 5%, transparent)`,
+                        }}
+                    >
+                        {project?.repoData?.language || '</>'}
+                    </span>
+                )}
+            </div>
+
+            <span className="col-span-1 hidden justify-self-end self-center sm:block" aria-hidden="true">
+                <FaArrowRight
+                    className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1.5"
+                    style={{ color: accent }}
+                />
+            </span>
+        </Link>
+    );
+}
+
+const ProjectsV2 = ({ data, config, basePath = '/projects' }) => {
+    const projects = useMemo(
+        () => (Array.isArray(data) ? [...data].sort(compareProjects) : []),
+        [data]
+    );
+
+    const [query, setQuery] = useState('');
+    const [filter, setFilter] = useState('all');
 
     const sectionRef = useRef(null);
     const { prefersReducedMotion } = useDevicePerformance();
 
-    const uniqueStatuses = useMemo(() => {
-        const statuses = projects.map((project) => normalizeStatus(project?.status));
-        return ['All', ...new Set(statuses)].sort((a, b) => a.localeCompare(b));
-    }, [projects]);
+    const filtered = useMemo(() => {
+        const needle = query.trim().toLowerCase();
+        return projects.filter((project) => (
+            matchesFilter(project, filter)
+            && (!needle || searchText(project).includes(needle))
+        ));
+    }, [projects, filter, query]);
 
-    const uniqueTypes = useMemo(() => {
-        const types = projects.map((project) => project?.projectType).filter(Boolean);
-        return ['All', ...new Set(types)].sort((a, b) => a.localeCompare(b));
-    }, [projects]);
+    // Maintained work leads; everything else keeps admin order below it.
+    const [maintained, rest] = useMemo(() => [
+        filtered.filter((project) => isActive(project)),
+        filtered.filter((project) => !isActive(project)),
+    ], [filtered]);
 
-    const filteredProjects = useMemo(() => {
-        const normalizedQuery = searchQuery.trim().toLowerCase();
-
-        return projects
-            .filter((project) => {
-                const stackList = Array.isArray(project?.techStack) ? project.techStack : [];
-                const normalizedStatus = normalizeStatus(project?.status);
-                const searchText = [project?.name, project?.description, project?.projectType, project?.year, normalizedStatus, ...stackList]
-                    .filter(Boolean)
-                    .join(' ')
-                    .toLowerCase();
-
-                const matchesSearch = !normalizedQuery || searchText.includes(normalizedQuery);
-                const matchesStatus = selectedStatus === 'All' || normalizedStatus === selectedStatus;
-                const matchesType = selectedType === 'All' || project?.projectType === selectedType;
-
-                return matchesSearch && matchesStatus && matchesType;
-            })
-            .sort(sortProjects);
-    }, [projects, searchQuery, selectedStatus, selectedType]);
-
-    const projectsByYear = useMemo(() => {
-        return filteredProjects.reduce((accumulator, project) => {
-            const year = extractGroupYear(project?.year);
-            if (!accumulator[year]) accumulator[year] = [];
-            accumulator[year].push(project);
-            return accumulator;
-        }, {});
-    }, [filteredProjects]);
-
-    const years = useMemo(() => Object.keys(projectsByYear).sort(sortYearsDesc), [projectsByYear]);
-
-    const shippedCount = useMemo(
-        () => projects.filter((project) => normalizeStatus(project?.status) === 'Done').length,
-        [projects]
-    );
+    const totalStars = useMemo(() => sumRepoStat(projects, 'stars'), [projects]);
+    const syncedCount = useMemo(() => projects.filter(isSynced).length, [projects]);
     const stackCount = useMemo(
         () => new Set(projects.flatMap((project) => project?.techStack || [])).size,
         [projects]
     );
 
-    useV2Fx(sectionRef, {
-        reducedMotion: prefersReducedMotion,
-        dependencies: [filteredProjects],
-    });
+    useV2Fx(sectionRef, { reducedMotion: prefersReducedMotion, dependencies: [filtered] });
 
-    const handleFilterChange = (setter) => (value) => {
-        setter(value);
+    const applyFilter = (next) => {
+        setFilter(next);
         refreshScrollTriggersSoon();
     };
 
-    let globalRowIndex = 0;
+    let rowIndex = 0;
 
     return (
         <div ref={sectionRef} className="relative overflow-hidden">
             <div className="mx-auto w-full max-w-7xl px-6 pb-24 pt-32 sm:pt-40 lg:px-10">
-                {/* Page head — same voice as a chapter head, sized for a full page. */}
-                <div className="relative mb-14 sm:mb-20">
+                <header className="relative mb-14 sm:mb-20">
                     <span
                         data-v2-depth="-0.4"
                         aria-hidden="true"
-                        className="pointer-events-none absolute -top-10 right-0 select-none text-[7rem] font-black leading-none tracking-tighter sm:-top-16 sm:text-[13rem]"
+                        className="pointer-events-none absolute -top-10 right-0 select-none text-[6rem] font-black leading-none tracking-tighter sm:-top-16 sm:text-[11rem]"
                         style={{
                             color: 'transparent',
                             WebkitTextStroke: '1.5px color-mix(in srgb, var(--accent-cyan) 20%, transparent)',
                             opacity: 0.8,
                         }}
                     >
-                        {'</>'}
+                        {'{ }'}
                     </span>
 
-                    <p data-v2="line" className="mb-4 font-mono text-xs font-semibold uppercase tracking-[0.35em]" style={{ color: 'var(--accent-cyan)' }}>
-                        ~/projects — the archive
+                    <p
+                        data-v2="line"
+                        className="mb-4 font-mono text-xs font-semibold uppercase tracking-[0.35em]"
+                        style={{ color: 'var(--accent-cyan)' }}
+                    >
+                        ~/open-source — the record
                     </p>
                     <h1
                         data-v2="line"
                         className="max-w-4xl text-4xl font-bold leading-[1.02] tracking-tight sm:text-6xl lg:text-7xl"
                         style={{ color: 'var(--text-bright)' }}
                     >
-                        {config?.projectsTitle || 'Every project, on the record.'}
+                        {config?.projectsTitle || 'Open Source & Community'}
                     </h1>
-                    <p data-v2="rise" className="mt-5 max-w-2xl text-base leading-relaxed sm:text-lg" style={{ color: 'var(--text-tertiary)' }}>
-                        {config?.projectsSubtitle || 'A curated collection of products and experiments, year by year.'}
+                    <p
+                        data-v2="rise"
+                        className="mt-5 max-w-2xl text-base leading-relaxed sm:text-lg"
+                        style={{ color: 'var(--text-tertiary)' }}
+                    >
+                        {config?.projectsSubtitle
+                            || 'Libraries, apps and experiments I build and maintain in the open — synced from GitHub, annotated by hand.'}
                     </p>
 
                     <p data-v2="rise" className="mt-8 font-mono text-sm" style={{ color: 'var(--text-muted)' }}>
-                        <span data-counter={projects.length}>{projects.length}</span> built ·{' '}
-                        <span data-counter={shippedCount}>{shippedCount}</span> shipped ·{' '}
-                        <span data-counter={stackCount}>{stackCount}</span> technologies
+                        <span data-counter={projects.length}>{projects.length}</span> projects
+                        {syncedCount > 0 && <> · <span data-counter={syncedCount}>{syncedCount}</span> live from GitHub</>}
+                        {totalStars > 0 && <> · {formatCount(totalStars)} stars</>}
+                        {' '}· <span data-counter={stackCount}>{stackCount}</span> technologies
                     </p>
-                </div>
+                </header>
 
-                {/* Command strip: mono search + bracketed filter chips over a hairline. */}
                 <div data-v2="rise" className="mb-4 space-y-4 pb-6" style={{ borderBottom: '1px solid var(--hairline)' }}>
                     <label className="flex items-center gap-3 font-mono text-sm" htmlFor="v2-project-search">
-                        <FaSearch aria-hidden="true" className="h-3.5 w-3.5 shrink-0" style={{ color: 'var(--accent-cyan)' }} />
+                        <FaMagnifyingGlass className="h-3.5 w-3.5 shrink-0" aria-hidden="true" style={{ color: 'var(--accent-cyan)' }} />
                         <span className="shrink-0" style={{ color: 'var(--text-muted)' }}>$ grep</span>
+                        <span className="sr-only">Search projects</span>
                         <input
                             id="v2-project-search"
-                            type="text"
-                            value={searchQuery}
-                            onChange={(event) => handleFilterChange(setSearchQuery)(event.target.value)}
-                            placeholder="name, stack, type…"
-                            className="w-full min-w-0 bg-transparent pb-1 focus:outline-none"
-                            style={{
-                                color: 'var(--text-primary)',
-                                borderBottom: '1px solid var(--hairline)',
-                            }}
+                            type="search"
+                            value={query}
+                            onChange={(event) => { setQuery(event.target.value); refreshScrollTriggersSoon(); }}
+                            placeholder="name, language, topic…"
+                            className="w-full min-w-0 bg-transparent pb-1 focus:outline-none focus-visible:ring-1"
+                            style={{ color: 'var(--text-primary)', borderBottom: '1px solid var(--hairline)' }}
                         />
                     </label>
 
                     <div className="flex flex-wrap items-baseline gap-x-3 gap-y-2 font-mono text-xs sm:text-sm">
-                        <span className="uppercase tracking-[0.2em]" style={{ color: 'var(--text-muted)' }}>status:</span>
-                        {uniqueStatuses.map((status) => {
-                            const active = selectedStatus === status;
+                        <span className="uppercase tracking-[0.2em]" style={{ color: 'var(--text-muted)' }}>view:</span>
+                        {FILTERS.map(({ id, label }) => {
+                            const active = filter === id;
                             return (
                                 <button
-                                    key={status}
+                                    key={id}
                                     type="button"
-                                    onClick={() => handleFilterChange(setSelectedStatus)(status)}
-                                    className="cursor-pointer whitespace-nowrap underline-offset-4 hover:underline"
-                                    style={chipStyle(active)}
+                                    onClick={() => applyFilter(id)}
                                     aria-pressed={active}
+                                    className="cursor-pointer whitespace-nowrap py-1 underline-offset-4 hover:underline"
+                                    style={{ color: active ? 'var(--accent-cyan)' : 'var(--text-secondary)' }}
                                 >
                                     <span style={{ color: active ? 'var(--accent-cyan)' : 'var(--text-muted)' }}>[</span>
-                                    {status.toLowerCase()}
+                                    {label}
                                     <span style={{ color: active ? 'var(--accent-cyan)' : 'var(--text-muted)' }}>]</span>
                                 </button>
                             );
                         })}
                     </div>
-
-                    {uniqueTypes.length > 2 && (
-                        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-2 font-mono text-xs sm:text-sm">
-                            <span className="uppercase tracking-[0.2em]" style={{ color: 'var(--text-muted)' }}>type:</span>
-                            {uniqueTypes.map((type) => {
-                                const active = selectedType === type;
-                                return (
-                                    <button
-                                        key={type}
-                                        type="button"
-                                        onClick={() => handleFilterChange(setSelectedType)(type)}
-                                        className="cursor-pointer whitespace-nowrap underline-offset-4 hover:underline"
-                                        style={chipStyle(active, 'var(--accent-purple)')}
-                                        aria-pressed={active}
-                                    >
-                                        <span style={{ color: active ? 'var(--accent-purple)' : 'var(--text-muted)' }}>[</span>
-                                        {String(type).toLowerCase()}
-                                        <span style={{ color: active ? 'var(--accent-purple)' : 'var(--text-muted)' }}>]</span>
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    )}
                 </div>
 
                 <p className="mb-2 font-mono text-xs" style={{ color: 'var(--text-muted)' }} aria-live="polite">
-                    → {filteredProjects.length} of {projects.length} entries
+                    → {filtered.length} of {projects.length} entries
                 </p>
 
-                {/* Year-grouped ledger. */}
-                {filteredProjects.length > 0 ? (
-                    years.map((year) => (
-                        <div key={year} className="relative">
-                            <div className="relative mt-16 flex items-baseline gap-4 pb-3 first:mt-6" style={{ borderBottom: '1px solid var(--hairline)' }}>
-                                <span
-                                    data-v2-depth="-0.25"
-                                    aria-hidden="true"
-                                    className="pointer-events-none absolute -top-8 right-0 select-none text-[4.5rem] font-black leading-none tracking-tighter sm:text-[7rem]"
-                                    style={{
-                                        color: 'transparent',
-                                        WebkitTextStroke: '1px color-mix(in srgb, var(--text-bright) 14%, transparent)',
-                                        opacity: 0.7,
-                                    }}
-                                >
-                                    {year}
-                                </span>
-                                <h2 className="font-mono text-sm font-semibold uppercase tracking-[0.3em]" style={{ color: 'var(--text-bright)' }}>
-                                    /{year}
-                                </h2>
-                                <span className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>
-                                    {projectsByYear[year].length} {projectsByYear[year].length === 1 ? 'entry' : 'entries'}
-                                </span>
-                            </div>
-
-                            <div style={{ perspective: '1600px' }}>
-                                {projectsByYear[year].map((project) => {
-                                    const rowIndex = globalRowIndex;
-                                    globalRowIndex += 1;
-                                    const accent = ROW_ACCENTS[rowIndex % ROW_ACCENTS.length];
-                                    const stack = Array.isArray(project?.techStack) ? project.techStack.slice(0, 4) : [];
-
-                                    return (
-                                        <button
-                                            type="button"
-                                            key={project?._id || `${project?.name}-${rowIndex}`}
-                                            data-v2={rowIndex % 2 === 0 ? 'door-left' : 'door-right'}
-                                            onClick={() => setSelectedProject(project)}
-                                            className="group grid w-full cursor-pointer grid-cols-12 items-center gap-4 py-8 text-left transition-colors duration-300 sm:py-10"
-                                            style={{ borderBottom: '1px solid var(--hairline)' }}
-                                        >
-                                            <span className="col-span-2 font-mono text-sm sm:col-span-1" style={{ color: accent }}>
-                                                {String(rowIndex + 1).padStart(2, '0')}
-                                                <span className="mt-1 block text-xs" style={{ color: 'var(--text-muted)' }}>
-                                                    {project?.year || ''}
-                                                </span>
-                                            </span>
-
-                                            <div className="col-span-10 sm:col-span-6">
-                                                <h3
-                                                    className="text-3xl font-bold tracking-tight transition-transform duration-300 group-hover:translate-x-2 sm:text-5xl"
-                                                    style={{ color: 'var(--text-bright)' }}
-                                                >
-                                                    {project?.name}
-                                                </h3>
-                                                <p className="mt-2 line-clamp-2 max-w-xl text-sm leading-relaxed sm:text-base" style={{ color: 'var(--text-tertiary)' }}>
-                                                    {project?.description}
-                                                </p>
-                                                <p className="mt-3 font-mono text-xs uppercase tracking-[0.15em]" style={{ color: `color-mix(in srgb, ${accent} 75%, var(--text-secondary))` }}>
-                                                    {normalizeStatus(project?.status)}{stack.length ? ` · ${stack.join(' / ')}` : ''}
-                                                </p>
-                                            </div>
-
-                                            <div className="col-span-8 col-start-3 sm:col-span-4 sm:col-start-8">
-                                                {project?.image ? (
-                                                    <span
-                                                        className="relative block h-32 overflow-hidden rounded-xl border transition-transform duration-500 group-hover:[transform:rotateY(-8deg)_rotateX(3deg)_translateZ(24px)] sm:h-40"
-                                                        style={{ borderColor: 'var(--hairline)', transformStyle: 'preserve-3d' }}
-                                                    >
-                                                        <Image
-                                                            src={project.image}
-                                                            alt={project?.name || 'Project preview'}
-                                                            fill
-                                                            sizes="(max-width: 768px) 90vw, 33vw"
-                                                            className="object-cover"
-                                                            loading="lazy"
-                                                            referrerPolicy="no-referrer"
-                                                        />
-                                                    </span>
-                                                ) : (
-                                                    <span
-                                                        aria-hidden="true"
-                                                        className="hidden h-32 items-center justify-center rounded-xl border font-mono text-xs uppercase tracking-[0.25em] sm:flex sm:h-40"
-                                                        style={{ borderColor: 'var(--hairline)', color: 'var(--text-muted)', backgroundColor: `color-mix(in srgb, ${accent} 5%, transparent)` }}
-                                                    >
-                                                        {'</>'}
-                                                    </span>
-                                                )}
-                                            </div>
-
-                                            <span className="col-span-2 hidden justify-self-end sm:col-span-1 sm:block" aria-hidden="true">
-                                                <FaArrowRight
-                                                    className="h-5 w-5 transition-all duration-300 group-hover:translate-x-1.5"
-                                                    style={{ color: accent }}
-                                                />
-                                            </span>
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    ))
-                ) : (
+                {filtered.length === 0 ? (
                     <div className="py-20 font-mono text-sm" style={{ color: 'var(--text-tertiary)' }}>
-                        <p>$ grep &quot;{searchQuery.trim() || selectedStatus}&quot; --archive</p>
-                        <p className="mt-2" style={{ color: 'var(--text-muted)' }}>→ 0 matches. Loosen the filters to see more.</p>
+                        <p>$ grep &quot;{query.trim() || filter}&quot; --open-source</p>
+                        <p className="mt-2" style={{ color: 'var(--text-muted)' }}>→ 0 matches.</p>
                         <button
                             type="button"
-                            onClick={() => {
-                                setSearchQuery('');
-                                setSelectedStatus('All');
-                                setSelectedType('All');
-                                refreshScrollTriggersSoon();
-                            }}
+                            onClick={() => { setQuery(''); applyFilter('all'); }}
                             className="mt-6 cursor-pointer underline-offset-4 hover:underline"
                             style={{ color: 'var(--accent-orange)' }}
                         >
                             [reset --filters]
                         </button>
                     </div>
+                ) : (
+                    <>
+                        {maintained.length > 0 && (
+                            <section aria-labelledby="maintained-heading">
+                                <div
+                                    className="mt-10 flex items-baseline gap-4 pb-3"
+                                    style={{ borderBottom: '1px solid var(--hairline)' }}
+                                >
+                                    <h2
+                                        id="maintained-heading"
+                                        className="font-mono text-sm font-semibold uppercase tracking-[0.3em]"
+                                        style={{ color: 'var(--accent-cyan)' }}
+                                    >
+                                        /currently maintained
+                                    </h2>
+                                    <span className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>
+                                        {maintained.length} {maintained.length === 1 ? 'entry' : 'entries'}
+                                    </span>
+                                </div>
+
+                                {maintained.map((project) => (
+                                    <EntryRow
+                                        key={project._id}
+                                        project={project}
+                                        index={rowIndex++}
+                                        href={`${basePath}/${project.slug || project._id}`}
+                                    />
+                                ))}
+                            </section>
+                        )}
+
+                        {rest.length > 0 && (
+                            <section aria-labelledby="archive-heading">
+                                <div
+                                    className="mt-16 flex items-baseline gap-4 pb-3"
+                                    style={{ borderBottom: '1px solid var(--hairline)' }}
+                                >
+                                    <h2
+                                        id="archive-heading"
+                                        className="font-mono text-sm font-semibold uppercase tracking-[0.3em]"
+                                        style={{ color: 'var(--text-bright)' }}
+                                    >
+                                        /the archive
+                                    </h2>
+                                    <span className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>
+                                        {rest.length} {rest.length === 1 ? 'entry' : 'entries'}
+                                    </span>
+                                </div>
+
+                                {rest.map((project) => (
+                                    <EntryRow
+                                        key={project._id}
+                                        project={project}
+                                        index={rowIndex++}
+                                        href={`${basePath}/${project.slug || project._id}`}
+                                    />
+                                ))}
+                            </section>
+                        )}
+                    </>
                 )}
             </div>
-
-            <ProjectDialog project={selectedProject} onClose={() => setSelectedProject(null)} isV2={true} />
         </div>
     );
 };

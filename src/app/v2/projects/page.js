@@ -11,13 +11,13 @@ export async function generateMetadata() {
     const [config, social] = await Promise.all([getConfigData(), getSocialMeta()]);
     const baseName = config?.siteTitle || config?.logoText || 'Portfolio';
     const baseUrl = getSiteUrl();
-    const description = 'The complete project archive, year by year — V2 edition.';
+    const description = 'Open source libraries, apps and experiments — built and maintained in the open.';
 
     const base = {
-        title: `${baseName} | Projects`,
+        title: `${baseName} | Open Source & Community`,
         description,
         openGraph: {
-            title: `${baseName} | Projects`,
+            title: `${baseName} | Open Source & Community`,
             description,
             url: `${baseUrl}${v2PublicPath(config, '/projects')}`,
             type: 'website',
@@ -38,8 +38,12 @@ export default async function ProjectsV2Page() {
 
     return (
         <>
-            <BreadcrumbSchema path="/projects" name="Projects" />
-            <ProjectsV2 data={projectsData} config={config} />
+            <BreadcrumbSchema path="/projects" name="Open Source" />
+            <ProjectsV2
+                data={projectsData}
+                config={config}
+                basePath={v2PublicPath(config, '/projects')}
+            />
         </>
     );
 }
