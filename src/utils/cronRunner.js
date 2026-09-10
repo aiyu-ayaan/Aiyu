@@ -449,6 +449,7 @@ export async function executeCronJob(job) {
         const attemptStartTime = Date.now();
         let attemptStatus = 'success';
         let attemptLogOutput;
+        let unrecoverable = false;
 
         try {
             if (job.action === 'clean_unreferenced') {
@@ -601,6 +602,9 @@ export async function executeCronJob(job) {
         } catch (err) {
             attemptStatus = 'failure';
             attemptLogOutput = `Execution failed after ${Date.now() - attemptStartTime}ms.\nError: ${err.message}\nStack: ${err.stack}`;
+            // A revoked/expired grant cannot be fixed by waiting; only a fresh
+            // consent can. Retrying just repeats the same rejection.
+            unrecoverable = Boolean(err.requiresReconnect);
         }
 
         // Add to main logOutput
@@ -613,6 +617,11 @@ export async function executeCronJob(job) {
         status = attemptStatus;
 
         if (status === 'success') {
+            break;
+        }
+
+        if (unrecoverable) {
+            logOutput += '[Not retried: the failure requires reconnecting the account.]\n\n';
             break;
         }
 
