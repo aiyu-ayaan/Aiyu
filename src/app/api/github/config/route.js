@@ -92,11 +92,27 @@ async function getConfig(request) {
                     const sorted = repos.sort((a, b) => {
                         if (a.private === b.private) return 0;
                         return a.private ? -1 : 1;
-                    }).map(r => r.name);
+                    });
 
+                    // `data` stays a string[] — the existing hidden-repo picker
+                    // on the GitHub dashboard reads it. `repos` carries the
+                    // detail the project-sync picker needs (linked state, stars,
+                    // recency) so it can be shown without a second round trip.
                     return NextResponse.json({
                         success: true,
-                        data: sorted
+                        data: sorted.map((r) => r.name),
+                        repos: sorted.map((r) => ({
+                            name: r.name,
+                            fullName: r.full_name,
+                            description: r.description || '',
+                            language: r.language || '',
+                            stars: r.stargazers_count || 0,
+                            forks: r.forks_count || 0,
+                            isPrivate: Boolean(r.private),
+                            isFork: Boolean(r.fork),
+                            isArchived: Boolean(r.archived),
+                            pushedAt: r.pushed_at || null,
+                        })),
                     });
                 }
             } catch (e) {

@@ -6,6 +6,7 @@ import cache, { CACHE_TTL, createCacheDebugHeaders } from '@/lib/cache';
 import { createPublicCacheHeaders, RESPONSE_CACHE } from '@/lib/httpCache';
 import { getProjectSlug } from '@/lib/contentSlugs';
 import { autoPing } from '@/lib/autoIndexing';
+import { SYNCABLE_FIELDS, withPinnedFields } from '@/lib/githubProjects';
 
 export async function PUT(request, { params }) {
     const session = await getSession();
@@ -16,9 +17,30 @@ export async function PUT(request, { params }) {
     try {
         const { id } = await params;
         const body = await request.json();
+        const data = fromClient('project', body, { keepId: false });
+
+        // Editing a synced project pins the fields you touched, so the next
+        // GitHub sync leaves your wording alone (see lib/githubProjects.js).
+        // An explicit `pinnedFields` in the body wins — that is the admin
+        // un-pinning a field to hand it back to sync.
+        const existing = await prisma.project.findUnique({
+            where: { id },
+            select: { source: true, pinnedFields: true, ...Object.fromEntries(SYNCABLE_FIELDS.map((f) => [f, true])) },
+        });
+
+        if (existing?.source === 'github' && body.pinnedFields === undefined) {
+            const changed = SYNCABLE_FIELDS.filter((field) => (
+                data[field] !== undefined
+                && JSON.stringify(data[field]) !== JSON.stringify(existing[field])
+            ));
+            if (changed.length > 0) {
+                data.pinnedFields = withPinnedFields(existing.pinnedFields, changed);
+            }
+        }
+
         const project = await prisma.project.update({
             where: { id },
-            data: fromClient('project', body, { keepId: false }),
+            data,
         });
         await cache.invalidatePrefixAsync('db:projects');
         const updated = toClient('project', project);
