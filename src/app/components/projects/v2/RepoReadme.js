@@ -13,14 +13,46 @@
  *    blocks scroll inside their own container so the page body never scrolls
  *    horizontally on a phone.
  *
- * README content is authored in the repo and rendered as data. `react-markdown`
- * does not evaluate raw HTML unless `rehype-raw` is added — it is deliberately
- * not added here, so embedded <script>/<iframe> in a README stay inert.
+ * README content is authored in the repo and rendered as data. READMEs lean
+ * heavily on raw HTML — `<div align="center">` headers, `<img>` banners,
+ * `<details>` sections — so `rehype-raw` parses it, and `rehype-sanitize` runs
+ * AFTER it against an explicit allowlist. Order matters: sanitize must see the
+ * parsed tree, not the escaped source. The schema below drops <script>,
+ * <iframe>, <style>, event handlers and javascript: URLs, so repo markup can
+ * shape a page but never execute on this origin.
  */
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
+import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 import { FaChevronDown } from 'react-icons/fa6';
+
+/**
+ * GitHub's own README allowlist, minus anything that executes. Built from
+ * rehype-sanitize's default (already script-free and javascript:-safe) with the
+ * layout tags READMEs actually use, plus the few presentational attributes that
+ * carry meaning (align, width on images).
+ */
+const README_SCHEMA = {
+    ...defaultSchema,
+    tagNames: [
+        ...(defaultSchema.tagNames || []),
+        'div', 'span', 'picture', 'source', 'details', 'summary',
+        'kbd', 'samp', 'sub', 'sup', 'ins', 'mark',
+    ],
+    attributes: {
+        ...defaultSchema.attributes,
+        '*': [...(defaultSchema.attributes?.['*'] || []), 'align', 'id'],
+        img: [
+            ...(defaultSchema.attributes?.img || []),
+            'width', 'height', 'align', 'loading', 'srcSet',
+        ],
+        a: [...(defaultSchema.attributes?.a || []), 'target', 'rel'],
+        source: ['srcSet', 'media', 'type'],
+        details: ['open'],
+    },
+};
 
 // Roughly two screens of prose. Long READMEs are collapsed by default so the
 // project's own framing stays above the fold instead of being buried.
@@ -116,22 +148,57 @@ const markdownComponents = {
         <td className="px-3 py-2" style={{ borderBottom: '1px solid var(--hairline)' }}>{children}</td>
     ),
     hr: () => <hr className="my-8" style={{ borderColor: 'var(--hairline)' }} />,
-    img: ({ src, alt }) => (
+    img: ({ src, alt, width, height }) => (
         // Remote README assets from arbitrary repos: plain <img> rather than
         // next/image, which would require every host in next.config remotePatterns.
+        // width/height are honoured so a 128px logo stays a logo instead of
+        // stretching to the column width.
         <img
             src={src}
             alt={alt || ''}
+            width={width || undefined}
+            height={height || undefined}
             loading="lazy"
             decoding="async"
             referrerPolicy="no-referrer"
-            className="my-4 inline-block h-auto max-w-full rounded-lg"
+            className="my-2 inline-block h-auto max-w-full rounded-lg"
         />
+    ),
+    details: ({ children }) => (
+        <details className="my-4 rounded-lg p-3" style={{ border: '1px solid var(--hairline)' }}>
+            {children}
+        </details>
+    ),
+    summary: ({ children }) => (
+        <summary className="cursor-pointer font-mono text-sm" style={{ color: 'var(--accent-cyan)' }}>
+            {children}
+        </summary>
     ),
 };
 
+const ALERT_LABELS = {
+    NOTE: 'Note',
+    TIP: 'Tip',
+    IMPORTANT: 'Important',
+    WARNING: 'Warning',
+    CAUTION: 'Caution',
+};
+
+/**
+ * GitHub alert callouts (`> [!NOTE]`) are a GitHub-flavoured extension that
+ * remark-gfm does not implement, so the raw `[!NOTE]` token renders as literal
+ * text inside the quote. Rewrite the marker to a bold label, which keeps the
+ * callout readable without a bespoke remark plugin.
+ */
+export function normalizeGithubAlerts(markdown) {
+    return String(markdown || '').replace(
+        /^(\s*>\s*)\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*$/gim,
+        (_match, quote, type) => `${quote}**${ALERT_LABELS[type.toUpperCase()]}**`
+    );
+}
+
 export default function RepoReadme({ markdown, repoName }) {
-    const content = typeof markdown === 'string' ? markdown.trim() : '';
+    const content = typeof markdown === 'string' ? normalizeGithubAlerts(markdown.trim()) : '';
     const isLong = content.length > COLLAPSE_THRESHOLD_CHARS;
     const [expanded, setExpanded] = useState(false);
 
@@ -154,7 +221,11 @@ export default function RepoReadme({ markdown, repoName }) {
                 className="relative"
                 style={collapsed ? { maxHeight: COLLAPSED_MAX_HEIGHT, overflow: 'hidden' } : undefined}
             >
-                <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+                <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    rehypePlugins={[rehypeRaw, [rehypeSanitize, README_SCHEMA]]}
+                    components={markdownComponents}
+                >
                     {content}
                 </ReactMarkdown>
 
