@@ -105,6 +105,11 @@ export default async function ProjectDetailV2Page({ params }) {
     const canonicalUrl = `${baseUrl}${v2PublicPath(config, `/projects/${canonicalSlug}`)}`;
     const stackList = Array.isArray(project?.techStack) ? project.techStack : [];
 
+    // Live repository facts enrich the entity for search engines: the primary
+    // language, licence and star count are the signals that distinguish a
+    // maintained library from an abandoned one.
+    const repo = project?.repoData || null;
+
     const projectSchema = {
         '@context': 'https://schema.org',
         '@type': 'SoftwareSourceCode',
@@ -112,7 +117,19 @@ export default async function ProjectDetailV2Page({ params }) {
         description: project.description || undefined,
         url: canonicalUrl,
         ...(project?.image ? { image: project.image } : {}),
-        ...(stackList.length > 0 ? { programmingLanguage: stackList } : {}),
+        ...(stackList.length > 0 || repo?.language
+            ? { programmingLanguage: [...new Set([repo?.language, ...stackList].filter(Boolean))] }
+            : {}),
+        ...(repo?.license ? { license: repo.license } : {}),
+        ...(repo?.pushedAt ? { dateModified: repo.pushedAt } : {}),
+        ...(repo?.createdAt ? { dateCreated: repo.createdAt } : {}),
+        ...(repo?.stars > 0 ? {
+            interactionStatistic: {
+                '@type': 'InteractionCounter',
+                interactionType: 'https://schema.org/LikeAction',
+                userInteractionCount: repo.stars,
+            },
+        } : {}),
         ...(isExternalHttpUrl(project?.codeLink) ? { codeRepository: project.codeLink } : {}),
         author: {
             '@type': 'Person',
@@ -132,7 +149,7 @@ export default async function ProjectDetailV2Page({ params }) {
             />
             <BreadcrumbSchema
                 path="/projects"
-                name="Projects"
+                name="Open Source"
                 trail={[{ name: project.name, path: `/projects/${canonicalSlug}` }]}
             />
             <TrackView entityType="project" entityId={project?._id} entitySlug={canonicalSlug} />
