@@ -23,7 +23,10 @@ test('logs in with valid credentials and reaches the dashboard', async ({ page }
   await page.fill('input[type="password"]', PASSWORD);
   await page.click('button[type="submit"]');
 
-  await expect(page).toHaveURL(/\/admin(\/|$)/, { timeout: 15_000 });
+  // Must be the dashboard itself, not just any /admin/* path: `/admin/login`
+  // also matches a `(\/|$)` suffix, so a failed login would satisfy it and the
+  // real assertion below would be the only thing catching the regression.
+  await expect(page).toHaveURL(/\/admin$/, { timeout: 15_000 });
   await expect(page.locator('input[type="password"]')).toHaveCount(0);
 });
 
