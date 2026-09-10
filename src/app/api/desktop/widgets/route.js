@@ -63,6 +63,8 @@ export async function GET() {
 
         // 3. Format Projects from DB
         projects.forEach((p) => {
+            const repo = p.source === 'github' ? (p.repoData || null) : null;
+
             projectItems.push({
                 id: `proj-${p._id || p.id}`,
                 type: 'project',
@@ -72,7 +74,24 @@ export async function GET() {
                 description: p.description,
                 techStack: Array.isArray(p.techStack) ? p.techStack : ['React', 'Next.js'],
                 status: p.status || 'Active',
-                url: p.codeLink || p.blogLink || `/projects/${p.slug || p._id}`,
+                // Synced repos open the detail page, which is where the README
+                // lives — sending them straight to GitHub would skip the very
+                // content the sync exists to publish. Manual entries keep the
+                // old preference for their own code/blog link.
+                url: repo
+                    ? `/projects/${p.slug || p._id}`
+                    : (p.codeLink || p.blogLink || `/projects/${p.slug || p._id}`),
+                // Live signals, mirrored from the web section's repo rail.
+                repo: repo ? {
+                    fullName: repo.fullName || '',
+                    stars: Number(repo.stars) || 0,
+                    forks: Number(repo.forks) || 0,
+                    language: repo.language || '',
+                    license: repo.license || '',
+                    pushedAt: repo.pushedAt || null,
+                    isArchived: Boolean(repo.isArchived),
+                } : null,
+                hasReadme: typeof p.readme === 'string' && p.readme.trim().length > 0,
             });
         });
 

@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { ExternalLink, Bot, Cpu, Zap, Code, Terminal, Folder, Loader2, Newspaper, Image as ImageIcon, Rocket, AppWindow, MoreHorizontal, Sparkles, Globe } from 'lucide-react';
+import { ExternalLink, Bot, Cpu, Zap, Code, Terminal, Folder, Loader2, Newspaper, Image as ImageIcon, Rocket, AppWindow, MoreHorizontal, Sparkles, Globe, GitBranch, GitFork, Star } from 'lucide-react';
 import { WIDGET_ITEMS as FALLBACK_ITEMS } from './data/widgetItems';
 
 const BATCH_SIZE = 8;
@@ -221,27 +221,62 @@ function WidgetCard({ item, onClick }) {
 
         case 'project': {
             const img = getImageUrl(item.image);
+            const repo = item.repo || null;
+
             return (
-                <CardShell icon={Rocket} label="Project" accentColor="amber" onClick={onClick}>
+                <CardShell
+                    icon={repo ? GitBranch : Rocket}
+                    label={repo ? 'Open Source' : 'Project'}
+                    accentColor="amber"
+                    onClick={onClick}
+                >
                     {img && (
                         <div className="relative aspect-video w-full overflow-hidden rounded-lg mb-2">
                             <img src={img} alt={item.title} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" loading="lazy" />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
                         </div>
                     )}
-                    <div className="flex items-center gap-1.5 mb-1">
+                    <div className="flex flex-wrap items-center gap-1.5 mb-1">
                         <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold border ${
-                            item.status === 'Active'
+                            item.status === 'Active' || item.status === 'Working'
                                 ? 'bg-green-500/15 text-green-400 border-green-500/25'
-                                : item.status === 'Completed'
+                                : item.status === 'Completed' || item.status === 'Done'
                                     ? 'bg-blue-500/15 text-blue-400 border-blue-500/25'
                                     : 'bg-white/10 text-neutral-400 border-white/10'
                         }`}>
                             {item.status || 'Active'}
                         </span>
+                        {repo?.isArchived && (
+                            <span className="rounded-full border border-white/10 bg-white/10 px-2 py-0.5 text-[9px] font-bold text-neutral-400">
+                                archived
+                            </span>
+                        )}
                     </div>
                     <h4 className="text-[11px] font-bold leading-tight text-white group-hover:text-amber-300 transition-colors line-clamp-1">{item.title}</h4>
                     {item.description && <p className="mt-0.5 text-[10px] text-neutral-500 line-clamp-2">{item.description}</p>}
+
+                    {repo && (
+                        <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[9px] text-neutral-500">
+                            {repo.stars > 0 && (
+                                <span className="inline-flex items-center gap-0.5">
+                                    <Star className="h-2.5 w-2.5" aria-hidden="true" />
+                                    {repo.stars}
+                                    <span className="sr-only"> stars</span>
+                                </span>
+                            )}
+                            {repo.forks > 0 && (
+                                <span className="inline-flex items-center gap-0.5">
+                                    <GitFork className="h-2.5 w-2.5" aria-hidden="true" />
+                                    {repo.forks}
+                                    <span className="sr-only"> forks</span>
+                                </span>
+                            )}
+                            {repo.language && <span>{repo.language}</span>}
+                            {repo.license && <span>{repo.license}</span>}
+                            {item.hasReadme && <span className="text-amber-400/80">README</span>}
+                        </div>
+                    )}
+
                     {Array.isArray(item.techStack) && item.techStack.length > 0 && (
                         <div className="mt-2 flex flex-wrap gap-1">
                             {item.techStack.slice(0, 4).map((tech) => (

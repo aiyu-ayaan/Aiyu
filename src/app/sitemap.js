@@ -130,6 +130,15 @@ function createStaticRoutes(baseUrl, options = {}) {
       priority: 0.7,
     },
     {
+      // Aiyu OS. Indexable since the desktop SEO pass — the page carries a
+      // server-rendered summary and WebApplication schema, so there is real
+      // content behind this URL rather than an empty JS shell.
+      url: `${baseUrl}/desktop`,
+      lastModified: now,
+      changeFrequency: 'monthly',
+      priority: 0.75,
+    },
+    {
       url: `${baseUrl}/contact-us`,
       lastModified: now,
       changeFrequency: 'monthly',
