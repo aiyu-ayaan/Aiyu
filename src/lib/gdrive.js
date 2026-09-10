@@ -6,6 +6,23 @@ import { encrypt, decrypt } from '@/lib/encryption';
 export const OAUTH_STATE_COOKIE = 'gdrive_oauth_state';
 export const OAUTH_STATE_MAX_AGE = 600; // seconds
 
+/**
+ * Raised when the stored grant is dead and only a fresh consent can fix it.
+ * Callers use `requiresReconnect` to skip retries that cannot possibly succeed.
+ */
+export class GDriveAuthError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'GDriveAuthError';
+    this.requiresReconnect = true;
+  }
+}
+
+const RECONNECT_HINT =
+  'Reconnect Google Drive in Database Admin. If the Google Cloud OAuth consent ' +
+  'screen for this client is still in "Testing", refresh tokens are revoked after ' +
+  '7 days — publish the app to keep the connection alive.';
+
 const CONFIG_FIELDS = [
   'clientId',
   'clientSecret',
@@ -134,7 +151,7 @@ export async function getValidAccessToken() {
   }
 
   if (!config.refreshToken || !config.clientId || !config.clientSecret) {
-    throw new Error('Google Drive credentials or refresh token missing');
+    throw new GDriveAuthError('Google Drive credentials or refresh token missing');
   }
 
   const response = await fetch('https://oauth2.googleapis.com/token', {
@@ -150,6 +167,26 @@ export async function getValidAccessToken() {
 
   if (!response.ok) {
     const errText = await response.text();
+
+    // `invalid_grant` means the refresh token itself is dead (expired, revoked,
+    // or superseded) — retrying it can never succeed. Drop the useless tokens so
+    // the app reports itself as disconnected and the admin is prompted to
+    // re-consent, instead of failing every backup forever with a live-looking
+    // connection.
+    let errorCode = null;
+    try {
+      errorCode = JSON.parse(errText).error;
+    } catch {
+      // Non-JSON error body: fall through to the generic failure below.
+    }
+
+    if (errorCode === 'invalid_grant') {
+      await clearGDriveTokens();
+      throw new GDriveAuthError(
+        `Google Drive refresh token is expired or revoked. ${RECONNECT_HINT}`
+      );
+    }
+
     throw new Error(
       `Failed to refresh Google Drive token: ${response.statusText} - ${errText}`
     );

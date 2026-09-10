@@ -197,6 +197,83 @@ describe('Google Drive Helper Module (gdrive.js)', () => {
         'Google Drive credentials or refresh token missing'
       );
     });
+
+    it('clears dead tokens and flags a reconnect when Google returns invalid_grant', async () => {
+      let dbStorage = null;
+      mockPrismaConfig.findFirst.mockImplementation(async () => dbStorage);
+      mockPrismaConfig.create.mockImplementation(async ({ data }) => {
+        dbStorage = { id: 'cfg_1', data: data.data };
+        return dbStorage;
+      });
+      mockPrismaConfig.update.mockImplementation(async ({ data }) => {
+        dbStorage = { id: 'cfg_1', data: data.data };
+        return dbStorage;
+      });
+
+      await saveGDriveConfig({
+        clientId: 'client_id_val',
+        clientSecret: 'client_secret_val',
+        accessToken: 'expired_access_token',
+        refreshToken: 'revoked_refresh_token',
+        tokenExpiry: Date.now() - 1000,
+      });
+
+      global.fetch.mockResolvedValueOnce({
+        ok: false,
+        statusText: 'Bad Request',
+        text: async () =>
+          JSON.stringify({
+            error: 'invalid_grant',
+            error_description: 'Token has been expired or revoked.',
+          }),
+      });
+
+      await expect(getValidAccessToken()).rejects.toMatchObject({
+        requiresReconnect: true,
+      });
+
+      // The revoked grant must not survive: the account has to read as
+      // disconnected so the admin is prompted to re-consent.
+      const after = await getGDriveConfig();
+      expect(after.refreshToken).toBeNull();
+      expect(after.accessToken).toBeNull();
+      expect(after.clientId).toBe('client_id_val');
+      expect(after.clientSecret).toBe('client_secret_val');
+    });
+
+    it('keeps tokens and does not flag a reconnect on a transient refresh failure', async () => {
+      let dbStorage = null;
+      mockPrismaConfig.findFirst.mockImplementation(async () => dbStorage);
+      mockPrismaConfig.create.mockImplementation(async ({ data }) => {
+        dbStorage = { id: 'cfg_1', data: data.data };
+        return dbStorage;
+      });
+      mockPrismaConfig.update.mockImplementation(async ({ data }) => {
+        dbStorage = { id: 'cfg_1', data: data.data };
+        return dbStorage;
+      });
+
+      await saveGDriveConfig({
+        clientId: 'client_id_val',
+        clientSecret: 'client_secret_val',
+        accessToken: 'expired_access_token',
+        refreshToken: 'good_refresh_token',
+        tokenExpiry: Date.now() - 1000,
+      });
+
+      global.fetch.mockResolvedValueOnce({
+        ok: false,
+        statusText: 'Internal Server Error',
+        text: async () => 'upstream unavailable',
+      });
+
+      await expect(getValidAccessToken()).rejects.toThrow(
+        'Failed to refresh Google Drive token'
+      );
+
+      const after = await getGDriveConfig();
+      expect(after.refreshToken).toBe('good_refresh_token');
+    });
   });
 
   describe('getOrCreateBackupFolder', () => {
