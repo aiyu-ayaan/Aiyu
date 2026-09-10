@@ -148,7 +148,7 @@ export default function RepoSyncPanel({ username, hiddenRepos = [] }) {
 
     if (!username) {
         return (
-            <div className="rounded-2xl border border-white/10 bg-slate-900/50 p-6">
+            <div id="repository-sync" className="rounded-2xl border border-white/10 bg-slate-900/50 p-6 scroll-mt-8">
                 <p className="font-mono text-xs uppercase tracking-widest text-slate-500">Repository Sync</p>
                 <p className="mt-3 text-sm text-slate-400">
                     Set a target username above and save before syncing repositories.
@@ -158,7 +158,10 @@ export default function RepoSyncPanel({ username, hiddenRepos = [] }) {
     }
 
     return (
-        <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-slate-900/50 p-4 backdrop-blur-xl md:p-8">
+        <div
+            id="repository-sync"
+            className="relative overflow-hidden rounded-2xl border border-white/10 bg-slate-900/50 p-4 backdrop-blur-xl scroll-mt-8 md:p-8"
+        >
             <div className="pointer-events-none absolute right-0 top-0 h-64 w-64 rounded-full bg-cyan-500/5 blur-[100px]" />
 
             <div className="relative z-10 mb-6 flex flex-wrap items-center justify-between gap-4">

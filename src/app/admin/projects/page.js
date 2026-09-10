@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Search } from 'lucide-react';
+import { GitBranch, Lock, Search } from 'lucide-react';
 import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
 
 const getStatusMeta = (status) => {
@@ -176,12 +176,24 @@ export default function AdminProjects() {
                             <p className="text-xs font-mono text-cyan-400 mt-2">SAVING_PROJECT_ORDER...</p>
                         )}
                     </div>
-                    <Link href="/admin/projects/new" className="group relative px-6 py-3 rounded-lg overflow-hidden bg-cyan-500/10 border border-cyan-500/20 hover:border-cyan-500/50 transition-all hover:shadow-[0_0_20px_rgba(34,211,238,0.2)]">
-                        <div className="absolute inset-0 bg-linear-to-r from-transparent via-cyan-500/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700" />
-                        <span className="relative text-cyan-400 font-bold tracking-wide flex items-center gap-2">
-                            <span className="text-lg">+</span> INITIALIZE_PROJECT
-                        </span>
-                    </Link>
+                    <div className="flex flex-wrap items-center gap-3">
+                        {/* Repo sync lives on the GitHub dashboard next to the
+                            token and hidden-repo controls it depends on, but
+                            this is where you come looking for it. */}
+                        <Link
+                            href="/admin/github#repository-sync"
+                            className="px-5 py-3 rounded-lg border border-white/10 text-slate-300 font-mono text-sm tracking-wide transition-colors hover:bg-white/5 flex items-center gap-2"
+                        >
+                            <GitBranch className="w-4 h-4" aria-hidden="true" />
+                            SYNC_FROM_GITHUB
+                        </Link>
+                        <Link href="/admin/projects/new" className="group relative px-6 py-3 rounded-lg overflow-hidden bg-cyan-500/10 border border-cyan-500/20 hover:border-cyan-500/50 transition-all hover:shadow-[0_0_20px_rgba(34,211,238,0.2)]">
+                            <div className="absolute inset-0 bg-linear-to-r from-transparent via-cyan-500/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700" />
+                            <span className="relative text-cyan-400 font-bold tracking-wide flex items-center gap-2">
+                                <span className="text-lg">+</span> INITIALIZE_PROJECT
+                            </span>
+                        </Link>
+                    </div>
                 </div>
             </div>
 
@@ -245,7 +257,27 @@ export default function AdminProjects() {
                                             </span>
                                         </td>
                                         <td className="px-6 py-5 font-semibold text-slate-200 group-hover:text-cyan-400 transition-colors">
-                                            {project.name}
+                                            <span className="flex flex-wrap items-center gap-2">
+                                                {project.name}
+                                                {project.source === 'github' && (
+                                                    <span
+                                                        title={project.repoFullName || 'Synced from GitHub'}
+                                                        className="inline-flex items-center gap-1 rounded border border-cyan-500/30 bg-cyan-500/10 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide text-cyan-400"
+                                                    >
+                                                        <GitBranch className="w-3 h-3" aria-hidden="true" />
+                                                        synced
+                                                    </span>
+                                                )}
+                                                {project.pinnedFields?.length > 0 && (
+                                                    <span
+                                                        title={`Protected from sync: ${project.pinnedFields.join(', ')}`}
+                                                        className="inline-flex items-center gap-1 font-mono text-[10px] text-slate-500"
+                                                    >
+                                                        <Lock className="w-3 h-3" aria-hidden="true" />
+                                                        {project.pinnedFields.length}
+                                                    </span>
+                                                )}
+                                            </span>
                                         </td>
                                         <td className="px-6 py-5 text-slate-400">{project.projectType}</td>
                                         <td className="px-6 py-5 text-slate-500 font-mono">{project.year}</td>
