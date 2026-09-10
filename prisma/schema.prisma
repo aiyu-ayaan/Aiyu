@@ -62,6 +62,13 @@ model Blog {
   @@index([updatedAt])
 }
 
+// A portfolio entry. Rows are either hand-authored (`source = "manual"`) or
+// linked to a GitHub repository (`source = "github"`, keyed by `repoFullName`)
+// and refreshed by the admin-triggered sync in lib/githubProjects.js.
+//
+// Both kinds live in this one table on purpose: /projects/[slug], the project
+// dialog, and the sitemap all read `Project`, so a synced repo becomes a
+// crawlable page with no parallel model, slug resolver, or sitemap branch.
 model Project {
   id           String   @id @default(cuid())
   name         String
@@ -75,13 +82,39 @@ model Project {
   blogLink     String?
   image        String?
   displayOrder Int      @default(0)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @default(now()) @updatedAt
+
+  // "manual" | "github". Drives which UI affordances the admin sees and whether
+  // sync is allowed to touch the row at all.
+  source String @default("manual")
+
+  // "owner/repo" — the sync key. Unique so a repo maps to exactly one project
+  // and sync can upsert safely; null for hand-authored rows (Postgres allows
+  // many NULLs under a UNIQUE constraint, so manual rows never collide).
+  repoFullName String? @unique
+
+  // Last synced GitHub snapshot: stars, forks, language, topics, license,
+  // archived, pushedAt, defaultBranch, homepage. A Json blob rather than
+  // columns because it is display-only, read as a whole, and never queried by
+  // field — the same reasoning as GitHub.data.
+  repoData Json?
+
+  // README markdown as fetched, with relative links already absolutized.
+  readme          String?
+  readmeFetchedAt DateTime?
+  syncedAt        DateTime?
+
+  // Field names the admin has overridden by hand. Sync refreshes everything
+  // EXCEPT these, so re-syncing is never destructive to manual edits.
+  pinnedFields String[] @default([])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 
   @@index([displayOrder, year])
   @@index([updatedAt])
   @@index([createdAt])
   @@index([slug])
+  @@index([source])
 }
 
 model Deployment {

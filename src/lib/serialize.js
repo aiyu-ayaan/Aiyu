@@ -19,7 +19,7 @@
 // Top-level DateTime columns per model (coerced to Date on write).
 const DATE_FIELDS = {
   blog: ['createdAt', 'updatedAt'],
-  project: ['createdAt', 'updatedAt'],
+  project: ['createdAt', 'updatedAt', 'syncedAt', 'readmeFetchedAt'],
   deployment: ['createdAt', 'updatedAt'],
   gallery: ['createdAt'],
   contactMessage: ['createdAt'],
@@ -69,7 +69,9 @@ const RELATIONAL_COLUMNS = {
   ],
   project: [
     'name', 'slug', 'techStack', 'year', 'status', 'projectType', 'description',
-    'codeLink', 'blogLink', 'image', 'displayOrder', 'createdAt', 'updatedAt',
+    'codeLink', 'blogLink', 'image', 'displayOrder', 'source', 'repoFullName',
+    'repoData', 'readme', 'readmeFetchedAt', 'syncedAt', 'pinnedFields',
+    'createdAt', 'updatedAt',
   ],
   deployment: [
     'name', 'slug', 'techStack', 'status', 'appType', 'environment',
