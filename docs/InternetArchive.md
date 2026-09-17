@@ -1,17 +1,15 @@
 # Internet Archive (Wayback Machine) Snapshot Task
 
-How to configure the `Site to Internet Archive` webhook cron so it actually
-archives the site, and why the old URL stopped working.
+How to archive the site on a schedule, and why the old
+`web.archive.org/save/<url>` cron stopped working.
 
 ## TL;DR
 
-Use the predefined **Internet Archive Snapshot** system task: put two keys in
-`.env`, enable the task, done. No URL, header or body to hand-type.
+Use the predefined **Internet Archive Snapshot** system task. No URL, header
+or body to hand-type.
 
-```env
-IA_ACCESS_KEY=...
-IA_SECRET_KEY=...
-```
+Add `IA_ACCESS_KEY` and `IA_SECRET_KEY` under **Manage Global Environment
+Secrets** on `/admin/config/crons` (or in `.env`), then enable the task.
 
 The manual webhook route below is still supported, but every field is a
 chance to mistype a placeholder; prefer the system task.
@@ -43,16 +41,18 @@ A control URL unrelated to this site fails identically, so nothing about
 4:00 AM, **disabled**.
 
 1. Generate S3 keys at <https://archive.org/account/s3.php>.
-2. Put them in the deployment's environment (`.env`, or `prod.env` in Docker):
+2. Add `IA_ACCESS_KEY` and `IA_SECRET_KEY` in **either** place:
 
-   ```env
-   IA_ACCESS_KEY=your-access-key
-   IA_SECRET_KEY=your-secret-key
-   ```
+   - **Manage Global Environment Secrets** on `/admin/config/crons` —
+     AES-256 encrypted, effective immediately, no redeploy. Preferred.
+   - `.env` / `prod.env` — needs an app restart to take effect.
 
-3. Restart the app so the new variables are loaded.
-4. Enable the task from `/admin/config/crons` (System Defined Tasks) and press
-   **TRIGGER** once to confirm.
+   If a key is set in both, the secret store wins; a blank entry there falls
+   through to the deployment environment.
+
+3. Enable the task from `/admin/config/crons` (System Defined Tasks) and press
+   **TRIGGER** once to confirm. The log line reports which source each key was
+   read from.
 
 The task archives the site's own base URL — the same origin `$site` resolves
 to — so there is nothing site-specific to configure. It reports the resolved
@@ -218,6 +218,7 @@ once real keys are configured.
 ## Reference
 
 - SPN2 client: `src/lib/webArchive.js` (+ `webArchive.test.js`)
+- Secret loading: `src/lib/cronSecrets.js` (store layered over `process.env`)
 - Runner: `src/utils/cronRunner.js` (`archive_snapshot` seed + branch, `webhook` branch)
 - Template/placeholder resolution: `src/utils/cronTemplate.js`
 - Env storage: `src/app/api/admin/crons/env/route.js`
