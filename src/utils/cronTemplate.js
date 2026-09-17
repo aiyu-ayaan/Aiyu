@@ -26,6 +26,7 @@
  * `rowLimit`. Mixed references within one compile upgrade the fetch to the
  * union of what every placeholder needs (see the per-model meta in cachedData).
  */
+import { getSiteUrl } from '@/lib/siteUrl';
 import { prisma } from '@/lib/prisma';
 import { getModelColumns, getSingleton, toClient, toClientList } from '@/lib/serialize';
 
@@ -142,7 +143,11 @@ async function resolvePlaceholder(modelName, path, cachedData, options = {}) {
         return getValueByPath(cachedData.env || {}, path);
     }
     if (lowerModel === 'site') {
-        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || 'http://localhost:3000';
+        // Delegate to the app's canonical resolver so `$site` cannot drift from
+        // the origin used for canonicals, sitemaps and OAuth callbacks. The old
+        // inline copy read NEXT_PUBLIC_SITE_URL — a variable set nowhere in this
+        // repo — and so fell through to http://localhost:3000 in production.
+        const siteUrl = getSiteUrl();
         return getValueByPath({ url: siteUrl }, path) || siteUrl;
     }
     if (lowerModel === 'device') {
