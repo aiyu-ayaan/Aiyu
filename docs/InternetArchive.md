@@ -131,6 +131,33 @@ Confirm the snapshot landed at
 <https://web.archive.org/web/*/me.aiyu.co.in> — a `job_id` means the capture
 was queued, not that it finished.
 
+## Common mistakes
+
+**Wrapping the body in braces.** The body field's placeholder hint shows
+`{"status": "active"}`, which invites this:
+
+```
+{ url=https://me.aiyu.co.in/&capture_all=1 }
+```
+
+The braces are sent literally. Archive.org then reads the first field name as
+`{ url`, finds no `url` parameter, and rejects the request. The body is a raw
+form-urlencoded string with no braces, quotes or surrounding whitespace:
+
+```
+url=https://me.aiyu.co.in/&capture_all=1
+```
+
+**Using `{{env.KEY}}` instead of `$env.KEY`.** This scheduler resolves
+`$model.path` placeholders only; `{{ }}` is not a syntax it recognises and is
+passed through untouched, so the literal text `{{env.IA_ACCESS_KEY}}` would be
+sent as the credential and archive.org returns `401`.
+
+The **Headers Preview (evaluated)** panel is the quickest check: it renders the
+compiled value, so a value that comes back unchanged did not resolve. Note that
+the panel prints resolved secrets on screen, so avoid sharing screenshots of it
+once real keys are configured.
+
 ## Troubleshooting
 
 | Response | Meaning | Fix |
