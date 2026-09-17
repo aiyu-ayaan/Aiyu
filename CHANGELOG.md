@@ -1,5 +1,27 @@
 # Changelog
 
+## [5.1.1](https://github.com/aiyu-ayaan/Aiyu/compare/v5.1.0...v5.1.1) (2026-09-17)
+
+### Features
+
+* Seed an Internet Archive Snapshot system task
+* Add Save Page Now (SPN2) client
+
+### Bug Fixes
+
+* : Internet archive issue fixed
+* Read system-task secrets from the admin secret store
+* Describe every system task, not just the first two
+* Resolve $site from the canonical site URL helper
+
+### Other Changes
+
+* Merge branch 'master' of https://github.com/aiyu-ayaan/Aiyu
+* Cover both secret locations for the archive task
+* Document IA_ACCESS_KEY/IA_SECRET_KEY and the snapshot task
+* Note the two SPN2 config traps in the archive guide
+* Add Internet Archive snapshot task setup guide
+
 ## [5.1.0](https://github.com/aiyu-ayaan/Aiyu/compare/v5.0.2...v5.1.0) (2026-09-10)
 
 ### ⚠ BREAKING CHANGES
