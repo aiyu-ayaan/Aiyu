@@ -5,12 +5,16 @@ archives the site, and why the old URL stopped working.
 
 ## TL;DR
 
-| | Old (broken) | New (working) |
-|---|---|---|
-| Method | `GET` | `POST` |
-| URL | `https://web.archive.org/save/https://me.aiyu.co.in/` | `https://web.archive.org/save` |
-| Auth | none | `Authorization: LOW <access>:<secret>` |
-| Body | none | `url=https://me.aiyu.co.in/&capture_all=1` |
+Use the predefined **Internet Archive Snapshot** system task: put two keys in
+`.env`, enable the task, done. No URL, header or body to hand-type.
+
+```env
+IA_ACCESS_KEY=...
+IA_SECRET_KEY=...
+```
+
+The manual webhook route below is still supported, but every field is a
+chance to mistype a placeholder; prefer the system task.
 
 ## Why the old task broke
 
@@ -33,7 +37,51 @@ A control URL unrelated to this site fails identically, so nothing about
 `me.aiyu.co.in` is being blocked. The replacement is the authenticated
 **SPN2** API, which needs archive.org S3 keys.
 
-## 1. Get archive.org S3 keys
+## Option A (recommended): the predefined system task
+
+`Internet Archive Snapshot` is seeded automatically as a system task, daily at
+4:00 AM, **disabled**.
+
+1. Generate S3 keys at <https://archive.org/account/s3.php>.
+2. Put them in the deployment's environment (`.env`, or `prod.env` in Docker):
+
+   ```env
+   IA_ACCESS_KEY=your-access-key
+   IA_SECRET_KEY=your-secret-key
+   ```
+
+3. Restart the app so the new variables are loaded.
+4. Enable the task from `/admin/config/crons` (System Defined Tasks) and press
+   **TRIGGER** once to confirm.
+
+The task archives the site's own base URL — the same origin `$site` resolves
+to — so there is nothing site-specific to configure. It reports the resolved
+target, the SPN2 job id and a verification link in its log.
+
+### The target URL comes from SITE_URL
+
+`$site` and the snapshot task both resolve through
+`lib/siteUrl.getSiteUrl()`, which reads:
+
+```
+SITE_URL  ||  NEXT_PUBLIC_BASE_URL  ||  https://me.aiyu.co.in
+```
+
+If neither variable is set in production you will archive whatever the
+fallback is, so set `SITE_URL` in `prod.env`. (Before the fix in this change
+`$site` read `NEXT_PUBLIC_SITE_URL`, a variable set nowhere in this repo, and
+fell back to `http://localhost:3000` — templated webhooks built on `$site`
+were pointing at localhost in production.)
+
+If the keys are missing the task fails with the missing variable's name rather
+than a bare `401`, so the Logs view says exactly what to add.
+
+## Option B: a manual webhook task
+
+Only needed to archive a URL other than the site root, or to keep credentials
+in the encrypted cron env store rather than the environment.
+
+### 1. Get archive.org S3 keys
 
 1. Log in at <https://archive.org>.
 2. Open <https://archive.org/account/s3.php> ("Archive.org S3 keys").
@@ -41,7 +89,7 @@ A control URL unrelated to this site fails identically, so nothing about
 
 These are per-account, not per-site, and are the only credential SPN2 accepts.
 
-## 2. Store the keys as cron environment variables
+### 2. Store the keys as cron environment variables
 
 Add them in the **Environment Variables** manager on the crons admin page
 (`/admin/config/crons`):
@@ -60,7 +108,7 @@ the Logs view.
 > `webhookEnv` is stripped before the job runs
 > (`src/utils/cronRunner.js`).
 
-## 3. Configure the task
+### 3. Configure the task
 
 Edit `Site to Internet Archive`:
 
@@ -114,7 +162,7 @@ per-account concurrent-capture limit, and hammering it after a `429` extends
 the lockout instead of clearing it. The previous `10x retries / 60s delay`
 setting works against you here.
 
-## 4. Verify
+## Verify
 
 Press **TRIGGER**, then open **Logs**. The log records the method, URL,
 headers and body (secrets redacted) followed by the response.
@@ -169,7 +217,8 @@ once real keys are configured.
 
 ## Reference
 
-- Runner implementation: `src/utils/cronRunner.js` (the `job.action === 'webhook'` branch)
+- SPN2 client: `src/lib/webArchive.js` (+ `webArchive.test.js`)
+- Runner: `src/utils/cronRunner.js` (`archive_snapshot` seed + branch, `webhook` branch)
 - Template/placeholder resolution: `src/utils/cronTemplate.js`
 - Env storage: `src/app/api/admin/crons/env/route.js`
 - SPN2 API: <https://archive.org/details/spn-2-public-api-page>
