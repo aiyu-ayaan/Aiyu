@@ -27,6 +27,19 @@ import {
     ChevronDown
 } from 'lucide-react';
 
+// Blurb shown on each system task card, keyed by its `action`. Previously a
+// two-branch ternary, so every action beyond the first two rendered the WebP
+// description.
+const SYSTEM_TASK_DESCRIPTIONS = {
+    clean_unreferenced: 'Audits all files in the uploads folder, finds files not referenced by any database collections, and purges them to reclaim storage.',
+    migrate_webp: 'Scans public uploads directory for legacy files (.png, .jpg), optimizes them to WebP, replaces all references, and purges originals.',
+    uptime_check: 'Pings every configured endpoint, records response status and latency for the uptime dashboard, and reports a failure when any endpoint is down.',
+    prune_sessions: 'Deletes expired and inactive admin sessions once they pass the retention window, keeping the session store small.',
+    gdrive_backup: 'Exports the full database and uploads it to the connected Google Drive account as a timestamped zip archive.',
+    gdrive_purge: 'Removes Google Drive backup archives older than the configured retention window so the Drive folder does not grow without bound.',
+    archive_snapshot: 'Submits the site base URL ($site) to the Internet Archive Save Page Now API, preserving a public snapshot. Requires IA_ACCESS_KEY and IA_SECRET_KEY in the environment.'
+};
+
 function cronToHuman(cronExpression) {
     if (!cronExpression) return '';
     const fields = cronExpression.trim().split(/\s+/);
@@ -946,9 +959,7 @@ export default function CronJobsPage() {
                                         </div>
 
                                         <p className="text-slate-400 text-xs mt-2 leading-relaxed">
-                                            {job.action === 'clean_unreferenced'
-                                                ? 'Audits all files in the uploads folder, finds files not referenced by any database collections, and purges them to reclaim storage.'
-                                                : 'Scans public uploads directory for legacy files (.png, .jpg), optimizes them to WebP, replaces all references, and purges originals.'}
+                                            {SYSTEM_TASK_DESCRIPTIONS[job.action] || 'Scheduled system maintenance task.'}
                                         </p>
 
                                         <div className="mt-5 grid grid-cols-2 gap-4 border-t border-white/5 pt-4 text-xs font-mono">
