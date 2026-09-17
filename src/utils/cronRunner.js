@@ -4,10 +4,10 @@ import { executeUnreferencedCleanup, executeWebPMigration } from '@/lib/storageA
 import { runUptimeChecks } from '@/lib/uptime';
 import { pruneSessions, SESSION_RETENTION_DAYS } from '@/lib/auth';
 import { sendNotification } from './notificationService';
-import { decrypt } from '@/lib/encryption';
 import { compileTemplate, EXECUTION_ROW_LIMIT } from './cronTemplate';
 import { getGDriveConfig, uploadBackupToDrive, cleanOldDriveBackups } from '@/lib/gdrive';
 import { saveToWayback } from '@/lib/webArchive';
+import { loadCronSecrets, resolveCronEnv, describeSecretSource } from '@/lib/cronSecrets';
 import archiver from 'archiver';
 import { join } from 'path';
 import { readFile, access, readdir } from 'fs/promises';
@@ -515,30 +515,19 @@ export async function executeCronJob(job) {
                 attemptLogOutput = `Google Drive auto-delete purge completed successfully. Purged ${cleanResult.deletedCount} expired backup file(s) older than ${config.retentionMonths || 1} month(s).`;
             } else if (job.action === 'archive_snapshot') {
                 // Target defaults to the site's own base URL, the same origin
-                // `$site` resolves to; credentials come from IA_ACCESS_KEY /
-                // IA_SECRET_KEY in the environment.
-                const snapshot = await saveToWayback();
+                // `$site` resolves to. Credentials come from the admin-managed
+                // secret store first, then the deployment environment.
+                const archiveSecrets = await loadCronSecrets();
+                const archiveEnv = await resolveCronEnv();
+                const snapshot = await saveToWayback(undefined, { env: archiveEnv });
                 attemptLogOutput = `Internet Archive snapshot queued in ${Date.now() - attemptStartTime}ms.\n` +
                             `Target: ${snapshot.url}\n` +
                             `Job ID: ${snapshot.jobId || 'not reported'}\n` +
+                            `Credentials: IA_ACCESS_KEY read from ${describeSecretSource('IA_ACCESS_KEY', archiveSecrets, process.env)}\n` +
                             `Verify at https://web.archive.org/web/*/${snapshot.url.replace(/^https?:\/\//, '')}`;
             } else if (job.action === 'webhook') {
                 const cachedData = {};
-                cachedData.env = {};
-                
-                // Load global environment variables
-                try {
-                    const globalEnvDoc = await getSingleton(prisma, 'cronEnv');
-                    if (globalEnvDoc && Array.isArray(globalEnvDoc.env)) {
-                        for (const env of globalEnvDoc.env) {
-                            if (env.key && env.key.trim()) {
-                                cachedData.env[env.key.trim()] = env.value ? decrypt(env.value) : '';
-                            }
-                        }
-                    }
-                } catch (envErr) {
-                    console.error('[CRON SERVICE] Failed to load global environment variables:', envErr);
-                }
+                cachedData.env = await loadCronSecrets();
 
                 const shouldCompileUrl = job.webhookUrlType === 'expression' || hasTemplateValue(job.webhookUrl);
                 const compiledUrlValue = shouldCompileUrl

@@ -22,6 +22,10 @@ describe('getArchiveCredentials', () => {
         expect(getArchiveCredentials({ IA_ACCESS_KEY: ' a ', IA_SECRET_KEY: '\tb\n' }))
             .toEqual({ accessKey: 'a', secretKey: 'b' });
     });
+    it('points at both places a key can live', () => {
+        expect(() => getArchiveCredentials({})).toThrow(/Global Environment Secrets/);
+        expect(() => getArchiveCredentials({})).toThrow(/\.env/);
+    });
     it('names the missing variable', () => {
         expect(() => getArchiveCredentials({ IA_ACCESS_KEY: 'a' })).toThrow(/IA_SECRET_KEY/);
         expect(() => getArchiveCredentials({})).toThrow(/IA_ACCESS_KEY and IA_SECRET_KEY/);

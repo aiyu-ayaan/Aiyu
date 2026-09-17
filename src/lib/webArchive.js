@@ -32,7 +32,8 @@ export function getArchiveCredentials(env = process.env) {
             .join(' and ');
         throw new Error(
             `Internet Archive credentials are not configured (missing ${missing}). ` +
-            'Generate S3 keys at https://archive.org/account/s3.php and add them to the environment.'
+            'Generate S3 keys at https://archive.org/account/s3.php, then add them either in ' +
+            'Manage Global Environment Secrets on /admin/config/crons, or to .env / prod.env.'
         );
     }
 
