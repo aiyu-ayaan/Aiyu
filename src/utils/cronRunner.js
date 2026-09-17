@@ -7,6 +7,7 @@ import { sendNotification } from './notificationService';
 import { decrypt } from '@/lib/encryption';
 import { compileTemplate, EXECUTION_ROW_LIMIT } from './cronTemplate';
 import { getGDriveConfig, uploadBackupToDrive, cleanOldDriveBackups } from '@/lib/gdrive';
+import { saveToWayback } from '@/lib/webArchive';
 import archiver from 'archiver';
 import { join } from 'path';
 import { readFile, access, readdir } from 'fs/promises';
@@ -239,6 +240,19 @@ export async function initCronRunner() {
                 nextRun: getNextCronRun('0 3 * * *', new Date(), timeZone)
             } });
             console.log('[CRON SERVICE] Seeded: Google Drive Auto-Delete Purge');
+        }
+
+        const archiveJob = await prisma.cron.findFirst({ where: { action: 'archive_snapshot' } });
+        if (!archiveJob) {
+            await prisma.cron.create({ data: {
+                name: 'Internet Archive Snapshot',
+                type: 'system',
+                schedule: '0 4 * * *', // Daily at 4:00 AM
+                enabled: false,
+                action: 'archive_snapshot',
+                nextRun: getNextCronRun('0 4 * * *', new Date(), timeZone)
+            } });
+            console.log('[CRON SERVICE] Seeded: Internet Archive Snapshot');
         }
 
 
@@ -499,6 +513,15 @@ export async function executeCronJob(job) {
                 }
                 const cleanResult = await cleanOldDriveBackups(config.retentionMonths || 1, true);
                 attemptLogOutput = `Google Drive auto-delete purge completed successfully. Purged ${cleanResult.deletedCount} expired backup file(s) older than ${config.retentionMonths || 1} month(s).`;
+            } else if (job.action === 'archive_snapshot') {
+                // Target defaults to the site's own base URL, the same origin
+                // `$site` resolves to; credentials come from IA_ACCESS_KEY /
+                // IA_SECRET_KEY in the environment.
+                const snapshot = await saveToWayback();
+                attemptLogOutput = `Internet Archive snapshot queued in ${Date.now() - attemptStartTime}ms.\n` +
+                            `Target: ${snapshot.url}\n` +
+                            `Job ID: ${snapshot.jobId || 'not reported'}\n` +
+                            `Verify at https://web.archive.org/web/*/${snapshot.url.replace(/^https?:\/\//, '')}`;
             } else if (job.action === 'webhook') {
                 const cachedData = {};
                 cachedData.env = {};
