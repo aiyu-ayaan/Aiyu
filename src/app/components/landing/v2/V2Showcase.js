@@ -11,6 +11,7 @@ import {
 } from 'react-icons/fa';
 import useDevicePerformance from '../../../hooks/useDevicePerformance';
 import { useV2Fx } from './gsap3d';
+import SceneBackdrop from './SceneBackdrop';
 import TermHead from './TermHead';
 import { getIcon } from '../../../../lib/iconLibrary';
 
@@ -121,7 +122,8 @@ const V2Showcase = ({ data }) => {
 
   return (
     // No transform on this wrapper: a transformed ancestor would break the pin.
-    <section ref={sectionRef} className="relative overflow-hidden py-20 sm:py-28" style={{ borderTop: '1px solid var(--hairline)' }}>
+    <section ref={sectionRef} className="relative isolate overflow-hidden py-20 sm:py-28" style={{ borderTop: '1px solid var(--hairline)' }}>
+        <SceneBackdrop accent="var(--accent-cyan)" side="right" />
       <div className="ws-pin mx-auto w-full max-w-7xl px-6 lg:px-10">
         <TermHead path="~" command="i3-msg workspace next" title={headline} kicker={description} accent="var(--accent-cyan)" />
 

@@ -4,6 +4,7 @@ import React, { useMemo, useRef } from 'react';
 import Link from 'next/link';
 import useDevicePerformance from '../../../hooks/useDevicePerformance';
 import { useV2Fx } from './gsap3d';
+import SceneBackdrop from './SceneBackdrop';
 import { Marquee } from './motion';
 import TermHead from './TermHead';
 
@@ -49,7 +50,8 @@ const V2TechStack = ({ data }) => {
     const rows = [skills.slice(0, half), skills.slice(half)].filter((row) => row.length);
 
     return (
-        <section ref={sectionRef} className="relative overflow-hidden py-20 sm:py-28" style={{ borderTop: '1px solid var(--hairline)' }}>
+        <section ref={sectionRef} className="relative isolate overflow-hidden py-20 sm:py-28" style={{ borderTop: '1px solid var(--hairline)' }}>
+            <SceneBackdrop accent="var(--accent-orange)" side="right" />
             <div className="mx-auto w-full max-w-7xl px-6 lg:px-10">
                 <TermHead
                     path="~"

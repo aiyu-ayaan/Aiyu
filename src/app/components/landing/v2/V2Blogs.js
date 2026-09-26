@@ -7,6 +7,7 @@ import { getReadTime } from '../../blogs/blogUtils';
 import { getBlogPath } from '@/lib/publicPaths';
 import useDevicePerformance from '../../../hooks/useDevicePerformance';
 import { useV2Fx } from './gsap3d';
+import SceneBackdrop from './SceneBackdrop';
 import TermHead from './TermHead';
 import { v2PublicPath } from '@/lib/siteVersion';
 
@@ -36,9 +37,10 @@ const V2Blogs = ({ blogs, config }) => {
   return (
     <section
       ref={sectionRef}
-      className="relative overflow-hidden py-20 sm:py-28"
+      className="relative isolate overflow-hidden py-20 sm:py-28"
       style={{ borderTop: '1px solid var(--hairline)' }}
     >
+        <SceneBackdrop accent="var(--accent-purple)" side="right" />
       <div className="mx-auto w-full max-w-7xl px-6 lg:px-10">
         <TermHead
           path="~/notes"

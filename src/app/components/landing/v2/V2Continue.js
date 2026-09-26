@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { FaArrowRight, FaArrowUp, FaGamepad } from 'react-icons/fa6';
 import useDevicePerformance from '../../../hooks/useDevicePerformance';
 import { useV2Fx } from './gsap3d';
+import SceneBackdrop from './SceneBackdrop';
 import { Magnetic, SplitWords, smoothScrollTo } from './motion';
 import { v2PublicPath } from '@/lib/siteVersion';
 
@@ -71,13 +72,14 @@ const V2Continue = ({ config }) => {
     return (
         <section
             ref={sectionRef}
-            className="relative overflow-hidden py-24 sm:py-36"
+            className="relative isolate overflow-hidden py-24 sm:py-36"
             style={{
                 borderTop: '1px solid var(--hairline)',
                 backgroundImage:
                     'radial-gradient(60% 70% at 15% 100%, color-mix(in srgb, var(--accent-pink) 16%, transparent), transparent 70%), radial-gradient(50% 60% at 95% 0%, color-mix(in srgb, var(--accent-purple) 14%, transparent), transparent 70%)',
             }}
         >
+            <SceneBackdrop accent="var(--accent-pink)" side="left" />
             {/* scanlines */}
             <div
                 aria-hidden="true"

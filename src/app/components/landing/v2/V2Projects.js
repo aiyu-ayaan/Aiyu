@@ -21,6 +21,7 @@ import Image from 'next/image';
 import { FaArrowRight } from 'react-icons/fa6';
 import useDevicePerformance from '../../../hooks/useDevicePerformance';
 import { useV2Fx } from './gsap3d';
+import SceneBackdrop from './SceneBackdrop';
 import TermHead from './TermHead';
 import RepoMeta from '../../projects/v2/RepoMeta';
 import {
@@ -59,9 +60,10 @@ const V2Projects = ({ data, config }) => {
   return (
     <section
       ref={sectionRef}
-      className="relative overflow-hidden py-20 sm:py-28"
+      className="relative isolate overflow-hidden py-20 sm:py-28"
       style={{ borderTop: '1px solid var(--hairline)' }}
     >
+        <SceneBackdrop accent="var(--accent-cyan)" side="left" />
       <div className="mx-auto w-full max-w-7xl px-6 lg:px-10">
         <TermHead
           path="~/code"

@@ -3,6 +3,7 @@
 import React, { useRef } from 'react';
 import useDevicePerformance from '../../../hooks/useDevicePerformance';
 import { useV2Fx } from './gsap3d';
+import SceneBackdrop from './SceneBackdrop';
 import TermHead from './TermHead';
 
 const quickLinks = [
@@ -60,7 +61,8 @@ const V2Snapshot = ({ stats = [], recentProjectNames = [], recentBlogTitles = []
     ];
 
     return (
-        <section ref={scopeRef} className="relative overflow-hidden py-20 sm:py-28" style={{ borderTop: '1px solid var(--hairline)' }}>
+        <section ref={scopeRef} className="relative isolate overflow-hidden py-20 sm:py-28" style={{ borderTop: '1px solid var(--hairline)' }}>
+            <SceneBackdrop accent="var(--status-success)" side="right" />
             <div className="mx-auto w-full max-w-7xl px-6 lg:px-10">
                 <TermHead path="~" command="neofetch" title="System check: all green." accent="var(--status-success)" />
 
