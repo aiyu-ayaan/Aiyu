@@ -15,6 +15,16 @@ const prefersReduced = () =>
 
 export const motionDisabled = () => prefersReduced() || isLiteDevice();
 
+/** Smooth in-page scroll that cooperates with Lenis when it is running. */
+export function smoothScrollTo(top) {
+    if (typeof window === 'undefined') return;
+    if (window.__lenis) {
+        window.__lenis.scrollTo(top, { lerp: 0.08 });
+        return;
+    }
+    window.scrollTo({ top, behavior: prefersReduced() ? 'auto' : 'smooth' });
+}
+
 const hasFinePointer = () =>
     typeof window !== 'undefined' && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
 

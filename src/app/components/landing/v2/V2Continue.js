@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { FaArrowRight, FaArrowUp, FaGamepad } from 'react-icons/fa6';
 import useDevicePerformance from '../../../hooks/useDevicePerformance';
 import { useV2Fx } from './gsap3d';
-import { Magnetic, SplitWords } from './motion';
+import { Magnetic, SplitWords, smoothScrollTo } from './motion';
 import { v2PublicPath } from '@/lib/siteVersion';
 
 /**
@@ -117,7 +117,7 @@ const V2Continue = ({ config }) => {
                         <span><span style={{ color: 'var(--status-success)' }}>[A]</span> contact</span>
                         <button
                             type="button"
-                            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                            onClick={() => smoothScrollTo(0)}
                             className="inline-flex cursor-pointer items-center gap-1.5 uppercase"
                         >
                             <span style={{ color: 'var(--status-error, var(--accent-pink))' }}>[B]</span> back to boot <FaArrowUp size={9} />

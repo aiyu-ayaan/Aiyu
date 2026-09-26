@@ -8,6 +8,7 @@ import useDevicePerformance from '../../../hooks/useDevicePerformance';
 import HyperFramesStage from '../../shared/HyperFramesStage';
 import { useV2Fx, isLiteDevice } from './gsap3d';
 import DesktopPrompt from './DesktopPrompt';
+import { smoothScrollTo } from './motion';
 import { BOOT_READY_EVENT, isBootReady } from '../../shared/bootSignal';
 
 /**
@@ -49,7 +50,9 @@ const V2Hero = ({ data, counts = {} }) => {
         setFilm(!prefersReducedMotion && !isLiteDevice());
     }, [prefersReducedMotion]);
 
+    // Skip seeks that would not change the frame (sub-frame at 60fps).
     const seek = useCallback((t) => {
+        if (Math.abs(t - timeRef.current) < 1 / 120 && playerRef.current) return;
         timeRef.current = t;
         playerRef.current?.seek(t);
     }, []);
@@ -82,8 +85,9 @@ const V2Hero = ({ data, counts = {} }) => {
             const span = FILM_DURATION - INTRO_END;
             let introTween;
 
-            // Scroll drives a paused proxy tween through quickTo, so wheel
-            // steps glide instead of jumping frame to frame.
+            // Scroll drives a paused proxy tween. Lenis already smooths wheel
+            // input on desktop, so only touch (native scroll) gets a short
+            // catch-up — stacking both is what makes a scrub feel floaty.
             const proxy = { t: INTRO_END };
             const scrub = gsap.to(proxy, {
                 t: FILM_DURATION,
@@ -93,7 +97,9 @@ const V2Hero = ({ data, counts = {} }) => {
                     if (!introTween?.isActive()) seek(proxy.t);
                 },
             });
-            const follow = gsap.quickTo(scrub, 'progress', { duration: 0.5, ease: 'power3.out' });
+            const follow = window.__lenis
+                ? (value) => scrub.progress(value)
+                : gsap.quickTo(scrub, 'progress', { duration: 0.25, ease: 'power2.out' });
 
             const st = ScrollTrigger.create({
                 trigger: scope,
@@ -109,7 +115,7 @@ const V2Hero = ({ data, counts = {} }) => {
                 },
             });
 
-            skipRef.current = () => window.scrollTo({ top: st.end + 2, behavior: 'smooth' });
+            skipRef.current = () => smoothScrollTo(st.end + 2);
 
             // Opening line plays by itself once the boot splash has cleared
             // AND the film has painted — whichever comes last starts it.

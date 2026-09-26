@@ -47,8 +47,11 @@
         background-size: 6vmin 6vmin;
         -webkit-mask-image: radial-gradient(ellipse at 50% 55%, black 20%, transparent 70%);
         mask-image: radial-gradient(ellipse at 50% 55%, black 20%, transparent 70%);
+        will-change: transform;
       }
-      .glow { position: absolute; inset: 0; }
+      /* Own compositor layers: these full-frame fills only change opacity or
+         transform, so scrubbing never repaints them. */
+      .glow { position: absolute; inset: 0; will-change: opacity; }
       #glow-day { background: radial-gradient(55% 60% at 70% 40%, color-mix(in srgb, var(--c1) 22%, transparent), transparent 70%); }
       #glow-night {
         opacity: 0;
@@ -425,7 +428,7 @@
         tl.fromTo("#whoami-t", { clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0% 0 0)", duration: 0.35, ease: "steps(6)" }, 0.05);
         tl.fromTo("#hello-name .word > span", { yPercent: 110 }, { yPercent: 0, duration: 0.9, stagger: 0.07 }, 0.3);
         tl.fromTo("#hello-roles", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.7 }, 0.75);
-        tl.to("#hello-in", { opacity: 0, scale: 0.94, filter: "blur(8px)", duration: 0.45, ease: "power2.in" }, 1.75);
+        tl.to("#hello-in", { opacity: 0, scale: 0.94, duration: 0.45, ease: "power2.in" }, 1.75);
 
         // ── S2 code ──
         tl.fromTo("#code-copy .eyebrow", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.6 }, 2.05);

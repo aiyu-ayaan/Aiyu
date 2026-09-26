@@ -211,9 +211,11 @@ export default function ClientEnhancements() {
                 if (cancelled) return;
                 gsapRef = gsap;
 
+                // lerp mode: every frame closes a fixed share of the gap to the
+                // target, so wheel input glides continuously (Apple-style)
+                // instead of restarting a fixed-duration ease on each tick.
                 lenis = new Lenis({
-                    duration: 1.1,
-                    easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+                    lerp: 0.1,
                     orientation: 'vertical',
                     gestureOrientation: 'vertical',
                     smoothWheel: true,
@@ -226,10 +228,6 @@ export default function ClientEnhancements() {
                 lenis.on('scroll', () => {
                     ScrollTrigger.update();
                 });
-                // Update ScrollTrigger on Lenis scroll
-                lenis.on('scroll', () => {
-                    ScrollTrigger.update();
-                });
 
                 // Sync GSAP ticker with Lenis frame rendering
                 tickerCallback = (time) => {
@@ -237,6 +235,9 @@ export default function ClientEnhancements() {
                 };
                 gsap.ticker.add(tickerCallback);
                 gsap.ticker.lagSmoothing(0);
+                // In-page jumps (skip story, back to top) route through Lenis
+                // so they glide instead of fighting it.
+                window.__lenis = lenis;
             } catch (error) {
                 console.error("Failed to initialize Lenis:", error);
             }
@@ -244,8 +245,8 @@ export default function ClientEnhancements() {
 
         return () => {
             cancelled = true;
-            cancelled = true;
             if (lenis) {
+                if (window.__lenis === lenis) delete window.__lenis;
                 lenis.destroy();
             }
             if (tickerCallback && gsapRef) {
