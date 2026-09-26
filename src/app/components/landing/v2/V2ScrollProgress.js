@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import useDevicePerformance from '../../../hooks/useDevicePerformance';
-import { useV2Fx } from './gsap3d';
+import { useV2Fx, watchDocumentHeight } from './gsap3d';
 
 /**
  * Thin scroll-progress beam pinned under the header — the storytelling
@@ -12,6 +12,10 @@ import { useV2Fx } from './gsap3d';
 const V2ScrollProgress = () => {
     const scopeRef = useRef(null);
     const { prefersReducedMotion } = useDevicePerformance();
+
+    // Lazy chapters swap placeholders for real content as they approach;
+    // keep every trigger on the page measured against the real layout.
+    useEffect(() => watchDocumentHeight(), []);
 
     useV2Fx(scopeRef, {
         reducedMotion: prefersReducedMotion,

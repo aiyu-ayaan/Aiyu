@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef } from 'react';
-import { gsap, useGSAP } from './gsap3d';
+import { gsap, useGSAP, refreshScrollTriggersSoon } from './gsap3d';
 import { SplitWords, motionDisabled } from './motion';
 
 /**
@@ -32,6 +32,7 @@ const TermHead = ({ path = '~', command, title, kicker, accent = 'var(--accent-c
                 )
                 .fromTo(words, { yPercent: 110 }, { yPercent: 0, duration: 1, ease: 'expo.out', stagger: 0.06 }, '-=0.1');
             if (kick) tl.fromTo(kick, { autoAlpha: 0, y: 14 }, { autoAlpha: 1, y: 0, duration: 0.7, ease: 'power3.out' }, '-=0.7');
+            refreshScrollTriggersSoon();
         },
         { scope: ref, dependencies: [command, title] }
     );

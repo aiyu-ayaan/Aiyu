@@ -263,9 +263,45 @@ export function animateHorizontalScroll(scope, { reducedMotion = false } = {}) {
  * Lazy-mounted sections change the document height after ScrollTrigger has
  * measured it; schedule a refresh once layout settles.
  */
+let refreshFrame = 0;
+
+/**
+ * Coalesced refresh: many sections mount in the same frame, so collapse
+ * their requests into one. sort() first — triggers are created in mount
+ * order, not page order (the v2 hero pins only after the device check, after
+ * lazy sections below it exist), and refresh() measures in creation order,
+ * so without it a trigger below a late pin keeps positions that ignore the
+ * pin spacer and its reveal can stay hidden.
+ */
 export function refreshScrollTriggersSoon() {
-    if (typeof window === 'undefined') return;
-    window.requestAnimationFrame(() => ScrollTrigger.refresh());
+    if (typeof window === 'undefined' || refreshFrame) return;
+    refreshFrame = window.requestAnimationFrame(() => {
+        refreshFrame = 0;
+        ScrollTrigger.sort();
+        ScrollTrigger.refresh();
+    });
+}
+
+/**
+ * Re-measure every trigger when the document height changes (lazy sections
+ * swapping placeholders, images, fonts). Returns a disconnect function.
+ */
+export function watchDocumentHeight() {
+    if (typeof window === 'undefined' || typeof ResizeObserver === 'undefined') return () => {};
+    let last = document.body.scrollHeight;
+    let timer = 0;
+    const observer = new ResizeObserver(() => {
+        const next = document.body.scrollHeight;
+        if (Math.abs(next - last) < 2) return;
+        last = next;
+        window.clearTimeout(timer);
+        timer = window.setTimeout(refreshScrollTriggersSoon, 120);
+    });
+    observer.observe(document.body);
+    return () => {
+        window.clearTimeout(timer);
+        observer.disconnect();
+    };
 }
 
 /**

@@ -7,6 +7,7 @@ import {
     isLiteDevice,
     animateCounters,
     refreshScrollTriggersSoon,
+    watchDocumentHeight,
 } from '../../shared/gsapScroll';
 
 /**
@@ -206,4 +207,4 @@ export function useV2Fx(scopeRef, { reducedMotion = false, extra, dependencies =
     );
 }
 
-export { gsap, ScrollTrigger, useGSAP, isLiteDevice, refreshScrollTriggersSoon };
+export { gsap, ScrollTrigger, useGSAP, isLiteDevice, refreshScrollTriggersSoon, watchDocumentHeight };
