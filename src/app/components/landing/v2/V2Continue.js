@@ -3,11 +3,23 @@
 import React, { useRef } from 'react';
 import Link from 'next/link';
 import { FaArrowRight, FaArrowUp, FaGamepad } from 'react-icons/fa6';
+import { SiPubg, SiRockstargames, SiValorant } from 'react-icons/si';
 import useDevicePerformance from '../../../hooks/useDevicePerformance';
 import { useV2Fx } from './gsap3d';
 import SceneBackdrop from './SceneBackdrop';
 import { Magnetic, SplitWords, smoothScrollTo } from './motion';
 import { v2PublicPath } from '@/lib/siteVersion';
+
+// Games shown on the Windows side of the story. Brand colours are the
+// publishers' own; glyphs come from Simple Icons (CC0). See GAME_DISCLAIMER.
+export const GAMES = [
+    { name: 'VALORANT', genre: 'tactical shooter', Icon: SiValorant, color: '#FA4454' },
+    { name: 'GTA V', genre: 'open world', Icon: SiRockstargames, color: '#FCAF17' },
+    { name: 'PUBG', genre: 'battle royale', Icon: SiPubg, color: '#F4B942' },
+];
+
+export const GAME_DISCLAIMER =
+    'VALORANT is a trademark of Riot Games, Inc. Grand Theft Auto V and the Rockstar Games logo are trademarks of Take-Two Interactive Software, Inc. PUBG is a trademark of KRAFTON, Inc. These names and logos are shown only to list games I play. This site is not affiliated with, sponsored or endorsed by Riot Games, Rockstar Games, Take-Two Interactive or KRAFTON, and all rights remain with their respective owners.';
 
 /**
  * Closing chapter — the story ends back on the Windows side: a game's
@@ -113,6 +125,32 @@ const V2Continue = ({ config }) => {
                                 Replay the projects
                             </Link>
                         </Magnetic>
+                    </div>
+
+                    <div className="cont-rest mt-12">
+                        <p className="mb-3 font-mono text-[0.7rem] uppercase tracking-[0.3em]" style={{ color: 'var(--text-muted)' }}>
+                            in rotation
+                        </p>
+                        <ul className="flex flex-wrap gap-3">
+                            {GAMES.map(({ name, genre, Icon, color }) => (
+                                <li
+                                    key={name}
+                                    className="flex items-center gap-3 rounded-xl border py-2 pl-2 pr-4"
+                                    style={{ borderColor: 'var(--hairline)', backgroundColor: 'color-mix(in srgb, var(--bg-secondary) 75%, transparent)' }}
+                                >
+                                    <span className="flex h-9 w-9 items-center justify-center rounded-lg" style={{ backgroundColor: '#111' }}>
+                                        <Icon size={18} color={color} aria-hidden="true" />
+                                    </span>
+                                    <span>
+                                        <span className="block text-sm font-extrabold tracking-wide" style={{ color: 'var(--text-bright)' }}>{name}</span>
+                                        <span className="block font-mono text-[0.62rem] uppercase tracking-[0.18em]" style={{ color: 'var(--text-muted)' }}>{genre}</span>
+                                    </span>
+                                </li>
+                            ))}
+                        </ul>
+                        <p className="mt-4 max-w-2xl text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>
+                            {GAME_DISCLAIMER}
+                        </p>
                     </div>
 
                     <p className="cont-rest mt-10 flex flex-wrap gap-x-6 gap-y-2 font-mono text-xs uppercase tracking-[0.2em]" style={{ color: 'var(--text-muted)' }}>

@@ -238,6 +238,18 @@ const V2Hero = ({ data, counts = {} }) => {
                     </div>
                 </div>
 
+                {/* The Windows scene shows game logos; the full notice is in
+                    the closing chapter (V2Continue). */}
+                {film && (
+                    <p
+                        className="absolute inset-x-0 bottom-[8.5svh] z-10 mx-auto max-w-3xl px-6 text-center font-mono text-[0.62rem] leading-relaxed transition-opacity duration-500 lg:bottom-[9vh]"
+                        style={{ color: 'var(--text-muted)', opacity: phase === 'end' ? 1 : 0 }}
+                        aria-hidden={phase !== 'end'}
+                    >
+                        VALORANT, GTA V and PUBG names and logos are trademarks of Riot Games, Take-Two Interactive / Rockstar Games and KRAFTON. Not affiliated or endorsed.
+                    </p>
+                )}
+
                 {film && (
                     <>
                         <div
