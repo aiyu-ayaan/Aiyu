@@ -84,7 +84,10 @@ export default async function HomeV2() {
 
       <V2ScrollProgress />
 
-      <V2Hero data={serializedHomeData} />
+      <V2Hero
+        data={serializedHomeData}
+        counts={{ projects: projects.length, skills: skills.length, blogs: blogs.length }}
+      />
 
       <ViewportLazySection
         id="v2-snapshot"

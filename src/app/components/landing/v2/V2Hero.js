@@ -1,321 +1,266 @@
 "use client";
 
-import React, { useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { FaArrowDown, FaGithub, FaSatelliteDish, FaDesktop, FaXmark, FaArrowRight } from 'react-icons/fa6';
-import { motion, AnimatePresence } from 'framer-motion';
+import { FaArrowDown, FaArrowRight, FaGithub, FaWindows, FaForwardStep } from 'react-icons/fa6';
 import TypewriterEffect from '../../shared/TypewriterEffect';
 import useDevicePerformance from '../../../hooks/useDevicePerformance';
-import { useV2Fx } from './gsap3d';
+import HyperFramesStage from '../../shared/HyperFramesStage';
+import { useV2Fx, isLiteDevice } from './gsap3d';
+import DesktopPrompt from './DesktopPrompt';
 import { BOOT_READY_EVENT, isBootReady } from '../../shared/bootSignal';
 
 /**
- * V2 hero: a pinned 3D stage. The name, role line, and floating glass shards sit
- * at different camera depths; scrolling flies the camera through the stack —
- * foreground shards sweep past, the headline recedes and tilts, and the scroll
- * cue hands off to the snapshot chapter. Lite / reduced-motion devices get the
- * same layout, static and unpinned.
+ * V2 hero — the story film. The boot loader ends on a login prompt; this
+ * stage opens on the same frame and plays the HyperFrames "story"
+ * composition (hyperframes/story): hello → code on Linux → ship → reboot →
+ * play on Windows. The opening line plays by itself after the boot handoff,
+ * then scrolling scrubs the film while the stage is pinned, like a product
+ * page. Live home data and the site theme flow into the film.
+ *
+ * A real DOM headline stays in the document for SEO and screen readers, and
+ * is the whole hero on reduced-motion / lite devices, which never load the
+ * film.
  */
-const DEPTH_SHARDS = [
-    { label: 'GSAP · ScrollTrigger', z: 160, x: '8%', y: '18%', accent: 'var(--accent-cyan)', drift: -1.4 },
-    { label: 'Next.js · React', z: 90, x: '74%', y: '14%', accent: 'var(--accent-purple)', drift: -0.9 },
-    { label: 'Design Systems', z: 220, x: '78%', y: '66%', accent: 'var(--accent-orange)', drift: -1.8 },
-    { label: '3D Interfaces', z: 60, x: '6%', y: '70%', accent: 'var(--accent-pink)', drift: -0.6 },
-];
 
-const V2Hero = ({ data }) => {
+const FILM_DURATION = 12;
+// The opening "Hi, I'm …" line is fully on screen here; scroll takes over.
+const INTRO_END = 1.6;
+
+const V2Hero = ({ data, counts = {} }) => {
     const { name, homeRoles, githubLink, resumeStatus } = data || {};
+    const displayName = name || 'Developer';
+    const roles = Array.isArray(homeRoles) ? homeRoles : [];
+
     const sectionRef = useRef(null);
+    const playerRef = useRef(null);
+    const timeRef = useRef(0);
+    const phaseRef = useRef('start');
+    const skipRef = useRef(null);
+    const introRef = useRef(null);
+
+    const [film, setFilm] = useState(false);
+    const [painted, setPainted] = useState(false);
+    const [phase, setPhase] = useState('start');
     const [showDesktopPrompt, setShowDesktopPrompt] = useState(false);
     const { prefersReducedMotion } = useDevicePerformance();
 
+    useEffect(() => {
+        setFilm(!prefersReducedMotion && !isLiteDevice());
+    }, [prefersReducedMotion]);
+
+    const seek = useCallback((t) => {
+        timeRef.current = t;
+        playerRef.current?.seek(t);
+    }, []);
+
+    const syncPhase = useCallback((next) => {
+        if (phaseRef.current === next) return;
+        phaseRef.current = next;
+        setPhase(next);
+    }, []);
+
+    const handleReady = useCallback((player) => {
+        playerRef.current = player;
+        player.pause();
+        player.seek(timeRef.current);
+    }, []);
+
+    const handlePainted = useCallback(() => {
+        setPainted(true);
+        introRef.current?.();
+    }, []);
+
     useV2Fx(sectionRef, {
-        reducedMotion: prefersReducedMotion,
-        extra: ({ gsap, scope, reducedMotion }) => {
+        reducedMotion: prefersReducedMotion || !film,
+        dependencies: [film],
+        extra: ({ gsap, ScrollTrigger, scope, reducedMotion }) => {
             if (reducedMotion) return;
+            const stage = scope.querySelector('.hero-stage');
+            if (!stage) return;
 
-            const stage = scope.querySelector('.v2-hero-stage');
-            const headline = scope.querySelector('.v2-hero-headline');
-            const meta = scope.querySelector('.v2-hero-meta');
-            const shards = scope.querySelectorAll('.v2-hero-shard');
-            const cue = scope.querySelector('.v2-hero-cue');
-            if (!stage || !headline) return;
+            const span = FILM_DURATION - INTRO_END;
+            let introTween;
 
-            // Entrance: headline lines pivot up, shards surface from depth.
-            // Targets are INNER wrappers (.v2-hero-*-in) — the fly-through
-            // below animates the outer elements, and sharing targets between
-            // a time-based intro and a scrubbed timeline makes the scrub
-            // capture/fight the intro's hidden start values (shards vanished
-            // after a scroll round-trip). Disjoint targets can't conflict.
-            //
-            // Built paused: the boot splash covers the hero for ~3s, so playing
-            // now would burn the entrance behind the overlay. It starts on the
-            // boot-ready handoff (or immediately if the splash was skipped).
-            const intro = gsap.timeline({ defaults: { ease: 'expo.out' }, paused: true });
-            intro
-                .from(scope.querySelectorAll('.v2-hero-line'), {
-                    autoAlpha: 0,
-                    rotationX: -46,
-                    yPercent: 52,
-                    transformOrigin: '50% 100%',
-                    transformPerspective: 900,
-                    duration: 1.1,
-                    stagger: 0.1,
-                })
-                .from(scope.querySelector('.v2-hero-meta-in'), { autoAlpha: 0, y: 22, duration: 0.9 }, '-=0.7')
-                .from(scope.querySelectorAll('.v2-hero-shard-in'), {
-                    autoAlpha: 0,
-                    z: -240,
-                    scale: 0.92,
-                    transformPerspective: 900,
-                    duration: 1.2,
-                    stagger: 0.08,
-                }, '-=0.95')
-                .from(scope.querySelector('.v2-hero-cue-in'), { autoAlpha: 0, y: -14, duration: 0.6 }, '-=0.4');
-
-            // Start on the boot handoff. If the splash already finished (or was
-            // skipped for this tab), the flag is set — play right away.
-            let teardownIntro;
-            if (isBootReady()) {
-                intro.play();
-            } else {
-                const startIntro = () => intro.play();
-                window.addEventListener(BOOT_READY_EVENT, startIntro, { once: true });
-                // Returned to useV2Fx as teardown (unmount before the handoff).
-                teardownIntro = () => window.removeEventListener(BOOT_READY_EVENT, startIntro);
-            }
-
-            // Fly-through: pin the stage and dolly the camera as the user scrolls.
-            const fly = gsap.timeline({
-                defaults: { ease: 'none' },
-                scrollTrigger: {
-                    trigger: scope,
-                    start: 'top top',
-                    end: '+=130%',
-                    pin: stage,
-                    scrub: 0.9,
-                    anticipatePin: 1,
+            // Scroll drives a paused proxy tween through quickTo, so wheel
+            // steps glide instead of jumping frame to frame.
+            const proxy = { t: INTRO_END };
+            const scrub = gsap.to(proxy, {
+                t: FILM_DURATION,
+                ease: 'none',
+                paused: true,
+                onUpdate: () => {
+                    if (!introTween?.isActive()) seek(proxy.t);
                 },
             });
-            // fromTo (not .to): the scrubbed timeline renders once at creation,
-            // while the intro still has these elements at autoAlpha 0 — a .to
-            // would capture THAT as its start value and scrub back to invisible
-            // when the user returns to the top. Declare the resting state
-            // explicitly instead; immediateRender:false keeps the intro intact.
-            fly
-                .fromTo(headline, { z: 0, rotationX: 0, autoAlpha: 1 }, {
-                    z: 340,
-                    rotationX: 14,
-                    autoAlpha: 0,
-                    transformOrigin: '50% 20%',
-                    immediateRender: false,
-                }, 0)
-                .fromTo(meta, { z: 0, y: 0, autoAlpha: 1 }, {
-                    z: 200,
-                    autoAlpha: 0,
-                    immediateRender: false,
-                }, 0.05)
-                .fromTo(shards, {
-                    z: (i) => DEPTH_SHARDS[i % DEPTH_SHARDS.length].z,
-                    autoAlpha: 1,
-                }, {
-                    z: (i) => 520 + DEPTH_SHARDS[i % DEPTH_SHARDS.length].z * 2,
-                    autoAlpha: 0,
-                    stagger: 0.04,
-                    immediateRender: false,
-                }, 0)
-                .fromTo(cue, { y: 0, autoAlpha: 1 }, {
-                    autoAlpha: 0,
-                    y: 30,
-                    immediateRender: false,
-                }, 0);
+            const follow = gsap.quickTo(scrub, 'progress', { duration: 0.5, ease: 'power3.out' });
 
-            // Idle drift so the depth reads even before scrolling.
-            shards.forEach((shard, index) => {
-                gsap.to(shard, {
-                    y: `+=${DEPTH_SHARDS[index % DEPTH_SHARDS.length].drift * 12}`,
-                    duration: 3 + index * 0.6,
-                    ease: 'sine.inOut',
-                    yoyo: true,
-                    repeat: -1,
-                });
+            const st = ScrollTrigger.create({
+                trigger: scope,
+                start: 'top top',
+                end: '+=420%',
+                pin: stage,
+                anticipatePin: 1,
+                onUpdate: (self) => {
+                    if (self.progress > 0.001) introTween?.kill();
+                    follow(self.progress);
+                    const t = INTRO_END + self.progress * span;
+                    syncPhase(self.progress < 0.03 ? 'start' : t > 10.4 ? 'end' : 'mid');
+                },
             });
 
-            return teardownIntro;
+            skipRef.current = () => window.scrollTo({ top: st.end + 2, behavior: 'smooth' });
+
+            // Opening line plays by itself once the boot splash has cleared
+            // AND the film has painted — whichever comes last starts it.
+            let bootDone = isBootReady();
+            let filmDone = false;
+            const maybeIntro = () => {
+                if (!bootDone || !filmDone || introTween) return;
+                if (window.scrollY > st.start + 4) {
+                    seek(INTRO_END + st.progress * span);
+                    return;
+                }
+                const o = { t: 0 };
+                introTween = gsap.to(o, {
+                    t: INTRO_END,
+                    duration: INTRO_END,
+                    ease: 'none',
+                    onUpdate: () => seek(o.t),
+                });
+            };
+            const onBoot = () => {
+                bootDone = true;
+                maybeIntro();
+            };
+            introRef.current = () => {
+                filmDone = true;
+                maybeIntro();
+            };
+            if (!bootDone) window.addEventListener(BOOT_READY_EVENT, onBoot, { once: true });
+            if (playerRef.current) introRef.current();
+
+            return () => {
+                window.removeEventListener(BOOT_READY_EVENT, onBoot);
+                introRef.current = null;
+                skipRef.current = null;
+            };
         },
     });
 
+    const filmParams = {
+        name: displayName,
+        roles: roles.slice(0, 2).join('|'),
+        projects: counts.projects ?? 0,
+        skills: counts.skills ?? 0,
+        blogs: counts.blogs ?? 0,
+    };
+
+    const showDock = !film || phase !== 'mid';
+
     return (
-        <section ref={sectionRef} className="relative" aria-label="Intro">
-            <div className="v2-hero-stage relative flex min-h-screen w-full items-center justify-center overflow-hidden">
+        <section ref={sectionRef} className="relative" aria-labelledby="hero-title">
+            <div className="hero-stage relative h-[100svh] min-h-[560px] w-full overflow-hidden" style={{ backgroundColor: 'var(--bg-primary)' }}>
+                {film && (
+                    <HyperFramesStage
+                        name="story"
+                        params={filmParams}
+                        onReady={handleReady}
+                        onPainted={handlePainted}
+                        className="top-[4.5rem] transition-opacity duration-700 sm:top-24"
+                        style={{ opacity: painted ? 1 : 0 }}
+                    />
+                )}
+
+                {/* DOM hero: the real headline. It is the visible hero until
+                    the film paints (and always without the film); after that
+                    it stays in the document for crawlers and screen readers. */}
                 <div
-                    className="relative mx-auto w-full max-w-6xl px-6 py-24 text-center"
-                    style={{ perspective: '1200px', transformStyle: 'preserve-3d' }}
+                    className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center transition-opacity duration-700"
+                    style={{ opacity: film && painted ? 0 : 1 }}
                 >
-                    {DEPTH_SHARDS.map((shard) => (
-                        <div
-                            key={shard.label}
-                            className="v2-hero-shard glass-tile pointer-events-none absolute hidden px-4 py-2.5 text-xs font-semibold tracking-wide sm:block"
-                            style={{
-                                left: shard.x,
-                                top: shard.y,
-                                transform: `translateZ(${shard.z}px)`,
-                                color: shard.accent,
-                                borderColor: `color-mix(in srgb, ${shard.accent} 35%, transparent)`,
-                                boxShadow: `0 18px 48px -24px color-mix(in srgb, ${shard.accent} 45%, transparent)`,
-                            }}
-                            aria-hidden="true"
-                        >
-                            <span className="v2-hero-shard-in block">{shard.label}</span>
-                        </div>
-                    ))}
-
-                    <div className="v2-hero-headline" style={{ transformStyle: 'preserve-3d' }}>
-                        <p className="v2-hero-line eyebrow mb-6 inline-flex items-center gap-2">
-                            <FaSatelliteDish size={11} style={{ color: 'var(--status-success)' }} />
-                            {resumeStatus || 'ONLINE'} · Portfolio V2
-                        </p>
-                        <h1
-                            className="text-5xl font-bold leading-[1.02] tracking-tight sm:text-7xl lg:text-8xl"
-                            style={{ color: 'var(--text-bright)' }}
-                        >
-                            <span className="v2-hero-line block">{name || 'Developer'}</span>
-                            <span
-                                className="v2-hero-line mt-3 block bg-clip-text text-transparent"
-                                style={{
-                                    backgroundImage:
-                                        'linear-gradient(120deg, var(--accent-cyan), var(--accent-purple) 55%, var(--accent-pink))',
-                                }}
-                            >
-                                builds in depth.
-                            </span>
-                        </h1>
-                    </div>
-
-                    <div className="v2-hero-meta mt-8">
-                        <div className="v2-hero-meta-in flex flex-col items-center gap-6">
-                        <div className="text-lg font-medium sm:text-2xl" style={{ color: 'var(--text-secondary)' }}>
-                            <TypewriterEffect roles={homeRoles || []} />
-                        </div>
-                        <div className="flex flex-wrap items-center justify-center gap-3">
-                            <Link href="/projects" className="pill-solid">
-                                Explore Projects
-                            </Link>
-                            {githubLink && (
-                                <a
-                                    href={githubLink}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="pill-ghost inline-flex items-center gap-2"
-                                >
-                                    <FaGithub size={14} /> GitHub
-                                </a>
-                            )}
-                            <button
-                                type="button"
-                                onClick={() => setShowDesktopPrompt(true)}
-                                className="pill-ghost inline-flex cursor-pointer items-center gap-2"
-                            >
-                                <FaDesktop size={14} /> Desktop Mode
-                            </button>
-                        </div>
-                        </div>
-                    </div>
-
-                    <div
-                        className="v2-hero-cue absolute inset-x-0 -bottom-6 mx-auto w-max text-xs font-medium uppercase tracking-[0.2em]"
-                        style={{ color: 'var(--text-muted)' }}
-                        aria-hidden="true"
+                    <p className="mb-5 font-mono text-sm" style={{ color: 'var(--text-tertiary)' }}>
+                        <span style={{ color: 'var(--status-success)' }}>$</span> whoami
+                    </p>
+                    <h1
+                        id="hero-title"
+                        className="text-[clamp(3rem,10vw,8.5rem)] font-extrabold leading-[0.95] tracking-[-0.045em]"
+                        style={{ color: 'var(--text-bright)' }}
                     >
-                        <span className="v2-hero-cue-in flex items-center gap-2">
-                            Scroll to fly through <FaArrowDown size={10} />
+                        Hi, I&apos;m {displayName}.
+                    </h1>
+                    <p className="mt-6 font-mono text-base sm:text-lg" style={{ color: 'var(--accent-cyan)' }}>
+                        <TypewriterEffect roles={roles} />
+                    </p>
+                    <p className="mt-4 max-w-xl text-base sm:text-lg" style={{ color: 'var(--text-tertiary)' }}>
+                        Writes code on Linux, plays on Windows.
+                    </p>
+                </div>
+
+                {/* "Press start" dock: shown before the story starts and once
+                    it reaches the Windows scene; hidden while it plays. */}
+                <div
+                    className="absolute inset-x-0 bottom-[12svh] z-10 flex justify-center px-4 transition-all duration-500 sm:bottom-[13vh] lg:justify-start lg:px-[4vmin]"
+                    style={{
+                        opacity: showDock ? 1 : 0,
+                        transform: showDock ? 'none' : 'translateY(16px)',
+                        visibility: showDock ? 'visible' : 'hidden',
+                    }}
+                >
+                    <div
+                        className="flex flex-wrap items-center justify-center gap-2.5 rounded-2xl border p-2 backdrop-blur-md"
+                        style={{ borderColor: 'var(--hairline)', backgroundColor: 'color-mix(in srgb, var(--bg-primary) 55%, transparent)' }}
+                    >
+                        <span className="hidden px-2 font-mono text-[0.7rem] uppercase tracking-[0.3em] sm:inline" style={{ color: 'var(--text-muted)' }}>
+                            {phase === 'end' ? 'press start' : resumeStatus || 'online'}
                         </span>
+                        <Link href="/projects" className="pill-solid inline-flex items-center gap-2">
+                            Explore projects <FaArrowRight size={12} />
+                        </Link>
+                        {githubLink && (
+                            <a href={githubLink} target="_blank" rel="noopener noreferrer" className="pill-ghost inline-flex items-center gap-2">
+                                <FaGithub size={14} /> GitHub
+                            </a>
+                        )}
+                        <button
+                            type="button"
+                            onClick={() => setShowDesktopPrompt(true)}
+                            className="pill-ghost inline-flex cursor-pointer items-center gap-2"
+                        >
+                            <FaWindows size={13} /> Desktop mode
+                        </button>
                     </div>
                 </div>
+
+                {film && (
+                    <>
+                        <div
+                            className="pointer-events-none absolute inset-x-0 bottom-[6.5vmin] z-10 mx-auto w-max font-mono text-[0.68rem] uppercase tracking-[0.3em] transition-opacity duration-500"
+                            style={{ color: 'var(--text-muted)', opacity: phase === 'start' ? 1 : 0 }}
+                            aria-hidden="true"
+                        >
+                            <span className="flex items-center gap-2">
+                                scroll to play <FaArrowDown size={10} className="animate-bounce" />
+                            </span>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => skipRef.current?.()}
+                            className="absolute right-4 top-24 z-10 inline-flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 font-mono text-[0.68rem] uppercase tracking-[0.2em] backdrop-blur-md transition-opacity duration-300 hover:opacity-100 sm:right-[4vmin]"
+                            style={{
+                                borderColor: 'var(--hairline)',
+                                color: 'var(--text-secondary)',
+                                backgroundColor: 'color-mix(in srgb, var(--bg-primary) 50%, transparent)',
+                                opacity: phase === 'end' ? 0 : 0.75,
+                            }}
+                        >
+                            skip story <FaForwardStep size={10} />
+                        </button>
+                    </>
+                )}
             </div>
 
-            <AnimatePresence>
-                {showDesktopPrompt && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            onClick={() => setShowDesktopPrompt(false)}
-                            className="fixed inset-0 bg-black/70 backdrop-blur-md"
-                        />
-
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                            className="relative z-10 w-full max-w-lg overflow-hidden rounded-2xl border border-[color-mix(in_srgb,var(--accent-cyan)_35%,transparent)] bg-[var(--bg-surface)] p-6 shadow-2xl backdrop-blur-xl sm:p-8 text-left"
-                            style={{
-                                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 30px color-mix(in srgb, var(--accent-cyan) 20%, transparent)',
-                            }}
-                            role="dialog"
-                            aria-modal="true"
-                            aria-labelledby="desktop-dialog-title"
-                        >
-                            <button
-                                type="button"
-                                onClick={() => setShowDesktopPrompt(false)}
-                                className="absolute right-4 top-4 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-white/10 hover:text-[var(--text-bright)]"
-                                aria-label="Close dialog"
-                            >
-                                <FaXmark size={14} />
-                            </button>
-
-                            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[color-mix(in_srgb,var(--accent-cyan)_30%,transparent)] bg-[color-mix(in_srgb,var(--accent-cyan)_10%,transparent)] px-3 py-1 text-xs font-semibold font-mono text-[var(--accent-cyan)]">
-                                <FaDesktop size={12} />
-                                <span>Aiyu OS · Web Desktop</span>
-                            </div>
-
-                            <h3 id="desktop-dialog-title" className="text-2xl font-bold text-[var(--text-bright)] sm:text-3xl">
-                                Launch Desktop OS?
-                            </h3>
-
-                            <p className="mt-3 text-sm leading-relaxed text-[var(--text-secondary)] sm:text-base">
-                                Switch to an interactive, windowed Web OS environment simulating Windows 11 with built-in apps, code editor, terminal, browser, and live widgets.
-                            </p>
-
-                            <div className="mt-5 space-y-2.5 rounded-xl border border-[var(--border-secondary)] bg-[var(--bg-secondary)] p-4 text-xs sm:text-sm">
-                                <div className="flex items-start gap-2 text-[var(--text-secondary)]">
-                                    <span className="font-bold text-[var(--accent-cyan)]">•</span>
-                                    <span>Multi-window multitasking with drag, minimize & resize</span>
-                                </div>
-                                <div className="flex items-start gap-2 text-[var(--text-secondary)]">
-                                    <span className="font-bold text-[var(--accent-purple)]">•</span>
-                                    <span>Interactive Apps (Terminal, Code Editor, Browser & Settings)</span>
-                                </div>
-                                <div className="flex items-start gap-2 text-[var(--text-secondary)]">
-                                    <span className="font-bold text-[var(--accent-orange)]">•</span>
-                                    <span>Custom wallpapers and widgets feed</span>
-                                </div>
-                            </div>
-
-                            <div className="mt-6 flex flex-wrap items-center justify-end gap-3">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowDesktopPrompt(false)}
-                                    className="pill-ghost cursor-pointer text-xs sm:text-sm"
-                                >
-                                    Cancel
-                                </button>
-                                <Link
-                                    href="/desktop"
-                                    onClick={() => setShowDesktopPrompt(false)}
-                                    className="pill-solid inline-flex items-center gap-2 text-xs sm:text-sm"
-                                >
-                                    <span>Launch Desktop</span>
-                                    <FaArrowRight size={12} />
-                                </Link>
-                            </div>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
+            <DesktopPrompt open={showDesktopPrompt} onClose={() => setShowDesktopPrompt(false)} />
         </section>
     );
 };
