@@ -148,7 +148,7 @@ const V2Continue = ({ config }) => {
                                 </li>
                             ))}
                         </ul>
-                        <p className="mt-4 max-w-2xl text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>
+                        <p id="game-disclaimer" className="mt-4 max-w-2xl text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>
                             {GAME_DISCLAIMER}
                         </p>
                     </div>

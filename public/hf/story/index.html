@@ -177,15 +177,110 @@
           radial-gradient(90% 70% at 50% 110%, color-mix(in srgb, var(--c3) 38%, transparent), transparent 60%),
           radial-gradient(70% 60% at 0% 0%, color-mix(in srgb, var(--c2) 34%, transparent), transparent 60%),
           var(--surface);
-        display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2.2vmin;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
       }
-      #scan { position: absolute; inset: 0; opacity: 0.25; background-image: repeating-linear-gradient(0deg, rgba(0,0,0,0.5) 0 1px, transparent 1px 4px); }
+      #scan { position: absolute; inset: 0; z-index: 3; pointer-events: none; opacity: 0.25; background-image: repeating-linear-gradient(0deg, rgba(0,0,0,0.5) 0 1px, transparent 1px 4px); }
       #p1 { font-family: var(--mono); font-size: 1.8vmin; letter-spacing: 0.5em; color: var(--c3); text-transform: uppercase; }
       #game-name { font-size: 8vmin; font-weight: 900; font-style: italic; text-transform: uppercase; letter-spacing: -0.03em; }
       #xp { width: 55%; }
       #xp-top { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 1.5vmin; color: var(--muted); margin-bottom: 0.8vmin; text-transform: uppercase; }
       #xp-track { height: 1.2vmin; border-radius: 1vmin; background: color-mix(in srgb, var(--fg) 14%, transparent); overflow: hidden; }
       #xp-fill { height: 100%; width: 100%; transform-origin: left center; background: linear-gradient(90deg, var(--c2), var(--c3), var(--c4)); }
+
+      /* ── game vignettes inside #game (S5). Deliberately game-like colours,
+            independent of the site theme, like real gameplay footage. ── */
+      #card { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 2.2vmin; }
+      #screens { position: absolute; inset: 0; z-index: 1; overflow: hidden; border-radius: 1.4vmin; }
+      .gscreen { position: absolute; inset: 0; opacity: 0; overflow: hidden; }
+      .g-tag {
+        position: absolute; left: 2vmin; bottom: 4.6vmin; z-index: 6; display: flex; align-items: center; gap: 1.2vmin;
+        padding: 0.9vmin 1.8vmin 0.9vmin 0.9vmin; border-radius: 1vmin; color: #fff;
+        background: rgba(0, 0, 0, 0.55); border: 1px solid rgba(255, 255, 255, 0.16);
+      }
+      .g-tag b { display: block; font-size: 1.9vmin; font-weight: 800; }
+      .g-tag small { display: block; font-family: var(--mono); font-size: 1.2vmin; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(255, 255, 255, 0.7); }
+      .hud-mono { font-family: var(--mono); color: #fff; text-shadow: 0 0.2vmin 0.6vmin rgba(0, 0, 0, 0.6); }
+
+      /* VALORANT — shooting range */
+      #g-val { background: linear-gradient(180deg, #151b26 0%, #243044 58%, #2d323b 58.2%, #1d2026 100%); }
+      #val-floor {
+        position: absolute; left: -20%; right: -20%; bottom: 0; height: 42%;
+        background-image: repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.07) 0 1px, transparent 1px 7vmin), repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 4vmin);
+      }
+      .val-crate { position: absolute; bottom: 30%; background: #5a4838; border: 0.4vmin solid #3d3127; }
+      #val-c1 { left: 10%; width: 15vmin; height: 12vmin; }
+      #val-c2 { left: 36%; width: 10vmin; height: 8vmin; }
+      #val-target { position: absolute; left: 64%; top: 22%; width: 8vmin; height: 26vmin; transform-origin: 50% 100%; }
+      #val-target .head { position: absolute; left: 2vmin; top: 0; width: 4vmin; height: 4vmin; border-radius: 50%; background: #d8dde6; box-shadow: 0 0 0 0.35vmin #ff4655; }
+      #val-target .torso { position: absolute; left: 0; top: 4.6vmin; width: 8vmin; height: 21vmin; border-radius: 2vmin 2vmin 0.6vmin 0.6vmin; background: #c9ced8; box-shadow: 0 0 0 0.35vmin #ff4655; }
+      #val-aim { position: absolute; left: calc(64% + 4vmin); top: calc(22% + 2vmin); width: 0; height: 0; }
+      #val-cross, #val-hit { position: absolute; left: -3vmin; top: -3vmin; width: 6vmin; height: 6vmin; }
+      #val-cross i { position: absolute; background: #34ffb3; }
+      #val-cross .t, #val-cross .b { left: 2.85vmin; width: 0.3vmin; height: 1.6vmin; }
+      #val-cross .t { top: 0; } #val-cross .b { bottom: 0; }
+      #val-cross .l, #val-cross .r { top: 2.85vmin; height: 0.3vmin; width: 1.6vmin; }
+      #val-cross .l { left: 0; } #val-cross .r { right: 0; }
+      #val-hit { opacity: 0; }
+      #val-hit i { position: absolute; left: 2.8vmin; top: 0.6vmin; width: 0.4vmin; height: 4.8vmin; background: #ff4655; }
+      #val-hit .x1 { transform: rotate(45deg); } #val-hit .x2 { transform: rotate(-45deg); }
+      #val-flash { position: absolute; left: 0; right: 0; margin: 0 auto; bottom: -12vmin; width: 46vmin; height: 34vmin; opacity: 0; background: radial-gradient(closest-side, rgba(255, 214, 120, 0.95), rgba(255, 120, 40, 0.5) 45%, transparent 75%); }
+      #val-gun {
+        position: absolute; right: 8%; bottom: -1vmin; width: 36vmin; height: 15vmin; background: #1a1d24;
+        clip-path: polygon(0 55%, 60% 40%, 62% 20%, 100% 20%, 100% 55%, 78% 60%, 72% 100%, 55% 100%, 58% 65%, 0 75%);
+      }
+      #val-feed { position: absolute; right: 2vmin; top: 2vmin; display: flex; align-items: center; gap: 1vmin; padding: 0.8vmin 1.4vmin; border-radius: 0.6vmin; background: rgba(0, 0, 0, 0.55); font-size: 1.6vmin; }
+      #val-feed .ico { width: 2.2vmin; height: 2.2vmin; }
+      #val-feed .hs { padding: 0.2vmin 0.8vmin; border-radius: 0.4vmin; background: #ff4655; color: #fff; font-weight: 700; }
+      #val-ammo { position: absolute; right: 3vmin; bottom: 4.6vmin; font-size: 1.6vmin; }
+      #val-ammo b { font-size: 4.2vmin; font-weight: 700; }
+
+      /* GTA V — open-world drive at sunset */
+      #g-gta { background: linear-gradient(180deg, #2a1c4d 0%, #b8456f 40%, #f39a5a 60%, #1a1622 60.2%, #121016 100%); }
+      #gta-sun { position: absolute; left: 58%; top: 20%; width: 16vmin; height: 16vmin; border-radius: 50%; background: radial-gradient(circle, #ffe3a1 30%, rgba(255, 200, 120, 0) 70%); }
+      #gta-city { position: absolute; left: 0; bottom: 40%; height: 28vmin; width: 220%; display: flex; align-items: flex-end; gap: 0.5vmin; }
+      #gta-city span {
+        flex: none; width: 6vmin; background-color: #211a35;
+        background-image: repeating-linear-gradient(0deg, transparent 0 1.3vmin, rgba(255, 214, 140, 0.28) 1.3vmin 1.6vmin);
+      }
+      #gta-road { position: absolute; left: 0; right: 0; bottom: 0; height: 40%; background: #16141c; }
+      #gta-lanes { position: absolute; left: 0; top: 46%; width: 300%; height: 0.8vmin; background: repeating-linear-gradient(90deg, #f3d16a 0 6vmin, transparent 6vmin 12vmin); }
+      #gta-car { position: absolute; left: 28%; bottom: 14%; width: 24vmin; height: 10vmin; }
+      #gta-car .top { position: absolute; left: 22%; top: 0; width: 48%; height: 45%; background: #2b8cff; clip-path: polygon(18% 0, 82% 0, 100% 100%, 0 100%); }
+      #gta-car .win { position: absolute; left: 27%; top: 8%; width: 38%; height: 32%; background: #9fd4ff; clip-path: polygon(15% 0, 85% 0, 100% 100%, 0 100%); opacity: 0.8; }
+      #gta-car .body { position: absolute; left: 0; top: 40%; width: 100%; height: 38%; border-radius: 1.2vmin 2.4vmin 0.8vmin 0.8vmin; background: #1f6fe0; }
+      #gta-car .lamp { position: absolute; right: -0.4vmin; top: 48%; width: 1.4vmin; height: 1vmin; border-radius: 0.3vmin; background: #fff3c4; box-shadow: 2vmin 0 3vmin 1vmin rgba(255, 240, 190, 0.45); }
+      #gta-car .wheel { position: absolute; bottom: 0; width: 5vmin; height: 5vmin; border-radius: 50%; background: #0b0b0f; border: 1vmin solid #2b2b33; }
+      #gta-car .w1 { left: 12%; } #gta-car .w2 { right: 12%; }
+      #gta-map { position: absolute; left: 2vmin; top: 2vmin; width: 17vmin; height: 17vmin; border-radius: 50%; overflow: hidden; border: 0.5vmin solid rgba(0, 0, 0, 0.6); background-color: #33463a; background-image: linear-gradient(rgba(255,255,255,0.12) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.12) 1px, transparent 1px); background-size: 3vmin 3vmin; }
+      #gta-map .road { position: absolute; background: #c9c3b0; }
+      #gta-map .r1 { left: 0; right: 0; top: 55%; height: 0.8vmin; } #gta-map .r2 { top: 0; bottom: 0; left: 62%; width: 0.8vmin; }
+      #gta-route { position: absolute; left: 20%; top: 55%; width: 42%; height: 0.8vmin; background: #b04cff; transform-origin: left center; }
+      #gta-dot { position: absolute; left: 20%; top: calc(55% - 0.6vmin); width: 2vmin; height: 2vmin; border-radius: 50%; background: #fff; box-shadow: 0 0 0 0.4vmin #2b8cff; }
+      #gta-stars { position: absolute; right: 2.4vmin; top: 2vmin; display: flex; gap: 0.6vmin; font-size: 3vmin; color: rgba(255, 255, 255, 0.5); }
+      #gta-stars .on { color: #fff; }
+      #gta-cash { position: absolute; right: 2.4vmin; top: 6.4vmin; font-size: 2.6vmin; font-weight: 700; color: #7cf29a; }
+
+      /* PUBG — drop, zone, survive */
+      #g-pubg {
+        background-color: #3d4b30;
+        background-image:
+          radial-gradient(18% 22% at 30% 35%, #56663f, transparent 70%), radial-gradient(20% 16% at 72% 60%, #6b5b3e, transparent 70%),
+          radial-gradient(14% 18% at 58% 22%, #2f5a73, transparent 70%),
+          linear-gradient(rgba(0, 0, 0, 0.14) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 0, 0, 0.14) 1px, transparent 1px);
+        background-size: auto, auto, auto, 8vmin 8vmin, 8vmin 8vmin;
+      }
+      #pubg-zone { position: absolute; left: 50%; top: 50%; width: 110vmin; height: 110vmin; margin: -55vmin 0 0 -55vmin; border-radius: 50%; border: 0.6vmin solid #4aa3ff; box-shadow: 0 0 0 200vmin rgba(40, 110, 255, 0.28); }
+      #pubg-safe { position: absolute; left: 54%; top: 54%; width: 34vmin; height: 34vmin; margin: -17vmin 0 0 -17vmin; border-radius: 50%; border: 0.4vmin solid #fff; }
+      #pubg-chute { position: absolute; left: 40%; top: 18%; width: 14vmin; height: 20vmin; transform-origin: 50% 0; }
+      #pubg-canopy { position: absolute; left: 0; top: 0; width: 14vmin; height: 7vmin; border-radius: 7vmin 7vmin 0 0; background: repeating-linear-gradient(90deg, #f2b33d 0 2.33vmin, #e2e2d6 2.33vmin 4.66vmin); }
+      #pubg-chute .cord { position: absolute; top: 7vmin; width: 0.25vmin; height: 9vmin; background: rgba(255, 255, 255, 0.8); }
+      #pubg-chute .c1 { left: 3vmin; transform: rotate(-16deg); transform-origin: top; } #pubg-chute .c2 { right: 3vmin; transform: rotate(16deg); transform-origin: top; }
+      #pubg-player { position: absolute; left: 5.5vmin; top: 15.5vmin; width: 3vmin; height: 3vmin; border-radius: 50%; background: #f7f7f2; box-shadow: 0 0 0 0.4vmin #1d1d1d; }
+      #pubg-hud { position: absolute; right: 2.4vmin; top: 2vmin; display: flex; gap: 1vmin; }
+      #pubg-hud div { padding: 0.8vmin 1.4vmin; border-radius: 0.5vmin; background: rgba(0, 0, 0, 0.55); font-size: 1.4vmin; letter-spacing: 0.15em; text-transform: uppercase; }
+      #pubg-hud b { display: block; font-size: 3.4vmin; letter-spacing: 0; }
+      #pubg-win { position: absolute; left: 0; right: 0; top: 38%; margin: 0 auto; width: max-content; padding: 1.2vmin 3vmin; border-radius: 1vmin; background: rgba(0, 0, 0, 0.6); text-align: center; font-size: 5vmin; font-weight: 900; font-style: italic; color: #f2b33d; opacity: 0; }
+      #pubg-win small { display: block; font-size: 1.8vmin; font-style: normal; letter-spacing: 0.3em; color: #fff; }
       /* Game library (logos: Simple Icons, CC0; marks belong to their owners). */
       #library { display: flex; gap: 1.6vmin; }
       .game {
@@ -196,11 +291,11 @@
       .game-ico svg { width: 60%; height: 60%; }
       .game b { display: block; font-size: 1.8vmin; font-weight: 800; letter-spacing: 0.02em; }
       .game small { display: block; font-family: var(--mono); font-size: 1.15vmin; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); }
-      #tm { position: absolute; left: 2vmin; right: 2vmin; bottom: 1.4vmin; text-align: center; font-family: var(--mono); font-size: 1.1vmin; color: var(--muted); }
+      #tm { z-index: 4; position: absolute; left: 2vmin; right: 2vmin; bottom: 1.4vmin; text-align: center; font-family: var(--mono); font-size: 1.1vmin; color: var(--muted); }
       .tb-game { width: 3vmin; height: 3vmin; border-radius: 0.6vmin; display: flex; align-items: center; justify-content: center; background: #111; }
       .tb-game svg { width: 62%; height: 62%; }
       #start { font-family: var(--mono); font-size: 2vmin; letter-spacing: 0.6em; text-transform: uppercase; }
-      #toasts { position: absolute; left: 2vmin; right: 2vmin; top: 2vmin; display: flex; gap: 1.2vmin; z-index: 3; }
+      #toasts { position: absolute; left: 2vmin; right: 2vmin; top: 2vmin; display: flex; gap: 1.2vmin; z-index: 4; }
       .toast { flex: 1; min-width: 0; }
       .toast strong { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .toast {
@@ -237,7 +332,7 @@
     </style>
   </head>
   <body>
-    <div id="root" data-composition-id="story" data-start="0" data-duration="12" data-width="1920" data-height="1080">
+    <div id="root" data-composition-id="story" data-start="0" data-duration="16" data-width="1920" data-height="1080">
       <!-- persistent stage (untimed) -->
       <div id="bg">
         <div id="grid"></div>
@@ -333,7 +428,7 @@
       </section>
 
       <!-- S5 · play on windows -->
-      <section id="s-play" class="clip" data-start="8.6" data-duration="3.4" data-track-index="1">
+      <section id="s-play" class="clip" data-start="8.6" data-duration="7.4" data-track-index="1">
         <div id="play-copy">
           <p class="eyebrow">22:00 — windows</p>
           <h2 id="play-title" class="title"></h2>
@@ -347,6 +442,42 @@
               <div class="toast"><span class="toast-ico">★</span><span><small>achievement unlocked</small><strong id="ach-2"></strong></span></div>
               <div class="toast"><span class="toast-ico">★</span><span><small>achievement unlocked</small><strong id="ach-3"></strong></span></div>
             </div>
+            <div id="screens">
+              <div class="gscreen" id="g-val">
+                <div id="val-floor"></div>
+                <div class="val-crate" id="val-c1"></div>
+                <div class="val-crate" id="val-c2"></div>
+                <div id="val-target"><i class="head"></i><i class="torso"></i></div>
+                <div id="val-aim">
+                  <div id="val-cross"><i class="t"></i><i class="b"></i><i class="l"></i><i class="r"></i></div>
+                  <div id="val-hit"><i class="x1"></i><i class="x2"></i></div>
+                </div>
+                <div id="val-flash"></div>
+                <div id="val-gun"></div>
+                <div id="val-feed" class="hud-mono"><span class="feed-name"></span><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#FA4454" d="M23.792 2.152a.252.252 0 0 0-.098.083c-3.384 4.23-6.769 8.46-10.15 12.69-.107.093-.025.288.119.265 2.439.003 4.877 0 7.316.001a.66.66 0 0 0 .552-.25c.774-.967 1.55-1.934 2.324-2.903a.72.72 0 0 0 .144-.49c-.002-3.077 0-6.153-.003-9.23.016-.11-.1-.206-.204-.167zM.077 2.166c-.077.038-.074.132-.076.205.002 3.074.001 6.15.001 9.225a.679.679 0 0 0 .158.463l7.64 9.55c.12.152.308.25.505.247 2.455 0 4.91.003 7.365 0 .142.02.222-.174.116-.265C10.661 15.176 5.526 8.766.4 2.35c-.08-.094-.174-.272-.322-.184z"/></svg></span><span class="hs">headshot</span></div>
+                <div id="val-ammo" class="hud-mono"><b id="ammo">25</b> / 75</div>
+                <div class="g-tag"><span class="game-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#FA4454" d="M23.792 2.152a.252.252 0 0 0-.098.083c-3.384 4.23-6.769 8.46-10.15 12.69-.107.093-.025.288.119.265 2.439.003 4.877 0 7.316.001a.66.66 0 0 0 .552-.25c.774-.967 1.55-1.934 2.324-2.903a.72.72 0 0 0 .144-.49c-.002-3.077 0-6.153-.003-9.23.016-.11-.1-.206-.204-.167zM.077 2.166c-.077.038-.074.132-.076.205.002 3.074.001 6.15.001 9.225a.679.679 0 0 0 .158.463l7.64 9.55c.12.152.308.25.505.247 2.455 0 4.91.003 7.365 0 .142.02.222-.174.116-.265C10.661 15.176 5.526 8.766.4 2.35c-.08-.094-.174-.272-.322-.184z"/></svg></span><span><b>VALORANT</b><small>tactical shooter</small></span></div>
+              </div>
+              <div class="gscreen" id="g-gta">
+                <div id="gta-sun"></div>
+                <div id="gta-city"></div>
+                <div id="gta-road"><div id="gta-lanes"></div></div>
+                <div id="gta-car"><i class="top"></i><i class="win"></i><i class="body"></i><i class="lamp"></i><i class="wheel w1"></i><i class="wheel w2"></i></div>
+                <div id="gta-map"><i class="road r1"></i><i class="road r2"></i><i id="gta-route"></i><i id="gta-dot"></i></div>
+                <div id="gta-stars"><span class="st on">★</span><span class="st on">★</span><span class="st on">★</span><span>★</span><span>★</span></div>
+                <div id="gta-cash" class="hud-mono">$<span id="cash">0</span></div>
+                <div class="g-tag"><span class="game-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#FCAF17" d="M5.971 6.816h3.241c1.469 0 2.741-.448 2.741-2.084 0-1.3-1.117-1.576-2.19-1.576H6.748l-.777 3.66Zm12.834 8.753h5.168l-4.664 3.228.755 5.087-4.041-3.07L10.599 24l2.536-5.392s-2.95-3.075-2.947-3.075c-.198-.262-.265-.936-.265-1.226 0-.367.024-.739.049-1.134.028-.451.058-.933.058-1.476 0-1.338-.59-2.038-2.036-2.038H5.283l-1.18 5.525H.026L3.269 0h7.672c2.852 0 5.027.702 5.027 3.936 0 2.276-1.12 3.894-3.592 4.233v.045c1.162.276 1.598 1.062 1.598 2.527 0 .585-.018 1.098-.034 1.581-.015.428-.03.834-.03 1.243 0 .525.137 1.382.48 1.968h.567l3.028-5.06.82 5.096Zm-1.233-2.948-2.187 3.654h-3.457l2.103 2.189-1.73 3.672 3.777-2.218 2.976 2.263-.553-3.731 3.093-2.139h-3.43l-.592-3.69Z"/></svg></span><span><b>GTA V</b><small>open world</small></span></div>
+              </div>
+              <div class="gscreen" id="g-pubg">
+                <div id="pubg-zone"></div>
+                <div id="pubg-safe"></div>
+                <div id="pubg-chute"><div id="pubg-canopy"></div><i class="cord c1"></i><i class="cord c2"></i><div id="pubg-player"></div></div>
+                <div id="pubg-hud" class="hud-mono"><div>alive<b id="alive">64</b></div><div>kills<b id="kills">0</b></div></div>
+                <p id="pubg-win" class="hud-mono">#1 · last one standing<small>survival · battle royale</small></p>
+                <div class="g-tag"><span class="game-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#F4B942" d="M1.425 20.693c-.107-.247-.132-.4-.131-.8 0-.376.015-.478.208-1.416a38 38 0 0 0 .2-1.015c-.1-.056-.481-.376-.7-.587-.49-.472-.799-.938-.942-1.415-.059-.195-.067-.282-.056-.592.013-.341.02-.378.127-.599a2 2 0 0 1 .257-.39c.14-.15.145-.161.188-.465.024-.171.072-.493.105-.715.054-.36.056-.424.018-.592a2.84 2.84 0 0 1 .082-1.529c.358-.99 1.39-1.681 3-2.007 1.226-.249 2.815-.265 4.374-.045 1.537.218 3.344.715 5.011 1.38.214.086.392.152.396.148.014-.014-1.28-.668-1.61-.814A17 17 0 0 0 8.28 8.073C7.472 7.92 7.22 7.9 6.147 7.9c-.931 0-1.068.007-1.46.073a7 7 0 0 0-.836.18c-.1.03-.056-.046.082-.141.516-.356 1.36-.69 2.23-.886.853-.191.851-.177.023-.165-.407.006-.74.002-.74-.009s.025-.041.055-.068a10 10 0 0 0 .342-.376c.493-.56 1.253-1.22 1.923-1.667 1.278-.854 2.553-1.345 4.124-1.588.51-.08 2.061-.08 2.6 0 1.682.245 2.964.707 4.14 1.49.554.37.864.624 1.339 1.101.953.958 1.613 2.02 2.191 3.527.31.808.601 1.76.756 2.474l.072.331.164.115c.09.063.183.152.206.198s.166.448.316.894c.151.445.286.814.3.82s.026.111.026.234c0 .213-.004.225-.086.264-.106.05-1.037.255-1.16.255-.127 0-.23-.11-.322-.343l-.177-.436c-.054-.128-.172-.416-.263-.638-.302-.739-.295-.725-.394-.766-.08-.033-.128-.026-.393.064-.166.057-.35.13-.407.165a.55.55 0 0 0-.221.4c-.001.091.23.762.289.84.067.089 1.591 1.11 1.688 1.131.06.013.253-.014.528-.074l.438-.094c.003 0 .016.215.028.478.021.45.018.486-.043.607-.104.204-.003.16-1.67.723-1.314.444-1.564.497-2.353.497a4.5 4.5 0 0 1-2.388-.644c-.48-.283-1.052-.767-1.224-1.037-.133-.209-.16-.04.34-2.195.1-.427.194-.781.211-.787.017-.005.09.1.163.236s.164.266.202.29.287.14.552.259c.409.182.515.217.695.228a.82.82 0 0 0 .79-.41c.083-.131.097-.2.213-1.07l.158-1.178c.098-.725.09-.957-.046-1.248-.153-.327-.328-.474-.881-.741-.918-.444-.862-.435-1.279-.204-.158.088-.29.161-.293.164a8 8 0 0 0 .313-.006l.318-.01.52.24c.408.19.555.275.678.392.301.29.393.655.31 1.241-.052.37-.085.458-.23.615-.185.202-.334.269-.596.27-.208 0-.243-.01-.732-.24-.509-.24-.516-.242-.79-.249l-.276-.007-.039.156-.166.685c-.162.673-.477 1.976-.735 3.038-.11.454-.258 1.063-.327 1.355-.159.668-.214.86-.307 1.075-.219.503-.689.99-1.2 1.245-.578.287-1.076.342-1.828.205a45 45 0 0 0-4.48-.615c-.606-.053-2.655-.053-3.051 0-.826.111-1.187.19-1.535.337a1.93 1.93 0 0 0-.847.672c-.174.257-.253.71-.191 1.092.029.177-.008.192-.079.03zm.317-3.394c0-.028.06-.365.165-.929.1-.538.212-.748.576-1.086.604-.56 1.758-.924 3.331-1.05.557-.045 2.451-.014 3.072.05 1.287.131 1.77.195 2.88.38.906.151.886.15.7.073a58 58 0 0 0-2.054-.744c-1.222-.412-1.941-.578-3.207-.74-.625-.08-2.496-.081-3.082-.001-1.13.154-1.95.382-2.568.717-.523.282-.895.643-1.049 1.02-.09.22-.075.702.03.956.124.299.332.586.65.9.436.428.556.526.556.454m-.558-4.09c.15-.107.649-.33.963-.43.525-.169.957-.256 1.805-.367.497-.065 2.617-.093 3.284-.043l.716.053c.286.022.316-.01.392-.418l.184-.974c.19-1 .248-1.318.249-1.375 0-.105-.107-.19-.281-.217-.792-.129-2.275-.198-3.255-.153-2.203.1-3.583.628-4.102 1.566a1.6 1.6 0 0 0-.219.662q-.018.188.01.105c.143-.436.52-.88.926-1.094.237-.125.26-.132.26-.088 0 .015-.063.058-.14.096q-.273.131-.513.593c-.153.295-.193.468-.297 1.291a61 61 0 0 1-.096.74c-.021.135-.008.14.114.053m9.586-.184c.066-.052.078-.085.078-.236 0-.159-.01-.184-.102-.266-.12-.108-.188-.114-.298-.028-.161.128-.122.44.069.544.11.06.16.057.253-.014m7.349-1.91c.223-.15.319-.421.251-.712-.118-.515-.662-.73-.966-.384-.283.322-.166.91.22 1.1.178.088.361.087.495-.004m-.321-.32c-.187-.102-.245-.433-.103-.586.108-.117.285-.115.4.006.166.172.172.42.016.551-.105.088-.19.096-.313.029m-6.548-.146c.098-.139.036-.446-.105-.521-.09-.049-.204-.039-.257.022-.14.16-.142.312-.003.476.1.12.29.132.366.023z"/></svg></span><span><b>PUBG</b><small>battle royale</small></span></div>
+              </div>
+            </div>
+            <div id="card">
             <p id="p1">player 1</p>
             <p id="game-name"></p>
             <div id="xp">
@@ -359,6 +490,7 @@
               <div class="game"><span class="game-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#F4B942" d="M1.425 20.693c-.107-.247-.132-.4-.131-.8 0-.376.015-.478.208-1.416a38 38 0 0 0 .2-1.015c-.1-.056-.481-.376-.7-.587-.49-.472-.799-.938-.942-1.415-.059-.195-.067-.282-.056-.592.013-.341.02-.378.127-.599a2 2 0 0 1 .257-.39c.14-.15.145-.161.188-.465.024-.171.072-.493.105-.715.054-.36.056-.424.018-.592a2.84 2.84 0 0 1 .082-1.529c.358-.99 1.39-1.681 3-2.007 1.226-.249 2.815-.265 4.374-.045 1.537.218 3.344.715 5.011 1.38.214.086.392.152.396.148.014-.014-1.28-.668-1.61-.814A17 17 0 0 0 8.28 8.073C7.472 7.92 7.22 7.9 6.147 7.9c-.931 0-1.068.007-1.46.073a7 7 0 0 0-.836.18c-.1.03-.056-.046.082-.141.516-.356 1.36-.69 2.23-.886.853-.191.851-.177.023-.165-.407.006-.74.002-.74-.009s.025-.041.055-.068a10 10 0 0 0 .342-.376c.493-.56 1.253-1.22 1.923-1.667 1.278-.854 2.553-1.345 4.124-1.588.51-.08 2.061-.08 2.6 0 1.682.245 2.964.707 4.14 1.49.554.37.864.624 1.339 1.101.953.958 1.613 2.02 2.191 3.527.31.808.601 1.76.756 2.474l.072.331.164.115c.09.063.183.152.206.198s.166.448.316.894c.151.445.286.814.3.82s.026.111.026.234c0 .213-.004.225-.086.264-.106.05-1.037.255-1.16.255-.127 0-.23-.11-.322-.343l-.177-.436c-.054-.128-.172-.416-.263-.638-.302-.739-.295-.725-.394-.766-.08-.033-.128-.026-.393.064-.166.057-.35.13-.407.165a.55.55 0 0 0-.221.4c-.001.091.23.762.289.84.067.089 1.591 1.11 1.688 1.131.06.013.253-.014.528-.074l.438-.094c.003 0 .016.215.028.478.021.45.018.486-.043.607-.104.204-.003.16-1.67.723-1.314.444-1.564.497-2.353.497a4.5 4.5 0 0 1-2.388-.644c-.48-.283-1.052-.767-1.224-1.037-.133-.209-.16-.04.34-2.195.1-.427.194-.781.211-.787.017-.005.09.1.163.236s.164.266.202.29.287.14.552.259c.409.182.515.217.695.228a.82.82 0 0 0 .79-.41c.083-.131.097-.2.213-1.07l.158-1.178c.098-.725.09-.957-.046-1.248-.153-.327-.328-.474-.881-.741-.918-.444-.862-.435-1.279-.204-.158.088-.29.161-.293.164a8 8 0 0 0 .313-.006l.318-.01.52.24c.408.19.555.275.678.392.301.29.393.655.31 1.241-.052.37-.085.458-.23.615-.185.202-.334.269-.596.27-.208 0-.243-.01-.732-.24-.509-.24-.516-.242-.79-.249l-.276-.007-.039.156-.166.685c-.162.673-.477 1.976-.735 3.038-.11.454-.258 1.063-.327 1.355-.159.668-.214.86-.307 1.075-.219.503-.689.99-1.2 1.245-.578.287-1.076.342-1.828.205a45 45 0 0 0-4.48-.615c-.606-.053-2.655-.053-3.051 0-.826.111-1.187.19-1.535.337a1.93 1.93 0 0 0-.847.672c-.174.257-.253.71-.191 1.092.029.177-.008.192-.079.03zm.317-3.394c0-.028.06-.365.165-.929.1-.538.212-.748.576-1.086.604-.56 1.758-.924 3.331-1.05.557-.045 2.451-.014 3.072.05 1.287.131 1.77.195 2.88.38.906.151.886.15.7.073a58 58 0 0 0-2.054-.744c-1.222-.412-1.941-.578-3.207-.74-.625-.08-2.496-.081-3.082-.001-1.13.154-1.95.382-2.568.717-.523.282-.895.643-1.049 1.02-.09.22-.075.702.03.956.124.299.332.586.65.9.436.428.556.526.556.454m-.558-4.09c.15-.107.649-.33.963-.43.525-.169.957-.256 1.805-.367.497-.065 2.617-.093 3.284-.043l.716.053c.286.022.316-.01.392-.418l.184-.974c.19-1 .248-1.318.249-1.375 0-.105-.107-.19-.281-.217-.792-.129-2.275-.198-3.255-.153-2.203.1-3.583.628-4.102 1.566a1.6 1.6 0 0 0-.219.662q-.018.188.01.105c.143-.436.52-.88.926-1.094.237-.125.26-.132.26-.088 0 .015-.063.058-.14.096q-.273.131-.513.593c-.153.295-.193.468-.297 1.291a61 61 0 0 1-.096.74c-.021.135-.008.14.114.053m9.586-.184c.066-.052.078-.085.078-.236 0-.159-.01-.184-.102-.266-.12-.108-.188-.114-.298-.028-.161.128-.122.44.069.544.11.06.16.057.253-.014m7.349-1.91c.223-.15.319-.421.251-.712-.118-.515-.662-.73-.966-.384-.283.322-.166.91.22 1.1.178.088.361.087.495-.004m-.321-.32c-.187-.102-.245-.433-.103-.586.108-.117.285-.115.4.006.166.172.172.42.016.551-.105.088-.19.096-.313.029m-6.548-.146c.098-.139.036-.446-.105-.521-.09-.049-.204-.039-.257.022-.14.16-.142.312-.003.476.1.12.29.132.366.023z"/></svg></span><span><b>PUBG</b><small>battle royale</small></span></div>
             </div>
             <p id="start">press start</p>
+            </div>
             <p id="tm">VALORANT © Riot Games · GTA V © Rockstar Games / Take-Two · PUBG © KRAFTON — trademarks of their owners, not affiliated</p>
           </div>
           <div id="taskbar">
@@ -423,7 +555,7 @@
         }).join("");
 
         var tl = gsap.timeline({ paused: true, defaults: { ease: "expo.out" } });
-        var D = 12;
+        var D = 16;
 
         // ── persistent: timecode, chapter bars, day→night glow ──
         var tc = $("#tc");
@@ -435,11 +567,11 @@
             tc.textContent = "00:" + (s < 10 ? "0" : "") + s + ":" + String(Math.floor((clock.t % 1) * 24)).padStart(2, "0");
           },
         }, 0);
-        var spans = [[0, 2.1], [2.1, 5.3], [5.3, 7.7], [7.7, 8.7], [8.7, 12]];
+        var spans = [[0, 2.1], [2.1, 5.3], [5.3, 7.7], [7.7, 8.7], [8.7, 16]];
         spans.forEach(function (s, i) {
           tl.fromTo("#cf-" + i, { scaleX: 0 }, { scaleX: 1, duration: s[1] - s[0], ease: "none" }, s[0]);
         });
-        tl.fromTo("#rec-dot", { opacity: 1 }, { opacity: 0.2, duration: 0.5, ease: "sine.inOut", repeat: 23, yoyo: true }, 0);
+        tl.fromTo("#rec-dot", { opacity: 1 }, { opacity: 0.2, duration: 0.5, ease: "sine.inOut", repeat: 31, yoyo: true }, 0);
         tl.fromTo("#grid", { y: 0 }, { y: "-6vmin", duration: D, ease: "none" }, 0);
         tl.fromTo("#glow-day", { opacity: 1 }, { opacity: 0, duration: 1, ease: "power2.inOut" }, 7.6);
         tl.fromTo("#glow-night", { opacity: 0 }, { opacity: 1, duration: 1.2, ease: "power2.inOut" }, 8.4);
@@ -504,19 +636,83 @@
         tl.fromTo("#p1", { opacity: 0, scale: 1.3 }, { opacity: 1, scale: 1, duration: 0.8 }, 9.1);
         tl.fromTo("#game-name", { opacity: 0, scale: 1.25, skewX: -12 }, { opacity: 1, scale: 1, skewX: 0, duration: 0.7, ease: "back.out(1.6)" }, 9.2);
         tl.fromTo("#xp", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 9.4);
-        tl.fromTo("#xp-fill", { scaleX: 0 }, { scaleX: 1, duration: 1.8, ease: "power2.inOut" }, 9.5);
+        tl.fromTo("#xp-fill", { scaleX: 0 }, { scaleX: 1, duration: 5.6, ease: "power1.inOut" }, 9.5);
         var lvl = $("#lvl");
         var lv = { v: 1 };
         var LV_MAX = Math.max(2, PROJECTS + SKILLS);
         tl.fromTo(lv, { v: 1 }, {
-          v: LV_MAX, duration: 1.8, ease: "power2.inOut",
+          v: LV_MAX, duration: 5.6, ease: "power1.inOut",
           onUpdate: function () { lvl.textContent = "lv " + Math.round(lv.v); },
         }, 9.5);
-        tl.fromTo(".game", { opacity: 0, y: 24, scale: 0.94 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, stagger: 0.14, ease: "back.out(1.6)" }, 9.55);
         tl.fromTo(".tb-game", { scale: 0 }, { scale: 1, duration: 0.35, stagger: 0.07, ease: "back.out(3)" }, 9.2);
-        tl.fromTo("#tm", { opacity: 0 }, { opacity: 1, duration: 0.4 }, 9.9);
-        tl.fromTo(".toast", { opacity: 0, y: -30 }, { opacity: 1, y: 0, duration: 0.5, stagger: 0.45, ease: "back.out(1.4)" }, 9.7);
-        tl.fromTo("#start", { opacity: 0 }, { opacity: 1, duration: 0.25, ease: "none", repeat: 4, yoyo: true }, 10.6);
+
+        // Card steps aside for three short gameplay vignettes.
+        tl.to("#card", { opacity: 0, scale: 0.96, duration: 0.25, ease: "power2.in" }, 9.9);
+        var counter = function (sel, from, to, at, dur, fmt) {
+          var el = $(sel);
+          var o = { v: from };
+          tl.fromTo(o, { v: from }, { v: to, duration: dur, ease: "none", onUpdate: function () { el.textContent = fmt ? fmt(o.v) : String(Math.round(o.v)); } }, at);
+        };
+
+        // VALORANT — line up the shot, one tap, headshot.
+        var V0 = 10.1;
+        $("#val-feed .feed-name").textContent = NAME;
+        tl.fromTo("#g-val", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "none" }, V0);
+        tl.fromTo("#val-aim", { x: "-24vmin", y: "10vmin" }, { x: 0, y: 0, duration: 0.55, ease: "power3.inOut" }, V0 + 0.1);
+        tl.fromTo("#val-flash", { opacity: 0 }, { opacity: 1, duration: 0.04, ease: "none" }, V0 + 0.7);
+        tl.to("#val-flash", { opacity: 0, duration: 0.16, ease: "power2.out" }, V0 + 0.74);
+        tl.fromTo("#val-gun", { y: 0, rotation: 0 }, { y: "1.6vmin", rotation: -3, duration: 0.06, ease: "power2.out" }, V0 + 0.7);
+        tl.to("#val-gun", { y: 0, rotation: 0, duration: 0.25, ease: "power2.out" }, V0 + 0.76);
+        tl.fromTo("#val-cross", { y: 0 }, { y: "-1.4vmin", duration: 0.06, ease: "power2.out" }, V0 + 0.7);
+        tl.to("#val-cross", { y: 0, duration: 0.25, ease: "power2.out" }, V0 + 0.76);
+        tl.fromTo("#val-hit", { opacity: 0, scale: 1.5 }, { opacity: 1, scale: 1, duration: 0.1, ease: "power2.out" }, V0 + 0.72);
+        tl.to("#val-hit", { opacity: 0, duration: 0.3 }, V0 + 0.95);
+        tl.fromTo("#val-target", { rotation: 0, x: 0, opacity: 1 }, { rotation: 24, x: "3vmin", opacity: 0.25, duration: 0.45, ease: "power2.in" }, V0 + 0.74);
+        tl.fromTo("#val-feed", { opacity: 0, x: "6vmin" }, { opacity: 1, x: 0, duration: 0.3, ease: "back.out(1.6)" }, V0 + 0.8);
+        counter("#ammo", 25, 24, V0 + 0.7, 0.05);
+        tl.to("#g-val", { opacity: 0, duration: 0.2, ease: "none" }, V0 + 1.25);
+
+        // GTA V — sunset drive through the city, minimap, wanted level.
+        var G0 = 11.5;
+        var city = $("#gta-city");
+        var html = "";
+        // Deterministic but irregular skyline (no Math.random in compositions).
+        for (var b = 0; b < 44; b++) {
+          var bh = 8 + ((b * 53 + b * b * 7) % 21);
+          var bw = 4 + ((b * 29) % 5);
+          html += '<span style="height:' + bh + 'vmin;width:' + bw + 'vmin"></span>';
+        }
+        city.innerHTML = html;
+        tl.fromTo("#g-gta", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "none" }, G0);
+        tl.fromTo("#gta-city", { x: 0 }, { x: "-60vmin", duration: 1.45, ease: "none" }, G0);
+        tl.fromTo("#gta-lanes", { x: 0 }, { x: "-96vmin", duration: 1.45, ease: "none" }, G0);
+        tl.fromTo("#gta-car", { y: 0 }, { y: "-0.5vmin", duration: 0.12, ease: "sine.inOut", repeat: 11, yoyo: true }, G0);
+        tl.fromTo("#gta-car .wheel", { rotation: 0 }, { rotation: 720, duration: 1.45, ease: "none" }, G0);
+        tl.fromTo("#gta-route", { scaleX: 0 }, { scaleX: 1, duration: 1.1, ease: "power1.inOut" }, G0 + 0.1);
+        tl.fromTo("#gta-dot", { x: 0 }, { x: "7vmin", duration: 1.1, ease: "power1.inOut" }, G0 + 0.1);
+        tl.fromTo("#gta-stars .st", { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.2, stagger: 0.18, ease: "back.out(3)" }, G0 + 0.35);
+        counter("#cash", 0, 1337420, G0 + 0.1, 1.2, function (v) { return Math.round(v).toLocaleString("en-US"); });
+        tl.to("#g-gta", { opacity: 0, duration: 0.2, ease: "none" }, G0 + 1.25);
+
+        // PUBG — drop in, the zone closes, last one standing.
+        var P0 = 12.9;
+        tl.fromTo("#g-pubg", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "none" }, P0);
+        tl.fromTo("#pubg-zone", { scale: 1 }, { scale: 0.36, duration: 1.25, ease: "power1.inOut" }, P0);
+        tl.fromTo("#pubg-chute", { y: "-36vmin" }, { y: "22vmin", duration: 0.95, ease: "power1.out" }, P0);
+        tl.fromTo("#pubg-chute", { rotation: -7 }, { rotation: 7, duration: 0.24, ease: "sine.inOut", repeat: 3, yoyo: true }, P0);
+        tl.fromTo("#pubg-canopy", { opacity: 1, scale: 1 }, { opacity: 0, scale: 0.6, duration: 0.2 }, P0 + 0.95);
+        counter("#alive", 64, 1, P0, 1.1);
+        counter("#kills", 0, 7, P0 + 0.2, 0.9);
+        tl.fromTo("#pubg-win", { opacity: 0, scale: 1.3 }, { opacity: 1, scale: 1, duration: 0.3, ease: "back.out(2)" }, P0 + 1.0);
+        tl.to("#g-pubg", { opacity: 0, duration: 0.2, ease: "none" }, P0 + 1.35);
+
+        // Back to the player card: library, achievements, press start.
+        var E0 = 14.3;
+        tl.to("#card", { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, E0);
+        tl.fromTo(".game", { opacity: 0, y: 24, scale: 0.94 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, stagger: 0.12, ease: "back.out(1.6)" }, E0 + 0.1);
+        tl.fromTo("#tm", { opacity: 0 }, { opacity: 1, duration: 0.4 }, E0 + 0.2);
+        tl.fromTo(".toast", { opacity: 0, y: -30 }, { opacity: 1, y: 0, duration: 0.45, stagger: 0.2, ease: "back.out(1.4)" }, E0 + 0.25);
+        tl.fromTo("#start", { opacity: 0 }, { opacity: 1, duration: 0.25, ease: "none", repeat: 2, yoyo: true }, E0 + 0.8);
 
         window.__timelines["story"] = tl;
       })();

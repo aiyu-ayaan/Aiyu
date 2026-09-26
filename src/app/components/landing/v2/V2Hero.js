@@ -24,9 +24,11 @@ import { BOOT_READY_EVENT, isBootReady } from '../../shared/bootSignal';
  * film.
  */
 
-const FILM_DURATION = 12;
+const FILM_DURATION = 16;
 // The opening "Hi, I'm …" line is fully on screen here; scroll takes over.
 const INTRO_END = 1.6;
+// From here the film is back on the player card: show the press-start dock.
+const END_SCENE = 14.3;
 
 const V2Hero = ({ data, counts = {} }) => {
     const { name, homeRoles, githubLink, resumeStatus } = data || {};
@@ -104,14 +106,14 @@ const V2Hero = ({ data, counts = {} }) => {
             const st = ScrollTrigger.create({
                 trigger: scope,
                 start: 'top top',
-                end: '+=420%',
+                end: '+=540%',
                 pin: stage,
                 anticipatePin: 1,
                 onUpdate: (self) => {
                     if (self.progress > 0.001) introTween?.kill();
                     follow(self.progress);
                     const t = INTRO_END + self.progress * span;
-                    syncPhase(self.progress < 0.03 ? 'start' : t > 10.4 ? 'end' : 'mid');
+                    syncPhase(self.progress < 0.03 ? 'start' : t > END_SCENE ? 'end' : 'mid');
                 },
             });
 
@@ -238,16 +240,28 @@ const V2Hero = ({ data, counts = {} }) => {
                     </div>
                 </div>
 
-                {/* The Windows scene shows game logos; the full notice is in
+                {/* Trademark chip: takes the skip button's corner once the
+                    story reaches the game scene; the full notice lives on
                     the closing chapter (V2Continue). */}
                 {film && (
-                    <p
-                        className="absolute inset-x-0 bottom-[8.5svh] z-10 mx-auto max-w-3xl px-6 text-center font-mono text-[0.62rem] leading-relaxed transition-opacity duration-500 lg:bottom-[9vh]"
-                        style={{ color: 'var(--text-muted)', opacity: phase === 'end' ? 1 : 0 }}
-                        aria-hidden={phase !== 'end'}
+                    <button
+                        type="button"
+                        onClick={() => {
+                            const target = document.getElementById('v2-continue');
+                            if (target) smoothScrollTo(target.getBoundingClientRect().top + window.scrollY - 80);
+                        }}
+                        className="absolute right-4 top-24 z-10 inline-flex max-w-[16rem] cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 text-left font-mono text-[0.6rem] leading-tight backdrop-blur-md transition-opacity duration-500 sm:right-[4vmin] sm:max-w-none"
+                        style={{
+                            borderColor: 'var(--hairline)',
+                            color: 'var(--text-tertiary)',
+                            backgroundColor: 'color-mix(in srgb, var(--bg-primary) 55%, transparent)',
+                            opacity: phase === 'end' ? 1 : 0,
+                            visibility: phase === 'end' ? 'visible' : 'hidden',
+                        }}
                     >
-                        VALORANT, GTA V and PUBG names and logos are trademarks of Riot Games, Take-Two Interactive / Rockstar Games and KRAFTON. Not affiliated or endorsed.
-                    </p>
+                        <span className="font-sans text-xs font-bold" style={{ color: 'var(--text-secondary)' }}>™</span>
+                        Game names &amp; logos belong to their owners · notice ↓
+                    </button>
                 )}
 
                 {film && (
@@ -270,6 +284,7 @@ const V2Hero = ({ data, counts = {} }) => {
                                 color: 'var(--text-secondary)',
                                 backgroundColor: 'color-mix(in srgb, var(--bg-primary) 50%, transparent)',
                                 opacity: phase === 'end' ? 0 : 0.75,
+                                visibility: phase === 'end' ? 'hidden' : 'visible',
                             }}
                         >
                             skip story <FaForwardStep size={10} />
