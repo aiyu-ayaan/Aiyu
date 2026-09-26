@@ -1,5 +1,34 @@
 # Changelog
 
+## [6.0.0](https://github.com/aiyu-ayaan/Aiyu/compare/v5.1.1...v6.0.0) (2026-09-26)
+
+### ⚠ BREAKING CHANGES
+
+* : V2 Home redesign with HyperFrames interactive story, boot sequence, and motion primitives
+
+### Features
+
+* Play each game on the Windows screen; move the TM notice
+* Show VALORANT, GTA V and PUBG with a trademark notice
+* Continue the film's look through every chapter
+* Tell the rest of the home page as a terminal story
+* Play the HyperFrames boot film on the loading screen
+* Scroll-scrubbed HyperFrames story as the landing hero
+* Add boot and story compositions with a site sync script
+* Add shared motion primitives for the home redesign
+
+### Bug Fixes
+
+* Make the VALORANT gun actually aim at the crosshair
+* Keep the whole game scene inside the pin; 5-star wanted, real viewmodel
+* Re-measure scroll triggers in page order after late pins
+* Avoid nesting the typewriter <p> inside a <p>
+
+### Other Changes
+
+* Apple-style smooth scroll and a lighter film scrub
+* Add compose file aliases for local and dev commands
+
 ## [5.1.1](https://github.com/aiyu-ayaan/Aiyu/compare/v5.1.0...v5.1.1) (2026-09-17)
 
 ### Features
