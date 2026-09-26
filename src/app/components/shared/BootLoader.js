@@ -1,7 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { signalBootReady } from "./bootSignal";
+
+const HyperFramesStage = dynamic(() => import("./HyperFramesStage"), { ssr: false });
 
 /**
  * V2 editorial boot screen shown only when this is the *only* open instance
@@ -29,7 +32,15 @@ import { signalBootReady } from "./bootSignal";
  * numeral at depth, and a ledger-style progress footer. Pure React + CSS, so
  * it stays out of the heavy root bundle. Honours prefers-reduced-motion and
  * data-perf="lite".
+ *
+ * Film mode: on capable devices the HyperFrames "boot" composition
+ * (hyperframes/boot — BIOS, GRUB, systemd, login) plays over this screen and
+ * hands off to the landing film, which opens on the same login frame. The DOM
+ * screen paints first; if the film has not painted within FILM_GRACE_MS it
+ * is abandoned and the DOM sequence runs as before.
  */
+const FILM_GRACE_MS = 1500;
+const FILM_SAFETY_MS = 7000;
 const BOOT_LINES = [
   "mounting kernel modules",
   "initializing render pipeline",
@@ -66,8 +77,11 @@ const COVER_STYLE = {
   background: "var(--bg-primary, #0d1117)",
 };
 
-export default function BootLoader() {
+export default function BootLoader({ host }) {
   const [visible, setVisible] = useState(true);
+  const [film, setFilm] = useState(false);
+  const [filmPainted, setFilmPainted] = useState(false);
+  const filmRef = useRef({ onPainted: null, onEnded: null });
   const [exiting, setExiting] = useState(false);
   const [completedLines, setCompletedLines] = useState(0);
   const [progress, setProgress] = useState(0);
@@ -204,31 +218,56 @@ export default function BootLoader() {
     }
 
     const stepMs = lite ? 220 : 300;
-    // Run long enough that every greeting gets its turn (plus a short tail so
-    // the last word is readable before the exit fade).
     const greetingsMs = HELLOS.length * HELLO_DWELL_MS + 400;
     const totalMs = Math.max(stepMs * (BOOT_LINES.length + 1), greetingsMs);
-    const startedAt = performance.now();
+    let domStarted = false;
+    let grace = 0;
 
-    const tick = (now) => {
-      if (aborted) return;
-      const elapsed = now - startedAt;
-      setProgress(Math.min(100, Math.round((elapsed / totalMs) * 100)));
-      setCompletedLines(Math.min(BOOT_LINES.length, Math.floor(elapsed / stepMs)));
-      if (elapsed >= totalMs) {
-        finish();
-        return;
-      }
+    const startDomBoot = () => {
+      if (domStarted || aborted || done) return;
+      domStarted = true;
+      setFilm(false);
+      const startedAt = performance.now();
+      const tick = (now) => {
+        if (aborted) return;
+        const elapsed = now - startedAt;
+        setProgress(Math.min(100, Math.round((elapsed / totalMs) * 100)));
+        setCompletedLines(Math.min(BOOT_LINES.length, Math.floor(elapsed / stepMs)));
+        if (elapsed >= totalMs) {
+          finish();
+          return;
+        }
+        raf = window.requestAnimationFrame(tick);
+      };
       raf = window.requestAnimationFrame(tick);
+      window.clearTimeout(safety);
+      safety = window.setTimeout(finish, totalMs + 4000);
     };
-    raf = window.requestAnimationFrame(tick);
-    // Guard against requestAnimationFrame stalling (e.g. loaded in a background tab).
-    safety = window.setTimeout(finish, totalMs + 4000);
+
+    if (lite) {
+      startDomBoot();
+    } else {
+      // Film first; the DOM sequence is the fallback.
+      setFilm(true);
+      filmRef.current.onPainted = () => {
+        if (domStarted) return;
+        window.clearTimeout(grace);
+        setFilmPainted(true);
+        window.clearTimeout(safety);
+        safety = window.setTimeout(finish, FILM_SAFETY_MS);
+      };
+      filmRef.current.onEnded = () => {
+        if (!domStarted) finish();
+      };
+      grace = window.setTimeout(startDomBoot, FILM_GRACE_MS);
+    }
 
     return () => {
       window.cancelAnimationFrame(raf);
       window.clearTimeout(safety);
+      window.clearTimeout(grace);
       window.clearTimeout(exitTimer);
+      filmRef.current = { onPainted: null, onEnded: null };
       teardownPresence();
     };
   }, []);
@@ -249,7 +288,18 @@ export default function BootLoader() {
       {/* v2 backdrop: depth gradient + top hairline, echoing V2Backdrop */}
       <div className="boot2-backdrop" aria-hidden="true" />
 
-      <div className="boot2-frame">
+      {film && (
+        <HyperFramesStage
+          name="boot"
+          autoplay
+          params={{ host }}
+          onPainted={() => filmRef.current.onPainted?.()}
+          onEnded={() => filmRef.current.onEnded?.()}
+          style={{ zIndex: 2, opacity: filmPainted ? 1 : 0, transition: "opacity 0.25s ease" }}
+        />
+      )}
+
+      <div className="boot2-frame" style={filmPainted ? { visibility: "hidden" } : undefined}>
         <header className="boot2-topbar" aria-hidden="true">
           <span className="boot2-topbar__id">
             <span className="boot2-beacon" />

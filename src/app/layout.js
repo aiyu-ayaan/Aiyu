@@ -223,7 +223,7 @@ export default async function RootLayout({ children }) {
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         suppressHydrationWarning
       >
-        <BootLoader />
+        <BootLoader host={config?.logoText} />
         {adsConfig?.adsenseEnabled && adsenseClientId && (
           <Script
             src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClientId}`}
