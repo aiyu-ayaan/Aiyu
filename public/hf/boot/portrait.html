@@ -1,0 +1,165 @@
+<!doctype html>
+<html
+  lang="en"
+  data-composition-variables='[
+    {"id":"host","type":"string","label":"Hostname","default":"aiyu"},
+    {"id":"bg","type":"color","label":"Background","default":"#0b0f14"},
+    {"id":"fg","type":"color","label":"Text","default":"#f2f5f9"},
+    {"id":"muted","type":"color","label":"Muted text","default":"#8f99a6"},
+    {"id":"line","type":"color","label":"Hairline","default":"#243040"},
+    {"id":"c1","type":"color","label":"Accent 1","default":"#5ee1ff"},
+    {"id":"c3","type":"color","label":"Accent 3","default":"#ff5fa2"},
+    {"id":"ok","type":"color","label":"Success","default":"#4ade80"}
+  ]'
+>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <title>aiyu — boot</title>
+    <script src="/hf/vendor/hyperframe.runtime.iife.js"></script>
+    <script src="/hf/vendor/gsap.min.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg, #0b0f14); }
+      #root {
+        position: relative; width: 100%; height: 100%; overflow: hidden;
+        background: var(--bg); color: var(--fg);
+        font-family: ui-monospace, monospace;
+      }
+      .clip { position: absolute; inset: 0; }
+      #grid {
+        position: absolute; inset: 0; opacity: 0;
+        background-image:
+          linear-gradient(color-mix(in srgb, var(--line) 70%, transparent) 1px, transparent 1px),
+          linear-gradient(90deg, color-mix(in srgb, var(--line) 70%, transparent) 1px, transparent 1px);
+        background-size: 6vmin 6vmin;
+        -webkit-mask-image: radial-gradient(ellipse at 50% 55%, black 20%, transparent 70%);
+        mask-image: radial-gradient(ellipse at 50% 55%, black 20%, transparent 70%);
+      }
+      #glow { position: absolute; inset: 0; opacity: 0; background: radial-gradient(55% 60% at 50% 45%, color-mix(in srgb, var(--c1) 20%, transparent), transparent 70%); }
+
+      /* POST */
+      #s-post { padding: 7vmin 6vmin; font-size: 2vmin; line-height: 1.9; color: var(--muted); }
+      #post-head { display: flex; justify-content: space-between; color: var(--fg); margin-bottom: 3vmin; }
+      #post-logo { font-weight: 800; letter-spacing: 0.2em; color: var(--c1); }
+      .pl .v { color: var(--ok); }
+      #mem { color: var(--fg); font-variant-numeric: tabular-nums; }
+
+      /* GRUB */
+      #s-grub { display: flex; align-items: center; justify-content: center; }
+      #grub { width: 74vmin; border: 1px solid color-mix(in srgb, var(--fg) 40%, transparent); font-size: 2.1vmin; color: var(--muted); }
+      #grub-head { padding: 1.3vmin 2vmin; border-bottom: 1px solid color-mix(in srgb, var(--fg) 40%, transparent); letter-spacing: 0.2em; text-transform: uppercase; font-size: 1.6vmin; display: flex; justify-content: space-between; }
+      #grub-list { position: relative; padding: 1vmin; }
+      #grub-sel { position: absolute; left: 1vmin; right: 1vmin; top: 1vmin; height: 5.4vmin; background: var(--c1); }
+      .gi { position: relative; padding: 1.25vmin 2vmin; }
+      #gi-linux { color: var(--bg); font-weight: 700; }
+      #grub-foot { padding: 1.2vmin 2vmin; border-top: 1px solid color-mix(in srgb, var(--fg) 40%, transparent); font-size: 1.6vmin; }
+      #count { color: var(--fg); }
+
+      /* systemd */
+      #s-sys { padding: 7vmin 6vmin; font-size: 1.9vmin; line-height: 1.85; color: var(--muted); }
+      .sl b { font-weight: 400; color: var(--ok); }
+      .sl u { text-decoration: none; color: var(--fg); }
+
+      /* login → handoff frame (matches the story's first frame) */
+      #s-login { display: flex; align-items: center; justify-content: center; text-align: center; }
+      #login { display: flex; flex-direction: column; align-items: center; gap: 2.4vmin; }
+      #login-line { font-size: 2.4vmin; color: var(--muted); }
+      #login-line b { color: var(--c1); font-weight: 400; }
+      #whoami { font-size: 2.4vmin; color: var(--muted); }
+      #whoami b { color: var(--ok); font-weight: 400; }
+      #bar { width: 42vmin; height: 0.4vmin; background: var(--line); overflow: hidden; }
+      #bar-fill { width: 100%; height: 100%; background: var(--c1); transform-origin: left center; }
+
+      @media (orientation: portrait) {
+        #s-post, #s-sys { font-size: 2.6vmin; padding: 12vmin 6vmin; }
+        #grub { width: 88vmin; font-size: 2.8vmin; }
+        #grub-sel { height: 6.6vmin; }
+        #login-line, #whoami { font-size: 3.2vmin; }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="boot" data-start="0" data-duration="3.6" data-width="1080" data-height="1920">
+      <div id="grid"></div>
+      <div id="glow"></div>
+
+      <section id="s-post" class="clip" data-start="0" data-duration="0.9" data-track-index="1">
+        <div id="post-head"><span id="post-logo">AIYU BIOS</span><span>v5 · uefi</span></div>
+        <p class="pl">cpu ............ <span class="v">ok</span></p>
+        <p class="pl">memory test .... <span id="mem">0</span>M <span class="v">ok</span></p>
+        <p class="pl">nvme0n1 ........ <span class="v">detected</span></p>
+        <p class="pl">usb ............ keyboard, controller <span class="v">ok</span></p>
+        <p class="pl">boot order ..... grub → linux</p>
+      </section>
+
+      <section id="s-grub" class="clip" data-start="0.9" data-duration="0.9" data-track-index="1">
+        <div id="grub">
+          <div id="grub-head"><span>GNU GRUB · dual boot</span><span>2.12</span></div>
+          <div id="grub-list">
+            <div id="grub-sel"></div>
+            <div class="gi" id="gi-linux">▸ linux — write code</div>
+            <div class="gi" id="gi-win">&nbsp; windows — play games</div>
+          </div>
+          <div id="grub-foot">booting <span id="gi-name">linux</span> in <span id="count">2</span>s…</div>
+        </div>
+      </section>
+
+      <section id="s-sys" class="clip" data-start="1.8" data-duration="1.05" data-track-index="1">
+        <p class="sl">[ <b>OK</b> ] Mounted <u>/home/aiyu</u>.</p>
+        <p class="sl">[ <b>OK</b> ] Started <u>projects.service</u>.</p>
+        <p class="sl">[ <b>OK</b> ] Started <u>blogs.service</u>.</p>
+        <p class="sl">[ <b>OK</b> ] Started <u>apps.service</u>.</p>
+        <p class="sl">[ <b>OK</b> ] Started <u>theme.service</u>.</p>
+        <p class="sl">[ <b>OK</b> ] Reached target <u>portfolio.target</u>.</p>
+      </section>
+
+      <section id="s-login" class="clip" data-start="2.85" data-duration="0.75" data-track-index="1">
+        <div id="login">
+          <p id="login-line"><b id="host">aiyu</b> login: guest</p>
+          <p id="whoami"><b>$</b> whoami</p>
+          <div id="bar"><div id="bar-fill"></div></div>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      (function () {
+        var vars = (window.__hyperframes && window.__hyperframes.getVariables && window.__hyperframes.getVariables()) || {};
+        var q = new URLSearchParams(location.search);
+        var get = function (k, d) { return q.has(k) ? q.get(k) : (vars[k] != null ? vars[k] : d); };
+        var $ = function (s) { return document.querySelector(s); };
+        var HOST = String(get("host", "aiyu")).toLowerCase().replace(/[^a-z0-9-]/g, "") || "aiyu";
+        $("#host").textContent = HOST;
+
+        var tl = gsap.timeline({ paused: true, defaults: { ease: "power2.out" } });
+
+        // POST: lines print, memory counts up.
+        tl.fromTo("#post-head", { opacity: 0 }, { opacity: 1, duration: 0.05, ease: "none" }, 0.02);
+        tl.fromTo(".pl", { opacity: 0 }, { opacity: 1, duration: 0.03, stagger: 0.12, ease: "none" }, 0.12);
+        var mem = { v: 0 };
+        var memEl = $("#mem");
+        tl.fromTo(mem, { v: 0 }, { v: 32768, duration: 0.35, ease: "none", onUpdate: function () { memEl.textContent = String(Math.round(mem.v / 1024) * 1024); } }, 0.24);
+
+        // GRUB: menu snaps in, countdown ticks.
+        tl.fromTo("#grub", { opacity: 0, scale: 0.98 }, { opacity: 1, scale: 1, duration: 0.15 }, 0.92);
+        var count = $("#count");
+        tl.call(function () { count.textContent = "2"; }, null, 0.9);
+        tl.call(function () { count.textContent = "1"; }, null, 1.35);
+        tl.fromTo("#grub-sel", { opacity: 1 }, { opacity: 0.55, duration: 0.08, yoyo: true, repeat: 1, ease: "none" }, 1.6);
+
+        // systemd: the site's own sections come up as services.
+        tl.fromTo(".sl", { opacity: 0, x: -8 }, { opacity: 1, x: 0, duration: 0.1, stagger: 0.13 }, 1.82);
+
+        // Login: the stage the landing film opens on (grid + glow + whoami).
+        tl.fromTo("#grid", { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power1.out" }, 2.85);
+        tl.fromTo("#glow", { opacity: 0 }, { opacity: 1, duration: 0.6, ease: "power1.out" }, 2.85);
+        tl.fromTo("#login-line", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.3 }, 2.87);
+        tl.fromTo("#whoami", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.3 }, 3.0);
+        tl.fromTo("#bar-fill", { scaleX: 0 }, { scaleX: 1, duration: 0.5, ease: "power2.inOut" }, 3.05);
+
+        window.__timelines["boot"] = tl;
+      })();
+    </script>
+  </body>
+</html>

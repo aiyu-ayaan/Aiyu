@@ -33,7 +33,9 @@
     "docker:verify": "bash scripts/verify-security.sh",
     "emergency:cleanup": "bash scripts/emergency-cleanup.sh",
     "screenshots:install": "npx playwright install chromium",
-    "screenshots:capture": "node scripts/capture-screenshots.mjs"
+    "screenshots:capture": "node scripts/capture-screenshots.mjs",
+    "hf:sync": "node scripts/sync-hyperframes.mjs",
+    "hf:check": "cd hyperframes/story && npx --yes hyperframes@0.8.78 check && cd ../boot && npx --yes hyperframes@0.8.78 check"
   },
   "dependencies": {
     "@codemirror/legacy-modes": "^6.5.3",
@@ -44,6 +46,7 @@
     "@google/genai": "^2.9.0",
     "@google/generative-ai": "^0.24.1",
     "@gsap/react": "^2.1.2",
+    "@hyperframes/player": "^0.8.78",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@prisma/client": "^6.19.3",
     "@tailwindcss/typography": "^0.5.20",
