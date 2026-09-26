@@ -11,6 +11,7 @@ import {
 } from 'react-icons/fa';
 import useDevicePerformance from '../../../hooks/useDevicePerformance';
 import { useV2Fx } from './gsap3d';
+import TermHead from './TermHead';
 import { getIcon } from '../../../../lib/iconLibrary';
 
 // Same focus-area content as the v1 rail — the redesign is the presentation.
@@ -59,28 +60,19 @@ const SHOWCASE_PANELS = [
   },
 ];
 
-// Resting transform for a card sitting `slot` places deep in the stack.
-const slotProps = (slot) => ({
-  z: -slot * 130,
-  y: slot * 30,
-  scale: 1 - slot * 0.05,
-  autoAlpha: slot > 3 ? 0 : 1 - slot * 0.18,
-});
-
 /**
- * Chapter 05 — Focus areas as a pinned depth deck. The cards stack in camera
- * depth; each scroll step throws the front card past the lens while the rest
- * dolly forward one slot. Cards carry a giant ghost numeral and an accent
- * edge instead of the site's glass-tile look. Lite / reduced-motion devices
- * keep the plain grid.
+ * Chapter 05 — focus areas as i3 workspaces. On desktop the chapter pins and
+ * the workspaces slide past horizontally while a polybar tracks the active
+ * one — the "side to side" rail the admin copy describes. Smaller screens
+ * and reduced motion get a plain vertical stack. Same showcaseSection data.
  */
 const V2Showcase = ({ data }) => {
   const sectionRef = useRef(null);
   const { prefersReducedMotion } = useDevicePerformance();
 
   const eyebrow = data?.eyebrow || 'How I Work';
-  const headline = data?.headline || 'Focus areas, card by card.';
-  const description = data?.description || 'Keep scrolling — each card lifts off toward you and hands the stage to the next.';
+  const headline = data?.headline || 'Focus areas, side to side.';
+  const description = data?.description || 'Keep scrolling — this rail moves sideways with you, then hands you back to the page.';
   const panels = Array.isArray(data?.panels) && data.panels.length > 0 ? data.panels : SHOWCASE_PANELS;
 
   useV2Fx(sectionRef, {
@@ -88,156 +80,123 @@ const V2Showcase = ({ data }) => {
     dependencies: [panels.length],
     extra: ({ gsap, scope, reducedMotion }) => {
       if (reducedMotion) return;
+      const mm = gsap.matchMedia();
+      mm.add('(min-width: 1024px)', () => {
+        const pin = scope.querySelector('.ws-pin');
+        const track = scope.querySelector('.ws-track');
+        const tabs = Array.from(scope.querySelectorAll('.ws-tab'));
+        const fill = scope.querySelector('.ws-fill');
+        if (!pin || !track) return undefined;
 
-      const pinWrap = scope.querySelector('.v2-deck-pin');
-      const stage = scope.querySelector('.v2-deck-stage');
-      const cards = Array.from(scope.querySelectorAll('.v2-deck-card'));
-      const dots = Array.from(scope.querySelectorAll('.v2-deck-dot'));
-      if (!pinWrap || !stage || cards.length < 2) return;
+        const distance = () => Math.max(0, track.scrollWidth - track.parentElement.clientWidth);
+        const setActive = (index) => {
+          tabs.forEach((tab, i) => {
+            tab.dataset.active = i === index ? 'true' : 'false';
+          });
+        };
+        setActive(0);
 
-      // Convert the accessible grid into an absolute depth stack.
-      const stageHeight = Math.max(...cards.map((card) => card.offsetHeight)) + 8;
-      gsap.set(stage, {
-        display: 'block',
-        position: 'relative',
-        height: stageHeight,
-        perspective: 1400,
-        transformStyle: 'preserve-3d',
-      });
-      cards.forEach((card, index) => {
-        gsap.set(card, {
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          height: stageHeight - 8,
-          transformOrigin: '50% 40%',
-          zIndex: cards.length - index,
-          ...slotProps(index),
-        });
-      });
-
-      const steps = cards.length - 1;
-      const tl = gsap.timeline({
-        defaults: { ease: 'none' },
-        scrollTrigger: {
-          trigger: pinWrap,
-          start: 'top 96px',
-          end: `+=${steps * 55}%`,
-          pin: true,
-          scrub: 0.8,
-          anticipatePin: 1,
-          onUpdate: (self) => {
-            const active = Math.min(steps, Math.round(self.progress * steps));
-            dots.forEach((dot, i) => {
-              dot.style.opacity = i === active ? '1' : '0.3';
-              dot.style.transform = i === active ? 'scale(1.35)' : 'scale(1)';
-            });
+        gsap.to(track, {
+          x: () => -distance(),
+          ease: 'none',
+          scrollTrigger: {
+            trigger: pin,
+            start: 'top 80px',
+            end: () => `+=${distance()}`,
+            pin: true,
+            scrub: 0.8,
+            anticipatePin: 1,
+            invalidateOnRefresh: true,
+            onUpdate: (self) => {
+              setActive(Math.min(panels.length - 1, Math.round(self.progress * (panels.length - 1))));
+              if (fill) fill.style.transform = `scaleX(${self.progress})`;
+            },
           },
-        },
-      });
-
-      cards.forEach((card, index) => {
-        if (index === steps) return;
-        // Front card flies past the camera; it fades within the first 40% of
-        // the step so its text never overlaps the card dollying in behind it.
-        tl.to(card, { z: 460, y: -70, rotationX: -10, duration: 1 }, index);
-        tl.to(card, { autoAlpha: 0, duration: 0.4 }, index);
-        // …while every card behind it dollies forward one slot.
-        cards.slice(index + 1).forEach((behind, offset) => {
-          tl.to(behind, { ...slotProps(offset), duration: 1 }, index);
         });
+        return undefined;
       });
+      return () => mm.revert();
     },
   });
 
   return (
-    // No perspective on this wrapper: a transformed ancestor would break the pin.
+    // No transform on this wrapper: a transformed ancestor would break the pin.
     <section ref={sectionRef} className="relative overflow-hidden py-20 sm:py-28" style={{ borderTop: '1px solid var(--hairline)' }}>
-      <div className="v2-deck-pin mx-auto w-full max-w-7xl px-6 lg:px-10">
-        <div className="relative mb-12">
-          <p data-v2="line" className="mb-4 font-mono text-xs font-semibold uppercase tracking-[0.35em]" style={{ color: 'var(--accent-cyan)' }}>
-            /05 — {eyebrow}
-          </p>
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <h2 data-v2="line" className="max-w-3xl text-4xl font-bold leading-[1.02] tracking-tight sm:text-6xl" style={{ color: 'var(--text-bright)' }}>
-                {headline}
-              </h2>
-              <p data-v2="rise" className="mt-4 max-w-2xl text-base leading-relaxed sm:text-lg" style={{ color: 'var(--text-tertiary)' }}>
-                {description}
-              </p>
-            </div>
-            <div data-v2="rise" className="flex items-center gap-2.5 pb-2" aria-hidden="true">
-              {panels.map((panel, index) => (
-                <span
-                  key={panel.title}
-                  className="v2-deck-dot h-2 w-2 rounded-full transition-all duration-200"
-                  style={{
-                    backgroundColor: panel.accent || 'var(--accent-cyan)',
-                    opacity: index === 0 ? 1 : 0.3,
-                  }}
-                />
-              ))}
-            </div>
+      <div className="ws-pin mx-auto w-full max-w-7xl px-6 lg:px-10">
+        <TermHead path="~" command="i3-msg workspace next" title={headline} kicker={description} accent="var(--accent-cyan)" />
+
+        {/* polybar */}
+        <div
+          className="mb-6 flex items-center justify-between gap-4 rounded-lg border px-3 py-2 font-mono text-xs"
+          style={{ borderColor: 'var(--hairline)', backgroundColor: 'color-mix(in srgb, var(--bg-secondary) 80%, transparent)', color: 'var(--text-muted)' }}
+        >
+          <div className="flex flex-wrap items-center gap-1.5">
+            {panels.map((panel, index) => (
+              <span
+                key={panel.title}
+                data-active={index === 0 ? 'true' : 'false'}
+                className="ws-tab rounded px-2 py-0.5 transition-colors duration-200 data-[active=true]:font-bold data-[active=true]:text-[var(--bg-primary)]"
+                style={{ '--ws-accent': panel.accent || 'var(--accent-cyan)' }}
+              >
+                {index + 1}
+              </span>
+            ))}
           </div>
+          <span className="hidden truncate uppercase tracking-[0.2em] sm:inline">{eyebrow}</span>
+          <span className="relative hidden h-1 w-32 overflow-hidden rounded-full lg:block" style={{ backgroundColor: 'var(--hairline)' }}>
+            <span className="ws-fill absolute inset-0 origin-left" style={{ transform: 'scaleX(0)', backgroundColor: 'var(--accent-cyan)' }} />
+          </span>
         </div>
 
-        <div className="v2-deck-stage grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {panels.map((panel, index) => {
-            const Icon = typeof panel.icon === 'string' ? getIcon(panel.icon) : (panel.icon || FaLaptopCode);
-            const accent = panel.accent || 'var(--accent-cyan)';
-            return (
-              <article
-                key={panel.title}
-                className="v2-deck-card relative flex min-h-[24rem] flex-col overflow-hidden rounded-3xl border p-8 sm:p-12"
-                style={{
-                  borderColor: 'var(--hairline)',
-                  backgroundColor: 'var(--bg-secondary)',
-                  backgroundImage: `radial-gradient(ellipse at 85% -10%, color-mix(in srgb, ${accent} 14%, transparent), transparent 55%)`,
-                }}
-              >
-                <span
-                  aria-hidden="true"
-                  className="pointer-events-none absolute -bottom-10 right-4 select-none text-[11rem] font-black leading-none"
-                  style={{
-                    color: 'transparent',
-                    WebkitTextStroke: `1.5px color-mix(in srgb, ${accent} 25%, transparent)`,
-                  }}
+        <div className="overflow-hidden lg:overflow-visible">
+          <div className="ws-track grid grid-cols-1 gap-6 lg:flex lg:w-max lg:gap-8">
+            {panels.map((panel, index) => {
+              const Icon = typeof panel.icon === 'string' ? getIcon(panel.icon) : (panel.icon || FaLaptopCode);
+              const accent = panel.accent || 'var(--accent-cyan)';
+              const tags = Array.isArray(panel.tags) ? panel.tags : [];
+              const dir = String(panel.title).toLowerCase().replace(/[^a-z0-9]+/g, '-');
+              return (
+                <article
+                  key={panel.title}
+                  className="relative flex min-h-[22rem] flex-col overflow-hidden rounded-2xl border lg:h-[26rem] lg:w-[min(40rem,70vw)]"
+                  style={{ borderColor: `color-mix(in srgb, ${accent} 30%, var(--hairline))`, backgroundColor: 'var(--bg-secondary)' }}
                 >
-                  {String(index + 1).padStart(2, '0')}
-                </span>
-                <span aria-hidden="true" className="absolute inset-x-0 top-0 h-[3px]" style={{ background: `linear-gradient(90deg, ${accent}, transparent 70%)` }} />
-
-                <div className="mb-8 flex items-start justify-between gap-3">
-                  <span
-                    className="inline-flex h-12 w-12 items-center justify-center rounded-2xl border"
-                    style={{ borderColor: `color-mix(in srgb, ${accent} 35%, transparent)`, backgroundColor: `color-mix(in srgb, ${accent} 12%, transparent)` }}
-                  >
-                    <Icon size={16} style={{ color: accent }} />
-                  </span>
-                  <span className="font-mono text-xs tabular-nums" style={{ color: 'var(--text-muted)' }}>
-                    {String(index + 1).padStart(2, '0')} / {String(panels.length).padStart(2, '0')}
-                  </span>
-                </div>
-
-                <h3 className="mb-4 max-w-md text-3xl font-bold tracking-tight sm:text-4xl" style={{ color: 'var(--text-bright)' }}>
-                  {panel.title}
-                </h3>
-                <p className="max-w-xl text-base leading-relaxed sm:text-lg" style={{ color: 'var(--text-tertiary)' }}>
-                  {panel.description}
-                </p>
-
-                <div className="mt-auto flex flex-wrap gap-x-5 gap-y-2 pt-8 font-mono text-xs uppercase tracking-[0.15em]">
-                  {panel.tags.map((tag) => (
-                    <span key={tag} style={{ color: `color-mix(in srgb, ${accent} 75%, var(--text-secondary))` }}>
-                      #{tag}
+                  <div className="flex items-center justify-between border-b px-4 py-2 font-mono text-xs" style={{ borderColor: 'var(--hairline)', color: 'var(--text-muted)' }}>
+                    <span>
+                      <span className="mr-2 rounded px-1.5 font-bold" style={{ backgroundColor: accent, color: 'var(--bg-primary)' }}>{index + 1}</span>
+                      ~/focus/{dir}
                     </span>
-                  ))}
-                </div>
-              </article>
-            );
-          })}
+                    <span>{String(index + 1).padStart(2, '0')} / {String(panels.length).padStart(2, '0')}</span>
+                  </div>
+
+                  <div
+                    className="relative flex flex-1 flex-col p-7 sm:p-10"
+                    style={{ backgroundImage: `radial-gradient(ellipse at 90% -10%, color-mix(in srgb, ${accent} 16%, transparent), transparent 55%)` }}
+                  >
+                    <span
+                      className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-xl border"
+                      style={{ borderColor: `color-mix(in srgb, ${accent} 35%, transparent)`, backgroundColor: `color-mix(in srgb, ${accent} 12%, transparent)` }}
+                    >
+                      <Icon size={16} style={{ color: accent }} />
+                    </span>
+                    <h3 className="mb-4 max-w-md text-3xl font-bold tracking-tight sm:text-4xl" style={{ color: 'var(--text-bright)' }}>
+                      {panel.title}
+                    </h3>
+                    <p className="max-w-xl text-base leading-relaxed sm:text-lg" style={{ color: 'var(--text-tertiary)' }}>
+                      {panel.description}
+                    </p>
+                    <div className="mt-auto flex flex-wrap gap-x-5 gap-y-2 pt-8 font-mono text-xs uppercase tracking-[0.15em]">
+                      {tags.map((tag) => (
+                        <span key={tag} style={{ color: `color-mix(in srgb, ${accent} 75%, var(--text-secondary))` }}>
+                          #{tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
         </div>
       </div>
     </section>

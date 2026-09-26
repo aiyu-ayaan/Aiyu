@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import useDevicePerformance from '../../../hooks/useDevicePerformance';
 import { useV2Fx } from './gsap3d';
-import V2ChapterHead from './V2ChapterHead';
+import TermHead from './TermHead';
 
 const STATUS_ROWS = [
     { key: 'focus', flag: '--focus', accent: 'var(--accent-cyan)', fallback: 'Building delightful web experiences' },
@@ -12,7 +12,7 @@ const STATUS_ROWS = [
 ];
 
 /**
- * Chapter 02 — Mission Control as a HUD console. One wide terminal lies almost
+ * Chapter 02 — Mission Control as `systemctl status`. One wide terminal lies almost
  * flat like a launch desk and stands upright as it scrolls in (scrubbed
  * rotationX); the status rows then print in sequence with a blinking cursor.
  * Same /admin/home statusSection contract as v1.
@@ -85,9 +85,9 @@ const V2MissionControl = ({ data }) => {
     return (
         <section ref={sectionRef} className="relative overflow-hidden py-20 sm:py-28">
             <div className="mx-auto w-full max-w-7xl px-6 lg:px-10">
-                <V2ChapterHead
-                    index="02"
-                    eyebrow="Live Status"
+                <TermHead
+                    path="~"
+                    command="systemctl status aiyu"
                     title={data?.headline || 'Mission Control.'}
                     accent="var(--accent-purple)"
                 />
@@ -109,7 +109,7 @@ const V2MissionControl = ({ data }) => {
                                 <span className="h-3 w-3 rounded-full" style={{ backgroundColor: 'var(--status-error, #f87171)', opacity: 0.8 }} />
                                 <span className="h-3 w-3 rounded-full" style={{ backgroundColor: 'var(--accent-orange)', opacity: 0.8 }} />
                                 <span className="h-3 w-3 rounded-full" style={{ backgroundColor: 'var(--status-success)', opacity: 0.8 }} />
-                                <span className="ml-3 text-xs" style={{ color: 'var(--text-muted)' }}>aiyu@v2 — status</span>
+                                <span className="ml-3 text-xs" style={{ color: 'var(--text-muted)' }}>guest@linux — systemctl</span>
                             </div>
                             <p className="text-xs tabular-nums" style={{ color: 'var(--text-tertiary)' }} suppressHydrationWarning>
                                 <span className="relative mr-2 inline-flex h-1.5 w-1.5 align-middle">
@@ -121,8 +121,14 @@ const V2MissionControl = ({ data }) => {
                         </div>
 
                         <div className="px-5 py-6 sm:px-8 sm:py-8">
-                            <p className="v2-console-row mb-5" style={{ color: 'var(--text-muted)' }}>
-                                <span style={{ color: 'var(--status-success)' }}>$</span> status --live
+                            <p className="v2-console-row" style={{ color: 'var(--text-primary)' }}>
+                                <span style={{ color: 'var(--status-success)' }}>●</span> aiyu.service — portfolio
+                            </p>
+                            <p className="v2-console-row pl-5 text-xs sm:text-sm" style={{ color: 'var(--text-muted)' }}>
+                                Loaded: loaded (/etc/systemd/system/aiyu.service; <span style={{ color: 'var(--status-success)' }}>enabled</span>)
+                            </p>
+                            <p className="v2-console-row mb-6 pl-5 text-xs sm:text-sm" style={{ color: 'var(--text-muted)' }}>
+                                Active: <span className="font-semibold" style={{ color: 'var(--status-success)' }}>active (running)</span>
                             </p>
                             {STATUS_ROWS.map((row) => (
                                 <div key={row.key} className="v2-console-row mb-4 flex flex-col gap-1 sm:flex-row sm:items-baseline sm:gap-4">

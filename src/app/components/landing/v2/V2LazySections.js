@@ -8,6 +8,7 @@ const V2About = dynamic(() => import('./V2About'), { loading: () => <div classNa
 const V2Showcase = dynamic(() => import('./V2Showcase'), { loading: () => <div className="h-[720px]" /> });
 const V2Projects = dynamic(() => import('./V2Projects'), { loading: () => <div className="h-[760px]" /> });
 const V2Blogs = dynamic(() => import('./V2Blogs'), { loading: () => <div className="h-[720px]" /> });
+const V2Continue = dynamic(() => import('./V2Continue'), { loading: () => <div className="h-[640px]" /> });
 
 // The v2 chapters are full-bleed and draw their own hairline separators,
 // so no Divider elements between them.
@@ -32,6 +33,10 @@ export default function V2LazySections({ aboutData, projectsData, blogsData, hom
 
       <ViewportLazySection id="v2-blogs" placeholderHeight={720} rootMargin="420px 0px">
         <V2Blogs blogs={blogsData} config={config} />
+      </ViewportLazySection>
+
+      <ViewportLazySection id="v2-continue" placeholderHeight={640} rootMargin="420px 0px">
+        <V2Continue config={config} />
       </ViewportLazySection>
     </>
   );

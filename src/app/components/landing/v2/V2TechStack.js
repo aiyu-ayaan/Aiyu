@@ -4,20 +4,19 @@ import React, { useMemo, useRef } from 'react';
 import Link from 'next/link';
 import useDevicePerformance from '../../../hooks/useDevicePerformance';
 import { useV2Fx } from './gsap3d';
-import V2ChapterHead from './V2ChapterHead';
+import { Marquee } from './motion';
+import TermHead from './TermHead';
 
-const BAND_ACCENTS = [
-    'var(--accent-cyan)',
-    'var(--accent-purple)',
-    'var(--accent-orange)',
-    'var(--accent-pink)',
-];
+const ACCENTS = ['var(--accent-cyan)', 'var(--accent-purple)', 'var(--accent-orange)', 'var(--accent-pink)'];
+const TOP = 6;
+
+const slug = (name) => String(name).toLowerCase().replace(/\s*\(.*?\)\s*/g, '').trim().replace(/[^a-z0-9.+#]+/g, '-');
 
 /**
- * Chapter 03 — Stack. Full-bleed 3D chip cloud floating over the open page:
- * chips cascade in from flat in random order, each landing on its own resting
- * depth, then the whole cloud yaws with scroll so the depths parallax. The
- * top skills render bigger so hierarchy survives the drift.
+ * Chapter 03 — the stack as `pacman -Qe`. Every skill rides two marquees
+ * that surge with scroll velocity; the strongest ones are listed as
+ * installed packages whose fluency bars fill as they scroll in. Data is the
+ * About skills list, sorted by level.
  */
 const V2TechStack = ({ data }) => {
     const sectionRef = useRef(null);
@@ -27,8 +26,7 @@ const V2TechStack = ({ data }) => {
         const list = Array.isArray(data?.skills) ? data.skills : [];
         return [...list]
             .filter((skill) => skill?.name)
-            .sort((a, b) => (Number(b?.level) || 0) - (Number(a?.level) || 0))
-            .slice(0, 28);
+            .sort((a, b) => (Number(b?.level) || 0) - (Number(a?.level) || 0));
     }, [data]);
 
     useV2Fx(sectionRef, {
@@ -36,103 +34,85 @@ const V2TechStack = ({ data }) => {
         dependencies: [skills.length],
         extra: ({ gsap, scope, reducedMotion }) => {
             if (reducedMotion) return;
-            const cloud = scope.querySelector('.v2-tech-cloud');
-            const chips = scope.querySelectorAll('.v2-tech-chip');
-            if (!cloud || !chips.length) return;
-
-            gsap.fromTo(
-                chips,
-                {
-                    autoAlpha: 0,
-                    y: 52,
-                    rotationX: -65,
-                    z: -180,
-                    transformOrigin: '50% 100%',
-                    transformPerspective: 1000,
-                },
-                {
-                    autoAlpha: 1,
-                    y: 0,
-                    rotationX: 0,
-                    z: (i) => ((i % 5) - 2) * 34,
-                    duration: 0.85,
-                    ease: 'power3.out',
-                    stagger: { each: 0.04, from: 'random' },
-                    scrollTrigger: {
-                        trigger: cloud,
-                        start: 'top 88%',
-                        toggleActions: 'play none none reverse',
-                    },
-                }
-            );
-
-            gsap.fromTo(
-                cloud,
-                { rotationY: -8, rotationX: 4, transformPerspective: 1400 },
-                {
-                    rotationY: 8,
-                    rotationX: -4,
-                    ease: 'none',
-                    scrollTrigger: {
-                        trigger: cloud,
-                        start: 'top bottom',
-                        end: 'bottom top',
-                        scrub: 1,
-                    },
-                }
-            );
+            scope.querySelectorAll('.pkg-row').forEach((row) => {
+                const bar = row.querySelector('.pkg-bar');
+                const tl = gsap.timeline({ scrollTrigger: { trigger: row, start: 'top 88%', toggleActions: 'play none none none' } });
+                tl.fromTo(row, { autoAlpha: 0, y: 14 }, { autoAlpha: 1, y: 0, duration: 0.5, ease: 'power3.out' });
+                if (bar) tl.fromTo(bar, { scaleX: 0 }, { scaleX: 1, duration: 1.1, ease: 'expo.out', transformOrigin: 'left center' }, 0.1);
+            });
         },
     });
 
     if (skills.length === 0) return null;
 
+    const half = Math.ceil(skills.length / 2);
+    const rows = [skills.slice(0, half), skills.slice(half)].filter((row) => row.length);
+
     return (
         <section ref={sectionRef} className="relative overflow-hidden py-20 sm:py-28" style={{ borderTop: '1px solid var(--hairline)' }}>
             <div className="mx-auto w-full max-w-7xl px-6 lg:px-10">
-                <V2ChapterHead
-                    index="03"
-                    eyebrow="Tech Stack"
+                <TermHead
+                    path="~"
+                    command="pacman -Qe"
                     title="A toolbox with real depth."
-                    kicker={`${skills.length} skills ranked by fluency — floating in 3D, drifting as you scroll.`}
+                    kicker={`${skills.length} packages installed, sorted by how often they get used.`}
                     accent="var(--accent-orange)"
                 />
+            </div>
 
-                <div style={{ perspective: '1400px' }}>
-                    <div
-                        className="v2-tech-cloud flex flex-wrap items-center justify-center gap-3 py-6 sm:gap-4"
-                        style={{ transformStyle: 'preserve-3d' }}
-                    >
-                        {skills.map((skill, index) => {
-                            const accent = BAND_ACCENTS[index % BAND_ACCENTS.length];
-                            const level = Math.max(0, Math.min(100, Number(skill.level) || 0));
-                            const isTop = index < 6;
+            <div className="space-y-4 py-4">
+                {rows.map((row, rowIndex) => (
+                    <Marquee key={rowIndex} speed={rowIndex ? 48 : 40} reverse={rowIndex === 1} itemClassName="gap-4 pr-4">
+                        {row.map((skill, index) => {
+                            const accent = ACCENTS[(index + rowIndex) % ACCENTS.length];
                             return (
                                 <span
                                     key={`${skill.name}-${index}`}
-                                    className="v2-tech-chip inline-flex cursor-default items-center gap-2.5 rounded-full border font-mono font-semibold transition-colors duration-200"
+                                    className="inline-flex shrink-0 items-center gap-3 whitespace-nowrap rounded-full border px-5 py-2.5 font-mono text-sm sm:text-base"
                                     style={{
-                                        padding: isTop ? '0.8rem 1.4rem' : '0.55rem 1.05rem',
-                                        fontSize: isTop ? '1.05rem' : '0.82rem',
                                         color: 'var(--text-primary)',
-                                        borderColor: `color-mix(in srgb, ${accent} ${isTop ? 55 : 30}%, transparent)`,
-                                        backgroundColor: `color-mix(in srgb, ${accent} ${isTop ? 10 : 5}%, var(--bg-secondary))`,
-                                        boxShadow: isTop ? `0 16px 40px -22px color-mix(in srgb, ${accent} 60%, transparent)` : undefined,
+                                        borderColor: `color-mix(in srgb, ${accent} 35%, transparent)`,
+                                        backgroundColor: `color-mix(in srgb, ${accent} 7%, var(--bg-secondary))`,
                                     }}
                                 >
+                                    <span style={{ color: accent }}>●</span>
                                     {skill.name}
-                                    {level > 0 && (
-                                        <span className="text-[0.65rem] font-bold tabular-nums" style={{ color: accent }}>
-                                            {level}
-                                        </span>
-                                    )}
                                 </span>
                             );
                         })}
-                    </div>
+                    </Marquee>
+                ))}
+            </div>
+
+            <div className="mx-auto mt-12 w-full max-w-7xl px-6 lg:px-10">
+                <div className="rounded-2xl border p-5 font-mono text-sm sm:p-8" style={{ borderColor: 'var(--hairline)', backgroundColor: 'color-mix(in srgb, var(--bg-secondary) 70%, transparent)' }}>
+                    <p className="mb-5 text-xs" style={{ color: 'var(--text-muted)' }}>
+                        <span style={{ color: 'var(--status-success)' }}>$</span> pacman -Qi $(pacman -Qeq | head -{TOP})
+                    </p>
+                    <ul className="space-y-4">
+                        {skills.slice(0, TOP).map((skill, index) => {
+                            const level = Math.max(0, Math.min(100, Number(skill.level) || 0));
+                            const accent = ACCENTS[index % ACCENTS.length];
+                            return (
+                                <li key={skill.name} className="pkg-row grid grid-cols-1 items-center gap-2 sm:grid-cols-[minmax(0,16rem)_1fr_3rem] sm:gap-6">
+                                    <span className="truncate" style={{ color: 'var(--text-primary)' }}>
+                                        <span style={{ color: accent }}>local/</span>
+                                        {slug(skill.name)}
+                                    </span>
+                                    <span className="h-1.5 overflow-hidden rounded-full" style={{ backgroundColor: 'var(--hairline)' }}>
+                                        <span className="pkg-bar block h-full rounded-full" style={{ width: `${level}%`, backgroundColor: accent }} />
+                                    </span>
+                                    <span className="tabular-nums sm:text-right" style={{ color: 'var(--text-tertiary)' }}>
+                                        {level > 0 ? `${level}%` : '—'}
+                                    </span>
+                                </li>
+                            );
+                        })}
+                    </ul>
                 </div>
 
-                <p data-v2="rise" className="mt-10 text-center font-mono text-sm">
-                    <Link href="/about-me" className="underline-offset-4 hover:underline" style={{ color: 'var(--text-secondary)' }}>
+                <p data-v2="rise" className="mt-10 font-mono text-sm">
+                    <Link href="/about-me" className="v2-link-draw" style={{ color: 'var(--text-secondary)' }}>
                         → full skill breakdown
                     </Link>
                 </p>

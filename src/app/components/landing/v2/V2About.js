@@ -4,7 +4,7 @@ import React, { useMemo, useRef } from 'react';
 import Link from 'next/link';
 import useDevicePerformance from '../../../hooks/useDevicePerformance';
 import { useV2Fx } from './gsap3d';
-import V2ChapterHead from './V2ChapterHead';
+import TermHead from './TermHead';
 
 const highlightRows = [
     {
@@ -68,9 +68,9 @@ const V2About = ({ data }) => {
     return (
         <section ref={sectionRef} className="relative overflow-hidden py-20 sm:py-28" style={{ borderTop: '1px solid var(--hairline)' }}>
             <div className="mx-auto w-full max-w-7xl px-6 lg:px-10">
-                <V2ChapterHead
-                    index="04"
-                    eyebrow="About"
+                <TermHead
+                    path="~"
+                    command="cat about.md"
                     title="Intentional engineering, creative energy."
                     accent="var(--accent-pink)"
                 />

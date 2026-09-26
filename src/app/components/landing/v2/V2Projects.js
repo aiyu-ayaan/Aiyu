@@ -21,7 +21,7 @@ import Image from 'next/image';
 import { FaArrowRight } from 'react-icons/fa6';
 import useDevicePerformance from '../../../hooks/useDevicePerformance';
 import { useV2Fx } from './gsap3d';
-import V2ChapterHead from './V2ChapterHead';
+import TermHead from './TermHead';
 import RepoMeta from '../../projects/v2/RepoMeta';
 import {
   compareProjects,
@@ -63,9 +63,9 @@ const V2Projects = ({ data, config }) => {
       style={{ borderTop: '1px solid var(--hairline)' }}
     >
       <div className="mx-auto w-full max-w-7xl px-6 lg:px-10">
-        <V2ChapterHead
-          index="06"
-          eyebrow="Open Source & Community"
+        <TermHead
+          path="~/code"
+          command="git log --oneline --all"
           title={config?.projectsTitle || 'Built in the open.'}
           accent="var(--accent-cyan)"
         />

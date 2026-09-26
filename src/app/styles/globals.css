@@ -1461,3 +1461,8 @@ html[data-perf="lite"] .boot2-ghost {
   .boot2-hello { filter: none; opacity: 1; transform: none; }
 }
 
+
+/* V2 home — i3 workspace tabs (V2Showcase). Accent comes per panel. */
+.ws-tab[data-active="true"] {
+  background-color: var(--ws-accent, var(--accent-cyan));
+}

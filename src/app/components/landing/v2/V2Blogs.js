@@ -7,7 +7,7 @@ import { getReadTime } from '../../blogs/blogUtils';
 import { getBlogPath } from '@/lib/publicPaths';
 import useDevicePerformance from '../../../hooks/useDevicePerformance';
 import { useV2Fx } from './gsap3d';
-import V2ChapterHead from './V2ChapterHead';
+import TermHead from './TermHead';
 import { v2PublicPath } from '@/lib/siteVersion';
 
 const ROW_ACCENTS = ['var(--accent-pink)', 'var(--accent-cyan)', 'var(--accent-purple)'];
@@ -40,9 +40,9 @@ const V2Blogs = ({ blogs, config }) => {
       style={{ borderTop: '1px solid var(--hairline)' }}
     >
       <div className="mx-auto w-full max-w-7xl px-6 lg:px-10">
-        <V2ChapterHead
-          index="07"
-          eyebrow="Writing"
+        <TermHead
+          path="~/notes"
+          command="ls -t | head -3"
           title="Notes from the workbench."
           kicker="Practical notes, tutorials, and reflections from projects and day-to-day engineering."
           accent="var(--accent-purple)"
