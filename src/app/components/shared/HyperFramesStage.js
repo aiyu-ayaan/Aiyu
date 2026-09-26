@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import HF_VERSIONS from "./hfVersions.json";
 
 /**
  * Full-bleed <hyperframes-player> for the compositions published to
@@ -79,8 +80,12 @@ export default function HyperFramesStage({
         callbacks.current = { onReady, onPainted, onEnded };
     }, [onReady, onPainted, onEnded]);
     const [portrait, setPortrait] = useState(null);
+    // `v` is the composition's content hash (written by npm run hf:sync), so
+    // a cached copy of an older film can never load under newer page code.
     const query = new URLSearchParams(
-        Object.entries(params || {}).filter(([, value]) => value !== undefined && value !== null && value !== "")
+        Object.entries({ ...(params || {}), v: HF_VERSIONS[name] }).filter(
+            ([, value]) => value !== undefined && value !== null && value !== ""
+        )
     ).toString();
 
     // Orientation decides which canvas to load; only a real flip reloads it.

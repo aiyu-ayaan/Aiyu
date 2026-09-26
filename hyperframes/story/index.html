@@ -222,15 +222,24 @@
       #val-hit { opacity: 0; }
       #val-hit i { position: absolute; left: 2.8vmin; top: 0.6vmin; width: 0.4vmin; height: 4.8vmin; background: #ff4655; }
       #val-hit .x1 { transform: rotate(45deg); } #val-hit .x2 { transform: rotate(-45deg); }
-      #val-flash { position: absolute; left: 0; right: 0; margin: 0 auto; bottom: -12vmin; width: 46vmin; height: 34vmin; opacity: 0; background: radial-gradient(closest-side, rgba(255, 214, 120, 0.95), rgba(255, 120, 40, 0.5) 45%, transparent 75%); }
-      #val-gun {
-        position: absolute; right: 8%; bottom: -1vmin; width: 36vmin; height: 15vmin; background: #1a1d24;
-        clip-path: polygon(0 55%, 60% 40%, 62% 20%, 100% 20%, 100% 55%, 78% 60%, 72% 100%, 55% 100%, 58% 65%, 0 75%);
-      }
       #val-feed { position: absolute; right: 2vmin; top: 2vmin; display: flex; align-items: center; gap: 1vmin; padding: 0.8vmin 1.4vmin; border-radius: 0.6vmin; background: rgba(0, 0, 0, 0.55); font-size: 1.6vmin; }
       #val-feed .ico { width: 2.2vmin; height: 2.2vmin; }
       #val-feed .hs { padding: 0.2vmin 0.8vmin; border-radius: 0.4vmin; background: #ff4655; color: #fff; font-weight: 700; }
-      #val-ammo { position: absolute; right: 3vmin; bottom: 4.6vmin; font-size: 1.6vmin; }
+      #val-ammo { position: absolute; left: 0; right: 0; margin: 0 auto; width: max-content; bottom: 3vmin; font-size: 1.6vmin; }
+      /* First-person viewmodel: the rig carries the static aim angle, #val-gun
+         (tweened) only the recoil, so CSS and GSAP never share a transform. */
+      #val-rig { position: absolute; right: -3vmin; bottom: -5vmin; width: 62vmin; height: 26vmin; transform: rotate(13deg); transform-origin: 100% 100%; }
+      #val-gun { position: absolute; inset: 0; }
+      #val-gun i { position: absolute; display: block; }
+      #val-gun .barrel { left: 0; top: 9vmin; width: 22vmin; height: 1.8vmin; background: #58606e; border-radius: 0.3vmin; }
+      #val-gun .guard { left: 15vmin; top: 7.4vmin; width: 15vmin; height: 4.8vmin; background: #3a404b; border-radius: 0.6vmin; }
+      #val-gun .body { left: 29vmin; top: 6.2vmin; width: 22vmin; height: 7.4vmin; background: #23272f; border-radius: 0.8vmin; }
+      #val-gun .accent { left: 30vmin; top: 9.4vmin; width: 19vmin; height: 0.5vmin; background: #ff4655; }
+      #val-gun .sight { left: 34vmin; top: 3.8vmin; width: 7vmin; height: 2.6vmin; background: #14161b; border-radius: 0.4vmin; }
+      #val-gun .mag { left: 36vmin; top: 13vmin; width: 5vmin; height: 8vmin; background: #1a1d23; transform: skewX(-12deg); }
+      #val-gun .glove { left: 45vmin; top: 10vmin; width: 7vmin; height: 7vmin; background: #2b2c30; border-radius: 1.6vmin; }
+      #val-gun .sleeve { left: 50vmin; top: 9vmin; width: 20vmin; height: 11vmin; background: #1f3a44; border-radius: 3vmin 0 0 3vmin; }
+      #val-flash { position: absolute; left: -9vmin; top: 4.8vmin; width: 12vmin; height: 10vmin; opacity: 0; background: radial-gradient(closest-side, rgba(255, 236, 170, 1), rgba(255, 150, 50, 0.7) 45%, transparent 80%); }
       #val-ammo b { font-size: 4.2vmin; font-weight: 700; }
 
       /* GTA V — open-world drive at sunset */
@@ -255,8 +264,10 @@
       #gta-map .r1 { left: 0; right: 0; top: 55%; height: 0.8vmin; } #gta-map .r2 { top: 0; bottom: 0; left: 62%; width: 0.8vmin; }
       #gta-route { position: absolute; left: 20%; top: 55%; width: 42%; height: 0.8vmin; background: #b04cff; transform-origin: left center; }
       #gta-dot { position: absolute; left: 20%; top: calc(55% - 0.6vmin); width: 2vmin; height: 2vmin; border-radius: 50%; background: #fff; box-shadow: 0 0 0 0.4vmin #2b8cff; }
-      #gta-stars { position: absolute; right: 2.4vmin; top: 2vmin; display: flex; gap: 0.6vmin; font-size: 3vmin; color: rgba(255, 255, 255, 0.5); }
-      #gta-stars .on { color: #fff; }
+      /* Wanted level: five dim stars always shown, a lit star pops over each. */
+      #gta-stars { position: absolute; right: 2.4vmin; top: 2vmin; display: flex; gap: 0.6vmin; font-size: 3vmin; }
+      #gta-stars .slot { position: relative; display: block; width: 3.2vmin; text-align: center; color: rgba(255, 255, 255, 0.45); }
+      #gta-stars .st { position: absolute; left: 0; top: 0; width: 100%; color: #fff; text-shadow: 0 0 1vmin rgba(255, 255, 255, 0.6); }
       #gta-cash { position: absolute; right: 2.4vmin; top: 6.4vmin; font-size: 2.6vmin; font-weight: 700; color: #7cf29a; }
 
       /* PUBG — drop, zone, survive */
@@ -451,8 +462,7 @@
                   <div id="val-cross"><i class="t"></i><i class="b"></i><i class="l"></i><i class="r"></i></div>
                   <div id="val-hit"><i class="x1"></i><i class="x2"></i></div>
                 </div>
-                <div id="val-flash"></div>
-                <div id="val-gun"></div>
+                <div id="val-rig"><div id="val-gun"><i class="barrel"></i><i class="guard"></i><i class="sleeve"></i><i class="glove"></i><i class="mag"></i><i class="body"></i><i class="accent"></i><i class="sight"></i><i id="val-flash"></i></div></div>
                 <div id="val-feed" class="hud-mono"><span class="feed-name"></span><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#FA4454" d="M23.792 2.152a.252.252 0 0 0-.098.083c-3.384 4.23-6.769 8.46-10.15 12.69-.107.093-.025.288.119.265 2.439.003 4.877 0 7.316.001a.66.66 0 0 0 .552-.25c.774-.967 1.55-1.934 2.324-2.903a.72.72 0 0 0 .144-.49c-.002-3.077 0-6.153-.003-9.23.016-.11-.1-.206-.204-.167zM.077 2.166c-.077.038-.074.132-.076.205.002 3.074.001 6.15.001 9.225a.679.679 0 0 0 .158.463l7.64 9.55c.12.152.308.25.505.247 2.455 0 4.91.003 7.365 0 .142.02.222-.174.116-.265C10.661 15.176 5.526 8.766.4 2.35c-.08-.094-.174-.272-.322-.184z"/></svg></span><span class="hs">headshot</span></div>
                 <div id="val-ammo" class="hud-mono"><b id="ammo">25</b> / 75</div>
                 <div class="g-tag"><span class="game-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#FA4454" d="M23.792 2.152a.252.252 0 0 0-.098.083c-3.384 4.23-6.769 8.46-10.15 12.69-.107.093-.025.288.119.265 2.439.003 4.877 0 7.316.001a.66.66 0 0 0 .552-.25c.774-.967 1.55-1.934 2.324-2.903a.72.72 0 0 0 .144-.49c-.002-3.077 0-6.153-.003-9.23.016-.11-.1-.206-.204-.167zM.077 2.166c-.077.038-.074.132-.076.205.002 3.074.001 6.15.001 9.225a.679.679 0 0 0 .158.463l7.64 9.55c.12.152.308.25.505.247 2.455 0 4.91.003 7.365 0 .142.02.222-.174.116-.265C10.661 15.176 5.526 8.766.4 2.35c-.08-.094-.174-.272-.322-.184z"/></svg></span><span><b>VALORANT</b><small>tactical shooter</small></span></div>
@@ -463,7 +473,7 @@
                 <div id="gta-road"><div id="gta-lanes"></div></div>
                 <div id="gta-car"><i class="top"></i><i class="win"></i><i class="body"></i><i class="lamp"></i><i class="wheel w1"></i><i class="wheel w2"></i></div>
                 <div id="gta-map"><i class="road r1"></i><i class="road r2"></i><i id="gta-route"></i><i id="gta-dot"></i></div>
-                <div id="gta-stars"><span class="st on">★</span><span class="st on">★</span><span class="st on">★</span><span>★</span><span>★</span></div>
+                <div id="gta-stars"><span class="slot">★<span class="st">★</span></span><span class="slot">★<span class="st">★</span></span><span class="slot">★<span class="st">★</span></span><span class="slot">★<span class="st">★</span></span><span class="slot">★<span class="st">★</span></span></div>
                 <div id="gta-cash" class="hud-mono">$<span id="cash">0</span></div>
                 <div class="g-tag"><span class="game-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#FCAF17" d="M5.971 6.816h3.241c1.469 0 2.741-.448 2.741-2.084 0-1.3-1.117-1.576-2.19-1.576H6.748l-.777 3.66Zm12.834 8.753h5.168l-4.664 3.228.755 5.087-4.041-3.07L10.599 24l2.536-5.392s-2.95-3.075-2.947-3.075c-.198-.262-.265-.936-.265-1.226 0-.367.024-.739.049-1.134.028-.451.058-.933.058-1.476 0-1.338-.59-2.038-2.036-2.038H5.283l-1.18 5.525H.026L3.269 0h7.672c2.852 0 5.027.702 5.027 3.936 0 2.276-1.12 3.894-3.592 4.233v.045c1.162.276 1.598 1.062 1.598 2.527 0 .585-.018 1.098-.034 1.581-.015.428-.03.834-.03 1.243 0 .525.137 1.382.48 1.968h.567l3.028-5.06.82 5.096Zm-1.233-2.948-2.187 3.654h-3.457l2.103 2.189-1.73 3.672 3.777-2.218 2.976 2.263-.553-3.731 3.093-2.139h-3.43l-.592-3.69Z"/></svg></span><span><b>GTA V</b><small>open world</small></span></div>
               </div>
@@ -657,11 +667,12 @@
         var V0 = 10.1;
         $("#val-feed .feed-name").textContent = NAME;
         tl.fromTo("#g-val", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "none" }, V0);
+        tl.fromTo("#val-rig", { y: "3vmin" }, { y: 0, duration: 0.5, ease: "power3.out" }, V0 + 0.05);
         tl.fromTo("#val-aim", { x: "-24vmin", y: "10vmin" }, { x: 0, y: 0, duration: 0.55, ease: "power3.inOut" }, V0 + 0.1);
-        tl.fromTo("#val-flash", { opacity: 0 }, { opacity: 1, duration: 0.04, ease: "none" }, V0 + 0.7);
+        tl.fromTo("#val-flash", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1.15, duration: 0.04, ease: "none" }, V0 + 0.7);
         tl.to("#val-flash", { opacity: 0, duration: 0.16, ease: "power2.out" }, V0 + 0.74);
-        tl.fromTo("#val-gun", { y: 0, rotation: 0 }, { y: "1.6vmin", rotation: -3, duration: 0.06, ease: "power2.out" }, V0 + 0.7);
-        tl.to("#val-gun", { y: 0, rotation: 0, duration: 0.25, ease: "power2.out" }, V0 + 0.76);
+        tl.fromTo("#val-gun", { x: 0, y: 0, rotation: 0 }, { x: "1.8vmin", y: "1vmin", rotation: 3, duration: 0.06, ease: "power2.out" }, V0 + 0.7);
+        tl.to("#val-gun", { x: 0, y: 0, rotation: 0, duration: 0.28, ease: "power2.out" }, V0 + 0.76);
         tl.fromTo("#val-cross", { y: 0 }, { y: "-1.4vmin", duration: 0.06, ease: "power2.out" }, V0 + 0.7);
         tl.to("#val-cross", { y: 0, duration: 0.25, ease: "power2.out" }, V0 + 0.76);
         tl.fromTo("#val-hit", { opacity: 0, scale: 1.5 }, { opacity: 1, scale: 1, duration: 0.1, ease: "power2.out" }, V0 + 0.72);
@@ -689,7 +700,7 @@
         tl.fromTo("#gta-car .wheel", { rotation: 0 }, { rotation: 720, duration: 1.45, ease: "none" }, G0);
         tl.fromTo("#gta-route", { scaleX: 0 }, { scaleX: 1, duration: 1.1, ease: "power1.inOut" }, G0 + 0.1);
         tl.fromTo("#gta-dot", { x: 0 }, { x: "7vmin", duration: 1.1, ease: "power1.inOut" }, G0 + 0.1);
-        tl.fromTo("#gta-stars .st", { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.2, stagger: 0.18, ease: "back.out(3)" }, G0 + 0.35);
+        tl.fromTo("#gta-stars .st", { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.18, stagger: 0.14, ease: "back.out(3)" }, G0 + 0.3);
         counter("#cash", 0, 1337420, G0 + 0.1, 1.2, function (v) { return Math.round(v).toLocaleString("en-US"); });
         tl.to("#g-gta", { opacity: 0, duration: 0.2, ease: "none" }, G0 + 1.25);
 

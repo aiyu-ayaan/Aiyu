@@ -24,11 +24,16 @@ import { BOOT_READY_EVENT, isBootReady } from '../../shared/bootSignal';
  * film.
  */
 
+// Fallback only: the real length is read from the player once it is ready,
+// so the scroll mapping always matches the film that actually loaded.
 const FILM_DURATION = 16;
 // The opening "Hi, I'm …" line is fully on screen here; scroll takes over.
 const INTRO_END = 1.6;
-// From here the film is back on the player card: show the press-start dock.
-const END_SCENE = 14.3;
+// The last stretch before the film ends is the player card (press start).
+const END_SCENE_LEAD = 1.7;
+// Share of the pin spent playing the film; the rest holds the final frame
+// so the ending is readable before the page moves on.
+const PLAY_SHARE = 0.9;
 
 const V2Hero = ({ data, counts = {} }) => {
     const { name, homeRoles, githubLink, resumeStatus } = data || {};
@@ -65,8 +70,13 @@ const V2Hero = ({ data, counts = {} }) => {
         setPhase(next);
     }, []);
 
+    const durationRef = useRef(FILM_DURATION);
+
     const handleReady = useCallback((player) => {
         playerRef.current = player;
+        if (Number.isFinite(player.duration) && player.duration > INTRO_END + 1) {
+            durationRef.current = player.duration;
+        }
         player.pause();
         player.seek(timeRef.current);
     }, []);
@@ -84,19 +94,22 @@ const V2Hero = ({ data, counts = {} }) => {
             const stage = scope.querySelector('.hero-stage');
             if (!stage) return;
 
-            const span = FILM_DURATION - INTRO_END;
             let introTween;
+            const filmTime = (progress) => {
+                const played = Math.min(1, progress / PLAY_SHARE);
+                return INTRO_END + played * (durationRef.current - INTRO_END);
+            };
 
             // Scroll drives a paused proxy tween. Lenis already smooths wheel
             // input on desktop, so only touch (native scroll) gets a short
             // catch-up — stacking both is what makes a scrub feel floaty.
-            const proxy = { t: INTRO_END };
+            const proxy = { p: 0 };
             const scrub = gsap.to(proxy, {
-                t: FILM_DURATION,
+                p: 1,
                 ease: 'none',
                 paused: true,
                 onUpdate: () => {
-                    if (!introTween?.isActive()) seek(proxy.t);
+                    if (!introTween?.isActive()) seek(filmTime(proxy.p));
                 },
             });
             const follow = window.__lenis
@@ -106,14 +119,15 @@ const V2Hero = ({ data, counts = {} }) => {
             const st = ScrollTrigger.create({
                 trigger: scope,
                 start: 'top top',
-                end: '+=540%',
+                end: '+=560%',
                 pin: stage,
                 anticipatePin: 1,
                 onUpdate: (self) => {
                     if (self.progress > 0.001) introTween?.kill();
                     follow(self.progress);
-                    const t = INTRO_END + self.progress * span;
-                    syncPhase(self.progress < 0.03 ? 'start' : t > END_SCENE ? 'end' : 'mid');
+                    const t = filmTime(self.progress);
+                    const endScene = durationRef.current - END_SCENE_LEAD;
+                    syncPhase(self.progress < 0.03 ? 'start' : t > endScene ? 'end' : 'mid');
                 },
             });
 
@@ -126,7 +140,7 @@ const V2Hero = ({ data, counts = {} }) => {
             const maybeIntro = () => {
                 if (!bootDone || !filmDone || introTween) return;
                 if (window.scrollY > st.start + 4) {
-                    seek(INTRO_END + st.progress * span);
+                    seek(filmTime(st.progress));
                     return;
                 }
                 const o = { t: 0 };

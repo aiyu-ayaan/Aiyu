@@ -10,11 +10,16 @@
  *     CDN runtime (it skips injection when the runtime bridge exists).
  *   - A portrait twin (1080×1920) is emitted next to each landscape file;
  *     the compositions carry `@media (orientation: portrait)` layouts.
+ *   - A content hash per composition is written to
+ *     src/app/components/shared/hfVersions.json; the site appends it to the
+ *     film URL so a browser can never pair a cached old film with new page
+ *     code (e.g. a shorter film under a longer scroll mapping).
  *
  * Usage: npm run hf:sync
  */
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
+import { createHash } from 'node:crypto';
 
 const root = process.cwd();
 const SRC = path.join(root, 'hyperframes');
@@ -42,6 +47,7 @@ async function main() {
         await fs.copyFile(path.join(root, from), path.join(OUT, 'vendor', to));
     }
 
+    const versions = {};
     for (const name of COMPOSITIONS) {
         const source = await fs.readFile(path.join(SRC, name, 'index.html'), 'utf8');
         if (!CDN_GSAP.test(source)) {
@@ -55,8 +61,13 @@ async function main() {
         await fs.mkdir(path.join(OUT, name), { recursive: true });
         await fs.writeFile(path.join(OUT, name, 'index.html'), landscape);
         await fs.writeFile(path.join(OUT, name, 'portrait.html'), portrait);
-        console.log(`[hf] ${name} → public/hf/${name}/{index,portrait}.html`);
+        versions[name] = createHash('sha256').update(landscape).digest('hex').slice(0, 10);
+        console.log(`[hf] ${name} → public/hf/${name}/{index,portrait}.html (${versions[name]})`);
     }
+    await fs.writeFile(
+        path.join(root, 'src', 'app', 'components', 'shared', 'hfVersions.json'),
+        `${JSON.stringify(versions, null, 2)}\n`
+    );
 }
 
 main().catch((error) => {
