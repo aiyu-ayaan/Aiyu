@@ -189,9 +189,9 @@ const V2Hero = ({ data, counts = {} }) => {
                     >
                         Hi, I&apos;m {displayName}.
                     </h1>
-                    <p className="mt-6 font-mono text-base sm:text-lg" style={{ color: 'var(--accent-cyan)' }}>
+                    <div className="mt-6 font-mono text-base sm:text-lg" style={{ color: 'var(--accent-cyan)' }}>
                         <TypewriterEffect roles={roles} />
-                    </p>
+                    </div>
                     <p className="mt-4 max-w-xl text-base sm:text-lg" style={{ color: 'var(--text-tertiary)' }}>
                         Writes code on Linux, plays on Windows.
                     </p>
