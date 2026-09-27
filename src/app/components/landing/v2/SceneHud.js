@@ -3,9 +3,12 @@
 import React, { useRef } from 'react';
 import { gsap, ScrollTrigger, useGSAP } from './gsap3d';
 import { motionDisabled } from './motion';
+import { LIFE_STORY } from '../../../data/lifeStory';
 
-// Home chapters after the film, in page order (ids are the lazy-section wrappers).
+// Home chapters after the film, in page order: the life story first (ids
+// are its chapter sections), then the lazy-section wrappers.
 const CHAPTERS = [
+    ...LIFE_STORY.map((chapter) => ({ id: `story-${chapter.id}`, label: chapter.label, accent: chapter.accent })),
     { id: 'v2-snapshot', label: 'system', accent: 'var(--status-success)' },
     { id: 'v2-status', label: 'status', accent: 'var(--accent-purple)' },
     { id: 'v2-tech', label: 'stack', accent: 'var(--accent-orange)' },
@@ -48,18 +51,23 @@ const SceneHud = () => {
             const label = root.querySelector('.hud-label');
             const dot = root.querySelector('.hud-dot');
             const tc = root.querySelector('.hud-tc');
+            const all = root.querySelector('.hud-all');
             const first = document.getElementById(present[0].id);
             const last = document.getElementById(present[present.length - 1].id);
 
             gsap.set(root, { autoAlpha: 0, y: 12 });
+            // Measured after the story's pins (refreshPriority -1): those pins
+            // sit inside these ranges and add most of their scroll length.
             ScrollTrigger.create({
                 trigger: first,
+                refreshPriority: -1,
                 start: 'top 70%',
                 endTrigger: last,
                 end: 'bottom 60%',
                 onToggle: (self) => gsap.to(root, { autoAlpha: self.isActive ? 1 : 0, y: self.isActive ? 0 : 12, duration: 0.4, ease: 'power2.out', overwrite: true }),
-                onUpdate: () => {
+                onUpdate: (self) => {
                     if (tc) tc.textContent = formatTimecode(window.scrollY);
+                    if (all) all.style.transform = `scaleX(${self.progress})`;
                 },
             });
 
@@ -70,6 +78,7 @@ const SceneHud = () => {
                     const el = document.getElementById(chapter.id);
                     ScrollTrigger.create({
                         trigger: el,
+                        refreshPriority: -1,
                         start: 'top 55%',
                         end: 'bottom 55%',
                         onUpdate: (self) => {
@@ -107,7 +116,11 @@ const SceneHud = () => {
                 <span className="hidden sm:inline">rec</span>
                 <span className="hud-label" style={{ color: 'var(--text-primary)' }}>01 system</span>
             </span>
-            <span className="flex flex-1 items-center gap-1.5">
+            {/* Phones get one overall bar; a bar per chapter needs the width. */}
+            <span className="h-[3px] flex-1 overflow-hidden rounded-full sm:hidden" style={{ backgroundColor: 'var(--hairline)' }}>
+                <span className="hud-all block h-full origin-left" style={{ transform: 'scaleX(0)', backgroundColor: 'var(--text-secondary)' }} />
+            </span>
+            <span className="hidden flex-1 items-center gap-1 sm:flex">
                 {CHAPTERS.map((chapter) => (
                     <span key={chapter.id} data-hud={chapter.id} className="h-[3px] flex-1 overflow-hidden rounded-full" style={{ backgroundColor: 'var(--hairline)' }}>
                         <span className="hud-fill block h-full origin-left" style={{ transform: 'scaleX(0)', backgroundColor: chapter.accent }} />

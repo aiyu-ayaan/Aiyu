@@ -76,7 +76,7 @@ export default async function HomeV2() {
     .filter(Boolean);
 
   return (
-    <div className="relative overflow-hidden">
+    <div className="relative overflow-x-clip">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{

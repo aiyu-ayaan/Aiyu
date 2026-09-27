@@ -10,7 +10,7 @@ import { smoothScrollTo } from './motion';
 // Share of the pin spent playing; the rest holds the last frame so the
 // chapter's final line can be read before the next one scrolls in.
 const PLAY_SHARE = 0.9;
-// Pin length per film second, in % of the viewport height (the hero film
+// Scroll length per film second, in % of the viewport height (the hero film
 // uses about the same rate, so every chapter scrolls at one speed).
 const PIN_PER_SECOND = 34;
 
@@ -77,13 +77,27 @@ const StoryChapter = ({ chapter, index, total, params, skipTo }) => {
         player.seek(timeRef.current);
     }, [introEnd]);
 
-    const handlePainted = useCallback(() => setPainted(true), []);
+    // `painted` fires when the player's loading panel hides, which can be
+    // before the composition's first frame is on screen. Re-seek and reveal
+    // once the player reports the new time (or after a short fallback), so
+    // the card never hands off to a blank film.
+    const handlePainted = useCallback((player) => {
+        let done = false;
+        const reveal = () => {
+            if (done) return;
+            done = true;
+            player.removeEventListener('timeupdate', reveal);
+            requestAnimationFrame(() => requestAnimationFrame(() => setPainted(true)));
+        };
+        player.addEventListener('timeupdate', reveal);
+        player.seek(timeRef.current);
+        window.setTimeout(reveal, 900);
+    }, []);
 
     useGSAP(
         () => {
             const section = sectionRef.current;
             if (!film || !section) return;
-            const stage = section.querySelector('.story-stage');
 
             // Lenis already smooths wheel input, so only native (touch)
             // scrolling gets a short catch-up; stacking both feels floaty.
@@ -92,13 +106,14 @@ const StoryChapter = ({ chapter, index, total, params, skipTo }) => {
                 ? (t) => seek(t)
                 : gsap.quickTo(proxy, 't', { duration: 0.25, ease: 'power2.out', onUpdate: () => seek(proxy.t) });
 
-            const pinLength = Math.round((duration - introEnd) * PIN_PER_SECOND);
+            // The stage is CSS-sticky inside a tall section (see below), so this
+            // trigger only reads progress. A ScrollTrigger pin would move the
+            // stage in and out of its spacer on every refresh, and moving a
+            // <hyperframes-player> in the DOM reloads its film.
             const pin = ScrollTrigger.create({
                 trigger: section,
                 start: 'top top',
-                end: `+=${pinLength}%`,
-                pin: stage,
-                anticipatePin: 1,
+                end: 'bottom bottom',
                 onUpdate: (self) => {
                     const played = Math.min(1, self.progress / PLAY_SHARE);
                     follow(introEnd + played * (durationRef.current - introEnd));
@@ -119,26 +134,35 @@ const StoryChapter = ({ chapter, index, total, params, skipTo }) => {
     );
 
     const showCard = !film || !painted;
+    const pinLength = Math.round((duration - introEnd) * PIN_PER_SECOND);
 
     return (
-        <section id={`story-${id}`} ref={sectionRef} className="relative" aria-labelledby={`story-${id}-title`}>
-            <div className="story-stage relative h-[100svh] min-h-[560px] w-full overflow-hidden" style={{ backgroundColor: 'var(--bg-primary)' }}>
+        <section
+            id={`story-${id}`}
+            ref={sectionRef}
+            className="relative"
+            style={film ? { height: `calc(max(100svh, 560px) + ${pinLength}svh)` } : undefined}
+            aria-labelledby={`story-${id}-title`}
+        >
+            <div className="story-stage sticky top-0 h-[100svh] min-h-[560px] w-full overflow-hidden" style={{ backgroundColor: 'var(--bg-primary)' }}>
                 {film && near && (
                     <HyperFramesStage
                         name={filmName}
                         params={params}
                         onReady={handleReady}
                         onPainted={handlePainted}
-                        className="top-[4.5rem] transition-opacity duration-700 sm:top-24"
-                        style={{ opacity: painted ? 1 : 0 }}
+                        className="top-[4.5rem] sm:top-24"
                     />
                 )}
 
                 {/* The chapter's copy: visible without the film, kept in the
-                    document for crawlers and screen readers once it plays. */}
+                    document for crawlers and screen readers once it plays.
+                    It is opaque and sits over the film while that loads: the
+                    film keeps rendering underneath (an iframe at opacity 0 is
+                    not painted, so fading the film in would flash black). */}
                 <div
-                    className="absolute inset-0 flex items-center justify-center px-6 transition-opacity duration-700"
-                    style={{ opacity: showCard ? 1 : 0 }}
+                    className="absolute inset-0 z-[1] flex items-center justify-center px-6 transition-opacity duration-700"
+                    style={{ opacity: showCard ? 1 : 0, backgroundColor: 'var(--bg-primary)', pointerEvents: showCard ? 'auto' : 'none' }}
                 >
                     <div className="grid w-full max-w-5xl items-center gap-8 md:grid-cols-[auto_1fr] md:gap-14">
                         <div className="flex items-center gap-5 md:flex-col md:items-start">
