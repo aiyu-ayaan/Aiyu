@@ -1,0 +1,339 @@
+<!doctype html>
+<html
+  lang="en"
+  data-composition-variables='[
+    {"id":"name","type":"string","label":"Name","default":"Ayaan"},
+    {"id":"bg","type":"color","label":"Background","default":"#0b0f14"},
+    {"id":"surface","type":"color","label":"Surface","default":"#121821"},
+    {"id":"fg","type":"color","label":"Text","default":"#f2f5f9"},
+    {"id":"muted","type":"color","label":"Muted text","default":"#8f99a6"},
+    {"id":"line","type":"color","label":"Hairline","default":"#243040"},
+    {"id":"c1","type":"color","label":"Accent 1 (code)","default":"#5ee1ff"},
+    {"id":"c2","type":"color","label":"Accent 2","default":"#a78bfa"},
+    {"id":"c3","type":"color","label":"Accent 3","default":"#ff5fa2"},
+    {"id":"c4","type":"color","label":"Accent 4","default":"#ffb454"},
+    {"id":"ok","type":"color","label":"Success","default":"#4ade80"}
+  ]'
+>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <title>aiyu — chapter 06 · masters</title>
+    <script src="/hf/vendor/hyperframe.runtime.iife.js"></script>
+    <script src="/hf/vendor/gsap.min.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg, #0b0f14); }
+      #root {
+        position: relative; width: 100%; height: 100%; overflow: hidden;
+        color: var(--fg); background: var(--bg);
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        --mono: ui-monospace, monospace;
+        --det: #34f5c5;
+        --bit: #34c46a;
+        --paper: #fdfbf6;
+      }
+      .mono { font-family: var(--mono); }
+      .clip { position: absolute; inset: 0; }
+      .eyebrow { font-family: var(--mono); font-size: 1.7vmin; letter-spacing: 0.32em; text-transform: uppercase; color: var(--muted); }
+      .title { font-weight: 800; letter-spacing: -0.045em; line-height: 0.95; }
+      .word { display: inline-block; overflow: hidden; vertical-align: bottom; padding-bottom: 0.08em; }
+      .word > span { display: inline-block; }
+      .hl { color: var(--c1); }
+
+      #chip { position: absolute; left: 4vmin; top: 3.6vmin; z-index: 20; display: flex; align-items: center; gap: 1.2vmin; font-family: var(--mono); font-size: 1.45vmin; letter-spacing: 0.28em; text-transform: uppercase; color: var(--muted); }
+      #chip b { color: var(--fg); font-weight: 600; }
+      #chip i { width: 4vmin; height: 1px; background: var(--line); }
+      #stamp { position: absolute; right: 4vmin; top: 3vmin; z-index: 20; text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--fg); }
+      #stamp .st { position: absolute; right: 0; top: 0; white-space: nowrap; opacity: 0; }
+      #stamp small { display: block; font-size: 1.3vmin; letter-spacing: 0.3em; text-transform: uppercase; color: var(--muted); }
+      #stamp b { display: block; margin-top: 0.4vmin; font-size: 3vmin; font-weight: 600; letter-spacing: 0.04em; }
+
+      .scene { display: flex; align-items: center; padding: 11vmin 6vmin 8vmin 7vmin; gap: 6vmin; }
+      .copy { flex: 0 0 32%; }
+      .copy .eyebrow { margin-bottom: 3vmin; }
+      .copy h2 { font-size: 8.4vmin; }
+      .copy p.sub { margin-top: 3vmin; font-size: 2.5vmin; line-height: 1.45; color: var(--muted); max-width: 52vmin; }
+      .copy p.sub b { color: var(--fg); font-weight: 600; }
+      .stage { position: relative; flex: 1; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4vmin; }
+
+      /* ── S1 · computer vision ── */
+      #vf { position: relative; width: 72vmin; height: 42vmin; border-radius: 1.6vmin; overflow: hidden; background: linear-gradient(180deg, #2b3446 0%, #3a4458 58%, #5a4a3a 58.2%, #4a3c2e 100%); }
+      #vf .corner { position: absolute; width: 4vmin; height: 4vmin; border: 0.4vmin solid #fff; opacity: 0.9; }
+      #vf .tl { left: 1.6vmin; top: 1.6vmin; border-right: 0; border-bottom: 0; } #vf .tr { right: 1.6vmin; top: 1.6vmin; border-left: 0; border-bottom: 0; }
+      #vf .bl { left: 1.6vmin; bottom: 1.6vmin; border-right: 0; border-top: 0; } #vf .br { right: 1.6vmin; bottom: 1.6vmin; border-left: 0; border-top: 0; }
+      #vf-hud { position: absolute; left: 3.2vmin; top: 2.4vmin; display: flex; align-items: center; gap: 1vmin; font-family: var(--mono); font-size: 1.3vmin; color: #fff; letter-spacing: 0.16em; z-index: 3; }
+      #vf-hud i { width: 1vmin; height: 1vmin; border-radius: 50%; background: #ff4d4d; }
+      #vf-fps { position: absolute; right: 3.2vmin; top: 2.4vmin; font-family: var(--mono); font-size: 1.3vmin; color: #fff; z-index: 3; }
+      #vf-art { position: absolute; inset: 0; width: 100%; height: 100%; }
+      #scanline { position: absolute; left: 0; right: 0; top: 0; height: 18%; background: linear-gradient(180deg, transparent, rgba(52, 245, 197, 0.22), transparent); z-index: 2; }
+      .bb { position: absolute; border: 0.3vmin solid var(--det); border-radius: 0.4vmin; z-index: 2; }
+      .bb span { position: absolute; left: -0.3vmin; top: -3vmin; padding: 0.3vmin 0.8vmin; border-radius: 0.4vmin 0.4vmin 0.4vmin 0; background: var(--det); color: #06231b; font-family: var(--mono); font-size: 1.25vmin; font-weight: 700; white-space: nowrap; }
+      #nn { width: 72vmin; height: 15vmin; }
+      #nn svg { width: 100%; height: 100%; overflow: visible; }
+      #nn line { stroke: color-mix(in srgb, var(--fg) 16%, transparent); stroke-width: 1; }
+      #nn circle { fill: var(--surface); stroke: color-mix(in srgb, var(--fg) 40%, transparent); stroke-width: 1.5; }
+
+      /* ── S2 · Compose migration ── */
+      #mig { display: flex; align-items: center; gap: 5vmin; }
+      #phone { position: relative; flex: none; width: 30vmin; height: 60vmin; padding: 0.9vmin; border-radius: 4.6vmin; background: #0e1014; box-shadow: 0 0 0 0.3vmin #2d313a, 0 4vmin 8vmin -3vmin rgba(0, 0, 0, 0.6); }
+      #pscr { position: relative; width: 100%; height: 100%; overflow: hidden; border-radius: 3.8vmin; background: #f3f6f4; }
+      #pscr .old, #pscr .new { position: absolute; inset: 0; padding-top: 4vmin; }
+      .old .bar { height: 6vmin; background: #2f7d4a; }
+      .old .r { margin: 1.6vmin 2vmin 0; height: 5vmin; border-radius: 0.4vmin; background: #e1e7e3; }
+      .new { background: #10151c; }
+      .new .hd { margin: 2vmin 2.2vmin; height: 12vmin; border-radius: 2vmin; background: linear-gradient(135deg, #1f6b3b, #34c46a); }
+      .new .g { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2vmin; padding: 0 2.2vmin; }
+      .new .g i { height: 9vmin; border-radius: 1.8vmin; background: #1c2530; }
+      #pscr .wipe { position: absolute; left: 0; right: 0; top: 0; height: 100%; background: #10151c; transform-origin: 50% 0%; }
+      #pscr .punch { position: absolute; left: 50%; top: 1.1vmin; width: 1.3vmin; height: 1.3vmin; margin-left: -0.65vmin; border-radius: 50%; background: #000; z-index: 4; }
+      #list { width: 46vmin; padding: 2.6vmin; border-radius: 1.8vmin; border: 1px solid var(--line); background: color-mix(in srgb, var(--surface) 92%, transparent); }
+      #list-h { display: flex; justify-content: space-between; align-items: baseline; font-family: var(--mono); font-size: 1.4vmin; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+      #pct { font-size: 4.4vmin; font-weight: 800; letter-spacing: -0.03em; color: var(--fg); font-family: ui-sans-serif, system-ui, sans-serif; font-variant-numeric: tabular-nums; }
+      #prog { margin: 1.6vmin 0 2vmin; height: 1vmin; border-radius: 0.6vmin; background: color-mix(in srgb, var(--fg) 12%, transparent); overflow: hidden; }
+      #prog i { display: block; width: 100%; height: 100%; background: linear-gradient(90deg, #1f6b3b, var(--bit)); transform-origin: left center; }
+      .mrow { display: flex; align-items: center; justify-content: space-between; padding: 1.2vmin 0; border-top: 1px solid var(--line); font-family: var(--mono); font-size: 1.6vmin; color: var(--fg); }
+      .mrow small { color: var(--muted); font-size: 1.3vmin; }
+      .mrow .ck { width: 2.4vmin; height: 2.4vmin; border-radius: 50%; border: 2px solid var(--line); display: flex; align-items: center; justify-content: center; font-size: 1.4vmin; color: #062012; }
+      .mrow .ck b { opacity: 0; font-weight: 800; }
+
+      /* ── S3 · the offer ── */
+      #env { position: relative; width: 62vmin; height: 40vmin; margin-top: 18vmin; }
+      #env-back { position: absolute; inset: 0; border-radius: 1vmin; background: #c9b27f; }
+      #letter { position: absolute; z-index: 2; left: 4vmin; right: 4vmin; top: 3vmin; height: 46vmin; padding: 3vmin 3.4vmin; border-radius: 0.8vmin; background: var(--paper); color: #1f2433; box-shadow: 0 1vmin 3vmin rgba(0, 0, 0, 0.25); }
+      #letter small { display: block; font-family: var(--mono); font-size: 1.3vmin; letter-spacing: 0.3em; text-transform: uppercase; color: #6a6f80; }
+      #letter h3 { margin-top: 1.2vmin; font-size: 4.2vmin; font-weight: 800; letter-spacing: -0.03em; line-height: 1; }
+      #letter p { margin-top: 1.8vmin; font-size: 1.9vmin; line-height: 1.5; color: #353b4d; }
+      #letter .role { display: inline-block; margin-top: 2vmin; padding: 0.8vmin 1.6vmin; border-radius: 0.6vmin; background: #1f2433; color: #fff; font-family: var(--mono); font-size: 1.5vmin; letter-spacing: 0.1em; }
+      #env-front { position: absolute; left: 0; right: 0; bottom: 0; height: 100%; z-index: 3; }
+      #env-front svg, #env-flap svg { width: 100%; height: 100%; }
+      #env-flap { position: absolute; left: 0; right: 0; top: 0; height: 60%; z-index: 4; transform-origin: 50% 0%; }
+      #confetti { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
+      #confetti i { position: absolute; left: 50%; top: 40%; width: 1.2vmin; height: 0.7vmin; border-radius: 0.2vmin; opacity: 0; }
+
+      @media (orientation: portrait) {
+        .eyebrow { font-size: 2.3vmin; }
+        .scene { flex-direction: column; justify-content: center; padding: 15vmin 5vmin 10vmin; gap: 6vmin; }
+        .copy { flex: none; width: 100%; padding: 0 2vmin; }
+        .copy h2 { font-size: 11vmin; }
+        .copy p.sub { font-size: 3.4vmin; max-width: none; }
+        .stage { flex: none; width: 100%; height: auto; }
+        #vf { width: 90vmin; height: 56vmin; }
+        #nn { width: 90vmin; height: 18vmin; }
+        #mig { gap: 3vmin; }
+        #phone { width: 38vmin; height: 76vmin; }
+        #list { width: 52vmin; padding: 2.2vmin; }
+        .mrow { font-size: 1.7vmin; }
+        #env { width: 80vmin; height: 50vmin; margin-top: 26vmin; }
+        #letter { height: 58vmin; }
+        #letter p { font-size: 2.3vmin; }
+        #chip { font-size: 2.6vmin; }
+        #stamp small { font-size: 2.2vmin; }
+        #stamp b { font-size: 4.6vmin; }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="masters" data-start="0" data-duration="14.5" data-width="1080" data-height="1920">
+      <div id="chip"><b>ch 06</b><i></i><span>master's</span></div>
+      <div id="stamp">
+        <div class="st" id="st-1"><small>mca · bit mesra</small><b>aug 2023</b></div>
+        <div class="st" id="st-2"><small>bit app</small><b>dec 2023</b></div>
+        <div class="st" id="st-3"><small>placement</small><b>aug 2024</b></div>
+      </div>
+
+      <!-- S1 · ML and computer vision -->
+      <section id="s-cv" class="clip scene" data-start="0" data-duration="5.4" data-track-index="1">
+        <div class="copy">
+          <p class="eyebrow">Chapter 06 — Master's</p>
+          <h2 id="cv-title" class="title"></h2>
+          <p class="sub">I went back to BIT Mesra for my master's (MCA), and loved exploring new topics like <b>machine learning</b> and <b>computer vision</b>.</p>
+        </div>
+        <div class="stage">
+          <div id="vf">
+            <svg id="vf-art" viewBox="0 0 720 420" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+              <rect x="0" y="244" width="720" height="176" fill="#4a3c2e" />
+              <rect x="60" y="238" width="600" height="14" rx="4" fill="#6b5641" />
+              <!-- laptop -->
+              <rect x="120" y="120" width="200" height="118" rx="8" fill="#1d2230" /><rect x="130" y="130" width="180" height="98" rx="4" fill="#2f5d8a" />
+              <path d="M100 238 L340 238 L330 250 L110 250 Z" fill="#c9ced8" />
+              <!-- mug -->
+              <rect x="400" y="176" width="54" height="62" rx="8" fill="#e8e3da" /><path d="M454 190 C 478 190, 478 224, 454 224" fill="none" stroke="#e8e3da" stroke-width="9" />
+              <path d="M414 164 C 408 150, 422 146, 416 132 M436 164 C 430 150, 444 146, 438 132" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="4" stroke-linecap="round" />
+              <!-- plant -->
+              <rect x="540" y="196" width="60" height="42" rx="6" fill="#b5653d" />
+              <path d="M570 196 C 540 150, 530 120, 552 104 C 566 134, 572 160, 570 196 Z" fill="#3f8f5a" /><path d="M570 196 C 600 150, 612 126, 594 110 C 578 140, 570 164, 570 196 Z" fill="#4fa86b" /><path d="M570 196 C 568 150, 570 120, 572 92 C 580 130, 578 160, 570 196 Z" fill="#5cc27c" />
+              <!-- phone -->
+              <rect x="350" y="226" width="34" height="12" rx="3" fill="#15181f" />
+            </svg>
+            <div id="scanline"></div>
+            <div class="bb" id="bb-1" style="left:15.5%;top:26.8%;width:30.5%;height:33.4%"><span>laptop 0.98</span></div>
+            <div class="bb" id="bb-2" style="left:54.4%;top:30.2%;width:11.4%;height:28.4%"><span>cup 0.95</span></div>
+            <div class="bb" id="bb-3" style="left:73.4%;top:20.4%;width:12%;height:37.4%"><span>potted plant 0.91</span></div>
+            <div class="bb" id="bb-4" style="left:47.6%;top:52.2%;width:6%;height:5.8%"><span>phone 0.87</span></div>
+            <div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>
+            <div id="vf-hud"><i></i>detect · live</div>
+            <div id="vf-fps">4 objects</div>
+          </div>
+          <div id="nn"><svg id="nn-svg" viewBox="0 0 720 150" aria-hidden="true"></svg></div>
+        </div>
+      </section>
+
+      <!-- S2 · Dec 2023, BIT App goes all-in on Compose -->
+      <section id="s-mig" class="clip scene" data-start="5.2" data-duration="4.5" data-track-index="1">
+        <div class="copy">
+          <p class="eyebrow">December 2023</p>
+          <h2 id="mig-title" class="title"></h2>
+          <p class="sub">During my master's, I migrated the whole of <b>BIT App</b> to <b>Jetpack Compose</b>.</p>
+        </div>
+        <div class="stage">
+          <div id="mig">
+            <div id="phone">
+              <div id="pscr">
+                <div class="punch"></div>
+                <div class="old"><div class="bar"></div><div class="r"></div><div class="r"></div><div class="r"></div><div class="r"></div><div class="r"></div></div>
+                <div class="new" id="new"><div class="hd"></div><div class="g"><i></i><i></i><i></i><i></i></div></div>
+              </div>
+            </div>
+            <div id="list">
+              <div id="list-h"><span>xml → compose</span><span id="pct">0%</span></div>
+              <div id="prog"><i></i></div>
+              <div id="rows"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- S3 · Aug 2024, the offer -->
+      <section id="s-offer" class="clip scene" data-start="9.5" data-duration="5" data-track-index="1">
+        <div class="copy">
+          <p class="eyebrow">August 2024</p>
+          <h2 id="of-title" class="title"></h2>
+          <p class="sub">In August 2024 I got placed at <b>Adrosonic</b> as a <b>Software Engineer</b>.</p>
+        </div>
+        <div class="stage">
+          <div id="env">
+            <div id="env-back"></div>
+            <div id="letter">
+              <small>offer of employment</small>
+              <h3>Adrosonic</h3>
+              <p>Dear <span id="dear"></span>, we are pleased to offer you the position of</p>
+              <span class="role">Software Engineer</span>
+            </div>
+            <div id="env-front"><svg viewBox="0 0 620 400" preserveAspectRatio="none" aria-hidden="true"><path d="M0 120 L310 290 L620 120 L620 400 L0 400 Z" fill="#e2cc98" /><path d="M0 400 L260 250 M620 400 L360 250" stroke="#c9b27f" stroke-width="3" /></svg></div>
+            <div id="env-flap"><svg viewBox="0 0 620 240" preserveAspectRatio="none" aria-hidden="true"><path d="M0 0 L620 0 L310 200 Z" fill="#d6be88" /></svg></div>
+            <div id="confetti"></div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      (function () {
+        var vars = (window.__hyperframes && window.__hyperframes.getVariables && window.__hyperframes.getVariables()) || {};
+        var q = new URLSearchParams(location.search);
+        var get = function (k, d) { return q.has(k) ? q.get(k) : (vars[k] != null ? vars[k] : d); };
+        var NAME = String(get("name", "Ayaan"));
+        var $ = function (s) { return document.querySelector(s); };
+        var $$ = function (s) { return Array.prototype.slice.call(document.querySelectorAll(s)); };
+        var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); };
+        var words = function (text, hl) {
+          return text.split(" ").map(function (w) {
+            var cls = hl && hl.indexOf(w.replace(/[.,]/g, "")) > -1 ? ' class="hl"' : "";
+            return '<span class="word"><span' + cls + ">" + esc(w) + "</span></span>";
+          }).join(" ");
+        };
+        $("#cv-title").innerHTML = words("Teaching machines to see.", ["see"]);
+        $("#mig-title").innerHTML = words("All in on Compose.", ["Compose"]);
+        $("#of-title").innerHTML = words("Placed.", ["Placed"]);
+        $("#dear").textContent = NAME;
+
+        // Neural net: 4 → 6 → 6 → 3.
+        var layers = [4, 6, 6, 3];
+        var svg = "", nodes = [];
+        layers.forEach(function (n, l) {
+          var x = 60 + l * 200;
+          nodes[l] = [];
+          for (var i = 0; i < n; i++) nodes[l].push({ x: x, y: 75 + (i - (n - 1) / 2) * 22 });
+        });
+        for (var l = 0; l < layers.length - 1; l++) {
+          nodes[l].forEach(function (a) { nodes[l + 1].forEach(function (b) { svg += '<line class="e' + l + '" x1="' + a.x + '" y1="' + a.y + '" x2="' + b.x + '" y2="' + b.y + '" />'; }); });
+        }
+        nodes.forEach(function (layer, l) { layer.forEach(function (p) { svg += '<circle class="n' + l + '" cx="' + p.x + '" cy="' + p.y + '" r="8" />'; }); });
+        $("#nn-svg").innerHTML = svg;
+
+        var SCREENS = ["home", "syllabus", "notices", "timetable", "settings"];
+        $("#rows").innerHTML = SCREENS.map(function (s, i) {
+          return '<div class="mrow"><span>' + s + ' <small>screen</small></span><span class="ck" id="ck-' + i + '"><b>✓</b></span></div>';
+        }).join("");
+
+        // Deterministic confetti.
+        var colors = ["#ff5fa2", "#5ee1ff", "#ffb454", "#4ade80", "#a78bfa"];
+        var conf = "";
+        for (var c = 0; c < 36; c++) conf += '<i style="background:' + colors[c % 5] + '"></i>';
+        $("#confetti").innerHTML = conf;
+
+        var tl = gsap.timeline({ paused: true, defaults: { ease: "expo.out" } });
+        var stamp = function (i, at) {
+          if (i > 1) tl.to("#st-" + (i - 1), { opacity: 0, y: -8, duration: 0.3, ease: "power2.in" }, at);
+          tl.fromTo("#st-" + i, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.45 }, at + 0.15);
+        };
+        var intro = function (sc, title, at) {
+          tl.fromTo(sc + " .eyebrow", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.7 }, at);
+          tl.fromTo(title + " .word > span", { yPercent: 110 }, { yPercent: 0, duration: 1, stagger: 0.08 }, at + 0.1);
+          tl.fromTo(sc + " .sub", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.8 }, at + 0.45);
+        };
+
+        // ── S1 · CV ──
+        stamp(1, 0);
+        intro("#s-cv", "#cv-title", 0);
+        tl.fromTo("#vf", { opacity: 0, scale: 0.96 }, { opacity: 1, scale: 1, duration: 1 }, 0.1);
+        tl.fromTo("#scanline", { yPercent: -100 }, { yPercent: 560, duration: 1.2, ease: "none", repeat: 2 }, 1.0);
+        ["#bb-1", "#bb-2", "#bb-3", "#bb-4"].forEach(function (b, i) {
+          tl.fromTo(b, { opacity: 0, scale: 1.25 }, { opacity: 1, scale: 1, duration: 0.35, ease: "back.out(2)" }, 1.4 + i * 0.35);
+        });
+        tl.fromTo("#vf-hud i", { opacity: 1 }, { opacity: 0.2, duration: 0.4, yoyo: true, repeat: 9, ease: "sine.inOut" }, 0.8);
+        tl.fromTo("#nn", { opacity: 0 }, { opacity: 1, duration: 0.6 }, 0.8);
+        for (var k = 0; k < layers.length; k++) {
+          tl.to("#nn-svg .n" + k, { fill: "var(--c1)", stroke: "var(--c1)", duration: 0.25, stagger: 0.04, ease: "power2.out" }, 1.5 + k * 0.45);
+          if (k < layers.length - 1) tl.to("#nn-svg .e" + k, { stroke: "color-mix(in srgb, var(--c1) 55%, transparent)", duration: 0.3, ease: "none" }, 1.7 + k * 0.45);
+        }
+        tl.to("#s-cv > *", { opacity: 0, y: -24, duration: 0.45, ease: "power2.in", stagger: 0.05 }, 4.9);
+
+        // ── S2 · migration ──
+        var M = 5.3;
+        stamp(2, M);
+        intro("#s-mig", "#mig-title", M);
+        tl.fromTo("#phone", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.9 }, M + 0.1);
+        tl.fromTo("#list", { opacity: 0, x: 30 }, { opacity: 1, x: 0, duration: 0.9 }, M + 0.2);
+        tl.fromTo("#new", { clipPath: "inset(0 0 100% 0)" }, { clipPath: "inset(0 0 0% 0)", duration: 2.2, ease: "power1.inOut" }, M + 0.9);
+        var pct = { v: 0 };
+        tl.fromTo(pct, { v: 0 }, { v: 100, duration: 2.2, ease: "power1.inOut", onUpdate: function () { $("#pct").textContent = Math.round(pct.v) + "%"; } }, M + 0.9);
+        tl.fromTo("#prog i", { scaleX: 0 }, { scaleX: 1, duration: 2.2, ease: "power1.inOut" }, M + 0.9);
+        SCREENS.forEach(function (_, i) {
+          tl.to("#ck-" + i, { borderColor: "var(--ok)", backgroundColor: "var(--ok)", duration: 0.2, ease: "none" }, M + 1.2 + i * 0.42);
+          tl.to("#ck-" + i + " b", { opacity: 1, duration: 0.2, ease: "none" }, M + 1.2 + i * 0.42);
+        });
+        tl.to("#s-mig > *", { opacity: 0, y: -24, duration: 0.45, ease: "power2.in", stagger: 0.05 }, 9.2);
+
+        // ── S3 · offer ──
+        var O = 9.6;
+        stamp(3, O);
+        intro("#s-offer", "#of-title", O);
+        tl.fromTo("#env", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.9 }, O + 0.1);
+        tl.fromTo("#env-flap", { scaleY: 1 }, { scaleY: -1, duration: 0.5, ease: "power2.inOut" }, O + 0.9);
+        tl.set("#env-flap", { zIndex: 1 }, O + 1.15);
+        tl.fromTo("#letter", { opacity: 0 }, { opacity: 1, duration: 0.1, ease: "none" }, O + 1.25);
+        tl.fromTo("#letter", { y: "8vmin" }, { y: "-20vmin", duration: 0.9, ease: "power3.out" }, O + 1.3);
+        $$("#confetti i").forEach(function (el, i) {
+          var ang = (i / 36) * Math.PI * 2;
+          var dist = 18 + (i * 7) % 16;
+          tl.fromTo(el, { opacity: 0, x: 0, y: 0, rotation: 0 }, { opacity: 1, x: Math.cos(ang) * dist + "vmin", y: Math.sin(ang) * dist * 0.7 - 8 + "vmin", rotation: (i * 47) % 360, duration: 0.8, ease: "power3.out" }, O + 1.9);
+          tl.to(el, { opacity: 0, y: "+=6vmin", duration: 0.9, ease: "power1.in" }, O + 2.8);
+        });
+
+        window.__timelines["masters"] = tl;
+      })();
+    </script>
+  </body>
+</html>

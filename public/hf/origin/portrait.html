@@ -1,0 +1,414 @@
+<!doctype html>
+<html
+  lang="en"
+  data-composition-variables='[
+    {"id":"name","type":"string","label":"Name","default":"Ayaan"},
+    {"id":"born","type":"string","label":"Birth year (optional)","default":""},
+    {"id":"bg","type":"color","label":"Background","default":"#0b0f14"},
+    {"id":"surface","type":"color","label":"Surface","default":"#121821"},
+    {"id":"fg","type":"color","label":"Text","default":"#f2f5f9"},
+    {"id":"muted","type":"color","label":"Muted text","default":"#8f99a6"},
+    {"id":"line","type":"color","label":"Hairline","default":"#243040"},
+    {"id":"c1","type":"color","label":"Accent 1 (code)","default":"#5ee1ff"},
+    {"id":"c2","type":"color","label":"Accent 2","default":"#a78bfa"},
+    {"id":"c3","type":"color","label":"Accent 3","default":"#ff5fa2"},
+    {"id":"c4","type":"color","label":"Accent 4","default":"#ffb454"},
+    {"id":"ok","type":"color","label":"Success","default":"#4ade80"}
+  ]'
+>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <title>aiyu — chapter 01 · origin</title>
+    <script src="/hf/vendor/hyperframe.runtime.iife.js"></script>
+    <script src="/hf/vendor/gsap.min.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg, #0b0f14); }
+      #root {
+        position: relative; width: 100%; height: 100%; overflow: hidden;
+        color: var(--fg); background: var(--bg);
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        --mono: ui-monospace, monospace;
+        /* Real-world objects keep their own colours in every theme (a night
+           window, a lit CRT); the room around them follows the site theme. */
+        --night: #0a1428;
+        --crt: #04110f;
+        --phosphor: #7dffc4;
+      }
+      .mono { font-family: var(--mono); }
+      .clip { position: absolute; inset: 0; }
+      .eyebrow { font-family: var(--mono); font-size: 1.7vmin; letter-spacing: 0.32em; text-transform: uppercase; color: var(--muted); }
+      .title { font-weight: 800; letter-spacing: -0.045em; line-height: 0.95; }
+      .word { display: inline-block; overflow: hidden; vertical-align: bottom; padding-bottom: 0.08em; }
+      .word > span { display: inline-block; }
+      .hl { color: var(--c1); }
+
+      /* ── chapter chrome (shared by every chapter film) ── */
+      #chip {
+        position: absolute; left: 4vmin; top: 3.6vmin; z-index: 20; display: flex; align-items: center; gap: 1.2vmin;
+        font-family: var(--mono); font-size: 1.45vmin; letter-spacing: 0.28em; text-transform: uppercase; color: var(--muted);
+      }
+      #chip b { color: var(--fg); font-weight: 600; }
+      #chip i { width: 4vmin; height: 1px; background: var(--line); }
+      #stamp {
+        position: absolute; right: 4vmin; top: 3vmin; z-index: 20; text-align: right;
+        font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--fg);
+      }
+      #stamp small { display: block; font-size: 1.3vmin; letter-spacing: 0.3em; text-transform: uppercase; color: var(--muted); }
+      #stamp b { display: block; margin-top: 0.4vmin; font-size: 3vmin; font-weight: 600; letter-spacing: 0.06em; }
+
+      /* ── S1 · rain ─────────────────────────────────────── */
+      #s-rain { display: flex; align-items: center; padding: 12vmin 7vmin 10vmin; gap: 6vmin; }
+      #rain-copy { flex: 0 0 40%; }
+      #rain-copy .eyebrow { margin-bottom: 3vmin; }
+      #rain-date { font-size: 19vmin; }
+      #rain-sub { margin-top: 3vmin; font-size: 2.7vmin; line-height: 1.45; color: var(--muted); max-width: 52vmin; }
+      #rain-sub b { color: var(--fg); font-weight: 600; }
+
+      #ecg { margin-top: 5vmin; display: flex; align-items: center; gap: 1.4vmin; width: 56vmin; }
+      #ecg svg { flex: 1; height: 7vmin; overflow: visible; }
+      #ecg-path { fill: none; stroke: var(--c3); stroke-width: 3.2; stroke-linejoin: round; stroke-linecap: round; stroke-dasharray: 760; stroke-dashoffset: 760; }
+      #ecg-cursor { flex: none; width: 1.4vmin; height: 3vmin; background: var(--fg); }
+      #ecg-label { font-family: var(--mono); font-size: 1.4vmin; letter-spacing: 0.24em; text-transform: uppercase; color: var(--muted); margin-top: 1.4vmin; }
+      #ecg-label b { color: var(--c3); font-weight: 400; }
+
+      #win-wrap { position: relative; flex: 1; height: 100%; display: flex; align-items: center; justify-content: center; }
+      #window {
+        position: relative; width: 62vmin; height: 74vmin; border-radius: 31vmin 31vmin 1.4vmin 1.4vmin;
+        padding: 1.8vmin; background: color-mix(in srgb, var(--fg) 16%, var(--surface));
+        box-shadow: 0 4vmin 10vmin -4vmin rgba(0, 0, 0, 0.5), inset 0 0 0 1px color-mix(in srgb, var(--fg) 12%, transparent);
+      }
+      #glass {
+        position: relative; width: 100%; height: 100%; overflow: hidden; border-radius: 29.2vmin 29.2vmin 0.6vmin 0.6vmin;
+        background: linear-gradient(180deg, #050a18 0%, var(--night) 45%, #16223d 100%);
+      }
+      #skyline { position: absolute; left: 0; right: 0; bottom: 0; height: 30%; display: flex; align-items: flex-end; gap: 0.5vmin; padding: 0 1vmin; }
+      #skyline span {
+        flex: 1; background-color: #0d1629;
+        background-image: repeating-linear-gradient(0deg, transparent 0 1.6vmin, rgba(255, 210, 130, 0.22) 1.6vmin 2vmin);
+      }
+      #rain { position: absolute; inset: -20% -20%; transform: rotate(12deg); }
+      #rain i { position: absolute; top: 0; width: 0.24vmin; border-radius: 0.2vmin; background: linear-gradient(180deg, transparent, rgba(200, 225, 255, 0.9)); }
+      #drops i {
+        position: absolute; width: 1.4vmin; height: 1.8vmin; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+        background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.85) 0 12%, rgba(170, 205, 255, 0.28) 30%, rgba(120, 160, 220, 0.12) 70%);
+        box-shadow: 0 0.2vmin 0.4vmin rgba(0, 0, 0, 0.4);
+      }
+      #bolt { position: absolute; left: 30%; top: 4%; width: 26%; height: 52%; overflow: visible; }
+      #bolt path { fill: none; stroke: #eef4ff; stroke-width: 3; stroke-linejoin: round; filter: drop-shadow(0 0 6px #9fc3ff); }
+      #flash { position: absolute; inset: 0; background: #dfe9ff; opacity: 0; }
+      #mullion-v { position: absolute; left: calc(50% - 0.6vmin); top: 0; bottom: 0; width: 1.2vmin; background: color-mix(in srgb, var(--fg) 16%, var(--surface)); }
+      #mullion-h { position: absolute; left: 0; right: 0; top: 52%; height: 1.2vmin; background: color-mix(in srgb, var(--fg) 16%, var(--surface)); }
+      #sill { position: absolute; left: -3vmin; right: -3vmin; bottom: -2.6vmin; height: 2.6vmin; border-radius: 0.6vmin; background: color-mix(in srgb, var(--fg) 22%, var(--surface)); }
+      #room-flash { position: absolute; inset: 0; z-index: 15; pointer-events: none; background: #cfe0ff; opacity: 0; }
+
+      /* ── S2 · the child and the computer ───────────────── */
+      #s-kid { display: flex; align-items: center; padding: 11vmin 7vmin 9vmin; gap: 5vmin; }
+      #scene { position: relative; flex: 0 0 58%; aspect-ratio: 760 / 520; }
+      #scene > svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+      #room-glow { position: absolute; left: 22%; top: -18%; width: 78%; height: 120%; background: radial-gradient(closest-side, color-mix(in srgb, var(--phosphor) 26%, transparent), transparent); opacity: 0; }
+      /* Screen text sits over the SVG CRT, positioned in the same 1000×700 box. */
+      #screen {
+        position: absolute; left: 45.26%; top: 15%; width: 35.79%; height: 36.15%; overflow: hidden;
+        padding: 1.4vmin 1.8vmin; font-family: var(--mono); font-size: 2vmin; line-height: 1.45; color: var(--phosphor);
+        text-shadow: 0 0 0.8vmin color-mix(in srgb, var(--phosphor) 70%, transparent);
+      }
+      #screen .row { white-space: pre; display: none; }
+      #screen .t { display: inline-block; overflow: hidden; vertical-align: bottom; }
+      #screen .out { color: #ffffff; }
+      #screen .cur { color: var(--phosphor); }
+      #scr-star { position: absolute; right: 2vmin; top: 50%; margin-top: -4.5vmin; width: 9vmin; height: 9vmin; overflow: visible; }
+      #scr-star path { fill: none; stroke: #fff3a8; stroke-width: 3; stroke-linejoin: round; filter: drop-shadow(0 0 4px #ffe36b); }
+      #scanlines { position: absolute; left: 45.26%; top: 15%; width: 35.79%; height: 36.15%; pointer-events: none; background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.28) 0 1px, transparent 1px 3px); }
+
+      #kid-copy { flex: 1; }
+      #kid-copy .eyebrow { margin-bottom: 2.6vmin; }
+      #kid-lead { font-size: 3vmin; line-height: 1.35; color: var(--muted); }
+      #kid-quote { margin-top: 2vmin; font-size: 8.4vmin; }
+      #kid-quote .hl { color: var(--ok); }
+      #kid-note { margin-top: 3vmin; font-family: var(--mono); font-size: 1.6vmin; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); }
+      #kid-note b { color: var(--fg); font-weight: 500; }
+
+      @media (orientation: portrait) {
+        .eyebrow { font-size: 2.3vmin; }
+        #s-rain { flex-direction: column; justify-content: center; padding: 16vmin 7vmin 12vmin; gap: 8vmin; }
+        #rain-copy { flex: none; width: 100%; }
+        #rain-date { font-size: 26vmin; }
+        #rain-sub { font-size: 3.6vmin; max-width: none; }
+        #ecg { width: 100%; }
+        #win-wrap { flex: none; width: 100%; height: auto; }
+        #window { width: 70vmin; height: 84vmin; border-radius: 35vmin 35vmin 1.4vmin 1.4vmin; }
+        #glass { border-radius: 33.2vmin 33.2vmin 0.6vmin 0.6vmin; }
+        #s-kid { flex-direction: column; justify-content: center; padding: 16vmin 6vmin 12vmin; gap: 7vmin; }
+        #scene { flex: none; width: 100%; }
+        #screen { font-size: 2.2vmin; }
+        #kid-copy { flex: none; width: 100%; }
+        #kid-lead { font-size: 3.8vmin; }
+        #kid-quote { font-size: 11vmin; }
+        #kid-note { font-size: 2vmin; }
+        #chip { font-size: 2.6vmin; }
+        #stamp small { font-size: 2.2vmin; }
+        #stamp b { font-size: 4.6vmin; }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="origin" data-start="0" data-duration="12.5" data-width="1080" data-height="1920">
+      <div id="chip"><b>ch 01</b><i></i><span id="chip-t">origin</span></div>
+      <div id="stamp"><small id="stamp-l">born</small><b id="stamp-v">03 · 05</b></div>
+      <div id="room-flash"></div>
+
+      <!-- S1 · 3 May, heavy rain -->
+      <section id="s-rain" class="clip" data-start="0" data-duration="5.4" data-track-index="1">
+        <div id="rain-copy">
+          <p class="eyebrow">Chapter 01 — Origin</p>
+          <h2 id="rain-date" class="title"></h2>
+          <p id="rain-sub">It was <b>raining heavily</b> the day I was born.</p>
+          <div id="ecg">
+            <svg viewBox="0 0 600 100" preserveAspectRatio="none" aria-hidden="true">
+              <path id="ecg-path" d="M0 55 L110 55 L128 55 L138 40 L148 55 L166 55 L176 8 L190 92 L202 55 L232 55 L246 44 L262 55 L360 55 L378 55 L388 40 L398 55 L416 55 L426 8 L440 92 L452 55 L482 55 L496 44 L512 55 L600 55" />
+            </svg>
+            <div id="ecg-cursor"></div>
+          </div>
+          <p id="ecg-label"><b>♥</b> first heartbeat · first line</p>
+        </div>
+        <div id="win-wrap">
+          <div id="window">
+            <div id="glass">
+              <div id="skyline"></div>
+              <svg id="bolt" viewBox="0 0 100 200" aria-hidden="true"><path id="bolt-path" d="M60 0 L38 70 L58 72 L30 140 L50 142 L22 200" /></svg>
+              <div id="rain" data-layout-allow-overflow></div>
+              <div id="drops"></div>
+              <div id="flash"></div>
+            </div>
+            <div id="mullion-v"></div>
+            <div id="mullion-h"></div>
+            <div id="sill"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- S2 · a child meets a computer that listens -->
+      <section id="s-kid" class="clip" data-start="5.1" data-duration="7.4" data-track-index="1">
+        <div id="scene">
+          <div id="room-glow"></div>
+          <svg viewBox="250 150 760 520" aria-hidden="true">
+            <defs>
+              <radialGradient id="face-light" cx="1" cy="0.45" r="0.9">
+                <stop offset="0" stop-color="#7dffc4" stop-opacity="0.85" />
+                <stop offset="1" stop-color="#7dffc4" stop-opacity="0" />
+              </radialGradient>
+              <linearGradient id="crt-body" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#e4dccb" />
+                <stop offset="1" stop-color="#bdb39f" />
+              </linearGradient>
+            </defs>
+            <!-- floor + desk -->
+            <line x1="250" y1="640" x2="1010" y2="640" stroke="var(--line)" stroke-width="2" />
+            <ellipse cx="620" cy="642" rx="330" ry="14" fill="color-mix(in srgb, var(--fg) 7%, transparent)" />
+            <rect id="desk" x="470" y="470" width="520" height="22" rx="4" fill="color-mix(in srgb, var(--fg) 26%, var(--surface))" />
+            <rect x="500" y="492" width="16" height="148" fill="color-mix(in srgb, var(--fg) 18%, var(--surface))" />
+            <rect x="944" y="492" width="16" height="148" fill="color-mix(in srgb, var(--fg) 18%, var(--surface))" />
+            <!-- CRT monitor -->
+            <path d="M690 452 L760 452 L775 470 L675 470 Z" fill="#a89e8a" />
+            <rect x="560" y="196" width="340" height="262" rx="22" fill="url(#crt-body)" />
+            <rect x="580" y="214" width="300" height="214" rx="16" fill="#8f8675" />
+            <rect id="crt-screen" x="594" y="228" width="272" height="188" rx="12" fill="#04110f" />
+            <rect id="crt-on" x="594" y="228" width="272" height="188" rx="12" fill="#0b3a2c" />
+            <circle cx="872" cy="444" r="4" fill="#3a3a3a" />
+            <circle id="crt-led" cx="872" cy="444" r="4" fill="#4ade80" />
+            <!-- keyboard -->
+            <path d="M590 470 L850 470 L840 458 L600 458 Z" fill="#cfc6b3" />
+            <g id="keys" fill="#9d9380">
+              <rect x="612" y="461" width="22" height="5" rx="1" /><rect x="640" y="461" width="22" height="5" rx="1" />
+              <rect x="668" y="461" width="22" height="5" rx="1" /><rect id="key-hit" x="696" y="461" width="60" height="5" rx="1" />
+              <rect x="762" y="461" width="22" height="5" rx="1" /><rect x="790" y="461" width="22" height="5" rx="1" />
+            </g>
+            <!-- stool -->
+            <rect x="286" y="500" width="150" height="18" rx="6" fill="color-mix(in srgb, var(--fg) 30%, var(--surface))" />
+            <rect x="300" y="518" width="12" height="122" fill="color-mix(in srgb, var(--fg) 22%, var(--surface))" />
+            <rect x="410" y="518" width="12" height="122" fill="color-mix(in srgb, var(--fg) 22%, var(--surface))" />
+            <!-- child, side profile, facing the screen -->
+            <g id="kid" fill="color-mix(in srgb, var(--fg) 78%, var(--bg))">
+              <path d="M330 500 C 330 440, 345 392, 392 382 C 432 374, 460 400, 462 440 L 462 500 Z" />
+              <path d="M392 496 L 470 496 C 486 496, 492 510, 492 522 L 492 600 L 474 600 L 470 520 L 392 520 Z" />
+              <rect x="468" y="596" width="36" height="12" rx="6" />
+              <g id="kid-arm">
+                <path d="M420 402 C 470 410, 520 430, 566 452 L 560 466 C 510 446, 462 430, 414 424 Z" />
+                <circle cx="568" cy="458" r="10" />
+              </g>
+              <g id="kid-head">
+                <rect x="398" y="346" width="26" height="40" rx="10" />
+                <circle cx="420" cy="302" r="62" />
+                <path d="M478 296 C 490 300, 494 312, 482 318 Z" />
+                <path id="hair" fill="color-mix(in srgb, var(--fg) 92%, var(--bg))" d="M360 300 C 352 238, 420 214, 466 244 C 486 258, 486 270, 478 276 C 452 262, 420 262, 398 280 C 388 300, 376 316, 364 322 Z" />
+                <circle id="face-glow" cx="420" cy="302" r="62" fill="url(#face-light)" opacity="0" />
+                <ellipse id="eye" cx="458" cy="298" rx="5.5" ry="7" fill="var(--bg)" />
+                <circle id="glint" cx="460" cy="295" r="2.4" fill="#ffffff" opacity="0" />
+                <path id="smile" d="M452 328 Q 464 336, 474 326" fill="none" stroke="var(--bg)" stroke-width="3" stroke-linecap="round" opacity="0" />
+              </g>
+            </g>
+          </svg>
+          <div id="screen">
+            <div class="row"><span>&gt; </span><span class="t" id="cmd-1">hello</span></div>
+            <div class="row out"><span class="t" id="out-1">hello</span></div>
+            <div class="row"><span>&gt; </span><span class="t" id="cmd-2">draw star</span></div>
+            <div class="row"><span>&gt; </span><span class="t" id="cmd-3">2 + 2</span></div>
+            <div class="row out"><span class="t" id="out-3">4</span></div>
+            <div class="row"><span>&gt; </span><span class="cur" id="cur">▋</span></div>
+            <svg id="scr-star" viewBox="0 0 100 100" aria-hidden="true"><path id="star-path" d="M50 6 L62 38 L96 38 L68 58 L78 92 L50 72 L22 92 L32 58 L4 38 L38 38 Z" /></svg>
+          </div>
+          <div id="scanlines"></div>
+        </div>
+        <div id="kid-copy">
+          <p class="eyebrow">The fascination</p>
+          <p id="kid-lead">The thing I love about computers:</p>
+          <h2 id="kid-quote" class="title"></h2>
+          <p id="kid-note">three commands · <b>three exact answers</b></p>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      (function () {
+        var vars = (window.__hyperframes && window.__hyperframes.getVariables && window.__hyperframes.getVariables()) || {};
+        var q = new URLSearchParams(location.search);
+        var get = function (k, d) { return q.has(k) ? q.get(k) : (vars[k] != null ? vars[k] : d); };
+        var BORN = String(get("born", "")).replace(/[^0-9]/g, "").slice(0, 4);
+
+        var $ = function (s) { return document.querySelector(s); };
+        var $$ = function (s) { return Array.prototype.slice.call(document.querySelectorAll(s)); };
+        var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); };
+        var words = function (text, hl) {
+          return text.split(" ").map(function (w) {
+            var cls = hl && hl.indexOf(w.replace(/[.,:]/g, "")) > -1 ? ' class="hl"' : "";
+            return '<span class="word"><span' + cls + ">" + esc(w) + "</span></span>";
+          }).join(" ");
+        };
+
+        $("#rain-date").innerHTML = words("3 May.");
+        $("#kid-quote").innerHTML = words("They do only what I tell them to.", ["only", "I", "tell"]);
+        if (BORN) $("#stamp-v").textContent = "03 · 05 · " + BORN;
+
+        // Deterministic skyline, rain and drops (no Math.random in a composition).
+        var sky = "";
+        for (var b = 0; b < 14; b++) sky += '<span style="height:' + (22 + ((b * 37 + b * b * 11) % 60)) + '%"></span>';
+        $("#skyline").innerHTML = sky;
+        var rain = "";
+        var STREAKS = 90;
+        for (var r = 0; r < STREAKS; r++) {
+          var x = (r * 61) % 100;
+          var len = 5 + ((r * 13) % 7);
+          rain += '<i style="left:' + x + "%;height:" + len + 'vmin"></i>';
+        }
+        $("#rain").innerHTML = rain;
+        var drops = "";
+        for (var d = 0; d < 12; d++) {
+          drops += '<i style="left:' + (8 + ((d * 29) % 84)) + "%;top:" + (8 + ((d * 47) % 70)) + '%"></i>';
+        }
+        $("#drops").innerHTML = drops;
+
+        var tl = gsap.timeline({ paused: true, defaults: { ease: "expo.out" } });
+
+        // ── S1 · rain ──
+        $$("#rain i").forEach(function (el, i) {
+          var dur = 0.42 + ((i * 7) % 5) * 0.06;
+          var reps = Math.ceil(5.6 / dur);
+          // Start each streak part-way down so frame 0 is already raining.
+          var phase = ((i * 0.37) % 1);
+          tl.fromTo(el, { y: -15 + phase * 135 + "vmin" }, { y: "120vmin", duration: dur * (1 - phase), ease: "none" }, 0);
+          tl.fromTo(el, { y: "-15vmin" }, { y: "120vmin", duration: dur, ease: "none", repeat: reps, immediateRender: false }, dur * (1 - phase));
+        });
+        $$("#drops i").forEach(function (el, i) {
+          var at = 0.4 + ((i * 0.53) % 4);
+          tl.fromTo(el, { y: 0, scaleY: 1 }, { y: "3vmin", scaleY: 1.25, duration: 0.5, ease: "power2.in" }, at);
+          tl.to(el, { y: "9vmin", scaleY: 1, duration: 0.8, ease: "power1.in" }, at + 0.9);
+        });
+        [1.5, 3.3].forEach(function (at, n) {
+          tl.fromTo("#flash", { opacity: 0 }, { opacity: 0.85, duration: 0.05, ease: "none" }, at);
+          tl.to("#flash", { opacity: 0, duration: 0.5, ease: "power2.out" }, at + 0.08);
+          tl.fromTo("#room-flash", { opacity: 0 }, { opacity: 0.1, duration: 0.05, ease: "none" }, at);
+          tl.to("#room-flash", { opacity: 0, duration: 0.6, ease: "power2.out" }, at + 0.08);
+          if (n === 0) {
+            tl.fromTo("#bolt-path", { strokeDasharray: 260, strokeDashoffset: 260, opacity: 1 }, { strokeDashoffset: 0, duration: 0.08, ease: "none" }, at);
+            tl.to("#bolt-path", { opacity: 0, duration: 0.35 }, at + 0.14);
+          }
+        });
+
+        
+        tl.fromTo("#rain-date .word > span", { yPercent: 110 }, { yPercent: 0, duration: 1, stagger: 0.08 }, 0.12);
+        tl.fromTo("#rain-sub", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.8 }, 0.6);
+        tl.fromTo("#window", { y: 0, scale: 1 }, { y: "-1.5vmin", scale: 1.02, duration: 4.8, ease: "none" }, 0);
+        tl.fromTo("#ecg-path", { strokeDashoffset: 760 }, { strokeDashoffset: 0, duration: 2.4, ease: "none" }, 1.8);
+        tl.fromTo("#ecg-label", { opacity: 0 }, { opacity: 1, duration: 0.6 }, 1.9);
+        tl.fromTo("#ecg-cursor", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "steps(1)", repeat: 5, yoyo: true }, 4.1);
+        // Camera pushes into the window, then the room fades up.
+        tl.to("#rain-copy", { opacity: 0, y: -30, duration: 0.45, ease: "power2.in" }, 4.85);
+        tl.to("#window", { scale: 1.12, opacity: 0, duration: 0.55, ease: "power2.in" }, 4.9);
+
+        // ── S2 · the child ──
+        var S = 5.1;
+        tl.fromTo("#scene", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.9 }, S);
+        tl.fromTo("#kid-copy .eyebrow", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.7 }, S + 0.2);
+        tl.fromTo("#kid-lead", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.8 }, S + 0.35);
+        // CRT power-on: a bright line opens into the screen.
+        tl.fromTo("#crt-led", { opacity: 0 }, { opacity: 1, duration: 0.1, ease: "none" }, S + 0.3);
+        tl.fromTo("#crt-on", { opacity: 0, scaleY: 0.02, transformOrigin: "50% 50%" }, { opacity: 1, scaleY: 1, duration: 0.3, ease: "power3.out" }, S + 0.35);
+        tl.to("#crt-on", { opacity: 0.35, duration: 0.5, ease: "power2.out" }, S + 0.65);
+        tl.fromTo("#screen", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "none" }, S + 0.6);
+        tl.fromTo("#room-glow", { opacity: 0 }, { opacity: 0.45, duration: 0.8 }, S + 0.5);
+        tl.fromTo("#cur", { opacity: 1 }, { opacity: 0, duration: 0.25, ease: "steps(1)", repeat: 25, yoyo: true }, S + 0.6);
+
+        // Each command: the arm taps, the command types, the answer lands,
+        // the child lights up a little more.
+        var rows = $$("#screen .row");
+        tl.set(rows[5], { display: "block" }, S + 0.6);
+        var type = function (sel, at, n) {
+          tl.fromTo(sel, { clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0% 0 0)", duration: n * 0.07, ease: "steps(" + n + ")" }, at);
+        };
+        var tap = function (at, count) {
+          for (var k = 0; k < count; k++) {
+            tl.fromTo("#kid-arm", { rotation: 0 }, { rotation: 3, svgOrigin: "420 410", duration: 0.07, ease: "power2.out", yoyo: true, repeat: 1 }, at + k * 0.16);
+            tl.fromTo("#key-hit", { y: 0 }, { y: 2, duration: 0.07, ease: "power2.out", yoyo: true, repeat: 1 }, at + k * 0.16);
+          }
+        };
+        var react = function (at, level) {
+          tl.to("#face-glow", { opacity: level, duration: 0.5, ease: "power2.out" }, at);
+          tl.to("#room-glow", { opacity: 0.45 + level * 0.6, duration: 0.6, ease: "power2.out" }, at);
+          tl.fromTo("#eye", { scale: 1, svgOrigin: "458 298" }, { scale: 1.35, duration: 0.25, ease: "back.out(3)" }, at);
+          tl.to("#eye", { scale: 1.12, svgOrigin: "458 298", duration: 0.5, ease: "power2.out" }, at + 0.3);
+          tl.to("#glint", { opacity: 1, duration: 0.2 }, at);
+          tl.fromTo("#kid-head", { rotation: 0 }, { rotation: -3, svgOrigin: "412 386", duration: 0.35, ease: "power2.out", yoyo: true, repeat: 1 }, at);
+        };
+
+        var C1 = S + 1.1, C2 = S + 2.4, C3 = S + 3.8;
+        // 1 · hello → hello
+        tl.set(rows[0], { display: "block" }, C1);
+        tap(C1, 3); type("#cmd-1", C1, 5);
+        tl.set(rows[1], { display: "block" }, C1 + 0.6);
+        type("#out-1", C1 + 0.6, 5);
+        react(C1 + 0.7, 0.25);
+        tl.fromTo("#kid-quote .word:nth-child(-n+3) > span", { yPercent: 110 }, { yPercent: 0, duration: 0.9, stagger: 0.08 }, C1 + 0.7);
+        // 2 · draw star → a star
+        tl.set(rows[2], { display: "block" }, C2);
+        tap(C2, 4); type("#cmd-2", C2, 9);
+        tl.fromTo("#star-path", { strokeDasharray: 330, strokeDashoffset: 330 }, { strokeDashoffset: 0, duration: 0.6, ease: "power2.inOut" }, C2 + 0.7);
+        tl.to("#star-path", { fill: "rgba(255, 236, 120, 0.35)", duration: 0.4 }, C2 + 1.2);
+        react(C2 + 0.9, 0.5);
+        tl.fromTo("#kid-quote .word:nth-child(n+4):nth-child(-n+5) > span", { yPercent: 110 }, { yPercent: 0, duration: 0.9, stagger: 0.08 }, C2 + 0.9);
+        // 3 · 2 + 2 → 4
+        tl.set(rows[3], { display: "block" }, C3);
+        tap(C3, 3); type("#cmd-3", C3, 5);
+        tl.set(rows[4], { display: "block" }, C3 + 0.5);
+        type("#out-3", C3 + 0.5, 1);
+        react(C3 + 0.6, 0.8);
+        tl.fromTo("#kid-quote .word:nth-child(n+6) > span", { yPercent: 110 }, { yPercent: 0, duration: 0.9, stagger: 0.08 }, C3 + 0.6);
+        tl.fromTo("#smile", { opacity: 0 }, { opacity: 1, duration: 0.4 }, C3 + 0.8);
+        tl.fromTo("#kid-note", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.7 }, C3 + 1.2);
+
+        window.__timelines["origin"] = tl;
+      })();
+    </script>
+  </body>
+</html>

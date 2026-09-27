@@ -1,0 +1,435 @@
+<!doctype html>
+<html
+  lang="en"
+  data-composition-variables='[
+    {"id":"name","type":"string","label":"Name","default":"Ayaan"},
+    {"id":"bg","type":"color","label":"Background","default":"#0b0f14"},
+    {"id":"surface","type":"color","label":"Surface","default":"#121821"},
+    {"id":"fg","type":"color","label":"Text","default":"#f2f5f9"},
+    {"id":"muted","type":"color","label":"Muted text","default":"#8f99a6"},
+    {"id":"line","type":"color","label":"Hairline","default":"#243040"},
+    {"id":"c1","type":"color","label":"Accent 1 (code)","default":"#5ee1ff"},
+    {"id":"c2","type":"color","label":"Accent 2","default":"#a78bfa"},
+    {"id":"c3","type":"color","label":"Accent 3","default":"#ff5fa2"},
+    {"id":"c4","type":"color","label":"Accent 4","default":"#ffb454"},
+    {"id":"ok","type":"color","label":"Success","default":"#4ade80"}
+  ]'
+>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>aiyu — chapter 02 · school</title>
+    <script src="/hf/vendor/hyperframe.runtime.iife.js"></script>
+    <script src="/hf/vendor/gsap.min.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg, #0b0f14); }
+      #root {
+        position: relative; width: 100%; height: 100%; overflow: hidden;
+        color: var(--fg); background: var(--bg);
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        --mono: ui-monospace, monospace;
+        /* The book is a real object: paper, ink and cloth keep their colours
+           in every theme. */
+        --paper: #fbf6ea;
+        --paper-edge: #e8dfc9;
+        --ink: #1e2b4a;
+        --rule: rgba(64, 120, 200, 0.22);
+        --margin: rgba(220, 70, 70, 0.45);
+        --cloth: #1f3a6b;
+        --foil: #e8c778;
+      }
+      .mono { font-family: var(--mono); }
+      .clip { position: absolute; inset: 0; }
+      .eyebrow { font-family: var(--mono); font-size: 1.7vmin; letter-spacing: 0.32em; text-transform: uppercase; color: var(--muted); }
+      .title { font-weight: 800; letter-spacing: -0.045em; line-height: 0.95; }
+      .word { display: inline-block; overflow: hidden; vertical-align: bottom; padding-bottom: 0.08em; }
+      .word > span { display: inline-block; }
+      .hl { color: var(--c4); }
+
+      #chip {
+        position: absolute; left: 4vmin; top: 3.6vmin; z-index: 20; display: flex; align-items: center; gap: 1.2vmin;
+        font-family: var(--mono); font-size: 1.45vmin; letter-spacing: 0.28em; text-transform: uppercase; color: var(--muted);
+      }
+      #chip b { color: var(--fg); font-weight: 600; }
+      #chip i { width: 4vmin; height: 1px; background: var(--line); }
+      #stamp { position: absolute; right: 4vmin; top: 3vmin; z-index: 20; text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--fg); }
+      #stamp small { display: block; font-size: 1.3vmin; letter-spacing: 0.3em; text-transform: uppercase; color: var(--muted); }
+      #stamp b { display: block; margin-top: 0.4vmin; font-size: 3vmin; font-weight: 600; letter-spacing: 0.06em; }
+
+      #s-book { display: flex; align-items: center; padding: 12vmin 6vmin 8vmin 7vmin; gap: 5vmin; }
+      #copy { flex: 0 0 31%; }
+      #copy .eyebrow { margin-bottom: 3vmin; }
+      #years { font-size: 9.6vmin; white-space: nowrap; }
+      #sub { margin-top: 3vmin; font-size: 2.6vmin; line-height: 1.45; color: var(--muted); max-width: 50vmin; }
+      #sub b { color: var(--fg); font-weight: 600; }
+
+      #desk { position: relative; flex: 1; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6vmin; }
+      /* Open spread = 2 × page. Closed, the cover sits centred (x offset). */
+      #book { position: relative; width: 90vmin; height: 58vmin; }
+      #book-shadow { position: absolute; left: 0; right: 0; bottom: -3vmin; height: 5vmin; border-radius: 50%; background: radial-gradient(closest-side, rgba(0, 0, 0, 0.45), transparent); }
+      #spine-shadow { position: absolute; left: calc(50% - 3vmin); top: 0; bottom: 0; width: 6vmin; z-index: 60; pointer-events: none; opacity: 0; background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.18) 45%, rgba(0, 0, 0, 0.28) 50%, rgba(0, 0, 0, 0.18) 55%, transparent); }
+      #base-r {
+        position: absolute; left: 50%; top: 0; width: 50%; height: 100%; border-radius: 0 1vmin 1vmin 0; background: var(--paper-edge);
+        box-shadow: 0.5vmin 0.6vmin 0 -0.1vmin #d8ceb4, 1vmin 1.2vmin 0 -0.2vmin #cfc4a8;
+      }
+      #base-l {
+        position: absolute; left: 0; top: 0; width: 50%; height: 100%; border-radius: 1vmin 0 0 1vmin; background: var(--paper-edge); opacity: 0;
+        box-shadow: -0.5vmin 0.6vmin 0 -0.1vmin #d8ceb4, -1vmin 1.2vmin 0 -0.2vmin #cfc4a8;
+      }
+      .leaf { position: absolute; left: 50%; top: 0; width: 50%; height: 100%; transform-origin: 0 50%; transform-style: preserve-3d; }
+      .face { position: absolute; inset: 0; overflow: hidden; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+      .face.back { transform: rotateY(180deg); }
+      .paper {
+        background-color: var(--paper); color: var(--ink);
+        background-image: linear-gradient(90deg, transparent 7.4vmin, var(--margin) 7.4vmin, var(--margin) calc(7.4vmin + 1px), transparent calc(7.4vmin + 1px)),
+          repeating-linear-gradient(180deg, transparent 0 3.9vmin, var(--rule) 3.9vmin calc(3.9vmin + 1px));
+        background-position: 0 0, 0 7vmin;
+        padding: 5vmin 4vmin 4vmin 9.4vmin;
+      }
+      .face.front.paper { border-radius: 0 1vmin 1vmin 0; box-shadow: inset 2.4vmin 0 2.4vmin -2vmin rgba(0, 0, 0, 0.16); }
+      .face.back.paper { border-radius: 1vmin 0 0 1vmin; box-shadow: inset -2.4vmin 0 2.4vmin -2vmin rgba(0, 0, 0, 0.16); }
+      .pg-year { font-family: var(--mono); font-size: 1.6vmin; letter-spacing: 0.3em; color: rgba(30, 43, 74, 0.72); }
+      .pg-title { margin-top: 1.4vmin; font-size: 3.6vmin; font-weight: 800; letter-spacing: -0.02em; line-height: 1.05; }
+      .pg-hand { font-family: ui-rounded, ui-sans-serif, sans-serif; font-style: italic; font-size: 2.6vmin; line-height: 3.9vmin; color: #2b3f78; }
+      .pg-art { position: absolute; left: 9vmin; right: 3.6vmin; bottom: 4vmin; height: 30vmin; }
+      .pg-art svg { width: 100%; height: 100%; overflow: visible; }
+      .pg-no { position: absolute; bottom: 1.8vmin; font-family: var(--mono); font-size: 1.3vmin; color: rgba(30, 43, 74, 0.7); }
+      .front .pg-no { right: 2.6vmin; } .back .pg-no { left: 2.6vmin; }
+
+      /* Cover: cloth, foil title, a nameplate. */
+      #cover {
+        border-radius: 0 1.2vmin 1.2vmin 0; background: var(--cloth); color: var(--foil);
+        background-image: radial-gradient(120% 90% at 20% 0%, rgba(255, 255, 255, 0.14), transparent 55%), repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.03) 0 2px, transparent 2px 5px);
+        box-shadow: inset 1.6vmin 0 0 rgba(0, 0, 0, 0.25);
+        display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3vmin; text-align: center;
+      }
+      #cover .rule { width: 60%; height: 2px; background: var(--foil); opacity: 0.7; }
+      #cover h3 { font-size: 5.6vmin; font-weight: 800; letter-spacing: -0.02em; line-height: 1; }
+      #cover p { font-family: var(--mono); font-size: 1.6vmin; letter-spacing: 0.4em; text-transform: uppercase; }
+      #plate { margin-top: 2vmin; padding: 1.4vmin 3vmin; border: 2px solid var(--foil); border-radius: 0.8vmin; font-size: 2.4vmin; font-weight: 700; letter-spacing: 0.08em; }
+      #endpaper { background: #efe6cf; color: var(--ink); display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 2vmin; border-radius: 1.2vmin 0 0 1.2vmin; }
+      #endpaper small { font-family: var(--mono); font-size: 1.5vmin; letter-spacing: 0.3em; text-transform: uppercase; color: rgba(30, 43, 74, 0.78); }
+      #endpaper b { font-family: ui-rounded, ui-sans-serif, sans-serif; font-style: italic; font-size: 4.6vmin; color: #2b3f78; border-bottom: 2px solid rgba(43, 63, 120, 0.4); padding: 0 2vmin 0.6vmin; }
+
+      /* Stamp and cap at the end. */
+      #done {
+        position: absolute; right: 7vmin; top: 20vmin; z-index: 80; padding: 1.4vmin 2.4vmin; border: 0.5vmin solid #d23b3b; border-radius: 1vmin;
+        color: #d23b3b; font-family: var(--mono); font-weight: 800; font-size: 2.6vmin; letter-spacing: 0.2em; text-transform: uppercase; text-align: center; opacity: 0;
+      }
+      #done small { display: block; font-size: 1.5vmin; letter-spacing: 0.3em; }
+      #cap { position: absolute; left: 14vmin; top: 30vmin; z-index: 80; width: 16vmin; height: 12vmin; opacity: 0; }
+      #cap svg { width: 100%; height: 100%; overflow: visible; }
+
+      /* Timeline ribbon 2005 → 2019. */
+      #ribbon { position: relative; width: 86vmin; height: 7vmin; }
+      #rib-base { position: absolute; left: 0; right: 0; top: 2vmin; height: 2px; background: var(--line); }
+      #rib-fill { position: absolute; left: 0; right: 0; top: 2vmin; height: 2px; background: var(--c4); transform-origin: left center; }
+      .tick { position: absolute; top: 1.2vmin; width: 1.8vmin; height: 1.8vmin; margin-left: -0.9vmin; border-radius: 50%; border: 2px solid var(--line); background: var(--bg); }
+      .tick.major { top: 0.9vmin; width: 2.4vmin; height: 2.4vmin; margin-left: -1.2vmin; }
+      .tick-l { position: absolute; top: 4.4vmin; transform: translateX(-50%); font-family: var(--mono); font-size: 1.5vmin; letter-spacing: 0.1em; color: var(--muted); white-space: nowrap; }
+      #marker-rail { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+      #marker { position: absolute; left: 0; top: 0.3vmin; width: 3.6vmin; height: 3.6vmin; margin-left: -1.8vmin; border-radius: 50%; background: var(--c4); box-shadow: 0 0 0 0.8vmin color-mix(in srgb, var(--c4) 25%, transparent); }
+
+      @media (orientation: portrait) {
+        .eyebrow { font-size: 2.3vmin; }
+        #s-book { flex-direction: column; justify-content: center; padding: 15vmin 5vmin 10vmin; gap: 6vmin; }
+        #copy { flex: none; width: 100%; padding: 0 2vmin; }
+        #years { font-size: 15vmin; }
+        #sub { font-size: 3.5vmin; max-width: none; }
+        #desk { flex: none; width: 100%; height: auto; gap: 10vmin; }
+        #book { width: 90vmin; height: 70vmin; }
+        #ribbon { width: 86vmin; }
+        .paper { padding: 4.4vmin 2.6vmin 3vmin 7vmin; background-image: linear-gradient(90deg, transparent 5.4vmin, var(--margin) 5.4vmin, var(--margin) calc(5.4vmin + 1px), transparent calc(5.4vmin + 1px)), repeating-linear-gradient(180deg, transparent 0 3.9vmin, var(--rule) 3.9vmin calc(3.9vmin + 1px)); }
+        .pg-title { font-size: 3.4vmin; }
+        .pg-hand { font-size: 2.5vmin; }
+        .pg-art { left: 6.4vmin; right: 2.4vmin; }
+        #cover h3 { font-size: 5vmin; }
+        #chip { font-size: 2.6vmin; }
+        #stamp small { font-size: 2.2vmin; }
+        #stamp b { font-size: 4.6vmin; }
+        #done { right: 4vmin; top: 22vmin; }
+        .tick-l { font-size: 1.9vmin; }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="school" data-start="0" data-duration="11" data-width="1920" data-height="1080">
+      <div id="chip"><b>ch 02</b><i></i><span>school</span></div>
+      <div id="stamp"><small>year</small><b id="yr">2005</b></div>
+
+      <section id="s-book" class="clip" data-start="0" data-duration="11" data-track-index="1">
+        <div id="copy">
+          <p class="eyebrow">Chapter 02 — School</p>
+          <h2 id="years" class="title"></h2>
+          <p id="sub">Fourteen years of school, <b>one page at a time</b>. The fascination with computers never left.</p>
+        </div>
+
+        <div id="desk">
+          <div id="book" data-layout-allow-occlusion>
+            <div id="book-shadow"></div>
+            <div id="base-l"></div>
+            <div id="base-r"></div>
+
+            <!-- leaf 4 · 2019 (never flipped: the last page) -->
+            <div class="leaf" data-layout-allow-occlusion id="leaf-5">
+              <div class="face front paper" data-layout-allow-occlusion>
+                <p data-layout-allow-overlap data-layout-allow-occlusion class="pg-year">2019</p>
+                <p data-layout-allow-overlap data-layout-allow-occlusion class="pg-title">The last page.</p>
+                <p data-layout-allow-overlap data-layout-allow-occlusion class="pg-hand">Class XII, done. Next: college.</p>
+                <div class="pg-art">
+                  <svg viewBox="0 0 300 200" aria-hidden="true">
+                    <g fill="none" stroke="#2b3f78" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M40 150 L150 110 L260 150" />
+                      <path d="M150 70 L40 110 L150 150 L260 110 Z" fill="rgba(43,63,120,0.12)" />
+                      <path d="M90 128 L90 170 C 120 190, 180 190, 210 170 L210 128" />
+                      <path d="M258 110 L258 160" /><circle cx="258" cy="166" r="6" fill="#e8c778" stroke="#2b3f78" />
+                    </g>
+                  </svg>
+                </div>
+                <span class="pg-no" data-layout-allow-overlap data-layout-allow-occlusion>10</span>
+              </div>
+            </div>
+
+            <!-- leaf 4 · 2016 -->
+            <div class="leaf" data-layout-allow-occlusion id="leaf-4">
+              <div class="face front paper" data-layout-allow-occlusion>
+                <p data-layout-allow-overlap data-layout-allow-occlusion class="pg-year">2016</p>
+                <p data-layout-allow-overlap data-layout-allow-occlusion class="pg-title">Still drawing computers.</p>
+                <p data-layout-allow-overlap data-layout-allow-occlusion class="pg-hand">print("hello")  →  hello</p>
+                <div class="pg-art">
+                  <svg viewBox="0 0 300 200" aria-hidden="true">
+                    <g fill="none" stroke="#2b3f78" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="70" y="20" width="160" height="120" rx="12" />
+                      <rect x="88" y="36" width="124" height="86" rx="6" fill="rgba(46,160,120,0.16)" />
+                      <path d="M100 60 L112 70 L100 80" /><path d="M120 82 L150 82" />
+                      <path d="M130 140 L120 168 L180 168 L170 140" /><path d="M60 180 L240 180" />
+                    </g>
+                  </svg>
+                </div>
+                <span class="pg-no" data-layout-allow-overlap data-layout-allow-occlusion>8</span>
+              </div>
+              <div class="face back paper" data-layout-allow-occlusion>
+                <p data-layout-allow-overlap data-layout-allow-occlusion class="pg-year">notes</p>
+                <p data-layout-allow-overlap data-layout-allow-occlusion class="pg-hand">if (curious) { keep going; }</p>
+                <p data-layout-allow-overlap data-layout-allow-occlusion class="pg-hand">loops · logic · puzzles</p>
+                <span class="pg-no" data-layout-allow-overlap data-layout-allow-occlusion>9</span>
+              </div>
+            </div>
+
+            <!-- leaf 3 · 2013 -->
+            <div class="leaf" data-layout-allow-occlusion id="leaf-3">
+              <div class="face front paper" data-layout-allow-occlusion>
+                <p data-layout-allow-overlap data-layout-allow-occlusion class="pg-year">2013</p>
+                <p data-layout-allow-overlap data-layout-allow-occlusion class="pg-title">How does it all work?</p>
+                <p data-layout-allow-overlap data-layout-allow-occlusion class="pg-hand">atoms, planets, circuits</p>
+                <div class="pg-art">
+                  <svg viewBox="0 0 300 200" aria-hidden="true">
+                    <g fill="none" stroke="#2b3f78" stroke-width="3" stroke-linecap="round">
+                      <ellipse cx="150" cy="100" rx="100" ry="34" />
+                      <ellipse cx="150" cy="100" rx="100" ry="34" transform="rotate(60 150 100)" />
+                      <ellipse cx="150" cy="100" rx="100" ry="34" transform="rotate(-60 150 100)" />
+                      <circle cx="150" cy="100" r="12" fill="#e8c778" />
+                    </g>
+                  </svg>
+                </div>
+                <span class="pg-no" data-layout-allow-overlap data-layout-allow-occlusion>6</span>
+              </div>
+              <div class="face back paper" data-layout-allow-occlusion>
+                <p data-layout-allow-overlap data-layout-allow-occlusion class="pg-year">notes</p>
+                <p data-layout-allow-overlap data-layout-allow-occlusion class="pg-hand">E = mc²</p>
+                <p data-layout-allow-overlap data-layout-allow-occlusion class="pg-hand">V = I × R</p>
+                <span class="pg-no" data-layout-allow-overlap data-layout-allow-occlusion>7</span>
+              </div>
+            </div>
+
+            <!-- leaf 2 · 2009 -->
+            <div class="leaf" data-layout-allow-occlusion id="leaf-2">
+              <div class="face front paper" data-layout-allow-occlusion>
+                <p data-layout-allow-overlap data-layout-allow-occlusion class="pg-year">2009</p>
+                <p data-layout-allow-overlap data-layout-allow-occlusion class="pg-title">Numbers make sense.</p>
+                <p data-layout-allow-overlap data-layout-allow-occlusion class="pg-hand">7 × 6 = 42 ✓</p>
+                <div class="pg-art">
+                  <svg viewBox="0 0 300 200" aria-hidden="true">
+                    <g fill="none" stroke="#2b3f78" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M40 150 L100 60 L160 120 L220 40 L270 90" />
+                      <path d="M30 170 L280 170 M30 170 L30 30" />
+                    </g>
+                    <g transform="translate(236 26)">
+                      <path d="M20 0 L26 14 L40 14 L29 23 L33 38 L20 29 L7 38 L11 23 L0 14 L14 14 Z" fill="#f2b33d" stroke="#b27a10" stroke-width="2" />
+                    </g>
+                  </svg>
+                </div>
+                <span class="pg-no" data-layout-allow-overlap data-layout-allow-occlusion>4</span>
+              </div>
+              <div class="face back paper" data-layout-allow-occlusion>
+                <p data-layout-allow-overlap data-layout-allow-occlusion class="pg-year">notes</p>
+                <p data-layout-allow-overlap data-layout-allow-occlusion class="pg-hand">1 2 3 4 5 6 7 8 9 10</p>
+                <p data-layout-allow-overlap data-layout-allow-occlusion class="pg-hand">+ − × ÷</p>
+                <span class="pg-no" data-layout-allow-overlap data-layout-allow-occlusion>5</span>
+              </div>
+            </div>
+
+            <!-- leaf 1 · 2005 -->
+            <div class="leaf" data-layout-allow-occlusion id="leaf-1">
+              <div class="face front paper" data-layout-allow-occlusion>
+                <p data-layout-allow-overlap data-layout-allow-occlusion class="pg-year">2005</p>
+                <p data-layout-allow-overlap data-layout-allow-occlusion class="pg-title">First day of school.</p>
+                <p data-layout-allow-overlap data-layout-allow-occlusion class="pg-hand">A B C  ·  a b c</p>
+                <div class="pg-art">
+                  <svg viewBox="0 0 300 200" aria-hidden="true">
+                    <g stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="240" cy="44" r="22" fill="#ffd34d" stroke="#e0a800" stroke-width="3" />
+                      <g stroke="#e0a800" stroke-width="3"><path d="M240 10 L240 0" /><path d="M274 44 L284 44" /><path d="M264 20 L271 13" /><path d="M264 68 L271 75" /><path d="M206 44 L196 44" /></g>
+                      <path d="M60 170 L60 100 L110 60 L160 100 L160 170 Z" fill="#ff8a7a" stroke="#c0453a" stroke-width="3" />
+                      <path d="M50 104 L110 52 L170 104" fill="none" stroke="#9b2f26" stroke-width="5" />
+                      <rect x="96" y="124" width="28" height="46" fill="#7a4a2a" />
+                      <path d="M10 172 L290 172" stroke="#3aa35a" stroke-width="6" />
+                    </g>
+                  </svg>
+                </div>
+                <span class="pg-no" data-layout-allow-overlap data-layout-allow-occlusion>2</span>
+              </div>
+              <div class="face back paper" data-layout-allow-occlusion>
+                <p data-layout-allow-overlap data-layout-allow-occlusion class="pg-year">notes</p>
+                <p data-layout-allow-overlap data-layout-allow-occlusion class="pg-hand">a a a a  b b b b</p>
+                <p data-layout-allow-overlap data-layout-allow-occlusion class="pg-hand">c c c c  d d d d</p>
+                <span class="pg-no" data-layout-allow-overlap data-layout-allow-occlusion>3</span>
+              </div>
+            </div>
+
+            <!-- leaf 0 · cover -->
+            <div class="leaf" data-layout-allow-occlusion id="leaf-0">
+              <div class="face front" data-layout-allow-occlusion id="cover">
+                <p data-layout-allow-overlap data-layout-allow-occlusion>notebook</p>
+                <div class="rule"></div>
+                <h3 data-layout-allow-overlap data-layout-allow-occlusion>School Years</h3>
+                <p data-layout-allow-overlap data-layout-allow-occlusion>2005 — 2019</p>
+                <div class="rule"></div>
+                <div id="plate" data-layout-allow-overlap data-layout-allow-occlusion></div>
+              </div>
+              <div class="face back" data-layout-allow-occlusion id="endpaper">
+                <small data-layout-allow-overlap data-layout-allow-occlusion>this book belongs to</small>
+                <b id="owner" data-layout-allow-overlap data-layout-allow-occlusion></b>
+                <small data-layout-allow-overlap data-layout-allow-occlusion>class of 2019</small>
+              </div>
+            </div>
+
+            <div id="spine-shadow"></div>
+            <div id="done">completed<small data-layout-allow-overlap data-layout-allow-occlusion>schooling · 2019</small></div>
+            <div id="cap">
+              <svg viewBox="0 0 160 120" aria-hidden="true">
+                <path d="M80 10 L150 40 L80 70 L10 40 Z" fill="#1d2330" stroke="#0b0e14" stroke-width="3" />
+                <path d="M40 54 L40 84 C 60 100, 100 100, 120 84 L120 54 L80 70 Z" fill="#2a3242" />
+                <path d="M146 42 L146 84" stroke="#e8c778" stroke-width="3" /><circle cx="146" cy="90" r="6" fill="#e8c778" />
+              </svg>
+            </div>
+          </div>
+
+          <div id="ribbon">
+            <div id="rib-base"></div>
+            <div id="rib-fill"></div>
+            <div id="ticks"></div>
+            <div id="marker-rail"><div id="marker"></div></div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      (function () {
+        var vars = (window.__hyperframes && window.__hyperframes.getVariables && window.__hyperframes.getVariables()) || {};
+        var q = new URLSearchParams(location.search);
+        var get = function (k, d) { return q.has(k) ? q.get(k) : (vars[k] != null ? vars[k] : d); };
+        var NAME = String(get("name", "Ayaan"));
+
+        var $ = function (s) { return document.querySelector(s); };
+        var $$ = function (s) { return Array.prototype.slice.call(document.querySelectorAll(s)); };
+        var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); };
+        var words = function (text, hl) {
+          return text.split(" ").map(function (w) {
+            var cls = hl && hl.indexOf(w) > -1 ? ' class="hl"' : "";
+            return '<span class="word"><span' + cls + ">" + esc(w) + "</span></span>";
+          }).join(" ");
+        };
+        $("#years").innerHTML = words("2005 → 2019", ["2019"]);
+        $("#plate").textContent = NAME;
+        $("#owner").textContent = NAME;
+
+        // Ribbon: one tick per school year.
+        var Y0 = 2005, Y1 = 2019;
+        var ticks = "";
+        for (var y = Y0; y <= Y1; y++) {
+          var pct = ((y - Y0) / (Y1 - Y0)) * 100;
+          var major = y === 2005 || y === 2012 || y === 2019;
+          ticks += '<i class="tick' + (major ? " major" : "") + '" id="tk-' + y + '" style="left:' + pct + '%"></i>';
+          if (major) ticks += '<span class="tick-l" style="left:' + pct + '%">' + y + "</span>";
+        }
+        $("#ticks").innerHTML = ticks;
+
+        var tl = gsap.timeline({ paused: true, defaults: { ease: "expo.out" } });
+        var D = 11;
+
+        // Title (plays as the chapter scrolls in).
+        tl.fromTo("#copy .eyebrow", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.7 }, 0);
+        tl.fromTo("#years .word > span", { yPercent: 110 }, { yPercent: 0, duration: 1, stagger: 0.1 }, 0.1);
+        tl.fromTo("#sub", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.8 }, 0.5);
+
+        // Leaves stack with the cover on top; each takes the top of the left
+        // pile the moment it passes the spine.
+        var leaves = $$(".leaf");
+        leaves.forEach(function (leaf) {
+          var i = Number(leaf.id.split("-")[1]);
+          gsap.set(leaf, { zIndex: 50 - i });
+        });
+
+        // Closed: the book is shifted so the cover sits centred.
+        tl.fromTo("#book", { x: "-25vmin" }, { x: 0, duration: 0.9, ease: "power3.inOut" }, 1.0);
+        tl.fromTo("#book-shadow", { scaleX: 0.5, xPercent: 25 }, { scaleX: 1, xPercent: 0, duration: 0.9, ease: "power3.inOut" }, 1.0);
+        tl.fromTo("#base-l", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "none" }, 1.3);
+        tl.fromTo("#spine-shadow", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "none" }, 1.5);
+
+        var flip = function (i, at, dur) {
+          tl.fromTo("#leaf-" + i, { rotationY: 0, transformPerspective: 2600 }, { rotationY: -180, duration: dur, ease: "power2.inOut" }, at);
+          tl.set("#leaf-" + i, { zIndex: 60 + i }, at + dur / 2);
+        };
+        flip(0, 1.0, 0.9);
+
+        // Page turns, each moving the year counter and the ribbon on.
+        var years = [2005, 2009, 2013, 2016, 2019];
+        var yr = $("#yr");
+        var counter = { v: Y0 };
+        var pos = function (y) { return ((y - Y0) / (Y1 - Y0)) * 100; };
+        var lightTo = function (from, to, at, dur) {
+          for (var y = from + 1; y <= to; y++) {
+            var k = (y - from) / (to - from);
+            tl.fromTo("#tk-" + y, { borderColor: "var(--line)", backgroundColor: "var(--bg)" }, { borderColor: "var(--c4)", backgroundColor: "var(--c4)", duration: 0.15, ease: "none" }, at + dur * k - 0.05);
+          }
+        };
+        tl.fromTo("#tk-2005", { borderColor: "var(--line)", backgroundColor: "var(--bg)" }, { borderColor: "var(--c4)", backgroundColor: "var(--c4)", duration: 0.2, ease: "none" }, 1.6);
+        tl.fromTo("#ribbon", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.7 }, 1.2);
+        gsap.set("#rib-fill", { scaleX: 0 });
+
+        var T = [2.4, 3.9, 5.4, 6.9];
+        T.forEach(function (at, n) {
+          var dur = 1.0;
+          flip(n + 1, at, dur);
+          var from = years[n], to = years[n + 1];
+          tl.to(counter, { v: to, duration: dur, ease: "power1.inOut", onUpdate: function () { yr.textContent = String(Math.round(counter.v)); } }, at);
+          tl.to("#rib-fill", { scaleX: pos(to) / 100, duration: dur, ease: "power1.inOut" }, at);
+          tl.to("#marker-rail", { xPercent: pos(to), duration: dur, ease: "power1.inOut" }, at);
+          lightTo(from, to, at, dur);
+        });
+
+        // The last page: stamp, and the cap goes up.
+        tl.fromTo("#done", { opacity: 0, scale: 1.8, rotation: -18 }, { opacity: 1, scale: 1, rotation: -8, duration: 0.35, ease: "power4.in" }, 8.3);
+        tl.fromTo("#book", { y: 0 }, { y: "0.6vmin", duration: 0.08, ease: "power2.out", yoyo: true, repeat: 1 }, 8.62);
+        tl.fromTo("#cap", { opacity: 0, y: "6vmin", rotation: 0 }, { opacity: 1, y: "-14vmin", rotation: -200, duration: 0.8, ease: "power2.out" }, 8.8);
+        tl.to("#cap", { y: "-9vmin", rotation: -350, duration: 1.1, ease: "power1.inOut" }, 9.6);
+        tl.to({}, { duration: D - 10.7 }, 10.7);
+
+        window.__timelines["school"] = tl;
+      })();
+    </script>
+  </body>
+</html>

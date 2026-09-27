@@ -1,0 +1,317 @@
+<!doctype html>
+<html
+  lang="en"
+  data-composition-variables='[
+    {"id":"name","type":"string","label":"Name","default":"Ayaan"},
+    {"id":"bg","type":"color","label":"Background","default":"#0b0f14"},
+    {"id":"surface","type":"color","label":"Surface","default":"#121821"},
+    {"id":"fg","type":"color","label":"Text","default":"#f2f5f9"},
+    {"id":"muted","type":"color","label":"Muted text","default":"#8f99a6"},
+    {"id":"line","type":"color","label":"Hairline","default":"#243040"},
+    {"id":"c1","type":"color","label":"Accent 1 (code)","default":"#5ee1ff"},
+    {"id":"c2","type":"color","label":"Accent 2","default":"#a78bfa"},
+    {"id":"c3","type":"color","label":"Accent 3","default":"#ff5fa2"},
+    {"id":"c4","type":"color","label":"Accent 4","default":"#ffb454"},
+    {"id":"ok","type":"color","label":"Success","default":"#4ade80"}
+  ]'
+>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <title>aiyu — chapter 05 · voice</title>
+    <script src="/hf/vendor/hyperframe.runtime.iife.js"></script>
+    <script src="/hf/vendor/gsap.min.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg, #0b0f14); }
+      #root {
+        position: relative; width: 100%; height: 100%; overflow: hidden;
+        color: var(--fg); background: var(--bg);
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        --mono: ui-monospace, monospace;
+        --app: #6d5dfc;
+        --app-2: #19c3a6;
+        --kraft: #c89a62;
+        --kraft-2: #a97a44;
+      }
+      .mono { font-family: var(--mono); }
+      .clip { position: absolute; inset: 0; }
+      .eyebrow { font-family: var(--mono); font-size: 1.7vmin; letter-spacing: 0.32em; text-transform: uppercase; color: var(--muted); }
+      .title { font-weight: 800; letter-spacing: -0.045em; line-height: 0.95; }
+      .word { display: inline-block; overflow: hidden; vertical-align: bottom; padding-bottom: 0.08em; }
+      .word > span { display: inline-block; }
+      .hl { color: var(--c2); }
+
+      #chip { position: absolute; left: 4vmin; top: 3.6vmin; z-index: 20; display: flex; align-items: center; gap: 1.2vmin; font-family: var(--mono); font-size: 1.45vmin; letter-spacing: 0.28em; text-transform: uppercase; color: var(--muted); }
+      #chip b { color: var(--fg); font-weight: 600; }
+      #chip i { width: 4vmin; height: 1px; background: var(--line); }
+      #stamp { position: absolute; right: 4vmin; top: 3vmin; z-index: 20; text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--fg); }
+      #stamp small { display: block; font-size: 1.3vmin; letter-spacing: 0.3em; text-transform: uppercase; color: var(--muted); }
+      #stamp b { display: block; margin-top: 0.4vmin; font-size: 3vmin; font-weight: 600; letter-spacing: 0.04em; }
+      #months { display: flex; justify-content: flex-end; gap: 0.5vmin; margin-top: 1vmin; }
+      #months i { width: 2.2vmin; height: 0.5vmin; border-radius: 0.3vmin; background: var(--line); }
+
+      .scene { display: flex; align-items: center; padding: 11vmin 6vmin 8vmin 7vmin; gap: 6vmin; }
+      .copy { flex: 0 0 32%; }
+      .copy .eyebrow { margin-bottom: 3vmin; }
+      .copy h2 { font-size: 8.4vmin; }
+      .copy p.sub { margin-top: 3vmin; font-size: 2.5vmin; line-height: 1.45; color: var(--muted); max-width: 52vmin; }
+      .copy p.sub b { color: var(--fg); font-weight: 600; }
+      .stage { position: relative; flex: 1; height: 100%; display: flex; align-items: center; justify-content: center; gap: 6vmin; }
+
+      /* ── phone with a voice UI ── */
+      #phone { position: relative; flex: none; width: 34vmin; height: 68vmin; padding: 0.9vmin; border-radius: 5vmin; background: #0e1014; box-shadow: 0 0 0 0.3vmin #2d313a, 0 4vmin 8vmin -3vmin rgba(0, 0, 0, 0.6); }
+      #screen { position: relative; width: 100%; height: 100%; overflow: hidden; border-radius: 4.2vmin; background: linear-gradient(180deg, #151a2b, #0f1320); color: #eef1f7; }
+      #punch { position: absolute; left: 50%; top: 1.2vmin; width: 1.4vmin; height: 1.4vmin; margin-left: -0.7vmin; border-radius: 50%; background: #000; z-index: 3; }
+      #mode { position: absolute; left: 0; right: 0; top: 5vmin; display: flex; justify-content: center; gap: 0.8vmin; }
+      #mode span { padding: 0.7vmin 1.4vmin; border-radius: 2vmin; font-family: var(--mono); font-size: 1.2vmin; letter-spacing: 0.08em; background: rgba(255, 255, 255, 0.08); color: #b9c0d0; }
+      #mode span.on { background: var(--app); color: #fff; }
+      #bubble { position: absolute; left: 2.4vmin; right: 2.4vmin; top: 11vmin; padding: 1.8vmin 2vmin; border-radius: 2vmin 2vmin 2vmin 0.6vmin; background: rgba(255, 255, 255, 0.08); font-size: 2.1vmin; line-height: 1.4; min-height: 9vmin; }
+      #bubble .w { display: inline-block; opacity: 0; }
+      #bubble small { display: block; margin-bottom: 0.8vmin; font-family: var(--mono); font-size: 1.1vmin; letter-spacing: 0.2em; text-transform: uppercase; color: #9aa3b8; }
+      #reader { position: absolute; left: 2.4vmin; right: 2.4vmin; top: 11vmin; padding: 1.8vmin 2vmin; border-radius: 2vmin; background: #f4f5fb; color: #1d2233; font-size: 2vmin; line-height: 1.55; opacity: 0; }
+      #reader small { display: block; margin-bottom: 0.8vmin; font-family: var(--mono); font-size: 1.1vmin; letter-spacing: 0.2em; text-transform: uppercase; color: #5c6480; }
+      #reader .w { position: relative; display: inline-block; padding: 0 0.15em; border-radius: 0.4vmin; }
+      #hilite { position: absolute; left: 0; top: 0; height: 3.1vmin; border-radius: 0.5vmin; background: rgba(109, 93, 252, 0.28); opacity: 0; }
+      #wave { position: absolute; left: 2.4vmin; right: 2.4vmin; bottom: 17vmin; height: 10vmin; display: flex; align-items: center; justify-content: center; gap: 0.5vmin; }
+      #wave i { width: 0.7vmin; height: 10vmin; border-radius: 0.4vmin; background: linear-gradient(180deg, var(--app-2), var(--app)); transform-origin: 50% 50%; }
+      #mic { position: absolute; left: 50%; bottom: 5vmin; width: 9vmin; height: 9vmin; margin-left: -4.5vmin; border-radius: 50%; background: var(--app); display: flex; align-items: center; justify-content: center; box-shadow: 0 1.4vmin 3vmin -1vmin rgba(109, 93, 252, 0.7); }
+      #mic svg { width: 4.2vmin; height: 4.2vmin; }
+      #mic-ring { position: absolute; left: 50%; bottom: 5vmin; width: 9vmin; height: 9vmin; margin-left: -4.5vmin; border-radius: 50%; border: 0.4vmin solid var(--app); opacity: 0; }
+      #spk { position: absolute; left: 50%; bottom: 5vmin; width: 9vmin; height: 9vmin; margin-left: -4.5vmin; border-radius: 50%; background: var(--app-2); display: flex; align-items: center; justify-content: center; opacity: 0; }
+      #spk svg { width: 5vmin; height: 5vmin; overflow: visible; }
+
+      /* flow labels beside the phone */
+      #flow { display: flex; flex-direction: column; gap: 3vmin; }
+      .flow { display: flex; align-items: center; gap: 1.6vmin; padding: 1.8vmin 2.2vmin; border-radius: 1.4vmin; border: 1px solid var(--line); background: color-mix(in srgb, var(--surface) 88%, transparent); }
+      .flow b { font-size: 2.3vmin; font-weight: 700; letter-spacing: -0.01em; }
+      .flow small { display: block; margin-top: 0.4vmin; font-family: var(--mono); font-size: 1.3vmin; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+      .flow .ic { width: 5vmin; height: 5vmin; border-radius: 1.2vmin; display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-weight: 700; font-size: 1.6vmin; color: #fff; flex: none; }
+
+      /* ── S2 · the library ── */
+      #box { position: relative; flex: none; width: 34vmin; height: 34vmin; }
+      #box svg { width: 100%; height: 100%; overflow: visible; }
+      #pkg {
+        flex: none; width: 52vmin; padding: 3vmin; border-radius: 2vmin; border: 1px solid var(--line);
+        background: color-mix(in srgb, var(--surface) 92%, transparent); box-shadow: 0 3vmin 7vmin -3vmin rgba(0, 0, 0, 0.5);
+      }
+      #pkg-head { display: flex; align-items: center; gap: 2vmin; }
+      #pkg-ico { width: 7vmin; height: 7vmin; border-radius: 1.6vmin; background: var(--kraft); display: flex; align-items: center; justify-content: center; }
+      #pkg-ico svg { width: 60%; height: 60%; }
+      #pkg-head b { display: block; font-size: 3.4vmin; font-weight: 800; letter-spacing: -0.02em; }
+      #pkg-head small { display: block; margin-top: 0.4vmin; font-family: var(--mono); font-size: 1.4vmin; color: var(--muted); }
+      #pkg-tags { margin-top: 2.4vmin; display: flex; flex-wrap: wrap; gap: 1vmin; }
+      #pkg-tags span { padding: 0.7vmin 1.3vmin; border-radius: 2vmin; font-family: var(--mono); font-size: 1.3vmin; border: 1px solid var(--line); color: var(--fg); }
+      #pkg-dep { margin-top: 2.4vmin; padding: 1.6vmin 1.8vmin; border-radius: 1vmin; background: #0d1117; color: #c9d1d9; font-family: var(--mono); font-size: 1.3vmin; line-height: 1.7; white-space: pre; overflow: hidden; }
+      #pkg-dep .s { color: #a5d6ff; } #pkg-dep .f { color: #d2a8ff; }
+      #pkg-stats { margin-top: 2.6vmin; display: flex; gap: 4vmin; }
+      #pkg-stats b { display: block; font-size: 5.4vmin; font-weight: 800; letter-spacing: -0.04em; line-height: 1; font-variant-numeric: tabular-nums; }
+      #pkg-stats small { display: block; margin-top: 0.8vmin; font-family: var(--mono); font-size: 1.3vmin; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); }
+      #pkg-stats .g { color: var(--ok); }
+      #published { display: inline-flex; align-items: center; gap: 0.8vmin; margin-top: 2vmin; padding: 0.7vmin 1.4vmin; border-radius: 2vmin; background: color-mix(in srgb, var(--ok) 18%, transparent); color: var(--fg); font-family: var(--mono); font-size: 1.35vmin; letter-spacing: 0.1em; }
+      #published i { width: 1vmin; height: 1vmin; border-radius: 50%; background: var(--ok); }
+
+      @media (orientation: portrait) {
+        .eyebrow { font-size: 2.3vmin; }
+        .scene { flex-direction: column; justify-content: center; padding: 15vmin 5vmin 10vmin; gap: 6vmin; }
+        .copy { flex: none; width: 100%; padding: 0 2vmin; }
+        .copy h2 { font-size: 11vmin; }
+        .copy p.sub { font-size: 3.4vmin; max-width: none; }
+        .stage { flex: none; width: 100%; height: auto; gap: 4vmin; }
+        #s-voice .stage { flex-direction: row; }
+        #phone { width: 44vmin; height: 86vmin; }
+        #flow { gap: 2.4vmin; }
+        .flow { flex-direction: column; align-items: flex-start; padding: 1.8vmin; }
+        .flow b { font-size: 2.6vmin; } .flow small { font-size: 1.6vmin; }
+        #s-lib .stage { flex-direction: column; }
+        #box { width: 30vmin; height: 30vmin; }
+        #pkg { width: 86vmin; }
+        #pkg-dep { font-size: 1.9vmin; }
+        #chip { font-size: 2.6vmin; }
+        #stamp small { font-size: 2.2vmin; }
+        #stamp b { font-size: 4.6vmin; }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="voice" data-start="0" data-duration="14" data-width="1080" data-height="1920">
+      <div id="chip"><b>ch 05</b><i></i><span>internship</span></div>
+      <div id="stamp"><small>9-month internship</small><b id="month">jul 2022</b><div id="months"></div></div>
+
+      <!-- S1 · speech ⇄ text -->
+      <section id="s-voice" class="clip scene" data-start="0" data-duration="7.4" data-track-index="1">
+        <div class="copy">
+          <p class="eyebrow">Chapter 05 — Internship</p>
+          <h2 id="v-title" class="title"></h2>
+          <p class="sub">After my bachelor's I wanted to test my skills, so I interned for <b>9 months</b> at BeyondSchool, working heavily on <b>text-to-speech</b> and <b>speech-to-text</b>.</p>
+        </div>
+        <div class="stage">
+          <div id="phone">
+            <div id="screen">
+              <div id="punch"></div>
+              <div id="mode"><span class="on" id="m-stt">speech → text</span><span id="m-tts">text → speech</span></div>
+              <div id="bubble"><small>you said</small><span id="said"></span></div>
+              <div id="reader"><small>reading aloud</small><div id="read-wrap" style="position:relative"><div id="hilite"></div><span id="read"></span></div></div>
+              <div id="wave"></div>
+              <div id="mic-ring"></div>
+              <div id="mic"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3" fill="#fff" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3" /></svg></div>
+              <div id="spk"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z" fill="#fff" /><path id="arc-1" d="M16 9.5a3.5 3.5 0 0 1 0 5" /><path id="arc-2" d="M18.5 7a7 7 0 0 1 0 10" /></svg></div>
+            </div>
+          </div>
+          <div id="flow">
+            <div class="flow" id="f-stt"><span class="ic" style="background:var(--app)">STT</span><div><b>Speech → text</b><small>voice in, words out</small></div></div>
+            <div class="flow" id="f-tts"><span class="ic" style="background:#0b7564">TTS</span><div><b>Text → speech</b><small>each word lights up as it's read</small></div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- S2 · first Android library -->
+      <section id="s-lib" class="clip scene" data-start="7.1" data-duration="6.9" data-track-index="1">
+        <div class="copy">
+          <p class="eyebrow">Feb 2023</p>
+          <h2 id="l-title" class="title"></h2>
+          <p class="sub">I packaged what I learned into <b>TTS-Engine</b>, text-to-speech with real-time word highlighting that is lifecycle-aware, and published it on <b>JitPack</b>.</p>
+        </div>
+        <div class="stage">
+          <div id="box">
+            <svg viewBox="0 0 200 200" aria-hidden="true">
+              <path d="M100 60 L170 90 L170 160 L100 190 L30 160 L30 90 Z" fill="#b8864d" />
+              <path d="M100 120 L170 90 L170 160 L100 190 Z" fill="#a97a44" />
+              <path d="M100 120 L30 90 L30 160 L100 190 Z" fill="#c89a62" />
+              <path d="M100 60 L170 90 L100 120 L30 90 Z" fill="#6f4c28" />
+              <path id="flap-l" d="M30 90 L100 60 L100 120 Z" fill="#dcb07a" />
+              <path id="flap-r" d="M170 90 L100 60 L100 120 Z" fill="#cfa168" />
+              <path id="tape" d="M100 60 L100 120" stroke="#e9d9b5" stroke-width="10" opacity="0" />
+              <g id="label" opacity="0"><path d="M44 118 L88 136 L88 162 L44 144 Z" fill="#f5efe2" /><path d="M50 128 L82 141 M50 136 L74 146" stroke="#6b5534" stroke-width="3" /></g>
+            </svg>
+          </div>
+          <div id="pkg">
+            <div id="pkg-head">
+              <span id="pkg-ico"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 4v10l-8 4-8-4V7z" /><path d="M4 7l8 4 8-4M12 11v10" /></svg></span>
+              <div><b>tts-engine</b><small>android library · kotlin</small></div>
+            </div>
+            <div id="pkg-tags"><span>text-to-speech</span><span>real-time highlighting</span><span>lifecycle-aware</span></div>
+            <div id="pkg-dep"><span class="f">repositories</span> { maven(<span class="s">"https://jitpack.io"</span>) }
+<span class="f">implementation</span>(<span class="s">"com.github.aiyu-ayaan:tts-engine"</span>)</div>
+            <div id="pkg-stats">
+              <div><b><span id="n-dl">0</span><span class="g">+</span></b><small>downloads</small></div>
+              <div><b><span id="n-apps">0</span><span class="g">+</span></b><small>production apps</small></div>
+            </div>
+            <span id="published"><i></i>published on jitpack</span>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      (function () {
+        var $ = function (s) { return document.querySelector(s); };
+        var $$ = function (s) { return Array.prototype.slice.call(document.querySelectorAll(s)); };
+        var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); };
+        var words = function (text, hl) {
+          return text.split(" ").map(function (w) {
+            var cls = hl && hl.indexOf(w.replace(/[.,…]/g, "")) > -1 ? ' class="hl"' : "";
+            return '<span class="word"><span' + cls + ">" + esc(w) + "</span></span>";
+          }).join(" ");
+        };
+        $("#v-title").innerHTML = words("Nine months of voice.", ["voice"]);
+        $("#l-title").innerHTML = words("…and my first library.", ["library"]);
+
+        var SAID = "Read the next chapter to me.".split(" ");
+        $("#said").innerHTML = SAID.map(function (w) { return '<span class="w">' + esc(w) + "</span>"; }).join(" ");
+        var READ = "Chapter three. Every word lights up the moment it is spoken.".split(" ");
+        $("#read").innerHTML = READ.map(function (w) { return '<span class="w">' + esc(w) + "</span>"; }).join(" ");
+
+        // Waveform: deterministic bar heights.
+        var bars = "";
+        for (var b = 0; b < 26; b++) bars += "<i></i>";
+        $("#wave").innerHTML = bars;
+        var MONTHS = ["jul 2022", "aug 2022", "sep 2022", "oct 2022", "nov 2022", "dec 2022", "jan 2023", "feb 2023", "mar 2023"];
+        $("#months").innerHTML = MONTHS.map(function (_, i) { return '<i id="mo-' + i + '"></i>'; }).join("");
+
+        var tl = gsap.timeline({ paused: true, defaults: { ease: "expo.out" } });
+        var D = 14;
+
+        // Nine months pass across the whole film.
+        var month = $("#month");
+        var mo = { v: 0 };
+        tl.fromTo(mo, { v: 0 }, { v: 8.999, duration: 12, ease: "none", onUpdate: function () { month.textContent = MONTHS[Math.floor(mo.v)]; } }, 0.8);
+        MONTHS.forEach(function (_, i) {
+          tl.fromTo("#mo-" + i, { backgroundColor: "var(--line)" }, { backgroundColor: "var(--c2)", duration: 0.2, ease: "none" }, 0.8 + (12 * i) / 9);
+        });
+
+        // ── S1 ──
+        tl.fromTo("#s-voice .eyebrow", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.7 }, 0);
+        tl.fromTo("#v-title .word > span", { yPercent: 110 }, { yPercent: 0, duration: 1, stagger: 0.08 }, 0.1);
+        tl.fromTo("#s-voice .sub", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.8 }, 0.45);
+        tl.fromTo("#phone", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 1 }, 0.1);
+        tl.fromTo(".flow", { opacity: 0, x: 30 }, { opacity: 1, x: 0, duration: 0.8, stagger: 0.12 }, 0.5);
+
+        // Speech → text: the mic listens, the wave moves, words land.
+        tl.fromTo("#f-stt", { borderColor: "var(--line)" }, { borderColor: "var(--c2)", duration: 0.3 }, 1.3);
+        tl.fromTo("#mic-ring", { opacity: 0.8, scale: 1 }, { opacity: 0, scale: 1.8, duration: 0.8, ease: "power2.out", repeat: 2 }, 1.3);
+        $$("#wave i").forEach(function (bar, i) {
+          var h = 0.25 + ((i * 37 + i * i * 11) % 60) / 80;
+          tl.fromTo(bar, { scaleY: 0.12 }, { scaleY: h, duration: 0.18 + (i % 4) * 0.04, ease: "sine.inOut", yoyo: true, repeat: 7 }, 1.3 + (i % 5) * 0.03);
+        });
+        $$("#said .w").forEach(function (w, i) {
+          tl.fromTo(w, { opacity: 0, y: 6 }, { opacity: 1, y: 0, duration: 0.3, ease: "power2.out" }, 1.6 + i * 0.28);
+        });
+
+        // Text → speech: the reader card highlights each word as it's read.
+        var T = 4.0;
+        tl.to("#f-stt", { borderColor: "var(--line)", duration: 0.3 }, T);
+        tl.fromTo("#f-tts", { borderColor: "var(--line)" }, { borderColor: "var(--ok)", duration: 0.3 }, T);
+        tl.set("#m-stt", { className: "" }, T);
+        tl.set("#m-tts", { className: "on" }, T);
+        tl.to("#bubble", { opacity: 0, y: -10, duration: 0.3, ease: "power2.in" }, T);
+        tl.fromTo("#reader", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.5 }, T + 0.15);
+        tl.to("#mic", { opacity: 0, scale: 0.8, duration: 0.25 }, T);
+        tl.fromTo("#spk", { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 0.4, ease: "back.out(2)" }, T + 0.15);
+        tl.fromTo("#arc-1, #arc-2", { opacity: 0.2 }, { opacity: 1, duration: 0.25, stagger: 0.12, yoyo: true, repeat: 7, ease: "sine.inOut" }, T + 0.3);
+
+        // Measure each word once so the highlight can glide from word to word.
+        var wrap = $("#read-wrap").getBoundingClientRect();
+        var rects = $$("#read .w").map(function (w) {
+          var r = w.getBoundingClientRect();
+          return { x: ((r.left - wrap.left) / wrap.width) * 100, y: ((r.top - wrap.top) / wrap.height) * 100, w: (r.width / wrap.width) * 100, h: (r.height / wrap.height) * 100 };
+        });
+        gsap.set("#hilite", { left: rects[0].x + "%", top: rects[0].y + "%", width: rects[0].w + "%", height: rects[0].h + "%" });
+        tl.to("#hilite", { opacity: 1, duration: 0.2 }, T + 0.6);
+        var step = 0.26;
+        rects.forEach(function (r, i) {
+          if (!i) return;
+          tl.set("#hilite", { left: r.x + "%", top: r.y + "%", width: r.w + "%", height: r.h + "%" }, T + 0.6 + i * step);
+        });
+        $$("#read .w").forEach(function (w, i) {
+          tl.fromTo(w, { color: "#1d2233" }, { color: "#3b2fd6", duration: 0.1, ease: "none" }, T + 0.6 + i * step);
+        });
+        tl.to("#s-voice > *", { opacity: 0, y: -24, duration: 0.45, ease: "power2.in", stagger: 0.05 }, 6.9);
+
+        // ── S2 · the library ──
+        var L = 7.2;
+        tl.fromTo("#s-lib .eyebrow", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.7 }, L);
+        tl.fromTo("#l-title .word > span", { yPercent: 110 }, { yPercent: 0, duration: 1, stagger: 0.08 }, L + 0.1);
+        tl.fromTo("#s-lib .sub", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.8 }, L + 0.45);
+        // The box drops in, closes, gets taped and labelled.
+        tl.fromTo("#box", { opacity: 0, y: "-14vmin" }, { opacity: 1, y: 0, duration: 0.7, ease: "bounce.out" }, L + 0.3);
+        tl.fromTo("#flap-l", { scaleX: 0.05, svgOrigin: "30 90" }, { scaleX: 1, svgOrigin: "30 90", duration: 0.4, ease: "power3.in" }, L + 1.1);
+        tl.fromTo("#flap-r", { scaleX: 0.05, svgOrigin: "170 90" }, { scaleX: 1, svgOrigin: "170 90", duration: 0.4, ease: "power3.in" }, L + 1.25);
+        tl.to("#tape", { opacity: 1, duration: 0.2 }, L + 1.6);
+        tl.fromTo("#label", { opacity: 0, scale: 1.4 }, { opacity: 1, scale: 1, svgOrigin: "66 140", duration: 0.35, ease: "back.out(2)" }, L + 1.8);
+        // The published package.
+        tl.fromTo("#pkg", { opacity: 0, x: 40 }, { opacity: 1, x: 0, duration: 0.9 }, L + 2.1);
+        tl.fromTo("#pkg-tags span", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.5, stagger: 0.1 }, L + 2.5);
+        tl.fromTo("#pkg-dep", { clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0% 0 0)", duration: 0.9, ease: "steps(40)" }, L + 2.9);
+        var dl = { v: 0 }, apps = { v: 0 };
+        tl.fromTo(dl, { v: 0 }, { v: 500, duration: 1.3, ease: "power2.out", onUpdate: function () { $("#n-dl").textContent = String(Math.round(dl.v)); } }, L + 3.6);
+        tl.fromTo(apps, { v: 0 }, { v: 5, duration: 1.3, ease: "power2.out", onUpdate: function () { $("#n-apps").textContent = String(Math.round(apps.v)); } }, L + 3.7);
+        tl.fromTo("#published", { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.4, ease: "back.out(2)" }, L + 4.2);
+        tl.to("#box", { y: "-1vmin", duration: 0.6, ease: "sine.inOut", yoyo: true, repeat: 3 }, L + 3.2);
+        tl.to({}, { duration: 0.1 }, D - 0.1);
+
+        window.__timelines["voice"] = tl;
+      })();
+    </script>
+  </body>
+</html>

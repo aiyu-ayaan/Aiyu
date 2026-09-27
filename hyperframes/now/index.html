@@ -1,0 +1,237 @@
+<!doctype html>
+<html
+  lang="en"
+  data-composition-variables='[
+    {"id":"name","type":"string","label":"Name","default":"Ayaan"},
+    {"id":"bg","type":"color","label":"Background","default":"#0b0f14"},
+    {"id":"surface","type":"color","label":"Surface","default":"#121821"},
+    {"id":"fg","type":"color","label":"Text","default":"#f2f5f9"},
+    {"id":"muted","type":"color","label":"Muted text","default":"#8f99a6"},
+    {"id":"line","type":"color","label":"Hairline","default":"#243040"},
+    {"id":"c1","type":"color","label":"Accent 1 (code)","default":"#5ee1ff"},
+    {"id":"c2","type":"color","label":"Accent 2","default":"#a78bfa"},
+    {"id":"c3","type":"color","label":"Accent 3","default":"#ff5fa2"},
+    {"id":"c4","type":"color","label":"Accent 4","default":"#ffb454"},
+    {"id":"ok","type":"color","label":"Success","default":"#4ade80"}
+  ]'
+>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>aiyu — chapter 08 · now</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg, #0b0f14); }
+      #root {
+        position: relative; width: 100%; height: 100%; overflow: hidden;
+        color: var(--fg); background: var(--bg);
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        --mono: ui-monospace, monospace;
+        --term: #0b0e13; --term-fg: #d6dde8; --term-dim: #8a94a6;
+      }
+      .mono { font-family: var(--mono); }
+      .clip { position: absolute; inset: 0; }
+      .eyebrow { font-family: var(--mono); font-size: 1.7vmin; letter-spacing: 0.32em; text-transform: uppercase; color: var(--muted); }
+      .title { font-weight: 800; letter-spacing: -0.045em; line-height: 0.95; }
+      .word { display: inline-block; overflow: hidden; vertical-align: bottom; padding-bottom: 0.08em; }
+      .word > span { display: inline-block; }
+      .hl { color: var(--c3); }
+
+      #chip { position: absolute; left: 4vmin; top: 3.6vmin; z-index: 20; display: flex; align-items: center; gap: 1.2vmin; font-family: var(--mono); font-size: 1.45vmin; letter-spacing: 0.28em; text-transform: uppercase; color: var(--muted); }
+      #chip b { color: var(--fg); font-weight: 600; }
+      #chip i { width: 4vmin; height: 1px; background: var(--line); }
+      #stamp { position: absolute; right: 4vmin; top: 3vmin; z-index: 20; text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--fg); }
+      #stamp small { display: block; font-size: 1.3vmin; letter-spacing: 0.3em; text-transform: uppercase; color: var(--muted); }
+      #stamp b { display: block; margin-top: 0.4vmin; font-size: 3vmin; font-weight: 600; letter-spacing: 0.04em; }
+      #live { display: inline-block; width: 1vmin; height: 1vmin; margin-right: 0.8vmin; border-radius: 50%; background: var(--c3); vertical-align: 0.3vmin; }
+
+      .scene { display: flex; align-items: center; padding: 11vmin 5vmin 8vmin 7vmin; gap: 5vmin; }
+      .copy { flex: 0 0 31%; }
+      .copy .eyebrow { margin-bottom: 3vmin; }
+      .copy h2 { font-size: 8vmin; }
+      .copy p.sub { margin-top: 3vmin; font-size: 2.45vmin; line-height: 1.45; color: var(--muted); max-width: 52vmin; }
+      .copy p.sub b { color: var(--fg); font-weight: 600; }
+      .stage { position: relative; flex: 1; height: 100%; display: flex; align-items: center; justify-content: center; gap: 4vmin; }
+
+      /* agent terminal */
+      #term { position: relative; flex: none; width: 50vmin; border-radius: 1.4vmin; overflow: hidden; background: var(--term); box-shadow: 0 0 0 1px #262c38, 0 4vmin 9vmin -3vmin rgba(0, 0, 0, 0.6); }
+      #term-bar { display: flex; align-items: center; gap: 0.8vmin; height: 4vmin; padding: 0 1.6vmin; background: #141922; font-family: var(--mono); font-size: 1.3vmin; color: var(--term-dim); }
+      #term-bar i { width: 1.1vmin; height: 1.1vmin; border-radius: 50%; background: #3a414f; }
+      #term-bar span { margin-left: 1vmin; }
+      #term-body { padding: 2vmin 2.2vmin; font-family: var(--mono); font-size: 1.6vmin; line-height: 2.7vmin; color: var(--term-fg); min-height: 44vmin; }
+      #term-body .p { color: var(--c3); }
+      #term-body .t { display: inline-block; overflow: hidden; vertical-align: bottom; white-space: pre; }
+      #term-body .row { opacity: 0; white-space: nowrap; }
+      #term-body .ok { color: #4ade80; }
+      #term-body .dim { color: var(--term-dim); }
+      #cursor { display: inline-block; width: 1vmin; height: 2vmin; vertical-align: -0.3vmin; background: var(--term-fg); }
+
+      /* isometric stack */
+      #stack { position: relative; flex: none; width: 46vmin; height: 56vmin; }
+      #stack svg { width: 100%; height: 100%; overflow: visible; }
+      .slab-l { font-family: var(--mono); font-size: 13px; letter-spacing: 1.5px; text-transform: uppercase; fill: var(--fg); }
+      .slab-n { font-family: var(--mono); font-size: 11px; fill: var(--muted); }
+
+      /* ── S2 · the page, framed inside itself ── */
+      #s-meta { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4vmin; padding: 11vmin 6vmin 8vmin; }
+      #frames { position: relative; width: 110vmin; height: 62vmin; }
+      .fr { position: absolute; left: 50%; top: 50%; width: 110vmin; height: 62vmin; margin: -31vmin 0 0 -55vmin; border-radius: 1.6vmin; overflow: hidden; border: 1px solid color-mix(in srgb, var(--fg) 22%, transparent); background: var(--bg); box-shadow: 0 3vmin 8vmin -3vmin rgba(0, 0, 0, 0.6); transform-origin: 50% 50%; }
+      .fr-bar { display: flex; align-items: center; gap: 0.8vmin; height: 3.6vmin; padding: 0 1.6vmin; background: color-mix(in srgb, var(--surface) 90%, var(--fg)); border-bottom: 1px solid var(--line); }
+      .fr-bar i { width: 1vmin; height: 1vmin; border-radius: 50%; background: var(--muted); opacity: 0.6; }
+      .fr-bar span { margin-left: 1.4vmin; font-family: var(--mono); font-size: 1.3vmin; color: var(--muted); }
+      .fr-body { position: absolute; left: 0; right: 0; top: 3.6vmin; bottom: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 3vmin; gap: 1vmin; }
+      .fr-body small { font-family: var(--mono); font-size: 1.6vmin; color: var(--muted); }
+      .fr-body small b { color: var(--ok); font-weight: 400; }
+      .fr-body h3 { font-size: 6vmin; font-weight: 800; letter-spacing: -0.045em; line-height: 1; }
+      .fr-body p { font-family: var(--mono); font-size: 1.8vmin; color: var(--c1); }
+      #end { text-align: center; }
+      #end h2 { font-size: 6.4vmin; }
+      #end p { margin-top: 1.6vmin; font-family: var(--mono); font-size: 1.6vmin; letter-spacing: 0.3em; text-transform: uppercase; color: var(--muted); }
+
+      @media (orientation: portrait) {
+        .eyebrow { font-size: 2.3vmin; }
+        .scene { flex-direction: column; justify-content: center; padding: 15vmin 5vmin 10vmin; gap: 6vmin; }
+        .copy { flex: none; width: 100%; padding: 0 2vmin; }
+        .copy h2 { font-size: 10.6vmin; }
+        .copy p.sub { font-size: 3.3vmin; max-width: none; }
+        .stage { flex: none; width: 100%; height: auto; gap: 2vmin; }
+        #term { width: 54vmin; }
+        #term-body { font-size: 1.55vmin; min-height: 50vmin; padding: 1.8vmin; }
+        #stack { width: 40vmin; height: 56vmin; }
+        #frames, .fr { width: 90vmin; height: 120vmin; }
+        .fr { margin: -60vmin 0 0 -45vmin; }
+        .fr-body h3 { font-size: 8vmin; }
+        #end h2 { font-size: 8.4vmin; }
+        #chip { font-size: 2.6vmin; }
+        #stamp small { font-size: 2.2vmin; }
+        #stamp b { font-size: 4.6vmin; }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="now" data-start="0" data-duration="14" data-width="1920" data-height="1080">
+      <div id="chip"><b>ch 08</b><i></i><span>now</span></div>
+      <div id="stamp"><small>since jun 2025</small><b><span id="live"></span>now</b></div>
+
+      <!-- S1 · an AI harness and a site that keeps growing -->
+      <section id="s-build" class="clip scene" data-start="0" data-duration="9.4" data-track-index="1">
+        <div class="copy">
+          <p class="eyebrow">Chapter 08 — Now</p>
+          <h2 id="b-title" class="title"></h2>
+          <p class="sub">From June 2025 I got my hands on <b>AI coding harnesses</b> and started building this site. It began as a <b>static page</b>. Today it has everything from a <b>CMS</b> to a <b>backup machine</b>.</p>
+        </div>
+        <div class="stage">
+          <div id="term">
+            <div id="term-bar"><i></i><i></i><i></i><span>agent · ~/aiyu</span></div>
+            <div id="term-body"></div>
+          </div>
+          <div id="stack"><svg id="stack-svg" viewBox="0 0 460 560" aria-hidden="true"></svg></div>
+        </div>
+      </section>
+
+      <!-- S2 · zoom out: the page you are on -->
+      <section id="s-meta" class="clip" data-start="9.1" data-duration="4.9" data-track-index="1">
+        <div id="frames"></div>
+        <div id="end"><h2 id="end-title" class="title"></h2><p>the story continues · scroll ↓</p></div>
+      </section>
+    </div>
+
+    <script>
+      (function () {
+        var vars = (window.__hyperframes && window.__hyperframes.getVariables && window.__hyperframes.getVariables()) || {};
+        var q = new URLSearchParams(location.search);
+        var get = function (k, d) { return q.has(k) ? q.get(k) : (vars[k] != null ? vars[k] : d); };
+        var NAME = String(get("name", "Ayaan"));
+        var $ = function (s) { return document.querySelector(s); };
+        var $$ = function (s) { return Array.prototype.slice.call(document.querySelectorAll(s)); };
+        var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); };
+        var words = function (text, hl) {
+          return text.split(" ").map(function (w) {
+            var cls = hl && hl.indexOf(w.replace(/[.,…]/g, "")) > -1 ? ' class="hl"' : "";
+            return '<span class="word"><span' + cls + ">" + esc(w) + "</span></span>";
+          }).join(" ");
+        };
+        $("#b-title").innerHTML = words("Building this, with AI.", ["this"]);
+        $("#end-title").innerHTML = words("…and this is where you came in.", ["you"]);
+
+        // The layers the site grew, bottom to top.
+        var LAYERS = [
+          { l: "static site", n: "where it started", c: "#64748b" },
+          { l: "next.js app", n: "react · tailwind", c: "#5ee1ff" },
+          { l: "cms + admin", n: "content without code", c: "#a78bfa" },
+          { l: "postgres", n: "prisma orm", c: "#60a5fa" },
+          { l: "docker", n: "one-command deploys", c: "#38bdf8" },
+          { l: "backup machine", n: "nothing gets lost", c: "#4ade80" },
+        ];
+        var rows = [
+          '<span class="p">❯</span> <span class="t" id="cmd">build my site, and tell my story</span>',
+        ];
+        LAYERS.forEach(function (L) { rows.push('<span class="ok">✓</span> ' + esc(L.l) + ' <span class="dim">· ' + esc(L.n) + "</span>"); });
+        rows.push('<span class="ok">✓</span> this story <span class="dim">· hyperframes + gsap</span>');
+        rows.push('<span class="p">❯</span> <span id="cursor"></span>');
+        $("#term-body").innerHTML = rows.map(function (r, i) { return '<div class="row" id="r-' + i + '">' + r + "</div>"; }).join("");
+
+        // Isometric slabs (drawn in the 460×560 box, top slab last).
+        var svg = "";
+        var W = 150, H = 86, T = 22, X = 170, Y0 = 470, GAP = 64;
+        LAYERS.forEach(function (L, i) {
+          var y = Y0 - i * GAP;
+          var top = [[X, y - H / 2], [X + W, y], [X, y + H / 2], [X - W, y]];
+          var poly = function (pts) { return pts.map(function (p) { return p[0] + "," + p[1]; }).join(" "); };
+          svg += '<g id="slab-' + i + '">' +
+            '<polygon points="' + poly([[X - W, y], [X, y + H / 2], [X, y + H / 2 + T], [X - W, y + T]]) + '" fill="' + L.c + '" opacity="0.55" />' +
+            '<polygon points="' + poly([[X, y + H / 2], [X + W, y], [X + W, y + T], [X, y + H / 2 + T]]) + '" fill="' + L.c + '" opacity="0.38" />' +
+            '<polygon points="' + poly(top) + '" fill="' + L.c + '" opacity="0.9" />' +
+            '<text class="slab-l" x="' + (X + W + 24) + '" y="' + (y + 2) + '">' + esc(L.l) + "</text>" +
+            '<text class="slab-n" x="' + (X + W + 24) + '" y="' + (y + 20) + '">' + esc(L.n) + "</text>" +
+            "</g>";
+        });
+        $("#stack-svg").innerHTML = svg;
+
+        // Frames within frames: this very page, three levels deep.
+        var fr = "";
+        for (var f = 0; f < 3; f++) {
+          fr += '<div class="fr" id="fr-' + f + '" data-layout-allow-occlusion><div class="fr-bar"><i></i><i></i><i></i><span>aiyu · home</span></div>' +
+            '<div class="fr-body"><small data-layout-allow-occlusion data-layout-allow-overlap><b>$</b> whoami</small><h3 data-layout-allow-occlusion data-layout-allow-overlap>Hi, I\'m ' + esc(NAME) + '.</h3><p data-layout-allow-occlusion data-layout-allow-overlap>the story so far ↓</p></div></div>';
+        }
+        $("#frames").innerHTML = fr;
+
+        var tl = gsap.timeline({ paused: true, defaults: { ease: "expo.out" } });
+        tl.fromTo("#live", { opacity: 1 }, { opacity: 0.25, duration: 0.5, yoyo: true, repeat: 27, ease: "sine.inOut" }, 0);
+
+        // ── S1 ──
+        tl.fromTo("#s-build .eyebrow", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.7 }, 0);
+        tl.fromTo("#b-title .word > span", { yPercent: 110 }, { yPercent: 0, duration: 1, stagger: 0.08 }, 0.1);
+        tl.fromTo("#s-build .sub", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.8 }, 0.45);
+        tl.fromTo("#term", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.9 }, 0.1);
+        tl.fromTo("#r-0", { opacity: 0 }, { opacity: 1, duration: 0.1 }, 0.9);
+        var n = $("#cmd").textContent.length;
+        tl.fromTo("#cmd", { clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0% 0 0)", duration: 1.1, ease: "steps(" + n + ")" }, 1.0);
+        LAYERS.forEach(function (_, i) {
+          var at = 2.4 + i * 0.85;
+          tl.fromTo("#r-" + (i + 1), { opacity: 0, x: -8 }, { opacity: 1, x: 0, duration: 0.35, ease: "power2.out" }, at);
+          tl.fromTo("#slab-" + i, { opacity: 0, y: -60 }, { opacity: 1, y: 0, duration: 0.6, ease: "back.out(1.4)" }, at - 0.05);
+        });
+        var L7 = 2.4 + LAYERS.length * 0.85;
+        tl.fromTo("#r-" + (LAYERS.length + 1), { opacity: 0, x: -8 }, { opacity: 1, x: 0, duration: 0.35 }, L7);
+        tl.fromTo("#r-" + (LAYERS.length + 2), { opacity: 0 }, { opacity: 1, duration: 0.1 }, L7 + 0.2);
+        tl.fromTo("#cursor", { opacity: 1 }, { opacity: 0, duration: 0.25, ease: "steps(1)", yoyo: true, repeat: 3 }, L7 + 0.3);
+        tl.to("#s-build > *", { opacity: 0, y: -24, duration: 0.45, ease: "power2.in", stagger: 0.05 }, 8.9);
+
+        // ── S2 · zoom out onto this page ──
+        var M = 9.3;
+        // Three nested copies: each outer frame starts at full size and
+        // shrinks, so the page seems to back away from itself.
+        tl.fromTo("#fr-0", { opacity: 0, scale: 1.25 }, { opacity: 1, scale: 1, duration: 1.1, ease: "power3.out" }, M);
+        tl.fromTo("#fr-1", { opacity: 0, scale: 0.7, y: "7vmin" }, { opacity: 1, scale: 0.62, y: "7vmin", duration: 1.2, ease: "power2.out" }, M + 0.8);
+        tl.fromTo("#fr-2", { opacity: 0, scale: 0.42, y: "11.5vmin" }, { opacity: 1, scale: 0.38, y: "11.5vmin", duration: 1.2, ease: "power2.out" }, M + 1.3);
+        tl.to("#frames", { scale: 0.82, y: "-4vmin", duration: 1.6, ease: "power2.inOut" }, M + 1.8);
+        tl.fromTo("#end-title .word > span", { yPercent: 110 }, { yPercent: 0, duration: 0.9, stagger: 0.06 }, M + 2.3);
+        tl.fromTo("#end p", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.7 }, M + 2.9);
+
+        window.__timelines["now"] = tl;
+      })();
+    </script>
+  </body>
+</html>
