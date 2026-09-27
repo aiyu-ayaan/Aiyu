@@ -1,0 +1,31 @@
+/**
+ * The life story told on the v2 home page, one HyperFrames film per chapter
+ * (sources in /hyperframes/<film>, published by `npm run hf:sync`).
+ *
+ * The text here is the chapter's real DOM copy: it is what crawlers and
+ * screen readers get, and what reduced-motion / lite devices see instead
+ * of the film. Keep it in step with the film's own captions.
+ *
+ * - duration: the film length in seconds (fallback; the real length is read
+ *   from the player once it loads).
+ * - introEnd: the opening plays while the chapter scrolls into view; the pin
+ *   takes over from this second.
+ */
+
+// Optional: your birth year. When set, chapter 01's date stamp shows it.
+export const BORN_YEAR = '';
+
+export const LIFE_STORY = [
+    {
+        id: 'origin',
+        film: 'origin',
+        label: 'origin',
+        eyebrow: 'Chapter 01 · Origin',
+        when: '3 May',
+        title: 'Born on a day of heavy rain.',
+        body: 'I was born on 3 May, and it was raining heavily. As a kid I was always fascinated by how computers work. What I love about them is that they do only what I tell them to.',
+        accent: 'var(--accent-pink)',
+        duration: 12.5,
+        introEnd: 1.2,
+    },
+];

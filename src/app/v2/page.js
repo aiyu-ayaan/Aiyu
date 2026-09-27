@@ -1,4 +1,5 @@
 import V2Hero from "../components/landing/v2/V2Hero";
+import V2LifeStory from "../components/landing/v2/V2LifeStory";
 import V2Snapshot from "../components/landing/v2/V2Snapshot";
 import V2MissionControl from "../components/landing/v2/V2MissionControl";
 import V2LazySections from "../components/landing/v2/V2LazySections";
@@ -90,6 +91,8 @@ export default async function HomeV2() {
         data={serializedHomeData}
         counts={{ projects: projects.length, skills: skills.length, blogs: blogs.length }}
       />
+
+      <V2LifeStory name={serializedHomeData?.name || 'Ayaan'} />
 
       <ViewportLazySection
         id="v2-snapshot"

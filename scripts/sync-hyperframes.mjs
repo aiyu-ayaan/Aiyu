@@ -10,6 +10,8 @@
  *     CDN runtime (it skips injection when the runtime bridge exists).
  *   - A portrait twin (1080×1920) is emitted next to each landscape file;
  *     the compositions carry `@media (orientation: portrait)` layouts.
+ *   - An optional assets/ folder (images the film shows) is copied beside
+ *     the published files, so relative `assets/…` paths work in both.
  *   - A content hash per composition is written to
  *     src/app/components/shared/hfVersions.json; the site appends it to the
  *     film URL so a browser can never pair a cached old film with new page
@@ -24,7 +26,8 @@ import { createHash } from 'node:crypto';
 const root = process.cwd();
 const SRC = path.join(root, 'hyperframes');
 const OUT = path.join(root, 'public', 'hf');
-const COMPOSITIONS = ['boot', 'story'];
+// boot + the hero film, then the life-story chapters in page order.
+const COMPOSITIONS = ['boot', 'story', 'origin'];
 
 const VENDOR = [
     ['node_modules/gsap/dist/gsap.min.js', 'gsap.min.js'],
@@ -61,7 +64,16 @@ async function main() {
         await fs.mkdir(path.join(OUT, name), { recursive: true });
         await fs.writeFile(path.join(OUT, name, 'index.html'), landscape);
         await fs.writeFile(path.join(OUT, name, 'portrait.html'), portrait);
-        versions[name] = createHash('sha256').update(landscape).digest('hex').slice(0, 10);
+        const hash = createHash('sha256').update(landscape);
+        const assets = path.join(SRC, name, 'assets');
+        const hasAssets = await fs.stat(assets).then((s) => s.isDirectory(), () => false);
+        if (hasAssets) {
+            await fs.cp(assets, path.join(OUT, name, 'assets'), { recursive: true });
+            for (const file of (await fs.readdir(assets)).sort()) {
+                hash.update(file).update(await fs.readFile(path.join(assets, file)));
+            }
+        }
+        versions[name] = hash.digest('hex').slice(0, 10);
         console.log(`[hf] ${name} → public/hf/${name}/{index,portrait}.html (${versions[name]})`);
     }
     await fs.writeFile(
