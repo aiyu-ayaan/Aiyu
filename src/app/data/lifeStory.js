@@ -40,4 +40,16 @@ export const LIFE_STORY = [
         duration: 11,
         introEnd: 1.0,
     },
+    {
+        id: 'college',
+        film: 'college',
+        label: 'college',
+        eyebrow: 'Chapter 03 · College',
+        when: '2019 → 2020',
+        title: 'Hello, C. Then COVID hit.',
+        body: 'College began at BIT Mesra in 2019. My first language was C, and I loved the data structures class, especially writing linked lists. Then COVID hit, the world went quiet, and in 2020 I started learning Android development.',
+        accent: 'var(--accent-cyan)',
+        duration: 15,
+        introEnd: 1.1,
+    },
 ];

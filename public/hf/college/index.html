@@ -1,0 +1,357 @@
+<!doctype html>
+<html
+  lang="en"
+  data-composition-variables='[
+    {"id":"name","type":"string","label":"Name","default":"Ayaan"},
+    {"id":"bg","type":"color","label":"Background","default":"#0b0f14"},
+    {"id":"surface","type":"color","label":"Surface","default":"#121821"},
+    {"id":"fg","type":"color","label":"Text","default":"#f2f5f9"},
+    {"id":"muted","type":"color","label":"Muted text","default":"#8f99a6"},
+    {"id":"line","type":"color","label":"Hairline","default":"#243040"},
+    {"id":"c1","type":"color","label":"Accent 1 (code)","default":"#5ee1ff"},
+    {"id":"c2","type":"color","label":"Accent 2","default":"#a78bfa"},
+    {"id":"c3","type":"color","label":"Accent 3","default":"#ff5fa2"},
+    {"id":"c4","type":"color","label":"Accent 4","default":"#ffb454"},
+    {"id":"ok","type":"color","label":"Success","default":"#4ade80"}
+  ]'
+>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>aiyu — chapter 03 · college</title>
+    <script src="/hf/vendor/hyperframe.runtime.iife.js"></script>
+    <script src="/hf/vendor/gsap.min.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg, #0b0f14); }
+      #root {
+        position: relative; width: 100%; height: 100%; overflow: hidden;
+        color: var(--fg); background: var(--bg);
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        --mono: ui-monospace, monospace;
+        /* Device and editor colours are the real thing in every theme. */
+        --bezel: #16181d;
+        --alu-1: #dfe3e9;
+        --alu-2: #aab1bc;
+        --ed-bg: #0d1117;
+        --ed-bar: #161b22;
+        --ed-fg: #c9d1d9;
+        --ed-dim: #8b949e;
+        --syn-k: #ff7b72;
+        --syn-t: #79c0ff;
+        --syn-f: #d2a8ff;
+        --syn-n: #ffa657;
+        --droid: #3ddc84;
+      }
+      .mono { font-family: var(--mono); }
+      .clip { position: absolute; inset: 0; }
+      .eyebrow { font-family: var(--mono); font-size: 1.7vmin; letter-spacing: 0.32em; text-transform: uppercase; color: var(--muted); }
+      .title { font-weight: 800; letter-spacing: -0.045em; line-height: 0.95; }
+      .word { display: inline-block; overflow: hidden; vertical-align: bottom; padding-bottom: 0.08em; }
+      .word > span { display: inline-block; }
+      .hl { color: var(--c1); }
+
+      #chip { position: absolute; left: 4vmin; top: 3.6vmin; z-index: 20; display: flex; align-items: center; gap: 1.2vmin; font-family: var(--mono); font-size: 1.45vmin; letter-spacing: 0.28em; text-transform: uppercase; color: var(--muted); }
+      #chip b { color: var(--fg); font-weight: 600; }
+      #chip i { width: 4vmin; height: 1px; background: var(--line); }
+      #stamp { position: absolute; right: 4vmin; top: 3vmin; z-index: 20; text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--fg); }
+      #stamp small { display: block; font-size: 1.3vmin; letter-spacing: 0.3em; text-transform: uppercase; color: var(--muted); }
+      #stamp b { display: block; margin-top: 0.4vmin; font-size: 3vmin; font-weight: 600; letter-spacing: 0.06em; }
+      #st-b { position: absolute; right: 0; top: 0; white-space: nowrap; opacity: 0; }
+
+      /* ── laptop (front view) ── */
+      .laptop { position: relative; width: 70vmin; }
+      .lid { position: relative; width: 100%; aspect-ratio: 16 / 10.2; padding: 1.6vmin 1.6vmin 2vmin; border-radius: 2vmin 2vmin 0.4vmin 0.4vmin; background: var(--bezel); box-shadow: 0 0 0 0.25vmin #3a3f48, 0 4vmin 9vmin -3vmin rgba(0, 0, 0, 0.55); }
+      .cam { position: absolute; left: 50%; top: 0.6vmin; width: 0.6vmin; height: 0.6vmin; margin-left: -0.3vmin; border-radius: 50%; background: #2c3140; }
+      .screen { position: relative; width: 100%; height: 100%; overflow: hidden; border-radius: 0.5vmin; background: var(--ed-bg); }
+      .deck { position: relative; width: 116%; margin-left: -8%; height: 2.4vmin; border-radius: 0.3vmin 0.3vmin 2.8vmin 2.8vmin; background: linear-gradient(180deg, var(--alu-1), var(--alu-2)); box-shadow: 0 1.4vmin 2.4vmin -1vmin rgba(0, 0, 0, 0.5); }
+      .deck::after { content: ""; position: absolute; left: 50%; top: 0; width: 14%; height: 0.9vmin; margin-left: -7%; border-radius: 0 0 1vmin 1vmin; background: #9aa1ad; }
+
+      /* editor inside the screen */
+      .ed-bar { display: flex; align-items: center; gap: 0.8vmin; height: 3.4vmin; padding: 0 1.4vmin; background: var(--ed-bar); border-bottom: 1px solid #21262d; }
+      .ed-bar i { width: 1vmin; height: 1vmin; border-radius: 50%; background: #ff5f57; }
+      .ed-bar i:nth-child(2) { background: #febc2e; } .ed-bar i:nth-child(3) { background: #28c840; }
+      .ed-tab { margin-left: 1.6vmin; padding: 0.6vmin 1.4vmin; border-radius: 0.5vmin 0.5vmin 0 0; background: var(--ed-bg); font-family: var(--mono); font-size: 1.3vmin; color: var(--ed-fg); }
+      .code { position: relative; padding: 1.2vmin 0; font-family: var(--mono); font-size: 1.62vmin; line-height: 2.55vmin; color: var(--ed-fg); white-space: pre; }
+      .ln { position: relative; display: flex; gap: 1.8vmin; padding-left: 1.4vmin; }
+      .ln i { font-style: normal; width: 2.2vmin; text-align: right; color: var(--ed-dim); flex: none; }
+      .ln .t { display: inline-block; overflow: hidden; vertical-align: bottom; }
+      .k { color: var(--syn-k); } .ty { color: var(--syn-t); } .f { color: var(--syn-f); } .n { color: var(--syn-n); } .cm { color: var(--ed-dim); }
+      #hl-bar { position: absolute; left: 0; right: 0; top: 1.2vmin; height: 2.55vmin; background: rgba(56, 139, 253, 0.16); border-left: 0.3vmin solid #388bfd; opacity: 0; }
+
+      /* ── S1 · college ── */
+      #s-c { display: flex; align-items: center; padding: 11vmin 6vmin 8vmin 7vmin; gap: 5vmin; }
+      #c-copy { flex: 0 0 32%; }
+      #c-copy .eyebrow { margin-bottom: 3vmin; }
+      #c-title { font-size: 8.4vmin; }
+      #c-sub { margin-top: 3vmin; font-size: 2.5vmin; line-height: 1.45; color: var(--muted); max-width: 52vmin; }
+      #c-sub b { color: var(--fg); font-weight: 600; }
+      #c-love { margin-top: 3.6vmin; font-size: 3.4vmin; font-weight: 700; letter-spacing: -0.02em; }
+      #c-love .hl { color: var(--c3); }
+      #c-stage { flex: 1; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5vmin; }
+
+      /* linked list */
+      #list { position: relative; width: 92vmin; height: 12vmin; }
+      .slot { position: absolute; top: 2.4vmin; width: 13vmin; height: 7vmin; }
+      .node { position: absolute; left: 0; top: 0; width: 13vmin; height: 7vmin; display: flex; border-radius: 1.2vmin; overflow: hidden; border: 0.25vmin solid color-mix(in srgb, var(--fg) 30%, transparent); background: var(--surface); box-shadow: 0 1.4vmin 3vmin -1.4vmin rgba(0, 0, 0, 0.5); }
+      .node b { flex: 1; display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 3vmin; font-weight: 700; color: var(--fg); }
+      .node span { flex: 0 0 4.2vmin; border-left: 0.25vmin solid color-mix(in srgb, var(--fg) 30%, transparent); position: relative; }
+      .node span::after { content: ""; position: absolute; left: 50%; top: 50%; width: 1.2vmin; height: 1.2vmin; margin: -0.6vmin 0 0 -0.6vmin; border-radius: 50%; background: var(--c1); }
+      .node-glow { position: absolute; inset: -0.6vmin; border-radius: 1.6vmin; border: 0.4vmin solid var(--c3); opacity: 0; }
+      #n-99 .node { border-color: var(--c3); }
+      .link { position: absolute; top: 5.9vmin; height: 0.3vmin; background: var(--c1); transform-origin: left center; }
+      .link::after { content: ""; position: absolute; right: -0.2vmin; top: -0.75vmin; border-left: 1.4vmin solid var(--c1); border-top: 0.9vmin solid transparent; border-bottom: 0.9vmin solid transparent; }
+      #null { position: absolute; top: 4vmin; font-family: var(--mono); font-size: 2.4vmin; font-weight: 700; color: var(--muted); letter-spacing: 0.1em; }
+      #head-l { position: absolute; left: 0; top: -1.4vmin; font-family: var(--mono); font-size: 1.5vmin; letter-spacing: 0.2em; text-transform: uppercase; color: var(--c1); }
+      #walker { position: absolute; left: 0; top: 5.3vmin; width: 1.6vmin; height: 1.6vmin; margin-left: -0.8vmin; border-radius: 50%; background: var(--c3); box-shadow: 0 0 1.6vmin var(--c3); opacity: 0; }
+      #walk-rail { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+
+      /* ── S2 · covid ── */
+      #s-v { display: flex; align-items: center; padding: 11vmin 6vmin 8vmin 7vmin; gap: 5vmin; }
+      #v-copy { flex: 0 0 32%; }
+      #v-copy .eyebrow { margin-bottom: 3vmin; }
+      #v-title { font-size: 8.4vmin; }
+      #v-sub { margin-top: 3vmin; font-size: 2.5vmin; line-height: 1.45; color: var(--muted); max-width: 52vmin; }
+      #v-sub b { color: var(--fg); font-weight: 600; }
+      #v-stage { position: relative; flex: 1; height: 100%; display: flex; align-items: center; justify-content: center; }
+      #cal {
+        position: absolute; left: 0; top: 8%; width: 38vmin; border-radius: 1.2vmin; overflow: hidden; background: #fbfaf7; color: #1d2330;
+        box-shadow: 0 3vmin 6vmin -2vmin rgba(0, 0, 0, 0.5); z-index: 2;
+      }
+      #cal-head { padding: 1.6vmin 2vmin; background: #c23030; color: #fff; display: flex; justify-content: space-between; align-items: baseline; }
+      #cal-head b { font-size: 3vmin; font-weight: 800; letter-spacing: -0.01em; } #cal-head small { font-family: var(--mono); font-size: 1.6vmin; letter-spacing: 0.2em; }
+      #cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.5vmin; padding: 1.6vmin; }
+      .day { position: relative; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 1.5vmin; color: #3b4252; border-radius: 0.4vmin; background: #f0eee8; }
+      .day svg { position: absolute; inset: 12%; width: 76%; height: 76%; overflow: visible; }
+      .day path { fill: none; stroke: #d64545; stroke-width: 10; stroke-linecap: round; }
+      #v-laptop { position: absolute; right: 0; bottom: 8%; z-index: 3; width: 62vmin; }
+      /* Android Studio on the laptop */
+      #as { position: absolute; inset: 0; background: #1e1f22; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.6vmin; overflow: hidden; }
+      #as-bot { position: relative; width: 16vmin; height: 9vmin; }
+      #as-bot svg { width: 100%; height: 100%; overflow: visible; }
+      #as-name { font-size: 2.6vmin; font-weight: 700; color: #e8eaed; letter-spacing: -0.01em; }
+      #as-new { display: flex; gap: 1vmin; }
+      #as-new span { padding: 0.8vmin 1.4vmin; border-radius: 0.6vmin; background: #2b2d30; color: #dfe1e5; font-family: var(--mono); font-size: 1.3vmin; border: 1px solid #393b40; }
+      #as-new span.on { background: #2b5fd0; border-color: #2b5fd0; color: #fff; }
+
+      @media (orientation: portrait) {
+        #s-c, #s-v { flex-direction: column; justify-content: center; padding: 15vmin 5vmin 10vmin; gap: 6vmin; }
+        #c-copy, #v-copy { flex: none; width: 100%; padding: 0 2vmin; }
+        #c-title, #v-title { font-size: 11vmin; }
+        #c-sub, #v-sub { font-size: 3.4vmin; max-width: none; }
+        #c-love { font-size: 4.4vmin; }
+        #c-stage { flex: none; width: 100%; height: auto; gap: 7vmin; }
+        .laptop { width: 84vmin; }
+        #list { width: 94vmin; transform: scale(0.94); transform-origin: 50% 50%; }
+        #v-stage { flex: none; width: 100%; height: 122vmin; }
+        #cal { left: 4%; top: 2%; width: 50vmin; }
+        #v-laptop { right: 8vmin; bottom: 0; width: 74vmin; }
+        .code { font-size: 1.95vmin; line-height: 3vmin; }
+        #chip { font-size: 1.9vmin; }
+        #stamp small { font-size: 1.7vmin; }
+        #stamp b { font-size: 3.8vmin; }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="college" data-start="0" data-duration="15" data-width="1920" data-height="1080">
+      <div id="chip"><b>ch 03</b><i></i><span id="chip-t">college</span></div>
+      <div id="stamp"><div id="st-a"><small>bca · bit mesra</small><b>aug 2019</b></div><div id="st-b"><small>lockdown</small><b>mar 2020</b></div></div>
+
+      <!-- S1 · first language: C, first love: linked lists -->
+      <section id="s-c" class="clip" data-start="0" data-duration="9" data-track-index="1">
+        <div id="c-copy">
+          <p class="eyebrow">Chapter 03 — College</p>
+          <h2 id="c-title" class="title"></h2>
+          <p id="c-sub">College began at <b>BIT Mesra</b>. My first language was C, and the <b>data structures</b> class became my favourite.</p>
+          <p id="c-love"></p>
+        </div>
+        <div id="c-stage">
+          <div class="laptop" id="c-laptop">
+            <div class="lid">
+              <span class="cam"></span>
+              <div class="screen">
+                <div class="ed-bar"><i></i><i></i><i></i><span class="ed-tab">list.c</span></div>
+                <div class="code" id="code"><div id="hl-bar"></div></div>
+              </div>
+            </div>
+            <div class="deck"></div>
+          </div>
+          <div id="list">
+            <span id="head-l">head</span>
+            <div class="link" id="g0"></div><div class="link" id="g1"></div><div class="link" id="g2"></div><div class="link" id="g3"></div>
+            <div class="slot" id="n-12"><div class="node"><b>12</b><span></span></div><div class="node-glow"></div></div>
+            <div class="slot" id="n-7"><div class="node"><b>7</b><span></span></div><div class="node-glow"></div></div>
+            <div class="slot" id="n-99"><div class="node"><b>99</b><span></span></div><div class="node-glow"></div></div>
+            <div class="slot" id="n-42"><div class="node"><b>42</b><span></span></div><div class="node-glow"></div></div>
+            <span id="null">NULL</span>
+            <div id="walk-rail"><div id="walker"></div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- S2 · 2020, lockdown, and Android -->
+      <section id="s-v" class="clip" data-start="8.7" data-duration="6.3" data-track-index="1">
+        <div id="v-copy">
+          <p class="eyebrow">March 2020</p>
+          <h2 id="v-title" class="title"></h2>
+          <p id="v-sub">The world went quiet. So I opened <b>Android Studio</b> and started learning Android development.</p>
+        </div>
+        <div id="v-stage">
+          <div id="cal">
+            <div id="cal-head"><b>March</b><small>2020</small></div>
+            <div id="cal-grid"></div>
+          </div>
+          <div class="laptop" id="v-laptop">
+            <div class="lid">
+              <span class="cam"></span>
+              <div class="screen">
+                <div id="as">
+                  <div id="as-bot">
+                    <svg viewBox="0 0 160 90" aria-hidden="true">
+                      <path d="M10 88 A70 70 0 0 1 150 88 Z" fill="#3ddc84" />
+                      <circle cx="52" cy="58" r="6" fill="#1e1f22" /><circle cx="108" cy="58" r="6" fill="#1e1f22" />
+                      <path d="M40 30 L24 6" stroke="#3ddc84" stroke-width="6" stroke-linecap="round" />
+                      <path d="M120 30 L136 6" stroke="#3ddc84" stroke-width="6" stroke-linecap="round" />
+                    </svg>
+                  </div>
+                  <p id="as-name">Android Studio</p>
+                  <div id="as-new"><span>Open</span><span class="on" id="as-go">New Project</span><span>Get from VCS</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="deck"></div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      (function () {
+        var $ = function (s) { return document.querySelector(s); };
+        var $$ = function (s) { return Array.prototype.slice.call(document.querySelectorAll(s)); };
+        var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); };
+        var words = function (text, hl) {
+          return text.split(" ").map(function (w) {
+            var cls = hl && hl.indexOf(w.replace(/[.,]/g, "")) > -1 ? ' class="hl"' : "";
+            return '<span class="word"><span' + cls + ">" + esc(w) + "</span></span>";
+          }).join(" ");
+        };
+        $("#c-title").innerHTML = words("Hello, C.", ["C"]);
+        $("#c-love").innerHTML = words("I loved writing linked lists.", ["linked", "lists"]);
+        $("#v-title").innerHTML = words("Then COVID hit.");
+
+        // list.c: the insert the diagram acts out.
+        var src = [
+          '<span class="k">struct</span> <span class="ty">Node</span> {',
+          '  <span class="k">int</span> data;',
+          '  <span class="k">struct</span> <span class="ty">Node</span> *next;',
+          '};',
+          '',
+          '<span class="k">void</span> <span class="f">insert</span>(<span class="k">struct</span> <span class="ty">Node</span> *prev, <span class="k">int</span> v) {',
+          '  <span class="k">struct</span> <span class="ty">Node</span> *n = <span class="f">malloc</span>(<span class="k">sizeof</span> *n);',
+          '  n-&gt;data = v;',
+          '  n-&gt;next = prev-&gt;next;',
+          '  prev-&gt;next = n;',
+          '}',
+        ];
+        $("#code").insertAdjacentHTML("beforeend", src.map(function (l, i) {
+          return '<div class="ln"><i>' + (i + 1) + '</i><span class="t">' + (l || " ") + "</span></div>";
+        }).join(""));
+
+        // Calendar: March 2020 starts on a Sunday.
+        var cal = "";
+        for (var d = 1; d <= 31; d++) {
+          cal += '<div class="day" data-layout-allow-occlusion>' + d + (d >= 22 ? '<svg viewBox="0 0 100 100" aria-hidden="true"><path d="M15 15 L85 85 M85 15 L15 85" /></svg>' : "") + "</div>";
+        }
+        $("#cal-grid").innerHTML = cal;
+
+        var tl = gsap.timeline({ paused: true, defaults: { ease: "expo.out" } });
+
+        // Slots (in vmin): 5 positions, 19vmin apart.
+        var X = function (s) { return s * 19; };
+        var place = function (sel, slot) { gsap.set(sel, { x: X(slot) + "vmin" }); };
+        place("#n-12", 0); place("#n-7", 1); place("#n-99", 2); place("#n-42", 2);
+        // Links sit in the gap after each slot.
+        ["#g0", "#g1", "#g2", "#g3"].forEach(function (g, i) { gsap.set(g, { left: X(i) + 13.4 + "vmin", width: "5.2vmin", scaleX: 0 }); });
+        gsap.set("#null", { x: X(1) + 1 + "vmin" });
+
+        // ── S1 ──
+        tl.fromTo("#c-copy .eyebrow", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.7 }, 0);
+        tl.fromTo("#c-title .word > span", { yPercent: 110 }, { yPercent: 0, duration: 1, stagger: 0.1 }, 0.1);
+        tl.fromTo("#c-sub", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.8 }, 0.45);
+        tl.fromTo("#c-laptop", { opacity: 0, y: 40, rotationX: 10, transformPerspective: 1600 }, { opacity: 1, y: 0, rotationX: 0, duration: 1.1 }, 0.1);
+
+        // Code types line by line.
+        $$("#code .ln .t").forEach(function (el, i) {
+          var n = Math.max(1, el.textContent.length);
+          tl.fromTo(el, { clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0% 0 0)", duration: Math.min(0.3, n * 0.011), ease: "steps(" + n + ")" }, 1.1 + i * 0.16);
+        });
+
+        // Build 12 → 7 → 42 → NULL.
+        tl.fromTo("#list", { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "none" }, 2.4);
+        tl.fromTo("#n-12", { opacity: 0, y: "-3vmin" }, { opacity: 1, y: 0, duration: 0.6, ease: "back.out(1.8)" }, 2.5);
+        tl.fromTo("#head-l", { opacity: 0 }, { opacity: 1, duration: 0.4 }, 2.6);
+        tl.fromTo("#null", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 2.6);
+        tl.to("#null", { x: X(2) + 1 + "vmin", duration: 0.5, ease: "power3.inOut" }, 3.0);
+        tl.fromTo("#n-7", { opacity: 0, y: "-3vmin" }, { opacity: 1, y: 0, duration: 0.6, ease: "back.out(1.8)" }, 3.1);
+        tl.to("#g0", { scaleX: 1, duration: 0.35, ease: "power2.out" }, 3.35);
+        tl.to("#null", { x: X(3) + 1 + "vmin", duration: 0.5, ease: "power3.inOut" }, 3.6);
+        tl.fromTo("#n-42", { opacity: 0, y: "-3vmin" }, { opacity: 1, y: 0, duration: 0.6, ease: "back.out(1.8)" }, 3.7);
+        tl.to("#g1", { scaleX: 1, duration: 0.35, ease: "power2.out" }, 3.95);
+
+        // insert(7, 99): the code lines light up as the diagram does them.
+        var hl = function (line, at) { tl.to("#hl-bar", { y: (line - 1) * 2.55 + "vmin", opacity: 1, duration: 0.25, ease: "power2.out" }, at); };
+        hl(7, 4.5);
+        tl.to("#n-42", { x: X(3) + "vmin", duration: 0.6, ease: "power3.inOut" }, 4.5);
+        tl.to("#null", { x: X(4) + 1 + "vmin", duration: 0.6, ease: "power3.inOut" }, 4.5);
+        tl.to("#g1", { opacity: 0.25, duration: 0.3 }, 4.5);
+        tl.fromTo("#n-99", { opacity: 0, y: "-7vmin" }, { opacity: 1, y: "-7vmin", duration: 0.3 }, 4.7);
+        hl(8, 5.0);
+        tl.to("#g3", { scaleX: 1, duration: 0.3, ease: "power2.out" }, 5.0);
+        hl(9, 5.4);
+        tl.to("#n-99", { y: 0, duration: 0.5, ease: "back.out(1.6)" }, 5.4);
+        tl.to("#g2", { scaleX: 1, duration: 0.35, ease: "power2.out" }, 5.7);
+        hl(10, 6.0);
+        tl.fromTo("#g1", { scaleX: 0, opacity: 1 }, { scaleX: 1, opacity: 1, duration: 0.35, ease: "power2.out", immediateRender: false }, 6.0);
+        tl.to("#hl-bar", { opacity: 0, duration: 0.4 }, 6.6);
+        tl.fromTo("#c-love .word > span", { yPercent: 110 }, { yPercent: 0, duration: 0.9, stagger: 0.07 }, 5.9);
+
+        // Traverse head → NULL.
+        tl.fromTo("#walker", { opacity: 0, x: "6.5vmin" }, { opacity: 1, duration: 0.15 }, 6.7);
+        tl.to("#walker", { x: X(4) + 3 + "vmin", duration: 1.4, ease: "none" }, 6.8);
+        ["#n-12", "#n-7", "#n-99", "#n-42"].forEach(function (n, i) {
+          tl.fromTo(n + " .node-glow", { opacity: 0 }, { opacity: 1, duration: 0.12, ease: "none", yoyo: true, repeat: 1 }, 6.8 + i * 0.33);
+        });
+        tl.to("#walker", { opacity: 0, duration: 0.2 }, 8.2);
+        tl.to("#null", { color: "var(--c3)", duration: 0.2 }, 8.15);
+
+        // Leave: the colour drains out of the room.
+        tl.to("#s-c > *", { opacity: 0, y: -24, duration: 0.45, ease: "power2.in", stagger: 0.05 }, 8.45);
+        tl.to("#st-a", { opacity: 0, y: -8, duration: 0.3, ease: "power2.in" }, 8.5);
+
+        // ── S2 ──
+        var V = 8.8;
+        tl.fromTo("#v-copy .eyebrow", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.7 }, V);
+        tl.fromTo("#v-title .word > span", { yPercent: 110 }, { yPercent: 0, duration: 1, stagger: 0.1 }, V + 0.1);
+        tl.fromTo("#v-sub", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.8 }, V + 0.5);
+        tl.fromTo("#cal", { opacity: 0, y: 30, rotation: -4 }, { opacity: 1, y: 0, rotation: -3, duration: 0.9 }, V + 0.1);
+        $$(".day path").forEach(function (p, i) {
+          tl.fromTo(p, { strokeDasharray: 240, strokeDashoffset: 240 }, { strokeDashoffset: 0, duration: 0.14, ease: "power2.out" }, V + 0.7 + i * 0.1);
+        });
+        tl.fromTo("#st-b", { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.5 }, V + 0.1);
+
+        // The laptop opens on Android Studio; the robot rises.
+        tl.fromTo("#v-laptop", { opacity: 0, x: "8vmin" }, { opacity: 1, x: 0, duration: 1 }, V + 1.6);
+        tl.to("#cal", { scale: 0.92, x: "-3vmin", duration: 0.8, ease: "power2.inOut" }, V + 1.9);
+        tl.fromTo("#as-bot", { yPercent: 120, opacity: 0 }, { yPercent: 0, opacity: 1, duration: 0.9, ease: "back.out(1.4)" }, V + 2.3);
+        tl.fromTo("#as-name", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.6 }, V + 2.6);
+        tl.fromTo("#as-new span", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.5, stagger: 0.08 }, V + 2.8);
+        tl.fromTo("#as-go", { scale: 1 }, { scale: 0.94, duration: 0.1, ease: "power2.out", yoyo: true, repeat: 1 }, V + 3.8);
+        tl.fromTo("#as-bot path:nth-of-type(2), #as-bot path:nth-of-type(3)", { rotation: 0 }, { rotation: 8, transformOrigin: "50% 100%", duration: 0.25, ease: "sine.inOut", yoyo: true, repeat: 3 }, V + 3.3);
+
+        window.__timelines["college"] = tl;
+      })();
+    </script>
+  </body>
+</html>
