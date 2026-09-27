@@ -77,4 +77,16 @@ export const LIFE_STORY = [
         duration: 14,
         introEnd: 1.1,
     },
+    {
+        id: 'masters',
+        film: 'masters',
+        label: "master's",
+        eyebrow: "Chapter 06 · Master's",
+        when: '2023 → 2024',
+        title: 'Teaching machines to see, and getting placed.',
+        body: "I went back to BIT Mesra for my master's (MCA) and loved exploring new topics like machine learning and computer vision. In December 2023 I migrated the whole of BIT App to Jetpack Compose, and in August 2024 I got placed at Adrosonic as a Software Engineer.",
+        accent: 'var(--accent-cyan)',
+        duration: 14.5,
+        introEnd: 1.1,
+    },
 ];
