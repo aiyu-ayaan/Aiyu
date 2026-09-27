@@ -101,4 +101,16 @@ export const LIFE_STORY = [
         duration: 16.5,
         introEnd: 1.1,
     },
+    {
+        id: 'now',
+        film: 'now',
+        label: 'now',
+        eyebrow: 'Chapter 08 · Now',
+        when: 'Since Jun 2025',
+        title: 'Building this site, with AI.',
+        body: 'From June 2025 I got my hands on AI coding harnesses and started working on this site. It began as a static page, and now it has everything from a CMS to a backup machine. This story is the newest part of it.',
+        accent: 'var(--accent-pink)',
+        duration: 14,
+        introEnd: 1.1,
+    },
 ];
