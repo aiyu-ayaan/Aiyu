@@ -28,4 +28,16 @@ export const LIFE_STORY = [
         duration: 12.5,
         introEnd: 1.2,
     },
+    {
+        id: 'school',
+        film: 'school',
+        label: 'school',
+        eyebrow: 'Chapter 02 · School',
+        when: '2005 → 2019',
+        title: 'Fourteen years of school, one page at a time.',
+        body: 'I started school in 2005 and completed it in 2019. Through every year of it, the fascination with computers never left.',
+        accent: 'var(--accent-orange)',
+        duration: 11,
+        introEnd: 1.0,
+    },
 ];
