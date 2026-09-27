@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <title>aiyu — the story so far</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #0b0f14; }
+      #root {
+        position: relative; width: 100%; height: 100%; overflow: hidden;
+        background: #0b0f14; color: #f2f5f9;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        --mono: ui-monospace, monospace;
+        --bg: #0b0f14; --surface: #121821; --fg: #f2f5f9; --muted: #8f99a6; --line: #243040;
+        --c1: #5ee1ff; --c2: #a78bfa; --c3: #ff5fa2; --c4: #ffb454; --ok: #4ade80;
+      }
+      .mono { font-family: var(--mono); }
+      .clip { position: absolute; inset: 0; }
+      .beat { position: absolute; inset: 0; opacity: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3.4vmin; }
+      .label { font-family: var(--mono); font-size: 2.4vmin; letter-spacing: 0.22em; text-transform: uppercase; color: var(--muted); text-align: center; }
+      .label b { color: var(--fg); font-weight: 500; }
+
+      /* ── S1 · hook ── */
+      #s1 { background: #04060a; display: flex; align-items: center; justify-content: center; }
+      #flash { position: absolute; inset: 0; background: #dfe9ff; opacity: 0; z-index: 5; }
+      #win {
+        position: relative; width: 62vmin; height: 78vmin; border-radius: 31vmin 31vmin 1.6vmin 1.6vmin;
+        padding: 2vmin; background: #171d29; box-shadow: 0 6vmin 12vmin -5vmin rgba(0,0,0,0.6);
+      }
+      #glass { position: relative; width: 100%; height: 100%; overflow: hidden; border-radius: 29vmin 29vmin 0.6vmin 0.6vmin; background: linear-gradient(180deg, #050a18 0%, #0a1428 46%, #16223d 100%); }
+      #skyline { position: absolute; left: 0; right: 0; bottom: 0; height: 26%; display: flex; align-items: flex-end; gap: 0.5vmin; padding: 0 1vmin; }
+      #skyline span { flex: 1; background-color: #0d1629; background-image: repeating-linear-gradient(0deg, transparent 0 1.6vmin, rgba(255,210,130,0.22) 1.6vmin 2vmin); }
+      #rain { position: absolute; inset: -20% -20%; transform: rotate(12deg); }
+      #rain i { position: absolute; top: 0; width: 0.22vmin; height: 6vmin; border-radius: 0.2vmin; background: linear-gradient(180deg, transparent, rgba(200,225,255,0.9)); }
+      #bolt { position: absolute; left: 30%; top: 4%; width: 26%; height: 52%; overflow: visible; }
+      #bolt path { fill: none; stroke: #eef4ff; stroke-width: 3; stroke-linejoin: round; filter: drop-shadow(0 0 6px #9fc3ff); }
+      #date { margin-top: 4vmin; font-size: 11.5vmin; font-weight: 800; letter-spacing: -0.03em; }
+      #ecg { position: relative; width: 58vmin; height: 6vmin; margin-top: 1vmin; }
+      #ecg svg { width: 100%; height: 100%; overflow: visible; }
+      #ecg path { fill: none; stroke: var(--c3); stroke-width: 3; stroke-linejoin: round; stroke-linecap: round; }
+      #ecg-cur { position: absolute; right: -1vmin; top: 50%; width: 1.4vmin; height: 3.6vmin; margin-top: -1.8vmin; background: var(--fg); }
+
+      /* ── S2 · reveal (CRT) ── */
+      #s2 { background: #04110f; display: flex; align-items: center; justify-content: center; }
+      #crtbox { position: relative; width: 76vmin; height: 52vmin; border-radius: 3vmin; background: #0b0e14; border: 0.5vmin solid #1e2530; overflow: hidden; box-shadow: 0 0 8vmin -1vmin rgba(125,255,196,0.18); }
+      #crtglow { position: absolute; inset: 0; background: radial-gradient(60% 60% at 30% 40%, rgba(125,255,196,0.16), transparent 70%); }
+      #term2 { position: absolute; left: 4vmin; top: 4vmin; font-family: var(--mono); font-size: 3vmin; line-height: 1.7; color: #7dffc4; text-shadow: 0 0 1vmin rgba(125,255,196,0.6); }
+      #quote { font-size: 8.6vmin; font-weight: 800; line-height: 1.08; letter-spacing: -0.03em; text-align: center; padding: 0 6vmin; }
+      #quote span { display: inline-block; }
+
+      /* ── S3/S4 shared beat chrome ── */
+      .ico-wrap { position: relative; width: 62vmin; height: 62vmin; display: flex; align-items: center; justify-content: center; }
+      .ico-wrap svg, .ico-wrap img { width: 100%; height: 100%; }
+      .big { font-size: 9.5vmin; font-weight: 800; letter-spacing: -0.03em; text-align: center; }
+      .stat-row { display: flex; gap: 8vmin; }
+      .stat-row .n { font-size: 13vmin; font-weight: 800; letter-spacing: -0.04em; line-height: 1; text-align: center; }
+      .stat-row .n small { display: block; margin-top: 1.4vmin; font-family: var(--mono); font-size: 2vmin; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); }
+
+      /* notebook */
+      #nb { position: relative; width: 74vmin; height: 50vmin; display: flex; }
+      #nb .pg { flex: 1; background: #fbf6ea; color: #1e2b4a; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.6vmin; }
+      #nb .pg:first-child { border-radius: 1.4vmin 0 0 1.4vmin; }
+      #nb .pg:last-child { border-radius: 0 1.4vmin 1.4vmin 0; border-left: 0.2vmin solid rgba(30,43,74,0.15); }
+      #nb .yr { font-family: var(--mono); font-size: 5vmin; font-weight: 700; }
+      #nb .ic { width: 8vmin; height: 8vmin; opacity: 0.6; }
+
+      /* linked list */
+      #ll { display: flex; align-items: center; gap: 2vmin; }
+      .node { width: 13vmin; height: 8vmin; border-radius: 1.4vmin; border: 0.3vmin solid var(--c1); background: rgba(94,225,255,0.08); display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 3.6vmin; font-weight: 700; }
+      .arrow { width: 4vmin; height: 0.3vmin; background: var(--c1); position: relative; }
+      .arrow::after { content: ""; position: absolute; right: 0; top: -0.9vmin; border-left: 1.6vmin solid var(--c1); border-top: 1vmin solid transparent; border-bottom: 1vmin solid transparent; }
+
+      /* covid -> android */
+      #cv { position: relative; width: 60vmin; height: 60vmin; }
+      #cal2 { position: absolute; inset: 0; border-radius: 2vmin; background: #fbfaf7; color: #1d2330; display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.8vmin; padding: 3vmin; }
+      #cal2 div { aspect-ratio: 1; border-radius: 0.5vmin; background: #f0eee8; display: flex; align-items: center; justify-content: center; color: #d64545; font-size: 3vmin; font-weight: 700; }
+      #droid { position: absolute; inset: 0; opacity: 0; display: flex; align-items: center; justify-content: center; }
+      #droid svg { width: 70%; height: 70%; }
+
+      /* offer envelope */
+      #env2 { position: relative; width: 64vmin; height: 46vmin; }
+      #env2 svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+      #letter2 { position: absolute; left: 6vmin; right: 6vmin; top: 3vmin; height: 44vmin; border-radius: 1vmin; background: #fdfbf6; color: #1f2433; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1vmin; box-shadow: 0 1vmin 3vmin rgba(0,0,0,0.3); }
+      #letter2 b { font-size: 6vmin; font-weight: 800; }
+      #letter2 span { font-family: var(--mono); font-size: 1.9vmin; letter-spacing: 0.2em; text-transform: uppercase; color: #6a6f80; }
+
+      /* badge + c# */
+      #bwrap { display: flex; align-items: center; gap: 4vmin; }
+      #badge2 { width: 26vmin; height: 34vmin; border-radius: 2.2vmin; background: #fff; color: #111827; display: flex; flex-direction: column; align-items: center; padding-top: 3vmin; gap: 1.4vmin; box-shadow: 0 2vmin 4vmin -1vmin rgba(0,0,0,0.5); }
+      #badge2 .top2 { position: absolute; }
+      #badge2 .av { width: 9vmin; height: 9vmin; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-size: 3.6vmin; font-weight: 800; color: #3b2f8f; }
+      #badge2 b { font-size: 2.2vmin; }
+      #badge2 small { font-family: var(--mono); font-size: 1.4vmin; text-transform: uppercase; letter-spacing: 0.1em; padding: 0.6vmin 1.4vmin; border-radius: 1vmin; background: rgba(74,222,128,0.18); color: var(--ok); }
+      #cs2 { padding: 2vmin 2.4vmin; border-radius: 1.2vmin; background: #0d1117; color: #c9d1d9; font-family: var(--mono); font-size: 1.9vmin; line-height: 1.8; }
+      #cs2 .k { color: #ff7b72; } #cs2 .ty { color: #79c0ff; } #cs2 .s { color: #a5d6ff; }
+
+      /* terminal stack */
+      #tstack { display: flex; flex-direction: column-reverse; gap: 1.2vmin; width: 66vmin; }
+      #tstack div { padding: 1.8vmin 2.4vmin; border-radius: 1vmin; font-family: var(--mono); font-size: 2.2vmin; color: var(--fg); background: var(--surface); border: 1px solid var(--line); opacity: 0; }
+      #tstack div b { color: var(--ok); margin-right: 1vmin; }
+
+      /* waveform + box */
+      #wave2 { display: flex; align-items: center; gap: 0.7vmin; height: 14vmin; }
+      #wave2 i { width: 1.2vmin; border-radius: 0.6vmin; background: linear-gradient(180deg, #19c3a6, #6d5dfc); }
+      #box2 { width: 28vmin; height: 28vmin; }
+      #box2 svg { width: 100%; height: 100%; }
+
+      /* viewfinder */
+      #vf2 { position: relative; width: 66vmin; height: 44vmin; border-radius: 1.6vmin; overflow: hidden; background: linear-gradient(180deg,#2b3446 0%,#3a4458 58%,#5a4a3a 58.2%,#4a3c2e 100%); }
+      #vf2 .corner { position: absolute; width: 4vmin; height: 4vmin; border: 0.4vmin solid #fff; opacity: 0.9; }
+      #vf2 .tl2 { left: 1.6vmin; top: 1.6vmin; border-right: 0; border-bottom: 0; } #vf2 .tr2 { right: 1.6vmin; top: 1.6vmin; border-left: 0; border-bottom: 0; }
+      #vf2 .bl2 { left: 1.6vmin; bottom: 1.6vmin; border-right: 0; border-top: 0; } #vf2 .br2 { right: 1.6vmin; bottom: 1.6vmin; border-left: 0; border-top: 0; }
+      .bb2 { position: absolute; border: 0.3vmin solid #34f5c5; border-radius: 0.4vmin; opacity: 0; }
+
+      /* ── S5 outro ── */
+      #s5 { background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5vmin; }
+      #phone2 { position: relative; width: 62vmin; padding: 1.6vmin; border-radius: 6vmin; background: #0e1014; box-shadow: 0 0 0 0.4vmin #2d313a, 0 6vmin 12vmin -4vmin rgba(0,0,0,0.6); opacity: 0; }
+      #pscreen { position: relative; width: 100%; aspect-ratio: 9/16; overflow: hidden; border-radius: 5vmin; background: #0b0d12; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3vmin; padding: 6vmin 4vmin; }
+      #pscreen .who { font-family: var(--mono); font-size: 2.2vmin; color: var(--ok); }
+      #pscreen h1 { font-size: 8vmin; font-weight: 800; letter-spacing: -0.03em; text-align: center; line-height: 1.05; }
+      #pill2 { display: flex; align-items: center; gap: 1.6vmin; padding: 1.6vmin 2.4vmin; border-radius: 4vmin; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14); }
+      #pill2 span { font-family: var(--mono); font-size: 1.8vmin; color: #e9edf3; }
+      #pill2 .dot2 { width: 2vmin; height: 2vmin; border-radius: 50%; background: var(--c3); }
+      #caption5 { font-family: var(--mono); font-size: 2.4vmin; letter-spacing: 0.1em; color: var(--muted); text-align: center; opacity: 0; }
+      #url-card { position: absolute; inset: 0; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3vmin; opacity: 0; z-index: 6; }
+      #url-text { font-family: var(--mono); font-size: 12vmin; font-weight: 700; letter-spacing: -0.01em; color: var(--fg); display: flex; align-items: baseline; }
+      #url-cur { width: 1.4vmin; height: 9vmin; background: var(--c3); margin-left: 1vmin; }
+      #url-sub { font-family: var(--mono); font-size: 2.4vmin; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="brag" data-start="0" data-duration="21.5" data-width="1080" data-height="1920">
+
+      <!-- S1 · hook -->
+      <section id="s1" class="clip" data-start="0" data-duration="2.2" data-track-index="1">
+        <div id="flash"></div>
+        <div style="display:flex; flex-direction:column; align-items:center;">
+          <div id="win">
+            <div id="glass">
+              <div id="skyline"></div>
+              <svg id="bolt" viewBox="0 0 100 200" aria-hidden="true"><path id="bolt-path" d="M60 0 L38 70 L58 72 L30 140 L50 142 L22 200" /></svg>
+              <div id="rain" data-layout-allow-overflow></div>
+            </div>
+          </div>
+          <div id="date"></div>
+          <div id="ecg">
+            <svg viewBox="0 0 600 100" preserveAspectRatio="none" aria-hidden="true">
+              <path id="ecg-path" d="M0 55 L230 55 L248 55 L258 40 L268 55 L286 55 L296 8 L310 92 L322 55 L600 55" />
+            </svg>
+            <div id="ecg-cur"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- S2 · reveal -->
+      <section id="s2" class="clip" data-start="2.2" data-duration="1.82" data-track-index="1">
+        <div id="crtbox">
+          <div id="crtglow"></div>
+          <div id="term2"><span id="t2-a"></span><br /><span id="t2-b"></span></div>
+        </div>
+        <div id="quote"></div>
+      </section>
+
+      <!-- S3 · highlight montage A (school -> bitapp), beat-grid cuts -->
+      <section id="s3" class="clip" data-start="4.02" data-duration="5.0" data-track-index="1">
+        <div class="beat" id="a1">
+          <div id="nb">
+            <div class="pg"><span class="yr">2005</span><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="#1e2b4a" stroke-width="1.6" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="1.4" /><path d="M8 21h8M12 17v4" /></svg></div>
+            <div class="pg"><span class="yr">2019</span><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="#1e2b4a" stroke-width="1.6" aria-hidden="true"><path d="M22 10L12 6 2 10l10 4 10-4Z" /><path d="M6 12v5c0 1.5 3 3 6 3s6-1.5 6-3v-5" /></svg></div>
+          </div>
+          <div class="label">school<br /><b>2005 → 2019</b></div>
+        </div>
+        <div class="beat" id="a2">
+          <div id="ll">
+            <div class="node">12</div><div class="arrow"></div>
+            <div class="node">7</div><div class="arrow"></div>
+            <div class="node" style="border-color:var(--c3);color:var(--c3)">99</div><div class="arrow"></div>
+            <div class="node">42</div>
+          </div>
+          <div class="label">college · c<br /><b>insert(7, 99)</b></div>
+        </div>
+        <div class="beat" id="a3">
+          <div id="cv">
+            <div id="cal2"></div>
+            <div id="droid"><svg viewBox="0 0 160 90" aria-hidden="true"><path d="M10 88 A70 70 0 0 1 150 88 Z" fill="#3ddc84" /><circle cx="52" cy="58" r="6" fill="#0b0f14" /><circle cx="108" cy="58" r="6" fill="#0b0f14" /><path d="M40 30 L24 6" stroke="#3ddc84" stroke-width="6" stroke-linecap="round" /><path d="M120 30 L136 6" stroke="#3ddc84" stroke-width="6" stroke-linecap="round" /></svg></div>
+          </div>
+          <div class="label">2020 · lockdown<br /><b>→ android</b></div>
+        </div>
+        <div class="beat" id="a4">
+          <div class="ico-wrap"><img src="assets/bit-app.png" alt="" /></div>
+          <div class="label">first production app<br /><b>BIT App</b></div>
+        </div>
+        <div class="beat" id="a5">
+          <div class="stat-row">
+            <div class="n"><span id="stat-users">0</span><span style="color:var(--ok)">+</span><small>students</small></div>
+            <div class="n"><span id="stat-rating">0.0</span><span style="color:var(--ok)">★</span><small>google play</small></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- S4 · highlight montage B (voice -> the site), beat-grid cuts -->
+      <section id="s4" class="clip" data-start="9.02" data-duration="6.0" data-track-index="1">
+        <div class="beat" id="b1">
+          <div id="wave2"></div>
+          <div id="box2"><svg viewBox="0 0 200 200" aria-hidden="true"><path d="M100 60 L170 90 L170 160 L100 190 L30 160 L30 90 Z" fill="#b8864d" /><path d="M100 120 L170 90 L170 160 L100 190 Z" fill="#a97a44" /><path d="M100 120 L30 90 L30 160 L100 190 Z" fill="#c89a62" /></svg></div>
+          <div class="label">internship · voice<br /><b>TTS-Engine · JitPack</b></div>
+        </div>
+        <div class="beat" id="b2">
+          <div id="vf2">
+            <div class="corner tl2"></div><div class="corner tr2"></div><div class="corner bl2"></div><div class="corner br2"></div>
+            <div class="bb2" id="bb2a" style="left:16%;top:24%;width:30%;height:34%"></div>
+            <div class="bb2" id="bb2b" style="left:54%;top:30%;width:12%;height:28%"></div>
+            <div class="bb2" id="bb2c" style="left:73%;top:20%;width:13%;height:38%"></div>
+          </div>
+          <div class="label">master's<br /><b>computer vision</b></div>
+        </div>
+        <div class="beat" id="b3">
+          <div id="env2">
+            <svg viewBox="0 0 640 400" preserveAspectRatio="none" aria-hidden="true"><path d="M0 0 L640 0 L320 200 Z" fill="#d6be88" /><path d="M0 120 L320 290 L640 120 L640 400 L0 400 Z" fill="#e2cc98" /></svg>
+            <div id="letter2"><span>offer of employment</span><b>Adrosonic</b></div>
+          </div>
+          <div class="label">aug 2024<br /><b>placed</b></div>
+        </div>
+        <div class="beat" id="b4">
+          <div id="bwrap">
+            <div id="badge2"><div class="av">A</div><b>Ayaan</b><small>full time</small></div>
+            <div id="cs2"><span class="k">public async</span> <span class="ty">Task</span><br />&lt;<span class="ty">IActionResult</span>&gt; <span class="k">Run</span>(req)</div>
+          </div>
+          <div class="label">adrosonic<br /><b>backend · c#</b></div>
+        </div>
+        <div class="beat" id="b5">
+          <div id="tstack">
+            <div id="ts1"><b>✓</b>static site</div>
+            <div id="ts2"><b>✓</b>next.js · cms</div>
+            <div id="ts3"><b>✓</b>postgres · docker</div>
+            <div id="ts4"><b>✓</b>backup machine</div>
+          </div>
+          <div class="label">now<br /><b>building aiyu.co.in</b></div>
+        </div>
+      </section>
+
+      <!-- S5 · outro / url -->
+      <section id="s5" class="clip" data-start="15.02" data-duration="6.48" data-track-index="1">
+        <div id="phone2">
+          <div id="pscreen">
+            <span class="who">$ whoami</span>
+            <h1>Hi, I'm<br />Ayaan.</h1>
+            <div id="pill2"><span class="dot2"></span><span>pause</span><span>·</span><span>1×</span></div>
+          </div>
+        </div>
+        <div id="caption5">the story keeps scrolling.</div>
+        <div id="url-card">
+          <div id="url-text"><span id="url-t"></span><span id="url-cur"></span></div>
+          <div id="url-sub">watch the whole story →</div>
+        </div>
+      </section>
+    </div>
+
+    <!-- audio -->
+    <audio id="bgm" src="assets/music/happy-beats-business-moves-vol-1-by-ende-dot-app.mp3" data-start="0" data-duration="21.5" data-track-index="20" data-volume="1"
+      data-automation='{"version":1,"lanes":[{"target":"volume","points":[{"t":0,"v":0.05},{"t":2.2,"v":0.08},{"t":3.7,"v":0.55},{"t":9.0,"v":0.55},{"t":15.0,"v":0.6},{"t":16.02,"v":0.8},{"t":18.02,"v":0.85},{"t":20.6,"v":0.85},{"t":21.5,"v":0}]}]}'
+    ></audio>
+    <audio id="sfx-tick-1" src="assets/sfx/interface/click_005.ogg" data-start="0.55" data-track-index="21" data-volume="0.35"></audio>
+    <audio id="sfx-tick-2" src="assets/sfx/interface/click_005.ogg" data-start="0.75" data-track-index="22" data-volume="0.35"></audio>
+    <audio id="sfx-tick-3" src="assets/sfx/interface/click_005.ogg" data-start="0.95" data-track-index="23" data-volume="0.35"></audio>
+    <audio id="sfx-cut-1" src="assets/sfx/interface/click_003.ogg" data-start="4.02" data-track-index="24" data-volume="0.3"></audio>
+    <audio id="sfx-cut-2" src="assets/sfx/interface/click_003.ogg" data-start="5.03" data-track-index="25" data-volume="0.3"></audio>
+    <audio id="sfx-cut-3" src="assets/sfx/interface/click_003.ogg" data-start="6.03" data-track-index="26" data-volume="0.3"></audio>
+    <audio id="sfx-cut-4" src="assets/sfx/interface/click_003.ogg" data-start="7.02" data-track-index="27" data-volume="0.3"></audio>
+    <audio id="sfx-cut-5" src="assets/sfx/interface/click_003.ogg" data-start="8.02" data-track-index="28" data-volume="0.3"></audio>
+    <audio id="sfx-cut-6" src="assets/sfx/interface/click_003.ogg" data-start="9.02" data-track-index="29" data-volume="0.3"></audio>
+    <audio id="sfx-cut-7" src="assets/sfx/interface/click_003.ogg" data-start="10.02" data-track-index="30" data-volume="0.3"></audio>
+    <audio id="sfx-cut-8" src="assets/sfx/interface/click_003.ogg" data-start="11.02" data-track-index="31" data-volume="0.3"></audio>
+    <audio id="sfx-cut-9" src="assets/sfx/interface/click_003.ogg" data-start="12.02" data-track-index="32" data-volume="0.3"></audio>
+    <audio id="sfx-cut-10" src="assets/sfx/interface/click_003.ogg" data-start="13.01" data-track-index="33" data-volume="0.3"></audio>
+    <audio id="sfx-impact" src="assets/sfx/impact/impactSoft_medium_001.ogg" data-start="16.02" data-track-index="34" data-volume="0.65"></audio>
+    <audio id="sfx-chime" src="assets/sfx/impact/impactBell_heavy_000.ogg" data-start="18.02" data-track-index="35" data-volume="0.7"></audio>
+
+    <script>
+      (function () {
+        var $ = function (s) { return document.querySelector(s); };
+        var $$ = function (s) { return Array.prototype.slice.call(document.querySelectorAll(s)); };
+        var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); };
+        var words = function (text, hl) {
+          return text.split(" ").map(function (w) {
+            var cls = hl && hl.indexOf(w.replace(/[.,]/g, "")) > -1 ? ' style="color:var(--c2)"' : "";
+            return "<span" + cls + ">" + esc(w) + "</span>";
+          }).join(" ");
+        };
+        $("#date").textContent = "3 May.";
+        $("#quote").innerHTML = words("...what I tell them to.", ["tell"]);
+        $("#t2-a").textContent = "> hello";
+        $("#t2-b").textContent = "hello";
+
+        // Deterministic rain + skyline (no Math.random in a composition).
+        var rain = "";
+        for (var r = 0; r < 70; r++) rain += '<i style="left:' + ((r * 61) % 100) + '%"></i>';
+        $("#rain").innerHTML = rain;
+        var sky = "";
+        for (var b = 0; b < 12; b++) sky += '<span style="height:' + (22 + ((b * 37 + b * b * 11) % 60)) + '%"></span>';
+        $("#skyline").innerHTML = sky;
+        var cal = "";
+        for (var d = 0; d < 16; d++) cal += "<div>" + (d >= 9 ? "✕" : "") + "</div>";
+        $("#cal2").innerHTML = cal;
+        var waveBars = "";
+        for (var w = 0; w < 22; w++) waveBars += '<i style="height:' + (18 + ((w * 29 + w * w * 7) % 70)) + '%"></i>';
+        $("#wave2").innerHTML = waveBars;
+        $("#url-t").textContent = "aiyu.co.in";
+
+        var tl = gsap.timeline({ paused: true, defaults: { ease: "expo.out" } });
+
+        // ── S1 · hook (0 - 2.2s) ──
+        gsap.set("#rain i", { y: "-15vmin" });
+        $$("#rain i").forEach(function (el, i) {
+          var dur = 0.5 + ((i * 7) % 5) * 0.05;
+          tl.fromTo(el, { y: "-15vmin" }, { y: "120vmin", duration: dur, ease: "none", repeat: Math.ceil(2.4 / dur) }, -((i * 0.11) % dur));
+        });
+        tl.fromTo("#flash", { opacity: 0 }, { opacity: 1, duration: 0.04, ease: "none" }, 0);
+        tl.to("#flash", { opacity: 0, duration: 0.35, ease: "power2.out" }, 0.05);
+        tl.fromTo("#bolt-path", { strokeDasharray: 260, strokeDashoffset: 260, opacity: 1 }, { strokeDashoffset: 0, duration: 0.08, ease: "none" }, 0);
+        tl.to("#bolt-path", { opacity: 0, duration: 0.3 }, 0.1);
+        tl.fromTo("#win", { opacity: 0, scale: 0.94 }, { opacity: 1, scale: 1, duration: 0.5 }, 0);
+        tl.fromTo("#date", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5 }, 0.5);
+        tl.fromTo("#ecg-path", { strokeDasharray: 720, strokeDashoffset: 720 }, { strokeDashoffset: 0, duration: 1.1, ease: "none" }, 0.9);
+        tl.fromTo("#ecg-cur", { opacity: 1 }, { opacity: 0, duration: 0.16, ease: "steps(1)", repeat: 5, yoyo: true }, 1.6);
+        tl.to("#s1 > div", { opacity: 0, scale: 1.04, duration: 0.2, ease: "power2.in" }, 2.05);
+
+        // ── S2 · reveal (2.2 - 4.02s) ──
+        tl.fromTo("#crtbox", { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.4 }, 2.2);
+        var n1 = $("#t2-a").textContent.length;
+        tl.fromTo("#t2-a", { clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0% 0 0)", duration: 0.3, ease: "steps(" + n1 + ")" }, 2.35);
+        tl.fromTo("#t2-b", { opacity: 0 }, { opacity: 1, duration: 0.1 }, 2.7);
+        tl.fromTo("#quote span", { opacity: 0, yPercent: 60 }, { opacity: 1, yPercent: 0, duration: 0.45, stagger: 0.05, ease: "back.out(1.6)" }, 2.85);
+        tl.to("#s2 > *", { opacity: 0, duration: 0.15, ease: "power2.in" }, 3.87);
+
+        // ── S3 · montage A, beat-locked cuts (4.02, 5.03, 6.03, 7.02, 8.02) ──
+        var cut = function (outSel, inSel, at, pop) {
+          if (outSel) tl.set(outSel, { opacity: 0 }, at);
+          tl.fromTo(inSel, { opacity: 0, scale: pop ? 1.08 : 1.03 }, { opacity: 1, scale: 1, duration: 0.16, ease: "power2.out" }, at);
+        };
+        cut(null, "#a1", 4.02); // beat-locked: 4.02s
+        cut("#a1", "#a2", 5.03); // beat-locked: 5.03s
+        cut("#a2", "#a3", 6.03); // beat-locked: 6.03s
+        tl.fromTo("#droid", { opacity: 0, y: "6vmin" }, { opacity: 1, y: 0, duration: 0.28, ease: "back.out(1.6)" }, 6.28);
+        tl.to("#cal2", { opacity: 0, duration: 0.24 }, 6.28);
+        cut("#a3", "#a4", 7.02); // beat-locked: 7.02s
+        cut("#a4", "#a5", 8.02); // beat-locked: 8.02s
+        var stat1 = { v: 0 }, stat2 = { v: 0 };
+        var statUsers = $("#stat-users"), statRating = $("#stat-rating");
+        tl.fromTo(stat1, { v: 0 }, { v: 1000, duration: 0.7, ease: "power2.out", onUpdate: function () { statUsers.textContent = Math.round(stat1.v).toLocaleString("en-US"); } }, 8.05);
+        tl.fromTo(stat2, { v: 0 }, { v: 4.7, duration: 0.7, ease: "power2.out", onUpdate: function () { statRating.textContent = stat2.v.toFixed(1); } }, 8.15);
+        tl.to("#s3", { opacity: 0, duration: 0.18, ease: "power2.in" }, 8.9);
+
+        // ── S4 · montage B, beat-locked cuts (9.02, 10.02, 11.02, 12.02, 13.01) ──
+        tl.set("#s3", { opacity: 1 }, 9.0);
+        cut(null, "#b1", 9.02); // beat-locked: 9.02s
+        cut("#b1", "#b2", 10.02); // beat-locked: 10.02s
+        tl.fromTo("#bb2a, #bb2b, #bb2c", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 1, duration: 0.2, stagger: 0.08, ease: "back.out(2)" }, 10.15);
+        cut("#b2", "#b3", 11.02); // beat-locked: 11.02s
+        cut("#b3", "#b4", 12.02); // beat-locked: 12.02s
+        cut("#b4", "#b5", 13.01); // beat-locked: 13.01s
+        tl.fromTo("#ts1, #ts2, #ts3, #ts4", { opacity: 0, y: "3vmin" }, { opacity: 1, y: 0, duration: 0.25, stagger: 0.14, ease: "power2.out" }, 13.2);
+        tl.to("#s4", { opacity: 0, duration: 0.25, ease: "power2.in" }, 14.85);
+
+        // ── S5 · outro (15.02 - 21.5s) ──
+        tl.set("#s4", { opacity: 1 }, 15.0);
+        // phone slams in and settles exactly on the strong-cue impact hit
+        tl.fromTo("#phone2", { opacity: 0, y: "10vmin", scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "back.out(1.4)" }, 15.52); // beat-locked: 16.02s
+        tl.fromTo("#caption5", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.4 }, 16.3);
+        tl.to("#phone2, #caption5", { opacity: 0, y: "-4vmin", duration: 0.2, ease: "power2.in" }, 17.85);
+        tl.fromTo("#url-card", { opacity: 0 }, { opacity: 1, duration: 0.08, ease: "none" }, 18.02); // beat-locked: 18.02s
+        tl.fromTo("#url-t", { clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0% 0 0)", duration: 0.4, ease: "steps(10)" }, 18.1);
+        tl.fromTo("#url-cur", { opacity: 1 }, { opacity: 0, duration: 0.25, ease: "steps(1)", repeat: 11, yoyo: true }, 18.55);
+        tl.fromTo("#url-sub", { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.4 }, 18.6);
+        tl.to("#url-card", { opacity: 0, duration: 0.5, ease: "power2.in" }, 21.0);
+
+        window.__timelines["brag"] = tl;
+      })();
+    </script>
+  </body>
+</html>
