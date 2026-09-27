@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { FaArrowDown, FaArrowRight, FaGithub, FaWindows, FaForwardStep } from 'react-icons/fa6';
+import { FaArrowDown, FaArrowRight, FaGithub, FaWindows, FaPlay } from 'react-icons/fa6';
 import TypewriterEffect from '../../shared/TypewriterEffect';
 import useDevicePerformance from '../../../hooks/useDevicePerformance';
 import HyperFramesStage from '../../shared/HyperFramesStage';
@@ -10,6 +10,7 @@ import { useV2Fx, isLiteDevice } from './gsap3d';
 import DesktopPrompt from './DesktopPrompt';
 import { smoothScrollTo } from './motion';
 import { BOOT_READY_EVENT, isBootReady } from '../../shared/bootSignal';
+import { useStoryAutoplay, play as playStory, setHeroDock } from './storyAutoplay';
 
 /**
  * V2 hero — the story film. The boot loader ends on a login prompt; this
@@ -44,7 +45,6 @@ const V2Hero = ({ data, counts = {} }) => {
     const playerRef = useRef(null);
     const timeRef = useRef(0);
     const phaseRef = useRef('start');
-    const skipRef = useRef(null);
     const introRef = useRef(null);
 
     const [film, setFilm] = useState(false);
@@ -131,8 +131,6 @@ const V2Hero = ({ data, counts = {} }) => {
                 },
             });
 
-            skipRef.current = () => smoothScrollTo(st.end + 2);
-
             // Opening line plays by itself once the boot splash has cleared
             // AND the film has painted — whichever comes last starts it.
             let bootDone = isBootReady();
@@ -165,7 +163,6 @@ const V2Hero = ({ data, counts = {} }) => {
             return () => {
                 window.removeEventListener(BOOT_READY_EVENT, onBoot);
                 introRef.current = null;
-                skipRef.current = null;
             };
         },
     });
@@ -179,6 +176,23 @@ const V2Hero = ({ data, counts = {} }) => {
     };
 
     const showDock = !film || phase !== 'mid';
+    const { playing } = useStoryAutoplay();
+    // While the dock is up and on screen it owns the bottom slot; once the
+    // story plays (or the hero scrolls away) the StoryPlayer takes over.
+    const dockRef = useRef(null);
+    const [dockInView, setDockInView] = useState(true);
+    useEffect(() => {
+        const el = dockRef.current;
+        if (!el || !('IntersectionObserver' in window)) return undefined;
+        const io = new IntersectionObserver(([entry]) => setDockInView(entry.isIntersecting), { threshold: 0.5 });
+        io.observe(el);
+        return () => io.disconnect();
+    }, []);
+    useEffect(() => {
+        setHeroDock(showDock && dockInView);
+    }, [showDock, dockInView]);
+    useEffect(() => () => setHeroDock(false), []);
+    const dockVisible = showDock && !playing;
 
     return (
         <section ref={sectionRef} className="relative" aria-labelledby="hero-title">
@@ -221,33 +235,42 @@ const V2Hero = ({ data, counts = {} }) => {
 
                 {/* "Press start" dock: shown before the story starts and once
                     it reaches the Windows scene; hidden while it plays. It
-                    shares one bottom-centre slot with the skip button, and on
+                    shares one bottom-centre slot with the StoryPlayer, and on
                     portrait screens it stays narrow enough to clear the site's
                     floating side pills and sits in a band the film leaves free.
                     The trademark notice rides in it for the game scene. */}
                 <div
+                    ref={dockRef}
                     className="absolute inset-x-0 bottom-[13vh] z-10 flex justify-center px-4 transition-all duration-500 portrait:bottom-[4.25rem] lg:justify-start lg:px-[4vmin]"
                     style={{
-                        opacity: showDock ? 1 : 0,
-                        transform: showDock ? 'none' : 'translateY(16px)',
-                        visibility: showDock ? 'visible' : 'hidden',
+                        opacity: dockVisible ? 1 : 0,
+                        transform: dockVisible ? 'none' : 'translateY(16px)',
+                        visibility: dockVisible ? 'visible' : 'hidden',
                     }}
                 >
                     <div
-                        className="flex max-w-[17rem] flex-col items-center gap-1.5 rounded-2xl border p-2 backdrop-blur-md sm:max-w-none"
+                        className="flex max-w-[19.5rem] flex-col items-center gap-1.5 rounded-2xl border p-2 backdrop-blur-md sm:max-w-none"
                         style={{ borderColor: 'var(--hairline)', backgroundColor: 'color-mix(in srgb, var(--bg-primary) 60%, transparent)' }}
                     >
-                        <div className="flex items-center gap-2 sm:gap-2.5">
+                        <div className="flex items-center gap-1.5 sm:gap-2.5">
                             <span className="hidden px-2 font-mono text-[0.7rem] uppercase tracking-[0.3em] sm:inline" style={{ color: 'var(--text-muted)' }}>
                                 {phase === 'end' ? 'press start' : resumeStatus || 'online'}
                             </span>
-                            <Link href="/projects" className="pill-solid inline-flex items-center gap-2 whitespace-nowrap">
+                            <button
+                                type="button"
+                                onClick={playStory}
+                                className="pill-solid inline-flex cursor-pointer items-center gap-2 whitespace-nowrap max-sm:px-4!"
+                            >
+                                <FaPlay size={10} /> <span className="sm:hidden">Play</span>
+                                <span className="hidden sm:inline">Play story</span>
+                            </button>
+                            <Link href="/projects" className="pill-ghost inline-flex items-center gap-2 whitespace-nowrap max-sm:px-3.5!">
                                 <span className="sm:hidden">Projects</span>
                                 <span className="hidden sm:inline">Explore projects</span>
                                 <FaArrowRight size={12} />
                             </Link>
                             {githubLink && (
-                                <a href={githubLink} target="_blank" rel="noopener noreferrer" aria-label="GitHub" className="pill-ghost inline-flex items-center gap-2">
+                                <a href={githubLink} target="_blank" rel="noopener noreferrer" aria-label="GitHub" className="pill-ghost inline-flex items-center gap-2 max-sm:px-3!">
                                     <FaGithub size={14} /> <span className="hidden sm:inline">GitHub</span>
                                 </a>
                             )}
@@ -255,7 +278,7 @@ const V2Hero = ({ data, counts = {} }) => {
                                 type="button"
                                 onClick={() => setShowDesktopPrompt(true)}
                                 aria-label="Desktop mode"
-                                className="pill-ghost inline-flex cursor-pointer items-center gap-2"
+                                className="pill-ghost inline-flex cursor-pointer items-center gap-2 max-sm:px-3!"
                             >
                                 <FaWindows size={13} /> <span className="hidden sm:inline">Desktop mode</span>
                             </button>
@@ -288,20 +311,7 @@ const V2Hero = ({ data, counts = {} }) => {
                                 scroll to play <FaArrowDown size={10} className="animate-bounce" />
                             </span>
                         </div>
-                        <button
-                            type="button"
-                            onClick={() => skipRef.current?.()}
-                            className="absolute inset-x-0 bottom-[4.25rem] z-10 mx-auto inline-flex w-max cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 font-mono text-[0.68rem] uppercase tracking-[0.2em] backdrop-blur-md transition-opacity duration-300 hover:opacity-100 active:scale-[0.97]"
-                            style={{
-                                borderColor: 'var(--hairline)',
-                                color: 'var(--text-secondary)',
-                                backgroundColor: 'color-mix(in srgb, var(--bg-primary) 50%, transparent)',
-                                opacity: phase === 'mid' ? 0.8 : 0,
-                                visibility: phase === 'mid' ? 'visible' : 'hidden',
-                            }}
-                        >
-                            skip story <FaForwardStep size={10} />
-                        </button>
+
                     </>
                 )}
             </div>

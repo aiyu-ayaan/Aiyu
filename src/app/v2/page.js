@@ -1,5 +1,6 @@
 import V2Hero from "../components/landing/v2/V2Hero";
 import V2LifeStory from "../components/landing/v2/V2LifeStory";
+import StoryPlayer from "../components/landing/v2/StoryPlayer";
 import V2Snapshot from "../components/landing/v2/V2Snapshot";
 import V2MissionControl from "../components/landing/v2/V2MissionControl";
 import V2LazySections from "../components/landing/v2/V2LazySections";
@@ -93,6 +94,7 @@ export default async function HomeV2() {
       />
 
       <V2LifeStory name={serializedHomeData?.name || 'Ayaan'} />
+      <StoryPlayer skipTo="v2-snapshot" />
 
       <ViewportLazySection
         id="v2-snapshot"

@@ -1,11 +1,9 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { FaArrowDown } from 'react-icons/fa6';
 import HyperFramesStage from '../../shared/HyperFramesStage';
 import useDevicePerformance from '../../../hooks/useDevicePerformance';
 import { gsap, ScrollTrigger, useGSAP, isLiteDevice, refreshScrollTriggersSoon } from './gsap3d';
-import { smoothScrollTo } from './motion';
 
 // Share of the pin spent playing; the rest holds the last frame so the
 // chapter's final line can be read before the next one scrolls in.
@@ -26,7 +24,7 @@ const PIN_PER_SECOND = 34;
  *   whole chapter on reduced-motion / lite devices, and is shown while the
  *   film loads, then fades out once the film paints.
  */
-const StoryChapter = ({ chapter, index, total, params, skipTo }) => {
+const StoryChapter = ({ chapter, index, total, params }) => {
     const { id, film: filmName, eyebrow, when, title, body, accent, image, duration, introEnd } = chapter;
 
     const sectionRef = useRef(null);
@@ -194,25 +192,6 @@ const StoryChapter = ({ chapter, index, total, params, skipTo }) => {
                     </div>
                 </div>
 
-                {/* Bottom centre, clear of the site's floating corner buttons;
-                    on portrait screens the film ends above it. */}
-                {film && skipTo && (
-                    <button
-                        type="button"
-                        onClick={() => {
-                            const target = document.getElementById(skipTo);
-                            if (target) smoothScrollTo(target.getBoundingClientRect().top + window.scrollY);
-                        }}
-                        className="absolute inset-x-0 bottom-[4.25rem] z-10 mx-auto inline-flex w-max cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 font-mono text-[0.62rem] uppercase tracking-[0.2em] opacity-70 backdrop-blur-md transition-[opacity,transform] duration-200 hover:opacity-100 active:scale-[0.97]"
-                        style={{
-                            borderColor: 'var(--hairline)',
-                            color: 'var(--text-secondary)',
-                            backgroundColor: 'color-mix(in srgb, var(--bg-primary) 55%, transparent)',
-                        }}
-                    >
-                        skip story <FaArrowDown size={9} />
-                    </button>
-                )}
             </div>
         </section>
     );

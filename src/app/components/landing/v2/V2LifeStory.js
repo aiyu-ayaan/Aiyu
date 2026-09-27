@@ -2,11 +2,11 @@ import StoryChapter from './StoryChapter';
 import { LIFE_STORY, BORN_YEAR } from '../../../data/lifeStory';
 
 /**
- * The life story, told after the hero film: one pinned HyperFrames chapter
- * per phase of life (see src/app/data/lifeStory.js). Each chapter offers a
- * way out to the first section after the story.
+ * The life story, told after the hero film: one scroll-scrubbed HyperFrames
+ * chapter per phase of life (see src/app/data/lifeStory.js). Playback and
+ * skipping live in the floating StoryPlayer.
  */
-export default function V2LifeStory({ name, skipTo = 'v2-snapshot' }) {
+export default function V2LifeStory({ name }) {
     const params = { name, born: BORN_YEAR };
     return (
         <div id="v2-story" className="relative z-10">
@@ -17,7 +17,6 @@ export default function V2LifeStory({ name, skipTo = 'v2-snapshot' }) {
                     index={index}
                     total={LIFE_STORY.length}
                     params={params}
-                    skipTo={skipTo}
                 />
             ))}
         </div>
