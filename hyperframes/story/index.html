@@ -38,45 +38,25 @@
 
       /* ── persistent stage ─────────────────────────────── */
       #bg { position: absolute; inset: 0; }
-      #grid {
-        position: absolute; inset: -10%;
-        background-image:
-          linear-gradient(color-mix(in srgb, var(--line) 70%, transparent) 1px, transparent 1px),
-          linear-gradient(90deg, color-mix(in srgb, var(--line) 70%, transparent) 1px, transparent 1px);
-        background-size: 6vmin 6vmin;
-        -webkit-mask-image: radial-gradient(ellipse at 50% 55%, black 20%, transparent 70%);
-        mask-image: radial-gradient(ellipse at 50% 55%, black 20%, transparent 70%);
-        will-change: transform;
-      }
       /* Own compositor layers: these full-frame fills only change opacity or
          transform, so scrubbing never repaints them. */
       .glow { position: absolute; inset: 0; will-change: opacity; }
-      #glow-day { background: radial-gradient(55% 60% at 70% 40%, color-mix(in srgb, var(--c1) 22%, transparent), transparent 70%); }
+      #glow-day { background: radial-gradient(55% 60% at 70% 40%, color-mix(in srgb, var(--c1) 12%, transparent), transparent 70%); }
       #glow-night {
         opacity: 0;
         background:
-          radial-gradient(55% 60% at 30% 45%, color-mix(in srgb, var(--c3) 26%, transparent), transparent 70%),
-          radial-gradient(45% 50% at 80% 80%, color-mix(in srgb, var(--c2) 22%, transparent), transparent 70%);
+          radial-gradient(55% 60% at 30% 45%, color-mix(in srgb, var(--c3) 14%, transparent), transparent 70%),
+          radial-gradient(45% 50% at 80% 80%, color-mix(in srgb, var(--c2) 12%, transparent), transparent 70%);
       }
 
-      #hud-top {
-        position: absolute; left: 4vmin; right: 4vmin; top: 3.6vmin;
-        display: flex; justify-content: space-between; align-items: center;
-        font-family: var(--mono); font-size: 1.5vmin; letter-spacing: 0.25em; text-transform: uppercase;
-        color: var(--muted); z-index: 20;
-      }
-      #rec { display: flex; align-items: center; gap: 1vmin; }
-      #rec-dot { width: 1.1vmin; height: 1.1vmin; border-radius: 50%; background: var(--c3); }
-      #chapters {
-        position: absolute; left: 4vmin; right: 4vmin; bottom: 3.6vmin; z-index: 20;
-        display: flex; gap: 1.2vmin; font-family: var(--mono); font-size: 1.35vmin;
-        letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted);
-      }
-      .chap { flex: 1; }
-      .chap-bar { height: 0.35vmin; background: var(--line); margin-bottom: 1.2vmin; overflow: hidden; }
-      .chap-fill { height: 100%; width: 100%; background: var(--fg); transform-origin: left center; }
-      .chap[data-accent="1"] .chap-fill { background: var(--c1); }
-      .chap[data-accent="3"] .chap-fill { background: var(--c3); }
+      /* ── chapter chrome: the same header every life-story chapter uses ── */
+      #chip { position: absolute; left: 4vmin; top: 3.6vmin; z-index: 20; display: flex; align-items: center; gap: 1.2vmin; font-family: var(--mono); font-size: 1.45vmin; letter-spacing: 0.28em; text-transform: uppercase; color: var(--muted); }
+      #chip b { color: var(--fg); font-weight: 600; }
+      #chip i { width: 4vmin; height: 1px; background: var(--line); }
+      #stamp { position: absolute; right: 4vmin; top: 3vmin; z-index: 20; text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--fg); }
+      #stamp small { display: block; font-size: 1.3vmin; letter-spacing: 0.3em; text-transform: uppercase; color: var(--muted); }
+      #stamp .v { position: relative; height: 3.8vmin; margin-top: 0.4vmin; }
+      #stamp .v b { position: absolute; right: 0; top: 0; white-space: nowrap; font-size: 3vmin; font-weight: 600; letter-spacing: 0.04em; opacity: 0; }
 
       /* ── shared type ──────────────────────────────────── */
       .eyebrow { font-family: var(--mono); font-size: 1.8vmin; letter-spacing: 0.3em; text-transform: uppercase; }
@@ -99,32 +79,31 @@
       #code-title { font-size: 8.6vmin; }
       #code-title .hl { color: var(--c1); }
       #code-sub { margin-top: 2.6vmin; font-size: 2.3vmin; line-height: 1.45; color: var(--muted); max-width: 46vmin; }
-      #tiles { flex: 1; height: 100%; display: grid; grid-template-columns: 1.35fr 1fr; grid-template-rows: 1fr 0.8fr; gap: 1.6vmin; }
-      .win {
-        position: relative; overflow: hidden; border-radius: 1.2vmin;
-        border: 1px solid color-mix(in srgb, var(--fg) 14%, transparent);
-        background: color-mix(in srgb, var(--surface) 92%, transparent);
-        box-shadow: 0 3vmin 7vmin -3vmin rgba(0, 0, 0, 0.45);
-        display: flex; flex-direction: column;
-      }
-      .win-bar {
-        display: flex; justify-content: space-between; align-items: center;
-        padding: 1vmin 1.6vmin; font-family: var(--mono); font-size: 1.4vmin; color: var(--muted);
-        border-bottom: 1px solid color-mix(in srgb, var(--fg) 8%, transparent);
-      }
-      .win-bar .tag { color: var(--bg); background: var(--c1); padding: 0.2vmin 0.8vmin; border-radius: 0.4vmin; font-weight: 700; }
+      #lap-wrap { flex: 1; display: flex; align-items: center; justify-content: center; }
+      .laptop { position: relative; width: 94vmin; }
+      .lid { position: relative; width: 100%; aspect-ratio: 16 / 10.2; padding: 1.6vmin 1.6vmin 2vmin; border-radius: 2vmin 2vmin 0.4vmin 0.4vmin; background: #16181d; box-shadow: 0 0 0 0.25vmin #3a3f48, 0 4vmin 9vmin -3vmin rgba(0, 0, 0, 0.55); }
+      .cam { position: absolute; left: 50%; top: 0.6vmin; width: 0.6vmin; height: 0.6vmin; margin-left: -0.3vmin; border-radius: 50%; background: #2c3140; }
+      .deck { position: relative; width: 116%; margin-left: -8%; height: 2.4vmin; border-radius: 0.3vmin 0.3vmin 2.8vmin 2.8vmin; background: linear-gradient(180deg, #dfe3e9, #aab1bc); box-shadow: 0 1.4vmin 2.4vmin -1vmin rgba(0, 0, 0, 0.5); }
+      .deck::after { content: ""; position: absolute; left: 50%; top: 0; width: 14%; height: 0.9vmin; margin-left: -7%; border-radius: 0 0 1vmin 1vmin; background: #9aa1ad; }
+      /* The screen is a real terminal: fixed dark colours in every theme. */
+      #tmux { position: relative; width: 100%; height: 100%; overflow: hidden; border-radius: 0.5vmin; background: #0d1117; color: #c9d1d9; display: grid; grid-template-columns: 1.3fr 1fr; grid-template-rows: 1fr 0.8fr 3vmin; gap: 1px; background-color: #30363d; }
+      .win { position: relative; overflow: hidden; background: #0d1117; display: flex; flex-direction: column; }
+      .win-bar { display: flex; justify-content: space-between; align-items: center; padding: 0.8vmin 1.4vmin; font-family: var(--mono); font-size: 1.25vmin; color: #8b949e; border-bottom: 1px solid #21262d; }
+      .win-bar .tag { color: #0d1117; background: #56d4dd; padding: 0.15vmin 0.7vmin; border-radius: 0.3vmin; font-weight: 700; }
       #w-editor { grid-row: 1 / span 2; }
-      .code { padding: 1.6vmin 2vmin; font-family: var(--mono); font-size: 1.85vmin; line-height: 1.8; white-space: pre; }
+      #tmux-bar { grid-column: 1 / span 2; display: flex; align-items: center; gap: 1.6vmin; padding: 0 1.4vmin; background: #196c2e; color: #f0f6fc; font-family: var(--mono); font-size: 1.25vmin; }
+      #tmux-bar span:last-child { margin-left: auto; }
+      .code { padding: 1.4vmin 1.6vmin; font-family: var(--mono); font-size: 1.6vmin; line-height: 1.75; white-space: pre; }
       .ln { display: flex; gap: 2vmin; }
-      .ln i { font-style: normal; width: 2.4vmin; text-align: right; color: var(--muted); opacity: 0.55; flex: none; }
+      .ln i { font-style: normal; width: 2.4vmin; text-align: right; color: #8b949e; flex: none; }
       .ln span.t { display: inline-block; overflow: hidden; max-width: 100%; text-overflow: ellipsis; }
-      .k { color: var(--c2); } .s { color: var(--c4); } .p { color: var(--c1); } .c { color: var(--muted); }
-      #term { padding: 1.4vmin 1.8vmin; font-family: var(--mono); font-size: 1.6vmin; line-height: 1.75; color: var(--muted); }
-      #term .ok { color: var(--ok); } #term .fg { color: var(--fg); }
+      .k { color: #ff7b72; } .s { color: #a5d6ff; } .p { color: #79c0ff; } .c { color: #8b949e; }
+      #term { padding: 1.2vmin 1.6vmin; font-family: var(--mono); font-size: 1.45vmin; line-height: 1.75; color: #8b949e; }
+      #term .ok { color: #3fb950; } #term .fg { color: #f0f6fc; }
       #graph { flex: 1; display: flex; align-items: center; justify-content: center; gap: 1.1vmin; padding: 1.6vmin; }
-      .dot { width: 1.6vmin; height: 1.6vmin; border-radius: 50%; background: var(--c1); }
-      .dot.b { background: var(--c2); } .dot.c { background: var(--c4); }
-      .edge { width: 3vmin; height: 2px; background: color-mix(in srgb, var(--fg) 25%, transparent); transform-origin: left center; }
+      .dot { width: 1.6vmin; height: 1.6vmin; border-radius: 50%; background: #56d4dd; }
+      .dot.b { background: #d2a8ff; } .dot.c { background: #ffa657; }
+      .edge { width: 3vmin; height: 2px; background: #484f58; transform-origin: left center; }
 
       /* ── S3 ship ──────────────────────────────────────── */
       #s-ship { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7vmin; padding: 10vmin 6vmin; }
@@ -168,10 +147,13 @@
       #play-title { font-size: 8.6vmin; }
       #play-title .hl { color: var(--c3); }
       #play-sub { margin-top: 2.6vmin; font-size: 2.3vmin; line-height: 1.45; color: var(--muted); max-width: 46vmin; }
-      #rig { position: relative; flex: 1; height: 100%; display: flex; flex-direction: column; }
+      #rig { position: relative; flex: 1; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+      #monitor { position: relative; width: min(100%, 100vmin); padding: 1.2vmin; border-radius: 1.8vmin; background: #0f1115; box-shadow: 0 0 0 0.25vmin #2d313a, 0 4vmin 9vmin -3vmin rgba(0, 0, 0, 0.6); }
+      #mon-screen { position: relative; width: 100%; aspect-ratio: 16 / 10; overflow: hidden; border-radius: 0.8vmin; display: flex; flex-direction: column; background: #0b0d12; }
+      #mon-neck { width: 9vmin; height: 4vmin; background: linear-gradient(90deg, #22262e, #3a3f49, #22262e); }
+      #mon-foot { width: 26vmin; height: 1.4vmin; border-radius: 1vmin 1vmin 0.4vmin 0.4vmin; background: linear-gradient(180deg, #3a3f49, #1d2027); }
       #game {
-        position: relative; flex: 1; overflow: hidden; border-radius: 1.4vmin;
-        border: 1px solid color-mix(in srgb, var(--c3) 40%, transparent);
+        position: relative; flex: 1; overflow: hidden;
         background:
           radial-gradient(90% 70% at 50% 110%, color-mix(in srgb, var(--c3) 38%, transparent), transparent 60%),
           radial-gradient(70% 60% at 0% 0%, color-mix(in srgb, var(--c2) 34%, transparent), transparent 60%),
@@ -189,7 +171,7 @@
       /* ── game vignettes inside #game (S5). Deliberately game-like colours,
             independent of the site theme, like real gameplay footage. ── */
       #card { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 2.2vmin; }
-      #screens { position: absolute; inset: 0; z-index: 1; overflow: hidden; border-radius: 1.4vmin; }
+      #screens { position: absolute; inset: 0; z-index: 1; overflow: hidden; }
       .gscreen { position: absolute; inset: 0; opacity: 0; overflow: hidden; }
       .g-tag {
         position: absolute; left: 2vmin; bottom: 4.6vmin; z-index: 6; display: flex; align-items: center; gap: 1.2vmin;
@@ -230,9 +212,8 @@
       /* First-person viewmodel: the rig carries the static aim angle, #val-gun
          (tweened) only the recoil, so CSS and GSAP never share a transform. */
       /* The rig pivots on the muzzle (barrel axis at y 9.9vmin). The muzzle
-         sits below-right of the crosshair and the angle is solved so the
-         barrel line runs through the screen centre: atan(dy/dx) of
-         (64%,62%) → (50%,50%) on each canvas. */
+         sits below-right of the crosshair; the script solves the angle so the
+         barrel line runs through the screen centre (31deg is the fallback). */
       #val-rig { position: absolute; left: 64%; top: calc(62% - 9.9vmin); width: 62vmin; height: 26vmin; transform-origin: 0 9.9vmin; transform: rotate(31deg); z-index: 3; }
       #val-gun { position: absolute; inset: 0; }
       #val-gun i { position: absolute; display: block; }
@@ -320,30 +301,46 @@
       .toast-ico { flex: none; width: 4.4vmin; height: 4.4vmin; border-radius: 0.8vmin; display: flex; align-items: center; justify-content: center; font-size: 2.4vmin; color: var(--bg); background: var(--c4); }
       .toast small { display: block; font-family: var(--mono); font-size: 1.2vmin; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); }
       .toast strong { display: block; font-size: 1.9vmin; font-weight: 700; }
+      /* Windows taskbar, inside the monitor. */
       #taskbar {
-        margin-top: 1.4vmin; height: 5vmin; border-radius: 1vmin; display: flex; align-items: center; justify-content: center; gap: 1.4vmin;
-        background: color-mix(in srgb, var(--surface) 90%, transparent); border: 1px solid color-mix(in srgb, var(--fg) 10%, transparent);
+        flex: none; height: 4.6vmin; display: flex; align-items: center; justify-content: center; gap: 1.4vmin;
+        background: rgba(22, 26, 34, 0.96); border-top: 1px solid rgba(255, 255, 255, 0.08);
       }
       #winlogo { display: grid; grid-template-columns: 1fr 1fr; gap: 0.25vmin; }
-      #winlogo span { width: 1.2vmin; height: 1.2vmin; background: var(--c1); }
+      #winlogo span { width: 1.2vmin; height: 1.2vmin; background: #4cc2ff; }
 
       /* ── portrait variant (same file, 1080×1920 canvas) ── */
       @media (orientation: portrait) {
+        .eyebrow { font-size: 2.3vmin; }
         #s-code, #s-play { flex-direction: column; justify-content: center; padding: 14vmin 6vmin 16vmin; gap: 6vmin; }
         #code-copy, #play-copy { flex: none; width: 100%; }
         #code-title, #play-title { font-size: 11vmin; }
         #code-sub, #play-sub { max-width: none; font-size: 3vmin; }
-        #tiles, #rig { flex: none; width: 100%; height: 95vmin; }
+        #lap-wrap, #rig { flex: none; width: 100%; height: auto; }
+        .laptop { width: 84vmin; }
+        #card { margin-top: 7vmin; }
+        #tmux { grid-template-columns: 1fr; grid-template-rows: 1fr 0.34fr 3vmin; }
+        #term { font-size: 1.3vmin; line-height: 1.45; padding: 0.6vmin 1.4vmin; }
+        #w-editor { grid-row: auto; }
+        #w-graph { display: none; }
+        #tmux-bar { grid-column: auto; }
+        #monitor { width: 92vmin; }
+        #mon-screen { aspect-ratio: 5 / 4; }
         #hello-name { font-size: 22vmin; }
         #ship-title { font-size: 12vmin; }
         #pipe { gap: 4vmin; }
         #stats { flex-direction: column; gap: 5vmin; }
-        #toasts { flex-direction: column; left: auto; width: 60vmin; }
+        .toast { padding: 1vmin 1.2vmin; gap: 1vmin; }
+        .toast small { display: none; }
+        .toast-ico { width: 3.4vmin; height: 3.4vmin; font-size: 1.8vmin; }
+        .toast strong { font-size: 1.6vmin; }
         #library { flex-direction: column; }
-        #val-rig { transform: rotate(39deg); }
         .game b { font-size: 2.4vmin; }
-        .code { font-size: 2.3vmin; }
-        #chapters { font-size: 1.8vmin; }
+        .code { font-size: 1.35vmin; line-height: 1.7; padding: 0.9vmin 1.4vmin; }
+        #chip { font-size: 2.6vmin; }
+        #stamp small { font-size: 2.2vmin; }
+        #stamp .v { height: 5.6vmin; }
+        #stamp .v b { font-size: 4.6vmin; }
       }
     </style>
   </head>
@@ -351,21 +348,11 @@
     <div id="root" data-composition-id="story" data-start="0" data-duration="16" data-width="1920" data-height="1080">
       <!-- persistent stage (untimed) -->
       <div id="bg">
-        <div id="grid"></div>
         <div id="glow-day" class="glow"></div>
         <div id="glow-night" class="glow"></div>
       </div>
-      <div id="hud-top">
-        <span id="rec"><span id="rec-dot"></span><span id="rec-label">aiyu.story</span></span>
-        <span id="tc" class="mono">00:00</span>
-      </div>
-      <div id="chapters">
-        <div class="chap"><div class="chap-bar"><div class="chap-fill" id="cf-0"></div></div>01 hello</div>
-        <div class="chap" data-accent="1"><div class="chap-bar"><div class="chap-fill" id="cf-1"></div></div>02 code</div>
-        <div class="chap"><div class="chap-bar"><div class="chap-fill" id="cf-2"></div></div>03 ship</div>
-        <div class="chap"><div class="chap-bar"><div class="chap-fill" id="cf-3"></div></div>04 reboot</div>
-        <div class="chap" data-accent="3"><div class="chap-bar"><div class="chap-fill" id="cf-4"></div></div>05 play</div>
-      </div>
+      <div id="chip"><b>ch 00</b><i></i><span>prologue</span></div>
+      <div id="stamp"><small>a day in my life</small><div class="v"><b id="sv-0">hello</b><b id="sv-1">06:00 · linux</b><b id="sv-2">ship</b><b id="sv-3">reboot</b><b id="sv-4">22:00 · windows</b></div></div>
 
       <!-- S1 · hello -->
       <section id="s-hello" class="clip" data-start="0" data-duration="2.2" data-track-index="1">
@@ -383,7 +370,11 @@
           <h2 id="code-title" class="title"></h2>
           <p id="code-sub">Terminal first, keyboard driven. Ideas become commits here.</p>
         </div>
-        <div id="tiles">
+        <div id="lap-wrap">
+          <div class="laptop" id="laptop">
+            <div class="lid">
+              <span class="cam"></span>
+              <div id="tmux">
           <div class="win" id="w-editor">
             <div class="win-bar"><span><span class="tag">1:code</span>&nbsp; ~/code/dev.ts</span><span>linux</span></div>
             <div class="code" id="code"></div>
@@ -406,6 +397,11 @@
               <span class="dot c"></span><span class="edge"></span>
               <span class="dot"></span>
             </div>
+          </div>
+                <div id="tmux-bar"><span>[dev]</span><span>0:code*</span><span>1:zsh</span><span>2:git</span><span>linux · main</span></div>
+              </div>
+            </div>
+            <div class="deck"></div>
           </div>
         </div>
       </section>
@@ -451,6 +447,8 @@
           <p id="play-sub">Evenings belong to the backlog, the other kind.</p>
         </div>
         <div id="rig">
+          <div id="monitor">
+          <div id="mon-screen">
           <div id="game">
             <div id="scan"></div>
             <div id="toasts">
@@ -514,8 +512,12 @@
             <span id="winlogo"><span></span><span></span><span></span><span></span></span>
             <span class="tb-game"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#FA4454" d="M23.792 2.152a.252.252 0 0 0-.098.083c-3.384 4.23-6.769 8.46-10.15 12.69-.107.093-.025.288.119.265 2.439.003 4.877 0 7.316.001a.66.66 0 0 0 .552-.25c.774-.967 1.55-1.934 2.324-2.903a.72.72 0 0 0 .144-.49c-.002-3.077 0-6.153-.003-9.23.016-.11-.1-.206-.204-.167zM.077 2.166c-.077.038-.074.132-.076.205.002 3.074.001 6.15.001 9.225a.679.679 0 0 0 .158.463l7.64 9.55c.12.152.308.25.505.247 2.455 0 4.91.003 7.365 0 .142.02.222-.174.116-.265C10.661 15.176 5.526 8.766.4 2.35c-.08-.094-.174-.272-.322-.184z"/></svg></span>
             <span class="tb-game"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#FCAF17" d="M5.971 6.816h3.241c1.469 0 2.741-.448 2.741-2.084 0-1.3-1.117-1.576-2.19-1.576H6.748l-.777 3.66Zm12.834 8.753h5.168l-4.664 3.228.755 5.087-4.041-3.07L10.599 24l2.536-5.392s-2.95-3.075-2.947-3.075c-.198-.262-.265-.936-.265-1.226 0-.367.024-.739.049-1.134.028-.451.058-.933.058-1.476 0-1.338-.59-2.038-2.036-2.038H5.283l-1.18 5.525H.026L3.269 0h7.672c2.852 0 5.027.702 5.027 3.936 0 2.276-1.12 3.894-3.592 4.233v.045c1.162.276 1.598 1.062 1.598 2.527 0 .585-.018 1.098-.034 1.581-.015.428-.03.834-.03 1.243 0 .525.137 1.382.48 1.968h.567l3.028-5.06.82 5.096Zm-1.233-2.948-2.187 3.654h-3.457l2.103 2.189-1.73 3.672 3.777-2.218 2.976 2.263-.553-3.731 3.093-2.139h-3.43l-.592-3.69Z"/></svg></span>
-            <span class="tb-game"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#F4B942" d="M1.425 20.693c-.107-.247-.132-.4-.131-.8 0-.376.015-.478.208-1.416a38 38 0 0 0 .2-1.015c-.1-.056-.481-.376-.7-.587-.49-.472-.799-.938-.942-1.415-.059-.195-.067-.282-.056-.592.013-.341.02-.378.127-.599a2 2 0 0 1 .257-.39c.14-.15.145-.161.188-.465.024-.171.072-.493.105-.715.054-.36.056-.424.018-.592a2.84 2.84 0 0 1 .082-1.529c.358-.99 1.39-1.681 3-2.007 1.226-.249 2.815-.265 4.374-.045 1.537.218 3.344.715 5.011 1.38.214.086.392.152.396.148.014-.014-1.28-.668-1.61-.814A17 17 0 0 0 8.28 8.073C7.472 7.92 7.22 7.9 6.147 7.9c-.931 0-1.068.007-1.46.073a7 7 0 0 0-.836.18c-.1.03-.056-.046.082-.141.516-.356 1.36-.69 2.23-.886.853-.191.851-.177.023-.165-.407.006-.74.002-.74-.009s.025-.041.055-.068a10 10 0 0 0 .342-.376c.493-.56 1.253-1.22 1.923-1.667 1.278-.854 2.553-1.345 4.124-1.588.51-.08 2.061-.08 2.6 0 1.682.245 2.964.707 4.14 1.49.554.37.864.624 1.339 1.101.953.958 1.613 2.02 2.191 3.527.31.808.601 1.76.756 2.474l.072.331.164.115c.09.063.183.152.206.198s.166.448.316.894c.151.445.286.814.3.82s.026.111.026.234c0 .213-.004.225-.086.264-.106.05-1.037.255-1.16.255-.127 0-.23-.11-.322-.343l-.177-.436c-.054-.128-.172-.416-.263-.638-.302-.739-.295-.725-.394-.766-.08-.033-.128-.026-.393.064-.166.057-.35.13-.407.165a.55.55 0 0 0-.221.4c-.001.091.23.762.289.84.067.089 1.591 1.11 1.688 1.131.06.013.253-.014.528-.074l.438-.094c.003 0 .016.215.028.478.021.45.018.486-.043.607-.104.204-.003.16-1.67.723-1.314.444-1.564.497-2.353.497a4.5 4.5 0 0 1-2.388-.644c-.48-.283-1.052-.767-1.224-1.037-.133-.209-.16-.04.34-2.195.1-.427.194-.781.211-.787.017-.005.09.1.163.236s.164.266.202.29.287.14.552.259c.409.182.515.217.695.228a.82.82 0 0 0 .79-.41c.083-.131.097-.2.213-1.07l.158-1.178c.098-.725.09-.957-.046-1.248-.153-.327-.328-.474-.881-.741-.918-.444-.862-.435-1.279-.204-.158.088-.29.161-.293.164a8 8 0 0 0 .313-.006l.318-.01.52.24c.408.19.555.275.678.392.301.29.393.655.31 1.241-.052.37-.085.458-.23.615-.185.202-.334.269-.596.27-.208 0-.243-.01-.732-.24-.509-.24-.516-.242-.79-.249l-.276-.007-.039.156-.166.685c-.162.673-.477 1.976-.735 3.038-.11.454-.258 1.063-.327 1.355-.159.668-.214.86-.307 1.075-.219.503-.689.99-1.2 1.245-.578.287-1.076.342-1.828.205a45 45 0 0 0-4.48-.615c-.606-.053-2.655-.053-3.051 0-.826.111-1.187.19-1.535.337a1.93 1.93 0 0 0-.847.672c-.174.257-.253.71-.191 1.092.029.177-.008.192-.079.03zm.317-3.394c0-.028.06-.365.165-.929.1-.538.212-.748.576-1.086.604-.56 1.758-.924 3.331-1.05.557-.045 2.451-.014 3.072.05 1.287.131 1.77.195 2.88.38.906.151.886.15.7.073a58 58 0 0 0-2.054-.744c-1.222-.412-1.941-.578-3.207-.74-.625-.08-2.496-.081-3.082-.001-1.13.154-1.95.382-2.568.717-.523.282-.895.643-1.049 1.02-.09.22-.075.702.03.956.124.299.332.586.65.9.436.428.556.526.556.454m-.558-4.09c.15-.107.649-.33.963-.43.525-.169.957-.256 1.805-.367.497-.065 2.617-.093 3.284-.043l.716.053c.286.022.316-.01.392-.418l.184-.974c.19-1 .248-1.318.249-1.375 0-.105-.107-.19-.281-.217-.792-.129-2.275-.198-3.255-.153-2.203.1-3.583.628-4.102 1.566a1.6 1.6 0 0 0-.219.662q-.018.188.01.105c.143-.436.52-.88.926-1.094.237-.125.26-.132.26-.088 0 .015-.063.058-.14.096q-.273.131-.513.593c-.153.295-.193.468-.297 1.291a61 61 0 0 1-.096.74c-.021.135-.008.14.114.053m9.586-.184c.066-.052.078-.085.078-.236 0-.159-.01-.184-.102-.266-.12-.108-.188-.114-.298-.028-.161.128-.122.44.069.544.11.06.16.057.253-.014m7.349-1.91c.223-.15.319-.421.251-.712-.118-.515-.662-.73-.966-.384-.283.322-.166.91.22 1.1.178.088.361.087.495-.004m-.321-.32c-.187-.102-.245-.433-.103-.586.108-.117.285-.115.4.006.166.172.172.42.016.551-.105.088-.19.096-.313.029m-6.548-.146c.098-.139.036-.446-.105-.521-.09-.049-.204-.039-.257.022-.14.16-.142.312-.003.476.1.12.29.132.366.023z"/></svg></span>
+            <span class="tb-game" id="tb-last"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#F4B942" d="M1.425 20.693c-.107-.247-.132-.4-.131-.8 0-.376.015-.478.208-1.416a38 38 0 0 0 .2-1.015c-.1-.056-.481-.376-.7-.587-.49-.472-.799-.938-.942-1.415-.059-.195-.067-.282-.056-.592.013-.341.02-.378.127-.599a2 2 0 0 1 .257-.39c.14-.15.145-.161.188-.465.024-.171.072-.493.105-.715.054-.36.056-.424.018-.592a2.84 2.84 0 0 1 .082-1.529c.358-.99 1.39-1.681 3-2.007 1.226-.249 2.815-.265 4.374-.045 1.537.218 3.344.715 5.011 1.38.214.086.392.152.396.148.014-.014-1.28-.668-1.61-.814A17 17 0 0 0 8.28 8.073C7.472 7.92 7.22 7.9 6.147 7.9c-.931 0-1.068.007-1.46.073a7 7 0 0 0-.836.18c-.1.03-.056-.046.082-.141.516-.356 1.36-.69 2.23-.886.853-.191.851-.177.023-.165-.407.006-.74.002-.74-.009s.025-.041.055-.068a10 10 0 0 0 .342-.376c.493-.56 1.253-1.22 1.923-1.667 1.278-.854 2.553-1.345 4.124-1.588.51-.08 2.061-.08 2.6 0 1.682.245 2.964.707 4.14 1.49.554.37.864.624 1.339 1.101.953.958 1.613 2.02 2.191 3.527.31.808.601 1.76.756 2.474l.072.331.164.115c.09.063.183.152.206.198s.166.448.316.894c.151.445.286.814.3.82s.026.111.026.234c0 .213-.004.225-.086.264-.106.05-1.037.255-1.16.255-.127 0-.23-.11-.322-.343l-.177-.436c-.054-.128-.172-.416-.263-.638-.302-.739-.295-.725-.394-.766-.08-.033-.128-.026-.393.064-.166.057-.35.13-.407.165a.55.55 0 0 0-.221.4c-.001.091.23.762.289.84.067.089 1.591 1.11 1.688 1.131.06.013.253-.014.528-.074l.438-.094c.003 0 .016.215.028.478.021.45.018.486-.043.607-.104.204-.003.16-1.67.723-1.314.444-1.564.497-2.353.497a4.5 4.5 0 0 1-2.388-.644c-.48-.283-1.052-.767-1.224-1.037-.133-.209-.16-.04.34-2.195.1-.427.194-.781.211-.787.017-.005.09.1.163.236s.164.266.202.29.287.14.552.259c.409.182.515.217.695.228a.82.82 0 0 0 .79-.41c.083-.131.097-.2.213-1.07l.158-1.178c.098-.725.09-.957-.046-1.248-.153-.327-.328-.474-.881-.741-.918-.444-.862-.435-1.279-.204-.158.088-.29.161-.293.164a8 8 0 0 0 .313-.006l.318-.01.52.24c.408.19.555.275.678.392.301.29.393.655.31 1.241-.052.37-.085.458-.23.615-.185.202-.334.269-.596.27-.208 0-.243-.01-.732-.24-.509-.24-.516-.242-.79-.249l-.276-.007-.039.156-.166.685c-.162.673-.477 1.976-.735 3.038-.11.454-.258 1.063-.327 1.355-.159.668-.214.86-.307 1.075-.219.503-.689.99-1.2 1.245-.578.287-1.076.342-1.828.205a45 45 0 0 0-4.48-.615c-.606-.053-2.655-.053-3.051 0-.826.111-1.187.19-1.535.337a1.93 1.93 0 0 0-.847.672c-.174.257-.253.71-.191 1.092.029.177-.008.192-.079.03zm.317-3.394c0-.028.06-.365.165-.929.1-.538.212-.748.576-1.086.604-.56 1.758-.924 3.331-1.05.557-.045 2.451-.014 3.072.05 1.287.131 1.77.195 2.88.38.906.151.886.15.7.073a58 58 0 0 0-2.054-.744c-1.222-.412-1.941-.578-3.207-.74-.625-.08-2.496-.081-3.082-.001-1.13.154-1.95.382-2.568.717-.523.282-.895.643-1.049 1.02-.09.22-.075.702.03.956.124.299.332.586.65.9.436.428.556.526.556.454m-.558-4.09c.15-.107.649-.33.963-.43.525-.169.957-.256 1.805-.367.497-.065 2.617-.093 3.284-.043l.716.053c.286.022.316-.01.392-.418l.184-.974c.19-1 .248-1.318.249-1.375 0-.105-.107-.19-.281-.217-.792-.129-2.275-.198-3.255-.153-2.203.1-3.583.628-4.102 1.566a1.6 1.6 0 0 0-.219.662q-.018.188.01.105c.143-.436.52-.88.926-1.094.237-.125.26-.132.26-.088 0 .015-.063.058-.14.096q-.273.131-.513.593c-.153.295-.193.468-.297 1.291a61 61 0 0 1-.096.74c-.021.135-.008.14.114.053m9.586-.184c.066-.052.078-.085.078-.236 0-.159-.01-.184-.102-.266-.12-.108-.188-.114-.298-.028-.161.128-.122.44.069.544.11.06.16.057.253-.014m7.349-1.91c.223-.15.319-.421.251-.712-.118-.515-.662-.73-.966-.384-.283.322-.166.91.22 1.1.178.088.361.087.495-.004m-.321-.32c-.187-.102-.245-.433-.103-.586.108-.117.285-.115.4.006.166.172.172.42.016.551-.105.088-.19.096-.313.029m-6.548-.146c.098-.139.036-.446-.105-.521-.09-.049-.204-.039-.257.022-.14.16-.142.312-.003.476.1.12.29.132.366.023z"/></svg></span>
           </div>
+          </div>
+          </div>
+          <div id="mon-neck"></div>
+          <div id="mon-foot"></div>
         </div>
       </section>
     </div>
@@ -571,25 +573,21 @@
           return '<div class="ln"><i>' + (i + 1) + '</i><span class="t">' + (l || " ") + "</span></div>";
         }).join("");
 
+        // The rifle pivots on its muzzle at (64%, 62%) of the game screen and
+        // must point through the centre crosshair: solve the angle from the
+        // screen's untransformed size (it differs between the two canvases).
+        var gameEl = $("#game");
+        var aim = Math.atan2(0.12 * gameEl.offsetHeight, 0.14 * gameEl.offsetWidth) * 180 / Math.PI;
+        $("#val-rig").style.transform = "rotate(" + aim.toFixed(2) + "deg)";
+
         var tl = gsap.timeline({ paused: true, defaults: { ease: "expo.out" } });
         var D = 16;
 
-        // ── persistent: timecode, chapter bars, day→night glow ──
-        var tc = $("#tc");
-        var clock = { t: 0 };
-        tl.to(clock, {
-          t: D, duration: D, ease: "none",
-          onUpdate: function () {
-            var s = Math.floor(clock.t);
-            tc.textContent = "00:" + (s < 10 ? "0" : "") + s + ":" + String(Math.floor((clock.t % 1) * 24)).padStart(2, "0");
-          },
-        }, 0);
-        var spans = [[0, 2.1], [2.1, 5.3], [5.3, 7.7], [7.7, 8.7], [8.7, 16]];
-        spans.forEach(function (s, i) {
-          tl.fromTo("#cf-" + i, { scaleX: 0 }, { scaleX: 1, duration: s[1] - s[0], ease: "none" }, s[0]);
+        // ── persistent: the stamp names each part of the day; day → night glow ──
+        [0, 2.05, 5.25, 7.6, 8.65].forEach(function (at, i) {
+          if (i > 0) tl.to("#sv-" + (i - 1), { opacity: 0, y: -8, duration: 0.3, ease: "power2.in" }, at - 0.1);
+          tl.fromTo("#sv-" + i, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.45 }, at + 0.05);
         });
-        tl.fromTo("#rec-dot", { opacity: 1 }, { opacity: 0.2, duration: 0.5, ease: "sine.inOut", repeat: 31, yoyo: true }, 0);
-        tl.fromTo("#grid", { y: 0 }, { y: "-6vmin", duration: D, ease: "none" }, 0);
         tl.fromTo("#glow-day", { opacity: 1 }, { opacity: 0, duration: 1, ease: "power2.inOut" }, 7.6);
         tl.fromTo("#glow-night", { opacity: 0 }, { opacity: 1, duration: 1.2, ease: "power2.inOut" }, 8.4);
 
@@ -603,9 +601,8 @@
         tl.fromTo("#code-copy .eyebrow", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.6 }, 2.05);
         tl.fromTo("#code-title .word > span", { yPercent: 110 }, { yPercent: 0, duration: 0.9, stagger: 0.06 }, 2.1);
         tl.fromTo("#code-sub", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.7 }, 2.45);
-        tl.fromTo("#w-editor", { opacity: 0, x: 60, rotationY: -12, transformPerspective: 1600 }, { opacity: 1, x: 0, rotationY: 0, duration: 0.9 }, 2.1);
-        tl.fromTo("#w-term", { opacity: 0, y: -40 }, { opacity: 1, y: 0, duration: 0.8 }, 2.25);
-        tl.fromTo("#w-graph", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.8 }, 2.35);
+        tl.fromTo("#laptop", { opacity: 0, y: 40, rotationX: 10, transformPerspective: 1600 }, { opacity: 1, y: 0, rotationX: 0, duration: 1 }, 2.05);
+        tl.fromTo("#w-editor, #w-term, #w-graph", { opacity: 0 }, { opacity: 1, duration: 0.4, stagger: 0.12, ease: "power2.out" }, 2.3);
         $$("#code .ln .t").forEach(function (el, i) {
           var n = Math.max(1, el.textContent.length);
           tl.fromTo(el, { clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0% 0 0)", duration: Math.min(0.28, n * 0.012), ease: "steps(" + n + ")" }, 2.5 + i * 0.17);
@@ -647,8 +644,8 @@
         tl.fromTo("#play-copy .eyebrow", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.6 }, 8.65);
         tl.fromTo("#play-title .word > span", { yPercent: 110 }, { yPercent: 0, duration: 0.9, stagger: 0.06 }, 8.7);
         tl.fromTo("#play-sub", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.7 }, 9.05);
-        tl.fromTo("#game", { opacity: 0, scale: 0.9, rotationX: 14, transformPerspective: 1600 }, { opacity: 1, scale: 1, rotationX: 0, duration: 1 }, 8.7);
-        tl.fromTo("#taskbar", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.7 }, 8.9);
+        tl.fromTo("#monitor, #mon-neck, #mon-foot", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 1, stagger: 0.06 }, 8.7);
+        tl.fromTo("#taskbar", { opacity: 0 }, { opacity: 1, duration: 0.5 }, 9.0);
         tl.fromTo("#winlogo span", { scale: 0 }, { scale: 1, duration: 0.35, stagger: 0.06, ease: "back.out(3)" }, 9.0);
         tl.fromTo("#p1", { opacity: 0, scale: 1.3 }, { opacity: 1, scale: 1, duration: 0.8 }, 9.1);
         tl.fromTo("#game-name", { opacity: 0, scale: 1.25, skewX: -12 }, { opacity: 1, scale: 1, skewX: 0, duration: 0.7, ease: "back.out(1.6)" }, 9.2);
