@@ -110,10 +110,12 @@
       #s-ship { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7vmin; padding: 10vmin 6vmin; }
       #ship-title { font-size: 10vmin; text-align: center; }
       #ship-title .hl { color: var(--ok); }
-      #pipe { position: relative; display: flex; gap: 7vmin; align-items: center; }
-      #pipe-line { position: absolute; left: 2vmin; right: 2vmin; top: 50%; height: 2px; margin-top: -1px; background: var(--ok); transform-origin: left center; }
-      #pipe-base { position: absolute; left: 2vmin; right: 2vmin; top: 50%; height: 2px; margin-top: -1px; background: var(--line); }
-      .node { position: relative; display: flex; flex-direction: column; align-items: center; gap: 1.4vmin; }
+      #pipe { position: relative; display: flex; gap: 4vmin; align-items: flex-start; }
+      /* The line runs through the ring centres (ring 5vmin tall), from the first
+         node's centre to the last; nodes share one width so the gaps are even. */
+      #pipe-line { position: absolute; left: 6vmin; right: 6vmin; top: 2.5vmin; height: 2px; margin-top: -1px; background: var(--ok); transform-origin: left center; }
+      #pipe-base { position: absolute; left: 6vmin; right: 6vmin; top: 2.5vmin; height: 2px; margin-top: -1px; background: var(--line); }
+      .node { position: relative; width: 12vmin; display: flex; flex-direction: column; align-items: center; gap: 1.4vmin; }
       .node-ring {
         position: relative; z-index: 1;
         width: 5vmin; height: 5vmin; border-radius: 50%; display: flex; align-items: center; justify-content: center;
@@ -329,7 +331,9 @@
         #mon-screen { aspect-ratio: 5 / 4; }
         #hello-name { font-size: 22vmin; }
         #ship-title { font-size: 12vmin; }
-        #pipe { gap: 4vmin; }
+        #pipe { gap: 1vmin; }
+        .node { width: 16vmin; }
+        #pipe-line, #pipe-base { left: 8vmin; right: 8vmin; }
         #stats { flex-direction: column; gap: 5vmin; }
         .toast { padding: 1vmin 1.2vmin; gap: 1vmin; }
         .toast small { display: none; }
