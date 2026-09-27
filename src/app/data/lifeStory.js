@@ -65,4 +65,16 @@ export const LIFE_STORY = [
         duration: 15,
         introEnd: 1.2,
     },
+    {
+        id: 'voice',
+        film: 'voice',
+        label: 'internship',
+        eyebrow: 'Chapter 05 · Internship',
+        when: '9 months',
+        title: 'Nine months of voice, and my first library.',
+        body: "After my bachelor's I wanted to test my skills, so I interned for 9 months at BeyondSchool (Jul 2022 – Mar 2023), working heavily on text-to-speech and speech-to-text. In that time I also published my first Android library, TTS-Engine, on JitPack.",
+        accent: 'var(--accent-purple)',
+        duration: 14,
+        introEnd: 1.1,
+    },
 ];
