@@ -151,7 +151,7 @@ const StoryChapter = ({ chapter, index, total, params, skipTo }) => {
                         params={params}
                         onReady={handleReady}
                         onPainted={handlePainted}
-                        className="top-[4.5rem] sm:top-24"
+                        className="top-24 portrait:bottom-[6.75rem]"
                     />
                 )}
 
@@ -194,6 +194,8 @@ const StoryChapter = ({ chapter, index, total, params, skipTo }) => {
                     </div>
                 </div>
 
+                {/* Bottom centre, clear of the site's floating corner buttons;
+                    on portrait screens the film ends above it. */}
                 {film && skipTo && (
                     <button
                         type="button"
@@ -201,7 +203,7 @@ const StoryChapter = ({ chapter, index, total, params, skipTo }) => {
                             const target = document.getElementById(skipTo);
                             if (target) smoothScrollTo(target.getBoundingClientRect().top + window.scrollY);
                         }}
-                        className="absolute bottom-16 right-4 z-10 inline-flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 font-mono text-[0.62rem] uppercase tracking-[0.2em] opacity-70 backdrop-blur-md transition-[opacity,transform] duration-200 hover:opacity-100 active:scale-[0.97] sm:bottom-20 sm:right-[4vmin]"
+                        className="absolute inset-x-0 bottom-[4.25rem] z-10 mx-auto inline-flex w-max cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 font-mono text-[0.62rem] uppercase tracking-[0.2em] opacity-70 backdrop-blur-md transition-[opacity,transform] duration-200 hover:opacity-100 active:scale-[0.97]"
                         style={{
                             borderColor: 'var(--hairline)',
                             color: 'var(--text-secondary)',

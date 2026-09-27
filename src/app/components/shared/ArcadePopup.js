@@ -48,6 +48,9 @@ export default function ArcadePopup() {
             return;
         }
         if (dismissed) return;
+        // Phones keep the badge collapsed: an expanded card would sit on top
+        // of the page's first screen. A tap on the badge still opens it.
+        if (window.innerWidth < 768) return;
 
         // Yield to V2 beta popup on classic home page if it is pending
         const onClassicHome = !document.querySelector('[data-v2-shell]');

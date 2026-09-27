@@ -189,7 +189,7 @@ const V2Hero = ({ data, counts = {} }) => {
                         params={filmParams}
                         onReady={handleReady}
                         onPainted={handlePainted}
-                        className="top-[4.5rem] transition-opacity duration-700 sm:top-24"
+                        className="top-24 transition-opacity duration-700 portrait:bottom-[9.75rem]"
                         style={{ opacity: painted ? 1 : 0 }}
                     />
                 )}
@@ -220,9 +220,13 @@ const V2Hero = ({ data, counts = {} }) => {
                 </div>
 
                 {/* "Press start" dock: shown before the story starts and once
-                    it reaches the Windows scene; hidden while it plays. */}
+                    it reaches the Windows scene; hidden while it plays. It
+                    shares one bottom-centre slot with the skip button, and on
+                    portrait screens it stays narrow enough to clear the site's
+                    floating side pills and sits in a band the film leaves free.
+                    The trademark notice rides in it for the game scene. */}
                 <div
-                    className="absolute inset-x-0 bottom-[12svh] z-10 flex justify-center px-4 transition-all duration-500 sm:bottom-[13vh] lg:justify-start lg:px-[4vmin]"
+                    className="absolute inset-x-0 bottom-[13vh] z-10 flex justify-center px-4 transition-all duration-500 portrait:bottom-[4.25rem] lg:justify-start lg:px-[4vmin]"
                     style={{
                         opacity: showDock ? 1 : 0,
                         transform: showDock ? 'none' : 'translateY(16px)',
@@ -230,53 +234,48 @@ const V2Hero = ({ data, counts = {} }) => {
                     }}
                 >
                     <div
-                        className="flex flex-wrap items-center justify-center gap-2.5 rounded-2xl border p-2 backdrop-blur-md"
-                        style={{ borderColor: 'var(--hairline)', backgroundColor: 'color-mix(in srgb, var(--bg-primary) 55%, transparent)' }}
+                        className="flex max-w-[17rem] flex-col items-center gap-1.5 rounded-2xl border p-2 backdrop-blur-md sm:max-w-none"
+                        style={{ borderColor: 'var(--hairline)', backgroundColor: 'color-mix(in srgb, var(--bg-primary) 60%, transparent)' }}
                     >
-                        <span className="hidden px-2 font-mono text-[0.7rem] uppercase tracking-[0.3em] sm:inline" style={{ color: 'var(--text-muted)' }}>
-                            {phase === 'end' ? 'press start' : resumeStatus || 'online'}
-                        </span>
-                        <Link href="/projects" className="pill-solid inline-flex items-center gap-2">
-                            Explore projects <FaArrowRight size={12} />
-                        </Link>
-                        {githubLink && (
-                            <a href={githubLink} target="_blank" rel="noopener noreferrer" className="pill-ghost inline-flex items-center gap-2">
-                                <FaGithub size={14} /> GitHub
-                            </a>
+                        <div className="flex items-center gap-2 sm:gap-2.5">
+                            <span className="hidden px-2 font-mono text-[0.7rem] uppercase tracking-[0.3em] sm:inline" style={{ color: 'var(--text-muted)' }}>
+                                {phase === 'end' ? 'press start' : resumeStatus || 'online'}
+                            </span>
+                            <Link href="/projects" className="pill-solid inline-flex items-center gap-2 whitespace-nowrap">
+                                <span className="sm:hidden">Projects</span>
+                                <span className="hidden sm:inline">Explore projects</span>
+                                <FaArrowRight size={12} />
+                            </Link>
+                            {githubLink && (
+                                <a href={githubLink} target="_blank" rel="noopener noreferrer" aria-label="GitHub" className="pill-ghost inline-flex items-center gap-2">
+                                    <FaGithub size={14} /> <span className="hidden sm:inline">GitHub</span>
+                                </a>
+                            )}
+                            <button
+                                type="button"
+                                onClick={() => setShowDesktopPrompt(true)}
+                                aria-label="Desktop mode"
+                                className="pill-ghost inline-flex cursor-pointer items-center gap-2"
+                            >
+                                <FaWindows size={13} /> <span className="hidden sm:inline">Desktop mode</span>
+                            </button>
+                        </div>
+                        {film && phase === 'end' && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    const target = document.getElementById('v2-continue');
+                                    if (target) smoothScrollTo(target.getBoundingClientRect().top + window.scrollY - 80);
+                                }}
+                                className="inline-flex cursor-pointer items-center gap-1.5 px-2 pb-0.5 text-center font-mono text-[0.6rem] leading-tight transition-opacity hover:opacity-100"
+                                style={{ color: 'var(--text-tertiary)', opacity: 0.85 }}
+                            >
+                                <span className="font-sans text-xs font-bold" style={{ color: 'var(--text-secondary)' }}>™</span>
+                                Game names &amp; logos belong to their owners · notice ↓
+                            </button>
                         )}
-                        <button
-                            type="button"
-                            onClick={() => setShowDesktopPrompt(true)}
-                            className="pill-ghost inline-flex cursor-pointer items-center gap-2"
-                        >
-                            <FaWindows size={13} /> Desktop mode
-                        </button>
                     </div>
                 </div>
-
-                {/* Trademark chip: takes the skip button's corner once the
-                    story reaches the game scene; the full notice lives on
-                    the closing chapter (V2Continue). */}
-                {film && (
-                    <button
-                        type="button"
-                        onClick={() => {
-                            const target = document.getElementById('v2-continue');
-                            if (target) smoothScrollTo(target.getBoundingClientRect().top + window.scrollY - 80);
-                        }}
-                        className="absolute right-4 top-24 z-10 inline-flex max-w-[16rem] cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 text-left font-mono text-[0.6rem] leading-tight backdrop-blur-md transition-opacity duration-500 sm:right-[4vmin] sm:max-w-none"
-                        style={{
-                            borderColor: 'var(--hairline)',
-                            color: 'var(--text-tertiary)',
-                            backgroundColor: 'color-mix(in srgb, var(--bg-primary) 55%, transparent)',
-                            opacity: phase === 'end' ? 1 : 0,
-                            visibility: phase === 'end' ? 'visible' : 'hidden',
-                        }}
-                    >
-                        <span className="font-sans text-xs font-bold" style={{ color: 'var(--text-secondary)' }}>™</span>
-                        Game names &amp; logos belong to their owners · notice ↓
-                    </button>
-                )}
 
                 {film && (
                     <>
@@ -292,13 +291,13 @@ const V2Hero = ({ data, counts = {} }) => {
                         <button
                             type="button"
                             onClick={() => skipRef.current?.()}
-                            className="absolute right-4 top-24 z-10 inline-flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 font-mono text-[0.68rem] uppercase tracking-[0.2em] backdrop-blur-md transition-opacity duration-300 hover:opacity-100 sm:right-[4vmin]"
+                            className="absolute inset-x-0 bottom-[4.25rem] z-10 mx-auto inline-flex w-max cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 font-mono text-[0.68rem] uppercase tracking-[0.2em] backdrop-blur-md transition-opacity duration-300 hover:opacity-100 active:scale-[0.97]"
                             style={{
                                 borderColor: 'var(--hairline)',
                                 color: 'var(--text-secondary)',
                                 backgroundColor: 'color-mix(in srgb, var(--bg-primary) 50%, transparent)',
-                                opacity: phase === 'end' ? 0 : 0.75,
-                                visibility: phase === 'end' ? 'hidden' : 'visible',
+                                opacity: phase === 'mid' ? 0.8 : 0,
+                                visibility: phase === 'mid' ? 'visible' : 'hidden',
                             }}
                         >
                             skip story <FaForwardStep size={10} />
