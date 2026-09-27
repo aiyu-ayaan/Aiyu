@@ -89,4 +89,16 @@ export const LIFE_STORY = [
         duration: 14.5,
         introEnd: 1.1,
     },
+    {
+        id: 'adrosonic',
+        film: 'adrosonic',
+        label: 'adrosonic',
+        eyebrow: 'Chapter 07 · Adrosonic',
+        when: '2024 → 2025',
+        title: 'Building the website, then backend in C#.',
+        body: 'I joined Adrosonic in December 2024 as an intern on the website team: the Elevate Connected timezone-aware countdown, the blog read-time logic, migrating whole pages from Pods to ACF (Advanced Custom Fields), and mostly page templates. I joined full time in June 2025, and in October got my first client project as a backend developer in C#.',
+        accent: 'var(--accent-purple)',
+        duration: 16.5,
+        introEnd: 1.1,
+    },
 ];
