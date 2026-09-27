@@ -52,4 +52,17 @@ export const LIFE_STORY = [
         duration: 15,
         introEnd: 1.1,
     },
+    {
+        id: 'bitapp',
+        film: 'bitapp',
+        label: 'bit app',
+        eyebrow: 'Chapter 04 · BIT App',
+        when: 'BIT App',
+        title: 'My first production app, my obsession, my lab.',
+        body: 'BIT App became my obsession and my place to experiment, learn and ship new features. It grew from a static app into a dynamic one, moved from Java to Kotlin, then to the Navigation component, then to Jetpack Compose. More than 1,000 students used it, with a 4.7★ rating on Google Play.',
+        accent: 'var(--status-success)',
+        image: '/hf/bitapp/assets/bit-app.png',
+        duration: 15,
+        introEnd: 1.2,
+    },
 ];

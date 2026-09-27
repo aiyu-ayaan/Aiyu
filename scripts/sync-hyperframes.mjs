@@ -27,7 +27,7 @@ const root = process.cwd();
 const SRC = path.join(root, 'hyperframes');
 const OUT = path.join(root, 'public', 'hf');
 // boot + the hero film, then the life-story chapters in page order.
-const COMPOSITIONS = ['boot', 'story', 'origin', 'school', 'college'];
+const COMPOSITIONS = ['boot', 'story', 'origin', 'school', 'college', 'bitapp'];
 
 const VENDOR = [
     ['node_modules/gsap/dist/gsap.min.js', 'gsap.min.js'],

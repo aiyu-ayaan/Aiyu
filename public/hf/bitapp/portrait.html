@@ -1,0 +1,493 @@
+<!doctype html>
+<html
+  lang="en"
+  data-composition-variables='[
+    {"id":"name","type":"string","label":"Name","default":"Ayaan"},
+    {"id":"bg","type":"color","label":"Background","default":"#0b0f14"},
+    {"id":"surface","type":"color","label":"Surface","default":"#121821"},
+    {"id":"fg","type":"color","label":"Text","default":"#f2f5f9"},
+    {"id":"muted","type":"color","label":"Muted text","default":"#8f99a6"},
+    {"id":"line","type":"color","label":"Hairline","default":"#243040"},
+    {"id":"c1","type":"color","label":"Accent 1 (code)","default":"#5ee1ff"},
+    {"id":"c2","type":"color","label":"Accent 2","default":"#a78bfa"},
+    {"id":"c3","type":"color","label":"Accent 3","default":"#ff5fa2"},
+    {"id":"c4","type":"color","label":"Accent 4","default":"#ffb454"},
+    {"id":"ok","type":"color","label":"Success","default":"#4ade80"}
+  ]'
+>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <title>aiyu — chapter 04 · bit app</title>
+    <script src="/hf/vendor/hyperframe.runtime.iife.js"></script>
+    <script src="/hf/vendor/gsap.min.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg, #0b0f14); }
+      #root {
+        position: relative; width: 100%; height: 100%; overflow: hidden;
+        color: var(--fg); background: var(--bg);
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        --mono: ui-monospace, monospace;
+        /* The app's own palette (from its icon) and the device: fixed. */
+        --bit: #34c46a;
+        --bit-deep: #1b212c;
+        --ed-bg: #0d1117; --ed-fg: #c9d1d9; --ed-dim: #8b949e;
+        --syn-k: #ff7b72; --syn-t: #79c0ff; --syn-f: #d2a8ff; --syn-s: #a5d6ff; --syn-a: #ffa657;
+      }
+      .mono { font-family: var(--mono); }
+      .clip { position: absolute; inset: 0; }
+      .eyebrow { font-family: var(--mono); font-size: 1.7vmin; letter-spacing: 0.32em; text-transform: uppercase; color: var(--muted); }
+      .title { font-weight: 800; letter-spacing: -0.045em; line-height: 0.95; }
+      .word { display: inline-block; overflow: hidden; vertical-align: bottom; padding-bottom: 0.08em; }
+      .word > span { display: inline-block; }
+
+      #chip { position: absolute; left: 4vmin; top: 3.6vmin; z-index: 20; display: flex; align-items: center; gap: 1.2vmin; font-family: var(--mono); font-size: 1.45vmin; letter-spacing: 0.28em; text-transform: uppercase; color: var(--muted); }
+      #chip b { color: var(--fg); font-weight: 600; }
+      #chip i { width: 4vmin; height: 1px; background: var(--line); }
+      #stamp { position: absolute; right: 4vmin; top: 3vmin; z-index: 20; text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--fg); }
+      #stamp small { display: block; font-size: 1.3vmin; letter-spacing: 0.3em; text-transform: uppercase; color: var(--muted); }
+      #stamp .v { position: relative; height: 3.8vmin; margin-top: 0.4vmin; }
+      #stamp .v b { position: absolute; right: 0; top: 0; white-space: nowrap; font-size: 3vmin; font-weight: 600; letter-spacing: 0.04em; opacity: 0; }
+
+      #s-app { display: flex; align-items: center; padding: 11vmin 5vmin 8vmin 7vmin; gap: 5vmin; }
+      #copy { flex: 0 0 30%; }
+      #copy .eyebrow { margin-bottom: 3vmin; }
+      #brand { display: flex; align-items: center; gap: 2.4vmin; }
+      #brand img { width: 10vmin; height: 10vmin; border-radius: 2.4vmin; box-shadow: 0 1.6vmin 3.6vmin -1.2vmin rgba(0, 0, 0, 0.6); }
+      #title { font-size: 9vmin; }
+      #sub { margin-top: 3vmin; font-size: 2.5vmin; line-height: 1.45; color: var(--muted); max-width: 52vmin; }
+      #sub b { color: var(--fg); font-weight: 600; }
+      #stats { margin-top: 4vmin; display: flex; gap: 5vmin; }
+      .stat b { display: block; font-size: 6.4vmin; font-weight: 800; letter-spacing: -0.04em; line-height: 1; font-variant-numeric: tabular-nums; }
+      .stat small { display: block; margin-top: 1vmin; font-family: var(--mono); font-size: 1.4vmin; letter-spacing: 0.22em; text-transform: uppercase; color: var(--muted); }
+      .stat .g { color: var(--ok); }
+
+      #stage { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: center; gap: 3.4vmin; }
+      /* stepper: static → dynamic → kotlin → navigation → compose */
+      #steps { position: relative; display: flex; justify-content: space-between; padding: 0 1vmin; }
+      #steps-base, #steps-fill { position: absolute; left: 3vmin; right: 3vmin; top: 1.1vmin; height: 2px; }
+      #steps-base { background: var(--line); }
+      #steps-fill { background: var(--ok); transform-origin: left center; }
+      .step { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 1vmin; width: 12vmin; }
+      .step i { width: 2.4vmin; height: 2.4vmin; border-radius: 50%; border: 2px solid var(--line); background: var(--bg); }
+      .step span { font-family: var(--mono); font-size: 1.35vmin; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); }
+      #row { display: flex; align-items: center; gap: 5vmin; }
+
+      /* ── Android phone ── */
+      #phone { position: relative; flex: none; width: 32vmin; height: 64vmin; padding: 0.9vmin; border-radius: 4.8vmin; background: #0e1014; box-shadow: 0 0 0 0.3vmin #2d313a, 0 4vmin 8vmin -3vmin rgba(0, 0, 0, 0.6); }
+      #screen { position: relative; width: 100%; height: 100%; overflow: hidden; border-radius: 4vmin; background: #0c1016; }
+      #punch { position: absolute; left: 50%; top: 1.2vmin; z-index: 9; width: 1.4vmin; height: 1.4vmin; margin-left: -0.7vmin; border-radius: 50%; background: #000; box-shadow: 0 0 0 0.2vmin #1b1e24; }
+      #status { position: absolute; left: 0; right: 0; top: 0; z-index: 8; height: 3.8vmin; display: flex; align-items: center; justify-content: space-between; padding: 0 2.6vmin; font-size: 1.3vmin; font-weight: 600; color: #fff; }
+      #status .ico { display: flex; align-items: center; gap: 0.6vmin; }
+      #status .ico i { display: block; width: 1.2vmin; height: 1.2vmin; background: currentColor; clip-path: polygon(0 100%, 100% 0, 100% 100%); }
+      #status .ico u { display: block; width: 2vmin; height: 1vmin; border-radius: 0.2vmin; border: 0.18vmin solid currentColor; }
+      #pill { position: absolute; left: 50%; bottom: 1vmin; z-index: 9; width: 10vmin; height: 0.5vmin; margin-left: -5vmin; border-radius: 1vmin; background: rgba(255, 255, 255, 0.7); }
+
+      #home { position: absolute; inset: 0; padding: 7vmin 2.2vmin 0; background: radial-gradient(120% 70% at 20% 0%, #2a3d6b, transparent 60%), radial-gradient(90% 60% at 100% 100%, #3b2a5e, transparent 60%), #111724; }
+      #clock { text-align: center; color: #fff; font-size: 5.4vmin; font-weight: 300; letter-spacing: -0.02em; }
+      #date { text-align: center; color: rgba(255, 255, 255, 0.92); font-size: 1.3vmin; margin-top: 0.4vmin; }
+      #apps { margin-top: 5vmin; display: grid; grid-template-columns: repeat(4, 1fr); row-gap: 2.2vmin; }
+      .app { display: flex; flex-direction: column; align-items: center; gap: 0.6vmin; }
+      .app i { display: block; width: 5.6vmin; height: 5.6vmin; border-radius: 1.8vmin; }
+      .app img { display: block; width: 5.6vmin; height: 5.6vmin; border-radius: 1.8vmin; }
+      .app span { font-size: 1vmin; color: #e6e9ef; }
+      #bit-ring { position: absolute; width: 7.4vmin; height: 7.4vmin; border-radius: 2.4vmin; border: 0.3vmin solid var(--bit); opacity: 0; }
+      #ripple { position: absolute; width: 3vmin; height: 3vmin; border-radius: 50%; background: rgba(255, 255, 255, 0.6); opacity: 0; }
+      #dock { position: absolute; left: 2.2vmin; right: 2.2vmin; bottom: 3.2vmin; display: grid; grid-template-columns: repeat(4, 1fr); padding: 1.2vmin 0; border-radius: 3vmin; background: rgba(255, 255, 255, 0.12); justify-items: center; }
+      #dock i { display: block; width: 5vmin; height: 5vmin; border-radius: 1.6vmin; }
+
+      /* the app, launched from its icon */
+      #app { position: absolute; inset: 0; z-index: 5; overflow: hidden; background: var(--bit-deep); }
+      .ascr { position: absolute; inset: 0; padding-top: 3.8vmin; opacity: 0; }
+      #a-splash { display: flex; align-items: center; justify-content: center; background: var(--bit-deep); opacity: 1; }
+      #a-splash img { width: 13vmin; height: 13vmin; border-radius: 3vmin; }
+      /* v1: static, Java + XML era */
+      #a-v1 { background: #fafafa; }
+      .bar1 { height: 6vmin; display: flex; align-items: center; padding: 0 2.2vmin; background: #2f7d4a; color: #fff; font-size: 1.9vmin; font-weight: 700; box-shadow: 0 0.4vmin 0.8vmin rgba(0, 0, 0, 0.25); }
+      .row1 { display: flex; align-items: center; gap: 1.6vmin; padding: 2vmin 2.2vmin; border-bottom: 1px solid #e3e3e3; font-size: 1.6vmin; color: #222; }
+      .row1 i { width: 3vmin; height: 3vmin; border-radius: 50%; background: #c9d3cc; }
+      /* v2: dynamic, data from the cloud */
+      #a-dyn { background: #f3f6f4; }
+      .card2 { position: relative; margin: 1.6vmin 2vmin 0; padding: 1.8vmin; border-radius: 1.2vmin; background: #fff; box-shadow: 0 0.3vmin 0.8vmin rgba(0, 0, 0, 0.08); }
+      .card2 u { display: block; height: 1.2vmin; border-radius: 0.6vmin; background: #dfe6e1; }
+      .card2 u + u { margin-top: 1vmin; width: 70%; }
+      .card2 .fill { position: absolute; inset: 1.8vmin; opacity: 0; }
+      .card2 .fill u { background: #2f7d4a; }
+      .card2 .fill u + u { background: #9ad1ac; }
+      #synced { position: absolute; right: 2vmin; top: 7.6vmin; display: flex; align-items: center; gap: 0.6vmin; padding: 0.5vmin 1vmin; border-radius: 2vmin; background: #e3f4e8; color: #1f6b3b; font-size: 1.1vmin; font-weight: 700; opacity: 0; }
+      #synced i { width: 0.9vmin; height: 0.9vmin; border-radius: 50%; background: var(--bit); }
+      #snack { position: absolute; left: 2vmin; right: 2vmin; bottom: 3.6vmin; padding: 1.4vmin 1.8vmin; border-radius: 1vmin; background: #2b2f36; color: #fff; font-size: 1.3vmin; opacity: 0; z-index: 3; }
+      #snack b { color: #b6f0c8; }
+      /* nav: a second destination slides in */
+      #a-detail { background: #f3f6f4; }
+      #a-detail .bar1 { gap: 1.4vmin; }
+      #a-detail .bar1 i { width: 1.6vmin; height: 1.6vmin; border-left: 0.35vmin solid #fff; border-bottom: 0.35vmin solid #fff; transform: rotate(45deg); }
+      .blk { margin: 2vmin 2.2vmin 0; height: 14vmin; border-radius: 1.4vmin; background: linear-gradient(135deg, #cfe9d8, #e8f3ec); }
+      .ln3 { margin: 1.6vmin 2.2vmin 0; height: 1.2vmin; border-radius: 0.6vmin; background: #d7ded9; }
+      /* compose: Material 3, dark, brand colour */
+      #a-m3 { background: #10151c; }
+      .m3-top { padding: 2.4vmin 2.4vmin 1vmin; color: #e7ecef; }
+      .m3-top small { display: block; font-size: 1.2vmin; color: #9aa7b2; }
+      .m3-top b { display: block; margin-top: 0.4vmin; font-size: 3vmin; font-weight: 700; letter-spacing: -0.02em; }
+      .m3-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2vmin; padding: 1.2vmin 2vmin; }
+      .m3-card { height: 11vmin; border-radius: 2.2vmin; padding: 1.4vmin; background: #1c2530; display: flex; flex-direction: column; justify-content: space-between; }
+      .m3-card i { width: 3.4vmin; height: 3.4vmin; border-radius: 1vmin; background: rgba(52, 196, 106, 0.22); border: 0.25vmin solid var(--bit); }
+      .m3-card u { display: block; height: 1vmin; width: 70%; border-radius: 0.5vmin; background: #3a4655; }
+      .m3-card.hero { grid-column: 1 / span 2; height: 13vmin; background: linear-gradient(135deg, #1f6b3b, #34c46a); }
+      .m3-card.hero u { background: rgba(255, 255, 255, 0.55); }
+      .m3-card.hero i { background: rgba(255, 255, 255, 0.25); border-color: #fff; }
+      .m3-nav { position: absolute; left: 0; right: 0; bottom: 0; height: 8vmin; display: flex; justify-content: space-around; align-items: center; padding-bottom: 1.4vmin; background: #161d26; }
+      .m3-nav span { width: 6vmin; height: 3.2vmin; border-radius: 2vmin; display: flex; align-items: center; justify-content: center; }
+      .m3-nav span i { width: 1.8vmin; height: 1.8vmin; border-radius: 0.5vmin; background: #8a97a3; }
+      .m3-nav span.on { background: rgba(52, 196, 106, 0.25); }
+      .m3-nav span.on i { background: var(--bit); }
+
+      /* ── panels beside the phone ── */
+      #panels { position: relative; flex: 1; height: 44vmin; }
+      .pn { position: absolute; inset: 0; border-radius: 1.6vmin; overflow: hidden; background: var(--ed-bg); border: 1px solid #262c36; box-shadow: 0 3vmin 6vmin -3vmin rgba(0, 0, 0, 0.5); opacity: 0; }
+      .pn-bar { display: flex; align-items: center; justify-content: space-between; height: 4.4vmin; padding: 0 2vmin; background: #161b22; border-bottom: 1px solid #21262d; font-family: var(--mono); font-size: 1.35vmin; color: var(--ed-fg); }
+      .pn-bar .tag { padding: 0.3vmin 1vmin; border-radius: 0.5vmin; font-weight: 700; color: #0d1117; }
+      .code { padding: 1.8vmin 0; font-family: var(--mono); font-size: 1.7vmin; line-height: 2.8vmin; color: var(--ed-fg); white-space: pre; }
+      .ln { display: flex; gap: 2vmin; padding-left: 1.8vmin; }
+      .ln i { font-style: normal; width: 2vmin; text-align: right; color: var(--ed-dim); flex: none; }
+      .ln .t { display: inline-block; overflow: hidden; vertical-align: bottom; }
+      .k { color: var(--syn-k); } .ty { color: var(--syn-t); } .f { color: var(--syn-f); } .s { color: var(--syn-s); } .a { color: var(--syn-a); } .cm { color: var(--ed-dim); }
+      .strike { position: absolute; left: 6.4vmin; height: 2px; background: #ff7b72; transform-origin: left center; }
+
+      /* cloud panel */
+      #cloud-body { position: absolute; left: 0; right: 0; top: 4.4vmin; bottom: 0; display: flex; align-items: center; justify-content: space-around; padding: 0 4vmin; }
+      .node-b { display: flex; flex-direction: column; align-items: center; gap: 1.4vmin; font-family: var(--mono); font-size: 1.4vmin; color: var(--ed-fg); letter-spacing: 0.1em; }
+      .node-b svg { width: 12vmin; height: 10vmin; overflow: visible; }
+      #pipe { position: relative; flex: 1; height: 0.4vmin; margin: 0 3vmin 3vmin; background: #2a3240; }
+      #pipe .rail { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+      #pipe i { position: absolute; top: -0.5vmin; left: -0.7vmin; width: 1.4vmin; height: 1.4vmin; border-radius: 50%; background: #ffca28; box-shadow: 0 0 1.2vmin #ffca28; opacity: 0; }
+      #cloud-cap { position: absolute; left: 0; right: 0; bottom: 3vmin; text-align: center; font-family: var(--mono); font-size: 1.5vmin; color: var(--ed-dim); letter-spacing: 0.1em; }
+      #cloud-cap b { color: #b6f0c8; font-weight: 500; }
+
+      /* nav graph panel */
+      #nav-body { position: absolute; left: 0; right: 0; top: 4.4vmin; bottom: 0; }
+      .dest { position: absolute; width: 13vmin; height: 15vmin; border-radius: 1.4vmin; border: 0.25vmin solid #3a4454; background: #161b22; padding: 1.2vmin; }
+      .dest b { display: block; font-family: var(--mono); font-size: 1.3vmin; color: var(--ed-fg); font-weight: 500; }
+      .dest u { display: block; margin-top: 1vmin; height: 0.9vmin; border-radius: 0.5vmin; background: #2a3240; }
+      .dest.on { border-color: var(--bit); box-shadow: 0 0 0 0.5vmin rgba(52, 196, 106, 0.18); }
+      #d-home { left: 6%; top: 28%; } #d-detail { left: 46%; top: 6%; } #d-settings { left: 46%; top: 54%; }
+      #nav-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+      #nav-svg path { fill: none; stroke: #79c0ff; stroke-width: 0.4; }
+      #nav-start { position: absolute; left: 1.6vmin; top: 12%; font-family: var(--mono); font-size: 1.2vmin; color: var(--bit); }
+
+      @media (orientation: portrait) {
+        #s-app { flex-direction: column; justify-content: center; padding: 14vmin 4vmin 10vmin; gap: 6vmin; }
+        #copy { flex: none; width: 100%; padding: 0 3vmin; }
+        #title { font-size: 12vmin; }
+        #brand img { width: 13vmin; height: 13vmin; }
+        #sub { font-size: 3.4vmin; max-width: none; }
+        .stat b { font-size: 8vmin; } .stat small { font-size: 1.8vmin; }
+        #stage { flex: none; width: 100%; height: auto; gap: 5vmin; }
+        #row { gap: 3vmin; }
+        #phone { width: 38vmin; height: 76vmin; }
+        #panels { height: 58vmin; }
+        .code { font-size: 1.75vmin; line-height: 2.9vmin; }
+        .ln { gap: 1.2vmin; padding-left: 1.2vmin; }
+        .step { width: 17vmin; } .step span { font-size: 1.7vmin; }
+        .dest { width: 15vmin; height: 20vmin; }
+        #d-home { left: 4%; top: 22%; } #d-detail { left: 52%; top: 4%; } #d-settings { left: 52%; top: 54%; }
+        #chip { font-size: 1.9vmin; }
+        #stamp small { font-size: 1.7vmin; }
+        #stamp .v b { font-size: 3.8vmin; }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="bitapp" data-start="0" data-duration="15" data-width="1080" data-height="1920">
+      <div id="chip"><b>ch 04</b><i></i><span>bit app</span></div>
+      <div id="stamp"><small>build</small><div class="v"><b id="sv-0">first app</b><b id="sv-1">v1 · static</b><b id="sv-2">v2 · dynamic</b><b id="sv-3">kotlin</b><b id="sv-4">navigation</b><b id="sv-5">compose</b></div></div>
+
+      <section id="s-app" class="clip" data-start="0" data-duration="15" data-track-index="1">
+        <div id="copy">
+          <p class="eyebrow">Chapter 04 — BIT App</p>
+          <div id="brand"><img src="assets/bit-app.png" alt="" /><h2 id="title" class="title"></h2></div>
+          <p id="sub">My first production app. It became <b>my obsession</b>, and <b>my lab</b> for learning and shipping new features.</p>
+          <div id="stats">
+            <div class="stat"><b><span id="n-users">0</span><span class="g">+</span></b><small>students</small></div>
+            <div class="stat"><b><span id="n-rating">0.0</span><span class="g">★</span></b><small>on google play</small></div>
+          </div>
+        </div>
+
+        <div id="stage">
+          <div id="steps">
+            <div id="steps-base"></div><div id="steps-fill"></div>
+            <div class="step"><i id="st-1"></i><span>static</span></div>
+            <div class="step"><i id="st-2"></i><span>dynamic</span></div>
+            <div class="step"><i id="st-3"></i><span>kotlin</span></div>
+            <div class="step"><i id="st-4"></i><span>navigation</span></div>
+            <div class="step"><i id="st-5"></i><span>compose</span></div>
+          </div>
+
+          <div id="row">
+            <div id="phone">
+              <div id="screen">
+                <div id="punch"></div>
+                <div id="status"><span>9:41</span><span class="ico"><i></i><u></u></span></div>
+                <div id="home">
+                  <p id="clock">9:41</p>
+                  <p id="date">Monday</p>
+                  <div id="apps"></div>
+                  <div id="bit-ring"></div>
+                  <div id="ripple"></div>
+                  <div id="dock"><i style="background:#4caf50"></i><i style="background:#2196f3"></i><i style="background:#ff7043"></i><i style="background:#9575cd"></i></div>
+                </div>
+                <div id="app">
+                  <div class="ascr" id="a-splash"><img src="assets/bit-app.png" alt="" /></div>
+                  <div class="ascr" id="a-v1">
+                    <div class="bar1">BIT App</div>
+                    <div class="row1"><i></i>Syllabus</div><div class="row1"><i></i>Notices</div><div class="row1"><i></i>Timetable</div><div class="row1"><i></i>About</div>
+                  </div>
+                  <div class="ascr" id="a-dyn">
+                    <div class="bar1">BIT App</div>
+                    <span id="synced"><i></i>synced</span>
+                    <div class="card2"><u></u><u></u><div class="fill"><u></u><u></u></div></div>
+                    <div class="card2"><u></u><u></u><div class="fill"><u></u><u></u></div></div>
+                    <div class="card2"><u></u><u></u><div class="fill"><u></u><u></u></div></div>
+                    <div class="card2"><u></u><u></u><div class="fill"><u></u><u></u></div></div>
+                    <div id="snack">Rebuilt in <b>Kotlin</b> ✓</div>
+                  </div>
+                  <div class="ascr" id="a-detail">
+                    <div class="bar1"><i></i>Detail</div>
+                    <div class="blk"></div><div class="ln3"></div><div class="ln3" style="width:60%"></div><div class="ln3"></div>
+                  </div>
+                  <div class="ascr" id="a-m3">
+                    <div class="m3-top"><small>Good morning</small><b>BIT App</b></div>
+                    <div class="m3-grid">
+                      <div class="m3-card hero"><i></i><u></u></div>
+                      <div class="m3-card"><i></i><u></u></div><div class="m3-card"><i></i><u></u></div>
+                      <div class="m3-card"><i></i><u></u></div><div class="m3-card"><i></i><u></u></div>
+                    </div>
+                    <div class="m3-nav"><span class="on"><i></i></span><span><i></i></span><span><i></i></span><span><i></i></span></div>
+                  </div>
+                </div>
+                <div id="pill"></div>
+              </div>
+            </div>
+
+            <div id="panels">
+              <div class="pn" id="pn-java">
+                <div class="pn-bar"><span>MainActivity.java</span><span class="tag" style="background:#f0a04b">java</span></div>
+                <div class="code" id="code-java"></div>
+              </div>
+              <div class="pn" id="pn-cloud">
+                <div class="pn-bar"><span>static → dynamic</span><span class="tag" style="background:#ffca28">cloud</span></div>
+                <div id="cloud-body">
+                  <div class="node-b">
+                    <svg viewBox="0 0 120 100" aria-hidden="true"><path d="M30 80 C 8 80, 6 50, 28 46 C 30 22, 62 16, 72 36 C 92 28, 112 46, 100 64 C 112 72, 104 82, 94 80 Z" fill="#1c2430" stroke="#ffca28" stroke-width="3" /></svg>
+                    <span>firebase</span>
+                  </div>
+                  <div id="pipe"><b class="rail"><i></i></b><b class="rail"><i></i></b><b class="rail"><i></i></b></div>
+                  <div class="node-b">
+                    <svg viewBox="0 0 120 100" aria-hidden="true"><rect x="38" y="6" width="44" height="88" rx="9" fill="#1c2430" stroke="#34c46a" stroke-width="3" /><rect x="46" y="20" width="28" height="6" rx="3" fill="#34c46a" /><rect x="46" y="32" width="20" height="6" rx="3" fill="#2a3240" /></svg>
+                    <span>app</span>
+                  </div>
+                </div>
+                <p id="cloud-cap">content now comes from the cloud, <b>live</b></p>
+              </div>
+              <div class="pn" id="pn-kotlin">
+                <div class="pn-bar"><span>MainActivity.kt</span><span class="tag" style="background:#a98bff">kotlin</span></div>
+                <div class="code" id="code-kotlin"></div>
+              </div>
+              <div class="pn" id="pn-nav">
+                <div class="pn-bar"><span>nav_graph.xml</span><span class="tag" style="background:#79c0ff">navigation</span></div>
+                <div id="nav-body">
+                  <svg id="nav-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                    <path id="e-1" d="M28 40 C 38 40, 38 22, 46 22" /><path id="e-2" d="M28 56 C 38 56, 38 70, 46 70" />
+                  </svg>
+                  <span id="nav-start">▸ start</span>
+                  <div class="dest" id="d-home"><b>home</b><u></u><u style="width:60%"></u><u></u></div>
+                  <div class="dest" id="d-detail"><b>detail</b><u></u><u style="width:70%"></u></div>
+                  <div class="dest" id="d-settings"><b>settings</b><u></u><u style="width:50%"></u></div>
+                </div>
+              </div>
+              <div class="pn" id="pn-compose">
+                <div class="pn-bar"><span>HomeScreen.kt</span><span class="tag" style="background:#34c46a">compose</span></div>
+                <div class="code" id="code-xml"></div>
+                <div class="code" id="code-compose" style="position:absolute;left:0;right:0;top:4.4vmin"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      (function () {
+        var $ = function (s) { return document.querySelector(s); };
+        var $$ = function (s) { return Array.prototype.slice.call(document.querySelectorAll(s)); };
+        var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); };
+        $("#title").innerHTML = '<span class="word"><span>BIT</span></span> <span class="word"><span>App.</span></span>';
+
+        var lines = function (arr) {
+          return arr.map(function (l, i) { return '<div class="ln"><i>' + (i + 1) + '</i><span class="t">' + (l || " ") + "</span></div>"; }).join("");
+        };
+        $("#code-java").innerHTML = lines([
+          '<span class="k">public class</span> <span class="ty">MainActivity</span>',
+          '    <span class="k">extends</span> <span class="ty">AppCompatActivity</span> {',
+          '  <span class="a">@Override</span>',
+          '  <span class="k">protected void</span> <span class="f">onCreate</span>(<span class="ty">Bundle</span> b) {',
+          '    <span class="k">super</span>.<span class="f">onCreate</span>(b);',
+          '    <span class="f">setContentView</span>(R.layout.main);',
+          '  }',
+          '}',
+        ]);
+        $("#code-kotlin").innerHTML = lines([
+          '<span class="k">class</span> <span class="ty">MainActivity</span> : <span class="ty">AppCompatActivity</span>() {',
+          '  <span class="k">override fun</span> <span class="f">onCreate</span>(b: <span class="ty">Bundle</span>?) {',
+          '    <span class="k">super</span>.<span class="f">onCreate</span>(b)',
+          '    <span class="f">setContentView</span>(R.layout.main)',
+          '  }',
+          '}',
+        ]);
+        $("#code-xml").innerHTML = lines([
+          '<span class="cm">&lt;</span><span class="ty">LinearLayout</span> <span class="a">android:orientation</span>=<span class="s">"vertical"</span><span class="cm">&gt;</span>',
+          '  <span class="cm">&lt;</span><span class="ty">RecyclerView</span> <span class="a">android:id</span>=<span class="s">"@+id/cards"</span> <span class="cm">/&gt;</span>',
+          '<span class="cm">&lt;/</span><span class="ty">LinearLayout</span><span class="cm">&gt;</span>',
+        ]);
+        $("#code-compose").innerHTML = lines([
+          '<span class="a">@Composable</span>',
+          '<span class="k">fun</span> <span class="f">HomeScreen</span>(state: <span class="ty">HomeState</span>) {',
+          '  <span class="f">LazyColumn</span> {',
+          '    <span class="f">items</span>(state.cards) { <span class="f">InfoCard</span>(it) }',
+          '  }',
+          '}',
+        ]);
+        // Strike-through bars over the XML lines.
+        var xml = $("#code-xml");
+        for (var s = 0; s < 3; s++) xml.insertAdjacentHTML("beforeend", '<i class="strike" style="top:' + (1.8 + 1.4 + s * 2.8) + 'vmin;width:' + [44, 40, 22][s] + 'vmin"></i>');
+
+        // Home screen apps; the BIT App sits in row 2.
+        var palette = ["#ef5350", "#42a5f5", "#ffb300", "#26a69a", "#7e57c2", "BIT", "#ec407a", "#8d6e63", "#5c6bc0", "#66bb6a", "#29b6f6", "#ff7043"];
+        var names = ["Phone", "Messages", "Camera", "Photos", "Clock", "BIT App", "Music", "Files", "Mail", "Maps", "Weather", "Notes"];
+        $("#apps").innerHTML = palette.map(function (c, i) {
+          var ico = c === "BIT" ? '<img id="bit-ico" src="assets/bit-app.png" alt="" />' : '<i style="background:' + c + '"></i>';
+          return '<div class="app">' + ico + "<span>" + names[i] + "</span></div>";
+        }).join("");
+
+        // Launch geometry: the app grows out of its icon (clip-path from the
+        // icon's box to the full screen), and the ring/ripple sit on it.
+        var scr = $("#screen").getBoundingClientRect();
+        var ico = $("#bit-ico").getBoundingClientRect();
+        var pct = function (v, total) { return (v / total) * 100 + "%"; };
+        var iconInset = "inset(" + pct(ico.top - scr.top, scr.height) + " " + pct(scr.right - ico.right, scr.width) + " " + pct(scr.bottom - ico.bottom, scr.height) + " " + pct(ico.left - scr.left, scr.width) + " round 1.8vmin)";
+        var cx = pct(ico.left - scr.left + ico.width / 2, scr.width), cy = pct(ico.top - scr.top + ico.height / 2, scr.height);
+        gsap.set("#bit-ring", { left: cx, top: cy, xPercent: -50, yPercent: -50 });
+        gsap.set("#ripple", { left: cx, top: cy, xPercent: -50, yPercent: -50 });
+        gsap.set("#app", { clipPath: iconInset, opacity: 0 });
+
+        var tl = gsap.timeline({ paused: true, defaults: { ease: "expo.out" } });
+        var stamp = function (i, at) {
+          if (i > 0) tl.to("#sv-" + (i - 1), { opacity: 0, y: -8, duration: 0.3, ease: "power2.in" }, at);
+          tl.fromTo("#sv-" + i, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.45 }, at + 0.15);
+        };
+        var step = function (i, at) {
+          tl.to("#st-" + i, { borderColor: "var(--ok)", backgroundColor: "var(--ok)", scale: 1.15, duration: 0.3, ease: "back.out(3)" }, at);
+          tl.to("#steps-fill", { scaleX: (i - 1) / 4, duration: 0.5, ease: "power2.inOut" }, at - 0.2);
+        };
+        var panel = function (out, inn, at) {
+          if (out) tl.to(out, { opacity: 0, y: -16, duration: 0.35, ease: "power2.in" }, at);
+          tl.fromTo(inn, { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.7 }, at + 0.2);
+        };
+        var typeIn = function (sel, at) {
+          $$(sel + " .ln .t").forEach(function (el, i) {
+            var n = Math.max(1, el.textContent.length);
+            tl.fromTo(el, { clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0% 0 0)", duration: Math.min(0.3, n * 0.01), ease: "steps(" + n + ")" }, at + i * 0.13);
+          });
+        };
+        var screenTo = function (out, inn, at, dx) {
+          tl.to(out, { opacity: 0, x: dx ? -dx + "vmin" : 0, duration: 0.4, ease: "power2.inOut" }, at);
+          tl.fromTo(inn, { opacity: 0, x: dx ? dx + "vmin" : 0 }, { opacity: 1, x: 0, duration: 0.5, ease: "power3.out" }, at + 0.05);
+        };
+        gsap.set("#steps-fill", { scaleX: 0 });
+
+        // Intro (plays as the chapter scrolls in).
+        tl.fromTo("#copy .eyebrow", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.7 }, 0);
+        tl.fromTo("#brand img", { opacity: 0, scale: 0.6, rotation: -12 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.9, ease: "back.out(1.6)" }, 0.05);
+        tl.fromTo("#title .word > span", { yPercent: 110 }, { yPercent: 0, duration: 1, stagger: 0.1 }, 0.15);
+        tl.fromTo("#sub", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.8 }, 0.5);
+        tl.fromTo("#steps", { opacity: 0 }, { opacity: 1, duration: 0.6 }, 0.4);
+        stamp(0, 0);
+
+        // Tap the icon; the app opens out of it.
+        tl.fromTo("#bit-ring", { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 0.4, ease: "back.out(2)" }, 1.3);
+        tl.fromTo("#bit-ring", { scale: 1 }, { scale: 1.1, duration: 0.3, ease: "sine.inOut", yoyo: true, repeat: 1, immediateRender: false }, 1.7);
+        tl.fromTo("#ripple", { opacity: 0.7, scale: 0.4 }, { opacity: 0, scale: 4, duration: 0.5, ease: "power2.out" }, 2.1);
+        tl.fromTo("#bit-ico", { scale: 1 }, { scale: 0.9, duration: 0.1, ease: "power2.out", yoyo: true, repeat: 1 }, 2.05);
+        tl.to("#app", { opacity: 1, duration: 0.08, ease: "none" }, 2.2);
+        tl.to("#app", { clipPath: "inset(0% 0% 0% 0% round 4vmin)", duration: 0.6, ease: "power3.inOut" }, 2.2);
+        tl.fromTo("#a-splash img", { scale: 0.5 }, { scale: 1, duration: 0.6, ease: "power3.out" }, 2.2);
+        tl.to("#home", { scale: 0.94, opacity: 0, duration: 0.6, ease: "power2.inOut" }, 2.2);
+
+        // Light app screens get a dark status bar; Material 3 is dark again.
+        tl.to("#status", { color: "#1b1f24", duration: 0.2, ease: "none" }, 2.9);
+        tl.to("#status", { color: "#ffffff", duration: 0.2, ease: "none" }, 12.4);
+
+        // v1 · static (Java + XML).
+        screenTo("#a-splash", "#a-v1", 3.0, 0);
+        step(1, 3.0); stamp(1, 3.0);
+        panel(null, "#pn-java", 3.0); typeIn("#code-java", 3.25);
+
+        // v2 · dynamic: skeletons fill with live data.
+        screenTo("#a-v1", "#a-dyn", 4.8, 0);
+        step(2, 4.8); stamp(2, 4.8);
+        panel("#pn-java", "#pn-cloud", 4.8);
+        $$("#pipe .rail").forEach(function (rail, i) {
+          var dot = rail.firstElementChild;
+          tl.fromTo(rail, { xPercent: 0 }, { xPercent: 100, duration: 0.9, ease: "power1.inOut" }, 5.3 + i * 0.28);
+          tl.fromTo(dot, { opacity: 0 }, { opacity: 1, duration: 0.15 }, 5.3 + i * 0.28);
+          tl.to(dot, { opacity: 0, duration: 0.15 }, 6.1 + i * 0.28);
+        });
+        $$(".card2 .fill").forEach(function (f, i) {
+          tl.fromTo(f, { opacity: 0 }, { opacity: 1, duration: 0.35, ease: "power2.out" }, 5.9 + i * 0.14);
+        });
+        tl.fromTo("#synced", { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 0.4, ease: "back.out(2)" }, 6.4);
+
+        // Kotlin: same app, rewritten.
+        step(3, 6.9); stamp(3, 6.9);
+        panel("#pn-cloud", "#pn-kotlin", 6.9); typeIn("#code-kotlin", 7.15);
+        tl.fromTo("#snack", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5 }, 7.6);
+        tl.to("#snack", { opacity: 0, y: 20, duration: 0.3, ease: "power2.in" }, 8.6);
+
+        // Navigation: a graph of destinations; the phone follows it.
+        step(4, 8.9); stamp(4, 8.9);
+        panel("#pn-kotlin", "#pn-nav", 8.9);
+        tl.fromTo(".dest", { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.5, stagger: 0.1, ease: "back.out(1.6)" }, 9.15);
+        tl.fromTo("#e-1", { strokeDasharray: 40, strokeDashoffset: 40 }, { strokeDashoffset: 0, duration: 0.4, ease: "power2.out" }, 9.5);
+        tl.fromTo("#e-2", { strokeDasharray: 40, strokeDashoffset: 40 }, { strokeDashoffset: 0, duration: 0.4, ease: "power2.out" }, 9.6);
+        tl.set("#d-home", { className: "dest on" }, 9.4);
+        screenTo("#a-dyn", "#a-detail", 9.9, 12);
+        tl.set("#d-home", { className: "dest" }, 9.9);
+        tl.set("#d-detail", { className: "dest on" }, 9.9);
+        screenTo("#a-detail", "#a-dyn", 10.6, -12);
+        tl.set("#d-detail", { className: "dest" }, 10.6);
+        tl.set("#d-home", { className: "dest on" }, 10.6);
+
+        // Compose: XML is struck through and collapses; Material 3 arrives.
+        step(5, 11.2); stamp(5, 11.2);
+        panel("#pn-nav", "#pn-compose", 11.2);
+        typeIn("#code-xml", 11.4);
+        tl.fromTo(".strike", { scaleX: 0 }, { scaleX: 1, duration: 0.3, stagger: 0.1, ease: "power2.out" }, 11.9);
+        tl.to("#code-xml", { opacity: 0, scaleY: 0.2, transformOrigin: "50% 0%", duration: 0.4, ease: "power2.in" }, 12.4);
+        tl.fromTo("#code-compose", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "none" }, 12.5);
+        typeIn("#code-compose", 12.6);
+        tl.fromTo("#a-m3", { opacity: 0, scale: 1.04 }, { opacity: 1, scale: 1, duration: 0.6, ease: "power3.out" }, 12.4);
+        tl.fromTo(".m3-card", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.5, stagger: 0.06 }, 12.5);
+        tl.to("#a-dyn", { opacity: 0, duration: 0.4 }, 12.4);
+
+        // Payoff: who used it.
+        var users = { v: 0 }, rating = { v: 0 };
+        tl.fromTo("#stats", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.7 }, 13.1);
+        tl.fromTo(users, { v: 0 }, { v: 1000, duration: 1.2, ease: "power2.out", onUpdate: function () { $("#n-users").textContent = Math.round(users.v).toLocaleString("en-US"); } }, 13.2);
+        tl.fromTo(rating, { v: 0 }, { v: 4.7, duration: 1.2, ease: "power2.out", onUpdate: function () { $("#n-rating").textContent = rating.v.toFixed(1); } }, 13.3);
+
+        window.__timelines["bitapp"] = tl;
+      })();
+    </script>
+  </body>
+</html>
