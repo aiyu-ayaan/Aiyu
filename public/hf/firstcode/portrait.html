@@ -148,16 +148,6 @@
       .key.eq { background: linear-gradient(180deg, #3a74c8, #24579f); color: #fff; box-shadow: inset 0 0 0 1px #1d4786; }
 
       /* ── props around the laptop ── */
-      #cal { position: absolute; left: -15vmin; top: -9vmin; z-index: 5; width: 25vmin; border-radius: 1.2vmin; overflow: hidden; background: #fbfaf7; color: #1d2330; box-shadow: 0 3vmin 6vmin -2vmin rgba(0, 0, 0, 0.55); }
-      #cal-head { padding: 1.3vmin 1.8vmin; background: #3a5bd9; color: #fff; display: flex; justify-content: space-between; align-items: baseline; }
-      #cal-head b { font-size: 2.4vmin; font-weight: 800; letter-spacing: -0.01em; }
-      #cal-head small { font-family: var(--mono); font-size: 1.4vmin; letter-spacing: 0.2em; }
-      #cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.4vmin; padding: 1.2vmin; }
-      .day { position: relative; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 1.2vmin; color: #3b4252; border-radius: 0.3vmin; background: #f0eee8; }
-      .day.sun { color: #c23030; }
-      #d-15 { font-weight: 800; color: #1d2330; }
-      #ring { position: absolute; left: -35%; top: -35%; width: 170%; height: 170%; overflow: visible; pointer-events: none; }
-      #ring path { fill: none; stroke: #e0245e; stroke-width: 7; stroke-linecap: round; }
 
       #tag { position: absolute; right: -9vmin; bottom: -9vmin; z-index: 6; transform-origin: 50% 0; }
       #tag-str { width: 1px; height: 5vmin; margin: 0 auto; background: #c9ced6; }
@@ -203,7 +193,6 @@
         .copy .kick { font-size: 4.2vmin; }
         #rig { left: 0; right: 0; top: 82vmin; bottom: 12vmin; }
         #kit { width: 80vmin; }
-        #cal { left: -6vmin; top: -14vmin; width: 26vmin; }
         #tag { right: -4vmin; bottom: -12vmin; }
         #note-a { right: -4vmin; top: -12vmin; }
         #note-b { right: -4vmin; top: -13vmin; }
@@ -313,10 +302,6 @@
           <div class="deck"></div>
 
           <!-- S1 props -->
-          <div id="cal" data-layout-allow-occlusion>
-            <div id="cal-head" data-layout-allow-occlusion><b data-layout-allow-overlap data-layout-allow-occlusion>February</b><small data-layout-allow-overlap data-layout-allow-occlusion>2015</small></div>
-            <div id="cal-grid" data-layout-allow-occlusion></div>
-          </div>
           <div id="tag" data-layout-allow-occlusion>
             <div id="tag-str"></div>
             <div id="tag-card" data-layout-allow-occlusion><small data-layout-allow-overlap data-layout-allow-occlusion>my first laptop</small><b data-layout-allow-overlap data-layout-allow-occlusion>HP Notebook · 2000</b></div>
@@ -392,15 +377,6 @@
         $("#s3-title").innerHTML = words("Then came Java.", ["Java"]);
         $("#s3-kick").innerHTML = words("Finally, a calculator that worked, with a full GUI.", ["worked", "GUI"]);
         $("#boot-name").textContent = NAME;
-
-        // February 2015 starts on a Sunday and has exactly four weeks.
-        var cal = "";
-        for (var d = 1; d <= 28; d++) {
-          cal += '<div class="day' + (d % 7 === 1 ? " sun" : "") + '" id="d-' + d + '" data-layout-allow-occlusion>' + d +
-            (d === 15 ? '<svg id="ring" viewBox="0 0 100 100" aria-hidden="true"><path d="M50 8 C 80 6, 94 30, 92 52 C 90 78, 66 94, 46 92 C 20 90, 6 70, 8 46 C 10 24, 30 10, 58 12" /></svg>' : "") +
-            "</div>";
-        }
-        $("#cal-grid").innerHTML = cal;
 
         // calc.c: line 6 is missing its semicolon.
         var src = [
@@ -478,9 +454,6 @@
         tl.fromTo("#kit", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 1.1 }, 0.1);
         // Closed → open: the lid swings up from the hinge.
         tl.fromTo("#lid", { rotationX: -84, transformPerspective: 1800 }, { rotationX: 0, duration: 1.3, ease: "power3.inOut" }, 0.7);
-        tl.fromTo("#cal", { opacity: 0, y: 30, rotation: -8 }, { opacity: 1, y: 0, rotation: -5, duration: 0.9 }, 0.5);
-        tl.fromTo("#ring path", { strokeDasharray: 330, strokeDashoffset: 330 }, { strokeDashoffset: 0, duration: 0.7, ease: "power2.inOut" }, 1.4);
-        tl.fromTo("#d-15", { scale: 1 }, { scale: 1.25, duration: 0.2, ease: "power2.out", yoyo: true, repeat: 1 }, 2.0);
 
         // Power on: a flash, the logo, then the welcome.
         tl.fromTo("#scr-glow", { opacity: 0 }, { opacity: 0.85, duration: 0.12, ease: "none" }, 2.1);
@@ -503,7 +476,7 @@
 
         // Leave S1.
         leave("#s1", 5.7);
-        tl.to("#cal, #tag, #note-a", { opacity: 0, y: -20, duration: 0.4, ease: "power2.in", stagger: 0.05 }, 5.7);
+        tl.to("#tag, #note-a", { opacity: 0, y: -20, duration: 0.4, ease: "power2.in", stagger: 0.05 }, 5.7);
         swapStamp("#st-a", "#st-b", 5.8);
 
         // ── S2 · mid 2017, calc.c ──
