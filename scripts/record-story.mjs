@@ -13,7 +13,7 @@
  *   --device <d>       STORY_DEVICE   desktop | mobile | both. Default both
  *   --speed <n>        STORY_SPEED    playback speed, one of the player's (1, 1.5, 2, 3). Default 2
  *   --out-dir <dir>    STORY_OUT_DIR  where journey-<device>.mp4 is written. Default the repo root
- *   --fps <n>          STORY_FPS      output frame rate. Default 30
+ *   --fps <n>          STORY_FPS      output frame rate. Default 60
  *   --port <n>         STORY_PORT     port for the prod server. Default 3100
  *   --path <p>         STORY_PATH     page to record. Default /v2
  *   --url <origin>     STORY_URL      record an already running server (no build/start)
@@ -21,8 +21,11 @@
  *   --show-controls                   keep the story player pill in the video
  *   --headed                          show the browser window while recording
  *
- * Frames come from the Chrome DevTools screencast (sharper than Playwright's
- * built-in recorder) and are piped into ffmpeg at a constant frame rate.
+ * Recording is frame-stepped, not real time: the page runs on Playwright's
+ * fake clock, which is advanced exactly 1/fps per frame before each
+ * screenshot. The story's motion (autoplay scroll, GSAP, the films) runs off
+ * that clock, so the video is a true, stutter-free 60fps however slowly the
+ * machine renders. It takes longer than the video's length to capture.
  */
 import fs from 'fs';
 import path from 'path';
@@ -50,7 +53,7 @@ const opt = (name, env, fallback) => {
 
 const device = opt('device', 'STORY_DEVICE', 'both');
 const speed = Number(opt('speed', 'STORY_SPEED', 2));
-const fps = Number(opt('fps', 'STORY_FPS', 30));
+const fps = Number(opt('fps', 'STORY_FPS', 60));
 const port = Number(opt('port', 'STORY_PORT', 3100));
 const pagePath = opt('path', 'STORY_PATH', '/v2');
 const outDir = path.resolve(ROOT, opt('out-dir', 'STORY_OUT_DIR', '.'));
@@ -118,11 +121,7 @@ async function launchBrowser() {
 }
 
 // ------------------------------------------------------------------ recorder
-/**
- * Pipes screencast JPEGs into ffmpeg at a constant frame rate. The screencast
- * only emits a frame when the screen changes, so each frame is held (written
- * again) until the next one arrives.
- */
+/** Pipes JPEG frames into ffmpeg, one per 1/fps of video. */
 function createEncoder(file) {
     const ffmpeg = spawn('ffmpeg', [
         '-y', '-loglevel', 'error',
@@ -139,32 +138,17 @@ function createEncoder(file) {
         ffmpeg.on('exit', (code) => (code === 0 ? resolve() : reject(new Error(`ffmpeg exited with ${code}`))));
     });
 
-    let start = null;
-    // Screencast timestamps vs this clock, so the tail can be timed even
-    // when no new frame arrives (a still screen).
-    let clockOffset = 0;
     let written = 0;
-    let lastFrame = null;
-
-    const writeUntil = (seconds) => {
-        const target = Math.floor(seconds * fps);
-        while (lastFrame && written < target) {
-            ffmpeg.stdin.write(lastFrame);
-            written++;
-        }
-    };
-
     return {
-        frame(buffer, timestamp) {
-            if (start === null) {
-                start = timestamp;
-                clockOffset = Date.now() / 1000 - timestamp;
-            }
-            writeUntil(timestamp - start);
-            lastFrame = buffer;
+        get seconds() {
+            return written / fps;
+        },
+        async frame(buffer) {
+            written++;
+            // Respect backpressure so frames do not pile up in memory.
+            if (!ffmpeg.stdin.write(buffer)) await new Promise((r) => ffmpeg.stdin.once('drain', r));
         },
         async finish() {
-            if (start !== null) writeUntil(Date.now() / 1000 - clockOffset - start);
             ffmpeg.stdin.end();
             await done;
             return written / fps;
@@ -190,6 +174,9 @@ async function record(browser, name) {
                 localStorage.setItem('v2-beta-popup-dismissed', '1');
             } catch { /* storage blocked */ }
         });
+        // Fake timers from the first script on; the clock runs normally until
+        // it is paused for the frame-stepped capture.
+        await context.clock.install();
         const page = await context.newPage();
 
         log(`[${name}] Opening ${origin}${pagePath}…`);
@@ -221,37 +208,45 @@ async function record(browser, name) {
         const scale = preset.deviceScaleFactor;
         const cdp = await context.newCDPSession(page);
         const encoder = createEncoder(out);
-        cdp.on('Page.screencastFrame', ({ data, metadata, sessionId }) => {
-            encoder.frame(Buffer.from(data, 'base64'), metadata.timestamp);
-            cdp.send('Page.screencastFrameAck', { sessionId }).catch(() => {});
-        });
-        await cdp.send('Page.startScreencast', {
-            format: 'jpeg', quality: 92, maxWidth: width * scale, maxHeight: height * scale, everyNthFrame: 1,
-        });
+        const frameMs = 1000 / fps;
 
-        log(`[${name}] Recording at ${speed}× → ${path.relative(ROOT, out)}`);
+        // Advance the page by one frame, then capture it.
+        const step = async () => {
+            await page.clock.runFor(frameMs);
+            const { data } = await cdp.send('Page.captureScreenshot', { format: 'jpeg', quality: 92, optimizeForSpeed: true });
+            await encoder.frame(Buffer.from(data, 'base64'));
+        };
+        const stepFor = async (ms) => {
+            for (let t = 0; t < ms; t += frameMs) await step();
+        };
+        const playing = () => page.evaluate(() => document.querySelector('[data-story-player] button[aria-pressed]')?.getAttribute('aria-pressed') === 'true');
+
+        await page.clock.pauseAt(await page.evaluate(() => Date.now()) + 100);
+
+        log(`[${name}] Recording at ${speed}×, ${fps}fps → ${path.relative(ROOT, out)}`);
         // A short beat on the hero before the story starts moving. click()
         // dispatches only a click, which autoplay does not read as scrolling.
-        await page.waitForTimeout(1000);
+        await stepFor(1000);
         await heroPlay.evaluate((button) => button.click());
+        await step();
+        if (!(await playing())) throw new Error('The story did not start playing');
 
         // Autoplay pauses itself at the end of chapter 09.
-        const playButton = page.locator('[data-story-player] button[aria-pressed]');
-        await playButton.and(page.locator('[aria-pressed="true"]')).waitFor({ state: 'attached', timeout: 10_000 });
-        const started = Date.now();
-        const ticker = setInterval(() => {
-            process.stdout.write(`\r[record] [${name}] ${Math.round((Date.now() - started) / 1000)}s recorded…`);
-        }, 1000);
-        try {
-            await playButton.and(page.locator('[aria-pressed="false"]')).waitFor({ state: 'attached', timeout: 30 * 60_000 });
-        } finally {
-            clearInterval(ticker);
-            process.stdout.write('\n');
+        const began = Date.now();
+        const limit = 30 * 60 * fps;
+        let frames = 0;
+        while (await playing()) {
+            if (++frames > limit) throw new Error('The story did not finish within 30 minutes of video');
+            await step();
+            if (frames % fps === 0) {
+                const rate = (frames / ((Date.now() - began) / 1000)).toFixed(1);
+                process.stdout.write(`\r[record] [${name}] ${encoder.seconds.toFixed(0)}s of video captured (${rate} frames/s)…`);
+            }
         }
+        process.stdout.write('\n');
 
         // Hold the last frame of chapter 09 for a moment.
-        await page.waitForTimeout(1500);
-        await cdp.send('Page.stopScreencast');
+        await stepFor(1500);
         const seconds = await encoder.finish();
         log(`[${name}] Saved ${path.relative(ROOT, out)} (${seconds.toFixed(1)}s, ${width * scale}×${height * scale} @ ${fps}fps)`);
     } finally {
