@@ -62,6 +62,27 @@ The files in this `docs/` folder now serve as redirects to the wiki. They contai
 
 ---
 
+## Story Videos
+
+The v2 home page tells my life story as a scroll-driven film, from the hero to chapter 09. These recordings come straight from the production build (`npm run record`, 2× speed).
+
+<table>
+  <tr>
+    <th width="70%">Desktop</th>
+    <th width="30%">Mobile</th>
+  </tr>
+  <tr>
+    <td><video src="https://github.com/aiyu-ayaan/aiyu/raw/master/journey-desktop.mp4" controls muted loop playsinline width="100%"></video></td>
+    <td><video src="https://github.com/aiyu-ayaan/aiyu/raw/master/journey-mobile.mp4" controls muted loop playsinline width="100%"></video></td>
+  </tr>
+</table>
+
+Player not showing? Open the files directly, GitHub plays them in its file viewer: [journey-desktop.mp4](../journey-desktop.mp4) · [journey-mobile.mp4](../journey-mobile.mp4).
+
+Re-record both with `npm run record` (options: `--speed`, `--device desktop|mobile`, `--fps`, `--skip-build`; see `scripts/record-story.mjs`).
+
+---
+
 ## Screenshots
 
 Screenshots are still available in `docs/images/` and are referenced in the wiki using raw GitHub URLs:
