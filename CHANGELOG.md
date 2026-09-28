@@ -1,5 +1,31 @@
 # Changelog
 
+## [6.0.1](https://github.com/aiyu-ayaan/Aiyu/compare/v6.0.0...v6.0.1) (2026-09-27)
+
+### Features
+
+* Autoplay the story with play/pause and 1×–3× speed
+* Redesign the prologue film to match the life-story chapters
+* Chapter 08 now, building this site with AI
+* Chapter 07 Adrosonic, the website team, full time, C#
+* Chapter 06 master's, computer vision, Compose, the offer
+* Chapter 05 internship, speech ⇄ text and the TTS-Engine library
+* Chapter 04 BIT App, from static app to Jetpack Compose
+* Chapter 03 college, C and linked lists, then COVID and Android
+* Chapter 02 school, a notebook that turns 2005 → 2019
+* Life-story chapters with a pinned film per chapter; chapter 01 origin
+
+### Bug Fixes
+
+* : Interactive story chapters, autoplay controls, and mobile layout fixes
+* Centre the ship pipeline line on its checkpoints
+* Stop hero and story controls overlapping on phones
+* Sticky chapter stages so films never reload; story in the HUD
+
+### Other Changes
+
+* Merge branch 'feature/story'
+
 ## [6.0.0](https://github.com/aiyu-ayaan/Aiyu/compare/v5.1.1...v6.0.0) (2026-09-26)
 
 ### ⚠ BREAKING CHANGES
