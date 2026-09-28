@@ -34,6 +34,9 @@
     "emergency:cleanup": "bash scripts/emergency-cleanup.sh",
     "screenshots:install": "npx playwright install chromium",
     "screenshots:capture": "node scripts/capture-screenshots.mjs",
+    "record": "node scripts/record-story.mjs",
+    "record:desktop": "node scripts/record-story.mjs --device desktop",
+    "record:mobile": "node scripts/record-story.mjs --device mobile",
     "hf:sync": "node scripts/sync-hyperframes.mjs",
     "hf:check": "cd hyperframes/story && npx --yes hyperframes@0.8.78 check && cd ../boot && npx --yes hyperframes@0.8.78 check"
   },
