@@ -35,6 +35,8 @@ const END_SCENE_LEAD = 1.7;
 // Share of the pin spent playing the film; the rest holds the final frame
 // so the ending is readable before the page moves on.
 const PLAY_SHARE = 0.9;
+// Scroll length of the pinned stretch, in % of the viewport height.
+const PIN_LENGTH = 560;
 
 const V2Hero = ({ data, counts = {} }) => {
     const { name, homeRoles, githubLink, resumeStatus } = data || {};
@@ -91,8 +93,6 @@ const V2Hero = ({ data, counts = {} }) => {
         dependencies: [film],
         extra: ({ gsap, ScrollTrigger, scope, reducedMotion }) => {
             if (reducedMotion) return;
-            const stage = scope.querySelector('.hero-stage');
-            if (!stage) return;
 
             let introTween;
             const filmTime = (progress) => {
@@ -116,12 +116,16 @@ const V2Hero = ({ data, counts = {} }) => {
                 ? (value) => scrub.progress(value)
                 : gsap.quickTo(scrub, 'progress', { duration: 0.25, ease: 'power2.out' });
 
+            // The stage is CSS-sticky inside a tall section (see below), so this
+            // trigger only reads progress. A ScrollTrigger pin moves the stage
+            // into a spacer and back on every refresh; moving the film's iframe
+            // reloads it, and its unload handlers can abort the refresh midway
+            // (NotFoundError), stranding the stage fixed over the page with a
+            // zero-height section so the story renders on top of the hero.
             const st = ScrollTrigger.create({
                 trigger: scope,
                 start: 'top top',
-                end: '+=560%',
-                pin: stage,
-                anticipatePin: 1,
+                end: 'bottom bottom',
                 onUpdate: (self) => {
                     if (self.progress > 0.001) introTween?.kill();
                     follow(self.progress);
@@ -195,8 +199,16 @@ const V2Hero = ({ data, counts = {} }) => {
     const dockVisible = showDock && !playing;
 
     return (
-        <section ref={sectionRef} className="relative" aria-labelledby="hero-title">
-            <div className="hero-stage relative h-[100svh] min-h-[560px] w-full overflow-hidden" style={{ backgroundColor: 'var(--bg-primary)' }}>
+        <section
+            ref={sectionRef}
+            className="relative"
+            style={film ? { height: `calc(max(100svh, 560px) + ${PIN_LENGTH}svh)` } : undefined}
+            aria-labelledby="hero-title"
+        >
+            <div
+                className={`hero-stage ${film ? 'sticky top-0' : 'relative'} h-[100svh] min-h-[560px] w-full overflow-hidden`}
+                style={{ backgroundColor: 'var(--bg-primary)' }}
+            >
                 {film && (
                     <HyperFramesStage
                         name="story"
