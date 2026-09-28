@@ -42,6 +42,10 @@ if (fs.existsSync(envPath)) {
   console.log('Loaded credentials and config from .env successfully.');
 }
 
+// `--no-seed` (or SCREENSHOTS_SKIP_SEED=1) captures whatever is in the current
+// database instead of wiping and re-seeding it first.
+const skipSeed = process.argv.includes('--no-seed') || process.env.SCREENSHOTS_SKIP_SEED === '1';
+
 const routes = [
   { name: 'home', label: 'Home Page', path: '/' },
   { name: 'about', label: 'About Me', path: '/about-me' },
@@ -113,12 +117,16 @@ async function main() {
     }
 
     // 2. Run database seed to make sure we have beautiful data loaded
-    console.log('\n--- Seeding database with high-quality portfolio data ---');
-    try {
-      execSync('node scripts/seed.mjs', { stdio: 'inherit' });
-      console.log('Database seeded successfully!\n');
-    } catch (err) {
-      console.error('Warning: Seeding script failed. If your database is already seeded, screenshots will still take. Error:', err.message);
+    if (skipSeed) {
+      console.log('\n--- Skipping database seed (--no-seed): using the current database content ---');
+    } else {
+      console.log('\n--- Seeding database with high-quality portfolio data ---');
+      try {
+        execSync('node scripts/seed.mjs', { stdio: 'inherit' });
+        console.log('Database seeded successfully!\n');
+      } catch (err) {
+        console.error('Warning: Seeding script failed. If your database is already seeded, screenshots will still take. Error:', err.message);
+      }
     }
 
     // 3. Start Next.js dev server
@@ -160,8 +168,29 @@ async function main() {
 
     // 5. Launch Playwright Chromium
     console.log('\n--- Launching Playwright Chromium Browser ---');
-    browser = await chromium.launch({ headless: true });
-    const page = await browser.newPage();
+    try {
+      browser = await chromium.launch({ headless: true });
+    } catch (err) {
+      // No Playwright Chromium downloaded: fall back to the installed Chrome.
+      console.warn(`Playwright Chromium unavailable (${err.message.split('\n')[0]}), trying installed Chrome`);
+      browser = await chromium.launch({ headless: true, channel: 'chrome' });
+    }
+    const context = await browser.newContext();
+    // A fresh browser would show the boot screen and the arcade / v2 beta
+    // popups over the pages, and `next dev` adds its own indicator badge.
+    await context.addInitScript(() => {
+      try {
+        localStorage.setItem('aiyu:lastSeen', String(Date.now()));
+        localStorage.setItem('arcade-popup-dismissed', '1');
+        localStorage.setItem('v2-beta-popup-dismissed', '1');
+      } catch { /* storage blocked */ }
+      document.addEventListener('DOMContentLoaded', () => {
+        const style = document.createElement('style');
+        style.textContent = 'nextjs-portal{display:none!important}';
+        document.head.appendChild(style);
+      });
+    });
+    const page = await context.newPage();
 
     console.log('Starting screenshot captures for all public pages...\n');
 
