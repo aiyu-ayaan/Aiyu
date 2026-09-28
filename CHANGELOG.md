@@ -1,5 +1,37 @@
 # Changelog
 
+## [6.0.2](https://github.com/aiyu-ayaan/Aiyu/compare/v6.0.1...v6.0.2) (2026-09-28)
+
+### Features
+
+* Record at 60fps by stepping the page clock frame by frame
+* Npm run record films the story to MP4 on desktop and mobile
+* Cinematic scene change between life-story chapters
+* Tell chapter 03 first code on the home page
+* Chapter 03 first code film, laptop to a working calculator
+* Add settings.json to enable brag plugin
+* 21.5s vertical life-story recap video, ending at aiyu.co.in
+
+### Bug Fixes
+
+* : 60fps story recorder, fresh screenshots and README story previews
+* Sticky hero stage instead of a ScrollTrigger pin
+
+### Other Changes
+
+* Shrink story previews so the table fits without scrolling
+* Show story videos as GIF previews GitHub renders
+* Add animated GIF previews of the story recordings
+* Embed the desktop and mobile story videos
+* Re-record the desktop journey at 60fps
+* Refresh all screenshots, including the v2 home screen
+* Add --no-seed and keep popups out of captures
+* Add 2x journey recordings for desktop and mobile
+* Remove the calendar from the first code chapter
+* Renumber chapters 03–08 to 04–09 for the new chapter 03
+* Merge branch 'master' of https://github.com/aiyu-ayaan/aiyu
+* Ignore brag-* output directories in git
+
 ## [6.0.1](https://github.com/aiyu-ayaan/Aiyu/compare/v6.0.0...v6.0.1) (2026-09-27)
 
 ### Features
