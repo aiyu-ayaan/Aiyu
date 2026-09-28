@@ -76,16 +76,16 @@ The v2 home page tells my life story as a scroll-driven film, from the hero to c
 
 <table>
   <tr>
-    <th width="70%">Desktop</th>
-    <th width="30%">Mobile</th>
+    <th>Desktop</th>
+    <th>Mobile</th>
   </tr>
   <tr>
-    <td><video src="https://github.com/aiyu-ayaan/aiyu/raw/master/journey-desktop.mp4" controls muted loop playsinline width="100%"></video></td>
-    <td><video src="https://github.com/aiyu-ayaan/aiyu/raw/master/journey-mobile.mp4" controls muted loop playsinline width="100%"></video></td>
+    <td><a href="journey-desktop.mp4"><img src="docs/videos/journey-desktop-preview.gif" alt="Life story, desktop" width="640"></a></td>
+    <td><a href="journey-mobile.mp4"><img src="docs/videos/journey-mobile-preview.gif" alt="Life story, mobile" width="200"></a></td>
   </tr>
 </table>
 
-Player not showing? Open the files directly, GitHub plays them in its file viewer: [journey-desktop.mp4](journey-desktop.mp4) · [journey-mobile.mp4](journey-mobile.mp4).
+The previews run at 3× the recording. Click one to watch the full 2× MP4 in GitHub's player: [journey-desktop.mp4](journey-desktop.mp4) · [journey-mobile.mp4](journey-mobile.mp4).
 
 ---
 
