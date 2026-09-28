@@ -1,0 +1,592 @@
+<!doctype html>
+<html
+  lang="en"
+  data-composition-variables='[
+    {"id":"name","type":"string","label":"Name","default":"Ayaan"},
+    {"id":"bg","type":"color","label":"Background","default":"#0b0f14"},
+    {"id":"surface","type":"color","label":"Surface","default":"#121821"},
+    {"id":"fg","type":"color","label":"Text","default":"#f2f5f9"},
+    {"id":"muted","type":"color","label":"Muted text","default":"#8f99a6"},
+    {"id":"line","type":"color","label":"Hairline","default":"#243040"},
+    {"id":"c1","type":"color","label":"Accent 1 (code)","default":"#5ee1ff"},
+    {"id":"c2","type":"color","label":"Accent 2","default":"#a78bfa"},
+    {"id":"c3","type":"color","label":"Accent 3","default":"#ff5fa2"},
+    {"id":"c4","type":"color","label":"Accent 4","default":"#ffb454"},
+    {"id":"ok","type":"color","label":"Success","default":"#4ade80"}
+  ]'
+>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>aiyu — chapter 03 · first code</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg, #0b0f14); }
+      #root {
+        position: relative; width: 100%; height: 100%; overflow: hidden;
+        color: var(--fg); background: var(--bg);
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        --mono: ui-monospace, monospace;
+        --hand: ui-rounded, "Comic Sans MS", ui-sans-serif, sans-serif;
+        /* The laptop, the paper and the apps on screen are real objects:
+           they keep their colours in every theme. */
+        --shell: #1b1d22;
+        --shell-hi: #34373f;
+        --deck-1: #2a2d33;
+        --deck-2: #16181c;
+        --ed-bg: #0d1117;
+        --ed-bar: #161b22;
+        --ed-fg: #c9d1d9;
+        --ed-dim: #8b949e;
+        --syn-k: #ff7b72;
+        --syn-t: #79c0ff;
+        --syn-f: #d2a8ff;
+        --syn-s: #a5d6ff;
+        --err: #ff6b6b;
+        --paper: #fbf6ea;
+        --ink: #1e2b4a;
+        --swing: #eceef1;
+        --swing-2: #d5d9df;
+      }
+      .mono { font-family: var(--mono); }
+      .clip { position: absolute; inset: 0; }
+      .eyebrow { font-family: var(--mono); font-size: 1.7vmin; letter-spacing: 0.32em; text-transform: uppercase; color: var(--muted); }
+      .title { font-weight: 800; letter-spacing: -0.045em; line-height: 0.95; }
+      .word { display: inline-block; overflow: hidden; vertical-align: bottom; padding-bottom: 0.08em; }
+      .word > span { display: inline-block; }
+      .hl { color: var(--c2); }
+
+      #chip { position: absolute; left: 4vmin; top: 3.6vmin; z-index: 20; display: flex; align-items: center; gap: 1.2vmin; font-family: var(--mono); font-size: 1.45vmin; letter-spacing: 0.28em; text-transform: uppercase; color: var(--muted); }
+      #chip b { color: var(--fg); font-weight: 600; }
+      #chip i { width: 4vmin; height: 1px; background: var(--line); }
+      #stamp { position: absolute; right: 4vmin; top: 3vmin; z-index: 20; width: 40vmin; height: 7vmin; text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--fg); }
+      #stamp > div { position: absolute; right: 0; top: 0; white-space: nowrap; }
+      #stamp small { display: block; font-size: 1.3vmin; letter-spacing: 0.3em; text-transform: uppercase; color: var(--muted); }
+      #stamp b { display: block; margin-top: 0.4vmin; font-size: 3vmin; font-weight: 600; letter-spacing: 0.06em; }
+      #st-b, #st-c { opacity: 0; }
+
+      /* ── copy, one block per scene (left column) ── */
+      .scene { display: flex; align-items: center; padding: 11vmin 0 8vmin 7vmin; }
+      .copy { width: 57vmin; }
+      .copy .eyebrow { margin-bottom: 3vmin; }
+      .copy h2 { font-size: 8.4vmin; }
+      .copy .sub { margin-top: 3vmin; font-size: 2.5vmin; line-height: 1.45; color: var(--muted); max-width: 52vmin; }
+      .copy .sub b { color: var(--fg); font-weight: 600; }
+      .copy .kick { margin-top: 3.6vmin; font-size: 3.4vmin; font-weight: 700; letter-spacing: -0.02em; }
+
+      /* ── the rig: one laptop through the whole chapter (right column) ── */
+      #rig { position: absolute; left: 68vmin; right: 4vmin; top: 10vmin; bottom: 6vmin; display: flex; align-items: center; justify-content: center; }
+      #kit { position: relative; width: 76vmin; }
+      .lid { position: relative; width: 100%; aspect-ratio: 16 / 10.2; padding: 1.6vmin 1.6vmin 3vmin; border-radius: 2vmin 2vmin 0.4vmin 0.4vmin; background: var(--shell); box-shadow: 0 0 0 0.25vmin var(--shell-hi), 0 4vmin 9vmin -3vmin rgba(0, 0, 0, 0.6); transform-origin: 50% 100%; }
+      .cam { position: absolute; left: 50%; top: 0.6vmin; width: 0.6vmin; height: 0.6vmin; margin-left: -0.3vmin; border-radius: 50%; background: #2c3140; }
+      #badge { position: absolute; left: 50%; bottom: 0.7vmin; width: 1.9vmin; height: 1.9vmin; margin-left: -0.95vmin; border-radius: 50%; border: 0.18vmin solid #9aa1ad; color: #c4cad3; font-family: ui-sans-serif, system-ui, sans-serif; font-style: italic; font-weight: 700; font-size: 0.95vmin; line-height: 1.55vmin; text-align: center; }
+      .screen { position: relative; width: 100%; height: 100%; overflow: hidden; border-radius: 0.5vmin; background: #05070a; }
+      .scr { position: absolute; inset: 0; opacity: 0; }
+      .deck { position: relative; width: 112%; margin-left: -6%; height: 2.6vmin; border-radius: 0.3vmin 0.3vmin 2.8vmin 2.8vmin; background: linear-gradient(180deg, var(--deck-1), var(--deck-2)); box-shadow: 0 0 0 0.2vmin #3b3f48 inset, 0 1.4vmin 2.4vmin -1vmin rgba(0, 0, 0, 0.55); }
+      .deck::after { content: ""; position: absolute; left: 50%; top: 0; width: 14%; height: 0.9vmin; margin-left: -7%; border-radius: 0 0 1vmin 1vmin; background: #0e0f12; }
+      #kit-shadow { position: absolute; left: -4%; right: -4%; bottom: -3vmin; height: 4vmin; border-radius: 50%; background: radial-gradient(closest-side, rgba(0, 0, 0, 0.5), transparent); }
+
+      /* S1 screen: power on, welcome. */
+      #scr-boot { background: radial-gradient(120% 90% at 50% 40%, #1b4f8f 0%, #0b2446 55%, #061228 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2.4vmin; }
+      #boot-logo { width: 9vmin; height: 9vmin; border-radius: 50%; border: 0.5vmin solid #e8f1ff; color: #e8f1ff; font-style: italic; font-weight: 800; font-size: 4.2vmin; line-height: 7.8vmin; text-align: center; letter-spacing: -0.04em; }
+      #boot-hi { font-size: 3.4vmin; font-weight: 300; color: #e8f1ff; letter-spacing: 0.02em; }
+      #boot-hi b { font-weight: 700; }
+      #boot-dots { display: flex; gap: 1vmin; }
+      #boot-dots i { width: 0.9vmin; height: 0.9vmin; border-radius: 50%; background: #e8f1ff; opacity: 0.3; }
+      #scr-glow { position: absolute; inset: 0; opacity: 0; background: #fff; }
+
+      /* S2 screen: calc.c + a terminal that says no. */
+      #scr-c { background: var(--ed-bg); }
+      .ed-bar { display: flex; align-items: center; gap: 0.8vmin; height: 3.4vmin; padding: 0 1.4vmin; background: var(--ed-bar); border-bottom: 1px solid #21262d; }
+      .ed-bar i { width: 1vmin; height: 1vmin; border-radius: 50%; background: #ff5f57; }
+      .ed-bar i:nth-child(2) { background: #febc2e; } .ed-bar i:nth-child(3) { background: #28c840; }
+      .ed-tab { margin-left: 1.6vmin; padding: 0.6vmin 1.4vmin; border-radius: 0.5vmin 0.5vmin 0 0; background: var(--ed-bg); font-family: var(--mono); font-size: 1.3vmin; color: var(--ed-fg); }
+      .code { position: relative; padding: 1.1vmin 0; font-family: var(--mono); font-size: 1.62vmin; line-height: 2.5vmin; color: var(--ed-fg); white-space: pre; }
+      .ln { position: relative; display: flex; gap: 1.8vmin; padding-left: 1.4vmin; }
+      .ln i { font-style: normal; width: 2.2vmin; text-align: right; color: var(--ed-dim); flex: none; }
+      .ln .t { position: relative; display: inline-block; overflow: hidden; vertical-align: bottom; }
+      .k { color: var(--syn-k); } .ty { color: var(--syn-t); } .f { color: var(--syn-f); } .s { color: var(--syn-s); }
+      #squig { position: absolute; left: 0; bottom: -0.2vmin; width: 100%; height: 0.8vmin; transform-origin: left center; }
+      #squig path { fill: none; stroke: var(--err); stroke-width: 2.2; }
+      #err-row { position: absolute; left: 0; right: 0; height: 2.5vmin; background: rgba(255, 107, 107, 0.14); border-left: 0.3vmin solid var(--err); opacity: 0; }
+      #term { position: absolute; left: 0; right: 0; bottom: 0; height: 43%; padding: 1.2vmin 1.6vmin; background: #010409; border-top: 1px solid #30363d; font-family: var(--mono); font-size: 1.45vmin; line-height: 2.1vmin; color: var(--ed-fg); white-space: pre; }
+      #term .tl { overflow: hidden; }
+      #term .tt { display: inline-block; }
+      #term .p { color: #7ee787; } #term .e { color: var(--err); font-weight: 700; } #term .d { color: var(--ed-dim); } #term .g { color: #7ee787; }
+
+      /* S3 screen: NetBeans with a Swing form. */
+      #scr-nb { background: var(--swing); color: #1d2330; display: flex; flex-direction: column; }
+      #nb-title { height: 3.2vmin; display: flex; align-items: center; gap: 1vmin; padding: 0 1.4vmin; background: linear-gradient(180deg, #fdfdfd, #e3e6ea); border-bottom: 1px solid #c3c8cf; font-size: 1.35vmin; color: #3b4252; }
+      #nb-title b { font-weight: 700; color: #1d2330; }
+      #nb-tools { height: 3.4vmin; display: flex; align-items: center; gap: 1vmin; padding: 0 1.4vmin; border-bottom: 1px solid #c3c8cf; background: #f5f6f8; }
+      #nb-tools span { width: 2.2vmin; height: 2.2vmin; border-radius: 0.4vmin; background: #dde1e6; }
+      #nb-run { position: relative; display: flex; align-items: center; gap: 0.6vmin; padding: 0.3vmin 1vmin; border-radius: 0.4vmin; background: #dde1e6; font-size: 1.25vmin; font-weight: 600; color: #1d2330; }
+      #nb-run::before { content: ""; border-left: 1.1vmin solid #2e9e4f; border-top: 0.65vmin solid transparent; border-bottom: 0.65vmin solid transparent; }
+      #nb-body { flex: 1; display: flex; min-height: 0; }
+      #nb-proj { flex: 0 0 22%; padding: 1vmin 1.2vmin; border-right: 1px solid #c3c8cf; background: #f7f8fa; font-size: 1.2vmin; line-height: 2.2vmin; color: #3b4252; }
+      #nb-proj b { color: #1d2330; }
+      #nb-canvas { position: relative; flex: 1; display: flex; align-items: center; justify-content: center; background-color: #fff; background-image: radial-gradient(#d5d9df 0.12vmin, transparent 0.14vmin); background-size: 1.6vmin 1.6vmin; }
+      #nb-pal { flex: 0 0 20%; padding: 1vmin 1.2vmin; border-left: 1px solid #c3c8cf; background: #f7f8fa; font-size: 1.2vmin; line-height: 2.3vmin; color: #3b4252; }
+      #nb-pal small { display: block; font-size: 1.05vmin; letter-spacing: 0.1em; text-transform: uppercase; color: #6b7482; }
+      #nb-pal span { display: block; padding-left: 0.8vmin; border-radius: 0.3vmin; }
+      #pal-btn { background: #cfe0f7; color: #1d4f99; font-weight: 600; }
+      #nb-out { height: 5vmin; padding: 0.6vmin 1.4vmin; border-top: 1px solid #c3c8cf; background: #fbfbfc; font-family: var(--mono); font-size: 1.2vmin; line-height: 1.8vmin; color: #3b4252; }
+      #nb-out b { color: #2e9e4f; }
+
+      /* a Swing JFrame calculator: the design form, and the app it runs as */
+      .frame { width: 25vmin; border-radius: 0.6vmin; overflow: hidden; background: var(--swing); box-shadow: 0 0 0 1px #aab1bc, 0 1.2vmin 2.6vmin -1vmin rgba(0, 0, 0, 0.35); }
+      .frame-bar { height: 2.4vmin; display: flex; align-items: center; justify-content: space-between; padding: 0 0.9vmin; background: linear-gradient(180deg, #dfe8f5, #b9cbe5); font-size: 1.1vmin; font-weight: 600; color: #1d2330; }
+      .frame-bar em { font-style: normal; letter-spacing: 0.3em; color: #3b4252; }
+      .frame-in { padding: 1vmin; }
+      .disp { position: relative; height: 3.8vmin; margin-bottom: 1vmin; border-radius: 0.3vmin; background: #fff; box-shadow: inset 0 0 0 1px #9aa1ad; font-family: var(--mono); font-size: 2.2vmin; font-weight: 600; color: #1d2330; }
+      .disp span { position: absolute; right: 1vmin; top: 0; line-height: 3.8vmin; }
+      .keys { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.6vmin; }
+      .key { height: 3vmin; border-radius: 0.3vmin; display: flex; align-items: center; justify-content: center; background: linear-gradient(180deg, #fbfcfd, var(--swing-2)); box-shadow: inset 0 0 0 1px #9aa1ad; font-size: 1.4vmin; font-weight: 600; color: #1d2330; }
+      .key.op { color: #1d4f99; }
+      .key.eq { background: linear-gradient(180deg, #3a74c8, #24579f); color: #fff; box-shadow: inset 0 0 0 1px #1d4786; }
+
+      /* ── props around the laptop ── */
+      #cal { position: absolute; left: -15vmin; top: -9vmin; z-index: 5; width: 25vmin; border-radius: 1.2vmin; overflow: hidden; background: #fbfaf7; color: #1d2330; box-shadow: 0 3vmin 6vmin -2vmin rgba(0, 0, 0, 0.55); }
+      #cal-head { padding: 1.3vmin 1.8vmin; background: #3a5bd9; color: #fff; display: flex; justify-content: space-between; align-items: baseline; }
+      #cal-head b { font-size: 2.4vmin; font-weight: 800; letter-spacing: -0.01em; }
+      #cal-head small { font-family: var(--mono); font-size: 1.4vmin; letter-spacing: 0.2em; }
+      #cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.4vmin; padding: 1.2vmin; }
+      .day { position: relative; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 1.2vmin; color: #3b4252; border-radius: 0.3vmin; background: #f0eee8; }
+      .day.sun { color: #c23030; }
+      #d-15 { font-weight: 800; color: #1d2330; }
+      #ring { position: absolute; left: -35%; top: -35%; width: 170%; height: 170%; overflow: visible; pointer-events: none; }
+      #ring path { fill: none; stroke: #e0245e; stroke-width: 7; stroke-linecap: round; }
+
+      #tag { position: absolute; right: -9vmin; bottom: -9vmin; z-index: 6; transform-origin: 50% 0; }
+      #tag-str { width: 1px; height: 5vmin; margin: 0 auto; background: #c9ced6; }
+      #tag-card { position: relative; padding: 1.3vmin 2vmin 1.3vmin 3.2vmin; border-radius: 0.8vmin; background: var(--paper); color: var(--ink); box-shadow: 0 1.6vmin 3vmin -1vmin rgba(0, 0, 0, 0.5); }
+      #tag-card::before { content: ""; position: absolute; left: 1.2vmin; top: 50%; width: 1vmin; height: 1vmin; margin-top: -0.5vmin; border-radius: 50%; background: var(--bg); box-shadow: inset 0 0 0 1px #c9ced6; }
+      #tag-card small { display: block; font-family: var(--mono); font-size: 1.2vmin; letter-spacing: 0.26em; text-transform: uppercase; color: rgba(30, 43, 74, 0.72); }
+      #tag-card b { display: block; margin-top: 0.4vmin; font-size: 2.3vmin; font-weight: 800; letter-spacing: -0.01em; white-space: nowrap; }
+
+      .note { position: absolute; z-index: 7; padding: 1.6vmin 2.2vmin; border-radius: 0.4vmin; background: #fff3a8; color: #3a2f05; font-family: var(--hand); font-size: 2.6vmin; font-weight: 700; line-height: 1.25; box-shadow: 0 1.6vmin 3vmin -1vmin rgba(0, 0, 0, 0.5); white-space: nowrap; }
+      #note-a { right: -8vmin; top: -8vmin; }
+      #note-b { right: -9vmin; top: -9vmin; display: flex; align-items: center; gap: 1.4vmin; }
+      #note-b svg { width: 5.2vmin; height: 5.2vmin; flex: none; }
+      .heart { position: absolute; width: 3vmin; height: 3vmin; z-index: 7; opacity: 0; }
+      .heart svg { width: 100%; height: 100%; overflow: visible; }
+
+      #tut { position: absolute; left: -20vmin; top: -17vmin; z-index: 4; width: 26vmin; border-radius: 1vmin; overflow: hidden; background: #181a1f; box-shadow: 0 3vmin 6vmin -2vmin rgba(0, 0, 0, 0.6); }
+      #tut-vid { position: relative; height: 12.5vmin; background: #0d1117; padding: 1.2vmin 1.6vmin; font-family: var(--mono); font-size: 0.95vmin; line-height: 1.4vmin; color: #8b949e; white-space: pre; overflow: hidden; }
+      #tut-vid .k { color: var(--syn-k); } #tut-vid .f { color: var(--syn-f); }
+      #tut-play { position: absolute; left: 50%; top: 50%; width: 6vmin; height: 4.2vmin; margin: -2.1vmin 0 0 -3vmin; border-radius: 1vmin; background: rgba(230, 40, 40, 0.92); }
+      #tut-play::after { content: ""; position: absolute; left: 2.4vmin; top: 1.1vmin; border-left: 1.8vmin solid #fff; border-top: 1vmin solid transparent; border-bottom: 1vmin solid transparent; }
+      #tut-bar { height: 0.5vmin; background: #3a3d44; }
+      #tut-fill { height: 100%; background: #e62828; transform-origin: left center; }
+      #tut-cap { padding: 1.1vmin 1.4vmin 1.3vmin; color: #e6e8eb; font-size: 1.35vmin; font-weight: 600; }
+      #tut-cap small { display: block; margin-top: 0.3vmin; font-weight: 400; font-size: 1.15vmin; color: #9aa1ad; }
+
+      #app { position: absolute; right: -11vmin; bottom: -10vmin; z-index: 8; }
+      #app .frame { width: 30vmin; box-shadow: 0 0 0 1px #8b93a0, 0 4vmin 7vmin -2vmin rgba(0, 0, 0, 0.7); }
+      #app .frame-bar { height: 2.8vmin; font-size: 1.3vmin; }
+      #app .disp { height: 4.6vmin; font-size: 2.8vmin; }
+      #app .disp span { line-height: 4.6vmin; opacity: 0; }
+      #app .disp #v0 { opacity: 1; }
+      #app .key { height: 3.8vmin; font-size: 1.7vmin; }
+      #cursor { position: absolute; left: 0; top: 0; z-index: 3; width: 2.6vmin; height: 3.4vmin; opacity: 0; pointer-events: none; }
+      #cursor svg { width: 100%; height: 100%; overflow: visible; }
+      #works { position: absolute; left: 50%; top: -6vmin; z-index: 9; transform: translateX(-50%); padding: 0.9vmin 2vmin; border-radius: 99vmin; background: var(--ok); color: #06240f; font-family: var(--mono); font-size: 1.6vmin; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase; white-space: nowrap; opacity: 0; }
+
+      @media (orientation: portrait) {
+        .eyebrow { font-size: 2.3vmin; }
+        .scene { align-items: flex-start; padding: 14vmin 5vmin 0; }
+        .copy { width: 100%; padding: 0 2vmin; }
+        .copy h2 { font-size: 10.4vmin; }
+        .copy .sub { font-size: 3.3vmin; max-width: none; }
+        .copy .kick { font-size: 4.2vmin; }
+        #rig { left: 0; right: 0; top: 82vmin; bottom: 12vmin; }
+        #kit { width: 80vmin; }
+        #cal { left: -6vmin; top: -14vmin; width: 26vmin; }
+        #tag { right: -4vmin; bottom: -12vmin; }
+        #note-a { right: -4vmin; top: -12vmin; }
+        #note-b { right: -4vmin; top: -13vmin; }
+        #tut { left: -6vmin; top: -20vmin; width: 28vmin; }
+        #app { right: -4vmin; bottom: -22vmin; }
+        #works { top: -6vmin; }
+        #chip { font-size: 2.6vmin; }
+        #stamp { width: 60vmin; height: 10vmin; }
+        #stamp small { font-size: 2.2vmin; }
+        #stamp b { font-size: 4.6vmin; }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="firstcode" data-start="0" data-duration="19" data-width="1920" data-height="1080">
+      <div id="chip"><b>ch 03</b><i></i><span>first code</span></div>
+      <div id="stamp">
+        <div id="st-a"><small>the best day</small><b>15 feb 2015</b></div>
+        <div id="st-b"><small>after class x</small><b>mid 2017</b></div>
+        <div id="st-c"><small>class xi · xii</small><b>2017 → 2019</b></div>
+      </div>
+
+      <!-- S1 · 15 Feb 2015, the first laptop -->
+      <section id="s1" class="clip scene" data-start="0" data-duration="6.2" data-track-index="1">
+        <div class="copy" id="s1-copy">
+          <p class="eyebrow">Chapter 03 — First code</p>
+          <h2 id="s1-title" class="title"></h2>
+          <p class="sub">15 February 2015: an <b>HP Notebook, 2000 series</b>. It was the best day of my life.</p>
+        </div>
+      </section>
+
+      <!-- S2 · mid 2017, a calculator in C that would not compile -->
+      <section id="s2" class="clip scene" data-start="6" data-duration="6.6" data-track-index="1">
+        <div class="copy" id="s2-copy">
+          <p class="eyebrow">Mid 2017 — After Class 10</p>
+          <h2 id="s2-title" class="title"></h2>
+          <p class="sub">After my Class 10 exams I followed a tutorial to write a <b>simple CLI calculator in C</b>. I copied it line by line. Mine would not compile.</p>
+          <p class="kick" id="s2-kick"></p>
+        </div>
+      </section>
+
+      <!-- S3 · 2017 → 2019, Informatics Practices, Java in NetBeans -->
+      <section id="s3" class="clip scene" data-start="12.4" data-duration="6.6" data-track-index="1">
+        <div class="copy" id="s3-copy">
+          <p class="eyebrow">Class 11 — Informatics Practices</p>
+          <h2 id="s3-title" class="title"></h2>
+          <p class="sub">In higher secondary I chose <b>Informatics Practices</b>, and there I started learning Java in <b>NetBeans</b>.</p>
+          <p class="kick" id="s3-kick"></p>
+        </div>
+      </section>
+
+      <!-- The same laptop through all three scenes -->
+      <div id="rig" class="clip" data-start="0" data-duration="19" data-track-index="2" data-layout-allow-occlusion>
+        <div id="kit" data-layout-allow-occlusion>
+          <div id="kit-shadow"></div>
+          <div class="lid" id="lid" data-layout-allow-occlusion>
+            <span class="cam"></span>
+            <div class="screen" data-layout-allow-occlusion>
+              <!-- S1: power on -->
+              <div class="scr" id="scr-boot" data-layout-allow-occlusion>
+                <div id="boot-logo" data-layout-allow-overlap data-layout-allow-occlusion>hp</div>
+                <p id="boot-hi" data-layout-allow-overlap data-layout-allow-occlusion>Welcome, <b id="boot-name"></b></p>
+                <div id="boot-dots"><i></i><i></i><i></i></div>
+              </div>
+              <!-- S2: calc.c -->
+              <div class="scr" id="scr-c" data-layout-allow-occlusion>
+                <div class="ed-bar"><i></i><i></i><i></i><span class="ed-tab" data-layout-allow-overlap data-layout-allow-occlusion>calc.c</span></div>
+                <div class="code" id="code" data-layout-allow-occlusion><div id="err-row"></div></div>
+                <div id="term" data-layout-allow-occlusion></div>
+              </div>
+              <!-- S3: NetBeans -->
+              <div class="scr" id="scr-nb" data-layout-allow-occlusion>
+                <div id="nb-title" data-layout-allow-occlusion><b data-layout-allow-overlap data-layout-allow-occlusion>NetBeans IDE</b><span data-layout-allow-overlap data-layout-allow-occlusion>— Calculator.java [Design]</span></div>
+                <div id="nb-tools" data-layout-allow-occlusion><span></span><span></span><span></span><div id="nb-run" data-layout-allow-overlap data-layout-allow-occlusion>Run</div></div>
+                <div id="nb-body" data-layout-allow-occlusion>
+                  <div id="nb-proj" data-layout-allow-occlusion>
+                    <b data-layout-allow-overlap data-layout-allow-occlusion>▾ CalcGUI</b><br />
+                    <span data-layout-allow-overlap data-layout-allow-occlusion>&nbsp;&nbsp;▾ Source Packages</span><br />
+                    <span data-layout-allow-overlap data-layout-allow-occlusion>&nbsp;&nbsp;&nbsp;&nbsp;Calculator.java</span>
+                  </div>
+                  <div id="nb-canvas" data-layout-allow-occlusion>
+                    <div class="frame" id="form" data-layout-allow-occlusion>
+                      <div class="frame-bar" data-layout-allow-occlusion><span data-layout-allow-overlap data-layout-allow-occlusion>Calculator</span><em data-layout-allow-overlap data-layout-allow-occlusion>–▢✕</em></div>
+                      <div class="frame-in" data-layout-allow-occlusion>
+                        <div class="disp" id="form-disp" data-layout-allow-occlusion></div>
+                        <div class="keys" id="form-keys" data-layout-allow-occlusion></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div id="nb-pal" data-layout-allow-occlusion>
+                    <small data-layout-allow-overlap data-layout-allow-occlusion>Swing Controls</small>
+                    <span data-layout-allow-overlap data-layout-allow-occlusion>Label</span>
+                    <span id="pal-btn" data-layout-allow-overlap data-layout-allow-occlusion>Button</span>
+                    <span data-layout-allow-overlap data-layout-allow-occlusion>Text Field</span>
+                    <span data-layout-allow-overlap data-layout-allow-occlusion>Panel</span>
+                  </div>
+                </div>
+                <div id="nb-out" data-layout-allow-occlusion>
+                  <div id="out-1" data-layout-allow-overlap data-layout-allow-occlusion>run:</div>
+                  <div id="out-2" data-layout-allow-overlap data-layout-allow-occlusion><b>BUILD SUCCESSFUL</b> (total time: 4 seconds)</div>
+                </div>
+              </div>
+              <div id="scr-glow"></div>
+            </div>
+            <span id="badge" data-layout-allow-overlap data-layout-allow-occlusion>hp</span>
+          </div>
+          <div class="deck"></div>
+
+          <!-- S1 props -->
+          <div id="cal" data-layout-allow-occlusion>
+            <div id="cal-head" data-layout-allow-occlusion><b data-layout-allow-overlap data-layout-allow-occlusion>February</b><small data-layout-allow-overlap data-layout-allow-occlusion>2015</small></div>
+            <div id="cal-grid" data-layout-allow-occlusion></div>
+          </div>
+          <div id="tag" data-layout-allow-occlusion>
+            <div id="tag-str"></div>
+            <div id="tag-card" data-layout-allow-occlusion><small data-layout-allow-overlap data-layout-allow-occlusion>my first laptop</small><b data-layout-allow-overlap data-layout-allow-occlusion>HP Notebook · 2000</b></div>
+          </div>
+          <div class="note" id="note-a" data-layout-allow-overlap data-layout-allow-occlusion>best day of my life ♥</div>
+          <div class="heart" id="h1"><svg viewBox="0 0 32 30" aria-hidden="true"><path d="M16 29 C 6 21, 0 15, 0 8 A 8 8 0 0 1 16 5 A 8 8 0 0 1 32 8 C 32 15, 26 21, 16 29 Z" fill="#ff5fa2" /></svg></div>
+          <div class="heart" id="h2"><svg viewBox="0 0 32 30" aria-hidden="true"><path d="M16 29 C 6 21, 0 15, 0 8 A 8 8 0 0 1 16 5 A 8 8 0 0 1 32 8 C 32 15, 26 21, 16 29 Z" fill="#ff8ac0" /></svg></div>
+          <div class="heart" id="h3"><svg viewBox="0 0 32 30" aria-hidden="true"><path d="M16 29 C 6 21, 0 15, 0 8 A 8 8 0 0 1 16 5 A 8 8 0 0 1 32 8 C 32 15, 26 21, 16 29 Z" fill="#ff5fa2" /></svg></div>
+
+          <!-- S2 props -->
+          <div id="tut" data-layout-allow-occlusion>
+            <div id="tut-vid" data-layout-allow-occlusion></div>
+            <div id="tut-bar"><div id="tut-fill"></div></div>
+            <div id="tut-cap" data-layout-allow-overlap data-layout-allow-occlusion>C tutorial · simple calculator<small>follow along, line by line</small></div>
+            <div id="tut-play"></div>
+          </div>
+          <div class="note" id="note-b" data-layout-allow-occlusion>
+            <svg viewBox="0 0 52 52" aria-hidden="true">
+              <circle cx="26" cy="26" r="24" fill="#ffcc3d" stroke="#b27a10" stroke-width="2.5" />
+              <path d="M13 21 Q 18 15, 23 21" fill="none" stroke="#3a2f05" stroke-width="3" stroke-linecap="round" />
+              <path d="M29 21 Q 34 15, 39 21" fill="none" stroke="#3a2f05" stroke-width="3" stroke-linecap="round" />
+              <path d="M12 29 Q 26 46, 40 29 Z" fill="#7a2410" stroke="#3a2f05" stroke-width="2.5" stroke-linejoin="round" />
+              <path d="M9 24 C 6 30, 7 34, 10 35 C 13 34, 13 29, 9 24 Z" fill="#5ec8ff" />
+              <path d="M43 24 C 46 30, 45 34, 42 35 C 39 34, 39 29, 43 24 Z" fill="#5ec8ff" />
+            </svg>
+            <span data-layout-allow-overlap data-layout-allow-occlusion>semi-colon… what? lol</span>
+          </div>
+
+          <!-- S3 props: the form, running for real -->
+          <div id="app" data-layout-allow-occlusion>
+            <div id="works" data-layout-allow-overlap data-layout-allow-occlusion>✓ it works</div>
+            <div class="frame" data-layout-allow-occlusion>
+              <div class="frame-bar" data-layout-allow-occlusion><span data-layout-allow-overlap data-layout-allow-occlusion>Calculator</span><em data-layout-allow-overlap data-layout-allow-occlusion>–▢✕</em></div>
+              <div class="frame-in" data-layout-allow-occlusion>
+                <div class="disp" data-layout-allow-occlusion>
+                  <span id="v0" data-layout-allow-overlap data-layout-allow-occlusion>0</span>
+                  <span id="v1" data-layout-allow-overlap data-layout-allow-occlusion>7</span>
+                  <span id="v2" data-layout-allow-overlap data-layout-allow-occlusion>7 ×</span>
+                  <span id="v3" data-layout-allow-overlap data-layout-allow-occlusion>7 × 6</span>
+                  <span id="v4" data-layout-allow-overlap data-layout-allow-occlusion>42</span>
+                </div>
+                <div class="keys" id="app-keys" data-layout-allow-occlusion>
+                  <div id="cursor">
+                    <svg viewBox="0 0 26 34" aria-hidden="true"><path d="M2 2 L2 28 L9 21 L14 32 L19 30 L14 19 L24 19 Z" fill="#fff" stroke="#111" stroke-width="2" stroke-linejoin="round" /></svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      (function () {
+        var vars = (window.__hyperframes && window.__hyperframes.getVariables && window.__hyperframes.getVariables()) || {};
+        var q = new URLSearchParams(location.search);
+        var get = function (k, d) { return q.has(k) ? q.get(k) : (vars[k] != null ? vars[k] : d); };
+        var NAME = String(get("name", "Ayaan"));
+
+        var $ = function (s) { return document.querySelector(s); };
+        var $$ = function (s) { return Array.prototype.slice.call(document.querySelectorAll(s)); };
+        var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); };
+        var words = function (text, hl) {
+          return text.split(" ").map(function (w) {
+            var cls = hl && hl.indexOf(w.replace(/[.,?]/g, "")) > -1 ? ' class="hl"' : "";
+            return '<span class="word"><span' + cls + ">" + esc(w) + "</span></span>";
+          }).join(" ");
+        };
+        $("#s1-title").innerHTML = words("My first laptop.", ["laptop"]);
+        $("#s2-title").innerHTML = words("Hello, C? Not quite.", ["C"]);
+        $("#s2-kick").innerHTML = words("Something about a semicolon? lol.", ["semicolon"]);
+        $("#s3-title").innerHTML = words("Then came Java.", ["Java"]);
+        $("#s3-kick").innerHTML = words("Finally, a calculator that worked, with a full GUI.", ["worked", "GUI"]);
+        $("#boot-name").textContent = NAME;
+
+        // February 2015 starts on a Sunday and has exactly four weeks.
+        var cal = "";
+        for (var d = 1; d <= 28; d++) {
+          cal += '<div class="day' + (d % 7 === 1 ? " sun" : "") + '" id="d-' + d + '" data-layout-allow-occlusion>' + d +
+            (d === 15 ? '<svg id="ring" viewBox="0 0 100 100" aria-hidden="true"><path d="M50 8 C 80 6, 94 30, 92 52 C 90 78, 66 94, 46 92 C 20 90, 6 70, 8 46 C 10 24, 30 10, 58 12" /></svg>' : "") +
+            "</div>";
+        }
+        $("#cal-grid").innerHTML = cal;
+
+        // calc.c: line 6 is missing its semicolon.
+        var src = [
+          '<span class="k">#include</span> <span class="s">&lt;stdio.h&gt;</span>',
+          '',
+          '<span class="k">int</span> <span class="f">main</span>() {',
+          '  <span class="k">float</span> a, b;',
+          '  <span class="k">char</span> op;',
+          '  <span class="f">printf</span>(<span class="s">"Enter a op b: "</span>)<span id="miss"></span>',
+          '  <span class="f">scanf</span>(<span class="s">"%f %c %f"</span>, &amp;a, &amp;op, &amp;b);',
+          '  <span class="k">switch</span> (op) {',
+          '    <span class="k">case</span> <span class="s">\'+\'</span>: <span class="f">printf</span>(<span class="s">"%.2f"</span>, a + b); <span class="k">break</span>;',
+          '    <span class="k">case</span> <span class="s">\'-\'</span>: <span class="f">printf</span>(<span class="s">"%.2f"</span>, a - b); <span class="k">break</span>;',
+          '  }',
+          '  <span class="k">return</span> 0;',
+          '}',
+        ];
+        $("#code").insertAdjacentHTML("beforeend", src.map(function (l, i) {
+          return '<div class="ln" data-layout-allow-occlusion><i data-layout-allow-overlap data-layout-allow-occlusion>' + (i + 1) + '</i><span class="t" data-layout-allow-overlap data-layout-allow-occlusion>' + (l || " ") + "</span></div>";
+        }).join(""));
+        // The squiggle sits under the end of line 6.
+        $$("#code .ln .t")[5].insertAdjacentHTML("beforeend", '<svg id="squig" viewBox="0 0 100 8" preserveAspectRatio="none" aria-hidden="true"><path d="M0 4 Q 2.5 0, 5 4 T 10 4 T 15 4 T 20 4 T 25 4 T 30 4 T 35 4 T 40 4 T 45 4 T 50 4 T 55 4 T 60 4 T 65 4 T 70 4 T 75 4 T 80 4 T 85 4 T 90 4 T 95 4 T 100 4" /></svg>');
+        gsap.set("#err-row", { top: "calc(1.1vmin + " + 5 * 2.5 + "vmin)" });
+
+        // What gcc actually says, fix-it hint and all.
+        var term = [
+          '<span class="p">$</span> gcc calc.c -o calc',
+          '<span class="d">calc.c: In function \'main\':</span>',
+          'calc.c:6:34: <span class="e">error:</span> expected \';\' before \'scanf\'',
+          '<span class="d">    6 |   printf("Enter a op b: ")</span>',
+          '      |                           <span class="e">^</span>',
+          '      |                           <span class="g">;</span>',
+        ];
+        $("#term").innerHTML = term.map(function (l) { return '<div class="tl"><span class="tt">' + l + "</span></div>"; }).join("");
+
+        // The tutorial's frame: a blurry peek at the same program.
+        $("#tut-vid").innerHTML = [
+          '<span class="k">#include</span> &lt;stdio.h&gt;',
+          '<span class="k">int</span> <span class="f">main</span>() {',
+          '  <span class="k">float</span> a, b; <span class="k">char</span> op;',
+          '  <span class="f">printf</span>("Enter a op b: ");',
+          '  <span class="f">scanf</span>("%f %c %f", ...);',
+          '  <span class="k">switch</span> (op) { ... }',
+          '}',
+        ].join("\n");
+
+        // Keypads: the same 4 × 4 layout in the form and in the running app.
+        var KEYS = ["7", "8", "9", "÷", "4", "5", "6", "×", "1", "2", "3", "−", "0", "C", "=", "+"];
+        var keyHtml = function (prefix) {
+          return KEYS.map(function (k, i) {
+            var cls = k === "=" ? " eq" : "÷×−+C".indexOf(k) > -1 ? " op" : "";
+            return '<div class="key' + cls + '" id="' + prefix + i + '" data-layout-allow-occlusion><span data-layout-allow-overlap data-layout-allow-occlusion>' + k + "</span></div>";
+          }).join("");
+        };
+        $("#form-keys").innerHTML = keyHtml("fk");
+        $("#app-keys").insertAdjacentHTML("beforeend", keyHtml("ak"));
+
+        var tl = gsap.timeline({ paused: true, defaults: { ease: "expo.out" } });
+        var D = 19;
+        var intro = function (scene, at) {
+          tl.fromTo(scene + " .eyebrow", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.7 }, at);
+          tl.fromTo(scene + " h2 .word > span", { yPercent: 110 }, { yPercent: 0, duration: 1, stagger: 0.1 }, at + 0.1);
+          tl.fromTo(scene + " .sub", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.8 }, at + 0.45);
+        };
+        var leave = function (scene, at) {
+          tl.to(scene + " .copy > *", { opacity: 0, y: -24, duration: 0.45, ease: "power2.in", stagger: 0.05 }, at);
+        };
+        var swapStamp = function (from, to, at) {
+          tl.to(from, { opacity: 0, y: -8, duration: 0.3, ease: "power2.in" }, at);
+          tl.fromTo(to, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.5 }, at + 0.3);
+        };
+
+        // ── S1 · the laptop arrives, 15 Feb 2015 ──
+        intro("#s1", 0);
+        tl.fromTo("#kit", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 1.1 }, 0.1);
+        // Closed → open: the lid swings up from the hinge.
+        tl.fromTo("#lid", { rotationX: -84, transformPerspective: 1800 }, { rotationX: 0, duration: 1.3, ease: "power3.inOut" }, 0.7);
+        tl.fromTo("#cal", { opacity: 0, y: 30, rotation: -8 }, { opacity: 1, y: 0, rotation: -5, duration: 0.9 }, 0.5);
+        tl.fromTo("#ring path", { strokeDasharray: 330, strokeDashoffset: 330 }, { strokeDashoffset: 0, duration: 0.7, ease: "power2.inOut" }, 1.4);
+        tl.fromTo("#d-15", { scale: 1 }, { scale: 1.25, duration: 0.2, ease: "power2.out", yoyo: true, repeat: 1 }, 2.0);
+
+        // Power on: a flash, the logo, then the welcome.
+        tl.fromTo("#scr-glow", { opacity: 0 }, { opacity: 0.85, duration: 0.12, ease: "none" }, 2.1);
+        tl.set("#scr-boot", { opacity: 1 }, 2.22);
+        tl.to("#scr-glow", { opacity: 0, duration: 0.5, ease: "power2.out" }, 2.22);
+        tl.fromTo("#boot-logo", { opacity: 0, scale: 0.7 }, { opacity: 1, scale: 1, duration: 0.8, ease: "back.out(1.6)" }, 2.35);
+        $$("#boot-dots i").forEach(function (dot, i) {
+          tl.fromTo(dot, { opacity: 0.3 }, { opacity: 1, duration: 0.2, ease: "none", yoyo: true, repeat: 3 }, 2.6 + i * 0.12);
+        });
+        tl.fromTo("#boot-hi", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.7 }, 3.2);
+
+        // The tag swings on its string; the note and the hearts.
+        tl.fromTo("#tag", { opacity: 0, rotation: 28 }, { opacity: 1, rotation: 0, duration: 1.6, ease: "elastic.out(1, 0.35)" }, 2.7);
+        tl.fromTo("#note-a", { opacity: 0, scale: 0.6, rotation: 10 }, { opacity: 1, scale: 1, rotation: 4, duration: 0.6, ease: "back.out(2)" }, 3.7);
+        [["#h1", -2, -10, -14], ["#h2", 8, -6, 10], ["#h3", 18, -9, -6]].forEach(function (h, i) {
+          gsap.set(h[0], { right: h[1] + "vmin", top: h[2] + "vmin" });
+          tl.fromTo(h[0], { opacity: 0, y: 0, scale: 0.4, rotation: 0 }, { opacity: 1, y: "-5vmin", scale: 1, rotation: h[3], duration: 0.9, ease: "power2.out" }, 4.1 + i * 0.15);
+          tl.to(h[0], { opacity: 0, y: "-8vmin", duration: 0.6, ease: "power1.in" }, 5.0 + i * 0.15);
+        });
+
+        // Leave S1.
+        leave("#s1", 5.7);
+        tl.to("#cal, #tag, #note-a", { opacity: 0, y: -20, duration: 0.4, ease: "power2.in", stagger: 0.05 }, 5.7);
+        swapStamp("#st-a", "#st-b", 5.8);
+
+        // ── S2 · mid 2017, calc.c ──
+        var C = 6.1;
+        intro("#s2", C);
+        tl.to("#scr-boot", { opacity: 0, duration: 0.3, ease: "none" }, C);
+        tl.fromTo("#scr-c", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "none" }, C + 0.2);
+        tl.fromTo("#tut", { opacity: 0, x: "-6vmin", rotation: -4 }, { opacity: 1, x: 0, rotation: -3, duration: 0.9 }, C + 0.2);
+        tl.fromTo("#tut-play", { opacity: 1, scale: 1 }, { opacity: 0, scale: 1.4, duration: 0.3, ease: "power2.out" }, C + 0.8);
+        tl.fromTo("#tut-fill", { scaleX: 0.08 }, { scaleX: 0.9, duration: 3.2, ease: "none" }, C + 0.8);
+        gsap.set("#term", { yPercent: 105 });
+        gsap.set("#out-1, #out-2", { opacity: 0 });
+
+        // Type calc.c line by line, following along.
+        $$("#code .ln .t").forEach(function (el, i) {
+          var n = Math.max(1, el.textContent.length);
+          tl.fromTo(el, { clipPath: "inset(-1vmin 100% -1vmin 0)" }, { clipPath: "inset(-1vmin 0% -1vmin 0)", duration: Math.min(0.28, n * 0.01), ease: "steps(" + n + ")" }, C + 0.8 + i * 0.16);
+        });
+
+        // Compile. It says no.
+        var T = C + 3.1;
+        tl.to("#term", { yPercent: 0, duration: 0.5, ease: "power3.out" }, T);
+        $$("#term .tt").forEach(function (el, i) {
+          var n = el.textContent.length;
+          var at = i === 0 ? T + 0.4 : T + 1.05 + (i - 1) * 0.1;
+          tl.fromTo(el, { clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0% 0 0)", duration: i === 0 ? 0.45 : 0.05, ease: i === 0 ? "steps(" + n + ")" : "none" }, at);
+        });
+        tl.fromTo("#err-row", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "none" }, T + 1.2);
+        tl.fromTo("#squig", { scaleX: 0 }, { scaleX: 1, duration: 0.35, ease: "power2.out" }, T + 1.25);
+        tl.fromTo("#kit", { x: 0 }, { x: "0.7vmin", duration: 0.05, ease: "none", yoyo: true, repeat: 5, immediateRender: false }, T + 1.2);
+        tl.fromTo("#note-b", { opacity: 0, scale: 0.5, rotation: -14 }, { opacity: 1, scale: 1, rotation: -4, duration: 0.6, ease: "back.out(2.2)" }, T + 1.7);
+        tl.fromTo("#note-b svg", { rotation: 0 }, { rotation: 10, duration: 0.12, ease: "sine.inOut", yoyo: true, repeat: 7 }, T + 2.2);
+        tl.fromTo("#s2-kick .word > span", { yPercent: 110 }, { yPercent: 0, duration: 0.9, stagger: 0.07 }, T + 1.8);
+
+        // Leave S2.
+        leave("#s2", 12.1);
+        tl.to("#tut, #note-b", { opacity: 0, y: -20, duration: 0.4, ease: "power2.in", stagger: 0.05 }, 12.1);
+        swapStamp("#st-b", "#st-c", 12.2);
+
+        // ── S3 · Java in NetBeans ──
+        var J = 12.5;
+        intro("#s3", J);
+        tl.to("#scr-c", { opacity: 0, duration: 0.3, ease: "none" }, J);
+        tl.fromTo("#scr-nb", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "none" }, J + 0.2);
+        tl.fromTo("#form", { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.6 }, J + 0.5);
+        tl.fromTo("#form-disp", { opacity: 0, x: "12vmin" }, { opacity: 1, x: 0, duration: 0.5, ease: "power3.out" }, J + 0.8);
+        // Buttons dragged in from the palette, one by one.
+        KEYS.forEach(function (k, i) {
+          tl.fromTo("#fk" + i, { opacity: 0, x: "14vmin", scale: 0.7 }, { opacity: 1, x: 0, scale: 1, duration: 0.4, ease: "power3.out" }, J + 1.0 + i * 0.08);
+          tl.fromTo("#pal-btn", { backgroundColor: "#cfe0f7" }, { backgroundColor: "#9fc1f0", duration: 0.04, ease: "none", yoyo: true, repeat: 1 }, J + 1.0 + i * 0.08);
+        });
+
+        // Run ▶: the form comes to life in front of the laptop.
+        var R = J + 2.6;
+        tl.fromTo("#nb-run", { scale: 1 }, { scale: 0.88, duration: 0.1, ease: "power2.out", yoyo: true, repeat: 1 }, R);
+        tl.fromTo("#out-1", { opacity: 0 }, { opacity: 1, duration: 0.15, ease: "none" }, R + 0.15);
+        tl.fromTo("#app", { opacity: 0, scale: 0.5, x: "-18vmin", y: "-14vmin" }, { opacity: 1, scale: 1, x: 0, y: 0, duration: 0.8, ease: "back.out(1.3)" }, R + 0.3);
+
+        // 7 × 6 = 42 (the answer from the school notebook).
+        // Key centres in vmin: 28vmin of keypad, 4 columns, 0.6vmin gaps.
+        var KW = (28 - 3 * 0.6) / 4, KH = 3.8, KG = 0.6;
+        var col = function (i) { return (i % 4) * (KW + KG) + KW / 2; };
+        var row = function (i) { return Math.floor(i / 4) * (KH + KG) + KH / 2; };
+        var press = [[0, "#v1"], [7, "#v2"], [6, "#v3"], [14, "#v4"]];
+        tl.fromTo("#cursor", { opacity: 0, x: "17vmin", y: "19vmin" }, { opacity: 1, duration: 0.2, ease: "none" }, R + 1.0);
+        var shown = "#v0";
+        press.forEach(function (p, n) {
+          var at = R + 1.1 + n * 0.42;
+          tl.to("#cursor", { x: col(p[0]) + "vmin", y: row(p[0]) + "vmin", duration: 0.3, ease: "power2.inOut" }, at);
+          tl.fromTo("#ak" + p[0], { scale: 1, filter: "brightness(1)" }, { scale: 0.9, filter: "brightness(0.82)", duration: 0.08, ease: "power2.out", yoyo: true, repeat: 1 }, at + 0.3);
+          tl.set(shown, { opacity: 0 }, at + 0.34);
+          tl.set(p[1], { opacity: 1 }, at + 0.34);
+          shown = p[1];
+        });
+        var W = R + 1.1 + 4 * 0.42;
+        tl.fromTo("#v4", { scale: 1 }, { scale: 1.2, duration: 0.18, ease: "power2.out", yoyo: true, repeat: 1, transformOrigin: "100% 50%" }, W);
+        tl.fromTo("#works", { opacity: 0, y: 10, scale: 0.8 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "back.out(2)" }, W + 0.1);
+        tl.set("#out-2", { opacity: 1 }, W + 0.2);
+        tl.fromTo("#s3-kick .word > span", { yPercent: 110 }, { yPercent: 0, duration: 0.9, stagger: 0.06 }, J + 3.3);
+        tl.to("#cursor", { opacity: 0, duration: 0.3 }, W + 0.6);
+        tl.to({}, { duration: D - (W + 0.9) }, W + 0.9);
+
+        window.__timelines["firstcode"] = tl;
+      })();
+    </script>
+  </body>
+</html>
