@@ -11,12 +11,22 @@ const PLAY_SHARE = 0.9;
 // Scroll length per film second, in % of the viewport height (the hero film
 // uses about the same rate, so every chapter scrolls at one speed).
 const PIN_PER_SECOND = 34;
+// Scroll (% of the viewport) between two chapters. Both stages hold still
+// through it, so the scene change plays on a steady frame; at 1× autoplay
+// it lasts about as long as the cut.
+const HANDOFF = 40;
+// The scene change runs in time, not scroll, once the next chapter takes
+// over the screen, and reverses when the reader scrolls back.
+const CUT = { duration: 1.1, ease: 'expo.inOut' };
 
 /**
  * One chapter of the life story: a pinned, scroll-scrubbed HyperFrames film.
  *
- * - The opening (0 → introEnd) plays while the chapter scrolls up into view,
- *   so it never arrives as an empty frame; the pin then scrubs the rest.
+ * - The first chapter's opening (0 → introEnd) plays while it scrolls up
+ *   into view. Every later chapter overlaps the one before it, so the two
+ *   stages stay put through a short handoff: the old scene sinks back and
+ *   dims while the new one rises over it, and the new film's opening plays
+ *   in real time with it (a timed cut). The pin then scrubs the rest.
  * - The player mounts only while the chapter is within about a viewport of
  *   the screen and unmounts when it is far away, so a long story never runs
  *   more than one or two players at once.
@@ -28,6 +38,12 @@ const StoryChapter = ({ chapter, index, total, params }) => {
     const { id, film: filmName, eyebrow, when, title, body, accent, image, duration, introEnd } = chapter;
 
     const sectionRef = useRef(null);
+    const stageRef = useRef(null);
+    const innerRef = useRef(null);
+    const playMarkRef = useRef(null);
+    const endMarkRef = useRef(null);
+    const hasPrev = index > 0;
+    const hasNext = index < total - 1;
     const playerRef = useRef(null);
     const timeRef = useRef(0);
     const durationRef = useRef(duration);
@@ -104,45 +120,103 @@ const StoryChapter = ({ chapter, index, total, params }) => {
                 ? (t) => seek(t)
                 : gsap.quickTo(proxy, 't', { duration: 0.25, ease: 'power2.out', onUpdate: () => seek(proxy.t) });
 
-            // The stage is CSS-sticky inside a tall section (see below), so this
-            // trigger only reads progress. A ScrollTrigger pin would move the
+            // The stage is CSS-sticky inside a tall section (see below), so these
+            // triggers only read progress. A ScrollTrigger pin would move the
             // stage in and out of its spacer on every refresh, and moving a
-            // <hyperframes-player> in the DOM reloads its film.
+            // <hyperframes-player> in the DOM reloads its film. The markers sit
+            // where this chapter's own playback starts and ends, so the
+            // handoffs on either side are left out.
             const pin = ScrollTrigger.create({
-                trigger: section,
+                trigger: playMarkRef.current,
                 start: 'top top',
-                end: 'bottom bottom',
+                endTrigger: endMarkRef.current,
+                end: 'top bottom',
                 onUpdate: (self) => {
                     const played = Math.min(1, self.progress / PLAY_SHARE);
                     follow(introEnd + played * (durationRef.current - introEnd));
                 },
             });
-            ScrollTrigger.create({
-                trigger: section,
-                start: 'top bottom',
-                end: 'top top',
-                onUpdate: (self) => {
-                    if (pin.progress === 0) follow(self.progress * introEnd);
-                },
-            });
+            // The first chapter's opening plays as it scrolls in; later
+            // chapters play theirs with the cut below.
+            if (!hasPrev) {
+                ScrollTrigger.create({
+                    trigger: section,
+                    start: 'top bottom',
+                    end: 'top top',
+                    onUpdate: (self) => {
+                        if (pin.progress === 0) follow(self.progress * introEnd);
+                    },
+                });
+            }
+
+            // The scene change: this stage rises over the previous one, which
+            // sinks back and dims. Hidden until then, so while this section
+            // scrolls up under the previous chapter it is never seen moving.
+            const prevStage = hasPrev ? section.previousElementSibling?.querySelector('.story-stage') : null;
+            if (prevStage) {
+                const cut = gsap.timeline({ paused: true, defaults: CUT });
+                cut.fromTo(stageRef.current, { clipPath: 'inset(100% 0% 0% 0% round 2.5rem)' }, { clipPath: 'inset(0% 0% 0% 0% round 0rem)' }, 0)
+                    .fromTo(innerRef.current, { scale: 1.12, yPercent: 8 }, { scale: 1, yPercent: 0 }, 0)
+                    .fromTo(prevStage, { scale: 1, yPercent: 0 }, { scale: 0.9, yPercent: -4 }, 0)
+                    .fromTo(prevStage.querySelector('.story-dim'), { opacity: 0 }, { opacity: 0.65 }, 0);
+                // The opening, at the film's own speed, as the scene settles.
+                const opening = { t: 0 };
+                cut.fromTo(opening, { t: 0 }, {
+                    t: introEnd,
+                    duration: introEnd,
+                    ease: 'none',
+                    onUpdate: () => { if (pin.progress === 0) seek(opening.t); },
+                }, CUT.duration * 0.3);
+                ScrollTrigger.create({
+                    trigger: section,
+                    start: 'top top',
+                    onEnter: () => cut.play(),
+                    onLeaveBack: () => cut.reverse(),
+                    // Loaded, resized or jumped across the handoff: settle, no cut.
+                    onRefresh: (self) => {
+                        if (!cut.isActive()) cut.progress(self.progress > 0 ? 1 : 0);
+                    },
+                });
+            }
             // Chapters mount after the hero: re-sort so refresh runs in page order.
             refreshScrollTriggersSoon();
         },
-        { scope: sectionRef, dependencies: [film, duration, introEnd], revertOnUpdate: true }
+        { scope: sectionRef, dependencies: [film, duration, introEnd, hasPrev], revertOnUpdate: true }
     );
 
     const showCard = !film || !painted;
     const pinLength = Math.round((duration - introEnd) * PIN_PER_SECOND);
+    const handoffIn = hasPrev ? HANDOFF : 0;
+    const handoffOut = hasNext ? HANDOFF : 0;
+    const viewport = 'max(100svh, 560px)';
+    // Later chapters start a viewport + handoff early, on top of the one
+    // before, so both stages are stuck to the top through the handoff.
+    const filmStyle = {
+        height: `calc(${viewport} + ${handoffIn + pinLength + handoffOut}svh)`,
+        zIndex: index + 1,
+        ...(hasPrev ? { marginTop: `calc(-1 * (${viewport} + ${HANDOFF}svh))` } : null),
+    };
 
     return (
         <section
             id={`story-${id}`}
             ref={sectionRef}
             className="relative"
-            style={film ? { height: `calc(max(100svh, 560px) + ${pinLength}svh)` } : undefined}
+            style={film ? filmStyle : undefined}
             aria-labelledby={`story-${id}-title`}
         >
-            <div className="story-stage sticky top-0 h-[100svh] min-h-[560px] w-full overflow-hidden" style={{ backgroundColor: 'var(--bg-primary)' }}>
+            {film && (
+                <>
+                    <div ref={playMarkRef} aria-hidden="true" className="pointer-events-none absolute inset-x-0 h-0" style={{ top: `${handoffIn}svh` }} />
+                    <div ref={endMarkRef} aria-hidden="true" className="pointer-events-none absolute inset-x-0 h-0" style={{ bottom: `${handoffOut}svh` }} />
+                </>
+            )}
+            <div
+                ref={stageRef}
+                className="story-stage sticky top-0 h-[100svh] min-h-[560px] w-full overflow-hidden"
+                style={{ backgroundColor: 'var(--bg-primary)', transformOrigin: '50% 30%' }}
+            >
+                <div ref={innerRef} className="absolute inset-0">
                 {film && near && (
                     <HyperFramesStage
                         name={filmName}
@@ -191,7 +265,10 @@ const StoryChapter = ({ chapter, index, total, params }) => {
                         </div>
                     </div>
                 </div>
+                </div>
 
+                {/* Dims this scene as the next one rises over it. */}
+                <div className="story-dim pointer-events-none absolute inset-0 z-[2] bg-black" style={{ opacity: 0 }} />
             </div>
         </section>
     );
