@@ -41,6 +41,18 @@ export const LIFE_STORY = [
         introEnd: 1.0,
     },
     {
+        id: 'firstcode',
+        film: 'firstcode',
+        label: 'first code',
+        eyebrow: 'Chapter 03 · First code',
+        when: '2015 → 2019',
+        title: 'A laptop, a missing semicolon, and a calculator.',
+        body: 'On 15 February 2015 I got my first laptop, an HP Notebook 2000 series. It was the best day of my life. In mid 2017, after my Class 10 exams, I followed a tutorial to write a simple command-line calculator in C and could not get it to compile. A semicolon? I still do not know what I did wrong. In higher secondary I chose Informatics Practices, started learning Java in NetBeans, and finally built a calculator that worked, with a full GUI.',
+        accent: 'var(--accent-purple)',
+        duration: 19,
+        introEnd: 1.1,
+    },
+    {
         id: 'college',
         film: 'college',
         label: 'college',
