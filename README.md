@@ -80,8 +80,8 @@ The v2 home page tells my life story as a scroll-driven film, from the hero to c
     <th>Mobile</th>
   </tr>
   <tr>
-    <td><a href="journey-desktop.mp4"><img src="docs/videos/journey-desktop-preview.gif" alt="Life story, desktop" width="640"></a></td>
-    <td><a href="journey-mobile.mp4"><img src="docs/videos/journey-mobile-preview.gif" alt="Life story, mobile" width="200"></a></td>
+    <td><a href="journey-desktop.mp4"><img src="docs/videos/journey-desktop-preview.gif" alt="Life story, desktop" width="540"></a></td>
+    <td><a href="journey-mobile.mp4"><img src="docs/videos/journey-mobile-preview.gif" alt="Life story, mobile" width="180"></a></td>
   </tr>
 </table>
 
