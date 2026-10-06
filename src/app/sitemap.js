@@ -11,7 +11,7 @@ import { getConfigData, getAiPageData } from '@/lib/dataFetchers';
 import { v2PublicPath } from '@/lib/siteVersion';
 import { AI_SUBPAGES, findRenderableSection } from '@/lib/aiSubPages';
 import { GAMES } from '@/app/components/games/registry';
-import { listIndexableLegalPaths } from '@/lib/legal';
+import { listIndexableLegalPaths, listProductPathsByDeployment } from '@/lib/legal';
 
 const IS_PRODUCTION_BUILD = process.env.NEXT_PHASE === 'phase-production-build';
 const ALLOW_DB_DURING_BUILD = process.env.ALLOW_DB_DURING_BUILD === 'true';
@@ -236,7 +236,7 @@ export default async function sitemap() {
   }
 
   try {
-    const [blogRows, projectRows, deploymentRows, legalPaths] = await Promise.all([
+    const [blogRows, projectRows, deploymentRows, legalPaths, productPaths] = await Promise.all([
       prisma.blog.findMany({
         where: { published: true, noIndex: false },
         select: { id: true, title: true, slug: true, updatedAt: true, createdAt: true },
@@ -248,6 +248,7 @@ export default async function sitemap() {
         select: { id: true, name: true, slug: true, updatedAt: true, createdAt: true },
       }),
       listIndexableLegalPaths(),
+      listProductPathsByDeployment(),
     ]);
 
     const blogs = toClientList('blog', blogRows);
@@ -275,7 +276,9 @@ export default async function sitemap() {
       priority: 0.75,
     }));
 
-    const appRoutes = deployments.map((deployment) => ({
+    // Apps with a product page (/<slug>) canonicalize to it, so only the
+    // product page is listed — a sitemap must not contain non-canonical URLs.
+    const appRoutes = deployments.filter((deployment) => !productPaths.has(deployment._id)).map((deployment) => ({
       url: toCanonicalSiteUrl(`/apps/${getDeploymentSlug(deployment)}`),
       lastModified: getDocumentLastModified(deployment) || new Date(),
       changeFrequency: 'weekly',
@@ -283,11 +286,12 @@ export default async function sitemap() {
     }));
 
     // Legal hubs and their published, indexable documents (/<app>/<doc>).
-    const legalRoutes = legalPaths.map(({ path, updatedAt }) => ({
+    // Product pages (/<slug>) rank as main entries; legal pages stay low.
+    const legalRoutes = legalPaths.map(({ path, updatedAt, isProduct }) => ({
       url: toCanonicalSiteUrl(path),
       lastModified: toDateOrNull(updatedAt) || new Date(),
-      changeFrequency: 'yearly',
-      priority: 0.3,
+      changeFrequency: isProduct ? 'weekly' : 'yearly',
+      priority: isProduct ? 0.85 : 0.3,
     }));
 
     const generated = normalizeSitemapRoutes([

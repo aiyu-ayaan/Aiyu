@@ -51,7 +51,7 @@ function isExternalHttpUrl(value) {
  * chips over hairline rules. Keeps readers inside the v2 shell instead of
  * dropping them onto the classic glass card.
  */
-const AppDetailV2 = ({ deployment, backHref = '/apps', relatedProject = null, legal = null }) => {
+const AppDetailV2 = ({ deployment, backHref = '/apps', relatedProject = null, legal = null, productHref = null }) => {
     const sectionRef = useRef(null);
     const { prefersReducedMotion } = useDevicePerformance();
 
@@ -136,6 +136,16 @@ const AppDetailV2 = ({ deployment, backHref = '/apps', relatedProject = null, le
                                 style={{ border: '1px solid var(--hairline)', color: 'var(--accent-purple)' }}
                             >
                                 read --blog <FaArrowUpRightFromSquare className="h-3 w-3" aria-hidden="true" />
+                            </Link>
+                        ) : null}
+
+                        {productHref ? (
+                            <Link
+                                href={productHref}
+                                className="inline-flex items-center gap-2 rounded-full px-5 py-2 font-mono text-sm font-semibold underline-offset-4 transition-colors hover:underline"
+                                style={{ border: '1px solid var(--hairline)', color: 'var(--text-bright)' }}
+                            >
+                                cd ~{productHref} <FaArrowRightLong className="h-3 w-3" aria-hidden="true" />
                             </Link>
                         ) : null}
 

@@ -17,7 +17,7 @@ import { toClient, toClientList } from '@/lib/serialize';
 import cache, { CACHE_TTL } from '@/lib/cache';
 import { generateSlug } from '@/lib/seoHelper';
 import { autoPing } from '@/lib/autoIndexing';
-import { getDeploymentSlug } from '@/lib/contentSlugs';
+import { getDeploymentSlug, getProjectSlug } from '@/lib/contentSlugs';
 import { LEGAL_KINDS, LEGAL_FORMATS, legalKindLabel } from '@/lib/legalKinds';
 
 export { LEGAL_KINDS, LEGAL_FORMATS };
@@ -372,16 +372,107 @@ export async function getLinkedDeployment(app) {
     };
 }
 
-/** Indexable legal URLs for the sitemap: `[{ path, updatedAt }]`. */
+/**
+ * Card data for the legal hub: the linked /apps entry and, through it, the
+ * /projects entry it is built from. `{ app, project }`, either may be null.
+ */
+export async function getLegalAppShowcase(legalApp) {
+    if (!legalApp?.deploymentId) return { app: null, project: null };
+    const deploymentRow = await prisma.deployment.findUnique({ where: { id: legalApp.deploymentId } });
+    if (!deploymentRow) return { app: null, project: null };
+
+    const deployment = toClient('deployment', deploymentRow);
+    const app = {
+        name: deployment.name,
+        description: deployment.description || '',
+        image: deployment.image || '',
+        status: deployment.status || '',
+        type: deployment.appType || '',
+        techStack: Array.isArray(deployment.techStack) ? deployment.techStack : [],
+        externalUrl: deployment.hostedUrl || '',
+        href: `/apps/${getDeploymentSlug(deployment)}`,
+    };
+
+    const projectRow = deployment.projectId
+        ? await prisma.project.findUnique({ where: { id: deployment.projectId } })
+        : null;
+    if (!projectRow) return { app, project: null };
+
+    const project = toClient('project', projectRow);
+    const repo = project.repoData || {};
+    return {
+        app,
+        project: {
+            name: project.name,
+            description: project.description || '',
+            image: project.image || '',
+            status: project.status || '',
+            type: [project.projectType, project.year].filter(Boolean).join(' · '),
+            techStack: Array.isArray(project.techStack) ? project.techStack : [],
+            externalUrl: project.codeLink || '',
+            language: repo.language || '',
+            stars: Number(repo.stars) || 0,
+            href: `/projects/${getProjectSlug(project)}`,
+        },
+    };
+}
+
+/**
+ * The main product page for an /apps entry: `/<legal app slug>` when a legal
+ * app is linked to it, else null. That page is the canonical home of the
+ * product, so /apps/<slug> points its canonical here to consolidate ranking
+ * signals onto one URL instead of splitting them across two similar pages.
+ */
+export async function getProductPathForDeployment(deploymentId) {
+    if (!deploymentId) return null;
+    const path = await cache.getOrSet(`${CACHE_PREFIX}:product:${deploymentId}`, async () => {
+        const row = await prisma.legalApp.findFirst({
+            where: { deploymentId: String(deploymentId) },
+            orderBy: { createdAt: 'asc' },
+            select: { slug: true },
+        });
+        // Cache misses as '' so unlinked apps do not query on every request.
+        return row ? legalAppPath(row) : '';
+    }, CACHE_TTL.MEDIUM);
+    return path || null;
+}
+
+/** Map of deploymentId -> product path, for the sitemap. */
+export async function listProductPathsByDeployment() {
+    const rows = await prisma.legalApp.findMany({
+        where: { NOT: { deploymentId: null } },
+        orderBy: { createdAt: 'asc' },
+        select: { slug: true, deploymentId: true },
+    });
+    const map = new Map();
+    for (const row of rows) {
+        if (!map.has(row.deploymentId)) map.set(row.deploymentId, legalAppPath(row));
+    }
+    return map;
+}
+
+/**
+ * Indexable URLs for the sitemap: `[{ path, updatedAt, isProduct }]`. A hub
+ * linked to an /apps entry is the product's main page (`isProduct`) and is
+ * listed even before any legal page is published.
+ */
 export async function listIndexableLegalPaths() {
     const apps = await prisma.legalApp.findMany({
         include: { documents: { where: { published: true, noIndex: false }, select: { slug: true, updatedAt: true } } },
     });
+    // deploymentId is a soft reference; only count links that still resolve.
+    const linkedIds = apps.map((app) => app.deploymentId).filter(Boolean);
+    const liveDeployments = new Set(linkedIds.length === 0 ? [] : (await prisma.deployment.findMany({
+        where: { id: { in: linkedIds } },
+        select: { id: true },
+    })).map((row) => row.id));
+
     const entries = [];
     for (const app of apps) {
-        if (app.documents.length === 0) continue;
+        const isProduct = liveDeployments.has(app.deploymentId);
+        if (app.documents.length === 0 && !isProduct) continue;
         const newest = app.documents.reduce((max, d) => (d.updatedAt > max ? d.updatedAt : max), app.updatedAt);
-        entries.push({ path: legalAppPath(app), updatedAt: newest });
+        entries.push({ path: legalAppPath(app), updatedAt: newest, isProduct });
         for (const doc of app.documents) {
             entries.push({ path: legalDocumentPath(app, doc), updatedAt: doc.updatedAt });
         }

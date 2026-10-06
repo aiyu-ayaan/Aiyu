@@ -107,7 +107,7 @@ export default async function ProjectDetailV2Page({ params }) {
     const stackList = Array.isArray(project?.techStack) ? project.techStack : [];
     const relatedApps = (await getAppLinksForProject(project)).map((app) => ({
         ...app,
-        href: v2PublicPath(config, app.href),
+        href: app.isProduct ? app.href : v2PublicPath(config, app.href),
     }));
 
     // Live repository facts enrich the entity for search engines: the primary

@@ -8,7 +8,7 @@ import { getDeploymentSlug, resolveDeploymentByIdentifier } from '@/lib/contentS
 import { getSiteUrl } from '@/lib/siteUrl';
 import { v2PublicPath } from '@/lib/siteVersion';
 import { getProjectLinkForDeployment } from '@/lib/contentLinks';
-import { getLegalLinksForDeployment } from '@/lib/legal';
+import { getLegalLinksForDeployment, getProductPathForDeployment } from '@/lib/legal';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -43,7 +43,11 @@ export async function generateMetadata({ params }) {
         };
     }
 
-    const canonicalUrl = `${baseUrl}${v2PublicPath(config, `/apps/${getDeploymentSlug(deployment)}`)}`;
+    const appUrl = `${baseUrl}${v2PublicPath(config, `/apps/${getDeploymentSlug(deployment)}`)}`;
+    // A linked product page (/<slug>) is the product's canonical home; this
+    // page defers to it so the two never compete for the same queries.
+    const productPath = await getProductPathForDeployment(deployment._id);
+    const canonicalUrl = productPath ? `${baseUrl}${productPath}` : appUrl;
     const description = String(deployment?.description || 'App details').slice(0, 160);
     const ogImage = (typeof deployment?.image === 'string' && deployment.image.trim())
         || (typeof config?.ogImage === 'string' && config.ogImage.trim())
@@ -106,9 +110,10 @@ export default async function AppDetailV2Page({ params }) {
     const baseUrl = getSiteUrl();
     const canonicalUrl = `${baseUrl}${v2PublicPath(config, `/apps/${canonicalSlug}`)}`;
     const stackList = Array.isArray(deployment?.techStack) ? deployment.techStack : [];
-    const [projectLink, legal] = await Promise.all([
+    const [projectLink, legal, productPath] = await Promise.all([
         getProjectLinkForDeployment(deployment),
         getLegalLinksForDeployment(deployment._id),
+        getProductPathForDeployment(deployment._id),
     ]);
     const relatedProject = projectLink ? { ...projectLink, href: v2PublicPath(config, projectLink.href) } : null;
 
@@ -117,7 +122,7 @@ export default async function AppDetailV2Page({ params }) {
         '@type': 'SoftwareApplication',
         name: deployment.name,
         description: deployment.description || undefined,
-        url: isExternalHttpUrl(deployment?.hostedUrl) ? deployment.hostedUrl : canonicalUrl,
+        url: productPath ? `${baseUrl}${productPath}` : (isExternalHttpUrl(deployment?.hostedUrl) ? deployment.hostedUrl : canonicalUrl),
         applicationCategory: deployment?.appType || 'WebApplication',
         operatingSystem: 'Web',
         ...(deployment?.image ? { image: deployment.image } : {}),
@@ -149,6 +154,7 @@ export default async function AppDetailV2Page({ params }) {
                 backHref={v2PublicPath(config, '/apps')}
                 relatedProject={relatedProject}
                 legal={legal}
+                productHref={productPath}
             />
         </>
     );

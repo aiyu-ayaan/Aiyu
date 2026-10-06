@@ -190,7 +190,7 @@ export default async function ProjectDetailsPage({ params }) {
                         {relatedApps.map((app) => (
                             <Link
                                 key={app.href}
-                                href={`${redirectPrefix}${app.href}`}
+                                href={app.isProduct ? app.href : `${redirectPrefix}${app.href}`}
                                 className="rounded-lg border border-emerald-400/40 bg-emerald-500/10 px-4 py-2 font-semibold text-emerald-200 transition hover:border-emerald-300"
                             >
                                 View App: {app.name}

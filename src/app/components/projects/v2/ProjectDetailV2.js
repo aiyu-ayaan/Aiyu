@@ -116,7 +116,7 @@ const ProjectDetailV2 = ({ project, backHref = '/projects', relatedApps = [] }) 
                                 className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 font-mono text-sm font-semibold underline-offset-4 transition-colors hover:underline"
                                 style={{ border: '1px solid var(--hairline)', color: 'var(--status-success)' }}
                             >
-                                cd ~/apps/{app.href.split('/').pop()}
+                                {app.isProduct ? `cd ~/${app.href.split('/').pop()}` : `cd ~/apps/${app.href.split('/').pop()}`}
                                 <FaArrowRightLong className="h-3 w-3" aria-hidden="true" />
                             </Link>
                         ))}

@@ -19,18 +19,35 @@ export async function getProjectLinkForDeployment(deployment) {
     return { name: project.name, href: `/projects/${getProjectSlug(project)}` };
 }
 
-/** `[{ name, href, hostedUrl }]` for every app linked to a project. */
+/**
+ * `[{ name, href, hostedUrl, isProduct }]` for every app linked to a project.
+ * `href` is the app's canonical page: its product page (/<slug>) when one is
+ * linked, else /apps/<slug>. `isProduct` tells callers not to version-prefix it.
+ */
 export async function getAppLinksForProject(project) {
     if (!project?._id) return [];
     const rows = await prisma.deployment.findMany({
         where: { projectId: String(project._id) },
         orderBy: { displayOrder: 'asc' },
     });
-    return toClientList('deployment', rows).map((deployment) => ({
-        name: deployment.name,
-        href: `/apps/${getDeploymentSlug(deployment)}`,
-        hostedUrl: deployment.hostedUrl || '',
-    }));
+    const products = await prisma.legalApp.findMany({
+        where: { deploymentId: { in: rows.map((row) => row.id) } },
+        orderBy: { createdAt: 'asc' },
+        select: { slug: true, deploymentId: true },
+    });
+    const productPathById = new Map();
+    for (const product of products) {
+        if (!productPathById.has(product.deploymentId)) productPathById.set(product.deploymentId, `/${product.slug}`);
+    }
+    return toClientList('deployment', rows).map((deployment) => {
+        const productPath = productPathById.get(deployment._id);
+        return {
+            name: deployment.name,
+            href: productPath || `/apps/${getDeploymentSlug(deployment)}`,
+            hostedUrl: deployment.hostedUrl || '',
+            isProduct: Boolean(productPath),
+        };
+    });
 }
 
 /**
