@@ -30,7 +30,7 @@ function isExternalHttpUrl(value) {
     }
 }
 
-const ProjectDetailV2 = ({ project, backHref = '/projects', relatedApps = [] }) => {
+const ProjectDetailV2 = ({ project, backHref = '/projects', relatedApps = [], legal = [] }) => {
     const sectionRef = useRef(null);
     const { prefersReducedMotion } = useDevicePerformance();
 
@@ -236,6 +236,28 @@ const ProjectDetailV2 = ({ project, backHref = '/projects', relatedApps = [] }) 
                         </p>
                     )}
                 </div>
+
+                {legal.length > 0 && (
+                    <div data-v2="rise" className="mt-14">
+                        <h2 className="mb-2 font-mono text-xs font-semibold uppercase tracking-[0.3em]" style={{ color: 'var(--text-muted)' }}>
+                            {'// legal'}
+                        </h2>
+                        <ul>
+                            {legal.map((link) => (
+                                <li key={link.href} style={{ borderBottom: '1px solid var(--hairline)' }}>
+                                    <Link
+                                        href={link.href}
+                                        className="flex items-baseline justify-between gap-4 py-3.5 font-mono text-sm underline-offset-4 hover:underline"
+                                        style={{ color: 'var(--text-secondary)' }}
+                                    >
+                                        <span>{link.title}</span>
+                                        <span className="truncate text-xs" style={{ color: 'var(--text-muted)' }}>{link.href}</span>
+                                    </Link>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
             </div>
         </div>
     );

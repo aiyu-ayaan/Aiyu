@@ -451,6 +451,17 @@ export async function listProductPathsByDeployment() {
     return map;
 }
 
+/** De-duplicated legal links (`[{ title, href }]`) for several deployment ids. */
+export async function getLegalLinksForDeployments(deploymentIds = []) {
+    const sets = await Promise.all(deploymentIds.map((id) => getLegalLinksForDeployment(id)));
+    const seen = new Set();
+    return sets.flatMap((set) => set?.links || []).filter((link) => {
+        if (seen.has(link.href)) return false;
+        seen.add(link.href);
+        return true;
+    });
+}
+
 /**
  * Indexable URLs for the sitemap: `[{ path, updatedAt, isProduct }]`. A hub
  * linked to an /apps entry is the product's main page (`isProduct`) and is

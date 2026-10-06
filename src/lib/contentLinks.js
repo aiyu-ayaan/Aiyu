@@ -20,7 +20,7 @@ export async function getProjectLinkForDeployment(deployment) {
 }
 
 /**
- * `[{ name, href, hostedUrl, isProduct }]` for every app linked to a project.
+ * `[{ id, name, href, hostedUrl, isProduct }]` for every app linked to a project.
  * `href` is the app's canonical page: its product page (/<slug>) when one is
  * linked, else /apps/<slug>. `isProduct` tells callers not to version-prefix it.
  */
@@ -42,6 +42,7 @@ export async function getAppLinksForProject(project) {
     return toClientList('deployment', rows).map((deployment) => {
         const productPath = productPathById.get(deployment._id);
         return {
+            id: deployment._id,
             name: deployment.name,
             href: productPath || `/apps/${getDeploymentSlug(deployment)}`,
             hostedUrl: deployment.hostedUrl || '',

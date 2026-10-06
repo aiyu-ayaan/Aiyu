@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FaCalendarDay, FaCodeBranch, FaExternalLinkAlt, FaLayerGroup, FaTimes, FaBook } from 'react-icons/fa';
 import { getPlaceholderGradient, getProjectInitials } from './projectPlaceholder';
 import { trackEntityView } from '@/lib/track';
+import RelatedLinks from '../shared/RelatedLinks';
 
 const isOptimizableImage = (src) =>
   typeof src === 'string' && (src.startsWith('/') || src.startsWith('https://'));
@@ -296,6 +297,10 @@ const ProjectDialog = ({ project, onClose, isV2: propIsV2 }) => {
                       [Close]
                     </button>
                   </div>
+
+                  <div className="mt-6">
+                    <RelatedLinks type="project" id={project?._id} onNavigate={onClose} />
+                  </div>
                 </div>
               </div>
             ) : (
@@ -520,6 +525,10 @@ const ProjectDialog = ({ project, onClose, isV2: propIsV2 }) => {
                       <FaTimes />
                       Close
                     </button>
+                  </div>
+
+                  <div className="mt-6">
+                    <RelatedLinks type="project" id={project?._id} onNavigate={onClose} />
                   </div>
                 </div>
               </div>
