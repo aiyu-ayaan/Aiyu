@@ -18,22 +18,11 @@ import cache, { CACHE_TTL } from '@/lib/cache';
 import { generateSlug } from '@/lib/seoHelper';
 import { autoPing } from '@/lib/autoIndexing';
 import { getDeploymentSlug } from '@/lib/contentSlugs';
+import { LEGAL_KINDS, LEGAL_FORMATS, legalKindLabel } from '@/lib/legalKinds';
+
+export { LEGAL_KINDS, LEGAL_FORMATS };
 
 const CACHE_PREFIX = 'db:legal';
-
-/** Preset document kinds. `custom` lets the admin name any other page. */
-export const LEGAL_KINDS = [
-    { value: 'privacy-policy', label: 'Privacy Policy' },
-    { value: 'terms-and-conditions', label: 'Terms & Conditions' },
-    { value: 'eula', label: 'End User License Agreement' },
-    { value: 'data-deletion', label: 'Data Deletion' },
-    { value: 'cookie-policy', label: 'Cookie Policy' },
-    { value: 'refund-policy', label: 'Refund Policy' },
-    { value: 'disclaimer', label: 'Disclaimer' },
-    { value: 'custom', label: 'Custom' },
-];
-
-export const LEGAL_FORMATS = ['markdown', 'html'];
 
 const KIND_VALUES = new Set(LEGAL_KINDS.map((k) => k.value));
 
@@ -230,14 +219,10 @@ function format(value) {
     return f;
 }
 
-function kindLabel(value) {
-    return LEGAL_KINDS.find((k) => k.value === value)?.label || 'Document';
-}
-
 export async function createLegalDocument(appId, input = {}) {
     const app = await getLegalApp(appId);
     const docKind = kind(input.kind);
-    const title = str(input.title, 'title', { max: 160 }) || (docKind === 'custom' ? '' : kindLabel(docKind));
+    const title = str(input.title, 'title', { max: 160 }) || (docKind === 'custom' ? '' : legalKindLabel(docKind));
     if (!title) throw new LegalError('Field "title" must not be empty.');
 
     const last = app.documents[app.documents.length - 1];
