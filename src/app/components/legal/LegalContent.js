@@ -25,6 +25,9 @@ import { Fragment, jsx, jsxs } from 'react/jsx-runtime';
 
 const LEGAL_SCHEMA = {
     ...defaultSchema,
+    // Drop these elements together with their text, so pasted CSS/JS never
+    // shows up as visible prose.
+    strip: [...new Set([...(defaultSchema.strip || []), 'script', 'style', 'noscript', 'template'])],
     tagNames: [
         ...(defaultSchema.tagNames || []),
         'div', 'span', 'section', 'article', 'header', 'footer', 'address',
