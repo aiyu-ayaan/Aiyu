@@ -1,5 +1,32 @@
 # Changelog
 
+## [6.0.3](https://github.com/aiyu-ayaan/Aiyu/compare/v6.0.2...v6.0.3) (2026-10-06)
+
+### Features
+
+* Show related and legal links in dialogs and project pages
+* Make /<app> the product's main landing page
+* Cross-link app, project and legal pages
+* Link apps to projects and legal pages in admin
+* Legal apps and pages editor
+* Public legal hub and document pages
+* Add legal pages service and admin API
+* Add legal app/document models and app-project link
+* Include GitHub webhook secret in config backups
+* Push webhook for instant project sync
+* Auto-sync linked repos on a schedule
+
+### Bug Fixes
+
+* : ship legal pages, app/project cross-links and project sync self-heal
+* Report rate-limit failures clearly in project sync
+* Re-seed missing system jobs on every scheduler tick
+* Strip style/script text from sanitized content
+
+### Other Changes
+
+* Extract project sync persistence into shared lib
+
 ## [6.0.2](https://github.com/aiyu-ayaan/Aiyu/compare/v6.0.1...v6.0.2) (2026-09-28)
 
 ### Features
