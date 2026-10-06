@@ -8,6 +8,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { FaArrowUpRightFromSquare, FaGlobe, FaShieldHalved, FaScrewdriverWrench, FaXmark } from 'react-icons/fa6';
 import { getPlaceholderGradient, getProjectInitials } from '../projects/projectPlaceholder';
 import { trackEntityView } from '@/lib/track';
+import RelatedLinks from '../shared/RelatedLinks';
 
 const normalizeStatus = (status) => {
     const safeStatus = String(status || '').trim().toLowerCase();
@@ -288,6 +289,10 @@ export default function DeploymentDialog({ deployment, onClose, isV2: propIsV2 }
                                         </div>
                                     )}
 
+                                    <div className="mt-6">
+                                        <RelatedLinks type="app" id={deployment?._id} onNavigate={onClose} />
+                                    </div>
+
                                     <div className="mt-8 flex flex-wrap gap-3">
                                         <button
                                             type="button"
@@ -488,6 +493,8 @@ export default function DeploymentDialog({ deployment, onClose, isV2: propIsV2 }
                                             </div>
                                         </div>
                                     )}
+
+                                    <RelatedLinks type="app" id={deployment?._id} onNavigate={onClose} />
                                 </div>
                             </div>
                         )}

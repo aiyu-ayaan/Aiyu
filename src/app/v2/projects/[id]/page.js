@@ -7,6 +7,8 @@ import { getConfigData } from '@/lib/dataFetchers';
 import { getProjectSlug, resolveProjectByIdentifier } from '@/lib/contentSlugs';
 import { getSiteUrl } from '@/lib/siteUrl';
 import { v2PublicPath } from '@/lib/siteVersion';
+import { getAppLinksForProject } from '@/lib/contentLinks';
+import { getLegalLinksForDeployments } from '@/lib/legal';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -104,6 +106,12 @@ export default async function ProjectDetailV2Page({ params }) {
     const baseUrl = getSiteUrl();
     const canonicalUrl = `${baseUrl}${v2PublicPath(config, `/projects/${canonicalSlug}`)}`;
     const stackList = Array.isArray(project?.techStack) ? project.techStack : [];
+    const appLinks = await getAppLinksForProject(project);
+    const legal = await getLegalLinksForDeployments(appLinks.map((app) => app.id));
+    const relatedApps = appLinks.map((app) => ({
+        ...app,
+        href: app.isProduct ? app.href : v2PublicPath(config, app.href),
+    }));
 
     // Live repository facts enrich the entity for search engines: the primary
     // language, licence and star count are the signals that distinguish a
@@ -131,6 +139,14 @@ export default async function ProjectDetailV2Page({ params }) {
             },
         } : {}),
         ...(isExternalHttpUrl(project?.codeLink) ? { codeRepository: project.codeLink } : {}),
+        // The shipped product built from this code (its /apps page).
+        ...(relatedApps.length > 0 ? {
+            targetProduct: relatedApps.map((app) => ({
+                '@type': 'SoftwareApplication',
+                name: app.name,
+                url: `${baseUrl}${app.href}`,
+            })),
+        } : {}),
         author: {
             '@type': 'Person',
             name: process.env.NEXT_PUBLIC_AUTHOR_NAME || 'Portfolio Owner',
@@ -153,7 +169,7 @@ export default async function ProjectDetailV2Page({ params }) {
                 trail={[{ name: project.name, path: `/projects/${canonicalSlug}` }]}
             />
             <TrackView entityType="project" entityId={project?._id} entitySlug={canonicalSlug} />
-            <ProjectDetailV2 project={project} backHref={v2PublicPath(config, '/projects')} />
+            <ProjectDetailV2 project={project} backHref={v2PublicPath(config, '/projects')} relatedApps={relatedApps} legal={legal} />
         </>
     );
 }

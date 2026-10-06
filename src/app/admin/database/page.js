@@ -50,6 +50,8 @@ const EXPORT_SECTIONS = [
             { key: 'resumeStudio', label: 'Resume Studio' },
             { key: 'projects', label: 'Projects' },
             { key: 'deployments', label: 'Deployments' },
+            { key: 'legalApps', label: 'Legal Apps' },
+            { key: 'legalDocuments', label: 'Legal Pages' },
             { key: 'socials', label: 'Socials' },
             { key: 'themes', label: 'Themes' },
         ],

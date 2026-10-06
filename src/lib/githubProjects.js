@@ -481,8 +481,20 @@ export async function fetchRepo(fullName, { token, fetchImpl } = {}) {
     );
 
     if (!response.ok) {
-        const error = new Error(`GitHub repo fetch failed (${response.status})`);
+        // A bare "403" hid the usual cause: without a token GitHub allows 60
+        // requests/hour per IP, and the scheduled sync shares that budget with
+        // every other GitHub call on the server.
+        const remaining = response.headers?.get?.('x-ratelimit-remaining');
+        const rateLimited = (response.status === 403 || response.status === 429) && remaining === '0';
+        let message = `GitHub repo fetch failed (${response.status})`;
+        if (rateLimited) {
+            const reset = Number(response.headers.get('x-ratelimit-reset'));
+            const resetAt = Number.isFinite(reset) && reset > 0 ? ` until ${new Date(reset * 1000).toISOString()}` : '';
+            message = `GitHub API rate limit reached${resetAt}${token ? '' : ' (no GitHub token configured; add one in /admin/github to raise the limit to 5000/hour)'}`;
+        }
+        const error = new Error(message);
         error.status = response.status;
+        error.rateLimited = rateLimited;
         throw error;
     }
 

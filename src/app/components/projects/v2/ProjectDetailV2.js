@@ -13,7 +13,7 @@
  */
 import { useRef } from 'react';
 import Link from 'next/link';
-import { FaArrowLeftLong, FaArrowUpRightFromSquare } from 'react-icons/fa6';
+import { FaArrowLeftLong, FaArrowRightLong, FaArrowUpRightFromSquare } from 'react-icons/fa6';
 import useDevicePerformance from '../../../hooks/useDevicePerformance';
 import { useV2Fx } from '../../landing/v2/gsap3d';
 import RepoMeta from './RepoMeta';
@@ -30,7 +30,7 @@ function isExternalHttpUrl(value) {
     }
 }
 
-const ProjectDetailV2 = ({ project, backHref = '/projects' }) => {
+const ProjectDetailV2 = ({ project, backHref = '/projects', relatedApps = [], legal = [] }) => {
     const sectionRef = useRef(null);
     const { prefersReducedMotion } = useDevicePerformance();
 
@@ -108,6 +108,19 @@ const ProjectDetailV2 = ({ project, backHref = '/projects' }) => {
                     {synced && <RepoMeta project={project} className="mt-6" />}
 
                     <div data-v2="rise" className="mt-8 flex flex-wrap gap-3">
+                        {/* Internal link to the app page built from this project. */}
+                        {relatedApps.map((app) => (
+                            <Link
+                                key={app.href}
+                                href={app.href}
+                                className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 font-mono text-sm font-semibold underline-offset-4 transition-colors hover:underline"
+                                style={{ border: '1px solid var(--hairline)', color: 'var(--status-success)' }}
+                            >
+                                {app.isProduct ? `cd ~/${app.href.split('/').pop()}` : `cd ~/apps/${app.href.split('/').pop()}`}
+                                <FaArrowRightLong className="h-3 w-3" aria-hidden="true" />
+                            </Link>
+                        ))}
+
                         {isExternalHttpUrl(project?.codeLink) && (
                             <a
                                 href={project.codeLink}
@@ -223,6 +236,28 @@ const ProjectDetailV2 = ({ project, backHref = '/projects' }) => {
                         </p>
                     )}
                 </div>
+
+                {legal.length > 0 && (
+                    <div data-v2="rise" className="mt-14">
+                        <h2 className="mb-2 font-mono text-xs font-semibold uppercase tracking-[0.3em]" style={{ color: 'var(--text-muted)' }}>
+                            {'// legal'}
+                        </h2>
+                        <ul>
+                            {legal.map((link) => (
+                                <li key={link.href} style={{ borderBottom: '1px solid var(--hairline)' }}>
+                                    <Link
+                                        href={link.href}
+                                        className="flex items-baseline justify-between gap-4 py-3.5 font-mono text-sm underline-offset-4 hover:underline"
+                                        style={{ color: 'var(--text-secondary)' }}
+                                    >
+                                        <span>{link.title}</span>
+                                        <span className="truncate text-xs" style={{ color: 'var(--text-muted)' }}>{link.href}</span>
+                                    </Link>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
             </div>
         </div>
     );

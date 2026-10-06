@@ -1,43 +1,34 @@
 /**
  * POST /api/github/sync — pull selected repositories into Project rows.
  *
- * Manual only, by design: there is no cron and no fetch-on-render. The admin
- * picks repos and presses sync, so GitHub's rate limit is spent on an explicit
- * action rather than on visitor traffic.
+ * This is the admin's import path: it picks repos and presses sync. Rows it
+ * creates are then kept fresh automatically by the `github_project_sync` cron
+ * task and the push webhook (/api/github/webhook); none of the three fetch on
+ * render, so GitHub's rate limit is never spent on visitor traffic.
  *
  * GET returns a dry-run preview (what each repo would change, and which fields
  * are pinned) so a sync is never a blind write.
  *
  * Sync policy — which fields may be written and how pinning protects manual
- * edits — lives in lib/githubProjects.js; this route owns persistence,
- * authorization, cache invalidation and search-index pings.
+ * edits — lives in lib/githubProjects.js; persistence, cache invalidation and
+ * search-index pings live in lib/githubProjectSync.js. This route owns
+ * authorization and request validation.
  */
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { toClient, getSingleton } from '@/lib/serialize';
+import { getSingleton } from '@/lib/serialize';
 import { withAuth } from '@/middleware/auth';
-import { decrypt } from '@/lib/encryption';
-import cache from '@/lib/cache';
-import { autoPing } from '@/lib/autoIndexing';
-import { createUniqueProjectSlug, getProjectSlug } from '@/lib/contentSlugs';
 import {
-    buildRepoData,
     diffSyncedProject,
     fetchReadme,
     fetchRepo,
     mapRepoToProject,
-    mergeSyncedProject,
     seedImageFromReadme,
 } from '@/lib/githubProjects';
+import { getGithubToken, syncRepositories } from '@/lib/githubProjectSync';
 
 // One press should not be able to start an unbounded fan-out of upstream calls.
 const MAX_REPOS_PER_SYNC = 30;
-
-async function getToken() {
-    const config = await getSingleton(prisma, 'config', { withSecrets: true });
-    if (config?.encryptedGithubToken) return decrypt(config.encryptedGithubToken);
-    return process.env.GITHUB_TOKEN?.trim() || null;
-}
 
 /**
  * Resolve the caller's repo list to "owner/repo" form against the configured
@@ -118,7 +109,7 @@ async function loadSyncContext(requested) {
     const hidden = new Set((config.hiddenRepos || []).map((name) => String(name).toLowerCase()));
     const allowed = names.filter((fullName) => !hidden.has(fullName.split('/')[1].toLowerCase()));
 
-    return { config, names: allowed, rejected, token: await getToken() };
+    return { config, names: allowed, rejected, token: await getGithubToken() };
 }
 
 /** GET — dry run. Reports what a sync would change without writing anything. */
@@ -175,90 +166,7 @@ async function runSync(request) {
     if (context.error) return context.error;
 
     const { names, rejected, token } = context;
-    const results = [];
-    const pingPaths = new Set();
-
-    for (const fullName of names) {
-        try {
-            const repo = await fetchRepo(fullName, { token });
-            const repoData = buildRepoData(repo);
-            const incoming = mapRepoToProject(repo);
-            const existing = await prisma.project.findUnique({ where: { repoFullName: fullName } });
-
-            const readme = await fetchReadme(fullName, { token, branch: repoData.defaultBranch });
-
-            // Only fields the merge allows; pinned edits are already excluded.
-            const patch = mergeSyncedProject(existing, incoming);
-
-            // Seed a poster from the README's first non-badge image, but only
-            // when the project has none — a curated image always wins.
-            const seededImage = seedImageFromReadme(existing, readme);
-            if (seededImage) patch.image = seededImage;
-
-            const syncMetadata = {
-                source: 'github',
-                repoFullName: fullName,
-                repoData,
-                syncedAt: new Date(),
-                ...(readme ? { readme, readmeFetchedAt: new Date() } : {}),
-            };
-
-            let row;
-            if (existing) {
-                row = await prisma.project.update({
-                    where: { id: existing.id },
-                    data: { ...patch, ...syncMetadata },
-                });
-            } else {
-                // A new row needs the non-syncable fields the schema requires;
-                // they are seeded once here and owned by the admin thereafter.
-                const name = patch.name || repo.name;
-                row = await prisma.project.create({
-                    data: {
-                        ...patch,
-                        name,
-                        description: patch.description || '',
-                        year: patch.year || String(new Date().getUTCFullYear()),
-                        status: patch.status || 'Working',
-                        projectType: patch.projectType || 'Open Source',
-                        slug: await createUniqueProjectSlug(null, name),
-                        ...syncMetadata,
-                    },
-                });
-            }
-
-            const client = toClient('project', row);
-            pingPaths.add(`/projects/${getProjectSlug(client)}`);
-
-            results.push({
-                repo: fullName,
-                status: existing ? 'updated' : 'created',
-                projectId: client._id,
-                slug: getProjectSlug(client),
-                readme: Boolean(readme),
-                image: seededImage || null,
-                fieldsWritten: Object.keys(patch),
-                pinnedSkipped: (existing?.pinnedFields || []).filter((f) => f in incoming),
-            });
-        } catch (error) {
-            console.error(`[github-sync] ${fullName} failed:`, error);
-            results.push({
-                repo: fullName,
-                status: 'error',
-                error: error?.status === 404
-                    ? 'Repository not found or not visible to the configured token'
-                    : (error?.message || 'Sync failed'),
-            });
-        }
-    }
-
-    const wrote = results.some((r) => r.status === 'created' || r.status === 'updated');
-    if (wrote) {
-        await cache.invalidatePrefixAsync('db:projects');
-        // Ping the detail pages plus the index, so newly synced repos are
-        // submitted for crawling rather than only appearing in sitemap.xml.
-        autoPing([...pingPaths, '/projects']);
-    }
+    const results = await syncRepositories(names, { token });
 
     return NextResponse.json({
         success: true,

@@ -5,6 +5,9 @@ import { cache } from 'react';
 import { getConfigData } from '@/lib/dataFetchers';
 import { getProjectSlug, resolveProjectByIdentifier } from '@/lib/contentSlugs';
 import { getSiteUrl } from '@/lib/siteUrl';
+import Link from 'next/link';
+import { getAppLinksForProject } from '@/lib/contentLinks';
+import { getLegalLinksForDeployments } from '@/lib/legal';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -103,6 +106,8 @@ export default async function ProjectDetailsPage({ params }) {
 
     const baseUrl = getBaseUrl();
     const stackList = Array.isArray(project?.techStack) ? project.techStack : [];
+    const relatedApps = await getAppLinksForProject(project);
+    const legal = await getLegalLinksForDeployments(relatedApps.map((app) => app.id));
 
     const projectSchema = {
         '@context': 'https://schema.org',
@@ -113,6 +118,9 @@ export default async function ProjectDetailsPage({ params }) {
         ...(project?.image ? { image: project.image } : {}),
         ...(stackList.length > 0 ? { programmingLanguage: stackList } : {}),
         ...(isExternalHttpUrl(project?.codeLink) ? { codeRepository: project.codeLink } : {}),
+        ...(relatedApps.length > 0 ? {
+            targetProduct: relatedApps.map((app) => ({ '@type': 'SoftwareApplication', name: app.name, url: `${baseUrl}${app.href}` })),
+        } : {}),
         author: {
             '@type': 'Person',
             name: process.env.NEXT_PUBLIC_AUTHOR_NAME || 'Portfolio Owner',
@@ -181,6 +189,16 @@ export default async function ProjectDetailsPage({ params }) {
                     ) : null}
 
                     <section className="flex flex-wrap gap-3 pt-2">
+                        {relatedApps.map((app) => (
+                            <Link
+                                key={app.href}
+                                href={app.isProduct ? app.href : `${redirectPrefix}${app.href}`}
+                                className="rounded-lg border border-emerald-400/40 bg-emerald-500/10 px-4 py-2 font-semibold text-emerald-200 transition hover:border-emerald-300"
+                            >
+                                View App: {app.name}
+                            </Link>
+                        ))}
+
                         {isExternalHttpUrl(project?.codeLink) ? (
                             <a
                                 href={project.codeLink}
@@ -203,6 +221,24 @@ export default async function ProjectDetailsPage({ params }) {
                             </a>
                         ) : null}
                     </section>
+
+                    {legal.length > 0 ? (
+                        <section className="border-t border-white/10 pt-6">
+                            <h2 className="mb-3 text-lg font-semibold text-white">Legal</h2>
+                            <ul className="flex flex-wrap gap-2">
+                                {legal.map((link) => (
+                                    <li key={link.href}>
+                                        <Link
+                                            href={link.href}
+                                            className="inline-block rounded-md border border-white/10 bg-slate-800/50 px-3 py-1.5 text-sm text-slate-200 transition hover:border-cyan-400/40 hover:text-cyan-200"
+                                        >
+                                            {link.title}
+                                        </Link>
+                                    </li>
+                                ))}
+                            </ul>
+                        </section>
+                    ) : null}
                 </div>
             </article>
         </main>

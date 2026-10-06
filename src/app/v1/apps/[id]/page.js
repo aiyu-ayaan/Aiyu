@@ -6,6 +6,9 @@ import { getConfigData } from '@/lib/dataFetchers';
 import { getDeploymentSlug, resolveDeploymentByIdentifier } from '@/lib/contentSlugs';
 import { getSiteUrl } from '@/lib/siteUrl';
 import SectionReveal from '@/app/components/shared/SectionReveal';
+import Link from 'next/link';
+import { getProjectLinkForDeployment } from '@/lib/contentLinks';
+import { getLegalLinksForDeployment, getProductPathForDeployment } from '@/lib/legal';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -45,7 +48,11 @@ export async function generateMetadata({ params }) {
         };
     }
 
-    const canonicalUrl = `${baseUrl}/apps/${getDeploymentSlug(deployment)}`;
+    const appUrl = `${baseUrl}/apps/${getDeploymentSlug(deployment)}`;
+    // A linked product page (/<slug>) is the product's canonical home; this
+    // page defers to it so the two never compete for the same queries.
+    const productPath = await getProductPathForDeployment(deployment._id);
+    const canonicalUrl = productPath ? `${baseUrl}${productPath}` : appUrl;
     const description = String(deployment?.description || 'App details').slice(0, 160);
     const ogImage = (typeof deployment?.image === 'string' && deployment.image.trim())
         || (typeof config?.ogImage === 'string' && config.ogImage.trim())
@@ -104,17 +111,25 @@ export default async function AppDetailsPage({ params }) {
 
     const baseUrl = getBaseUrl();
     const stackList = Array.isArray(deployment?.techStack) ? deployment.techStack : [];
+    const [relatedProject, legal, productPath] = await Promise.all([
+        getProjectLinkForDeployment(deployment),
+        getLegalLinksForDeployment(deployment._id),
+        getProductPathForDeployment(deployment._id),
+    ]);
 
     const appSchema = {
         '@context': 'https://schema.org',
         '@type': 'SoftwareApplication',
         name: deployment.name,
         description: deployment.description || undefined,
-        url: isExternalHttpUrl(deployment?.hostedUrl) ? deployment.hostedUrl : `${baseUrl}/apps/${canonicalSlug}`,
+        url: productPath ? `${baseUrl}${productPath}` : (isExternalHttpUrl(deployment?.hostedUrl) ? deployment.hostedUrl : `${baseUrl}/apps/${canonicalSlug}`),
         applicationCategory: deployment?.appType || 'WebApplication',
         operatingSystem: 'Web',
         ...(deployment?.image ? { image: deployment.image } : {}),
         ...(stackList.length > 0 ? { softwareRequirements: stackList.join(', ') } : {}),
+        ...(relatedProject ? {
+            isBasedOn: { '@type': 'SoftwareSourceCode', name: relatedProject.name, url: `${baseUrl}${relatedProject.href}` },
+        } : {}),
         mainEntityOfPage: {
             '@type': 'WebPage',
             '@id': `${baseUrl}/apps/${canonicalSlug}`,
@@ -214,7 +229,43 @@ export default async function AppDetailsPage({ params }) {
                                     Read Related Blog
                                 </a>
                             ) : null}
+
+                            {productPath ? (
+                                <Link
+                                    href={productPath}
+                                    className="rounded-lg border border-emerald-400/40 bg-emerald-500/10 px-4 py-2 font-semibold text-emerald-200 transition hover:border-emerald-300"
+                                >
+                                    {deployment.name} Home
+                                </Link>
+                            ) : null}
+
+                            {relatedProject ? (
+                                <Link
+                                    href={`${redirectPrefix}${relatedProject.href}`}
+                                    className="rounded-lg border border-cyan-400/40 bg-cyan-500/10 px-4 py-2 font-semibold text-cyan-200 transition hover:border-cyan-300"
+                                >
+                                    View Project
+                                </Link>
+                            ) : null}
                         </section>
+
+                        {legal?.links?.length > 0 ? (
+                            <section className="border-t border-white/10 pt-6" data-reveal="left-soft">
+                                <h2 className="mb-3 text-lg font-semibold text-white">Legal</h2>
+                                <ul className="flex flex-wrap gap-2">
+                                    {legal.links.map((link) => (
+                                        <li key={link.href}>
+                                            <Link
+                                                href={link.href}
+                                                className="inline-block rounded-md border border-white/10 bg-slate-800/50 px-3 py-1.5 text-sm text-slate-200 transition hover:border-cyan-400/40 hover:text-cyan-200"
+                                            >
+                                                {link.title}
+                                            </Link>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </section>
+                        ) : null}
                     </div>
                 </article>
             </SectionReveal>

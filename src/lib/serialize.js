@@ -21,6 +21,8 @@ const DATE_FIELDS = {
   blog: ['createdAt', 'updatedAt'],
   project: ['createdAt', 'updatedAt', 'syncedAt', 'readmeFetchedAt'],
   deployment: ['createdAt', 'updatedAt'],
+  legalApp: ['createdAt', 'updatedAt'],
+  legalDocument: ['createdAt', 'updatedAt'],
   gallery: ['createdAt'],
   contactMessage: ['createdAt'],
   aiLog: ['createdAt', 'updatedAt'],
@@ -46,6 +48,7 @@ const DATE_FIELDS = {
 const INT_FIELDS = {
   project: ['displayOrder'],
   deployment: ['displayOrder'],
+  legalDocument: ['displayOrder'],
   gallery: ['width', 'height', 'order'],
   aiLog: ['inputTokens', 'outputTokens', 'totalTokens'],
   cron: ['retryCount', 'retryDelay'],
@@ -76,7 +79,15 @@ const RELATIONAL_COLUMNS = {
   deployment: [
     'name', 'slug', 'techStack', 'status', 'appType', 'environment',
     'hostingProvider', 'description', 'hostedUrl', 'blogLink', 'image',
-    'displayOrder', 'createdAt', 'updatedAt',
+    'displayOrder', 'projectId', 'createdAt', 'updatedAt',
+  ],
+  legalApp: [
+    'name', 'slug', 'packageName', 'description', 'contactEmail', 'deploymentId',
+    'createdAt', 'updatedAt',
+  ],
+  legalDocument: [
+    'appId', 'kind', 'title', 'slug', 'format', 'content', 'seoDescription',
+    'effectiveDate', 'published', 'noIndex', 'displayOrder', 'createdAt', 'updatedAt',
   ],
   gallery: ['src', 'thumbnail', 'description', 'width', 'height', 'isPinned', 'order', 'createdAt'],
   contactMessage: ['name', 'email', 'message', 'read', 'createdAt'],
@@ -129,11 +140,17 @@ const RELATIONAL_OMIT = {
 // Secret columns (withheld by default) for the json-blob Config model.
 const CONFIG_SECRETS = [
   'encryptedGithubToken',
+  'encryptedGithubWebhookSecret',
   'encryptedGeminiApiKey',
   'encryptedGroqApiKey',
   'encryptedOpenRouterApiKey',
   'blogApiTokenHash',
 ];
+
+// Config secrets that ARE written to backups (still encrypted, so a restore
+// needs the same ENCRYPTION_KEY). Import already restores any secret column
+// present in the payload; this list only controls what export includes.
+const CONFIG_BACKUP_SECRETS = ['encryptedGithubWebhookSecret'];
 
 // Secret column (withheld by default) for the SeoConfig json-blob model.
 const SEO_SECRETS = ['encryptedGoogleServiceAccount'];
@@ -156,6 +173,8 @@ export const MODELS = {
   blog: { delegate: 'blog', kind: 'relational', singleton: false },
   project: { delegate: 'project', kind: 'relational', singleton: false },
   deployment: { delegate: 'deployment', kind: 'relational', singleton: false },
+  legalApp: { delegate: 'legalApp', kind: 'relational', singleton: false },
+  legalDocument: { delegate: 'legalDocument', kind: 'relational', singleton: false },
   gallery: { delegate: 'gallery', kind: 'relational', singleton: false },
   contactMessage: { delegate: 'contactMessage', kind: 'relational', singleton: false },
   aiLog: { delegate: 'aiLog', kind: 'relational', singleton: false },
@@ -246,6 +265,17 @@ export function toClient(key, row, opts = {}) {
 export function toClientList(key, rows, opts = {}) {
   if (!Array.isArray(rows)) return [];
   return rows.map((row) => toClient(key, row, opts));
+}
+
+/** Config rows for a backup: client shape plus CONFIG_BACKUP_SECRETS. */
+export function toConfigBackupList(rows) {
+  return toClientList('config', rows).map((doc, index) => {
+    const out = { ...doc };
+    for (const secret of CONFIG_BACKUP_SECRETS) {
+      if (rows[index][secret]) out[secret] = rows[index][secret];
+    }
+    return out;
+  });
 }
 
 /**

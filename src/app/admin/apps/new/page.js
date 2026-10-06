@@ -1,8 +1,15 @@
 "use client";
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import DeploymentForm from '@/app/components/admin/DeploymentForm';
+
+// ?projectId=… (from a project's "Add to Apps") pre-links and pre-fills the form.
+function NewAppForm() {
+    const projectId = useSearchParams().get('projectId') || '';
+    return <DeploymentForm defaultProjectId={projectId} />;
+}
 
 export default function NewAppPage() {
     return (
@@ -15,7 +22,9 @@ export default function NewAppPage() {
                 <p className="text-slate-400">Create a new hosted app or service entry for the public apps screen.</p>
             </div>
 
-            <DeploymentForm />
+            <Suspense fallback={null}>
+                <NewAppForm />
+            </Suspense>
         </div>
     );
 }

@@ -131,12 +131,65 @@ model Deployment {
   blogLink        String?
   image           String?
   displayOrder    Int      @default(0)
+
+  // Optional link to the Project that documents this app's source, so
+  // /apps/<slug> and /projects/<slug> can cross-link. A soft reference (no FK)
+  // on purpose: backups restore one collection at a time, and a partial
+  // restore must never fail on a dangling id. Readers treat a missing target
+  // as "not linked".
+  projectId String?
+
   createdAt       DateTime @default(now())
   updatedAt       DateTime @default(now()) @updatedAt
 
   @@index([displayOrder, updatedAt])
   @@index([createdAt])
   @@index([slug])
+  @@index([projectId])
+}
+
+// An application that publishes legal pages (privacy policy, terms, …).
+// Public URLs are /<slug> (hub) and /<slug>/<document slug>, e.g.
+// /rewire/privacy-policy — the short, stable shape app stores ask for.
+// `deploymentId` optionally ties it to an /apps entry (soft reference, same
+// reasoning as Deployment.projectId) so the app page can list its legal links.
+model LegalApp {
+  id           String          @id @default(cuid())
+  name         String
+  slug         String          @unique
+  packageName  String          @default("")
+  description  String          @default("")
+  contactEmail String          @default("")
+  deploymentId String?
+  documents    LegalDocument[]
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @default(now()) @updatedAt
+
+  @@index([deploymentId])
+}
+
+// One legal page under a LegalApp. `kind` is a preset ("privacy-policy",
+// "terms-and-conditions", …) or "custom"; `format` says how `content` renders
+// ("markdown" | "html" — both are sanitized before reaching the page).
+model LegalDocument {
+  id             String   @id @default(cuid())
+  appId          String
+  app            LegalApp @relation(fields: [appId], references: [id], onDelete: Cascade)
+  kind           String   @default("custom")
+  title          String
+  slug           String
+  format         String   @default("markdown")
+  content        String   @default("")
+  seoDescription String   @default("")
+  effectiveDate  String   @default("")
+  published      Boolean  @default(true)
+  noIndex        Boolean  @default(false)
+  displayOrder   Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @default(now()) @updatedAt
+
+  @@unique([appId, slug])
+  @@index([appId, displayOrder])
 }
 
 model Gallery {
@@ -381,15 +434,17 @@ model Theme {
 // so the serializer can withhold them by default (see lib/serialize.js).
 
 model Config {
-  id                        String   @id @default(cuid())
-  data                      Json     @default("{}")
-  encryptedGithubToken      String?
-  encryptedGeminiApiKey     String?
-  encryptedGroqApiKey       String?
-  encryptedOpenRouterApiKey String?
-  blogApiTokenHash          String?
-  createdAt                 DateTime @default(now())
-  updatedAt                 DateTime @default(now()) @updatedAt
+  id                           String   @id @default(cuid())
+  data                         Json     @default("{}")
+  encryptedGithubToken         String?
+  // HMAC secret for /api/github/webhook; set from /admin/github.
+  encryptedGithubWebhookSecret String?
+  encryptedGeminiApiKey        String?
+  encryptedGroqApiKey          String?
+  encryptedOpenRouterApiKey    String?
+  blogApiTokenHash             String?
+  createdAt                    DateTime @default(now())
+  updatedAt                    DateTime @default(now()) @updatedAt
 }
 
 model Ads {

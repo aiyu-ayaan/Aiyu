@@ -12,6 +12,7 @@ function sanitizeConfig(configDoc) {
     const config = serialize(configDoc) || {};
 
     delete config.encryptedGithubToken;
+    delete config.encryptedGithubWebhookSecret;
     delete config.encryptedGeminiApiKey;
     delete config.encryptedGroqApiKey;
     delete config.encryptedOpenRouterApiKey;
