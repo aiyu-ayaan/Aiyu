@@ -7,6 +7,8 @@ import { getConfigData } from '@/lib/dataFetchers';
 import { getDeploymentSlug, resolveDeploymentByIdentifier } from '@/lib/contentSlugs';
 import { getSiteUrl } from '@/lib/siteUrl';
 import { v2PublicPath } from '@/lib/siteVersion';
+import { getProjectLinkForDeployment } from '@/lib/contentLinks';
+import { getLegalLinksForDeployment } from '@/lib/legal';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -104,6 +106,11 @@ export default async function AppDetailV2Page({ params }) {
     const baseUrl = getSiteUrl();
     const canonicalUrl = `${baseUrl}${v2PublicPath(config, `/apps/${canonicalSlug}`)}`;
     const stackList = Array.isArray(deployment?.techStack) ? deployment.techStack : [];
+    const [projectLink, legal] = await Promise.all([
+        getProjectLinkForDeployment(deployment),
+        getLegalLinksForDeployment(deployment._id),
+    ]);
+    const relatedProject = projectLink ? { ...projectLink, href: v2PublicPath(config, projectLink.href) } : null;
 
     const appSchema = {
         '@context': 'https://schema.org',
@@ -115,6 +122,10 @@ export default async function AppDetailV2Page({ params }) {
         operatingSystem: 'Web',
         ...(deployment?.image ? { image: deployment.image } : {}),
         ...(stackList.length > 0 ? { softwareRequirements: stackList.join(', ') } : {}),
+        // The source project behind this app (its /projects page).
+        ...(relatedProject ? {
+            isBasedOn: { '@type': 'SoftwareSourceCode', name: relatedProject.name, url: `${baseUrl}${relatedProject.href}` },
+        } : {}),
         mainEntityOfPage: {
             '@type': 'WebPage',
             '@id': canonicalUrl,
@@ -133,7 +144,12 @@ export default async function AppDetailV2Page({ params }) {
                 trail={[{ name: deployment.name, path: `/apps/${canonicalSlug}` }]}
             />
             <TrackView entityType="app" entityId={deployment?._id} entitySlug={canonicalSlug} />
-            <AppDetailV2 deployment={deployment} backHref={v2PublicPath(config, '/apps')} />
+            <AppDetailV2
+                deployment={deployment}
+                backHref={v2PublicPath(config, '/apps')}
+                relatedProject={relatedProject}
+                legal={legal}
+            />
         </>
     );
 }

@@ -13,7 +13,7 @@
  */
 import { useRef } from 'react';
 import Link from 'next/link';
-import { FaArrowLeftLong, FaArrowUpRightFromSquare } from 'react-icons/fa6';
+import { FaArrowLeftLong, FaArrowRightLong, FaArrowUpRightFromSquare } from 'react-icons/fa6';
 import useDevicePerformance from '../../../hooks/useDevicePerformance';
 import { useV2Fx } from '../../landing/v2/gsap3d';
 import RepoMeta from './RepoMeta';
@@ -30,7 +30,7 @@ function isExternalHttpUrl(value) {
     }
 }
 
-const ProjectDetailV2 = ({ project, backHref = '/projects' }) => {
+const ProjectDetailV2 = ({ project, backHref = '/projects', relatedApps = [] }) => {
     const sectionRef = useRef(null);
     const { prefersReducedMotion } = useDevicePerformance();
 
@@ -108,6 +108,19 @@ const ProjectDetailV2 = ({ project, backHref = '/projects' }) => {
                     {synced && <RepoMeta project={project} className="mt-6" />}
 
                     <div data-v2="rise" className="mt-8 flex flex-wrap gap-3">
+                        {/* Internal link to the app page built from this project. */}
+                        {relatedApps.map((app) => (
+                            <Link
+                                key={app.href}
+                                href={app.href}
+                                className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 font-mono text-sm font-semibold underline-offset-4 transition-colors hover:underline"
+                                style={{ border: '1px solid var(--hairline)', color: 'var(--status-success)' }}
+                            >
+                                cd ~/apps/{app.href.split('/').pop()}
+                                <FaArrowRightLong className="h-3 w-3" aria-hidden="true" />
+                            </Link>
+                        ))}
+
                         {isExternalHttpUrl(project?.codeLink) && (
                             <a
                                 href={project.codeLink}

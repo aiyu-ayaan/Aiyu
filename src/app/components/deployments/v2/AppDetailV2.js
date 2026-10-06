@@ -2,7 +2,7 @@
 
 import React, { useRef } from 'react';
 import Link from 'next/link';
-import { FaArrowUpRightFromSquare, FaArrowLeftLong } from 'react-icons/fa6';
+import { FaArrowUpRightFromSquare, FaArrowLeftLong, FaArrowRightLong } from 'react-icons/fa6';
 import useDevicePerformance from '../../../hooks/useDevicePerformance';
 import { useV2Fx } from '../../landing/v2/gsap3d';
 
@@ -51,7 +51,7 @@ function isExternalHttpUrl(value) {
  * chips over hairline rules. Keeps readers inside the v2 shell instead of
  * dropping them onto the classic glass card.
  */
-const AppDetailV2 = ({ deployment, backHref = '/apps' }) => {
+const AppDetailV2 = ({ deployment, backHref = '/apps', relatedProject = null, legal = null }) => {
     const sectionRef = useRef(null);
     const { prefersReducedMotion } = useDevicePerformance();
 
@@ -138,6 +138,16 @@ const AppDetailV2 = ({ deployment, backHref = '/apps' }) => {
                                 read --blog <FaArrowUpRightFromSquare className="h-3 w-3" aria-hidden="true" />
                             </Link>
                         ) : null}
+
+                        {relatedProject ? (
+                            <Link
+                                href={relatedProject.href}
+                                className="inline-flex items-center gap-2 rounded-full px-5 py-2 font-mono text-sm font-semibold underline-offset-4 transition-colors hover:underline"
+                                style={{ border: '1px solid var(--hairline)', color: 'var(--accent-cyan)' }}
+                            >
+                                cd ~/projects/{relatedProject.href.split('/').pop()} <FaArrowRightLong className="h-3 w-3" aria-hidden="true" />
+                            </Link>
+                        ) : null}
                     </div>
                 </div>
 
@@ -199,6 +209,28 @@ const AppDetailV2 = ({ deployment, backHref = '/apps' }) => {
                                 </span>
                             ))}
                         </div>
+                    </div>
+                ) : null}
+
+                {legal?.links?.length > 0 ? (
+                    <div data-v2="rise" className="mt-16">
+                        <h2 className="mb-2 font-mono text-xs font-semibold uppercase tracking-[0.3em]" style={{ color: 'var(--text-muted)' }}>
+                            {'// legal'}
+                        </h2>
+                        <ul>
+                            {legal.links.map((link) => (
+                                <li key={link.href} style={{ borderBottom: '1px solid var(--hairline)' }}>
+                                    <Link
+                                        href={link.href}
+                                        className="flex items-baseline justify-between gap-4 py-4 font-mono text-sm underline-offset-4 hover:underline"
+                                        style={{ color: 'var(--text-secondary)' }}
+                                    >
+                                        <span>{link.title}</span>
+                                        <span className="truncate text-xs" style={{ color: 'var(--text-muted)' }}>{link.href}</span>
+                                    </Link>
+                                </li>
+                            ))}
+                        </ul>
                     </div>
                 ) : null}
             </div>
