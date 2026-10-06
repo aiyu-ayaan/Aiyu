@@ -146,6 +146,42 @@ export function getNextCronRun(cronExpression, startDate = new Date(), timeZone)
     return null;
 }
 
+/**
+ * Built-in jobs every install needs. `ensureSystemCronJobs` re-creates any
+ * that are missing (by `action`), and runs on boot AND on every scheduler
+ * tick: a backup restore replaces the whole cron table, and a backup taken
+ * before a job existed would otherwise drop it until the next restart, which
+ * is how the GitHub project sync silently stopped. Existing rows are never
+ * touched, so admin edits (schedule, enabled) are preserved.
+ */
+const SYSTEM_CRON_JOBS = [
+    { action: 'clean_unreferenced', name: 'Unreferenced Uploads Cleanup', schedule: '0 2 * * *', enabled: true },
+    { action: 'migrate_webp', name: 'WebP Image Migration', schedule: '0 3 * * *', enabled: true },
+    { action: 'uptime_check', name: 'Endpoint Uptime Check', schedule: '*/15 * * * *', enabled: true },
+    { action: 'prune_sessions', name: 'Expired Session Cleanup', schedule: '30 2 * * *', enabled: true },
+    { action: 'gdrive_backup', name: 'Google Drive Automated Backup', schedule: '0 0 * * *', enabled: false },
+    { action: 'gdrive_purge', name: 'Google Drive Auto-Delete Purge', schedule: '0 3 * * *', enabled: false },
+    { action: 'archive_snapshot', name: 'Internet Archive Snapshot', schedule: '0 4 * * *', enabled: false },
+    { action: 'github_project_sync', name: 'GitHub Project Sync', schedule: '*/10 * * * *', enabled: true },
+];
+
+export async function ensureSystemCronJobs(timeZone = 'UTC') {
+    const existing = await prisma.cron.findMany({
+        where: { action: { in: SYSTEM_CRON_JOBS.map((job) => job.action) } },
+        select: { action: true },
+    });
+    const present = new Set(existing.map((row) => row.action));
+    for (const job of SYSTEM_CRON_JOBS) {
+        if (present.has(job.action)) continue;
+        await prisma.cron.create({ data: {
+            ...job,
+            type: 'system',
+            nextRun: getNextCronRun(job.schedule, new Date(), timeZone),
+        } });
+        console.log(`[CRON SERVICE] Seeded: ${job.name}`);
+    }
+}
+
 export async function initCronRunner() {
     if (global.cronIntervalStarted) return;
     global.cronIntervalStarted = true;
@@ -165,111 +201,7 @@ export async function initCronRunner() {
 
     // Seed system cron jobs
     try {
-        const cleanupJob = await prisma.cron.findFirst({ where: { action: 'clean_unreferenced' } });
-        if (!cleanupJob) {
-            await prisma.cron.create({ data: {
-                name: 'Unreferenced Uploads Cleanup',
-                type: 'system',
-                schedule: '0 2 * * *', // Daily at 2:00 AM
-                enabled: true,
-                action: 'clean_unreferenced',
-                nextRun: getNextCronRun('0 2 * * *', new Date(), timeZone)
-            } });
-            console.log('[CRON SERVICE] Seeded: Unreferenced Uploads Cleanup');
-        }
-
-        const webpJob = await prisma.cron.findFirst({ where: { action: 'migrate_webp' } });
-        if (!webpJob) {
-            await prisma.cron.create({ data: {
-                name: 'WebP Image Migration',
-                type: 'system',
-                schedule: '0 3 * * *', // Daily at 3:00 AM
-                enabled: true,
-                action: 'migrate_webp',
-                nextRun: getNextCronRun('0 3 * * *', new Date(), timeZone)
-            } });
-            console.log('[CRON SERVICE] Seeded: WebP Image Migration');
-        }
-
-        const uptimeJob = await prisma.cron.findFirst({ where: { action: 'uptime_check' } });
-        if (!uptimeJob) {
-            await prisma.cron.create({ data: {
-                name: 'Endpoint Uptime Check',
-                type: 'system',
-                schedule: '*/15 * * * *', // Every 15 minutes
-                enabled: true,
-                action: 'uptime_check',
-                nextRun: getNextCronRun('*/15 * * * *', new Date(), timeZone)
-            } });
-            console.log('[CRON SERVICE] Seeded: Endpoint Uptime Check');
-        }
-
-        const pruneSessionsJob = await prisma.cron.findFirst({ where: { action: 'prune_sessions' } });
-        if (!pruneSessionsJob) {
-            await prisma.cron.create({ data: {
-                name: 'Expired Session Cleanup',
-                type: 'system',
-                schedule: '30 2 * * *', // Daily at 2:30 AM
-                enabled: true,
-                action: 'prune_sessions',
-                nextRun: getNextCronRun('30 2 * * *', new Date(), timeZone)
-            } });
-            console.log('[CRON SERVICE] Seeded: Expired Session Cleanup');
-        }
-
-        const gdriveJob = await prisma.cron.findFirst({ where: { action: 'gdrive_backup' } });
-        if (!gdriveJob) {
-            await prisma.cron.create({ data: {
-                name: 'Google Drive Automated Backup',
-                type: 'system',
-                schedule: '0 0 * * *', // Daily at midnight
-                enabled: false,
-                action: 'gdrive_backup',
-                nextRun: getNextCronRun('0 0 * * *', new Date(), timeZone)
-            } });
-            console.log('[CRON SERVICE] Seeded: Google Drive Automated Backup');
-        }
-
-        const gdrivePurgeJob = await prisma.cron.findFirst({ where: { action: 'gdrive_purge' } });
-        if (!gdrivePurgeJob) {
-            await prisma.cron.create({ data: {
-                name: 'Google Drive Auto-Delete Purge',
-                type: 'system',
-                schedule: '0 3 * * *', // Daily at 3:00 AM
-                enabled: false,
-                action: 'gdrive_purge',
-                nextRun: getNextCronRun('0 3 * * *', new Date(), timeZone)
-            } });
-            console.log('[CRON SERVICE] Seeded: Google Drive Auto-Delete Purge');
-        }
-
-        const archiveJob = await prisma.cron.findFirst({ where: { action: 'archive_snapshot' } });
-        if (!archiveJob) {
-            await prisma.cron.create({ data: {
-                name: 'Internet Archive Snapshot',
-                type: 'system',
-                schedule: '0 4 * * *', // Daily at 4:00 AM
-                enabled: false,
-                action: 'archive_snapshot',
-                nextRun: getNextCronRun('0 4 * * *', new Date(), timeZone)
-            } });
-            console.log('[CRON SERVICE] Seeded: Internet Archive Snapshot');
-        }
-
-
-        const githubSyncJob = await prisma.cron.findFirst({ where: { action: 'github_project_sync' } });
-        if (!githubSyncJob) {
-            await prisma.cron.create({ data: {
-                name: 'GitHub Project Sync',
-                type: 'system',
-                schedule: '*/10 * * * *', // Every 10 minutes
-                enabled: true,
-                action: 'github_project_sync',
-                nextRun: getNextCronRun('*/10 * * * *', new Date(), timeZone)
-            } });
-            console.log('[CRON SERVICE] Seeded: GitHub Project Sync');
-        }
-
+        await ensureSystemCronJobs(timeZone);
 
         // Self-heal and recalculate missing or outdated nextRun timestamps
         const now = new Date();
@@ -309,6 +241,14 @@ async function runDueCronJobs() {
             }
         } catch (configErr) {
             console.error('[CRON SERVICE] Failed to load global timezone config in run loop:', configErr);
+        }
+
+        // Self-heal deleted system jobs (e.g. after a backup restore). Freshly
+        // re-created rows are picked up on the next tick.
+        try {
+            await ensureSystemCronJobs(timeZone);
+        } catch (seedErr) {
+            console.error('[CRON SERVICE] Failed to re-seed system jobs:', seedErr);
         }
 
         for (const job of activeJobs) {
