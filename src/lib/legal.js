@@ -17,6 +17,7 @@ import { toClient, toClientList } from '@/lib/serialize';
 import cache, { CACHE_TTL } from '@/lib/cache';
 import { generateSlug } from '@/lib/seoHelper';
 import { autoPing } from '@/lib/autoIndexing';
+import { getDeploymentSlug } from '@/lib/contentSlugs';
 
 const CACHE_PREFIX = 'db:legal';
 
@@ -371,6 +372,19 @@ export async function getLegalLinksForDeployment(deploymentId) {
             links: row.documents.map((d) => ({ title: d.title, href: legalDocumentPath(row, d) })),
         };
     }, CACHE_TTL.MEDIUM);
+}
+
+/** The /apps entry a legal app is linked to, as `{ name, href, hostedUrl }`, or null. */
+export async function getLinkedDeployment(app) {
+    if (!app?.deploymentId) return null;
+    const row = await prisma.deployment.findUnique({ where: { id: app.deploymentId } });
+    if (!row) return null;
+    const deployment = toClient('deployment', row);
+    return {
+        name: deployment.name,
+        href: `/apps/${getDeploymentSlug(deployment)}`,
+        hostedUrl: deployment.hostedUrl || '',
+    };
 }
 
 /** Indexable legal URLs for the sitemap: `[{ path, updatedAt }]`. */

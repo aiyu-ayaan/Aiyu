@@ -11,6 +11,7 @@ import { getConfigData, getAiPageData } from '@/lib/dataFetchers';
 import { v2PublicPath } from '@/lib/siteVersion';
 import { AI_SUBPAGES, findRenderableSection } from '@/lib/aiSubPages';
 import { GAMES } from '@/app/components/games/registry';
+import { listIndexableLegalPaths } from '@/lib/legal';
 
 const IS_PRODUCTION_BUILD = process.env.NEXT_PHASE === 'phase-production-build';
 const ALLOW_DB_DURING_BUILD = process.env.ALLOW_DB_DURING_BUILD === 'true';
@@ -235,7 +236,7 @@ export default async function sitemap() {
   }
 
   try {
-    const [blogRows, projectRows, deploymentRows] = await Promise.all([
+    const [blogRows, projectRows, deploymentRows, legalPaths] = await Promise.all([
       prisma.blog.findMany({
         where: { published: true, noIndex: false },
         select: { id: true, title: true, slug: true, updatedAt: true, createdAt: true },
@@ -246,6 +247,7 @@ export default async function sitemap() {
       prisma.deployment.findMany({
         select: { id: true, name: true, slug: true, updatedAt: true, createdAt: true },
       }),
+      listIndexableLegalPaths(),
     ]);
 
     const blogs = toClientList('blog', blogRows);
@@ -280,12 +282,21 @@ export default async function sitemap() {
       priority: 0.74,
     }));
 
+    // Legal hubs and their published, indexable documents (/<app>/<doc>).
+    const legalRoutes = legalPaths.map(({ path, updatedAt }) => ({
+      url: toCanonicalSiteUrl(path),
+      lastModified: toDateOrNull(updatedAt) || new Date(),
+      changeFrequency: 'yearly',
+      priority: 0.3,
+    }));
+
     const generated = normalizeSitemapRoutes([
       ...staticRoutesWithRealtimeCollections,
       ...aiSubPageRoutes,
       ...blogRoutes,
       ...projectRoutes,
       ...appRoutes,
+      ...legalRoutes,
       ...gameRoutes,
     ]);
 
