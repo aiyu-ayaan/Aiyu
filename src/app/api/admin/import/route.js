@@ -210,6 +210,9 @@ export async function POST(request) {
             { modelKey: 'aiPrompt', key: 'aiPrompts' },
             { modelKey: 'project', key: 'projects' },
             { modelKey: 'deployment', key: 'deployments' },
+            // App must precede document: legalDocument.appId is a FK onto legalApp.
+            { modelKey: 'legalApp', key: 'legalApps' },
+            { modelKey: 'legalDocument', key: 'legalDocuments' },
             { modelKey: 'social', key: 'socials' },
             { modelKey: 'github', key: 'github' },
             { modelKey: 'contactMessage', key: 'contactMessages' },

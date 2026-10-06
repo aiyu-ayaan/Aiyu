@@ -29,6 +29,8 @@ const COLLECTION_PRODUCERS = {
     aiPrompts: async () => toClientList('aiPrompt', await prisma.aiPrompt.findMany()),
     projects: async () => toClientList('project', await prisma.project.findMany()),
     deployments: async () => toClientList('deployment', await prisma.deployment.findMany()),
+    legalApps: async () => toClientList('legalApp', await prisma.legalApp.findMany()),
+    legalDocuments: async () => toClientList('legalDocument', await prisma.legalDocument.findMany()),
     socials: async () => toClientList('social', await prisma.social.findMany()),
     themes: async () => toClientList('theme', await prisma.theme.findMany()),
     crons: async () => toClientList('cron', await prisma.cron.findMany()).map(cron => {
