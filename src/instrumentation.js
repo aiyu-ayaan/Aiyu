@@ -49,6 +49,20 @@ export async function register() {
         console.warn(`[auto-seed] skipped: ${error?.message || 'unknown error'}`);
     }
 
+    // Start the task scheduler at boot. Previously it only started when the
+    // admin crons API was first hit, so scheduled tasks (including the GitHub
+    // project sync) silently stopped after every restart until an admin visit.
+    if (!isProductionBuild) {
+        try {
+            const { initCronRunner } = await import('@/utils/cronRunner');
+            initCronRunner().catch((error) => {
+                console.warn(`[cron] scheduler start failed: ${error?.message || 'unknown error'}`);
+            });
+        } catch (error) {
+            console.warn(`[cron] scheduler unavailable: ${error?.message || 'unknown error'}`);
+        }
+    }
+
     setTimeout(() => {
         warmPublicDataCache().catch((error) => {
             console.warn(`[startup-cache] warmup skipped: ${error?.message || 'unknown error'}`);

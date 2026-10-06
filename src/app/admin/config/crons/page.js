@@ -37,6 +37,7 @@ const SYSTEM_TASK_DESCRIPTIONS = {
     prune_sessions: 'Deletes expired and inactive admin sessions once they pass the retention window, keeping the session store small.',
     gdrive_backup: 'Exports the full database and uploads it to the connected Google Drive account as a timestamped zip archive.',
     gdrive_purge: 'Removes Google Drive backup archives older than the configured retention window so the Drive folder does not grow without bound.',
+    github_project_sync: 'Refreshes every project linked to a GitHub repository (stars, forks, last push, status, README). Repos with no changes since the last run cost one API call and no write; fields you edited by hand stay pinned.',
     archive_snapshot: 'Submits the site base URL ($site) to the Internet Archive Save Page Now API, preserving a public snapshot. Requires IA_ACCESS_KEY and IA_SECRET_KEY in the environment.'
 };
 

@@ -7,6 +7,7 @@ import { sendNotification } from './notificationService';
 import { compileTemplate, EXECUTION_ROW_LIMIT } from './cronTemplate';
 import { getGDriveConfig, uploadBackupToDrive, cleanOldDriveBackups } from '@/lib/gdrive';
 import { saveToWayback } from '@/lib/webArchive';
+import { syncLinkedRepositories } from '@/lib/githubProjectSync';
 import { loadCronSecrets, resolveCronEnv, describeSecretSource } from '@/lib/cronSecrets';
 import archiver from 'archiver';
 import { join } from 'path';
@@ -253,6 +254,20 @@ export async function initCronRunner() {
                 nextRun: getNextCronRun('0 4 * * *', new Date(), timeZone)
             } });
             console.log('[CRON SERVICE] Seeded: Internet Archive Snapshot');
+        }
+
+
+        const githubSyncJob = await prisma.cron.findFirst({ where: { action: 'github_project_sync' } });
+        if (!githubSyncJob) {
+            await prisma.cron.create({ data: {
+                name: 'GitHub Project Sync',
+                type: 'system',
+                schedule: '*/10 * * * *', // Every 10 minutes
+                enabled: true,
+                action: 'github_project_sync',
+                nextRun: getNextCronRun('*/10 * * * *', new Date(), timeZone)
+            } });
+            console.log('[CRON SERVICE] Seeded: GitHub Project Sync');
         }
 
 
@@ -525,6 +540,15 @@ export async function executeCronJob(job) {
                             `Job ID: ${snapshot.jobId || 'not reported'}\n` +
                             `Credentials: IA_ACCESS_KEY read from ${describeSecretSource('IA_ACCESS_KEY', archiveSecrets, process.env)}\n` +
                             `Verify at https://web.archive.org/web/*/${snapshot.url.replace(/^https?:\/\//, '')}`;
+            } else if (job.action === 'github_project_sync') {
+                const { results, summary } = await syncLinkedRepositories();
+                const failed = results.filter((r) => r.status === 'error');
+                attemptLogOutput = `GitHub project sync completed in ${Date.now() - attemptStartTime}ms.\n` +
+                            `Checked ${summary.total} linked repo(s): ${summary.updated} updated, ${summary.unchanged} unchanged, ${summary.failed} failed.` +
+                            (failed.length ? `\nFailed:\n${failed.map((r) => `  - ${r.repo}: ${r.error}`).join('\n')}` : '');
+                if (failed.length > 0) {
+                    attemptStatus = 'failure';
+                }
             } else if (job.action === 'webhook') {
                 const cachedData = {};
                 cachedData.env = await loadCronSecrets();
