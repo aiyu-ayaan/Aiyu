@@ -136,6 +136,11 @@ const CONFIG_SECRETS = [
   'blogApiTokenHash',
 ];
 
+// Config secrets that ARE written to backups (still encrypted, so a restore
+// needs the same ENCRYPTION_KEY). Import already restores any secret column
+// present in the payload; this list only controls what export includes.
+const CONFIG_BACKUP_SECRETS = ['encryptedGithubWebhookSecret'];
+
 // Secret column (withheld by default) for the SeoConfig json-blob model.
 const SEO_SECRETS = ['encryptedGoogleServiceAccount'];
 
@@ -247,6 +252,17 @@ export function toClient(key, row, opts = {}) {
 export function toClientList(key, rows, opts = {}) {
   if (!Array.isArray(rows)) return [];
   return rows.map((row) => toClient(key, row, opts));
+}
+
+/** Config rows for a backup: client shape plus CONFIG_BACKUP_SECRETS. */
+export function toConfigBackupList(rows) {
+  return toClientList('config', rows).map((doc, index) => {
+    const out = { ...doc };
+    for (const secret of CONFIG_BACKUP_SECRETS) {
+      if (rows[index][secret]) out[secret] = rows[index][secret];
+    }
+    return out;
+  });
 }
 
 /**

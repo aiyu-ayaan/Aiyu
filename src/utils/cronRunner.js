@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import { getSingleton, toClientList } from '@/lib/serialize';
+import { getSingleton, toClientList, toConfigBackupList } from '@/lib/serialize';
 import { executeUnreferencedCleanup, executeWebPMigration } from '@/lib/storageAudit';
 import { runUptimeChecks } from '@/lib/uptime';
 import { pruneSessions, SESSION_RETENTION_DAYS } from '@/lib/auth';
@@ -355,7 +355,7 @@ function safeLogJson(value, env = {}) {
 const COLLECTION_PRODUCERS = {
     about: async () => toClientList('about', await prisma.about.findMany()),
     blogs: async () => toClientList('blog', await prisma.blog.findMany()),
-    config: async () => toClientList('config', await prisma.config.findMany()),
+    config: async () => toConfigBackupList(await prisma.config.findMany()),
     gallery: async () => toClientList('gallery', await prisma.gallery.findMany()),
     header: async () => toClientList('header', await prisma.header.findMany()),
     home: async () => toClientList('home', await prisma.home.findMany()),

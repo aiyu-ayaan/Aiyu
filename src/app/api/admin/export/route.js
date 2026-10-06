@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { toClientList } from "@/lib/serialize";
+import { toClientList, toConfigBackupList } from "@/lib/serialize";
 import { getSession } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import archiver from "archiver";
@@ -12,7 +12,7 @@ import { readFile, access, readdir } from "fs/promises";
 const COLLECTION_PRODUCERS = {
     about: async () => toClientList('about', await prisma.about.findMany()),
     blogs: async () => toClientList('blog', await prisma.blog.findMany()),
-    config: async () => toClientList('config', await prisma.config.findMany()),
+    config: async () => toConfigBackupList(await prisma.config.findMany()),
     gallery: async () => toClientList('gallery', await prisma.gallery.findMany()),
     header: async () => toClientList('header', await prisma.header.findMany()),
     home: async () => toClientList('home', await prisma.home.findMany()),
