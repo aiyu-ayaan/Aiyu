@@ -129,6 +129,7 @@ const RELATIONAL_OMIT = {
 // Secret columns (withheld by default) for the json-blob Config model.
 const CONFIG_SECRETS = [
   'encryptedGithubToken',
+  'encryptedGithubWebhookSecret',
   'encryptedGeminiApiKey',
   'encryptedGroqApiKey',
   'encryptedOpenRouterApiKey',

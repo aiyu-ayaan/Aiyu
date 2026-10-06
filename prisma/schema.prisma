@@ -381,15 +381,17 @@ model Theme {
 // so the serializer can withhold them by default (see lib/serialize.js).
 
 model Config {
-  id                        String   @id @default(cuid())
-  data                      Json     @default("{}")
-  encryptedGithubToken      String?
-  encryptedGeminiApiKey     String?
-  encryptedGroqApiKey       String?
-  encryptedOpenRouterApiKey String?
-  blogApiTokenHash          String?
-  createdAt                 DateTime @default(now())
-  updatedAt                 DateTime @default(now()) @updatedAt
+  id                           String   @id @default(cuid())
+  data                         Json     @default("{}")
+  encryptedGithubToken         String?
+  // HMAC secret for /api/github/webhook; set from /admin/github.
+  encryptedGithubWebhookSecret String?
+  encryptedGeminiApiKey        String?
+  encryptedGroqApiKey          String?
+  encryptedOpenRouterApiKey    String?
+  blogApiTokenHash             String?
+  createdAt                    DateTime @default(now())
+  updatedAt                    DateTime @default(now()) @updatedAt
 }
 
 model Ads {

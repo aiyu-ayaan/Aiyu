@@ -31,6 +31,8 @@ async function getConfig(request) {
         // Get token from DB (encrypted) or Env
         const token = await getDecryptedToken();
         const hasToken = !!token;
+        const secrets = await getSingleton(prisma, 'config', { withSecrets: true });
+        const hasWebhookSecret = Boolean(secrets?.encryptedGithubWebhookSecret);
 
         // If 'repos' mode is requested, fetch full list of repos (proxied to use token)
         if (mode === 'repos' && config.username) {
@@ -146,7 +148,8 @@ async function getConfig(request) {
             data: {
                 ...config,
                 tokenStatus,
-                hasToken // Tell frontend we have a token (without sending it)
+                hasToken, // Tell frontend we have a token (without sending it)
+                hasWebhookSecret
             }
         });
     } catch (error) {
@@ -195,6 +198,15 @@ async function updateConfig(request) {
             const encryptedToken = body.githubToken ? encrypt(body.githubToken) : '';
             await upsertSingleton(prisma, 'config', { encryptedGithubToken: encryptedToken });
             await cache.invalidatePrefixAsync('db:github');
+            await cache.invalidatePrefixAsync('db:config');
+        }
+
+        if (body.webhookSecret !== undefined) {
+            if (typeof body.webhookSecret !== 'string') {
+                return NextResponse.json({ success: false, error: 'Invalid webhook secret' }, { status: 400 });
+            }
+            const secret = body.webhookSecret.trim();
+            await upsertSingleton(prisma, 'config', { encryptedGithubWebhookSecret: secret ? encrypt(secret) : '' });
             await cache.invalidatePrefixAsync('db:config');
         }
 

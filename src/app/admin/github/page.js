@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, CheckCircle, XCircle, ArrowLeft, BarChart2, Book, Code, Globe, User, EyeOff, Lock, Unlock, Search, GitCommit, Activity, LayoutGrid, Tags, Link2 } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, ArrowLeft, BarChart2, Book, Code, Globe, User, EyeOff, Lock, Unlock, Search, GitCommit, Activity, LayoutGrid, Tags, Link2, Webhook, Copy, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import RepoSyncPanel from '@/app/components/admin/github/RepoSyncPanel';
 
@@ -27,10 +27,14 @@ export default function GitHubConfigPage() {
             showConnect: true
         },
         hiddenRepos: [],
-        hasToken: false
+        hasToken: false,
+        hasWebhookSecret: false
     });
     const [newToken, setNewToken] = useState('');
     const [showTokenInput, setShowTokenInput] = useState(false);
+    const [newWebhookSecret, setNewWebhookSecret] = useState('');
+    const [showWebhookInput, setShowWebhookInput] = useState(false);
+    const [webhookUrl, setWebhookUrl] = useState('/api/github/webhook');
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [testing, setTesting] = useState(false);
@@ -39,6 +43,7 @@ export default function GitHubConfigPage() {
 
     useEffect(() => {
         fetchConfig();
+        setWebhookUrl(`${window.location.origin}/api/github/webhook`);
     }, []);
 
     const fetchConfig = async () => {
@@ -51,7 +56,8 @@ export default function GitHubConfigPage() {
                     sections: { ...config.sections, ...(data.data.sections || {}) },
                     hiddenRepos: data.data.hiddenRepos || [],
                     includePrivate: data.data.includePrivate || false,
-                    hasToken: data.data.hasToken || false
+                    hasToken: data.data.hasToken || false,
+                    hasWebhookSecret: data.data.hasWebhookSecret || false
                 });
                 setTokenStatus(data.data.tokenStatus);
             }
@@ -72,13 +78,19 @@ export default function GitHubConfigPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     ...config,
-                    githubToken: newToken || undefined // Only send if changed
+                    githubToken: newToken || undefined, // Only send if changed
+                    webhookSecret: newWebhookSecret || undefined
                 })
             });
 
             const data = await res.json();
 
             if (data.success) {
+                if (newWebhookSecret) {
+                    setConfig((prev) => ({ ...prev, hasWebhookSecret: true }));
+                    setShowWebhookInput(false);
+                    setNewWebhookSecret('');
+                }
                 showNotification(true, 'System Updated Successfully');
             } else {
                 showNotification(false, `Failed to save: ${data.message || 'Unknown error'}`);
@@ -88,6 +100,22 @@ export default function GitHubConfigPage() {
             showNotification(false, 'Failed to save configuration: ' + error.message);
         } finally {
             setSaving(false);
+        }
+    };
+
+    const generateWebhookSecret = () => {
+        const bytes = new Uint8Array(32);
+        crypto.getRandomValues(bytes);
+        setNewWebhookSecret(Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join(''));
+        setShowWebhookInput(true);
+    };
+
+    const copyToClipboard = async (value, label) => {
+        try {
+            await navigator.clipboard.writeText(value);
+            showNotification(true, `${label} copied`);
+        } catch {
+            showNotification(false, `Could not copy ${label.toLowerCase()}`);
         }
     };
 
@@ -384,6 +412,86 @@ export default function GitHubConfigPage() {
                                     * Requires valid Access Token
                                 </p>
                             )}
+                        </div>
+
+                        {/* Push webhook — instant project sync */}
+                        <div className="md:col-span-2">
+                            <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2 flex items-center gap-2">
+                                <Webhook className="w-3 h-3" /> Push Webhook (Optional)
+                            </label>
+                            <div className="flex flex-col sm:flex-row gap-2 mb-3">
+                                <code className="flex-1 min-w-0 truncate bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-300 text-sm font-mono">
+                                    {webhookUrl}
+                                </code>
+                                <button
+                                    type="button"
+                                    onClick={() => copyToClipboard(webhookUrl, 'Payload URL')}
+                                    className="px-4 py-2 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/20 rounded-lg transition-colors text-xs font-mono uppercase tracking-wide flex items-center justify-center gap-2"
+                                >
+                                    <Copy className="w-3 h-3" /> URL
+                                </button>
+                            </div>
+                            <div className="flex flex-col sm:flex-row gap-2">
+                                {config.hasWebhookSecret && !showWebhookInput ? (
+                                    <div className="flex-1 bg-green-500/10 border border-green-500/20 rounded-lg p-3 flex items-center gap-2">
+                                        <Lock className="w-4 h-4 text-green-400" />
+                                        <span className="text-green-400 text-sm font-mono flex-1">Webhook secret stored</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowWebhookInput(true)}
+                                            className="text-xs text-green-300 hover:text-green-200 underline"
+                                        >
+                                            Replace
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <input
+                                        type="text"
+                                        value={newWebhookSecret}
+                                        onChange={(e) => setNewWebhookSecret(e.target.value)}
+                                        placeholder={config.hasWebhookSecret ? 'Enter new secret to overwrite...' : 'Generate or paste a secret'}
+                                        autoComplete="off"
+                                        spellCheck={false}
+                                        className="flex-1 min-w-0 bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-purple-500/50 outline-none text-sm font-mono placeholder:text-slate-600"
+                                    />
+                                )}
+                                {(!config.hasWebhookSecret || showWebhookInput) && (
+                                    <div className="flex gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={generateWebhookSecret}
+                                            className="flex-1 sm:flex-none px-4 py-2 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/20 rounded-lg transition-colors text-xs font-mono uppercase tracking-wide flex items-center justify-center gap-2"
+                                        >
+                                            <RefreshCw className="w-3 h-3" /> Generate
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => copyToClipboard(newWebhookSecret, 'Secret')}
+                                            disabled={!newWebhookSecret}
+                                            className="flex-1 sm:flex-none px-4 py-2 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/20 rounded-lg transition-colors disabled:opacity-50 text-xs font-mono uppercase tracking-wide flex items-center justify-center gap-2"
+                                        >
+                                            <Copy className="w-3 h-3" /> Copy
+                                        </button>
+                                        {showWebhookInput && config.hasWebhookSecret && (
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setShowWebhookInput(false);
+                                                    setNewWebhookSecret('');
+                                                }}
+                                                className="text-slate-400 hover:text-white"
+                                            >
+                                                <XCircle className="w-5 h-5" />
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                            <p className="text-[10px] text-slate-500 mt-2 font-mono">
+                                Synced projects refresh every 10 min automatically. For instant updates, add a webhook on each repo
+                                (Settings → Webhooks) with this payload URL, content type application/json, and the secret above, then
+                                save here. The secret is encrypted and shown only until you save — copy it first.
+                            </p>
                         </div>
                     </div>
                 </div>
