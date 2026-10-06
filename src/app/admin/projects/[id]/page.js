@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import ProjectForm from '@/app/components/admin/ProjectForm';
+import ProjectAppLinks from '@/app/components/admin/ProjectAppLinks';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 
@@ -54,6 +55,7 @@ export default function EditProjectPage() {
                 <p className="text-slate-400">Update specific parameters and assets for this project module.</p>
             </div>
 
+            <ProjectAppLinks project={project} />
             <ProjectForm initialData={project} isEdit={true} />
         </div>
     );

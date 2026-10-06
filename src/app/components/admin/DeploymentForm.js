@@ -2,13 +2,16 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import {
     Activity,
     Globe,
     Image as ImageIcon,
     Layers,
+    Link2,
     Loader2,
     Save,
+    Scale,
     Server,
     ShieldCheck,
     Sparkles,
@@ -54,7 +57,7 @@ const getStatusState = (status) => {
     };
 };
 
-export default function DeploymentForm({ initialData, isEdit = false }) {
+export default function DeploymentForm({ initialData, isEdit = false, defaultProjectId = '' }) {
     const router = useRouter();
     const [formData, setFormData] = useState({
         name: '',
@@ -67,7 +70,10 @@ export default function DeploymentForm({ initialData, isEdit = false }) {
         blogLink: '',
         techStack: '',
         image: '',
+        projectId: '',
     });
+    const [projects, setProjects] = useState([]);
+    const [legalApp, setLegalApp] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [notification, setNotification] = useState(null);
@@ -81,8 +87,55 @@ export default function DeploymentForm({ initialData, isEdit = false }) {
         setFormData({
             ...initialData,
             techStack: Array.isArray(initialData.techStack) ? initialData.techStack.join(', ') : '',
+            projectId: initialData.projectId || '',
         });
     }, [initialData]);
+
+    useEffect(() => {
+        fetch('/api/projects')
+            .then((response) => (response.ok ? response.json() : []))
+            .then((rows) => setProjects(Array.isArray(rows) ? rows : []))
+            .catch(() => setProjects([]));
+    }, []);
+
+    // Legal pages are owned by a LegalApp that points at this deployment.
+    useEffect(() => {
+        if (!isEdit || !initialData?._id) return;
+        fetch('/api/legal/apps')
+            .then((response) => (response.ok ? response.json() : []))
+            .then((apps) => setLegalApp((Array.isArray(apps) ? apps : []).find((app) => app.deploymentId === initialData._id) || null))
+            .catch(() => setLegalApp(null));
+    }, [isEdit, initialData?._id]);
+
+    // /admin/apps/new?projectId=… arrives here once the project list loads.
+    useEffect(() => {
+        if (isEdit || !defaultProjectId || projects.length === 0) return;
+        applyProject(defaultProjectId);
+    }, [isEdit, defaultProjectId, projects]);
+
+    /**
+     * Link a project. On a new app, empty fields are pre-filled from the
+     * project so publishing an existing project as an app is one click; the
+     * matching name also gives /apps/<slug> the same slug as /projects/<slug>.
+     */
+    const applyProject = (projectId) => {
+        const project = projects.find((item) => item._id === projectId);
+        setFormData((previous) => {
+            const next = { ...previous, projectId };
+            if (!project || isEdit) return next;
+            return {
+                ...next,
+                name: previous.name || project.name || '',
+                description: previous.description || project.description || '',
+                techStack: previous.techStack || (Array.isArray(project.techStack) ? project.techStack.join(', ') : ''),
+                image: previous.image || project.image || '',
+                blogLink: previous.blogLink || project.blogLink || '',
+                hostedUrl: previous.hostedUrl || project.repoData?.homepage || '',
+            };
+        });
+    };
+
+    const linkedProject = projects.find((item) => item._id === formData.projectId);
 
     useEffect(() => {
         checkAiConfig();
@@ -229,6 +282,7 @@ export default function DeploymentForm({ initialData, isEdit = false }) {
             hostedUrl: formData.hostedUrl.trim(),
             blogLink: formData.blogLink ? formData.blogLink.trim() : '',
             image: formData.image.trim(),
+            projectId: formData.projectId || null,
         };
 
         try {
@@ -447,6 +501,49 @@ export default function DeploymentForm({ initialData, isEdit = false }) {
                 </div>
 
                 <div className="space-y-8">
+                    <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-6 relative overflow-hidden">
+                        <h2 className="text-sm font-mono text-sky-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                            <Link2 className="w-4 h-4" /> Links
+                        </h2>
+                        <label className="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-2" htmlFor="deployment-project">Project</label>
+                        <select
+                            id="deployment-project"
+                            value={formData.projectId}
+                            onChange={(event) => applyProject(event.target.value)}
+                            className="w-full bg-slate-950/50 border border-white/10 rounded-xl py-3 px-4 text-slate-200 focus:border-sky-500/50 outline-none text-sm"
+                        >
+                            <option value="" className="bg-slate-900">— Not linked —</option>
+                            {projects.map((project) => (
+                                <option key={project._id} value={project._id} className="bg-slate-900">{project.name}</option>
+                            ))}
+                        </select>
+                        <p className="mt-2 text-xs text-slate-500">
+                            {linkedProject
+                                ? <>The app page links to <span className="font-mono text-slate-300">/projects/{linkedProject.slug}</span> and back.</>
+                                : 'Link the project this app is built from so both pages point at each other.'}
+                        </p>
+
+                        <div className="mt-6 pt-6 border-t border-white/5">
+                            <p className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-slate-400 mb-2">
+                                <Scale className="w-3.5 h-3.5" /> Legal pages
+                            </p>
+                            {legalApp ? (
+                                <>
+                                    <ul className="space-y-1 mb-3">
+                                        {legalApp.documents.map((doc) => (
+                                            <li key={doc._id} className="font-mono text-xs text-slate-300 break-all">/{legalApp.slug}/{doc.slug}{!doc.published && ' (draft)'}</li>
+                                        ))}
+                                    </ul>
+                                    <Link href={`/admin/legal/${legalApp._id}`} className="text-xs text-sky-400 hover:text-sky-300">Manage legal pages →</Link>
+                                </>
+                            ) : isEdit ? (
+                                <Link href={`/admin/legal/new?deploymentId=${initialData._id}`} className="text-xs text-sky-400 hover:text-sky-300">+ Add privacy policy / terms</Link>
+                            ) : (
+                                <p className="text-xs text-slate-500">Save the app first, then add its legal pages.</p>
+                            )}
+                        </div>
+                    </div>
+
                     <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-6 relative overflow-hidden group">
                         <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
                         <h2 className="text-sm font-mono text-emerald-400 uppercase tracking-widest mb-6 relative z-10">App Status</h2>

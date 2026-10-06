@@ -17,7 +17,7 @@ const EMPTY = { name: '', slug: '', packageName: '', description: '', contactEma
  * name and slug from that app, so /apps/rewire and /rewire/privacy-policy share
  * one name.
  */
-export default function LegalAppForm({ initialData = null, onSaved }) {
+export default function LegalAppForm({ initialData = null, onSaved, defaultDeploymentId = '' }) {
     const router = useRouter();
     const { toast } = useAdminFeedback();
     const isEdit = Boolean(initialData?._id);
@@ -32,6 +32,10 @@ export default function LegalAppForm({ initialData = null, onSaved }) {
             .then((rows) => setDeployments(Array.isArray(rows) ? rows : []))
             .catch(() => setDeployments([]));
     }, []);
+
+    useEffect(() => {
+        if (!isEdit && defaultDeploymentId && deployments.length > 0) handleLink(defaultDeploymentId);
+    }, [isEdit, defaultDeploymentId, deployments]);
 
     const set = (name, value) => setForm((prev) => {
         const next = { ...prev, [name]: value };

@@ -6,6 +6,7 @@ import cache, { CACHE_TTL, createCacheDebugHeaders } from '@/lib/cache';
 import { createPublicCacheHeaders, RESPONSE_CACHE } from '@/lib/httpCache';
 import { getDeploymentSlug } from '@/lib/contentSlugs';
 import { autoPing } from '@/lib/autoIndexing';
+import { normalizeProjectIdInput } from '@/lib/contentLinks';
 
 export async function PUT(request, { params }) {
     const session = await getSession();
@@ -16,9 +17,10 @@ export async function PUT(request, { params }) {
     try {
         const { id } = await params;
         const body = await request.json();
+        const projectId = await normalizeProjectIdInput(body?.projectId);
         const deployment = await prisma.deployment.update({
             where: { id },
-            data: fromClient('deployment', body, { keepId: false }),
+            data: fromClient('deployment', { ...body, projectId }, { keepId: false }),
         });
         await cache.invalidatePrefixAsync('db:deployments');
         const updated = toClient('deployment', deployment);
@@ -27,6 +29,9 @@ export async function PUT(request, { params }) {
     } catch (error) {
         if (error?.code === 'P2025') {
             return NextResponse.json({ error: 'Deployment not found' }, { status: 404 });
+        }
+        if (error?.status === 400) {
+            return NextResponse.json({ error: error.message }, { status: 400 });
         }
         return NextResponse.json({ error: 'Failed to update deployment' }, { status: 500 });
     }
