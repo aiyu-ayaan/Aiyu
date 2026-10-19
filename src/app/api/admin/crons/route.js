@@ -49,7 +49,7 @@ async function getCrons(request) {
             });
         }
 
-        const crons = toClientList('cron', await prisma.cron.findMany({ orderBy: [{ type: 'asc' }, { name: 'asc' }] }));
+        const crons = toClientList('cron', await prisma.cron.findMany({ orderBy: [{ type: 'asc' }, { createdAt: 'desc' }] }));
         for (const cron of crons) {
             if (cron.webhookEnv && Array.isArray(cron.webhookEnv)) {
                 cron.webhookEnv = cron.webhookEnv.map(env => ({

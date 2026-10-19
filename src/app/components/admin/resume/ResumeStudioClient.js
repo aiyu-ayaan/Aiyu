@@ -344,7 +344,7 @@ export default function ResumeStudioClient() {
     const insertLatex = useCallback((block) => {
         if (mode === 'visual') {
             setModel((m) => (m
-                ? { ...m, sections: [...m.sections, { id: `raw-${Date.now()}`, title: 'Added Block', type: 'raw', raw: block.trim() }] }
+                ? { ...m, sections: [{ id: `raw-${Date.now()}`, title: 'Added Block', type: 'raw', raw: block.trim() }, ...m.sections] }
                 : m));
             setDirty(true);
             toast.success('Added as a new "Added Block" section — rename or drag it into place');

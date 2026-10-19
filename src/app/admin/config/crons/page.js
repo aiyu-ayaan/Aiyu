@@ -1688,7 +1688,7 @@ export default function CronJobsPage() {
 
                                                 <button
                                                     type="button"
-                                                    onClick={() => setFormWebhookHeaders([...formWebhookHeaders, { key: '', value: '' }])}
+                                                    onClick={() => setFormWebhookHeaders([{ key: '', value: '' }, ...formWebhookHeaders])}
                                                     className="inline-flex items-center gap-1 text-[11px] font-bold text-cyan-400 hover:text-cyan-300 transition-colors"
                                                 >
                                                     <Plus size={12} /> Add Header
@@ -2045,7 +2045,7 @@ export default function CronJobsPage() {
                                         <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block">Environment Variables</label>
                                         <button
                                             type="button"
-                                            onClick={() => setGlobalEnvs([...globalEnvs, { key: '', value: '' }])}
+                                            onClick={() => setGlobalEnvs([{ key: '', value: '' }, ...globalEnvs])}
                                             className="inline-flex items-center gap-1 text-[11px] font-bold text-cyan-400 hover:text-cyan-300 transition-colors"
                                         >
                                             <Plus size={12} /> Add Variable

@@ -162,7 +162,7 @@ const HeaderForm = () => {
     const handleAddNavLink = () => {
         setFormData({
             ...formData,
-            navLinks: [...formData.navLinks, { _id: `temp-${Date.now()}`, name: '', href: '', visible: true, beta: false, target: '' }]
+            navLinks: [{ _id: `temp-${Date.now()}`, name: '', href: '', visible: true, beta: false, target: '' }, ...formData.navLinks]
         });
     };
 

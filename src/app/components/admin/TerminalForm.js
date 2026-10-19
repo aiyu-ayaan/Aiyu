@@ -56,7 +56,7 @@ export default function TerminalForm() {
     const addAsciiArt = () => {
         setFormData(prev => ({
             ...prev,
-            asciiArts: [...(prev.asciiArts || []), { name: '', art: '' }]
+            asciiArts: [{ name: '', art: '' }, ...(prev.asciiArts || [])]
         }));
     };
 

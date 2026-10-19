@@ -110,7 +110,7 @@ function ServerTab({ config, patch }) {
 function TransportsTab({ config, patch }) {
     const list = config.transports;
     const update = (i, p) => patch({ transports: list.map((t, idx) => (idx === i ? { ...t, ...p } : t)) });
-    const add = () => patch({ transports: [...list, { type: 'webmcp', endpoint: '/', description: '' }] });
+    const add = () => patch({ transports: [{ type: 'webmcp', endpoint: '/', description: '' }, ...list] });
     const remove = (i) => patch({ transports: list.filter((_, idx) => idx !== i) });
     return (
         <Panel className="p-5">
@@ -171,7 +171,7 @@ function ToolsTab({ config, patch }) {
     const list = config.tools;
     const update = (i, p) => patch({ tools: list.map((t, idx) => (idx === i ? { ...t, ...p } : t)) });
     const setAnn = (i, key, v) => update(i, { annotations: { ...list[i].annotations, [key]: v } });
-    const add = () => patch({ tools: [...list, { name: '', title: '', description: '', enabled: true, inputSchema: '', annotations: {} }] });
+    const add = () => patch({ tools: [{ name: '', title: '', description: '', enabled: true, inputSchema: '', annotations: {} }, ...list] });
     const remove = (i) => patch({ tools: list.filter((_, idx) => idx !== i) });
     return (
         <Panel className="p-5">
@@ -206,7 +206,7 @@ function ToolsTab({ config, patch }) {
 function ResourcesTab({ config, patch }) {
     const list = config.resources;
     const update = (i, p) => patch({ resources: list.map((r, idx) => (idx === i ? { ...r, ...p } : r)) });
-    const add = () => patch({ resources: [...list, { uri: '', name: '', title: '', description: '', mimeType: '', enabled: true }] });
+    const add = () => patch({ resources: [{ uri: '', name: '', title: '', description: '', mimeType: '', enabled: true }, ...list] });
     const remove = (i) => patch({ resources: list.filter((_, idx) => idx !== i) });
     return (
         <Panel className="p-5">
@@ -236,10 +236,10 @@ function ResourcesTab({ config, patch }) {
 function PromptsTab({ config, patch }) {
     const list = config.prompts;
     const update = (i, p) => patch({ prompts: list.map((pr, idx) => (idx === i ? { ...pr, ...p } : pr)) });
-    const add = () => patch({ prompts: [...list, { name: '', title: '', description: '', enabled: true, arguments: [] }] });
+    const add = () => patch({ prompts: [{ name: '', title: '', description: '', enabled: true, arguments: [] }, ...list] });
     const remove = (i) => patch({ prompts: list.filter((_, idx) => idx !== i) });
     const updateArg = (pi, ai, p) => update(pi, { arguments: list[pi].arguments.map((a, idx) => (idx === ai ? { ...a, ...p } : a)) });
-    const addArg = (pi) => update(pi, { arguments: [...list[pi].arguments, { name: '', description: '', required: false }] });
+    const addArg = (pi) => update(pi, { arguments: [{ name: '', description: '', required: false }, ...list[pi].arguments] });
     const removeArg = (pi, ai) => update(pi, { arguments: list[pi].arguments.filter((_, idx) => idx !== ai) });
     return (
         <Panel className="p-5">
@@ -280,7 +280,7 @@ function PromptsTab({ config, patch }) {
 function LinksTab({ config, patch }) {
     const list = config.links;
     const update = (i, p) => patch({ links: list.map((l, idx) => (idx === i ? { ...l, ...p } : l)) });
-    const add = () => patch({ links: [...list, { name: '', url: '' }] });
+    const add = () => patch({ links: [{ name: '', url: '' }, ...list] });
     const remove = (i) => patch({ links: list.filter((_, idx) => idx !== i) });
     return (
         <Panel className="p-5 max-w-3xl">

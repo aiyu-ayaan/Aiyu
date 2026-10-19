@@ -82,7 +82,7 @@ function BulletsEditor({ bullets, onChange }) {
                 </div>
             ))}
             <button
-                onClick={() => onChange([...bullets, ''])}
+                onClick={() => onChange(['', ...bullets])}
                 className="mt-1 flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-cyan-500/20 bg-cyan-500/5 text-[9px] uppercase font-bold tracking-wider text-cyan-400 hover:bg-cyan-500/10 hover:text-cyan-300 transition-all cursor-pointer"
             >
                 <FaPlus className="text-[8px]" /> bullet
@@ -159,7 +159,7 @@ function EntriesBody({ section, patch }) {
                     </SortableItem>
                 ))}
             </ItemsDnd>
-            <button onClick={() => setItems([...section.items, blankItemFor('entries')])} className="mt-2.5 flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-cyan-500/20 bg-cyan-500/5 text-[10px] uppercase font-bold tracking-wider text-cyan-400 hover:bg-cyan-500/10 hover:text-cyan-300 transition-all cursor-pointer">
+            <button onClick={() => setItems([blankItemFor('entries'), ...section.items])} className="mt-2.5 flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-cyan-500/20 bg-cyan-500/5 text-[10px] uppercase font-bold tracking-wider text-cyan-400 hover:bg-cyan-500/10 hover:text-cyan-300 transition-all cursor-pointer">
                 <FaPlus className="text-[8px]" /> Add entry
             </button>
         </>
@@ -174,13 +174,13 @@ function ProjectsBody({ section, patch, portfolio }) {
     const addFromPortfolio = (projectId) => {
         const project = portfolio.find((p) => p._id === projectId);
         if (!project) return;
-        setItems([...section.items, {
+        setItems([{
             ...blankItemFor('projects'),
             name: escapeLatex(project.name || ''),
             tech: escapeLatex((project.techStack || []).join(', ')),
             right: escapeLatex(project.year || ''),
             bullets: [escapeLatex(project.description || '')],
-        }]);
+        }, ...section.items]);
     };
 
     return (
@@ -202,7 +202,7 @@ function ProjectsBody({ section, patch, portfolio }) {
                 ))}
             </ItemsDnd>
             <div className="mt-2.5 flex items-center gap-2">
-                <button onClick={() => setItems([...section.items, blankItemFor('projects')])} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-cyan-500/20 bg-cyan-500/5 text-[10px] uppercase font-bold tracking-wider text-cyan-400 hover:bg-cyan-500/10 hover:text-cyan-300 transition-all cursor-pointer">
+                <button onClick={() => setItems([blankItemFor('projects'), ...section.items])} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-cyan-500/20 bg-cyan-500/5 text-[10px] uppercase font-bold tracking-wider text-cyan-400 hover:bg-cyan-500/10 hover:text-cyan-300 transition-all cursor-pointer">
                     <FaPlus className="text-[8px]" /> Add project
                 </button>
                 {portfolio.length > 0 && (
@@ -236,7 +236,7 @@ function SkillsBody({ section, patch }) {
                     </SortableItem>
                 ))}
             </ItemsDnd>
-            <button onClick={() => setRows([...section.rows, blankItemFor('skills')])} className="mt-2.5 flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-cyan-500/20 bg-cyan-500/5 text-[10px] uppercase font-bold tracking-wider text-cyan-400 hover:bg-cyan-500/10 hover:text-cyan-300 transition-all cursor-pointer">
+            <button onClick={() => setRows([blankItemFor('skills'), ...section.rows])} className="mt-2.5 flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-cyan-500/20 bg-cyan-500/5 text-[10px] uppercase font-bold tracking-wider text-cyan-400 hover:bg-cyan-500/10 hover:text-cyan-300 transition-all cursor-pointer">
                 <FaPlus className="text-[8px]" /> Add row
             </button>
         </>
@@ -374,7 +374,7 @@ function HeaderEditor({ header, onChange }) {
                                     </div>
                                 ))}
                                 <button
-                                    onClick={() => update({ lines: [...parsed.lines, ''] })}
+                                    onClick={() => update({ lines: ['', ...parsed.lines] })}
                                     className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-white/10 bg-white/[0.02] text-[9px] uppercase font-bold tracking-wider text-slate-500 hover:text-slate-300 hover:border-white/20 transition-all cursor-pointer"
                                 >
                                     <FaPlus className="text-[8px]" /> subtitle line
@@ -418,7 +418,7 @@ function HeaderEditor({ header, onChange }) {
                                     </div>
                                 ))}
                                 <button
-                                    onClick={() => update({ contacts: [...parsed.contacts, blankContact()] })}
+                                    onClick={() => update({ contacts: [blankContact(), ...parsed.contacts] })}
                                     className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-cyan-500/20 bg-cyan-500/5 text-[9px] uppercase font-bold tracking-wider text-cyan-400 hover:bg-cyan-500/10 hover:text-cyan-300 transition-all cursor-pointer"
                                 >
                                     <FaPlus className="text-[8px]" /> contact
@@ -517,7 +517,7 @@ export default function VisualEditor({ model, onChange }) {
                                         key={key}
                                         onClick={() => {
                                             const base = blankSection(type);
-                                            onChange({ ...model, sections: [...model.sections, { ...base, title }] });
+                                            onChange({ ...model, sections: [{ ...base, title }, ...model.sections] });
                                             setAddOpen(false);
                                         }}
                                         className="flex flex-col items-center gap-1.5 rounded-lg border border-transparent px-2 py-2.5 text-slate-300 hover:border-cyan-500/30 hover:bg-cyan-500/10 hover:text-cyan-300 transition-all"
