@@ -111,7 +111,7 @@ export function StringListEditor({ items, onChange, placeholder = 'value' }) {
     const list = Array.isArray(items) ? items : [];
     const update = (i, v) => onChange(list.map((x, idx) => (idx === i ? v : x)));
     const remove = (i) => onChange(list.filter((_, idx) => idx !== i));
-    const add = () => onChange([...list, '']);
+    const add = () => onChange(['', ...list]);
 
     return (
         <div className="space-y-2">

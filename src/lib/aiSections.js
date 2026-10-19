@@ -82,10 +82,10 @@ export async function invalidateAiPage() {
     await cache.invalidateAsync(`${CACHE_KEYS.AI_PAGE}:stats`);
 }
 
-/** Next display order for a delegate (append to the end). */
+/** Next display order for a delegate (prepend to the top). */
 async function nextOrder(delegate, where = {}) {
-    const row = await delegate.findFirst({ where, orderBy: { displayOrder: 'desc' }, select: { displayOrder: true } });
-    return Number.isFinite(row?.displayOrder) ? row.displayOrder + 1 : 0;
+    const row = await delegate.findFirst({ where, orderBy: { displayOrder: 'asc' }, select: { displayOrder: true } });
+    return Number.isFinite(row?.displayOrder) ? row.displayOrder - 1 : 0;
 }
 
 // ───────────────────────────── Skills ─────────────────────────────
@@ -93,8 +93,8 @@ async function nextOrder(delegate, where = {}) {
 /** All skill categories with their ordered skills, client-shaped. */
 export async function listSkillCategories() {
     const cats = await prisma.aiSkillCategory.findMany({
-        orderBy: { displayOrder: 'asc' },
-        include: { skills: { orderBy: { displayOrder: 'asc' } } },
+        orderBy: [{ displayOrder: 'asc' }, { createdAt: 'desc' }],
+        include: { skills: { orderBy: [{ displayOrder: 'asc' }, { createdAt: 'desc' }] } },
     });
     return cats.map((cat) => ({
         ...toClient('aiSkillCategory', cat),
@@ -195,7 +195,7 @@ export async function deleteSkill(id) {
 // ─────────────────────── Recommendations ───────────────────────
 
 export async function listRecommendations() {
-    const rows = await prisma.aiRecommendation.findMany({ orderBy: { displayOrder: 'asc' } });
+    const rows = await prisma.aiRecommendation.findMany({ orderBy: [{ displayOrder: 'asc' }, { createdAt: 'desc' }] });
     return toClientList('aiRecommendation', rows);
 }
 
@@ -257,7 +257,7 @@ export async function deleteRecommendation(id) {
 // ───────────────────────────── Credits ─────────────────────────────
 
 export async function listCredits() {
-    const rows = await prisma.aiCredit.findMany({ orderBy: { displayOrder: 'asc' } });
+    const rows = await prisma.aiCredit.findMany({ orderBy: [{ displayOrder: 'asc' }, { createdAt: 'desc' }] });
     return toClientList('aiCredit', rows);
 }
 
@@ -319,7 +319,7 @@ export async function deleteCredit(id) {
 // ───────────────────────────── Prompts ─────────────────────────────
 
 export async function listPrompts() {
-    const rows = await prisma.aiPrompt.findMany({ orderBy: { displayOrder: 'asc' } });
+    const rows = await prisma.aiPrompt.findMany({ orderBy: [{ displayOrder: 'asc' }, { createdAt: 'desc' }] });
     return toClientList('aiPrompt', rows);
 }
 

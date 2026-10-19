@@ -85,7 +85,7 @@ export default function LayoutManager({ notify }) {
     const addSection = (type) => {
         const template = templatesByType[type] || { type, enabled: true, title: TYPE_LABELS[type], data: {} };
         const next = { ...clone(template), id: newId(type), enabled: true };
-        setSections((prev) => [...prev, next]);
+        setSections((prev) => [next, ...prev]);
         setOpenId(next.id);
     };
 

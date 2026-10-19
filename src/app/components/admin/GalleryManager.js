@@ -107,7 +107,7 @@ export default function GalleryManager() {
             };
         });
 
-        setFiles(prev => [...prev, ...fileObjects]);
+        setFiles(prev => [...fileObjects, ...prev]);
     };
 
     const removeFile = (id) => {

@@ -31,7 +31,7 @@ export default function SkillsManager({ notify }) {
 
     const createCategory = async (form) => {
         const res = await postJson('/api/ai/skills/categories', form);
-        setCategories((prev) => [...prev, { ...res.category, skills: [] }]);
+        setCategories((prev) => [{ ...res.category, skills: [] }, ...prev]);
         setDraftCat(null);
         notify?.(true, 'Category added.');
     };
@@ -50,7 +50,7 @@ export default function SkillsManager({ notify }) {
 
     const addSkill = async (categoryId, form) => {
         const res = await postJson('/api/ai/skills/items', { ...form, categoryId });
-        setCategories((prev) => prev.map((c) => (c._id === categoryId ? { ...c, skills: [...(c.skills || []), res.skill] } : c)));
+        setCategories((prev) => prev.map((c) => (c._id === categoryId ? { ...c, skills: [res.skill, ...(c.skills || [])] } : c)));
         notify?.(true, 'Skill added.');
     };
 
@@ -82,6 +82,24 @@ export default function SkillsManager({ notify }) {
 
     return (
         <div className="space-y-4">
+            {draftCat ? (
+                <CategoryHeaderForm
+                    isNew
+                    value={draftCat}
+                    onSave={createCategory}
+                    onCancel={() => setDraftCat(null)}
+                    notify={notify}
+                />
+            ) : (
+                <button
+                    type="button"
+                    onClick={() => setDraftCat({ label: '', accent: 'var(--accent-cyan)' })}
+                    className="flex items-center gap-1.5 rounded-lg border border-cyan-500/20 bg-cyan-500/10 px-3 py-2 font-mono text-xs uppercase tracking-wider text-cyan-400 transition-colors hover:bg-cyan-500/20"
+                >
+                    <Plus className="h-3.5 w-3.5" /> Add category
+                </button>
+            )}
+
             {categories.length === 0 && !draftCat && (
                 <p className="rounded-xl border border-dashed border-white/10 py-8 text-center font-mono text-xs text-slate-500">
                     No categories yet — add one to start.
@@ -100,24 +118,6 @@ export default function SkillsManager({ notify }) {
                     notify={notify}
                 />
             ))}
-
-            {draftCat ? (
-                <CategoryHeaderForm
-                    isNew
-                    value={draftCat}
-                    onSave={createCategory}
-                    onCancel={() => setDraftCat(null)}
-                    notify={notify}
-                />
-            ) : (
-                <button
-                    type="button"
-                    onClick={() => setDraftCat({ label: '', accent: 'var(--accent-cyan)' })}
-                    className="flex items-center gap-1.5 rounded-lg border border-cyan-500/20 bg-cyan-500/10 px-3 py-2 font-mono text-xs uppercase tracking-wider text-cyan-400 transition-colors hover:bg-cyan-500/20"
-                >
-                    <Plus className="h-3.5 w-3.5" /> Add category
-                </button>
-            )}
         </div>
     );
 }
@@ -184,18 +184,6 @@ function CategoryCard({ category, onSave, onDelete, onAddSkill, onSaveSkill, onD
                         </button>
                     )}
 
-                    <div className="space-y-2.5">
-                        {skills.map((s) => (
-                            <SkillRow
-                                key={s._id}
-                                skill={s}
-                                onSave={(form) => onSaveSkill(s._id, form)}
-                                onDelete={() => onDeleteSkill(s._id)}
-                                notify={notify}
-                            />
-                        ))}
-                    </div>
-
                     {draftSkill ? (
                         <SkillForm
                             isNew
@@ -216,6 +204,18 @@ function CategoryCard({ category, onSave, onDelete, onAddSkill, onSaveSkill, onD
                             <Plus className="h-3.5 w-3.5" /> Add skill
                         </button>
                     )}
+
+                    <div className="space-y-2.5">
+                        {skills.map((s) => (
+                            <SkillRow
+                                key={s._id}
+                                skill={s}
+                                onSave={(form) => onSaveSkill(s._id, form)}
+                                onDelete={() => onDeleteSkill(s._id)}
+                                notify={notify}
+                            />
+                        ))}
+                    </div>
                 </div>
             )}
         </div>

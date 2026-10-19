@@ -104,7 +104,7 @@ function SkillsEditor({ data, set }) {
             <AddButton
                 label="Add category"
                 onClick={() =>
-                    setCats([...categories, { id: newId('cat'), label: 'New category', accent: 'var(--accent-cyan)', items: [] }])
+                    setCats([{ id: newId('cat'), label: 'New category', accent: 'var(--accent-cyan)', items: [] }, ...categories])
                 }
             />
         </div>
@@ -135,7 +135,7 @@ function SkillItems({ items, onChange }) {
                     <RemoveButton onClick={() => onChange(list.filter((_, idx) => idx !== i))} />
                 </div>
             ))}
-            <AddButton label="Add skill" onClick={() => onChange([...list, { name: '', description: '', url: '' }])} />
+            <AddButton label="Add skill" onClick={() => onChange([{ name: '', description: '', url: '' }, ...list])} />
         </div>
     );
 }
@@ -179,7 +179,7 @@ function RecommendationsEditor({ data, set }) {
             <AddButton
                 label="Add tool"
                 onClick={() =>
-                    setCards([...cards, { id: newId('rec'), name: 'New tool', url: '', rating: 4, accent: 'var(--accent-cyan)', blurb: '', tags: [] }])
+                    setCards([{ id: newId('rec'), name: 'New tool', url: '', rating: 4, accent: 'var(--accent-cyan)', blurb: '', tags: [] }, ...cards])
                 }
             />
         </div>
@@ -223,7 +223,7 @@ function CreditsEditor({ data, set }) {
             <AddButton
                 label="Add provider"
                 onClick={() =>
-                    setRows([...rows, { id: newId('credit'), name: 'New provider', offer: '', url: '', note: '', freeApi: true, noCard: true }])
+                    setRows([{ id: newId('credit'), name: 'New provider', offer: '', url: '', note: '', freeApi: true, noCard: true }, ...rows])
                 }
             />
         </div>
@@ -259,7 +259,7 @@ function PromptsEditor({ data, set }) {
             ))}
             <AddButton
                 label="Add prompt"
-                onClick={() => setItems([...items, { id: newId('prompt'), title: 'New prompt', role: '', prompt: '' }])}
+                onClick={() => setItems([{ id: newId('prompt'), title: 'New prompt', role: '', prompt: '' }, ...items])}
             />
         </div>
     );

@@ -39,7 +39,17 @@ export async function GET(request) {
 async function createGalleryItem(req) {
     try {
         const body = await req.json();
-        const galleryItem = await prisma.gallery.create({ data: fromClient('gallery', body, { keepId: false }) });
+        const payload = { ...body };
+        if (!Number.isFinite(payload.order)) {
+            const minOrderedItem = await prisma.gallery.findFirst({
+                orderBy: { order: 'asc' },
+                select: { order: true },
+            });
+            payload.order = Number.isFinite(minOrderedItem?.order)
+                ? minOrderedItem.order - 1
+                : 0;
+        }
+        const galleryItem = await prisma.gallery.create({ data: fromClient('gallery', payload, { keepId: false }) });
         await cache.invalidateAsync(CACHE_KEYS.GALLERY);
         return NextResponse.json({ success: true, data: toClient('gallery', galleryItem) }, { status: 201 });
     } catch (error) {

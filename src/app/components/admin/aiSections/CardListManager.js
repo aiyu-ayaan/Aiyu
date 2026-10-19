@@ -53,7 +53,7 @@ export default function CardListManager({ endpoint, dataKey, itemKey, fields, ti
 
     const onCreate = async (form) => {
         const res = await postJson(endpoint, form);
-        setItems((prev) => [...prev, res[itemKey]]);
+        setItems((prev) => [res[itemKey], ...prev]);
         setDraft(null);
         notify?.(true, 'Added.');
     };
@@ -68,24 +68,6 @@ export default function CardListManager({ endpoint, dataKey, itemKey, fields, ti
 
     return (
         <div className="space-y-3">
-            {items.length === 0 && !draft && (
-                <p className="rounded-xl border border-dashed border-white/10 py-8 text-center font-mono text-xs text-slate-500">
-                    No entries yet — add one below.
-                </p>
-            )}
-
-            {items.map((item) => (
-                <ItemCard
-                    key={item.id}
-                    item={item}
-                    fields={fields}
-                    titleField={titleField}
-                    onSave={(form) => onSaveExisting(item.id, form)}
-                    onDelete={() => onDelete(item.id)}
-                    notify={notify}
-                />
-            ))}
-
             {draft ? (
                 <ItemCard
                     isNew
@@ -106,6 +88,24 @@ export default function CardListManager({ endpoint, dataKey, itemKey, fields, ti
                     <Plus className="h-3.5 w-3.5" /> Add
                 </button>
             )}
+
+            {items.length === 0 && !draft && (
+                <p className="rounded-xl border border-dashed border-white/10 py-8 text-center font-mono text-xs text-slate-500">
+                    No entries yet — add one above.
+                </p>
+            )}
+
+            {items.map((item) => (
+                <ItemCard
+                    key={item.id}
+                    item={item}
+                    fields={fields}
+                    titleField={titleField}
+                    onSave={(form) => onSaveExisting(item.id, form)}
+                    onDelete={() => onDelete(item.id)}
+                    notify={notify}
+                />
+            ))}
         </div>
     );
 }
