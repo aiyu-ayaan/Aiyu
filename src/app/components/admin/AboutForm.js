@@ -179,7 +179,7 @@ const AboutForm = () => {
                     }));
                     setFormData(prev => ({
                         ...prev,
-                        skills: [...prev.skills, ...newSkills]
+                        skills: [...newSkills, ...prev.skills]
                     }));
                     showNotification(true, 'Skill set expanded!');
                 } else if (mode === 'experience') {

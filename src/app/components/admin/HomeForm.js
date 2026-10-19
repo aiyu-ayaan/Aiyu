@@ -140,14 +140,14 @@ const HomeForm = () => {
         setFormData(prev => ({
             ...prev,
             showcasePanels: [
-                ...prev.showcasePanels,
                 {
                     title: '',
                     description: '',
                     icon: 'Code',
                     accent: 'var(--accent-cyan)',
                     tags: ''
-                }
+                },
+                ...prev.showcasePanels
             ]
         }));
     };
