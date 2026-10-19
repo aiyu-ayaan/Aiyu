@@ -132,7 +132,7 @@ function documentPaths(app, docs = []) {
 export async function listLegalApps() {
     const rows = await prisma.legalApp.findMany({
         orderBy: { createdAt: 'desc' },
-        include: { documents: { orderBy: [{ displayOrder: 'asc' }, { createdAt: 'asc' }] } },
+        include: { documents: { orderBy: [{ displayOrder: 'asc' }, { createdAt: 'desc' }] } },
     });
     return rows.map(shapeAppWithDocs);
 }
@@ -140,7 +140,7 @@ export async function listLegalApps() {
 export async function getLegalApp(id) {
     const row = await prisma.legalApp.findUnique({
         where: { id: String(id) },
-        include: { documents: { orderBy: [{ displayOrder: 'asc' }, { createdAt: 'asc' }] } },
+        include: { documents: { orderBy: [{ displayOrder: 'asc' }, { createdAt: 'desc' }] } },
     });
     if (!row) throw new LegalError('Legal app not found.', 404);
     return shapeAppWithDocs(row);
@@ -225,7 +225,7 @@ export async function createLegalDocument(appId, input = {}) {
     const title = str(input.title, 'title', { max: 160 }) || (docKind === 'custom' ? '' : legalKindLabel(docKind));
     if (!title) throw new LegalError('Field "title" must not be empty.');
 
-    const last = app.documents[app.documents.length - 1];
+    const first = app.documents[0];
     const hasOrder = input.displayOrder !== undefined && input.displayOrder !== null && input.displayOrder !== ''
         && Number.isFinite(Number(input.displayOrder));
     const data = {
@@ -239,7 +239,7 @@ export async function createLegalDocument(appId, input = {}) {
         effectiveDate: str(input.effectiveDate, 'effectiveDate', { max: 40 }) || '',
         published: input.published === undefined ? true : Boolean(input.published),
         noIndex: Boolean(input.noIndex),
-        displayOrder: hasOrder ? Math.round(Number(input.displayOrder)) : (last ? last.displayOrder + 1 : 0),
+        displayOrder: hasOrder ? Math.round(Number(input.displayOrder)) : (first ? first.displayOrder - 1 : 0),
     };
 
     try {
@@ -315,7 +315,7 @@ export async function getPublicLegalApp(slug) {
             include: {
                 documents: {
                     where: { published: true },
-                    orderBy: [{ displayOrder: 'asc' }, { createdAt: 'asc' }],
+                    orderBy: [{ displayOrder: 'asc' }, { createdAt: 'desc' }],
                 },
             },
         });
@@ -344,7 +344,7 @@ export async function getLegalLinksForDeployment(deploymentId) {
             include: {
                 documents: {
                     where: { published: true },
-                    orderBy: [{ displayOrder: 'asc' }, { createdAt: 'asc' }],
+                    orderBy: [{ displayOrder: 'asc' }, { createdAt: 'desc' }],
                     select: { title: true, slug: true },
                 },
             },

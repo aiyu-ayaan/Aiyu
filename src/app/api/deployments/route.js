@@ -58,13 +58,13 @@ export async function POST(request) {
         payload.projectId = await normalizeProjectIdInput(payload.projectId);
 
         if (!Number.isFinite(payload.displayOrder)) {
-            const maxOrderedDeployment = await prisma.deployment.findFirst({
-                orderBy: { displayOrder: 'desc' },
+            const minOrderedDeployment = await prisma.deployment.findFirst({
+                orderBy: { displayOrder: 'asc' },
                 select: { displayOrder: true },
             });
 
-            payload.displayOrder = Number.isFinite(maxOrderedDeployment?.displayOrder)
-                ? maxOrderedDeployment.displayOrder + 1
+            payload.displayOrder = Number.isFinite(minOrderedDeployment?.displayOrder)
+                ? minOrderedDeployment.displayOrder - 1
                 : 0;
         }
 

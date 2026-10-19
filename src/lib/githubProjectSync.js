@@ -74,6 +74,13 @@ export async function syncRepository(fullName, { token, onlyIfChanged = false } 
         // A new row needs the non-syncable fields the schema requires;
         // they are seeded once here and owned by the admin thereafter.
         const name = patch.name || repo.name;
+        const minOrderedProject = await prisma.project.findFirst({
+            orderBy: { displayOrder: 'asc' },
+            select: { displayOrder: true },
+        });
+        const displayOrder = Number.isFinite(minOrderedProject?.displayOrder)
+            ? minOrderedProject.displayOrder - 1
+            : 0;
         row = await prisma.project.create({
             data: {
                 ...patch,
@@ -82,6 +89,7 @@ export async function syncRepository(fullName, { token, onlyIfChanged = false } 
                 year: patch.year || String(new Date().getUTCFullYear()),
                 status: patch.status || 'Working',
                 projectType: patch.projectType || 'Open Source',
+                displayOrder,
                 slug: await createUniqueProjectSlug(null, name),
                 ...syncMetadata,
             },
