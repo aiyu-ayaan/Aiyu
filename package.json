@@ -117,6 +117,7 @@
   "overrides": {
     "postcss": "^8.5.10",
     "sharp": "^0.35.3",
-    "@hono/node-server": "^2.0.5"
+    "@hono/node-server": "^2.0.5",
+    "deepmerge-ts": "^8.0.2"
   }
 }
