@@ -10,7 +10,7 @@ export async function GET() {
         const { value: socials, meta } = await cache.getOrSetWithMeta(
             CACHE_KEYS.SOCIALS,
             async () => {
-                return toClientList('social', await prisma.social.findMany());
+                return toClientList('social', await prisma.social.findMany({ orderBy: { id: 'desc' } }));
             },
             CACHE_TTL.LONG
         );

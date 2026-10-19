@@ -23,7 +23,11 @@ const sortProjects = (projects = []) => {
     return [...projects].sort((a, b) => {
         const orderDifference = getDisplayOrderValue(a) - getDisplayOrderValue(b);
         if (orderDifference !== 0) return orderDifference;
-        return extractSortYear(b?.year) - extractSortYear(a?.year);
+        const yearDifference = extractSortYear(b?.year) - extractSortYear(a?.year);
+        if (yearDifference !== 0) return yearDifference;
+        const dateA = new Date(a?.createdAt || 0).getTime();
+        const dateB = new Date(b?.createdAt || 0).getTime();
+        return dateB - dateA;
     });
 };
 
@@ -32,7 +36,12 @@ export async function GET() {
         const { value: projects, meta } = await cache.getOrSetWithMeta(
             CACHE_KEYS.PROJECTS,
             async () => {
-                const allProjects = toClientList('project', await prisma.project.findMany());
+                const allProjects = toClientList(
+                    'project',
+                    await prisma.project.findMany({
+                        orderBy: [{ displayOrder: 'asc' }, { createdAt: 'desc' }],
+                    })
+                );
                 return sortProjects(allProjects);
             },
             CACHE_TTL.MEDIUM

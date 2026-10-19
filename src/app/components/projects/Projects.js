@@ -72,7 +72,11 @@ const getDisplayOrderValue = (project) => {
 const sortProjects = (firstProject, secondProject) => {
   const orderDifference = getDisplayOrderValue(firstProject) - getDisplayOrderValue(secondProject);
   if (orderDifference !== 0) return orderDifference;
-  return extractSortYear(secondProject?.year) - extractSortYear(firstProject?.year);
+  const yearDifference = extractSortYear(secondProject?.year) - extractSortYear(firstProject?.year);
+  if (yearDifference !== 0) return yearDifference;
+  const dateA = new Date(firstProject?.createdAt || 0).getTime();
+  const dateB = new Date(secondProject?.createdAt || 0).getTime();
+  return dateB - dateA;
 };
 
 const sortYearsDesc = (a, b) => {

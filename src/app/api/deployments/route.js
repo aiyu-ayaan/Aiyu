@@ -18,9 +18,9 @@ const sortDeployments = (deployments = []) => {
         const orderDifference = getDisplayOrderValue(a) - getDisplayOrderValue(b);
         if (orderDifference !== 0) return orderDifference;
 
-        const firstUpdatedAt = new Date(a?.updatedAt || 0).getTime();
-        const secondUpdatedAt = new Date(b?.updatedAt || 0).getTime();
-        return secondUpdatedAt - firstUpdatedAt;
+        const firstDate = new Date(a?.createdAt || a?.updatedAt || 0).getTime();
+        const secondDate = new Date(b?.createdAt || b?.updatedAt || 0).getTime();
+        return secondDate - firstDate;
     });
 };
 
@@ -29,7 +29,12 @@ export async function GET() {
         const { value: deployments, meta } = await cache.getOrSetWithMeta(
             CACHE_KEYS.DEPLOYMENTS,
             async () => {
-                const allDeployments = toClientList('deployment', await prisma.deployment.findMany());
+                const allDeployments = toClientList(
+                    'deployment',
+                    await prisma.deployment.findMany({
+                        orderBy: [{ displayOrder: 'asc' }, { createdAt: 'desc' }],
+                    })
+                );
                 return sortDeployments(allDeployments);
             },
             CACHE_TTL.MEDIUM
