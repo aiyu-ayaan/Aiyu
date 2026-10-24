@@ -289,7 +289,6 @@ const FuturisticResume = ({ data }) => {
     const KEYWORDS = ["REACT", "NEXTJS", "NODE", "DESIGN", "FUTURE", "CODE", "CREATE", "BUILD", "DEPLOY"];
 
     // Mouse position for gradient mask
-    const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
     // Motion values for 3D tilt and Magnetic Pull
     const x = useMotionValue(0); // -0.5 to 0.5
@@ -346,8 +345,9 @@ const FuturisticResume = ({ data }) => {
         const mouseX = e.clientX - rect.left;
         const mouseY = e.clientY - rect.top;
 
-        // Update gradient position
-        setMousePos({ x: mouseX, y: mouseY });
+        // Flashlight position goes straight to CSS vars: no React re-render per move
+        containerRef.current.style.setProperty('--fx', `${mouseX}px`);
+        containerRef.current.style.setProperty('--fy', `${mouseY}px`);
 
         // Calculate normalized position for tilt (-0.5 to 0.5)
         const normalizedX = (mouseX / rect.width) - 0.5;
@@ -394,13 +394,14 @@ const FuturisticResume = ({ data }) => {
         setIsHovering(true); // Always active on mobile
 
         const startTime = Date.now();
+        let rafId = 0;
         let lastFrameTime = 0;
         const frameInterval = config.mobileAnimationFps > 0 ? 1000 / config.mobileAnimationFps : 0;
 
         const animate = (currentTime) => {
             // Throttle based on target FPS
             if (frameInterval > 0 && currentTime - lastFrameTime < frameInterval) {
-                requestAnimationFrame(animate);
+                rafId = requestAnimationFrame(animate);
                 return;
             }
             lastFrameTime = currentTime;
@@ -421,14 +422,15 @@ const FuturisticResume = ({ data }) => {
                 const scanSpeed = 0.001;
                 const activeX = (Math.sin(elapsed * scanSpeed) * 0.4 + 0.5) * rect.width;
                 const activeY = (Math.cos(elapsed * scanSpeed * 0.7) * 0.4 + 0.5) * rect.height;
-                setMousePos({ x: activeX, y: activeY });
+                containerRef.current.style.setProperty('--fx', `${activeX}px`);
+                containerRef.current.style.setProperty('--fy', `${activeY}px`);
             }
 
-            requestAnimationFrame(animate);
+            rafId = requestAnimationFrame(animate);
         };
 
-        const animationId = requestAnimationFrame(animate);
-        return () => cancelAnimationFrame(animationId);
+        rafId = requestAnimationFrame(animate);
+        return () => cancelAnimationFrame(rafId);
     }, [isTouch, x, y, config.enableMobileAutoAnimation, config.mobileAnimationFps]);
     // -------------------------
     // -------------------------
@@ -656,7 +658,7 @@ const FuturisticResume = ({ data }) => {
                                     fontFamily: "'Fira Code', monospace",
                                     color: 'transparent',
                                     backgroundImage: isHovering ? `radial-gradient(
-                                        300px circle at ${mousePos.x}px ${mousePos.y}px,
+                                        300px circle at var(--fx, 0px) var(--fy, 0px),
                                         color-mix(in srgb, var(--text-bright) 85%, transparent),
                                         color-mix(in srgb, var(--text-tertiary) 60%, transparent),
                                         transparent
@@ -664,12 +666,12 @@ const FuturisticResume = ({ data }) => {
                                     backgroundClip: 'text',
                                     WebkitBackgroundClip: 'text',
                                     maskImage: isHovering ? `radial-gradient(
-                                        circle at ${mousePos.x}px ${mousePos.y}px,
+                                        circle at var(--fx, 0px) var(--fy, 0px),
                                         black 40%,
                                         transparent 70%
                                     )` : 'none',
                                     WebkitMaskImage: isHovering ? `radial-gradient(
-                                        circle at ${mousePos.x}px ${mousePos.y}px,
+                                        circle at var(--fx, 0px) var(--fy, 0px),
                                         black 40%,
                                         transparent 70%
                                     )` : 'none',
