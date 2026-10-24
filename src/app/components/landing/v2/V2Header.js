@@ -133,7 +133,7 @@ const V2Header = ({ logoText = '< aiyu />', data, config, socialData }) => {
                     </Link>
 
                     <nav className="flex min-w-0 items-center gap-3 xl:gap-4" aria-label="V2 navigation">
-                        <div className="hidden min-w-0 items-center gap-4 font-mono text-sm xl:flex">
+                        <div className="hidden min-w-0 items-center gap-4 overflow-x-auto font-mono text-sm [scrollbar-width:none] xl:flex [&::-webkit-scrollbar]:hidden">
                             {navLinks.map((link) => {
                                 // `classic` is an opt-out action, not a location — when v2 is
                                 // the admin default it shares `/` with home, so never mark it.
@@ -170,7 +170,7 @@ const V2Header = ({ logoText = '< aiyu />', data, config, socialData }) => {
                         <button
                             type="button"
                             onClick={() => window.dispatchEvent(new CustomEvent('open-command-palette'))}
-                            className="inline-flex h-9 w-9 items-center justify-center rounded-full border transition-transform duration-200 hover:scale-[1.03] active:scale-95"
+                            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border transition-transform duration-200 hover:scale-[1.03] active:scale-95"
                             style={{
                                 borderColor: 'color-mix(in srgb, var(--border-secondary) 75%, transparent)',
                                 backgroundColor: 'color-mix(in srgb, var(--bg-surface) 92%, transparent)',
@@ -185,7 +185,7 @@ const V2Header = ({ logoText = '< aiyu />', data, config, socialData }) => {
 
                         <Link
                             href={contactHref}
-                            className="hidden whitespace-nowrap rounded-full border px-4 py-1.5 font-mono text-xs font-semibold transition-colors duration-200 xl:inline-block"
+                            className="hidden shrink-0 whitespace-nowrap rounded-full border px-4 py-1.5 font-mono text-xs font-semibold transition-colors duration-200 xl:inline-block"
                             style={{
                                 color: 'var(--accent-cyan)',
                                 borderColor: 'color-mix(in srgb, var(--accent-cyan) 45%, transparent)',
