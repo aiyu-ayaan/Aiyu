@@ -119,12 +119,10 @@ const V2Header = ({ logoText = '< aiyu />', data, config, socialData }) => {
     return (
         <>
             <header
-                className="fixed inset-x-0 top-0 z-50"
+                className="fixed inset-x-0 top-0 z-50 xl:backdrop-blur-[14px] xl:backdrop-saturate-[1.4]"
                 style={{
                     borderBottom: '1px solid var(--hairline)',
-                    backgroundColor: 'color-mix(in srgb, var(--bg-primary) 78%, transparent)',
-                    backdropFilter: 'blur(14px) saturate(140%)',
-                    WebkitBackdropFilter: 'blur(14px) saturate(140%)',
+                    backgroundColor: 'color-mix(in srgb, var(--bg-primary) 94%, transparent)',
                 }}
             >
                 <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-3 px-4 py-3.5 sm:px-6 lg:px-10">
@@ -134,8 +132,8 @@ const V2Header = ({ logoText = '< aiyu />', data, config, socialData }) => {
                         </span>
                     </Link>
 
-                    <nav className="flex min-w-0 items-center gap-3 md:gap-4" aria-label="V2 navigation">
-                        <div className="hidden min-w-0 items-center gap-4 font-mono text-sm md:flex">
+                    <nav className="flex min-w-0 items-center gap-3 xl:gap-4" aria-label="V2 navigation">
+                        <div className="hidden min-w-0 items-center gap-4 font-mono text-sm xl:flex">
                             {navLinks.map((link) => {
                                 // `classic` is an opt-out action, not a location — when v2 is
                                 // the admin default it shares `/` with home, so never mark it.
@@ -187,7 +185,7 @@ const V2Header = ({ logoText = '< aiyu />', data, config, socialData }) => {
 
                         <Link
                             href={contactHref}
-                            className="hidden whitespace-nowrap rounded-full border px-4 py-1.5 font-mono text-xs font-semibold transition-colors duration-200 md:inline-block"
+                            className="hidden whitespace-nowrap rounded-full border px-4 py-1.5 font-mono text-xs font-semibold transition-colors duration-200 xl:inline-block"
                             style={{
                                 color: 'var(--accent-cyan)',
                                 borderColor: 'color-mix(in srgb, var(--accent-cyan) 45%, transparent)',
@@ -200,7 +198,7 @@ const V2Header = ({ logoText = '< aiyu />', data, config, socialData }) => {
                         <button
                             type="button"
                             onClick={() => setIsMenuOpen(true)}
-                            className="font-mono text-sm transition-colors duration-200 md:hidden"
+                            className="font-mono text-sm transition-colors duration-200 xl:hidden"
                             style={{ color: 'var(--text-secondary)' }}
                             aria-expanded={isMenuOpen}
                             aria-controls="v2-mobile-menu"
@@ -224,7 +222,7 @@ const V2Header = ({ logoText = '< aiyu />', data, config, socialData }) => {
             {/* Mobile overlay — terminal-styled directory listing of the nav. */}
             <div
                 id="v2-mobile-menu"
-                className="fixed inset-0 z-[60] flex flex-col overflow-y-auto overscroll-contain transition-[opacity,transform] duration-300 md:hidden"
+                className="fixed inset-0 z-[60] flex flex-col overflow-y-auto overscroll-contain transition-[opacity,transform,visibility] duration-300 xl:hidden"
                 style={{
                     transitionTimingFunction: 'cubic-bezier(0.32, 0.72, 0, 1)',
                     backgroundColor: 'color-mix(in srgb, var(--bg-primary) 94%, transparent)',
@@ -233,6 +231,7 @@ const V2Header = ({ logoText = '< aiyu />', data, config, socialData }) => {
                     opacity: isMenuOpen ? 1 : 0,
                     transform: isMenuOpen ? 'translateY(0)' : 'translateY(-2%)',
                     pointerEvents: isMenuOpen ? 'auto' : 'none',
+                    visibility: isMenuOpen ? 'visible' : 'hidden',
                 }}
                 aria-hidden={!isMenuOpen}
             >
