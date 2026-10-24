@@ -1,5 +1,40 @@
 # Changelog
 
+## [6.0.4](https://github.com/aiyu-ayaan/Aiyu/compare/v6.0.3...v6.0.4) (2026-10-24)
+
+### Features
+
+* Add JavaScript and TypeScript snippets documentation
+
+### Bug Fixes
+
+* Tablet header overlap and landing hero lag
+* Scroll nav links instead of overlapping controls when they do not fit
+* Use menu overlay on tablets and drop always-on backdrop blur
+* Prepend new entries in Resume Studio, Header, Terminal, MCP, and Crons
+* Order projects, deployments, and socials newest-first
+* Prepend new entries in AI sections and gallery
+* Place new synced projects, deployments, and legal documents at the top
+* Prepend new entries at the top in Home and About forms
+
+### Other Changes
+
+* Serve AVIF first, cache images 30d, leave compression to nginx
+* Drive hero flashlight via CSS vars instead of React state
+* Bump deepmerge-ts from 7.1.5 to 8.0.2 (#313)
+* Bump react and react-dom from 19.2.7 to 19.3.0 (#295)
+* Bump @testing-library/react from 16.3.2 to 16.3.3 (#296)
+* Bump @testing-library/user-event from 14.6.1 to 14.6.7 (#293)
+* Bump @testing-library/jest-dom from 6.9.1 to 7.0.1 (#297)
+* Bump next from 16.3.3 to 16.3.8 (#312)
+* Bump adm-zip from 0.6.0 to 0.6.1 (#299)
+* Bump @modelcontextprotocol/sdk from 1.29.0 to 1.32.1 (#307)
+* Bump proxy-addr from 2.0.7 to 2.0.8 (#306)
+* Bump fast-uri from 3.1.7 to 3.1.8 (#308)
+* Bump brace-expansion (#309)
+* Bump source-map-js from 1.2.1 to 1.2.2 (#310)
+* Bump ip-address from 10.7.0 to 10.7.3 (#304)
+
 ## [6.0.3](https://github.com/aiyu-ayaan/Aiyu/compare/v6.0.2...v6.0.3) (2026-10-06)
 
 ### Features
