@@ -1,4 +1,5 @@
 import ReactDOM from 'react-dom';
+import Link from 'next/link';
 import Desktop from '@/app/components/desktop/Desktop';
 import { DeviceModeProvider } from '@/app/context/DeviceModeContext';
 import { prisma } from '@/lib/prisma';
@@ -172,17 +173,17 @@ export default async function DesktopPage() {
                 </ul>
                 <p>
                     Prefer the standard site? Visit the{' '}
-                    <a href="/projects">projects archive</a>, the{' '}
-                    <a href="/blogs">blog</a>, or the{' '}
-                    <a href="/about-me">about page</a>.
+                    <Link href="/projects">projects archive</Link>, the{' '}
+                    <Link href="/blogs">blog</Link>, or the{' '}
+                    <Link href="/about-me">about page</Link>.
                 </p>
             </div>
 
             <noscript>
                 <p>
                     Aiyu OS requires JavaScript to run. You can browse the standard portfolio
-                    instead: <a href="/projects">projects</a>, <a href="/blogs">blog</a>,{' '}
-                    <a href="/about-me">about</a>.
+                    instead: <Link href="/projects">projects</Link>, <Link href="/blogs">blog</Link>,{' '}
+                    <Link href="/about-me">about</Link>.
                 </p>
             </noscript>
 
