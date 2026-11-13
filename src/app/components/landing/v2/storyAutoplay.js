@@ -72,6 +72,11 @@ const tick = (now) => {
     // Clamp the step so a backgrounded tab does not jump on return.
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
+    // The swarm build's cursors are constructing what is on screen: wait for them.
+    if (document.documentElement.hasAttribute('data-swarm-busy')) {
+        raf = requestAnimationFrame(tick);
+        return;
+    }
     pos += VIEWPORTS_PER_SECOND * window.innerHeight * state.speed * dt;
     const end = storyEndY();
     if (pos >= end) {

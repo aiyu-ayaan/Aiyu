@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Search } from 'lucide-react';
 import ThemeToggle from '../../ThemeToggle';
+import SwarmToggle from '../../shared/swarm/SwarmToggle';
 import TerminalPath from '../../admin/TerminalPath';
 import { v2PublicPath } from '@/lib/siteVersion';
 
@@ -181,6 +182,7 @@ const V2Header = ({ logoText = '< aiyu />', data, config, socialData }) => {
                             <Search size={14} style={{ color: 'var(--accent-cyan)' }} aria-hidden="true" />
                         </button>
 
+                        <SwarmToggle compact />
                         <ThemeToggle compact />
 
                         <Link

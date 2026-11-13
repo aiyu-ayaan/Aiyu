@@ -214,6 +214,24 @@ export default async function RootLayout({ children }) {
                   // Mark our presence immediately so a tab opening right now sees us.
                   localStorage.setItem('aiyu:lastSeen', String(Date.now()));
                 } catch (e) {}
+
+                // Swarm build (opt-in, see swarmStore.js): keep the page blank
+                // from the first paint so it does not flash before the cursors
+                // start. The timeout restores it if the animation never mounts.
+                try {
+                  if (
+                    localStorage.getItem('aiyu:swarmBuild') === '1' &&
+                    !/^\\/(?:admin|desktop|games)(?:\\/|$)/.test(location.pathname) &&
+                    window.self === window.top
+                  ) {
+                    var html = document.documentElement;
+                    html.setAttribute('data-swarm-boot', '1');
+                    var hide = document.createElement('style');
+                    hide.textContent = 'html[data-swarm-boot] main,html[data-swarm-boot] footer{visibility:hidden!important}';
+                    document.head.appendChild(hide);
+                    setTimeout(function() { html.removeAttribute('data-swarm-boot'); }, 8000);
+                  }
+                } catch (e) {}
               })();
             `,
           }}

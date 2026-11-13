@@ -154,6 +154,9 @@ const StoryChapter = ({ chapter, index, total, params }) => {
             // scrolls up under the previous chapter it is never seen moving.
             const prevStage = hasPrev ? section.previousElementSibling?.querySelector('.story-stage') : null;
             if (prevStage) {
+                // Clipped away until the cut: tell the swarm build not to build it unseen.
+                const hold = (on) => stageRef.current?.toggleAttribute('data-swarm-hold', on);
+                hold(true);
                 const cut = gsap.timeline({ paused: true, defaults: CUT });
                 cut.fromTo(stageRef.current, { clipPath: 'inset(100% 0% 0% 0% round 2.5rem)' }, { clipPath: 'inset(0% 0% 0% 0% round 0rem)' }, 0)
                     .fromTo(innerRef.current, { scale: 1.12, yPercent: 8 }, { scale: 1, yPercent: 0 }, 0)
@@ -170,16 +173,19 @@ const StoryChapter = ({ chapter, index, total, params }) => {
                 ScrollTrigger.create({
                     trigger: section,
                     start: 'top top',
-                    onEnter: () => cut.play(),
-                    onLeaveBack: () => cut.reverse(),
+                    onEnter: () => { hold(false); cut.play(); },
+                    onLeaveBack: () => { hold(true); cut.reverse(); },
                     // Loaded, resized or jumped across the handoff: settle, no cut.
                     onRefresh: (self) => {
                         if (!cut.isActive()) cut.progress(self.progress > 0 ? 1 : 0);
+                        hold(self.progress === 0);
                     },
                 });
             }
             // Chapters mount after the hero: re-sort so refresh runs in page order.
             refreshScrollTriggersSoon();
+            const stage = stageRef.current;
+            return () => stage?.removeAttribute('data-swarm-hold');
         },
         { scope: sectionRef, dependencies: [film, duration, introEnd, hasPrev], revertOnUpdate: true }
     );

@@ -8,6 +8,7 @@ import clsx from 'clsx';
 import { AnimatePresence, motion, useScroll, useSpring, useTransform } from 'framer-motion';
 import { ArrowUpRight, Menu, Search, X } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
+import SwarmToggle from './shared/swarm/SwarmToggle';
 import { useTheme } from '../context/ThemeContext';
 import TerminalPath from './admin/TerminalPath';
 import useDevicePerformance from '../hooks/useDevicePerformance';
@@ -282,6 +283,7 @@ export default memo(function Header({ data, logoText, socialData, config }) {
                 <span className="rounded border px-1.5 py-0.5" style={{ borderColor: 'var(--border-secondary)' }}>K</span>
               </div>
 
+              <SwarmToggle compact />
               <ThemeToggle />
 
               <Link href={getVersionedPath(pathname, contactLink?.href || '/contact-us')}>
@@ -449,6 +451,13 @@ export default memo(function Header({ data, logoText, socialData, config }) {
                    Theme Mode
                  </p>
                  <ThemeToggle />
+               </div>
+
+               <div className="rounded-xl border p-3" style={{ borderColor: 'color-mix(in srgb, var(--border-secondary) 70%, transparent)', backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 75%, transparent)' }}>
+                 <p className="mb-3 text-xs uppercase tracking-[0.14em]" style={{ color: 'var(--text-tertiary)' }}>
+                   Build Animation
+                 </p>
+                 <SwarmToggle />
                </div>
 
                <Link href={getVersionedPath(pathname, contactLink?.href || '/contact-us')}>

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
+import { useSwarmPref } from "./swarm/swarmStore";
 
 const CommandPalette = dynamic(() => import("./CommandPalette"), {
     ssr: false,
@@ -17,6 +18,10 @@ const V2BetaPopup = dynamic(() => import("./V2BetaPopup"), {
 });
 
 const ArcadePopup = dynamic(() => import("./ArcadePopup"), {
+    ssr: false,
+});
+
+const SwarmBuild = dynamic(() => import("./swarm/SwarmBuild"), {
     ssr: false,
 });
 
@@ -56,6 +61,7 @@ export default function ClientEnhancements() {
     const [isFooterVisible, setIsFooterVisible] = useState(false);
 
     const pathname = usePathname();
+    const swarmEnabled = useSwarmPref().enabled;
 
     const paletteMountedRef = useRef(false);
     const lowEndRef = useRef(false);
@@ -274,6 +280,7 @@ export default function ClientEnhancements() {
                 </div>
             )}
             {mountPalette && <CommandPalette />}
+            {swarmEnabled && <SwarmBuild />}
 
             {(pathname === '/' || pathname === '/v1') && <V2BetaPopup />}
             {(pathname === '/' || pathname === '/v1' || pathname === '/v2') && <ArcadePopup />}
