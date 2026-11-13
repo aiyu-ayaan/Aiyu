@@ -246,7 +246,8 @@ export function createSwarm({ auto = false } = {}) {
         return true;
     };
     const walkFilm = (parent, parentTask, film) => {
-        const viewport = { width: window.innerWidth, height: window.innerHeight };
+        // Sized against the film's own frame: a scene backdrop is not a layer to draw.
+        const viewport = film.frame.getBoundingClientRect();
         for (const el of parent.children) {
             if (el.dataset?.swarm || el.matches(SKIP_SELECTOR)) continue;
             const cs = styleOf(el);
@@ -627,7 +628,7 @@ export function createSwarm({ auto = false } = {}) {
         ready.sort((a, b) => a.top - b.top || a.left - b.left);
         if (ready.length) front = Math.min(front, ready[0].top);
         // The reader scrolled faster than the cursors build: work faster, do not leave them a blank page.
-        rush += (clamp(ready.length / (agents.length * 2), 1, 3) - rush) * 0.3;
+        rush += (clamp((ready.length + filmWaiting) / (agents.length * 2), 1, 3) - rush) * 0.3;
         const idle = agents.filter((agent) => !agent.busy);
         for (const { task, top, left } of ready) {
             if (!idle.length) break;
@@ -643,7 +644,12 @@ export function createSwarm({ auto = false } = {}) {
         if (!open) return finish();
         // Auto-scroll glides: full speed while the work is low on screen, easing
         // to a stop as the unfinished front nears the top, so nothing is passed.
-        scrollGoal = hold ? 0 : clamp((front / vh - 0.4) / 0.35, 0, 1);
+        // A film is scrubbed by the scroll, so it slows with its backlog rather than
+        // stopping dead (a stalled film reads as lag): layers are built on the move.
+        scrollGoal = Math.min(
+            clamp((front / vh - 0.4) / 0.35, 0, 1),
+            hold ? clamp(1 - filmWaiting / (agents.length * 1.5), 0.15, 1) : 1,
+        );
         maxScroll = doc.documentElement.scrollHeight - vh;
         if (hold || ready.length || agents.some((agent) => agent.busy && !agent.film)) { stuckMs = 0; return undefined; }
         if (window.scrollY >= maxScroll - 4) {
