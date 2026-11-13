@@ -39,6 +39,7 @@ export default async function AdminLogin({ searchParams }) {
                                 {githubError}
                             </div>
                         )}
+                        {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- OAuth route requires full browser navigation */}
                         <a
                             href="/api/auth/github"
                             className="w-full flex items-center justify-center gap-3 bg-gray-900 hover:bg-black border border-gray-600 text-white font-semibold py-3 rounded transition-colors"
