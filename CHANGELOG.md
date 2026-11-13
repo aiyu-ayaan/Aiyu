@@ -1,5 +1,34 @@
 # Changelog
 
+## [6.1.0](https://github.com/aiyu-ayaan/Aiyu/compare/v6.0.4...v6.1.0) (2026-11-13)
+
+### Features
+
+* Dependency updates and lint fixes
+* Wire the build animation into the site and smooth its pacing
+* Add multiplayer-cursor page build engine and preference store
+
+### Bug Fixes
+
+* Use next/link for internal links on desktop page
+* Allow OAuth anchor link on admin login page
+* Keep the story films moving and stop cursors drawing outside them
+
+### Other Changes
+
+* Bump @vitest/mocker and vitest
+* Bump next from 16.3.8 to 16.4.1
+* Bump react-dom from 19.3.0 to 19.3.1
+* Bump vite from 8.0.16 to 8.3.5
+* Bump zod from 4.3.6 to 4.6.7
+* Bump hono from 4.13.7 to 4.13.18
+* Bump @hono/node-server from 2.0.11 to 2.1.6
+* Bump undici from 7.29.1 to 7.30.1
+* Bump body-parser from 2.3.0 to 2.4.0
+* Bump fast-uri from 3.1.8 to 3.1.9
+* Bump ip-address from 10.7.3 to 10.7.4
+* Bump @codemirror/legacy-modes from 6.5.3 to 6.5.5
+
 ## [6.0.4](https://github.com/aiyu-ayaan/Aiyu/compare/v6.0.3...v6.0.4) (2026-10-24)
 
 ### Features
