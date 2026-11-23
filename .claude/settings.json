@@ -1,5 +1,23 @@
 {
   "enabledPlugins": {
-    "brag@brag": true
+    "brag@brag": true,
+    "ponytail@ponytail": true
+  },
+  "permissions": {
+    "allow": [
+      "mcp__codegraph__*"
+    ]
+  },
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "codegraph prompt-hook"
+          }
+        ]
+      }
+    ]
   }
 }
