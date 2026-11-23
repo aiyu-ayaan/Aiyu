@@ -55,7 +55,7 @@ RUN DATABASE_URL="postgresql://dummy:dummy@dummy:5432/dummy?schema=public" \
     ADMIN_PASSWORD="dummy" \
     JWT_SECRET="dummy" \
     NEXT_TELEMETRY_DISABLED=1 \
-    pnpm run build --webpack
+    pnpm run build
 
 # Assemble the complete runtime tree in /out so the runner ships ONE layer.
 # Copying standalone and the Prisma packages as separate layers stored the
@@ -164,6 +164,8 @@ COPY --from=builder --chown=nextjs:nodejs /out ./
 COPY --from=prismacli --chown=nextjs:nodejs /prismacli/node_modules /app/prisma-cli/node_modules
 
 COPY --from=rust --chown=nextjs:nodejs /server/target/release/aiyu-server /app/aiyu-server
+# Vite app (pages ported off Next), served by aiyu-server.
+COPY --from=builder --chown=nextjs:nodejs /app/web/dist /app/web/dist
 
 # Copy healthcheck script and the entrypoint
 COPY --chown=nextjs:nodejs scripts/healthcheck.sh /app/healthcheck.sh

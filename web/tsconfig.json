@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "allowJs": true,
+    "checkJs": false,
+    "isolatedModules": true,
+    "types": ["vite/client"],
+    "paths": {
+      "@/*": ["../src/*"],
+      "next/link": ["./src/shims/link.tsx"],
+      "next/navigation": ["./src/shims/navigation.ts"],
+      "next/dynamic": ["./src/shims/dynamic.tsx"],
+      "next/script": ["./src/shims/script.tsx"]
+    }
+  },
+  "include": ["src", "vite.config.mts"]
+}

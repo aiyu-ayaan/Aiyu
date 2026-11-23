@@ -60,10 +60,12 @@ Branch: `migrate/rust-vite`. Baseline and method: `development/docs/PERFORMANCE.
 - [ ] SQLite schema for all 36 models (Json -> TEXT json, String[] -> TEXT json, insensitive search -> COLLATE NOCASE)
 - [ ] `pg -> sqlite` copy tool with row-count and hash verification
 
-## Milestone 6: Vite client
-- [ ] Vite + React + react-router + `@tailwindcss/vite`, `envPrefix: ['VITE_', 'NEXT_PUBLIC_']`
-- [ ] Shims for `next/link`, `next/navigation`, `next/dynamic`, `next/image`, `next/script`
-- [ ] Rust renders head/meta/JSON-LD + initial data per route, `createRoot` mounts the app
+## Milestone 6: Vite client (DONE — 2026-11-24)
+- [x] `web/`: Vite 8 + React 19 + react-router 7 + `@tailwindcss/vite`, TypeScript (shared components stay JS, `allowJs`); assets under `/_app/` (immutable), fonts self-hosted via @fontsource
+- [x] Shims (TS): `next/link` (client nav inside the app, full load to Next pages), `next/navigation`, `next/dynamic`, `next/script`; `next/image` when a page needs it
+- [x] App shell = client half of the root layout; pre-paint scripts shared via `src/lib/prepaintScripts.js`
+- [x] Rust `web.rs`: shell with root-layout head (title, description, canonical, OG/Twitter, icons) + `#__DATA__` (logo, GA id withheld for admins, AdSense client); values HTML-escaped, `<` escaped in JSON; 404 status for unknown paths
+- [x] `pnpm build` = Next + Vite; Docker copies `web/dist`, `WEB_DIR`
 
 ## Milestone 7: Port pages one by one
 Each page: Rust data endpoint(s) + Vite route + e2e test passing against Rust.
@@ -120,8 +122,8 @@ Each page: Rust data endpoint(s) + Vite route + e2e test passing against Rust.
 - [ ] `/admin/themes`
 - [ ] `/admin/version`
 - [ ] `/desktop`
-- [ ] `/games`
-- [ ] `/games/[slug]`
+- [x] `/games` (Vite, 2026-11-24)
+- [x] `/games/[slug]` (Vite, 2026-11-24)
 - [ ] `/[legalApp]`
 - [ ] `/[legalApp]/[legalDoc]`
 - [ ] `/v2`

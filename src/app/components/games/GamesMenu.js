@@ -1,14 +1,9 @@
 import Link from 'next/link';
-import { GAMES } from '@/app/components/games/registry';
-import HighScoreBadge from '@/app/components/games/HighScoreBadge';
+import { GAMES } from './registry';
+import HighScoreBadge from './HighScoreBadge';
 
-export const metadata = {
-    title: 'Aiyu Arcade | Insert Coin',
-    description:
-        'Retro time-killers built into the portfolio: Byte Runner 3D, Moto Rush, Tetris, Snake, Breakout, Space Invaders, Pong, Flappy Byte, and Tic-Tac-Toe.',
-};
-
-export default function GamesPage() {
+/** Arcade menu: one card per visible cabinet. */
+export default function GamesMenu() {
     const visibleGames = GAMES.filter((game) => !game.hidden);
 
     return (

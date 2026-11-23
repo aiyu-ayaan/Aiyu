@@ -33,6 +33,7 @@ async fn app(trusted: &str) -> Router {
         trusted_proxies: parse_trusted(trusted).unwrap(),
         uploads_dir: "/nonexistent".into(),
         database_url: "postgres://localhost/none".into(),
+        web_dir: "/nonexistent".into(),
     }).await.unwrap())
 }
 
@@ -85,6 +86,7 @@ async fn upstream_down_is_bad_gateway() {
         trusted_proxies: vec![],
         uploads_dir: "/nonexistent".into(),
         database_url: "postgres://localhost/none".into(),
+        web_dir: "/nonexistent".into(),
     }).await.unwrap());
     let res = app.oneshot(Request::builder().uri("/").body(Body::empty()).unwrap()).await.unwrap();
     assert_eq!(res.status(), StatusCode::BAD_GATEWAY);

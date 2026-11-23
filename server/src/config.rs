@@ -11,6 +11,8 @@ pub struct Config {
     pub trusted_proxies: Vec<ipnet::IpNet>,
     pub uploads_dir: PathBuf,
     pub database_url: String,
+    /// Vite build output (`web/dist`): index.html, route-meta.json and the /_app assets.
+    pub web_dir: PathBuf,
 }
 
 impl Config {
@@ -24,6 +26,7 @@ impl Config {
             jwt_secret,
             trusted_proxies: parse_trusted(&env::var("TRUSTED_PROXIES").unwrap_or_default())?,
             uploads_dir: env::var("UPLOADS_DIR").unwrap_or_else(|_| "public/uploads".into()).into(),
+            web_dir: env::var("WEB_DIR").unwrap_or_else(|_| "web/dist".into()).into(),
             database_url: env::var("DATABASE_URL").map_err(|_| anyhow::anyhow!("DATABASE_URL environment variable must be set"))?,
         })
     }

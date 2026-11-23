@@ -1,0 +1,9 @@
+@import "../../src/app/styles/globals.css";
+/* globals.css scans src/; also scan this app's own sources. */
+@source "./";
+
+/* Replaces next/font: same CSS variables the components use. */
+:root {
+  --font-geist-sans: "Geist Variable", -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", sans-serif;
+  --font-geist-mono: "Geist Mono Variable", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}

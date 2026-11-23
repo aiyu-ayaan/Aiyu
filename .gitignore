@@ -65,3 +65,6 @@ k6-*.json
 brag-*
 # rust server
 /server/target
+
+# vite build output
+/web/dist

@@ -73,6 +73,7 @@ RUST_LISTEN="0.0.0.0:${PUBLIC_PORT}" \
 NEXT_UPSTREAM="http://127.0.0.1:${NEXT_PORT}" \
 NEXT_DIR=/app/.next \
 UPLOADS_DIR=/app/public/uploads \
+WEB_DIR=/app/web/dist \
 TRUSTED_PROXIES="${TRUSTED_PROXIES:-127.0.0.1}" \
   /app/aiyu-server &
 RUST_PID=$!

@@ -27,6 +27,9 @@ jobs:
       - name: Run ESLint
         run: pnpm run lint
 
+      - name: Typecheck web/ (tsc)
+        run: pnpm run web:typecheck
+
   unit:
     name: Unit tests (vitest)
     runs-on: ubuntu-latest

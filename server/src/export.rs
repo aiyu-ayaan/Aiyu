@@ -13,7 +13,7 @@ use axum::{
     response::Response,
 };
 use chrono::{NaiveDateTime, Utc};
-use futures_util::{AsyncWriteExt as _, TryStreamExt};
+use futures_util::TryStreamExt;
 use serde_json::{Map, Value};
 use sqlx::PgPool;
 use std::path::{Path, PathBuf};

@@ -76,3 +76,4 @@ docker-compose.yml
 
 # Rust build output (rebuilt in the image)
 server/target
+web/dist

@@ -5,6 +5,7 @@ pub mod crypto;
 pub mod export;
 pub mod proxy;
 pub mod session;
+pub mod web;
 
 use axum::{
     Router,
@@ -27,6 +28,8 @@ pub struct AppState {
     pub cipher: crypto::FieldCipher,
     pub sessions: session::SessionKeys,
     pub db: sqlx::PgPool,
+    /// None when the Vite build is missing: those routes then fall through to Next.
+    pub web: Option<std::sync::Arc<web::WebApp>>,
 }
 
 impl AppState {
@@ -40,7 +43,15 @@ impl AppState {
 
     /// The pool connects lazily, so this never blocks or fails on a down database.
     pub async fn new(config: config::Config) -> anyhow::Result<Self> {
+        let web = match web::WebApp::load(&config.web_dir) {
+            Ok(w) => Some(w),
+            Err(err) => {
+                tracing::warn!(dir = ?config.web_dir, error = %err, "web app not loaded; its routes go to Next");
+                None
+            }
+        };
         Ok(Self {
+            web,
             db: db::connect(&config.database_url).await?,
             upstream: proxy::Upstream::new(&config.next_upstream),
             cipher: crypto::FieldCipher::new(&config.jwt_secret),
@@ -60,10 +71,22 @@ pub fn router(state: AppState) -> Router {
             HeaderValue::from_static("public, max-age=31536000, immutable"),
         ));
 
+    // Vite assets: content-hashed, so cache forever.
+    let web_assets = Router::new()
+        .nest_service("/_app", ServeDir::new(&state.config.web_dir))
+        .layer(SetResponseHeaderLayer::overriding(
+            header::CACHE_CONTROL,
+            HeaderValue::from_static("public, max-age=31536000, immutable"),
+        ));
+
     Router::new()
         .route("/healthz", get(|| async { "ok" }))
+        .route("/games", get(web::page))
+        .route("/games/", get(web::page))
+        .route("/games/{slug}", get(web::page))
         .route("/api/admin/export", get(export::export))
         .merge(next_static)
+        .merge(web_assets)
         .fallback(proxy::forward)
         .layer(
             CompressionLayer::new().quality(tower_http::CompressionLevel::Precise(4)).br(true).gzip(true).compress_when(

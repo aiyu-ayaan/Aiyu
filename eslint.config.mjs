@@ -62,6 +62,11 @@ export default [
   },
   {
     ignores: [
+      "web/dist/**",
+      // TypeScript in web/ is checked by `pnpm web:typecheck` (tsc).
+      "web/**/*.ts",
+      "web/**/*.tsx",
+      "server/target/**",
       ".next/**",
       "node_modules/**",
       "dist/**",
