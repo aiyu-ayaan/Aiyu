@@ -73,3 +73,14 @@ Pages ship far more HTML than they show: `/blogs` embeds every blog's full conte
 ## Results per milestone
 
 Filled in as milestones land. Same method, same data.
+
+### Milestone 2: v1 removed (still Next.js)
+
+| | Before | After |
+|---|---|---|
+| Client JS raw | 6.99 MB | 6.33 MB (-9%) |
+| Client JS gzip | 1.94 MB | 1.76 MB (-9%) |
+| Source files | | 67 files deleted (31 v1-only components, `src/app/v1`, version switch) |
+| Server RSS idle / warm / after 3 backups | 235 / 500 / 834 MB | 286 / 532 / 867 MB (no change; within run-to-run noise) |
+
+Server memory does not move: it is set by Next.js and the backup path, not by page count.

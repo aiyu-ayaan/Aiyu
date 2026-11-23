@@ -99,7 +99,6 @@ const CONFIG_PUBLIC_SELECT = [
     'projectsSubtitle',
     'galleryTitle',
     'gallerySubtitle',
-    'defaultSiteVersion',
     'favicon.filename',
     'favicon.mimeType',
 ].join(' ');

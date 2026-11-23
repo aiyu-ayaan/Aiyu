@@ -3,7 +3,7 @@ import {
     FaHeading, FaShareNodes, FaEnvelope, FaPalette, FaGithub, FaSliders,
     FaDatabase, FaTerminal, FaRobot, FaServer, FaHardDrive, FaCode,
     FaGoogle, FaClock, FaBell, FaChartLine, FaMagnifyingGlass,
-    FaShieldHalved, FaGauge, FaCodeBranch, FaPlug, FaWandMagicSparkles,
+    FaShieldHalved, FaGauge, FaPlug, FaWandMagicSparkles,
     FaGear, FaFileLines, FaShareFromSquare, FaDesktop, FaScaleBalanced,
 } from "react-icons/fa6";
 
@@ -55,7 +55,6 @@ export const NAV_GROUPS = [
             { label: "Themes", description: "Colors & style", icon: FaPalette, path: "/admin/themes", accent: "violet" },
             { label: "Desktop", description: "Virtual OS & wallpaper", icon: FaDesktop, path: "/admin/desktop", accent: "blue" },
             { label: "Terminal", description: "CLI appearance", icon: FaTerminal, path: "/admin/terminal", accent: "amber" },
-            { label: "Version", description: "Classic vs V2 default", icon: FaCodeBranch, path: "/admin/version", accent: "sky" },
             { label: "Ads", description: "Google AdSense", icon: FaGoogle, path: "/admin/ads", accent: "green" },
         ],
     },

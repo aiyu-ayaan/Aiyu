@@ -20,7 +20,8 @@ if (fs.existsSync(envPath)) {
   }
 }
 
-const PORT = 3000;
+// E2E_PORT points the suite at an already-running server (e.g. the axum build) instead of `dev`.
+const PORT = Number(process.env.E2E_PORT) || 3000;
 const baseURL = `http://localhost:${PORT}`;
 
 export default defineConfig({

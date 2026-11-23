@@ -42,7 +42,7 @@ Aiyu is a developer portfolio for projects, writing, live deployments, gallery e
 - Apps: /apps
 - Gallery: /gallery
 - GitHub stats: /github
-- Live deployments: /live-deployments
+- Live deployments: /apps
 - Contact: /contact-us
 
 ## Public API Highlights

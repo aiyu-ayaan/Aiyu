@@ -9,7 +9,7 @@ const navigationTargets = {
     apps: '/apps',
     gallery: '/gallery',
     github: '/github',
-    deployments: '/live-deployments',
+    deployments: '/apps',
     contact: '/contact-us',
 };
 

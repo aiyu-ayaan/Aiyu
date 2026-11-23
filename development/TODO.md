@@ -17,10 +17,12 @@ Branch: `migrate/rust-vite`. Baseline and method: `development/docs/PERFORMANCE.
 - [x] Baseline numbers in `development/docs/PERFORMANCE.md`
 - [x] Backup memory cause found: zip buffered whole (export `arrayBuffer` + `Buffer.from` + `Buffer.concat` in `uploadBackupToDrive`), every table loaded whole with `findMany()`; V8 keeps the grown heap
 
-## Milestone 2: Remove v1
-- [ ] Delete `src/app/v1` and v1-only components
-- [ ] Remove the v1/v2 switch from the admin panel and proxy; 301 `/v1/*` to the v2 paths
-- [ ] Sitemap, tests, docs updated; build + tests pass
+## Milestone 2: Remove v1 (DONE — 2026-11-24)
+- [x] Delete `src/app/v1` and the 31 components only it used (plus classic `Header`/`Footer`, `V2BetaPopup`)
+- [x] Remove `/admin/version`, `VersionForm`, the nav entry, the header "classic" link and its admin toggle; `defaultSiteVersion` no longer exposed (stored value left in place)
+- [x] Proxy: clean URLs always rewrite to `/v2`; `/v1/*` 301 to the clean path; `/live-deployments` -> `/apps`, `/work-in-progress` -> `/`, `/gallery/<id>` -> `/gallery`
+- [x] Legal pages (`/[legalApp]`) use the v2 shell
+- [x] vitest 283 passed; Playwright 12 passed, 2 skipped (GitHub-mode); `next build` OK; client JS -9%
 
 ## Milestone 3: pnpm
 - [ ] `pnpm import` from `package-lock.json`, overrides to `pnpm.overrides`, peer settings in `.npmrc`

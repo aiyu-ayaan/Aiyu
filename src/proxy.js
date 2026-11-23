@@ -269,11 +269,6 @@ const markdownPages = {
         description: 'Portfolio projects, technology stacks, and project details.',
         sections: [['Related APIs', ['Projects API: /api/projects']]],
     },
-    '/work-in-progress': {
-        title: 'Aiyu Work In Progress',
-        description: 'Current and upcoming portfolio work.',
-        sections: [['Related Links', ['Projects: /projects', 'Apps: /apps']]],
-    },
 };
 
 const publicMarkdownPrefixes = Object.keys(markdownPages)
@@ -307,20 +302,10 @@ function getMarkdownPage(pathname) {
 }
 
 // ──────────────────────────────────────────────────────────────────────────
-// Default site version (set at /admin/version). Two rules, no cookies:
-//
-//   1. The default version OWNS the clean URLs. `/`, `/about-me`, `/blogs`,
-//      `/blogs/<id>`, … are served via rewrite from the default version's tree,
-//      so the address bar, sitemap, and canonical structure never carry a /v1
-//      or /v2 prefix. The default's OWN prefix collapses (308) back to the
-//      clean URL so there is only ever one public URL per page.
-//   2. The NON-default version is browsed VISIBLY under its /v1 or /v2 prefix.
-//      Navigating to /v1 or /v2 explicitly enters that specific version.
-//
-// The flag is read from the public config API and cached in module scope so it
-// costs one self-fetch per TTL, not per request. Version is a property of the
-// URL alone — deliberately NOT sticky in a cookie, so a stale cookie can never
-// lock a visitor onto a version the admin has switched away from.
+// The /v2 tree owns the clean public URLs: `/`, `/about-me`, `/blogs/<id>`, …
+// are served via rewrite from /v2, so the address bar, sitemap and canonicals
+// never carry a prefix. The old classic (/v1) site was removed; its URLs and
+// any explicit /v2 URL redirect permanently to the clean path.
 // ──────────────────────────────────────────────────────────────────────────
 const V2_PAGES = new Set([
     '/',
@@ -335,67 +320,22 @@ const V2_PAGES = new Set([
     '/ai'
 ]);
 
-const SITE_VERSION_CACHE_TTL_MS = process.env.NODE_ENV === 'production' ? 30 * 1000 : 1000;
-let siteVersionCache = { value: 'classic', expiresAt: 0 };
-
 // Detail routes that also live under /v2 (e.g. /apps/<slug>, /projects/<slug>,
-// /blogs/<slug>). Their listing pages are in V2_PAGES; these prefixes let the
-// clean detail URLs rewrite to the v2 tree too, instead of falling through to
-// v1 and dropping the visitor out of the v2 shell.
+// /blogs/<slug>).
 const V2_DETAIL_PREFIXES = ['/blogs/', '/apps/', '/projects/', '/ai/'];
 
 function isV2Page(pathname) {
     return V2_PAGES.has(pathname) || V2_DETAIL_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 }
 
-function getRewriteTarget(pathname, activeVersion) {
-    if (activeVersion === 'v2' && isV2Page(pathname)) {
-        return `/v2${pathname === '/' ? '' : pathname}`;
-    }
-    // Fall back to v1 for classic/v1, or anything not in V2
-    return `/v1${pathname === '/' ? '' : pathname}`;
+// Pages that only existed in the removed classic site, mapped to their v2 home.
+function getRemovedPageTarget(pathname) {
+    if (pathname === '/live-deployments') return '/apps';
+    if (pathname === '/work-in-progress') return '/';
+    if (pathname.startsWith('/gallery/')) return '/gallery';
+    return null;
 }
 
-async function getDefaultSiteVersion(request) {
-    const now = Date.now();
-    if (now < siteVersionCache.expiresAt) {
-        return siteVersionCache.value;
-    }
-
-    try {
-        const basePath = request.nextUrl.basePath || '';
-        const configUrl = new URL(basePath + '/api/config', request.nextUrl.origin);
-        // Standalone/Docker: request.nextUrl reflects the server bind address
-        // (HOSTNAME=0.0.0.0), and its port/scheme cannot be trusted — the port
-        // may resolve from the public Host header (e.g. :80) and the scheme may
-        // be the https that Cloudflare terminated with. Any of those makes this
-        // loopback self-fetch throw, and the catch below then silently pins the
-        // whole site to the initial 'classic' value → every clean URL serves
-        // v1 no matter what /admin/version is set to. The server always listens
-        // on plain http at PORT on loopback, so normalize scheme+host+port to
-        // that. Local dev (hostname 'localhost') is left untouched.
-        if (configUrl.hostname === '0.0.0.0' || configUrl.hostname === '::') {
-            configUrl.protocol = 'http:';
-            configUrl.hostname = '127.0.0.1';
-            configUrl.port = process.env.PORT || '3000';
-        }
-
-        const response = await fetch(configUrl, { headers: { accept: 'application/json' } });
-        const config = response.ok ? await response.json() : null;
-        siteVersionCache = {
-            value: config?.defaultSiteVersion === 'v2' ? 'v2' : 'classic',
-            expiresAt: now + SITE_VERSION_CACHE_TTL_MS,
-        };
-    } catch (error) {
-        // Keep serving the last known value; retry sooner than a full TTL.
-        // Surface the reason: a persistently failing self-fetch is what pins
-        // the site to v1, so make it visible in the container logs.
-        console.warn('[proxy] site-version self-fetch failed:', error?.message || error);
-        siteVersionCache = { value: siteVersionCache.value, expiresAt: now + 5000 };
-    }
-
-    return siteVersionCache.value;
-}
 
 function acceptsMarkdown(request) {
     const accept = request.headers.get('accept') || '';
@@ -407,39 +347,6 @@ function acceptsMarkdown(request) {
 
 function markdownTokenEstimate(markdown) {
     return String(markdown.trim().split(/\s+/).filter(Boolean).length);
-}
-
-const PUBLIC_PAGE_PREFIXES = [
-    '/projects/',
-    '/gallery/',
-    '/apps/',
-    '/blogs/',
-    '/ai/'
-];
-
-const PUBLIC_PAGE_EXACTS = new Set([
-    '/',
-    '/about-me',
-    '/projects',
-    '/gallery',
-    '/apps',
-    '/blogs',
-    '/contact-us',
-    '/github',
-    '/ai',
-    '/sitemap',
-    '/work-in-progress',
-    '/live-deployments'
-]);
-
-function isPublicPage(pathname) {
-    if (!pathname || pathname.includes('.')) {
-        return false;
-    }
-    if (PUBLIC_PAGE_EXACTS.has(pathname)) {
-        return true;
-    }
-    return PUBLIC_PAGE_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 }
 
 export async function proxy(request) {
@@ -493,49 +400,29 @@ export async function proxy(request) {
         });
     }
 
-    // 5. Dynamic site versioning (V1 vs V2):
-    //    We can access specific version with /v1 or /v2 prefix, served directly.
-    //    The default version is served at clean URLs (no version prefix) via rewrite.
+    // 5. Site routing: /v1 and /v2 prefixes redirect to the clean URL; clean
+    //    v2 URLs rewrite to the /v2 tree.
     if (request.method === 'GET' || request.method === 'HEAD') {
         const isV1Path = path === '/v1' || path.startsWith('/v1/');
         const isV2Path = path === '/v2' || path.startsWith('/v2/');
-
         let innerPath = path;
         if (isV1Path) innerPath = path.slice('/v1'.length) || '/';
         if (isV2Path) innerPath = path.slice('/v2'.length) || '/';
 
-        if (isPublicPage(innerPath)) {
-            // If explicit /v1 or /v2 path:
-            if (isV1Path || isV2Path) {
-                const defaultVersion = (await getDefaultSiteVersion(request)) === 'v2' ? 'v2' : 'v1';
-                const pathVersion = isV1Path ? 'v1' : 'v2';
+        const removedTarget = getRemovedPageTarget(innerPath);
+        if (isV1Path || isV2Path || removedTarget) {
+            const search = request.nextUrl.search || '';
+            const target = (request.nextUrl.basePath || '') + (removedTarget || innerPath) + search;
+            return NextResponse.redirect(new URL(target, getPublicOrigin(request)), isV2Path ? 308 : 301);
+        }
 
-                // If they are accessing the default version's path prefix, redirect to clean URL
-                if (pathVersion === defaultVersion) {
-                    const search = request.nextUrl.search || '';
-                    const redirectUrl = new URL((request.nextUrl.basePath || '') + innerPath + search, getPublicOrigin(request));
-                    return NextResponse.redirect(redirectUrl, 308);
-                }
-
-                // Otherwise, serve it directly (non-default version)
-                const requestHeaders = new Headers(request.headers);
-                requestHeaders.set('x-original-path', path);
-                return NextResponse.next({
-                    request: {
-                        headers: requestHeaders,
-                    }
-                });
-            }
-
-            // Clean URL: rewrite to serve the default version
-            const defaultVersion = (await getDefaultSiteVersion(request)) === 'v2' ? 'v2' : 'v1';
-            const rewriteTarget = getRewriteTarget(path, defaultVersion);
+        if (isV2Page(path)) {
             const requestHeaders = new Headers(request.headers);
             requestHeaders.set('x-is-rewrite', 'true');
             requestHeaders.set('x-original-path', path);
 
             const rewriteResponse = NextResponse.rewrite(
-                new URL((request.nextUrl.basePath || '') + rewriteTarget + request.nextUrl.search, request.nextUrl.origin),
+                new URL((request.nextUrl.basePath || '') + `/v2${path === '/' ? '' : path}` + request.nextUrl.search, request.nextUrl.origin),
                 {
                     request: {
                         headers: requestHeaders,

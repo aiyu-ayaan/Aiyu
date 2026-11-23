@@ -308,8 +308,7 @@ export default function AdminThemesPage() {
                                 { path: '/blogs', label: 'Blogs List (/blogs)' },
                                 { path: '/blogs/', label: 'Blog Details (/blogs/...)' },
                                 { path: '/contact-us', label: 'Contact Us (/contact-us)' },
-                                { path: '/github', label: 'GitHub Showcase (/github)' },
-                                { path: '/work-in-progress', label: 'Work In Progress (/work-in-progress)' }
+                                { path: '/github', label: 'GitHub Showcase (/github)' }
                             ].map(routeObj => (
                                 <div key={routeObj.path} className="bg-slate-950/50 p-4 rounded-xl border border-white/5 hover:border-purple-500/30 transition-colors">
                                     <div className="flex justify-between items-center mb-2">

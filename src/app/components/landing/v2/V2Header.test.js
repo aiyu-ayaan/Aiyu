@@ -44,7 +44,7 @@ describe('V2Header mobile menu', () => {
         await user.click(screen.getByRole('button', { name: /open navigation menu/i }));
 
         const overlayNav = screen.getByRole('navigation', { name: /v2 mobile navigation/i });
-        for (const label of ['home', 'about', 'projects', 'gallery', 'apps', 'blogs', 'github', 'classic']) {
+        for (const label of ['home', 'about', 'projects', 'gallery', 'apps', 'blogs', 'github']) {
             expect(overlayNav).toHaveTextContent(label);
         }
         expect(overlayNav).toHaveTextContent('contact --me');
@@ -69,22 +69,14 @@ describe('V2Header mobile menu', () => {
         expect(document.getElementById('v2-mobile-menu')).toHaveAttribute('aria-hidden', 'true');
     });
 
-    it('points classic at the /v1 prefix and closes the overlay when tapped', async () => {
-        // Version follows the URL, not a cookie: the classic switch simply
-        // navigates into the explicit /v1 tree (see src/proxy.js).
+    it('has no classic (/v1) link', async () => {
         const user = userEvent.setup();
         render(<V2Header />);
         await user.click(screen.getByRole('button', { name: /open navigation menu/i }));
 
         const overlayNav = screen.getByRole('navigation', { name: /v2 mobile navigation/i });
-        const classicLink = Array.from(overlayNav.querySelectorAll('a')).find(
-            (a) => a.textContent.includes('classic'),
-        );
-        expect(classicLink).toHaveAttribute('href', '/v1');
-        expect(document.cookie).not.toContain('site-version');
-
-        await user.click(classicLink);
-        expect(document.getElementById('v2-mobile-menu')).toHaveAttribute('aria-hidden', 'true');
+        const hrefs = Array.from(overlayNav.querySelectorAll('a')).map((a) => a.getAttribute('href'));
+        expect(hrefs.some((h) => h === '/v1' || h?.startsWith('/v1/'))).toBe(false);
     });
 
     it('renders custom nav links in the sequence defined in data', async () => {

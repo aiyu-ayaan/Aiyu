@@ -42,7 +42,6 @@ const PUBLIC_CONFIG_KEYS = [
     'desktopWallpaper',
     'desktopDeviceName',
     'desktopOsVersion',
-    'defaultSiteVersion',
     'activeTheme',
     'activeThemeVariant',
     'allowThemeSwitching',
