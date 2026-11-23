@@ -64,7 +64,7 @@ The files in this `docs/` folder now serve as redirects to the wiki. They contai
 
 ## Story Videos
 
-The v2 home page tells my life story as a scroll-driven film, from the hero to chapter 09. These recordings come straight from the production build (`npm run record`, 2× speed).
+The v2 home page tells my life story as a scroll-driven film, from the hero to chapter 09. These recordings come straight from the production build (`pnpm record`, 2× speed).
 
 <table>
   <tr>
@@ -79,7 +79,7 @@ The v2 home page tells my life story as a scroll-driven film, from the hero to c
 
 The previews run at 3× the recording. Click one to watch the full 2× MP4 in GitHub's player: [journey-desktop.mp4](../journey-desktop.mp4) · [journey-mobile.mp4](../journey-mobile.mp4).
 
-Re-record both with `npm run record` (options: `--speed`, `--device desktop|mobile`, `--fps`, `--skip-build`; see `scripts/record-story.mjs`).
+Re-record both with `pnpm record` (options: `--speed`, `--device desktop|mobile`, `--fps`, `--skip-build`; see `scripts/record-story.mjs`).
 
 ---
 

@@ -1,13 +1,13 @@
 # Development database stack.
 #
 # Brings up ONLY PostgreSQL (+ pgAdmin) so you can run the Next.js app and the
-# Prisma CLI directly on your host machine (npm run dev), pointing
+# Prisma CLI directly on your host machine (pnpm dev), pointing
 # DATABASE_URL at localhost:${POSTGRES_PORT}.
 #
-#   docker compose -f docker-compose-dev.yml up -d      # or: npm run db:up
-#   npx prisma migrate deploy                            # apply schema
-#   npm run db:seed                                      # populate sample data
-#   npm run dev
+#   docker compose -f docker-compose-dev.yml up -d      # or: pnpm db:up
+#   pnpm exec prisma migrate deploy                            # apply schema
+#   pnpm db:seed                                      # populate sample data
+#   pnpm dev
 #
 # Postgres is published to the host so Prisma/pgAdmin can reach it. pgAdmin is
 # optional — open http://localhost:${PGADMIN_PORT:-5050}.

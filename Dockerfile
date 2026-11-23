@@ -10,15 +10,17 @@ RUN apt-get update \
 
 # Copy manifests for deterministic installs.
 # The prisma schema is needed because the `postinstall` script runs `prisma generate`.
-COPY package.json package-lock.json ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY prisma ./prisma
 
-# Harden npm fetch behavior for flaky network/proxy conditions.
-RUN npm config set fetch-retries 5 \
-    && npm config set fetch-retry-factor 2 \
-    && npm config set fetch-retry-mintimeout 20000 \
-    && npm config set fetch-retry-maxtimeout 120000 \
-    && npm ci --include=dev --legacy-peer-deps --no-audit --no-fund --prefer-offline
+# pnpm comes from corepack (version pinned by package.json "packageManager").
+# node-linker=hoisted gives a flat npm-style node_modules, so the standalone
+# pruning below can copy node_modules/.prisma and @prisma/client by path.
+RUN corepack enable \
+    && pnpm config set fetch-retries 5 \
+    && pnpm config set fetch-retry-mintimeout 20000 \
+    && pnpm config set fetch-retry-maxtimeout 120000 \
+    && pnpm install --frozen-lockfile --config.node-linker=hoisted
 
 # Stage 2: Builder
 FROM node:20-bookworm-slim AS builder
@@ -34,7 +36,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # Ensure the Prisma client is generated against the committed schema.
-RUN npx prisma generate
+RUN corepack enable && pnpm exec prisma generate
 
 # Build-time args
 ARG NEXT_PUBLIC_N8N_WEBHOOK_URL
@@ -53,7 +55,7 @@ RUN DATABASE_URL="postgresql://dummy:dummy@dummy:5432/dummy?schema=public" \
     ADMIN_PASSWORD="dummy" \
     JWT_SECRET="dummy" \
     NEXT_TELEMETRY_DISABLED=1 \
-    npm run build -- --webpack
+    pnpm run build --webpack
 
 # Assemble the complete runtime tree in /out so the runner ships ONE layer.
 # Copying standalone and the Prisma packages as separate layers stored the

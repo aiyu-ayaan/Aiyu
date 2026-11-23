@@ -55,7 +55,7 @@ security_opt:
 
 ```bash
 # 1. IMMEDIATE: Stop everything
-npm run emergency:cleanup
+pnpm emergency:cleanup
 
 # 2. Follow the script prompts - it will:
 #    - Collect forensic data
@@ -68,11 +68,11 @@ node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 # Update .env with new JWT_SECRET, passwords, etc.
 
 # 4. Rebuild clean
-npm run docker:build
-npm run docker:up
+pnpm docker:build
+pnpm docker:up
 
 # 5. Verify security
-npm run docker:verify
+pnpm docker:verify
 ```
 
 ---
@@ -94,13 +94,13 @@ node -e "console.log('MONGO_ROOT_PASSWORD=' + require('crypto').randomBytes(32).
 # Change ALL placeholder values!
 
 # 4. Build with security hardening
-npm run docker:build
+pnpm docker:build
 
 # 5. Start containers
-npm run docker:up
+pnpm docker:up
 
 # 6. CRITICAL: Verify security
-npm run docker:verify
+pnpm docker:verify
 # ALL checks must pass!
 
 # 7. Test /tmp execution is blocked
@@ -153,7 +153,7 @@ After deployment, verify:
 - [ ] `docker exec aiyu-app ps aux` → Only node processes visible ✅
 - [ ] `curl http://localhost:3000/api/health` → Returns `{"status":"healthy"}` ✅
 - [ ] `docker inspect aiyu-app | grep ReadonlyRootfs` → Shows `true` ✅
-- [ ] `npm run security-check` → All checks pass ✅
+- [ ] `pnpm security-check` → All checks pass ✅
 
 ---
 
@@ -172,15 +172,15 @@ After deployment, verify:
 
 ```bash
 # Security
-npm run security-check      # Check app security
-npm run docker:verify        # Verify Docker security (after deployment)
-npm run emergency:cleanup    # Emergency cleanup if compromised
+pnpm security-check      # Check app security
+pnpm docker:verify        # Verify Docker security (after deployment)
+pnpm emergency:cleanup    # Emergency cleanup if compromised
 
 # Docker
-npm run docker:build         # Build with security hardening
-npm run docker:up            # Start containers
-npm run docker:down          # Stop containers
-npm run docker:logs          # View logs
+pnpm docker:build         # Build with security hardening
+pnpm docker:up            # Start containers
+pnpm docker:down          # Stop containers
+pnpm docker:logs          # View logs
 ```
 
 ---
@@ -205,7 +205,7 @@ npm run docker:logs          # View logs
 For detailed information:
 1. Start with **SECURITY_REMEDIATION.md** (comprehensive guide)
 2. Use **DEPLOYMENT_SECURITY_CHECKLIST.md** for deployment
-3. Run `npm run docker:verify` to check security status
+3. Run `pnpm docker:verify` to check security status
 4. Check **SECURITY_INCIDENT.md** for original incident details
 
 **Security Status:** 🟢 **SECURED**

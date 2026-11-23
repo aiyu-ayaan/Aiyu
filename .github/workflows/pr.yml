@@ -25,7 +25,7 @@ jobs:
         uses: ./.github/actions/setup
 
       - name: Run ESLint
-        run: npm run lint
+        run: pnpm run lint
 
   unit:
     name: Unit tests (vitest)
@@ -39,7 +39,7 @@ jobs:
 
       - name: Run unit tests
         # vitest runs in jsdom and needs no database or running server.
-        run: npm run test
+        run: pnpm run test
 
   e2e:
     name: E2E tests (playwright)
@@ -90,25 +90,25 @@ jobs:
           EOF
 
       - name: Apply database schema
-        run: npx prisma migrate deploy
+        run: pnpm exec prisma migrate deploy
 
       - name: Seed database
-        run: npm run db:seed
+        run: pnpm run db:seed
 
       - name: Cache Playwright browsers
         id: pw-cache
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
 
       - name: Install Playwright browser
         # Only the chromium project is configured. `--with-deps` is cheap when
         # the browser binary itself is restored from cache.
-        run: npx playwright install --with-deps chromium
+        run: pnpm exec playwright install --with-deps chromium
 
       - name: Run e2e tests
-        run: npm run test:ui
+        run: pnpm run test:ui
 
       - name: Upload Playwright report
         if: ${{ !cancelled() }}
@@ -148,4 +148,4 @@ jobs:
         # build fails on Linux with ENOENT. See next.config.mjs.
         env:
           NEXT_DISABLE_STANDALONE: 'true'
-        run: npm run build
+        run: pnpm run build

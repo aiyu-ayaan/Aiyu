@@ -24,9 +24,12 @@ Branch: `migrate/rust-vite`. Baseline and method: `development/docs/PERFORMANCE.
 - [x] Legal pages (`/[legalApp]`) use the v2 shell
 - [x] vitest 283 passed; Playwright 12 passed, 2 skipped (GitHub-mode); `next build` OK; client JS -9%
 
-## Milestone 3: pnpm
-- [ ] `pnpm import` from `package-lock.json`, overrides to `pnpm.overrides`, peer settings in `.npmrc`
-- [ ] Dockerfile, scripts and docs use pnpm; build + tests pass
+## Milestone 3: pnpm (DONE — 2026-11-24)
+- [x] `pnpm import` kept the npm-locked versions; overrides, peer rule (eslint 10) and allowed build scripts in `pnpm-workspace.yaml`
+- [x] Declared deps npm had hoisted silently: `@codemirror/{view,state,commands,language,autocomplete,search}`, `vite`, `@next/eslint-plugin-next`
+- [x] Tailwind scans only `src` (`source("../../")`): root auto-detection pulled `.codegraph/daemon.sock` into webpack and crashed builds (`Cannot read properties of null (reading 'hash')`); also drops 30 classes that only appeared in docs (CSS 352 -> 318 KB)
+- [x] Dockerfile (corepack, `node-linker=hoisted` so the standalone pruning paths stay valid), CI setup + workflows, README/AGENTS/docs commands
+- [x] vitest 283 passed, lint clean, `next build` OK, Playwright 12 passed, `docker build` OK (image 694 MB)
 
 ## Milestone 4: axum skeleton
 - [ ] Cargo workspace (`server/`), axum + tower-http (compression, static files), reverse proxy fallback to Next

@@ -72,7 +72,7 @@ Run two complete site designs side by side:
 
 ## 🎬 Watch the Story
 
-The v2 home page tells my life story as a scroll-driven film, from the hero to chapter 09. These recordings come straight from the production build (`npm run record`, 2× speed).
+The v2 home page tells my life story as a scroll-driven film, from the hero to chapter 09. These recordings come straight from the production build (`pnpm record`, 2× speed).
 
 <table>
   <tr>
@@ -129,8 +129,8 @@ Set `DATABASE_URL` to match your `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGR
 ### 3. Build & Deploy
 Start all services (App + PostgreSQL + Nginx Proxy):
 ```bash
-npm run docker:build
-npm run docker:up
+pnpm docker:build
+pnpm docker:up
 ```
 > The app container runs `prisma migrate deploy` on startup (`RUN_MIGRATIONS=true`),
 > so the schema is created/updated automatically against the Postgres service.
@@ -140,7 +140,7 @@ npm run docker:up
 ### 4. Verify Security Hardening
 Check if non-root user settings, read-only root system, and miner-prevention capabilities are active:
 ```bash
-npm run docker:verify
+pnpm docker:verify
 ```
 
 ### 5. Access and Seed
@@ -160,14 +160,14 @@ Run Next.js and the Prisma CLI directly on your machine, with only PostgreSQL
 
 ```bash
 cp .env.example .env.local         # set DATABASE_URL to localhost
-npm install                        # postinstall runs `prisma generate`
-npm run db:up                      # start Postgres + pgAdmin (docker-compose-dev.yml)
-npx prisma migrate deploy          # apply the schema
-npm run db:seed                    # populate sample data (or curl /api/seed)
-npm run dev                        # http://localhost:3000
+pnpm install                        # postinstall runs `prisma generate`
+pnpm db:up                      # start Postgres + pgAdmin (docker-compose-dev.yml)
+pnpm exec prisma migrate deploy          # apply the schema
+pnpm db:seed                    # populate sample data (or curl /api/seed)
+pnpm dev                        # http://localhost:3000
 ```
 
-Useful scripts: `npm run db:studio` (Prisma Studio), `npm run db:down` (stop the
+Useful scripts: `pnpm db:studio` (Prisma Studio), `pnpm db:down` (stop the
 dev database). pgAdmin is available at `http://localhost:5050`.
 
 ---
@@ -178,17 +178,17 @@ Unit & component tests (Vitest + Testing Library):
 
 ```bash
 npm test          # run once
-npm run test:watch
+pnpm test:watch
 ```
 
 UI / end-to-end tests (Playwright — auto-starts the dev server with real clicks):
 
 ```bash
-npm run test:ui          # headless
-npm run test:ui:headed   # watch the browser
+pnpm test:ui          # headless
+pnpm test:ui:headed   # watch the browser
 ```
 
-Run everything: `npm run test:all`.
+Run everything: `pnpm test:all`.
 
 The admin e2e reads `ADMIN_USERNAME` / `ADMIN_PASSWORD` from `.env` (same as the
 screenshot script); the valid-login test is skipped if `ADMIN_PASSWORD` is unset.

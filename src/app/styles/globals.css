@@ -1,4 +1,5 @@
-@import "tailwindcss";
+/* Scan only src: auto-detection walks the repo root, including tool dirs with live sockets that break webpack hashing. */
+@import "tailwindcss" source("../../");
 @plugin "@tailwindcss/typography";
 
 /* 3D Transform Utilities */

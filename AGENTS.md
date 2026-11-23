@@ -35,15 +35,15 @@ This project has `.codegraph/` initialized.
 
 | Command | Use |
 |---------|-----|
-| `npm run dev` | Start local development server |
-| `npm run build` | Production build |
-| `npm run start` | Start production server |
-| `npm run lint` | Run ESLint |
-| `npm run screenshots:install` | Install Playwright Chromium |
-| `npm run screenshots:public` | Capture screenshots of non-admin public pages |
-| `npm run docker:up` | Start production containers |
-| `npm run docker:up:dev` | Start development containers |
-| `npm run docker:down` | Stop containers |
+| `pnpm dev` | Start local development server |
+| `pnpm build` | Production build |
+| `pnpm start` | Start production server |
+| `pnpm lint` | Run ESLint |
+| `pnpm screenshots:install` | Install Playwright Chromium |
+| `pnpm screenshots:public` | Capture screenshots of non-admin public pages |
+| `pnpm docker:up` | Start production containers |
+| `pnpm docker:up:dev` | Start development containers |
+| `pnpm docker:down` | Stop containers |
 
 ## 5. Editing Guidelines
 
@@ -57,7 +57,7 @@ This project has `.codegraph/` initialized.
 
 Before finishing a task:
 
-1. Run `npm run lint`.
+1. Run `pnpm lint`.
 2. Manually verify changed routes/pages.
 3. Confirm API responses still match existing clients.
 4. If UI changed, capture updated screenshots when relevant.
@@ -91,7 +91,7 @@ When opening a PR, include:
 
 <!-- BEGIN:nextjs-agent-rules -->
 
-# This is NOT the Next.js you know
+## This is NOT the Next.js you know
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
 
