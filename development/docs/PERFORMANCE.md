@@ -109,5 +109,32 @@ Compression (curl, one request; Next sends HTML uncompressed):
 | `/` | 785 KB | 272 KB | 14 / 26 ms |
 | `/blogs` | 5.71 MB | 1.92 MB | 158 / 214 ms |
 
-Brotli costs 10-50 ms of CPU per page and cuts bytes on the wire by 65%. The real fix for `/blogs` is not
-shipping 5.7 MB of HTML, which comes with the page port.
+These are against local Next, which sends HTML uncompressed. Production nginx already gzips (level 6), so the
+real gain over production is brotli vs gzip, smaller than these numbers. With the bench method (Node fetch,
+10 sequential requests) p50 for `/` went from 22 ms (Next direct) to 85 ms through Rust and `/blogs` from 172 to
+356 ms: on-the-fly compression of very large HTML. Brotli quality: Default and Precise(4) give the same size
+(272 KB for `/`), Fastest doubles it (551 KB); Precise(4) is used. The real fix for `/blogs` is not shipping
+5.7 MB of HTML, which comes with the page port.
+
+Note: the 4.7-8 MB Rust RSS above is a fresh process under the sequential bench. Right after a Playwright run
+an earlier build (8 worker threads) sat at about 87 MB; the runtime now defaults to 2 workers.
+
+### Production image (Next.js, pnpm), before the backup work
+
+`docker run` of the pnpm image against the dev Postgres, read-only root like docker-compose.yml:
+idle 188 MB. Eight `POST /api/admin/gdrive/backup` (fails at the Drive token locally, after building and
+buffering the export): 455 / 506 / 515 / 488 / 489 / 493 / 504 / 573 MB, 302 MB 10 s later. So each backup
+spikes about 300 MB and the baseline creeps up (+115 MB after 8). In production the Drive upload buffers the zip
+once more on top.
+
+### Milestone 5: backups streamed
+
+Where the memory went: the database part, not the images. Four `export?includeImages=false` calls (3.6 MB zip)
+took Next from 213 to 486 MB; Prisma loads every table whole and `JSON.stringify` holds it all.
+
+| Backup path (8 runs, local) | Next RSS | Rust RSS | Time per backup |
+|---|---|---|---|
+| Before (Next export, buffered) | 213 -> 486 MB, climbing | - | 1.5-3.2 s |
+| After (Rust export, Next streams to a temp file) | 203 -> 278 -> 293 MB, flat | 9-16 MB | 0.85 s |
+
+Rust export alone: 0.69 s vs 2.5 s for Node, Rust RSS 9.7 MB.

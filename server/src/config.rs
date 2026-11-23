@@ -9,6 +9,8 @@ pub struct Config {
     pub jwt_secret: String,
     /// Peers allowed to set client-IP headers (nginx, Cloudflare tunnel). Everyone else gets them overwritten.
     pub trusted_proxies: Vec<ipnet::IpNet>,
+    pub uploads_dir: PathBuf,
+    pub database_url: String,
 }
 
 impl Config {
@@ -21,6 +23,8 @@ impl Config {
             next_dir: env::var("NEXT_DIR").unwrap_or_else(|_| ".next".into()).into(),
             jwt_secret,
             trusted_proxies: parse_trusted(&env::var("TRUSTED_PROXIES").unwrap_or_default())?,
+            uploads_dir: env::var("UPLOADS_DIR").unwrap_or_else(|_| "public/uploads".into()).into(),
+            database_url: env::var("DATABASE_URL").map_err(|_| anyhow::anyhow!("DATABASE_URL environment variable must be set"))?,
         })
     }
 }

@@ -11,6 +11,8 @@ const { mockGetSession, mockGDrive, mockPublicOrigin, mockPrismaConfig } = vi.ho
       saveGDriveConfig: vi.fn(),
       clearGDriveTokens: vi.fn(),
       uploadBackupToDrive: vi.fn(),
+      uploadBackupFileToDrive: vi.fn(),
+      withBackupTempFile: vi.fn(),
       listDriveBackups: vi.fn(),
       downloadDriveBackup: vi.fn(),
       deleteDriveBackup: vi.fn(),
@@ -265,19 +267,30 @@ describe('Google Drive API Routes', () => {
     it('POST exports backup and uploads to Google Drive', async () => {
       mockGetSession.mockResolvedValue({ user: { id: 1 } });
 
-      global.fetch.mockResolvedValueOnce({
-        ok: true,
-        headers: new Headers({ 'content-disposition': 'attachment; filename="aiyu-backup.zip"' }),
-        arrayBuffer: async () => Buffer.from('mock-zip-bytes').buffer,
-      });
+      global.fetch.mockResolvedValueOnce(new Response('mock-zip-bytes', {
+        headers: { 'content-disposition': 'attachment; filename="aiyu-backup.zip"' },
+      }));
 
-      mockGDrive.uploadBackupToDrive.mockResolvedValue({ id: 'drive_file_id', name: 'aiyu-backup.zip' });
+      // Real temp file, so the test checks the export is streamed to disk intact.
+      const { mkdtemp, readFile, rm } = await import('fs/promises');
+      const { tmpdir } = await import('os');
+      const { join } = await import('path');
+      const dir = await mkdtemp(join(tmpdir(), 'gdrive-backup-test-'));
+      mockGDrive.withBackupTempFile.mockImplementation(async (fn) => {
+        try { return await fn(join(dir, 'b.zip')); } finally { await rm(dir, { recursive: true, force: true }); }
+      });
+      let uploaded = null;
+      mockGDrive.uploadBackupFileToDrive.mockImplementation(async (filePath, filename) => {
+        uploaded = { bytes: await readFile(filePath, 'utf8'), filename };
+        return { id: 'drive_file_id', name: 'aiyu-backup.zip' };
+      });
 
       const res = await postBackup(new Request('http://localhost:3000/api/admin/gdrive/backup', { method: 'POST' }));
       expect(res.status).toBe(200);
       const data = await res.json();
       expect(data.success).toBe(true);
       expect(data.file).toEqual({ id: 'drive_file_id', name: 'aiyu-backup.zip' });
+      expect(uploaded).toEqual({ bytes: 'mock-zip-bytes', filename: 'aiyu-backup.zip' });
     });
   });
 

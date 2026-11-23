@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
-import { uploadBackupToDrive } from '@/lib/gdrive';
+import { createWriteStream } from 'fs';
+import { Readable } from 'stream';
+import { pipeline } from 'stream/promises';
+import { uploadBackupFileToDrive, withBackupTempFile } from '@/lib/gdrive';
 import { getPublicOrigin } from '@/lib/publicOrigin';
 
 export async function POST(request) {
@@ -29,9 +32,6 @@ export async function POST(request) {
       );
     }
 
-    const arrayBuffer = await exportRes.arrayBuffer();
-    const zipBuffer = Buffer.from(arrayBuffer);
-
     let filename = `aiyu-backup-${new Date().toISOString().replace(/[:.]/g, '-')}.zip`;
     const contentDisposition = exportRes.headers.get('content-disposition');
     if (contentDisposition && contentDisposition.includes('filename=')) {
@@ -39,7 +39,11 @@ export async function POST(request) {
       if (match && match[1]) filename = match[1];
     }
 
-    const result = await uploadBackupToDrive(zipBuffer, filename);
+    // Stream the export to disk and upload from there: the zip never sits in memory.
+    const result = await withBackupTempFile(async (filePath) => {
+      await pipeline(Readable.fromWeb(exportRes.body), createWriteStream(filePath));
+      return uploadBackupFileToDrive(filePath, filename);
+    });
 
     return NextResponse.json({
       success: true,

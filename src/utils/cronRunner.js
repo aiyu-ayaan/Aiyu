@@ -5,13 +5,15 @@ import { runUptimeChecks } from '@/lib/uptime';
 import { pruneSessions, SESSION_RETENTION_DAYS } from '@/lib/auth';
 import { sendNotification } from './notificationService';
 import { compileTemplate, EXECUTION_ROW_LIMIT } from './cronTemplate';
-import { getGDriveConfig, uploadBackupToDrive, cleanOldDriveBackups } from '@/lib/gdrive';
+import { getGDriveConfig, uploadBackupFileToDrive, withBackupTempFile, cleanOldDriveBackups } from '@/lib/gdrive';
 import { saveToWayback } from '@/lib/webArchive';
 import { syncLinkedRepositories } from '@/lib/githubProjectSync';
 import { loadCronSecrets, resolveCronEnv, describeSecretSource } from '@/lib/cronSecrets';
 import archiver from 'archiver';
 import { join } from 'path';
-import { readFile, access, readdir } from 'fs/promises';
+import { access, readdir } from 'fs/promises';
+import { createWriteStream } from 'fs';
+import { finished } from 'stream/promises';
 
 
 // Execution-time template options: bounded row cap, no shared preview cache
@@ -330,7 +332,11 @@ const COLLECTION_PRODUCERS = {
     contactMessages: async () => toClientList('contactMessage', await prisma.contactMessage.findMany()),
 };
 
-async function createExportZipBuffer() {
+/**
+ * Writes the backup zip to `filePath`. Images are added as file paths, which
+ * archiver reads lazily one at a time, so neither they nor the zip sit in memory.
+ */
+async function writeExportZip(filePath) {
     const data = { exportedAt: new Date().toISOString() };
     for (const [key, produce] of Object.entries(COLLECTION_PRODUCERS)) {
         data[key] = await produce();
@@ -387,20 +393,18 @@ async function createExportZipBuffer() {
         const filePath = join(uploadsDir, filename);
         try {
             await access(filePath);
-            const fileBuffer = await readFile(filePath);
-            archive.append(fileBuffer, { name: `uploads/${filename}` });
+            archive.file(filePath, { name: `uploads/${filename}` });
         } catch {
             // Skip missing file
         }
     }
 
-    return new Promise((resolve, reject) => {
-        const chunks = [];
-        archive.on('data', (chunk) => chunks.push(chunk));
-        archive.on('end', () => resolve(Buffer.concat(chunks)));
-        archive.on('error', (err) => reject(err));
-        archive.finalize();
-    });
+    const output = createWriteStream(filePath);
+    archive.pipe(output);
+    await Promise.all([
+        finished(output),
+        archive.finalize(),
+    ]);
 }
 
 export async function executeCronJob(job) {
@@ -453,12 +457,14 @@ export async function executeCronJob(job) {
                 if (!isConnected) {
                     throw new Error('Google Drive account is not connected. Connect Google Drive in Database Admin to enable automated backups.');
                 }
-                const zipBuffer = await createExportZipBuffer();
                 const now = new Date();
                 const dateStr = now.toISOString().split('T')[0];
                 const timeStr = now.toTimeString().split(' ')[0].replace(/:/g, '-');
                 const filename = `auto_backup_${dateStr}_${timeStr}.zip`;
-                const uploadRes = await uploadBackupToDrive(zipBuffer, filename);
+                const uploadRes = await withBackupTempFile(async (filePath) => {
+                    await writeExportZip(filePath);
+                    return uploadBackupFileToDrive(filePath, filename);
+                });
                 attemptLogOutput = `Google Drive automated backup completed successfully. File: ${filename} (ID: ${uploadRes.id}).`;
             } else if (job.action === 'gdrive_purge') {
                 const config = await getGDriveConfig();

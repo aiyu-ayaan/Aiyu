@@ -1,5 +1,8 @@
+pub mod auth;
 pub mod config;
+pub mod db;
 pub mod crypto;
+pub mod export;
 pub mod proxy;
 pub mod session;
 
@@ -23,16 +26,27 @@ pub struct AppState {
     pub upstream: proxy::Upstream,
     pub cipher: crypto::FieldCipher,
     pub sessions: session::SessionKeys,
+    pub db: sqlx::PgPool,
 }
 
 impl AppState {
-    pub fn new(config: config::Config) -> Self {
-        Self {
+    pub fn upstream_base(&self) -> &str {
+        &self.upstream.base
+    }
+
+    pub fn upstream_client(&self) -> &reqwest::Client {
+        &self.upstream.client
+    }
+
+    /// The pool connects lazily, so this never blocks or fails on a down database.
+    pub async fn new(config: config::Config) -> anyhow::Result<Self> {
+        Ok(Self {
+            db: db::connect(&config.database_url).await?,
             upstream: proxy::Upstream::new(&config.next_upstream),
             cipher: crypto::FieldCipher::new(&config.jwt_secret),
             sessions: session::SessionKeys::new(&config.jwt_secret),
             config,
-        }
+        })
     }
 }
 
@@ -48,10 +62,11 @@ pub fn router(state: AppState) -> Router {
 
     Router::new()
         .route("/healthz", get(|| async { "ok" }))
+        .route("/api/admin/export", get(export::export))
         .merge(next_static)
         .fallback(proxy::forward)
         .layer(
-            CompressionLayer::new().br(true).gzip(true).compress_when(
+            CompressionLayer::new().quality(tower_http::CompressionLevel::Precise(4)).br(true).gzip(true).compress_when(
                 // Already-compressed payloads (backup zips, images, fonts) only cost CPU to recompress.
                 DefaultPredicate::new()
                     .and(NotForContentType::new("application/zip"))

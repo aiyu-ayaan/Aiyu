@@ -336,6 +336,12 @@ describe('Google Drive Helper Module (gdrive.js)', () => {
       const res = await uploadBackupToDrive(zipBuffer, 'backup.zip');
 
       expect(res).toEqual({ id: 'uploaded_file_id', name: 'backup.zip' });
+      const sent = global.fetch.mock.calls.at(-1)[1];
+      const boundary = sent.headers['Content-Type'].split('boundary=')[1];
+      const text = await sent.body.text();
+      expect(text.startsWith(`--${boundary}\r\nContent-Type: application/json`)).toBe(true);
+      expect(text).toContain('\r\nContent-Type: application/zip\r\n\r\nmock-zip-content\r\n');
+      expect(text.endsWith(`--${boundary}--\r\n`)).toBe(true);
       expect(global.fetch).toHaveBeenCalledWith(
         'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',
         expect.objectContaining({

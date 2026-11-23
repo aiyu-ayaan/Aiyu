@@ -31,7 +31,9 @@ async fn app(trusted: &str) -> Router {
         next_dir: "/nonexistent".into(),
         jwt_secret: "s".into(),
         trusted_proxies: parse_trusted(trusted).unwrap(),
-    }))
+        uploads_dir: "/nonexistent".into(),
+        database_url: "postgres://localhost/none".into(),
+    }).await.unwrap())
 }
 
 async fn forwarded_headers(app: Router, peer: &str, headers: &[(&str, &str)]) -> serde_json::Value {
@@ -81,7 +83,9 @@ async fn upstream_down_is_bad_gateway() {
         next_dir: "/nonexistent".into(),
         jwt_secret: "s".into(),
         trusted_proxies: vec![],
-    }));
+        uploads_dir: "/nonexistent".into(),
+        database_url: "postgres://localhost/none".into(),
+    }).await.unwrap());
     let res = app.oneshot(Request::builder().uri("/").body(Body::empty()).unwrap()).await.unwrap();
     assert_eq!(res.status(), StatusCode::BAD_GATEWAY);
 }

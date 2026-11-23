@@ -14,8 +14,8 @@ use crate::AppState;
 
 #[derive(Clone)]
 pub struct Upstream {
-    base: String,
-    client: reqwest::Client,
+    pub(crate) base: String,
+    pub(crate) client: reqwest::Client,
 }
 
 impl Upstream {

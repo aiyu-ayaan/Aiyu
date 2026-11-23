@@ -1,8 +1,18 @@
 use aiyu_server::{AppState, config::Config, router};
 use std::net::SocketAddr;
 
-#[tokio::main]
-async fn main() -> anyhow::Result<()> {
+fn main() -> anyhow::Result<()> {
+    // Few threads keep RSS low on a 1 GB VPS: each worker has its own stack and allocator cache.
+    let workers = std::env::var("RUST_WORKERS").ok().and_then(|v| v.parse().ok()).unwrap_or(2);
+    tokio::runtime::Builder::new_multi_thread()
+        .worker_threads(workers)
+        .max_blocking_threads(8)
+        .enable_all()
+        .build()?
+        .block_on(run())
+}
+
+async fn run() -> anyhow::Result<()> {
     tracing_subscriber::fmt()
         .with_env_filter(tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into()))
         .init();
@@ -11,7 +21,7 @@ async fn main() -> anyhow::Result<()> {
     let listen = config.listen;
     tracing::info!(%listen, upstream = %config.next_upstream, "aiyu-server starting");
 
-    let app = router(AppState::new(config));
+    let app = router(AppState::new(config).await?);
     let listener = tokio::net::TcpListener::bind(listen).await?;
     axum::serve(listener, app.into_make_service_with_connect_info::<SocketAddr>())
         .with_graceful_shutdown(shutdown_signal())

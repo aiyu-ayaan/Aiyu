@@ -1,3 +1,7 @@
+import { mkdir, unlink } from 'fs/promises';
+import { openAsBlob } from 'fs';
+import { join } from 'path';
+import { randomUUID } from 'crypto';
 import { prisma } from '@/lib/prisma';
 import { encrypt, decrypt } from '@/lib/encryption';
 
@@ -268,9 +272,33 @@ export async function getOrCreateBackupFolder(accessToken) {
 }
 
 /**
- * Multipart upload to Google Drive.
+ * Temp file for a backup zip on disk. Defaults to `.next/cache/backups`: in Docker
+ * that is the writable cache volume, while /tmp is a tmpfs (RAM) on the
+ * read-only root. The caller deletes it (see `withBackupTempFile`).
  */
-export async function uploadBackupToDrive(zipBuffer, filename) {
+export async function withBackupTempFile(fn) {
+  const dir = process.env.BACKUP_TMP_DIR || join(process.cwd(), '.next', 'cache', 'backups');
+  await mkdir(dir, { recursive: true });
+  const filePath = join(dir, `${randomUUID()}.zip`);
+  try {
+    return await fn(filePath);
+  } finally {
+    await unlink(filePath).catch(() => {});
+  }
+}
+
+/**
+ * Uploads a zip file from disk. `openAsBlob` gives a file-backed Blob that
+ * fetch streams in chunks, so the zip never sits in memory.
+ */
+export async function uploadBackupFileToDrive(filePath, filename) {
+  return uploadBackupToDrive(await openAsBlob(filePath, { type: 'application/zip' }), filename);
+}
+
+/**
+ * Multipart upload to Google Drive. `zip` is a Blob (streamed) or a Buffer.
+ */
+export async function uploadBackupToDrive(zip, filename) {
   const accessToken = await getValidAccessToken();
   const config = await getGDriveConfig();
 
@@ -294,12 +322,8 @@ export async function uploadBackupToDrive(zipBuffer, filename) {
   const mediaHeader = `--${boundary}\r\nContent-Type: application/zip\r\n\r\n`;
   const footer = `\r\n--${boundary}--\r\n`;
 
-  const body = Buffer.concat([
-    Buffer.from(metadataPart, 'utf-8'),
-    Buffer.from(mediaHeader, 'utf-8'),
-    Buffer.isBuffer(zipBuffer) ? zipBuffer : Buffer.from(zipBuffer),
-    Buffer.from(footer, 'utf-8'),
-  ]);
+  // Same bytes as before; Blob parts reference the file instead of copying it.
+  const body = new Blob([metadataPart, mediaHeader, zip, footer]);
 
   const res = await fetch(
     'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',

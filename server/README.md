@@ -3,6 +3,8 @@
 Rust (axum) server that is replacing Next.js route by route. Plan and progress: `development/TODO.md`.
 
 Today it sits in front of Next:
+- `GET /api/admin/export` (backup zip) is served by Rust: rows stream from Postgres and files from disk into
+  the zip, so memory stays flat (about 10 MB) whatever the data size
 - serves `/_next/static/*` from `.next/static` with a one-year immutable cache
 - compresses responses (brotli, gzip; skips zips, PDFs, fonts, video)
 - streams every other request to Next (`NEXT_UPSTREAM`) and back, so large bodies such as backups never sit in memory
@@ -22,6 +24,9 @@ pnpm server:test
 | Env | Default | |
 |---|---|---|
 | `JWT_SECRET` | required | same value as the Next app |
+| `DATABASE_URL` | required | same Postgres as Next (Prisma's `?schema=` is ignored); pool of 3 |
+| `UPLOADS_DIR` | `public/uploads` | files added to backups |
+| `RUST_WORKERS` | `2` | tokio worker threads; fewer threads, less memory |
 | `RUST_LISTEN` | `0.0.0.0:8080` | |
 | `NEXT_UPSTREAM` | `http://127.0.0.1:3000` | Next server for unported routes |
 | `NEXT_DIR` | `.next` | where `static/` is read from |

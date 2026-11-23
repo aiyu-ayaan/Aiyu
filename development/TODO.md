@@ -5,6 +5,7 @@ Target stack: axum (Rust) server + SQLite, Vite + React (TypeScript where practi
 Branch: `migrate/rust-vite`. Baseline and method: `development/docs/PERFORMANCE.md`.
 
 ## Decisions
+- While Next and Rust both run, Rust reads and writes the same Postgres (sqlx, queries in `server/src/db.rs` and the route modules). SQLite replaces it in one step at cutover, so there is never a second copy of the data to drift. Rust admin routes check the `Session` row (revocation), not only the JWT.
 - Strangler migration: axum sits in front, serves what is ported, reverse-proxies the rest to Next. Every commit leaves the site working. RAM only drops once Next is fully gone (both servers run during the transition).
 - Client stays React: GSAP, framer-motion, three.js, CodeMirror run in the browser unchanged. Only Next-specific APIs are replaced (shims for `next/link`, `next/navigation`, `next/dynamic`).
 - Data: Postgres stays the source of truth until a verified cutover. Migrate with a direct per-table copy (not the backup zip: export strips cron secrets and covers fewer collections than the 36 models). Verify row counts and per-row hashes.
@@ -37,12 +38,20 @@ Branch: `migrate/rust-vite`. Baseline and method: `development/docs/PERFORMANCE.
 - [x] Parity: `encryption.js` decrypt/encrypt and session JWT verify, tested against Node-made fixtures (`server/tests/parity.rs`)
 - [x] Playwright 12 passed through Rust (`E2E_PORT=8080`); Rust RSS 5-8 MB incl. 3 streamed backups
 - [x] CI job `cargo test --locked`; `pnpm server:build|test|start`; graceful shutdown on SIGTERM and SIGINT
-- [ ] Tune for 1 GB: `worker_threads` (default = cores), allocator (mimalloc)
+- [x] Tune for 1 GB: 2 worker threads by default (`RUST_WORKERS`), brotli quality 4
+- [ ] Allocator check (mimalloc vs glibc) once more routes run in Rust
 
-## Milestone 5: Data layer (SQLite)
+## Milestone 5: Backups without memory spikes (IN PROGRESS)
+- [x] Rust `GET /api/admin/export`: session check (JWT + `Session` row), rows streamed from Postgres (`row_to_json`, one row at a time) with the `toClient` rules, uploads streamed from disk; 702/702 entries match the Node export (deep JSON compare, byte-equal uploads). 0.69 s vs 2.5 s, Rust RSS ~10 MB
+- [x] Node `gdrive/backup` streams the export to a temp file and uploads a file-backed Blob (same multipart bytes); Next RSS over 8 backups: 203 -> 293 MB flat (was 213 -> 486 MB and climbing)
+- [x] Cron `gdrive_backup` writes the zip to a temp file and adds images by path (no zip buffer)
+- [ ] Cron `gdrive_backup` still loads every table in Node: move the backup cron to Rust
+- [ ] Restore (`gdrive/restore`, `admin/import`) still buffers the whole zip: stream it
+- [ ] Verify a real Drive upload with OAuth credentials (not possible locally)
+
+## Milestone 5b: Data layer (SQLite, at cutover)
 - [ ] SQLite schema for all 36 models (Json -> TEXT json, String[] -> TEXT json, insensitive search -> COLLATE NOCASE)
 - [ ] `pg -> sqlite` copy tool with row-count and hash verification
-- [ ] Streaming backup export (same zip format) and restore; Drive upload streamed (resumable upload)
 
 ## Milestone 6: Vite client
 - [ ] Vite + React + react-router + `@tailwindcss/vite`, `envPrefix: ['VITE_', 'NEXT_PUBLIC_']`
@@ -141,7 +150,7 @@ Each page: Rust data endpoint(s) + Vite route + e2e test passing against Rust.
 - [ ] `/api/admin/crons/logs`
 - [ ] `/api/admin/crons/preview`
 - [ ] `/api/admin/crons/timezone`
-- [ ] `/api/admin/export`
+- [x] `/api/admin/export` (Rust)
 - [ ] `/api/admin/gdrive/auth`
 - [ ] `/api/admin/gdrive/backup`
 - [ ] `/api/admin/gdrive/callback`
