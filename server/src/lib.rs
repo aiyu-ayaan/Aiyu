@@ -3,6 +3,7 @@ pub mod config;
 pub mod db;
 pub mod crypto;
 pub mod export;
+pub mod pages;
 pub mod proxy;
 pub mod session;
 pub mod web;
@@ -30,6 +31,8 @@ pub struct AppState {
     pub db: sqlx::PgPool,
     /// None when the Vite build is missing: those routes then fall through to Next.
     pub web: Option<std::sync::Arc<web::WebApp>>,
+    /// package.json version, shown in the footer.
+    pub package_version: Option<String>,
 }
 
 impl AppState {
@@ -50,7 +53,12 @@ impl AppState {
                 None
             }
         };
+        let package_version = std::fs::read_to_string(std::env::var("PACKAGE_JSON").unwrap_or_else(|_| "package.json".into()))
+            .ok()
+            .and_then(|t| serde_json::from_str::<serde_json::Value>(&t).ok())
+            .and_then(|v| v.get("version").and_then(|v| v.as_str()).map(str::to_string));
         Ok(Self {
+            package_version,
             web,
             db: db::connect(&config.database_url).await?,
             upstream: proxy::Upstream::new(&config.next_upstream),
@@ -84,6 +92,10 @@ pub fn router(state: AppState) -> Router {
         .route("/games", get(web::page))
         .route("/games/", get(web::page))
         .route("/games/{slug}", get(web::page))
+        .route("/blogs", get(web::blogs_index))
+        .route("/blogs/", get(web::blogs_index))
+        .route("/blogs/{id}", get(web::blog_detail))
+        .route("/_img/blog/{id}", get(web::blog_image))
         .route("/api/admin/export", get(export::export))
         .merge(next_static)
         .merge(web_assets)

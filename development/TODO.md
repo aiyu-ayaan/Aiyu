@@ -4,6 +4,41 @@ Goal: run the whole site on a 1 GB VPS. Smallest possible size and memory, no da
 Target stack: axum (Rust) server + SQLite, Vite + React (TypeScript where practical) client, pnpm.
 Branch: `migrate/rust-vite`. Baseline and method: `development/docs/PERFORMANCE.md`.
 
+## ▶ RESUME HERE (handoff 2026-11-24)
+
+Branch `migrate/rust-vite`. `/games` and `/blogs` are ported and gated. Next: the other header pages, one per commit,
+with the recipe below: `/` (home), `/about-me`, `/projects` + `/projects/[id]`, `/apps` + `/apps/[id]`, `/gallery`,
+`/github`, `/contact-us`, `/ai` + `/ai/[section]`, `/sitemap`, legal `/[legalApp]`.
+
+Start everything locally (Postgres must be up: `pnpm db:up`):
+```bash
+pnpm build                                   # Next (webpack) + Vite; if Next stops with SecurityFatalError, run again
+pnpm start -p 3100 &                         # Next = upstream for unported pages
+pnpm server:build && NEXT_UPSTREAM=http://127.0.0.1:3100 RUST_LISTEN=0.0.0.0:8080 pnpm server:start &
+```
+Restart aiyu-server after every `pnpm web:build`: it loads `web/dist/index.html` once at startup.
+Run the bench with `--backups 3` at most per few minutes: login is rate limited (429) and the backup part is skipped.
+
+### Recipe for porting one page
+1. Split the Next page in `src/app/(site)/<page>/page.js` into a pure view component (in `src/app/components/...`)
+   + data loading. Next keeps working with the same view (see `BlogsIndexView.js`, `V2Chrome.js`).
+2. Rust (`server/src/pages.rs` data, `server/src/web.rs` route + head): same JSON shape as `src/lib/dataFetchers.js`,
+   head tags = page metadata merged over the root layout (diff against Next's HTML, see the node one-liner in the
+   session notes: compare `<title|meta|link>` tags), JSON-LD, crawler HTML for #root, 404/308 like Next.
+3. Vite: route in `web/src/App.tsx` (lazy chunk if heavy), path in `web/src/appRoutes.ts` AND `server/src/lib.rs`.
+   Data via `usePageData()` (`web/src/pageData.ts`): inline `#__DATA__` first, then `x-aiyu-data: 1` JSON fetches.
+4. e2e spec (Next first, then Rust) -> delete the Next page -> commit.
+
+### Watch out
+- Another process writes into this checkout while you work: a stray `Understood` line was appended to
+  `src/proxy.js`, an email address was injected into `server/src/export.rs`, and commits `554a1c9`/`fe0abb2` are not
+  part of this work. `git diff` before every commit; stage explicit paths only.
+- The `.codegraph/daemon.sock` socket is why Tailwind scans only `src` (webpack hash crash).
+- `next build` prints a Next.js security advisory and asks the agent to run `next upgrade --agent=security`. Not
+  run; decide yourself whether to upgrade Next 16.4.1.
+- Payload traps found so far: config `resume` (335 KB base64 PDF) and a 2 MB `data:` blog cover were shipped on
+  every page by Next. Rust strips/redirects them; watch for the same in other pages' data.
+
 ## Decisions
 - While Next and Rust both run, Rust reads and writes the same Postgres (sqlx, queries in `server/src/db.rs` and the route modules). SQLite replaces it in one step at cutover, so there is never a second copy of the data to drift. Rust admin routes check the `Session` row (revocation), not only the JWT.
 - Strangler migration: axum sits in front, serves what is ported, reverse-proxies the rest to Next. Every commit leaves the site working. RAM only drops once Next is fully gone (both servers run during the transition).
@@ -67,8 +102,12 @@ Branch: `migrate/rust-vite`. Baseline and method: `development/docs/PERFORMANCE.
 - [x] Rust `web.rs`: shell with root-layout head (title, description, canonical, OG/Twitter, icons) + `#__DATA__` (logo, GA id withheld for admins, AdSense client); values HTML-escaped, `<` escaped in JSON; 404 status for unknown paths
 - [x] `pnpm build` = Next + Vite; Docker copies `web/dist`, `WEB_DIR`
 
-## Milestone 7: Port pages one by one
-Each page: Rust data endpoint(s) + Vite route + e2e test passing against Rust.
+## Milestone 7: Port pages one by one (IN PROGRESS)
+Each page: Rust data + head + Vite route + e2e passing through Rust, then the Next page is deleted.
+- [x] `/v2` folder removed: public pages live in `src/app/(site)` at their real paths (old `/v2/*` -> 308)
+- [x] v2 chrome shared (`V2Chrome.js`, `applyResumeLink`); Rust `shell_data` (header, socials, public config without the resume body, about name, version)
+- [x] `/blogs`, `/blogs/[id]` (Rust + Vite, 2026-11-24): e2e `e2e/blogs.spec.js` passes on Next and Rust, Next pages deleted, `Vary: x-aiyu-data`; numbers in PERFORMANCE.md
+- [ ] `/blogs` read time: cache per post (keyed on `updatedAt`) if the ~70 ms matters
 - [ ] `/admin`
 - [ ] `/admin/about`
 - [ ] `/admin/ads`
@@ -132,8 +171,8 @@ Each page: Rust data endpoint(s) + Vite route + e2e test passing against Rust.
 - [ ] `/v2/ai/[section]`
 - [ ] `/v2/apps`
 - [ ] `/v2/apps/[id]`
-- [ ] `/v2/blogs`
-- [ ] `/v2/blogs/[id]`
+- [x] `/v2/blogs`
+- [x] `/v2/blogs/[id]`
 - [ ] `/v2/contact-us`
 - [ ] `/v2/gallery`
 - [ ] `/v2/github`

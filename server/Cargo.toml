@@ -29,6 +29,9 @@ tower-http = { version = "0.6", features = ["compression-br", "compression-gzip"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 hmac = "0.12"
+regex = "1"
+pulldown-cmark = { version = "0.13", default-features = false, features = ["html"] }
+ammonia = "4"
 
 [dev-dependencies]
 tower = { version = "0.5", features = ["util"] }

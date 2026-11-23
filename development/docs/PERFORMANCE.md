@@ -154,3 +154,24 @@ Same `docker run` as the baseline image (read-only root, tmpfs `/tmp`), 8 Drive 
 The 28 s on Node 20 was `Readable.fromWeb` (web stream to file at ~2.7 MB/s); Node 20 is also past end of
 life (April 2026), so the image now uses Node 24 LTS. In the container Rust holds 18 MB, Next the rest.
 Image: 742 MB (Node 24 + Rust binary) vs 694 MB.
+
+### Milestone 7: `/blogs` and `/blogs/[id]` served by Rust + Vite (2026-11-24)
+
+Same machine and data, bench through Rust on :8080 (Next on :3100 serves the unported pages behind it).
+
+| `/blogs` | Next (baseline) | Rust + Vite |
+|---|---|---|
+| HTML bytes | 5,711,724 | 389,240 (107 KB brotli) |
+| p50 / p90 ms | 172.6 / 320.0 | 71.7 / 73.0 |
+
+| Route | Bytes | p50 ms | p90 ms |
+|---|---|---|---|
+| `/blogs/<slug>` HTML | 29,130 | 12.8 | 15.1 |
+| `/blogs/<slug>` JSON (client nav, `x-aiyu-data: 1`) | 12,037 | 12.5 | 15.6 |
+
+- Vite JS: entry 488 KB (150 KB gzip), blog detail chunk 181 KB, loaded only on a post.
+- The list query used to pull a 2 MB `data:` cover on every request; it now reads only the prefix (Rust RSS
+  56 -> 45 MB after the bench, 16 MB right after start). Backups through Rust: 0.85-0.95 s each, RSS 43-52 MB.
+- Remaining `/blogs` cost: ~21 ms SQL (2.5 MB of post content) + regex markdown stripping for read time on all
+  307 posts. Next step if it matters: cache read time per post keyed on `updatedAt`.
+- Release binary: 8.1 MB (was 3.75 MB; pulldown-cmark, ammonia, regex for the blog pages).

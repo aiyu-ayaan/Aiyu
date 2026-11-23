@@ -226,7 +226,7 @@ async fn write_collection<W: tokio::io::AsyncWrite + Unpin>(db: &PgPool, c: &Col
         let Value::Object(mut row) = serde_json::from_str::<Value>(&raw)? else { continue };
         for col in &ts_cols {
             if let Some(v) = row.get_mut(col) {
-                normalize_timestamp(v);
+                normalize_timestamp_value(v);
             }
         }
         let doc = to_client(c, row);
@@ -276,7 +276,7 @@ fn truthy(v: &Value) -> bool {
 }
 
 /// Postgres renders `timestamp(3)` as `2026-11-23T19:54:14.96`; JS Date JSON is `2026-11-23T19:54:14.960Z`.
-fn normalize_timestamp(v: &mut Value) {
+pub fn normalize_timestamp_value(v: &mut Value) {
     if let Some(s) = v.as_str() {
         if let Ok(t) = NaiveDateTime::parse_from_str(s, "%Y-%m-%dT%H:%M:%S%.f") {
             *v = Value::String(js_date(t));
@@ -378,10 +378,10 @@ mod tests {
     #[test]
     fn timestamps_match_js() {
         let mut v = Value::String("2026-11-23T19:54:14.96".into());
-        normalize_timestamp(&mut v);
+        normalize_timestamp_value(&mut v);
         assert_eq!(v, "2026-11-23T19:54:14.960Z");
         let mut v = Value::String("2026-01-02T03:04:05".into());
-        normalize_timestamp(&mut v);
+        normalize_timestamp_value(&mut v);
         assert_eq!(v, "2026-01-02T03:04:05.000Z");
     }
 
