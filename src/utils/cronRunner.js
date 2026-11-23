@@ -13,7 +13,9 @@ import archiver from 'archiver';
 import { join } from 'path';
 import { access, readdir } from 'fs/promises';
 import { createWriteStream } from 'fs';
-import { finished } from 'stream/promises';
+import { finished, pipeline } from 'stream/promises';
+import { Readable } from 'stream';
+import { createHmac } from 'crypto';
 
 
 // Execution-time template options: bounded row cap, no shared preview cache
@@ -333,6 +335,23 @@ const COLLECTION_PRODUCERS = {
 };
 
 /**
+ * In the Docker image the Rust server (AIYU_SERVER_URL, loopback) builds the
+ * same zip by streaming rows and files, so the database never loads into this
+ * process. The key is HMAC(JWT_SECRET, 'internal:export'); Rust accepts it only
+ * from loopback (server/src/export.rs).
+ */
+async function downloadRustExport(filePath) {
+    const key = createHmac('sha256', process.env.JWT_SECRET || '').update('internal:export').digest('hex');
+    const res = await fetch(`${process.env.AIYU_SERVER_URL}/api/admin/export`, {
+        headers: { 'x-aiyu-internal': key },
+    });
+    if (!res.ok || !res.body) {
+        throw new Error(`Backup export failed (${res.status}): ${(await res.text().catch(() => '')).slice(0, 200)}`);
+    }
+    await pipeline(Readable.fromWeb(res.body), createWriteStream(filePath));
+}
+
+/**
  * Writes the backup zip to `filePath`. Images are added as file paths, which
  * archiver reads lazily one at a time, so neither they nor the zip sit in memory.
  */
@@ -462,7 +481,11 @@ export async function executeCronJob(job) {
                 const timeStr = now.toTimeString().split(' ')[0].replace(/:/g, '-');
                 const filename = `auto_backup_${dateStr}_${timeStr}.zip`;
                 const uploadRes = await withBackupTempFile(async (filePath) => {
-                    await writeExportZip(filePath);
+                    if (process.env.AIYU_SERVER_URL) {
+                        await downloadRustExport(filePath);
+                    } else {
+                        await writeExportZip(filePath);
+                    }
                     return uploadBackupFileToDrive(filePath, filename);
                 });
                 attemptLogOutput = `Google Drive automated backup completed successfully. File: ${filename} (ID: ${uploadRes.id}).`;

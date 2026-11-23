@@ -138,3 +138,19 @@ took Next from 213 to 486 MB; Prisma loads every table whole and `JSON.stringify
 | After (Rust export, Next streams to a temp file) | 203 -> 278 -> 293 MB, flat | 9-16 MB | 0.85 s |
 
 Rust export alone: 0.69 s vs 2.5 s for Node, Rust RSS 9.7 MB.
+
+### Milestone 5a: Rust in the Docker image (Node 24)
+
+Same `docker run` as the baseline image (read-only root, tmpfs `/tmp`), 8 Drive backups through the real route:
+
+| Container | Idle | During 8 backups | 10 s after | Time per backup |
+|---|---|---|---|---|
+| Next only, Node 20 (before) | 188 MB | 455-573 MB | 302 MB | 2.7-3.2 s |
+| Rust + Next, Node 20 | 196 MB | 275-402 MB | 303 MB | 28 s |
+| Rust + Next, Node 24 | 287 MB* | 312-347 MB | 230 MB | 0.7 s |
+
+\* idle measured after the smoke requests and seed, so Next was already warm.
+
+The 28 s on Node 20 was `Readable.fromWeb` (web stream to file at ~2.7 MB/s); Node 20 is also past end of
+life (April 2026), so the image now uses Node 24 LTS. In the container Rust holds 18 MB, Next the rest.
+Image: 742 MB (Node 24 + Rust binary) vs 694 MB.

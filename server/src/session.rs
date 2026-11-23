@@ -58,3 +58,8 @@ pub fn session_cookie(cookie_header: &str) -> Option<&str> {
         .find(|(k, _)| *k == "session")
         .map(|(_, v)| v)
 }
+
+/// Compare secrets without leaking where they differ.
+pub fn constant_time_eq(a: &str, b: &str) -> bool {
+    a.len() == b.len() && a.bytes().zip(b.bytes()).fold(0u8, |acc, (x, y)| acc | (x ^ y)) == 0
+}

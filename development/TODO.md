@@ -45,9 +45,16 @@ Branch: `migrate/rust-vite`. Baseline and method: `development/docs/PERFORMANCE.
 - [x] Rust `GET /api/admin/export`: session check (JWT + `Session` row), rows streamed from Postgres (`row_to_json`, one row at a time) with the `toClient` rules, uploads streamed from disk; 702/702 entries match the Node export (deep JSON compare, byte-equal uploads). 0.69 s vs 2.5 s, Rust RSS ~10 MB
 - [x] Node `gdrive/backup` streams the export to a temp file and uploads a file-backed Blob (same multipart bytes); Next RSS over 8 backups: 203 -> 293 MB flat (was 213 -> 486 MB and climbing)
 - [x] Cron `gdrive_backup` writes the zip to a temp file and adds images by path (no zip buffer)
-- [ ] Cron `gdrive_backup` still loads every table in Node: move the backup cron to Rust
+- [x] Cron `gdrive_backup` downloads the zip from Rust over loopback (`AIYU_SERVER_URL`, key = HMAC(JWT_SECRET, "internal:export"), loopback peers only); falls back to the Node zip when Rust is absent (`pnpm dev`)
+- [x] Manual Drive backup fetches the export over loopback in Docker instead of through the public origin/CDN
 - [ ] Restore (`gdrive/restore`, `admin/import`) still buffers the whole zip: stream it
 - [ ] Verify a real Drive upload with OAuth credentials (not possible locally)
+
+## Milestone 5a: Rust in the Docker image
+- [x] Rust build stage; entrypoint runs Next on `127.0.0.1:3001` and aiyu-server on the public port; either exiting stops the container; SIGTERM forwarded
+- [x] `TRUSTED_PROXIES`: loopback by default, private ranges in docker-compose.yml (nginx on the compose network)
+- [x] Container verified: migrations, seed, pages, redirects, brotli, backups (0.7 s, 312-347 MB peak vs 573 MB); see PERFORMANCE.md
+- [x] Image and CI on Node 24 LTS (Node 20 is EOL and its `Readable.fromWeb` made backups take 28 s)
 
 ## Milestone 5b: Data layer (SQLite, at cutover)
 - [ ] SQLite schema for all 36 models (Json -> TEXT json, String[] -> TEXT json, insensitive search -> COLLATE NOCASE)

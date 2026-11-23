@@ -1,6 +1,6 @@
 # Stage 1: Dependencies
 # Use Debian (glibc) instead of Alpine (musl) for more reliable native builds on Windows/WSL.
-FROM node:20-bookworm-slim AS deps
+FROM node:24-bookworm-slim AS deps
 WORKDIR /app
 
 # Install compiler toolchain for native modules (e.g. sharp/canvas-related transitive deps).
@@ -23,7 +23,7 @@ RUN corepack enable \
     && pnpm install --frozen-lockfile --config.node-linker=hoisted
 
 # Stage 2: Builder
-FROM node:20-bookworm-slim AS builder
+FROM node:24-bookworm-slim AS builder
 WORKDIR /app
 
 # OpenSSL is required by the Prisma query engine at generate/runtime.
@@ -101,7 +101,7 @@ RUN mkdir -p /out/.next/static /out/public \
 # Prisma releases — that is what caused "Cannot find module 'effect'"). Install
 # the CLI on its own so the runner can copy a complete, self-consistent
 # node_modules used solely for `migrate deploy`. Pinned to match @prisma/client.
-FROM node:20-bookworm-slim AS prismacli
+FROM node:24-bookworm-slim AS prismacli
 WORKDIR /prismacli
 RUN apt-get update \
     && apt-get install -y --no-install-recommends openssl \
@@ -123,8 +123,15 @@ RUN rm -rf node_modules/prisma/prisma-client \
              node_modules/prisma/build/query_engine_bg.* \
              node_modules/prisma/build/query_compiler_bg.*
 
+# Stage 2.6: Rust server (axum). Sits in front of Next and takes over routes as they are ported.
+FROM rust:1-slim-bookworm AS rust
+WORKDIR /server
+COPY server/Cargo.toml server/Cargo.lock ./
+COPY server/src ./src
+RUN cargo build --release --locked && strip target/release/aiyu-server
+
 # Stage 3: Runner
-FROM node:20-bookworm-slim AS runner
+FROM node:24-bookworm-slim AS runner
 WORKDIR /app
 
 # OpenSSL is required by the Prisma engines at runtime (migrate deploy + client).
@@ -155,6 +162,8 @@ COPY --from=builder --chown=nextjs:nodejs /out ./
 # kept in its own directory so it can't shadow the app's runtime node_modules.
 # Used only by the entrypoint to run `migrate deploy` at container start.
 COPY --from=prismacli --chown=nextjs:nodejs /prismacli/node_modules /app/prisma-cli/node_modules
+
+COPY --from=rust --chown=nextjs:nodejs /server/target/release/aiyu-server /app/aiyu-server
 
 # Copy healthcheck script and the entrypoint
 COPY --chown=nextjs:nodejs scripts/healthcheck.sh /app/healthcheck.sh
@@ -196,4 +205,4 @@ ENV HOSTNAME="0.0.0.0"
 # Apply migrations (when RUN_MIGRATIONS=true) then start one Next.js server
 # process. This is much lighter than PM2 clustering and is the best default
 # for small VPS/Docker Desktop deployments.
-ENTRYPOINT ["sh", "/app/docker-entrypoint.sh"]
+ENTRYPOINT ["bash", "/app/docker-entrypoint.sh"]

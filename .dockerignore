@@ -73,3 +73,6 @@ docs/images
 Dockerfile
 docker-compose.yml
 .dockerignore
+
+# Rust build output (rebuilt in the image)
+server/target

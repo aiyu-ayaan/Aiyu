@@ -42,6 +42,7 @@ dependencies = [
  "dotenvy",
  "futures-util",
  "hex",
+ "hmac",
  "http-body-util",
  "ipnet",
  "jsonwebtoken",

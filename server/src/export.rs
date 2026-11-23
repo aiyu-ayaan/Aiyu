@@ -9,7 +9,7 @@ use async_zip::{Compression, ZipEntryBuilder, tokio::write::ZipFileWriter};
 use axum::{
     body::Body,
     extract::{RawQuery, State},
-    http::{HeaderMap, HeaderValue, header},
+    http::{HeaderValue, header},
     response::Response,
 };
 use chrono::{NaiveDateTime, Utc};
@@ -20,6 +20,16 @@ use std::path::{Path, PathBuf};
 use tokio_util::{compat::FuturesAsyncWriteCompatExt, io::ReaderStream};
 
 use crate::{AppState, auth::require_session};
+
+pub const INTERNAL_HEADER: &str = "x-aiyu-internal";
+
+/// HMAC-SHA256(JWT_SECRET, "internal:export") as hex; the Node cron computes the same.
+pub fn internal_key(jwt_secret: &str) -> String {
+    use hmac::{Hmac, Mac};
+    let mut mac = Hmac::<sha2::Sha256>::new_from_slice(jwt_secret.as_bytes()).expect("any key length");
+    mac.update(b"internal:export");
+    hex::encode(mac.finalize().into_bytes())
+}
 
 #[derive(Clone, Copy)]
 enum Kind {
@@ -98,9 +108,19 @@ pub fn selected_keys(query: &[(String, String)]) -> Vec<&'static str> {
         .collect()
 }
 
-pub async fn export(State(state): State<AppState>, RawQuery(query): RawQuery, headers: HeaderMap) -> Response {
-    if let Err(res) = require_session(&state, &headers).await {
-        return res;
+pub async fn export(State(state): State<AppState>, RawQuery(query): RawQuery, req: axum::extract::Request) -> Response {
+    let headers = req.headers();
+    let peer = req.extensions().get::<axum::extract::ConnectInfo<std::net::SocketAddr>>().map(|c| c.0.ip());
+    // The backup cron inside the container calls this over loopback with a key derived from JWT_SECRET.
+    let internal = peer.is_some_and(|ip| ip.is_loopback())
+        && headers
+            .get(INTERNAL_HEADER)
+            .and_then(|v| v.to_str().ok())
+            .is_some_and(|v| crate::session::constant_time_eq(v, &internal_key(&state.config.jwt_secret)));
+    if !internal {
+        if let Err(res) = require_session(&state, headers).await {
+            return res;
+        }
     }
     let params = query.as_deref().map(url_pairs).unwrap_or_default();
     let include_images = !params.iter().any(|(k, v)| k == "includeImages" && v == "false");
@@ -363,6 +383,12 @@ mod tests {
         let mut v = Value::String("2026-01-02T03:04:05".into());
         normalize_timestamp(&mut v);
         assert_eq!(v, "2026-01-02T03:04:05.000Z");
+    }
+
+    #[test]
+    fn internal_key_matches_node() {
+        // node -e "console.log(require('crypto').createHmac('sha256','s').update('internal:export').digest('hex'))"
+        assert_eq!(internal_key("s"), "a3d63bf2357b9f9132e71c21bab23c3de6eaaacb4870ff95358565177fe1fde6");
     }
 
     #[test]

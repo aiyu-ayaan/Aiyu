@@ -13,7 +13,9 @@ export async function POST(request) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
-    const origin = getPublicOrigin(request);
+    // In the Docker image the Rust server is on loopback; going through the public
+    // origin would send the zip out through the CDN and back.
+    const origin = process.env.AIYU_SERVER_URL || getPublicOrigin(request);
     const { searchParams } = new URL(request.url);
     const exportUrl = `${origin}/api/admin/export?${searchParams.toString()}`;
     const cookieHeader = request.headers.get('cookie') || '';

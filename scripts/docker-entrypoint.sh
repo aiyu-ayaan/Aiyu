@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 # Container entrypoint for the Next.js standalone server.
 #
 # When RUN_MIGRATIONS=true (and DATABASE_URL is set) it applies any pending
@@ -59,5 +59,29 @@ if [ -n "${RUN_SEED}" ] && [ "${RUN_SEED}" != "false" ] && [ -n "${DATABASE_URL}
   fi
 fi
 
-echo "[entrypoint] Starting Next.js server..."
-exec node server.js
+# Next listens on loopback only; the Rust server (aiyu-server) owns the public
+# port, serves the routes ported to Rust and streams the rest to Next.
+PUBLIC_PORT="${PORT:-3000}"
+NEXT_PORT="${NEXT_INTERNAL_PORT:-3001}"
+
+echo "[entrypoint] Starting Next.js server on 127.0.0.1:${NEXT_PORT}..."
+PORT="${NEXT_PORT}" HOSTNAME=127.0.0.1 AIYU_SERVER_URL="http://127.0.0.1:${PUBLIC_PORT}" node server.js &
+NEXT_PID=$!
+
+echo "[entrypoint] Starting aiyu-server on 0.0.0.0:${PUBLIC_PORT}..."
+RUST_LISTEN="0.0.0.0:${PUBLIC_PORT}" \
+NEXT_UPSTREAM="http://127.0.0.1:${NEXT_PORT}" \
+NEXT_DIR=/app/.next \
+UPLOADS_DIR=/app/public/uploads \
+TRUSTED_PROXIES="${TRUSTED_PROXIES:-127.0.0.1}" \
+  /app/aiyu-server &
+RUST_PID=$!
+
+# Forward stop signals to both; if either process exits, stop the other so the
+# container exits and the restart policy brings both back.
+trap 'kill -TERM "$NEXT_PID" "$RUST_PID" 2>/dev/null' TERM INT
+wait -n "$NEXT_PID" "$RUST_PID"
+STATUS=$?
+kill -TERM "$NEXT_PID" "$RUST_PID" 2>/dev/null
+wait
+exit "$STATUS"
