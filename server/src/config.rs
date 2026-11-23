@@ -7,6 +7,8 @@ pub struct Config {
     pub next_upstream: String,
     pub next_dir: PathBuf,
     pub jwt_secret: String,
+    /// Peers allowed to set client-IP headers (nginx, Cloudflare tunnel). Everyone else gets them overwritten.
+    pub trusted_proxies: Vec<ipnet::IpNet>,
 }
 
 impl Config {
@@ -18,6 +20,20 @@ impl Config {
             next_upstream: env::var("NEXT_UPSTREAM").unwrap_or_else(|_| "http://127.0.0.1:3000".into()),
             next_dir: env::var("NEXT_DIR").unwrap_or_else(|_| ".next".into()).into(),
             jwt_secret,
+            trusted_proxies: parse_trusted(&env::var("TRUSTED_PROXIES").unwrap_or_default())?,
         })
     }
+}
+
+/// Comma-separated IPs or CIDRs, e.g. `127.0.0.1,172.16.0.0/12`.
+pub fn parse_trusted(list: &str) -> anyhow::Result<Vec<ipnet::IpNet>> {
+    list.split(',')
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(|s| {
+            s.parse::<ipnet::IpNet>()
+                .or_else(|_| s.parse::<std::net::IpAddr>().map(ipnet::IpNet::from))
+                .map_err(|_| anyhow::anyhow!("TRUSTED_PROXIES: invalid entry {s:?}"))
+        })
+        .collect()
 }

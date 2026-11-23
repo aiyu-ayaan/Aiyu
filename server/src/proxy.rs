@@ -40,6 +40,8 @@ const HOP_BY_HOP: [HeaderName; 7] = [
     header::UPGRADE,
 ];
 
+const CLIENT_IP_HEADERS: [&str; 4] = ["cf-connecting-ip", "x-real-ip", "x-forwarded-for", "x-client-ip"];
+
 fn strip_hop_by_hop(h: &mut HeaderMap) {
     for name in HOP_BY_HOP.iter() {
         h.remove(name);
@@ -55,20 +57,27 @@ pub async fn forward(State(state): State<AppState>, req: Request) -> Response {
 
     let mut headers = parts.headers;
     strip_hop_by_hop(&mut headers);
-    // Next resolves the client IP from x-real-ip, then the last x-forwarded-for hop (src/lib/clientIp.js).
+    // Next trusts cf-connecting-ip, then x-real-ip, then the last x-forwarded-for hop (src/lib/clientIp.js).
+    // Only a trusted proxy may set those; for anyone else they are replaced by the socket peer, so a client
+    // cannot pick its own IP to dodge the login throttle and rate limits or poison the audit log.
     if let Some(ConnectInfo(addr)) = peer {
-        let ip = addr.ip().to_string();
-        if !headers.contains_key("x-real-ip") {
-            if let Ok(v) = HeaderValue::from_str(&ip) {
-                headers.insert("x-real-ip", v);
+        let ip = addr.ip();
+        if state.config.trusted_proxies.iter().any(|net| net.contains(&ip)) {
+            let xff = match headers.get("x-forwarded-for").and_then(|v| v.to_str().ok()) {
+                Some(prev) => format!("{prev}, {ip}"),
+                None => ip.to_string(),
+            };
+            if let Ok(v) = HeaderValue::from_str(&xff) {
+                headers.insert("x-forwarded-for", v);
             }
-        }
-        let xff = match headers.get("x-forwarded-for").and_then(|v| v.to_str().ok()) {
-            Some(prev) => format!("{prev}, {ip}"),
-            None => ip,
-        };
-        if let Ok(v) = HeaderValue::from_str(&xff) {
-            headers.insert("x-forwarded-for", v);
+        } else {
+            for name in CLIENT_IP_HEADERS {
+                headers.remove(name);
+            }
+            if let Ok(v) = HeaderValue::from_str(&ip.to_string()) {
+                headers.insert("x-real-ip", v.clone());
+                headers.insert("x-forwarded-for", v);
+            }
         }
     }
     // Keep the browser's Host so Next builds public URLs and redirects for the real origin.

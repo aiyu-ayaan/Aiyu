@@ -42,7 +42,7 @@ export default defineConfig({
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
   ],
   webServer: {
-    command: 'npm run dev',
+    command: 'pnpm dev',
     url: baseURL,
     timeout: 120_000,
     reuseExistingServer: !process.env.CI,

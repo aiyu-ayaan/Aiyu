@@ -25,5 +25,6 @@ pnpm server:test
 | `RUST_LISTEN` | `0.0.0.0:8080` | |
 | `NEXT_UPSTREAM` | `http://127.0.0.1:3000` | Next server for unported routes |
 | `NEXT_DIR` | `.next` | where `static/` is read from |
+| `TRUSTED_PROXIES` | empty | IPs/CIDRs (e.g. nginx, `127.0.0.1,172.16.0.0/12`) allowed to set `x-real-ip`, `x-forwarded-for`, `cf-connecting-ip`. From any other peer those headers are replaced by the socket address. |
 
 Reads `.env` from the working directory.

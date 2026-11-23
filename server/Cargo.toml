@@ -13,6 +13,7 @@ cbc = { version = "0.1", features = ["alloc", "std"] }
 dotenvy = "0.15"
 futures-util = "0.3"
 hex = "0.4"
+ipnet = "2"
 jsonwebtoken = "9"
 rand = "0.8"
 reqwest = { version = "0.12", default-features = false, features = ["stream"] }
