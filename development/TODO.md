@@ -1,0 +1,287 @@
+# Aiyu: Rust + Vite migration tracking
+
+Goal: run the whole site on a 1 GB VPS. Smallest possible size and memory, no data loss.
+Target stack: axum (Rust) server + SQLite, Vite + React (TypeScript where practical) client, pnpm.
+Branch: `migrate/rust-vite`. Baseline and method: `development/docs/PERFORMANCE.md`.
+
+## Decisions
+- Strangler migration: axum sits in front, serves what is ported, reverse-proxies the rest to Next. Every commit leaves the site working. RAM only drops once Next is fully gone (both servers run during the transition).
+- Client stays React: GSAP, framer-motion, three.js, CodeMirror run in the browser unchanged. Only Next-specific APIs are replaced (shims for `next/link`, `next/navigation`, `next/dynamic`).
+- Data: Postgres stays the source of truth until a verified cutover. Migrate with a direct per-table copy (not the backup zip: export strips cron secrets and covers fewer collections than the 36 models). Verify row counts and per-row hashes.
+- Rust must stay byte-compatible with: `src/lib/encryption.js` (encrypted DB fields), session/JWT cookies (`jose`), password/token hashes, `toClient`/`fromClient` JSON shapes, the backup zip format (old Drive backups must restore).
+- TypeScript: new code (shims, API client, Rust-generated types via `ts-rs`) in TS; existing JS converted file by file with `allowJs`.
+
+## Milestone 1: Baseline (DONE — 2026-11-24)
+- [x] Branch `migrate/rust-vite`
+- [x] Bench script `scripts/perf/bench.mjs` (RSS, route latency, backup memory)
+- [x] Baseline numbers in `development/docs/PERFORMANCE.md`
+- [x] Backup memory cause found: zip buffered whole (export `arrayBuffer` + `Buffer.from` + `Buffer.concat` in `uploadBackupToDrive`), every table loaded whole with `findMany()`; V8 keeps the grown heap
+
+## Milestone 2: Remove v1
+- [ ] Delete `src/app/v1` and v1-only components
+- [ ] Remove the v1/v2 switch from the admin panel and proxy; 301 `/v1/*` to the v2 paths
+- [ ] Sitemap, tests, docs updated; build + tests pass
+
+## Milestone 3: pnpm
+- [ ] `pnpm import` from `package-lock.json`, overrides to `pnpm.overrides`, peer settings in `.npmrc`
+- [ ] Dockerfile, scripts and docs use pnpm; build + tests pass
+
+## Milestone 4: axum skeleton
+- [ ] Cargo workspace (`server/`), axum + tower-http (compression, static files), reverse proxy fallback to Next
+- [ ] Config from the same `.env`; health route; release profile (lto, strip, panic=abort)
+- [ ] Parity helpers: `encryption.js` decrypt/encrypt, session cookie verify, with fixture tests from Node-made values
+
+## Milestone 5: Data layer (SQLite)
+- [ ] SQLite schema for all 36 models (Json -> TEXT json, String[] -> TEXT json, insensitive search -> COLLATE NOCASE)
+- [ ] `pg -> sqlite` copy tool with row-count and hash verification
+- [ ] Streaming backup export (same zip format) and restore; Drive upload streamed (resumable upload)
+
+## Milestone 6: Vite client
+- [ ] Vite + React + react-router + `@tailwindcss/vite`, `envPrefix: ['VITE_', 'NEXT_PUBLIC_']`
+- [ ] Shims for `next/link`, `next/navigation`, `next/dynamic`, `next/image`, `next/script`
+- [ ] Rust renders head/meta/JSON-LD + initial data per route, `createRoot` mounts the app
+
+## Milestone 7: Port pages one by one
+Each page: Rust data endpoint(s) + Vite route + e2e test passing against Rust.
+- [ ] `/admin`
+- [ ] `/admin/about`
+- [ ] `/admin/ads`
+- [ ] `/admin/ai`
+- [ ] `/admin/ai-page`
+- [ ] `/admin/analytics`
+- [ ] `/admin/api-reference`
+- [ ] `/admin/apps`
+- [ ] `/admin/apps/[id]`
+- [ ] `/admin/apps/new`
+- [ ] `/admin/blogs`
+- [ ] `/admin/blogs/api`
+- [ ] `/admin/blogs/config`
+- [ ] `/admin/blogs/[id]`
+- [ ] `/admin/blogs/new`
+- [ ] `/admin/config`
+- [ ] `/admin/config/crons`
+- [ ] `/admin/config/crons/logs`
+- [ ] `/admin/config/notification`
+- [ ] `/admin/contact`
+- [ ] `/admin/database`
+- [ ] `/admin/deployments`
+- [ ] `/admin/deployments/[id]`
+- [ ] `/admin/deployments/new`
+- [ ] `/admin/desktop`
+- [ ] `/admin/footer`
+- [ ] `/admin/footer/[id]`
+- [ ] `/admin/footer/new`
+- [ ] `/admin/gallery`
+- [ ] `/admin/github`
+- [ ] `/admin/header`
+- [ ] `/admin/health`
+- [ ] `/admin/home`
+- [ ] `/admin/legal`
+- [ ] `/admin/legal/[id]`
+- [ ] `/admin/legal/[id]/pages/[docId]`
+- [ ] `/admin/legal/[id]/pages/new`
+- [ ] `/admin/legal/new`
+- [ ] `/admin/login`
+- [ ] `/admin/mcp`
+- [ ] `/admin/projects`
+- [ ] `/admin/projects/[id]`
+- [ ] `/admin/projects/new`
+- [ ] `/admin/resources`
+- [ ] `/admin/resume`
+- [ ] `/admin/security`
+- [ ] `/admin/seo`
+- [ ] `/admin/settings`
+- [ ] `/admin/social`
+- [ ] `/admin/terminal`
+- [ ] `/admin/themes`
+- [ ] `/admin/version`
+- [ ] `/desktop`
+- [ ] `/games`
+- [ ] `/games/[slug]`
+- [ ] `/[legalApp]`
+- [ ] `/[legalApp]/[legalDoc]`
+- [ ] `/v2`
+- [ ] `/v2/about-me`
+- [ ] `/v2/ai`
+- [ ] `/v2/ai/[section]`
+- [ ] `/v2/apps`
+- [ ] `/v2/apps/[id]`
+- [ ] `/v2/blogs`
+- [ ] `/v2/blogs/[id]`
+- [ ] `/v2/contact-us`
+- [ ] `/v2/gallery`
+- [ ] `/v2/github`
+- [ ] `/v2/projects`
+- [ ] `/v2/projects/[id]`
+- [ ] `/v2/sitemap`
+
+## Milestone 8: Port API routes
+- [ ] `/api/about`
+- [ ] `/api/admin/ads`
+- [ ] `/api/admin/ai/config`
+- [ ] `/api/admin/ai/generate`
+- [ ] `/api/admin/ai/logs`
+- [ ] `/api/admin/ai/models`
+- [ ] `/api/admin/ai/text`
+- [ ] `/api/admin/ai/validate-provider`
+- [ ] `/api/admin/analytics`
+- [ ] `/api/admin/blogs/token`
+- [ ] `/api/admin/crons`
+- [ ] `/api/admin/crons/env`
+- [ ] `/api/admin/crons/[id]`
+- [ ] `/api/admin/crons/[id]/run`
+- [ ] `/api/admin/crons/logs`
+- [ ] `/api/admin/crons/preview`
+- [ ] `/api/admin/crons/timezone`
+- [ ] `/api/admin/export`
+- [ ] `/api/admin/gdrive/auth`
+- [ ] `/api/admin/gdrive/backup`
+- [ ] `/api/admin/gdrive/callback`
+- [ ] `/api/admin/gdrive/config`
+- [ ] `/api/admin/gdrive/cron`
+- [ ] `/api/admin/gdrive/delete`
+- [ ] `/api/admin/gdrive/disconnect`
+- [ ] `/api/admin/gdrive/list`
+- [ ] `/api/admin/gdrive/restore`
+- [ ] `/api/admin/gdrive/status`
+- [ ] `/api/admin/health/analyze`
+- [ ] `/api/admin/health/metrics`
+- [ ] `/api/admin/health/targets`
+- [ ] `/api/admin/health/uptime`
+- [ ] `/api/admin/health/uptime/check`
+- [ ] `/api/admin/icons`
+- [ ] `/api/admin/images/upload`
+- [ ] `/api/admin/import`
+- [ ] `/api/admin/mcp/config`
+- [ ] `/api/admin/mcp/token`
+- [ ] `/api/admin/migrate-gallery`
+- [ ] `/api/admin/notifications`
+- [ ] `/api/admin/notifications/test`
+- [ ] `/api/admin/purge-cache`
+- [ ] `/api/admin/resume`
+- [ ] `/api/admin/resume/compile`
+- [ ] `/api/admin/resume/publish`
+- [ ] `/api/admin/security/audit`
+- [ ] `/api/admin/security/sessions`
+- [ ] `/api/admin/security/sessions/[id]/revoke`
+- [ ] `/api/admin/seo/audit`
+- [ ] `/api/admin/seo/config`
+- [ ] `/api/admin/seo/crawl`
+- [ ] `/api/admin/seo/fix`
+- [ ] `/api/admin/seo/index`
+- [ ] `/api/admin/social`
+- [ ] `/api/admin/storage`
+- [ ] `/api/admin/storage/migrate`
+- [ ] `/api/admin/storage/unreferenced`
+- [ ] `/api/admin/system-prompt`
+- [ ] `/api/ai/credits`
+- [ ] `/api/ai/credits/[id]`
+- [ ] `/api/ai/layout`
+- [ ] `/api/ai-page`
+- [ ] `/api/ai/prompts`
+- [ ] `/api/ai/prompts/[id]`
+- [ ] `/api/ai/recommendations`
+- [ ] `/api/ai/recommendations/[id]`
+- [ ] `/api/ai/seed`
+- [ ] `/api/ai/skills`
+- [ ] `/api/ai/skills/categories`
+- [ ] `/api/ai/skills/categories/[id]`
+- [ ] `/api/ai/skills/items`
+- [ ] `/api/ai/skills/items/[id]`
+- [ ] `/api/analytics/track`
+- [ ] `/api/auth/github`
+- [ ] `/api/auth/github/callback`
+- [ ] `/api/auth/login`
+- [ ] `/api/auth/logout`
+- [ ] `/api/blogs`
+- [ ] `/api/blogs/[id]`
+- [ ] `/api/config`
+- [ ] `/api/contact/message`
+- [ ] `/api/debug-groq`
+- [ ] `/api/deployments`
+- [ ] `/api/deployments/[id]`
+- [ ] `/api/deployments/[id]/links`
+- [ ] `/api/deployments/reorder`
+- [ ] `/api/desktop/source`
+- [ ] `/api/desktop/widgets`
+- [ ] `/api/favicon`
+- [ ] `/api/gallery`
+- [ ] `/api/github/config`
+- [ ] `/api/github/stats`
+- [ ] `/api/github/sync`
+- [ ] `/api/github/webhook`
+- [ ] `/api/global-search`
+- [ ] `/api/header`
+- [ ] `/api/health`
+- [ ] `/api/home`
+- [ ] `/api/legal/apps`
+- [ ] `/api/legal/apps/[id]`
+- [ ] `/api/legal/apps/[id]/documents`
+- [ ] `/api/legal/documents/[id]`
+- [ ] `/api/mcp`
+- [ ] `/api/og-preview`
+- [ ] `/api/projects`
+- [ ] `/api/projects/[id]`
+- [ ] `/api/projects/[id]/links`
+- [ ] `/api/projects/reorder`
+- [ ] `/api/resume`
+- [ ] `/api/socials`
+- [ ] `/api/socials/[id]`
+- [ ] `/api/themes`
+- [ ] `/api/themes/active`
+- [ ] `/api/themes/[id]`
+- [ ] `/api/upload`
+- [ ] `/api/uploads/[filename]`
+- [ ] `/api/version`
+- [ ] `/.well-known/agent-skills/index.json`
+- [ ] `/.well-known/agent-skills/[skill]/SKILL.md`
+- [ ] `/.well-known/api-catalog`
+- [ ] `/.well-known/jwks.json`
+- [ ] `/.well-known/mcp/server-card.json`
+- [ ] `/.well-known/oauth-authorization-server`
+- [ ] `/.well-known/oauth-protected-resource`
+- [ ] `/.well-known/openapi.json`
+- [ ] `/.well-known/openid-configuration`
+
+## Milestone 9: Models in SQLite
+- [ ] `Blog`
+- [ ] `Project`
+- [ ] `Deployment`
+- [ ] `LegalApp`
+- [ ] `LegalDocument`
+- [ ] `Gallery`
+- [ ] `ContactMessage`
+- [ ] `AiLog`
+- [ ] `Cron`
+- [ ] `CronLog`
+- [ ] `Session`
+- [ ] `AuditLog`
+- [ ] `UptimeTarget`
+- [ ] `UptimeCheck`
+- [ ] `AnalyticsEvent`
+- [ ] `AnalyticsDaily`
+- [ ] `Social`
+- [ ] `Theme`
+- [ ] `Config`
+- [ ] `Ads`
+- [ ] `SeoConfig`
+- [ ] `IndexingLog`
+- [ ] `About`
+- [ ] `Home`
+- [ ] `Header`
+- [ ] `NotificationConfig`
+- [ ] `GitHub`
+- [ ] `CronEnv`
+- [ ] `McpConfig`
+- [ ] `AiPage`
+- [ ] `ResumeStudio`
+- [ ] `AiSkillCategory`
+- [ ] `AiSkill`
+- [ ] `AiRecommendation`
+- [ ] `AiCredit`
+- [ ] `AiPrompt`
+
+## Milestone 10: Cutover
+- [ ] Copy production Postgres -> SQLite, verify counts and hashes
+- [ ] Remove Next.js, Prisma, Node from the runtime image; Docker image on a Rust binary + static files
+- [ ] Final bench vs baseline on a 1 GB VM
