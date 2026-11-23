@@ -278,7 +278,7 @@ export default function ClientEnhancements() {
             {mountPalette && <CommandPalette />}
             {swarmEnabled && <SwarmBuild />}
 
-            {(pathname === '/' || pathname === '/v2') && <ArcadePopup />}
+            {pathname === '/' && <ArcadePopup />}
 
             {/* Scroll to top button — CSS-only transitions (no framer-motion) so
                 this always-rendered root component stays out of the heavy

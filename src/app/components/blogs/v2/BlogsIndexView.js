@@ -1,35 +1,9 @@
 import Link from 'next/link';
-import BreadcrumbSchema from '../../components/shared/BreadcrumbSchema';
-import { getConfigData, getPublishedBlogs } from '@/lib/dataFetchers';
-import { getSiteUrl } from '@/lib/siteUrl';
 import { getBlogPath } from '@/lib/publicPaths';
-import { getReadTime, stripMarkdown } from '../../components/blogs/blogUtils';
+import { getReadTime, stripMarkdown } from '../blogUtils';
 import { v2PublicPath } from '@/lib/siteVersion';
 
-export const revalidate = 0;
-
 const ROW_ACCENTS = ['var(--accent-pink)', 'var(--accent-cyan)', 'var(--accent-purple)', 'var(--accent-orange)'];
-
-export async function generateMetadata() {
-    const config = await getConfigData();
-    const baseName = config?.siteTitle || config?.logoText || 'Portfolio';
-    const baseUrl = getSiteUrl();
-    const description = 'Every post as a plain editorial index — fast, server-rendered, no scripts. V2 edition.';
-
-    return {
-        title: `${baseName} | Writing`,
-        description,
-        openGraph: {
-            title: `${baseName} | Writing`,
-            description,
-            url: `${baseUrl}${v2PublicPath(config, '/blogs')}`,
-            type: 'website',
-        },
-        alternates: {
-            canonical: `${baseUrl}${v2PublicPath(config, '/blogs')}`,
-        },
-    };
-}
 
 const formatDate = (blog) => {
     const parsed = new Date(blog?.date || blog?.createdAt || 0);
@@ -38,24 +12,16 @@ const formatDate = (blog) => {
 };
 
 /**
- * /v2/blogs — deliberately the simplest v2 page. Writing is meant to load
- * fast, so this is a pure server component: no GSAP, no filters, no client
- * bundle beyond the shared chrome. Just the full index as hairline ledger
- * rows in the v2 editorial voice, sorted newest first.
+ * /blogs — the full index as hairline ledger rows, newest first. Pure view:
+ * rendered by the Next page and by the Vite app with the same data.
  */
-export default async function BlogsV2Page() {
-    const [blogs, config] = await Promise.all([
-        getPublishedBlogs(),
-        getConfigData(),
-    ]);
-
+export default function BlogsIndexView({ blogs, config }) {
     const sortedBlogs = (Array.isArray(blogs) ? [...blogs] : []).sort(
         (a, b) => new Date(b?.date || b?.createdAt || 0) - new Date(a?.date || a?.createdAt || 0)
     );
 
     return (
         <div className="relative overflow-hidden">
-            <BreadcrumbSchema path="/blogs" name="Blogs" />
             <div className="mx-auto w-full max-w-7xl px-6 pb-24 pt-32 sm:pt-40 lg:px-10">
                 <div className="relative mb-14 sm:mb-20">
                     <span

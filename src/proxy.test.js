@@ -10,22 +10,17 @@ function makeRequest(path, { cookie, host = 'localhost:3000' } = {}) {
     return new NextRequest(`http://localhost:3000${path}`, { headers });
 }
 
-const rewritePath = (res) => new URL(res.headers.get('x-middleware-rewrite')).pathname;
 const locationPath = (res) => new URL(res.headers.get('location')).pathname;
 
-// URL model: the /v2 tree owns the clean URLs (served via rewrite). The removed
-// classic site (/v1) and explicit /v2 prefixes redirect to the clean URL.
+// URL model: public pages live at their clean URLs (src/app/(site)). The legacy
+// /v1 and /v2 prefixes redirect to the clean URL.
 describe('proxy site routing', () => {
-    it('rewrites clean URLs to the /v2 tree', async () => {
-        expect(rewritePath(await proxy(makeRequest('/')))).toBe('/v2');
-        expect(rewritePath(await proxy(makeRequest('/projects')))).toBe('/v2/projects');
-        expect(rewritePath(await proxy(makeRequest('/blogs/some-post')))).toBe('/v2/blogs/some-post');
-    });
-
-    it('ignores a stale site-version cookie', async () => {
-        const res = await proxy(makeRequest('/about-me', { cookie: 'site-version=classic' }));
-        expect(res.headers.get('location')).toBeNull();
-        expect(rewritePath(res)).toBe('/v2/about-me');
+    it('serves clean URLs directly (no rewrite)', async () => {
+        for (const path of ['/', '/projects', '/blogs/some-post', '/about-me']) {
+            const res = await proxy(makeRequest(path, { cookie: 'site-version=classic' }));
+            expect(res.headers.get('x-middleware-rewrite')).toBeNull();
+            expect(res.headers.get('location')).toBeNull();
+        }
     });
 
     it('permanently redirects removed /v1 URLs to the clean URL', async () => {

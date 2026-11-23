@@ -1,4 +1,4 @@
-import V2Layout from '../v2/layout';
+import V2Layout from '../(site)/layout';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;

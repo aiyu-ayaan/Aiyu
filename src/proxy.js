@@ -302,32 +302,9 @@ function getMarkdownPage(pathname) {
 }
 
 // ──────────────────────────────────────────────────────────────────────────
-// The /v2 tree owns the clean public URLs: `/`, `/about-me`, `/blogs/<id>`, …
-// are served via rewrite from /v2, so the address bar, sitemap and canonicals
-// never carry a prefix. The old classic (/v1) site was removed; its URLs and
-// any explicit /v2 URL redirect permanently to the clean path.
+// Public pages live at their clean URLs (src/app/(site)). The old /v1 (classic)
+// and /v2 prefixes redirect permanently to the clean path.
 // ──────────────────────────────────────────────────────────────────────────
-const V2_PAGES = new Set([
-    '/',
-    '/about-me',
-    '/projects',
-    '/gallery',
-    '/apps',
-    '/blogs',
-    '/github',
-    '/contact-us',
-    '/sitemap',
-    '/ai'
-]);
-
-// Detail routes that also live under /v2 (e.g. /apps/<slug>, /projects/<slug>,
-// /blogs/<slug>).
-const V2_DETAIL_PREFIXES = ['/blogs/', '/apps/', '/projects/', '/ai/'];
-
-function isV2Page(pathname) {
-    return V2_PAGES.has(pathname) || V2_DETAIL_PREFIXES.some((prefix) => pathname.startsWith(prefix));
-}
-
 // Pages that only existed in the removed classic site, mapped to their v2 home.
 function getRemovedPageTarget(pathname) {
     if (pathname === '/live-deployments') return '/apps';
@@ -400,8 +377,7 @@ export async function proxy(request) {
         });
     }
 
-    // 5. Site routing: /v1 and /v2 prefixes redirect to the clean URL; clean
-    //    v2 URLs rewrite to the /v2 tree.
+    // 5. Legacy /v1 and /v2 prefixes redirect to the clean URL.
     if (request.method === 'GET' || request.method === 'HEAD') {
         const isV1Path = path === '/v1' || path.startsWith('/v1/');
         const isV2Path = path === '/v2' || path.startsWith('/v2/');
@@ -416,25 +392,6 @@ export async function proxy(request) {
             return NextResponse.redirect(new URL(target, getPublicOrigin(request)), isV2Path ? 308 : 301);
         }
 
-        if (isV2Page(path)) {
-            const requestHeaders = new Headers(request.headers);
-            requestHeaders.set('x-is-rewrite', 'true');
-            requestHeaders.set('x-original-path', path);
-
-            const rewriteResponse = NextResponse.rewrite(
-                new URL((request.nextUrl.basePath || '') + `/v2${path === '/' ? '' : path}` + request.nextUrl.search, request.nextUrl.origin),
-                {
-                    request: {
-                        headers: requestHeaders,
-                    }
-                }
-            );
-            if (path === '/') {
-                rewriteResponse.headers.set('Link', agentDiscoveryLinkHeader);
-                rewriteResponse.headers.append('Vary', 'Accept');
-            }
-            return rewriteResponse;
-        }
     }
 
     const response = NextResponse.next();
