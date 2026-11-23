@@ -1,0 +1,36 @@
+[package]
+name = "aiyu-server"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+aes = "0.8"
+anyhow = "1"
+axum = "0.8"
+base64 = "0.22"
+cbc = { version = "0.1", features = ["alloc", "std"] }
+dotenvy = "0.15"
+futures-util = "0.3"
+hex = "0.4"
+jsonwebtoken = "9"
+rand = "0.8"
+reqwest = { version = "0.12", default-features = false, features = ["stream"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "net", "signal"] }
+tower-http = { version = "0.6", features = ["compression-br", "compression-gzip", "fs", "set-header"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[dev-dependencies]
+tower = { version = "0.5", features = ["util"] }
+http-body-util = "0.1"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"

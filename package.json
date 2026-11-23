@@ -38,7 +38,10 @@
     "record:desktop": "node scripts/record-story.mjs --device desktop",
     "record:mobile": "node scripts/record-story.mjs --device mobile",
     "hf:sync": "node scripts/sync-hyperframes.mjs",
-    "hf:check": "cd hyperframes/story && pnpm dlx hyperframes@0.8.78 check && cd ../boot && pnpm dlx hyperframes@0.8.78 check"
+    "hf:check": "cd hyperframes/story && pnpm dlx hyperframes@0.8.78 check && cd ../boot && pnpm dlx hyperframes@0.8.78 check",
+    "server:build": "cargo build --release --manifest-path server/Cargo.toml",
+    "server:test": "cargo test --manifest-path server/Cargo.toml",
+    "server:start": "server/target/release/aiyu-server"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.20.3",

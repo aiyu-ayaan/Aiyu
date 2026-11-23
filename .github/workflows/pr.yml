@@ -41,6 +41,28 @@ jobs:
         # vitest runs in jsdom and needs no database or running server.
         run: pnpm run test
 
+  rust:
+    name: Rust server (cargo test)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            server/target
+          key: cargo-${{ runner.os }}-${{ hashFiles('server/Cargo.lock') }}
+
+      - name: Run tests
+        run: cargo test --locked
+
   e2e:
     name: E2E tests (playwright)
     runs-on: ubuntu-latest

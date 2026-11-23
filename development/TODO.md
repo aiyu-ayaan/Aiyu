@@ -31,10 +31,13 @@ Branch: `migrate/rust-vite`. Baseline and method: `development/docs/PERFORMANCE.
 - [x] Dockerfile (corepack, `node-linker=hoisted` so the standalone pruning paths stay valid), CI setup + workflows, README/AGENTS/docs commands
 - [x] vitest 283 passed, lint clean, `next build` OK, Playwright 12 passed, `docker build` OK (image 694 MB)
 
-## Milestone 4: axum skeleton
-- [ ] Cargo workspace (`server/`), axum + tower-http (compression, static files), reverse proxy fallback to Next
-- [ ] Config from the same `.env`; health route; release profile (lto, strip, panic=abort)
-- [ ] Parity helpers: `encryption.js` decrypt/encrypt, session cookie verify, with fixture tests from Node-made values
+## Milestone 4: axum skeleton (DONE — 2026-11-24)
+- [x] `server/` crate: axum + tower-http (brotli/gzip, skips zips/PDF/fonts/video), `/_next/static` from disk (immutable), streaming reverse-proxy fallback to Next
+- [x] Config from the same `.env`; `/healthz`; release profile (lto, strip, panic=abort): 3.75 MB binary
+- [x] Parity: `encryption.js` decrypt/encrypt and session JWT verify, tested against Node-made fixtures (`server/tests/parity.rs`)
+- [x] Playwright 12 passed through Rust (`E2E_PORT=8080`); Rust RSS 5-8 MB incl. 3 streamed backups
+- [x] CI job `cargo test --locked`; `pnpm server:build|test|start`; graceful shutdown on SIGTERM and SIGINT
+- [ ] Tune for 1 GB: `worker_threads` (default = cores), allocator (mimalloc)
 
 ## Milestone 5: Data layer (SQLite)
 - [ ] SQLite schema for all 36 models (Json -> TEXT json, String[] -> TEXT json, insensitive search -> COLLATE NOCASE)

@@ -84,3 +84,30 @@ Filled in as milestones land. Same method, same data.
 | Server RSS idle / warm / after 3 backups | 235 / 500 / 834 MB | 286 / 532 / 867 MB (no change; within run-to-run noise) |
 
 Server memory does not move: it is set by Next.js and the backup path, not by page count.
+
+### Milestone 3: pnpm
+
+CSS 352 KB -> 318 KB (Tailwind no longer scans markdown docs). Docker image (pnpm): 694 MB.
+
+### Milestone 4: axum in front of Next
+
+Release binary: 3.75 MB. Rust process RSS (Next still runs behind it, unchanged):
+
+| Rust RSS | MB |
+|---|---|
+| Start | 4.7 |
+| After public warmup | 6 |
+| After 3 backups (75.7 MB each, streamed) | 8 |
+
+Backups through Rust take the same time as direct (about 2.8 s) once zips are excluded from compression
+(the first try brotli-compressed the zip: 6.3 s).
+
+Compression (curl, one request; Next sends HTML uncompressed):
+
+| Route | Next direct | Rust, brotli | Time Next / Rust |
+|---|---|---|---|
+| `/` | 785 KB | 272 KB | 14 / 26 ms |
+| `/blogs` | 5.71 MB | 1.92 MB | 158 / 214 ms |
+
+Brotli costs 10-50 ms of CPU per page and cuts bytes on the wire by 65%. The real fix for `/blogs` is not
+shipping 5.7 MB of HTML, which comes with the page port.

@@ -63,3 +63,5 @@ k6-*.json
 
 # brag launch video outputs
 brag-*
+# rust server
+/server/target
