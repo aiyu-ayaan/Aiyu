@@ -97,9 +97,14 @@ fn normalize_timestamps(row: &mut Map<String, Value>) {
 /// `getSingleton(prisma, key)` for a json-blob model: `{ ...data, _id }` (+ timestamps when the model has them).
 /// `table` is always a constant from this crate.
 pub async fn singleton(db: &PgPool, table: &str, timestamps: bool) -> Value {
+    try_singleton(db, table, timestamps).await.unwrap_or(Value::Null)
+}
+
+/// `singleton`, with database errors reported (the API answers 500 on those, pages render without the data).
+pub async fn try_singleton(db: &PgPool, table: &str, timestamps: bool) -> anyhow::Result<Value> {
     let sql = format!(r#"SELECT row_to_json(t)::text FROM "{table}" t LIMIT 1"#);
-    let Ok(Some(raw)) = sqlx::query_scalar::<_, String>(&sql).fetch_optional(db).await else { return Value::Null };
-    let Ok(Value::Object(mut row)) = serde_json::from_str::<Value>(&raw) else { return Value::Null };
+    let Some(raw) = sqlx::query_scalar::<_, String>(&sql).fetch_optional(db).await? else { return Ok(Value::Null) };
+    let Value::Object(mut row) = serde_json::from_str::<Value>(&raw)? else { return Ok(Value::Null) };
     normalize_timestamps(&mut row);
     let mut out = match row.remove("data") {
         Some(Value::Object(d)) => d,
@@ -111,7 +116,7 @@ pub async fn singleton(db: &PgPool, table: &str, timestamps: bool) -> Value {
             out.insert(k.into(), row.remove(k).unwrap_or(Value::Null));
         }
     }
-    Value::Object(out)
+    Ok(Value::Object(out))
 }
 
 /// `toClientList(key, rows)` for a relational model: `id` becomes `_id` (first), other columns as-is.
@@ -133,7 +138,7 @@ pub fn to_client_row(v: Value) -> Value {
 
 /// `getDeploymentsData` (sortDeployments): displayOrder ascending (unset last), then most recently updated.
 pub async fn deployments(db: &PgPool) -> anyhow::Result<Vec<Value>> {
-    client_rows(db, "Deployment", r#"ORDER BY "displayOrder" ASC NULLS LAST, "updatedAt" DESC"#).await
+    client_rows(db, "Deployment", r#"ORDER BY "displayOrder" ASC NULLS LAST, "updatedAt" DESC, "createdAt" DESC"#).await
 }
 
 /// `getProjectsData` (sortProjects): displayOrder ascending (unset last), then the last 4-digit year, newest first.

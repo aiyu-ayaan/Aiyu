@@ -1,0 +1,22 @@
+# Batch 1: public read APIs
+GET /api/about
+GET /api/home
+GET /api/header
+GET /api/socials
+GET /api/version
+GET /api/health
+GET /api/health?deep=1
+GET /api/config
+GET /api/projects
+GET /api/projects/cmupzi3ir00app80134805884
+GET /api/projects/cmwm2j7oa04qzoc01w9tguen0
+GET /api/projects/nope-e2e
+GET /api/projects/cmupzi3ir00app80134805884/links
+GET /api/projects/nope-e2e/links
+GET /api/deployments
+GET /api/deployments/cmux2lmoj0003pg01a9j2h8ww
+GET /api/deployments/nope-e2e
+GET /api/deployments/cmux2lmoj0003pg01a9j2h8ww/links
+GET /api/deployments/cmwm2kr9n04raoc01xnjmj7zl/links
+GET /api/deployments/nope-e2e/links
+GET /api/gallery

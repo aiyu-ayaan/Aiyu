@@ -18,6 +18,7 @@ async fn run() -> anyhow::Result<()> {
         .with_env_filter(tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into()))
         .init();
 
+    aiyu_server::api::mark_start();
     let config = Config::from_env()?;
     let listen = config.listen;
     tracing::info!(%listen, upstream = %config.next_upstream, "aiyu-server starting");

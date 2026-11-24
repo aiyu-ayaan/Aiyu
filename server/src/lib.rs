@@ -1,6 +1,8 @@
 pub mod ai;
+pub mod api;
 pub mod auth;
 pub mod legal;
+pub mod limit;
 pub mod compat;
 pub mod config;
 pub mod db;
@@ -124,6 +126,21 @@ pub fn router(state: AppState) -> Router {
         .route("/{legal_app}", get(web::legal_app))
         .route("/{legal_app}/{legal_doc}", get(web::legal_doc))
         .route("/api/admin/export", get(export::export))
+        // API routes ported from Next; other methods on these paths still go to Next.
+        .route("/api/about", get(api::about))
+        .route("/api/home", get(api::home))
+        .route("/api/header", get(api::header_data))
+        .route("/api/socials", get(api::socials))
+        .route("/api/version", get(api::version))
+        .route("/api/health", get(api::health))
+        .route("/api/config", get(api::config))
+        .route("/api/projects", get(api::projects))
+        .route("/api/projects/{id}", get(api::project))
+        .route("/api/projects/{id}/links", get(api::project_links))
+        .route("/api/deployments", get(api::deployments))
+        .route("/api/deployments/{id}", get(api::deployment))
+        .route("/api/deployments/{id}/links", get(api::deployment_links))
+        .route("/api/gallery", get(api::gallery))
         .merge(next_static)
         .merge(web_assets)
         .fallback(proxy::forward)

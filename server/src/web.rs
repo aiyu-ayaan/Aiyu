@@ -1406,6 +1406,12 @@ fn iso(v: Option<&Value>) -> Option<String> {
     Some(local.with_timezone(&chrono::Utc).format("%Y-%m-%dT%H:%M:%S%.3fZ").to_string())
 }
 
+/// `new URL(value, getSiteUrl()).toString()` for site-relative values.
+pub fn absolute_url(value: &str) -> String {
+    let base = site_url();
+    reqwest::Url::parse(&format!("{base}/")).and_then(|b| b.join(value)).map(|u| u.to_string()).unwrap_or_else(|_| pages::absolute(&base, value))
+}
+
 /// `getSiteUrl()` in src/lib/siteUrl.js.
 fn site_url() -> String {
     let raw = std::env::var("SITE_URL").ok().filter(|v| !v.trim().is_empty())
