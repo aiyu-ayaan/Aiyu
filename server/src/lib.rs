@@ -127,6 +127,8 @@ pub fn router(state: AppState) -> Router {
         .merge(next_static)
         .merge(web_assets)
         .fallback(proxy::forward)
+        // A path Rust serves only for GET (pages, the legal catch-alls) still belongs to Next for other methods.
+        .method_not_allowed_fallback(proxy::forward)
         .layer(
             CompressionLayer::new().quality(tower_http::CompressionLevel::Precise(4)).br(true).gzip(true).compress_when(
                 // Already-compressed payloads (backup zips, images, fonts) only cost CPU to recompress.

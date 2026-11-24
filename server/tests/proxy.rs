@@ -107,3 +107,15 @@ async fn next_rsc_requests_to_vite_pages_get_an_empty_non_rsc_reply() {
     assert_eq!(res.headers()["content-type"], "text/plain");
     assert!(res.into_body().collect().await.unwrap().to_bytes().is_empty());
 }
+
+#[tokio::test]
+async fn non_get_methods_on_rust_page_patterns_reach_next() {
+    // `/{legal_app}/{legal_doc}` and the page routes are GET-only in Rust; uploads and admin saves must still
+    // reach Next instead of getting a 405.
+    for (method, uri) in [("POST", "/api/upload"), ("PUT", "/api/about"), ("DELETE", "/api/gallery"), ("POST", "/blogs")] {
+        let mut req = Request::builder().method(method).uri(uri).header("host", "example.com").body(Body::empty()).unwrap();
+        req.extensions_mut().insert(ConnectInfo::<SocketAddr>("127.0.0.1:5555".parse().unwrap()));
+        let res = app("").await.oneshot(req).await.unwrap();
+        assert_eq!(res.status(), StatusCode::OK, "{method} {uri}");
+    }
+}
