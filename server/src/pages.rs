@@ -131,6 +131,28 @@ pub fn to_client_row(v: Value) -> Value {
     Value::Object(out)
 }
 
+/// `getDeploymentsData` (sortDeployments): displayOrder ascending (unset last), then most recently updated.
+pub async fn deployments(db: &PgPool) -> anyhow::Result<Vec<Value>> {
+    client_rows(db, "Deployment", r#"ORDER BY "displayOrder" ASC NULLS LAST, "updatedAt" DESC"#).await
+}
+
+/// `getProjectsData` (sortProjects): displayOrder ascending (unset last), then the last 4-digit year, newest first.
+/// `list`: the index only checks that a readme exists, so it gets a one-character marker instead of ~260 KB of text.
+pub async fn projects(db: &PgPool, list: bool) -> anyhow::Result<Vec<Value>> {
+    let order = r#"ORDER BY "displayOrder" ASC NULLS LAST, COALESCE((regexp_match(year, '.*(\d{4})'))[1]::int, 0) DESC, "createdAt" DESC"#;
+    let mut rows = client_rows(db, "Project", order).await?;
+    if list {
+        for r in &mut rows {
+            if let Some(v) = r.get_mut("readme") {
+                if v.as_str().is_some_and(|t| !t.trim().is_empty()) {
+                    *v = Value::String("…".into());
+                }
+            }
+        }
+    }
+    Ok(rows)
+}
+
 /// `getSocialMeta()` (src/lib/socialMeta.js): `{ defaultImage, pages }`, possibly empty.
 pub async fn social_meta(db: &PgPool) -> Value {
     sqlx::query_scalar::<_, Option<Value>>(r#"SELECT (data->'social')::json FROM "SeoConfig" LIMIT 1"#)

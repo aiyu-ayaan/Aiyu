@@ -17,6 +17,11 @@ const GamesIndex = lazy(() => import('./routes/games').then((m) => ({ default: m
 const GamePage = lazy(() => import('./routes/games').then((m) => ({ default: m.GamePage })));
 const BlogDetail = lazy(() => import('./routes/blogDetail'));
 const AboutMe = lazy(() => import('./routes/aboutMe'));
+const Apps = lazy(() => import('./routes/apps'));
+const Projects = lazy(() => import('./routes/projects'));
+const Gallery = lazy(() => import('./routes/gallery'));
+const GitHub = lazy(() => import('./routes/github'));
+const Contact = lazy(() => import('./routes/contact'));
 import { NotFound } from './NotFound';
 
 export type BootData = {
@@ -55,6 +60,11 @@ export function App({ data }: { data: BootData }) {
               <Route path="/blogs" element={<BlogsIndex />} />
               <Route path="/blogs/:id" element={<BlogDetail />} />
               <Route path="/about-me" element={<AboutMe />} />
+              <Route path="/apps" element={<Apps />} />
+              <Route path="/projects" element={<Projects />} />
+              <Route path="/gallery" element={<Gallery />} />
+              <Route path="/github" element={<GitHub />} />
+              <Route path="/contact-us" element={<Contact />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

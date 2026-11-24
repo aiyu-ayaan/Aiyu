@@ -176,8 +176,7 @@ pub struct Section {
 }
 
 /// Render a section page. `page` is the data the Vite route reads; `fallback` is the crawler HTML.
-async fn section(web: &WebApp, state: &AppState, req: &Parts, sec: &Section, page: Value, fallback: String) -> Response {
-    let site = Site::load(state).await;
+async fn section(web: &WebApp, state: &AppState, req: &Parts, site: Site, sec: &Section, page: Value, fallback: String) -> Response {
     let social = pages::social_meta(&state.db).await;
     let shell = pages::shell_data(state, &site.config).await;
     let mut head = section_head(&site, &social, sec.path, &format!("{} | {}", site.base_name, sec.title), sec.description, sec.path);
@@ -225,7 +224,100 @@ pub async fn about_me(State(state): State<AppState>, req: Request) -> Response {
     let s = |k: &str| about.get(k).and_then(Value::as_str).unwrap_or_default();
     let fallback = format!("<main><h1>{}</h1><p>{}</p></main>", escape(s("name")), escape(s("professionalSummary")));
     let sec = Section { path: "/about-me", crumb: "About Me", title: "About Me", description: "Learn more about my background, skills, and experience." };
-    section(&web, &state, &req, &sec, json!({ "about": about }), fallback).await
+    section(&web, &state, &req, Site::load(&state).await, &sec, json!({ "about": about }), fallback).await
+}
+
+/// Crawler HTML for a list page: heading plus one link per item.
+fn link_list(heading: &str, items: &[Value], name_key: &str, base: &str) -> String {
+    let mut h = format!("<main><h1>{}</h1><ul>", escape(heading));
+    for it in items {
+        let name = it[name_key].as_str().unwrap_or_default();
+        let slug = it["slug"].as_str().filter(|s| !s.is_empty()).or(it["_id"].as_str()).unwrap_or_default();
+        h.push_str(&format!(r#"<li><a href="{base}/{}">{}</a></li>"#, escape(slug), escape(name)));
+    }
+    h.push_str("</ul></main>");
+    h
+}
+
+/// `/apps`: port of src/app/(site)/apps/page.js.
+pub async fn apps(State(state): State<AppState>, req: Request) -> Response {
+    let web = web_or_next!(state, req);
+    let req = req.into_parts().0;
+    let deployments = match pages::deployments(&state.db).await {
+        Ok(d) => d,
+        Err(err) => return server_error(err),
+    };
+    let fallback = link_list("Apps", &deployments, "name", "/apps");
+    let sec = Section { path: "/apps", crumb: "Apps", title: "Apps", description: "Hosted apps and services as a live process table — V2 edition." };
+    section(&web, &state, &req, Site::load(&state).await, &sec, json!({ "deployments": deployments }), fallback).await
+}
+
+/// `/projects`: port of src/app/(site)/projects/page.js.
+pub async fn projects(State(state): State<AppState>, req: Request) -> Response {
+    let web = web_or_next!(state, req);
+    let req = req.into_parts().0;
+    let projects = match pages::projects(&state.db, true).await {
+        Ok(p) => p,
+        Err(err) => return server_error(err),
+    };
+    let site = Site::load(&state).await;
+    let fallback = link_list("Open Source & Community", &projects, "name", "/projects");
+    let sec = Section {
+        path: "/projects",
+        crumb: "Open Source",
+        title: "Open Source & Community",
+        description: "Open source libraries, apps and experiments — built and maintained in the open.",
+    };
+    let page = json!({ "projects": projects, "config": site.config });
+    section(&web, &state, &req, site, &sec, page, fallback).await
+}
+
+/// `/gallery`: port of src/app/(site)/gallery/page.js.
+pub async fn gallery(State(state): State<AppState>, req: Request) -> Response {
+    let web = web_or_next!(state, req);
+    let req = req.into_parts().0;
+    let images = match pages::client_rows(&state.db, "Gallery", r#"ORDER BY "isPinned" DESC, "order" ASC, "createdAt" DESC"#).await {
+        Ok(i) => i,
+        Err(err) => return server_error(err),
+    };
+    let site = Site::load(&state).await;
+    let mut fallback = String::from("<main><h1>Gallery</h1>");
+    for i in &images {
+        fallback.push_str(&format!(r#"<img src="{}" alt="{}" loading="lazy" />"#, escape(i["thumbnail"].as_str().or(i["src"].as_str()).unwrap_or_default()), escape(i["description"].as_str().unwrap_or_default())));
+    }
+    fallback.push_str("</main>");
+    let sec = Section { path: "/gallery", crumb: "Gallery", title: "Gallery", description: "A pure photo wall — the visual archive with nothing but the frames. V2 edition." };
+    let page = json!({ "images": images, "config": site.config });
+    section(&web, &state, &req, site, &sec, page, fallback).await
+}
+
+/// `/github`: port of src/app/(site)/github/page.js (the stats load in the browser).
+pub async fn github(State(state): State<AppState>, req: Request) -> Response {
+    let web = web_or_next!(state, req);
+    let req = req.into_parts().0;
+    let sec = Section { path: "/github", crumb: "GitHub", title: "GitHub", description: "Open source contributions, repositories, and GitHub statistics — V2 edition." };
+    section(&web, &state, &req, Site::load(&state).await, &sec, json!({}), "<main><h1>GitHub</h1></main>".into()).await
+}
+
+/// `/contact-us`: port of src/app/(site)/contact-us/page.js.
+pub async fn contact(State(state): State<AppState>, req: Request) -> Response {
+    let web = web_or_next!(state, req);
+    let req = req.into_parts().0;
+    let site = Site::load(&state).await;
+    let c = &site.config;
+    let s = |k: &str| c.get(k).and_then(Value::as_str).filter(|v| !v.is_empty()).map(str::to_string);
+    // public_config already turned an uploaded resume into "/api/resume", like the page's `type === 'file'` branch.
+    let resume = c["resume"]["value"].as_str().filter(|v| !v.is_empty());
+    let page = json!({
+        "location": s("contactLocation").unwrap_or_else(|| "Remote / Worldwide".into()),
+        "status": s("contactStatus").unwrap_or_else(|| "Open to opportunities".into()),
+        "email": c.get("contactEmail"),
+        "hasResume": resume.is_some(),
+        "resumeHref": resume.unwrap_or("#"),
+    });
+    let fallback = format!("<main><h1>Contact</h1><p>{}</p></main>", escape(page["status"].as_str().unwrap_or_default()));
+    let sec = Section { path: "/contact-us", crumb: "Contact", title: "Contact", description: "Let's collaborate on something amazing." };
+    section(&web, &state, &req, site, &sec, page, fallback).await
 }
 
 /// `/_img/blog/{id}`: a blog cover stored inline as a data URI.

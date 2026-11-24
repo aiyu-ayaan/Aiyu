@@ -10,6 +10,24 @@ const PAGES = [
         const about = await (await request.get('/api/about')).json();
         await expect(page.getByText(about.name, { exact: false }).first()).toBeVisible();
     }],
+    ['/apps', /\| Apps$/, async (page, request) => {
+        // Rows reveal on scroll: check they rendered, not that they are on screen.
+        const [first] = await (await request.get('/api/deployments')).json();
+        await expect(page.getByText(first.name, { exact: false }).first()).toBeAttached();
+    }],
+    ['/projects', /\| Open Source & Community$/, async (page, request) => {
+        const [first] = await (await request.get('/api/projects')).json();
+        await expect(page.getByText(first.name, { exact: false }).first()).toBeAttached();
+    }],
+    ['/gallery', /\| Gallery$/, async (page) => {
+        await expect(page.locator('main img').first()).toBeVisible({ timeout: 15_000 });
+    }],
+    // Stats come from the GitHub API in the browser: only the shell is checked (the API may be rate-limited).
+    ['/github', /\| GitHub$/, async () => {}],
+    // Never submitted: it writes a ContactMessage and can send real notifications.
+    ['/contact-us', /\| Contact$/, async (page) => {
+        await expect(page.locator('form textarea').first()).toBeVisible();
+    }],
 ];
 
 for (const [path, title, check] of PAGES) {
@@ -21,7 +39,7 @@ for (const [path, title, check] of PAGES) {
         const res = await page.goto(path);
         expect(res.status()).toBe(200);
         await expect(page).toHaveTitle(title);
-        await expect(page.locator('h1').first()).toBeVisible({ timeout: 15_000 });
+        if (path !== '/github') await expect(page.locator('h1').first()).toBeVisible({ timeout: 15_000 });
         await expect(page.locator('script[type="application/ld+json"]').first()).toBeAttached();
         await check(page, request);
         expect(errors).toEqual([]);

@@ -97,6 +97,11 @@ pub fn router(state: AppState) -> Router {
         .route("/blogs/", get(web::blogs_index))
         .route("/blogs/{id}", get(web::blog_detail))
         .route("/about-me", get(web::about_me))
+        .route("/apps", get(web::apps))
+        .route("/projects", get(web::projects))
+        .route("/gallery", get(web::gallery))
+        .route("/github", get(web::github))
+        .route("/contact-us", get(web::contact))
         .layer(axum::middleware::from_fn(web::skip_next_rsc))
         .layer(axum::middleware::from_fn(compat::public_page));
 
