@@ -301,3 +301,247 @@ pub async fn gallery(State(state): State<AppState>, req: axum::extract::Request)
         Err(err) => json_status(StatusCode::BAD_REQUEST, json!({ "success": false, "error": err.to_string() })),
     }
 }
+
+// ── blogs ─────────────────────────────────────────────────────────────────────────────────────────────
+
+fn query_map(q: &Option<String>) -> std::collections::HashMap<String, String> {
+    url::form_urlencoded_parse(q.as_deref().unwrap_or(""))
+}
+
+mod url {
+    /// `URLSearchParams.get` semantics: `+` is a space, `%XX` decodes, the first value of a key wins.
+    pub fn form_urlencoded_parse(q: &str) -> std::collections::HashMap<String, String> {
+        let dec = |s: &str| {
+            let b = s.as_bytes();
+            let mut out = Vec::with_capacity(b.len());
+            let mut i = 0;
+            while i < b.len() {
+                let hex = |c: u8| (c as char).to_digit(16);
+                match b[i] {
+                    b'+' => out.push(b' '),
+                    b'%' if i + 2 < b.len() => {
+                        match (hex(b[i + 1]), hex(b[i + 2])) {
+                            (Some(h), Some(l)) => {
+                                out.push((h * 16 + l) as u8);
+                                i += 3;
+                                continue;
+                            }
+                            _ => out.push(b'%'),
+                        }
+                    }
+                    c => out.push(c),
+                }
+                i += 1;
+            }
+            String::from_utf8_lossy(&out).into_owned()
+        };
+        let mut map = std::collections::HashMap::new();
+        for pair in q.split('&').filter(|p| !p.is_empty()) {
+            let (k, v) = pair.split_once('=').unwrap_or((pair, ""));
+            map.entry(dec(k)).or_insert_with(|| dec(v));
+        }
+        map
+    }
+}
+
+/// `Number.parseInt` of a query value: leading integer, else None.
+fn js_int(v: Option<&String>) -> Option<i64> {
+    let s = v?.trim_start();
+    let end = s.char_indices().take_while(|(i, c)| c.is_ascii_digit() || (*i == 0 && (*c == '-' || *c == '+'))).last().map(|(i, c)| i + c.len_utf8())?;
+    s[..end].parse().ok()
+}
+
+fn without_search_vector(rows: Vec<Value>) -> Vec<Value> {
+    rows.into_iter()
+        .map(|mut r| {
+            if let Some(o) = r.as_object_mut() {
+                o.shift_remove("searchVector");
+            }
+            r
+        })
+        .collect()
+}
+
+async fn blog_views(state: &AppState, ids: &[String]) -> anyhow::Result<std::collections::HashMap<String, i64>> {
+    let rows: Vec<(String, i64)> = sqlx::query_as(
+        r#"SELECT "entityId", COALESCE(SUM(views), 0)::bigint FROM "AnalyticsDaily"
+           WHERE type = 'entity_view' AND "entityType" = 'blog' AND "entityId" = ANY($1) GROUP BY "entityId""#,
+    )
+    .bind(ids)
+    .fetch_all(&state.db)
+    .await?;
+    Ok(rows.into_iter().collect())
+}
+
+fn with_time(mut res: Response, started: Instant) -> Response {
+    if let Ok(v) = HeaderValue::from_str(&started.elapsed().as_millis().to_string()) {
+        res.headers_mut().insert("x-response-time-ms", v);
+    }
+    res
+}
+
+/// `GET /api/blogs`: published posts (all, or `?page=&limit=`), or for the admin with `?all=true` every post with
+/// filters, sorting, view counts and counts per tab.
+pub async fn blogs(State(state): State<AppState>, RawQuery(q): RawQuery, headers: axum::http::HeaderMap) -> Response {
+    let started = Instant::now();
+    let p = query_map(&q);
+    let admin = p.get("all").map(String::as_str) == Some("true") && signed_in(&state, &headers).await;
+    let result = if admin { blogs_admin(&state, &p, started).await } else { blogs_public(&state, &p, started).await };
+    result.unwrap_or_else(|err| with_time(json_status(StatusCode::BAD_REQUEST, json!({ "success": false, "error": err.to_string() })), started))
+}
+
+async fn blogs_public(state: &AppState, p: &std::collections::HashMap<String, String>, started: Instant) -> anyhow::Result<Response> {
+    const DEFAULT: i64 = 6;
+    if p.contains_key("page") || p.contains_key("limit") {
+        let page = js_int(p.get("page")).unwrap_or(1).max(1);
+        let limit = match p.get("limit") {
+            Some(_) => js_int(p.get("limit")).map(|l| l.clamp(1, 24)).unwrap_or(DEFAULT),
+            None => DEFAULT,
+        };
+        // page/limit are parsed integers.
+        let rest = format!(r#"WHERE published ORDER BY "createdAt" DESC LIMIT {limit} OFFSET {}"#, (page - 1) * limit);
+        let rows = without_search_vector(pages::client_rows(&state.db, "Blog", &rest).await?);
+        let total: i64 = sqlx::query_scalar(r#"SELECT count(*) FROM "Blog" WHERE published"#).fetch_one(&state.db).await?;
+        let pages_n = if total > 0 { (total + limit - 1) / limit } else { 0 };
+        let body = json!({ "success": true, "data": rows, "pagination": { "page": page, "limit": limit, "total": total, "totalPages": pages_n, "hasMore": page < pages_n } });
+        return Ok(with_time(public_json(body, PUBLIC_MEDIUM, "db:blogs:published:page"), started));
+    }
+    let rows = without_search_vector(pages::client_rows(&state.db, "Blog", r#"WHERE published ORDER BY "createdAt" DESC"#).await?);
+    Ok(with_time(public_json(json!({ "success": true, "data": rows }), PUBLIC_MEDIUM, "db:blogs:published"), started))
+}
+
+async fn blogs_admin(state: &AppState, p: &std::collections::HashMap<String, String>, started: Instant) -> anyhow::Result<Response> {
+    let limit = js_int(p.get("limit")).filter(|l| *l != 0).unwrap_or(20).clamp(1, 24);
+    let page = js_int(p.get("page")).filter(|l| *l != 0).unwrap_or(1).max(1);
+    let tab = p.get("filter").map(String::as_str).unwrap_or("all");
+    let sort_key = p.get("sortKey").map(String::as_str).unwrap_or("");
+    let dir = if p.get("sortDir").map(String::as_str) == Some("asc") { "ASC" } else { "DESC" };
+    let filter = match tab {
+        "flagged" => r#"WHERE "isFlagged""#,
+        "ceased" => r#"WHERE NOT published AND NOT "isFlagged""#,
+        "active" => r#"WHERE published AND NOT "isFlagged""#,
+        _ => "",
+    };
+    let (all, flagged, ceased, active): (i64, i64, i64, i64) = sqlx::query_as(
+        r#"SELECT count(*), count(*) FILTER (WHERE "isFlagged"), count(*) FILTER (WHERE NOT published AND NOT "isFlagged"),
+                  count(*) FILTER (WHERE published AND NOT "isFlagged") FROM "Blog""#,
+    )
+    .fetch_one(&state.db)
+    .await?;
+    let offset = (page - 1) * limit;
+    let id_of = |b: &Value| b["_id"].as_str().unwrap_or_default().to_string();
+    let data: Vec<Value> = if sort_key == "views" {
+        // Rank every matching post by views (ties keep the table order, like the JS sort), then load one page.
+        let ids: Vec<String> = sqlx::query_scalar(&format!(r#"SELECT id FROM "Blog" {filter}"#)).fetch_all(&state.db).await?;
+        let views = blog_views(state, &ids).await?;
+        let mut ranked = ids.clone();
+        ranked.sort_by(|a, b| {
+            let (va, vb) = (views.get(a).copied().unwrap_or(0), views.get(b).copied().unwrap_or(0));
+            if dir == "ASC" { va.cmp(&vb) } else { vb.cmp(&va) }
+        });
+        let page_ids: Vec<String> = ranked.into_iter().skip(offset as usize).take(limit as usize).collect();
+        let rows = sqlx::query_scalar::<_, String>(r#"SELECT row_to_json(t)::text FROM "Blog" t WHERE id = ANY($1)"#).bind(&page_ids).fetch_all(&state.db).await?;
+        let mut by_id: std::collections::HashMap<String, Value> = std::collections::HashMap::new();
+        for r in rows {
+            let v = pages::to_client_row(serde_json::from_str(&r)?);
+            by_id.insert(id_of(&v), v);
+        }
+        without_search_vector(page_ids.iter().filter_map(|id| by_id.remove(id)).collect())
+            .into_iter()
+            .map(|mut b| {
+                let n = views.get(&id_of(&b)).copied().unwrap_or(0);
+                b["views"] = n.into();
+                b
+            })
+            .collect()
+    } else {
+        let order = match sort_key {
+            "title" => format!("title {dir}"),
+            "date" => format!(r#""createdAt" {dir}"#),
+            "published" => format!("published {dir}"),
+            _ => r#""createdAt" DESC"#.into(),
+        };
+        // Every fragment is a constant or a parsed integer.
+        let rows = without_search_vector(pages::client_rows(&state.db, "Blog", &format!("{filter} ORDER BY {order} LIMIT {limit} OFFSET {offset}")).await?);
+        let ids: Vec<String> = rows.iter().map(id_of).collect();
+        let views = blog_views(state, &ids).await?;
+        rows.into_iter()
+            .map(|mut b| {
+                let n = views.get(&id_of(&b)).copied().unwrap_or(0);
+                b["views"] = n.into();
+                b
+            })
+            .collect()
+    };
+    let total = match tab {
+        "flagged" => flagged,
+        "ceased" => ceased,
+        "active" => active,
+        _ => all,
+    };
+    let pages_n = if total > 0 { (total + limit - 1) / limit } else { 0 };
+    let body = json!({
+        "success": true, "data": data,
+        "pagination": { "page": page, "limit": limit, "total": total, "totalPages": pages_n, "hasMore": page < pages_n },
+        "counts": { "all": all, "flagged": flagged, "ceased": ceased, "active": active },
+    });
+    Ok(with_time(Json(body).into_response(), started))
+}
+
+/// `GET /api/blogs/{id}`: `resolveBlogByIdentifier` (slug, slug ignoring case, id, then loose matches), drafts
+/// included like Next. Next also backfilled a missing slug on read; that write is left out.
+pub async fn blog(State(state): State<AppState>, axum::extract::Path(id): axum::extract::Path<String>) -> Response {
+    let result: anyhow::Result<Option<Value>> = async {
+        let ident = id.trim();
+        if ident.is_empty() {
+            return Ok(None);
+        }
+        let one = |cond: &str| format!(r#"SELECT row_to_json(t)::text FROM "Blog" t WHERE {cond} LIMIT 1"#);
+        for cond in ["slug = $1", "lower(slug) = lower($1)", "id = $1"] {
+            if let Some(raw) = sqlx::query_scalar::<_, String>(&one(cond)).bind(ident).fetch_optional(&state.db).await? {
+                return Ok(Some(pages::to_client_row(serde_json::from_str(&raw)?)));
+            }
+        }
+        let all: Vec<(String, String, String)> = sqlx::query_as(r#"SELECT id, slug, title FROM "Blog""#).fetch_all(&state.db).await?;
+        let hit = all.into_iter().find(|(bid, slug, title)| {
+            let derived = pages::entity_slug(&json!({ "_id": bid, "slug": slug, "name": title }), "blog");
+            derived == ident || slug == ident || bid == ident || pages::generate_slug(title) == ident
+                || (!slug.is_empty() && (ident.starts_with(slug.as_str()) || slug.starts_with(ident)))
+        });
+        match hit {
+            Some((bid, ..)) => {
+                let raw: String = sqlx::query_scalar(&one("id = $1")).bind(bid).fetch_one(&state.db).await?;
+                Ok(Some(pages::to_client_row(serde_json::from_str(&raw)?)))
+            }
+            None => Ok(None),
+        }
+    }
+    .await;
+    match result {
+        Ok(Some(mut b)) => {
+            if let Some(o) = b.as_object_mut() {
+                o.shift_remove("searchVector");
+            }
+            Json(json!({ "success": true, "data": b })).into_response()
+        }
+        Ok(None) => json_status(StatusCode::NOT_FOUND, json!({ "success": false, "error": "Blog not found" })),
+        Err(err) => json_status(StatusCode::BAD_REQUEST, json!({ "success": false, "error": err.to_string() })),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn query_parsing_like_url_search_params() {
+        let m = url::form_urlencoded_parse("a=1&a=2&b=x+y%21&c=%E2%9C%93&bad=%zz%&e");
+        assert_eq!(m["a"], "1");
+        assert_eq!(m["b"], "x y!");
+        assert_eq!(m["c"], "✓");
+        assert_eq!(m["bad"], "%zz%");
+        assert_eq!(m["e"], "");
+        assert_eq!(js_int(Some(&"12abc".to_string())), Some(12));
+        assert_eq!(js_int(Some(&"abc".to_string())), None);
+    }
+}

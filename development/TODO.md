@@ -9,7 +9,14 @@ Branch: `migrate/rust-vite`. Baseline and method: `development/docs/PERFORMANCE.
 Branch `migrate/rust-vite`. EVERY page is now served by Rust + Vite: all public pages, legal, `/desktop`, `/games`,
 and all `/admin` pages (`src/app/_admin/**/page.js`, routed by `web/src/routes/admin.tsx` through `import.meta.glob`;
 Next ignores `_` folders). Next only serves `/api/*`, `/.well-known/*`, `/docs/*`, sitemap.xml/robots.txt, uploads.
-Next step: Milestone 8 (API routes), then 5b/9 (SQLite), then 10 (cutover: remove Next).
+Milestone 8 (API routes) IN PROGRESS. Order: public GETs -> auth (login/logout, exact cookie/JWT/Session/audit
+parity, 5-per-5-min limit) + analytics/track -> admin writes (each must invalidate Next's in-memory cache through a
+loopback endpoint with the export's HMAC internal key, and keep audit/autoPing/notification side effects) ->
+integrations (Drive, crons, MCP, AI, GitHub sync, sharp/HEIC: port or keep a small Node sidecar, user's call).
+Every group: `node --env-file=.env scripts/perf/api-parity.mjs --cookie-jar <jar> scripts/perf/api/<group>.txt`
+(Next on :3100 vs Rust on :8080, signed out and in) must be all-equal before commit.
+Known pre-existing issue (kept for parity, ask the user): GET /api/blogs/{id} returns unpublished drafts to anyone.
+Then 5b/9 (SQLite), then 10 (cutover: remove Next).
 Admin pages call `/api/*`, so they keep working while APIs move one by one.
 e2e: `e2e/site-pages.spec.js` (public), `e2e/admin-pages.spec.js` (every admin route, one login; needs ADMIN_PASSWORD).
 
@@ -194,7 +201,7 @@ Each page: Rust data + head + Vite route + e2e passing through Rust, then the Ne
 - [x] `/v2/sitemap`
 
 ## Milestone 8: Port API routes
-- [ ] `/api/about`
+- [~] `/api/about` (GET in Rust; writes still Next)
 - [ ] `/api/admin/ads`
 - [ ] `/api/admin/ai/config`
 - [ ] `/api/admin/ai/generate`
@@ -271,46 +278,46 @@ Each page: Rust data + head + Vite route + e2e passing through Rust, then the Ne
 - [ ] `/api/auth/github/callback`
 - [ ] `/api/auth/login`
 - [ ] `/api/auth/logout`
-- [ ] `/api/blogs`
-- [ ] `/api/blogs/[id]`
-- [ ] `/api/config`
+- [~] `/api/blogs` (GET in Rust; writes still Next)
+- [~] `/api/blogs/[id]` (GET in Rust; writes still Next)
+- [~] `/api/config` (GET in Rust; writes still Next)
 - [ ] `/api/contact/message`
 - [ ] `/api/debug-groq`
-- [ ] `/api/deployments`
-- [ ] `/api/deployments/[id]`
-- [ ] `/api/deployments/[id]/links`
+- [~] `/api/deployments` (GET in Rust; writes still Next)
+- [~] `/api/deployments/[id]` (GET in Rust; writes still Next)
+- [x] `/api/deployments/[id]/links` (Rust)
 - [ ] `/api/deployments/reorder`
 - [ ] `/api/desktop/source`
 - [ ] `/api/desktop/widgets`
 - [ ] `/api/favicon`
-- [ ] `/api/gallery`
+- [~] `/api/gallery` (GET in Rust; writes still Next)
 - [ ] `/api/github/config`
 - [ ] `/api/github/stats`
 - [ ] `/api/github/sync`
 - [ ] `/api/github/webhook`
 - [ ] `/api/global-search`
-- [ ] `/api/header`
-- [ ] `/api/health`
-- [ ] `/api/home`
+- [~] `/api/header` (GET in Rust; writes still Next)
+- [x] `/api/health` (Rust)
+- [~] `/api/home` (GET in Rust; writes still Next)
 - [ ] `/api/legal/apps`
 - [ ] `/api/legal/apps/[id]`
 - [ ] `/api/legal/apps/[id]/documents`
 - [ ] `/api/legal/documents/[id]`
 - [ ] `/api/mcp`
 - [ ] `/api/og-preview`
-- [ ] `/api/projects`
-- [ ] `/api/projects/[id]`
-- [ ] `/api/projects/[id]/links`
+- [~] `/api/projects` (GET in Rust; writes still Next)
+- [~] `/api/projects/[id]` (GET in Rust; writes still Next)
+- [x] `/api/projects/[id]/links` (Rust)
 - [ ] `/api/projects/reorder`
 - [ ] `/api/resume`
-- [ ] `/api/socials`
+- [~] `/api/socials` (GET in Rust; writes still Next)
 - [ ] `/api/socials/[id]`
 - [ ] `/api/themes`
 - [ ] `/api/themes/active`
 - [ ] `/api/themes/[id]`
 - [ ] `/api/upload`
 - [ ] `/api/uploads/[filename]`
-- [ ] `/api/version`
+- [x] `/api/version` (Rust)
 - [ ] `/.well-known/agent-skills/index.json`
 - [ ] `/.well-known/agent-skills/[skill]/SKILL.md`
 - [ ] `/.well-known/api-catalog`

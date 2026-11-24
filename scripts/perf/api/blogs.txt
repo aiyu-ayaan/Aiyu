@@ -1,0 +1,11 @@
+GET /api/blogs
+GET /api/blogs?page=2&limit=5
+GET /api/blogs?page=0&limit=99
+GET /api/blogs?all=true
+GET /api/blogs?all=true&filter=active&sortKey=title&sortDir=asc&page=2
+GET /api/blogs?all=true&filter=ceased
+GET /api/blogs?all=true&sortKey=views&sortDir=desc
+GET /api/blogs/cmt8fl7kg0aq7ta01nvazixbo
+GET /api/blogs/microsoft-patch-tuesday-august-2026-570-flaws-3-zero-days
+GET /api/blogs/MICROSOFT-PATCH-TUESDAY-AUGUST-2026-570-FLAWS-3-ZERO-DAYS
+GET /api/blogs/nope-e2e

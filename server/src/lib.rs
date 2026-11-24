@@ -141,6 +141,8 @@ pub fn router(state: AppState) -> Router {
         .route("/api/deployments/{id}", get(api::deployment))
         .route("/api/deployments/{id}/links", get(api::deployment_links))
         .route("/api/gallery", get(api::gallery))
+        .route("/api/blogs", get(api::blogs))
+        .route("/api/blogs/{id}", get(api::blog))
         .merge(next_static)
         .merge(web_assets)
         .fallback(proxy::forward)
