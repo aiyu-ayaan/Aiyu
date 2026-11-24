@@ -259,17 +259,17 @@ Each page: Rust data + head + Vite route + e2e passing through Rust, then the Ne
 - [ ] `/api/admin/storage/migrate`
 - [ ] `/api/admin/storage/unreferenced`
 - [ ] `/api/admin/system-prompt`
-- [ ] `/api/ai/credits`
+- [~] `/api/ai/credits` (GET in Rust; writes still Next)
 - [ ] `/api/ai/credits/[id]`
-- [ ] `/api/ai/layout`
-- [ ] `/api/ai-page`
-- [ ] `/api/ai/prompts`
+- [~] `/api/ai/layout` (GET in Rust; writes still Next)
+- [x] `/api/ai-page` (Rust)
+- [~] `/api/ai/prompts` (GET in Rust; writes still Next)
 - [ ] `/api/ai/prompts/[id]`
-- [ ] `/api/ai/recommendations`
+- [~] `/api/ai/recommendations` (GET in Rust; writes still Next)
 - [ ] `/api/ai/recommendations/[id]`
 - [ ] `/api/ai/seed`
-- [ ] `/api/ai/skills`
-- [ ] `/api/ai/skills/categories`
+- [x] `/api/ai/skills` (Rust)
+- [~] `/api/ai/skills/categories` (GET in Rust; writes still Next)
 - [ ] `/api/ai/skills/categories/[id]`
 - [ ] `/api/ai/skills/items`
 - [ ] `/api/ai/skills/items/[id]`
@@ -289,7 +289,7 @@ Each page: Rust data + head + Vite route + e2e passing through Rust, then the Ne
 - [ ] `/api/deployments/reorder`
 - [ ] `/api/desktop/source`
 - [ ] `/api/desktop/widgets`
-- [ ] `/api/favicon`
+- [x] `/api/favicon` (Rust)
 - [~] `/api/gallery` (GET in Rust; writes still Next)
 - [ ] `/api/github/config`
 - [ ] `/api/github/stats`
@@ -299,19 +299,19 @@ Each page: Rust data + head + Vite route + e2e passing through Rust, then the Ne
 - [~] `/api/header` (GET in Rust; writes still Next)
 - [x] `/api/health` (Rust)
 - [~] `/api/home` (GET in Rust; writes still Next)
-- [ ] `/api/legal/apps`
-- [ ] `/api/legal/apps/[id]`
+- [~] `/api/legal/apps` (GET in Rust; writes still Next)
+- [~] `/api/legal/apps/[id]` (GET in Rust; writes still Next)
 - [ ] `/api/legal/apps/[id]/documents`
-- [ ] `/api/legal/documents/[id]`
+- [~] `/api/legal/documents/[id]` (GET in Rust; writes still Next)
 - [ ] `/api/mcp`
 - [ ] `/api/og-preview`
 - [~] `/api/projects` (GET in Rust; writes still Next)
 - [~] `/api/projects/[id]` (GET in Rust; writes still Next)
 - [x] `/api/projects/[id]/links` (Rust)
 - [ ] `/api/projects/reorder`
-- [ ] `/api/resume`
+- [x] `/api/resume` (Rust)
 - [~] `/api/socials` (GET in Rust; writes still Next)
-- [ ] `/api/socials/[id]`
+- [~] `/api/socials/[id]` (GET in Rust; writes still Next)
 - [ ] `/api/themes`
 - [ ] `/api/themes/active`
 - [ ] `/api/themes/[id]`

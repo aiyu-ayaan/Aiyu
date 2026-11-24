@@ -29,7 +29,7 @@ pub struct WebApp {
     template: String,
     meta: HashMap<String, PageMeta>,
     /// DEFAULT_AI_PAGE from src/lib/aiPageDefaults.js (written by the Vite build).
-    ai_defaults: Value,
+    pub ai_defaults: Value,
     /// `/admin/...` page patterns (`[id]` segments match anything), one per src/app/_admin page.
     admin_routes: Vec<String>,
 }

@@ -41,17 +41,30 @@ async fn list(db: &PgPool, sql: &str) -> anyhow::Result<Value> {
     Ok(sqlx::query_scalar::<_, Value>(sql).fetch_one(db).await?)
 }
 
-/// `{ config, stats }` as the AI Hub pages get them. `defaults` is DEFAULT_AI_PAGE (exported by the Vite build).
-pub async fn page_data(db: &PgPool, defaults: &Value) -> anyhow::Result<(Value, Value)> {
-    let stored = crate::pages::singleton(db, "AiPage", true).await;
-    // normalizeAiPageConfig: no sections -> the bundled defaults.
-    let mut config = if stored["sections"].as_array().is_some_and(|s| !s.is_empty()) { stored } else { defaults.clone() };
-    let shaped = [
-        ("skills", json!({ "categories": list(db, SKILLS).await? }), "categories"),
-        ("recommendations", json!({ "cards": list(db, RECOMMENDATIONS).await? }), "cards"),
-        ("credits", json!({ "rows": list(db, CREDITS).await? }), "rows"),
-        ("prompts", json!({ "items": list(db, PROMPTS).await? }), "items"),
-    ];
+/// The render shape of one DB-backed section (`skillsData`, `recommendationsData`, ...), with its list key.
+pub async fn section(db: &PgPool, kind: &str) -> anyhow::Result<Value> {
+    Ok(match kind {
+        "skills" => json!({ "categories": list(db, SKILLS).await? }),
+        "recommendations" => json!({ "cards": list(db, RECOMMENDATIONS).await? }),
+        "credits" => json!({ "rows": list(db, CREDITS).await? }),
+        "prompts" => json!({ "items": list(db, PROMPTS).await? }),
+        _ => anyhow::bail!("unknown AI section {kind}"),
+    })
+}
+
+/// The stored skeleton, or DEFAULT_AI_PAGE when no sections are saved (normalizeAiPageConfig).
+pub async fn skeleton(db: &PgPool, defaults: &Value) -> anyhow::Result<Value> {
+    let stored = crate::pages::try_singleton(db, "AiPage", true).await?;
+    Ok(if stored["sections"].as_array().is_some_and(|s| !s.is_empty()) { stored } else { defaults.clone() })
+}
+
+/// `hydrateAiSections(skeleton)`: what `GET /api/ai-page` serves.
+pub async fn hydrated(db: &PgPool, defaults: &Value) -> anyhow::Result<Value> {
+    let mut config = skeleton(db, defaults).await?;
+    let mut shaped = vec![];
+    for (kind, key) in [("skills", "categories"), ("recommendations", "cards"), ("credits", "rows"), ("prompts", "items")] {
+        shaped.push((kind, section(db, kind).await?, key));
+    }
     if let Some(sections) = config.get_mut("sections").and_then(Value::as_array_mut) {
         for section in sections.iter_mut() {
             let Some((_, data, key)) = shaped.iter().find(|(k, ..)| section["type"] == *k) else { continue };
@@ -63,7 +76,12 @@ pub async fn page_data(db: &PgPool, defaults: &Value) -> anyhow::Result<(Value, 
             }
         }
     }
-    Ok((config, stats(db).await))
+    Ok(config)
+}
+
+/// `{ config, stats }` as the AI Hub pages get them. `defaults` is DEFAULT_AI_PAGE (exported by the Vite build).
+pub async fn page_data(db: &PgPool, defaults: &Value) -> anyhow::Result<(Value, Value)> {
+    Ok((hydrated(db, defaults).await?, stats(db).await))
 }
 
 /// `computeAiStats`: zeroed on error, like the JS.

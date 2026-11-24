@@ -545,3 +545,247 @@ mod tests {
         assert_eq!(js_int(Some(&"abc".to_string())), None);
     }
 }
+
+// ── batch 2: socials/{id}, AI hub reads, legal admin reads, resume, favicon ───────────────────────────────
+
+/// `GET /api/socials/{id}`
+pub async fn social(State(state): State<AppState>, axum::extract::Path(id): axum::extract::Path<String>) -> Response {
+    match row_by_id(&state, "Social", &id).await {
+        Ok(Some(v)) => {
+            let mut res = public_json(v, PUBLIC_LONG, "db:socials:item");
+            if let Ok(h) = HeaderValue::from_str(&format!("db:socials:item:{id}")) {
+                res.headers_mut().insert("x-app-cache-key", h);
+            }
+            res
+        }
+        Ok(None) => error(StatusCode::NOT_FOUND, "Social link not found"),
+        Err(err) => {
+            log_error("/api/socials/{id}", &err);
+            error(StatusCode::INTERNAL_SERVER_ERROR, "Failed to fetch social link")
+        }
+    }
+}
+
+/// `GET /api/ai-page`: the skeleton hydrated from the four section tables.
+pub async fn ai_page(State(state): State<AppState>, req: axum::extract::Request) -> Response {
+    // DEFAULT_AI_PAGE comes with the Vite build; without it Next answers.
+    let Some(web) = state.web.clone() else { return crate::proxy::forward(State(state), req).await };
+    match crate::ai::hydrated(&state.db, &web.ai_defaults).await {
+        Ok(v) => public_json(v, PUBLIC_LONG, "db:aiPage"),
+        Err(err) => {
+            log_error("/api/ai-page", &err);
+            error(StatusCode::INTERNAL_SERVER_ERROR, "Failed to fetch AI page config")
+        }
+    }
+}
+
+/// `GET /api/ai/layout`: the skeleton only, no cache headers.
+pub async fn ai_layout(State(state): State<AppState>, req: axum::extract::Request) -> Response {
+    let Some(web) = state.web.clone() else { return crate::proxy::forward(State(state), req).await };
+    match crate::ai::skeleton(&state.db, &web.ai_defaults).await {
+        Ok(v) => Json(v).into_response(),
+        Err(err) => {
+            log_error("/api/ai/layout", &err);
+            error(StatusCode::INTERNAL_SERVER_ERROR, "Failed to fetch AI page layout")
+        }
+    }
+}
+
+/// `handleRead` in src/app/api/ai/_shared.js.
+fn ai_read(route: &str, result: anyhow::Result<Value>) -> Response {
+    match result {
+        Ok(v) => medium(v),
+        Err(err) => {
+            log_error(route, &err);
+            error(StatusCode::INTERNAL_SERVER_ERROR, "Internal error")
+        }
+    }
+}
+
+pub async fn ai_skills(State(state): State<AppState>) -> Response {
+    ai_read("/api/ai/skills", crate::ai::section(&state.db, "skills").await)
+}
+
+pub async fn ai_recommendations(State(state): State<AppState>) -> Response {
+    ai_read("/api/ai/recommendations", crate::ai::section(&state.db, "recommendations").await)
+}
+
+pub async fn ai_credits(State(state): State<AppState>) -> Response {
+    ai_read("/api/ai/credits", crate::ai::section(&state.db, "credits").await)
+}
+
+pub async fn ai_prompts(State(state): State<AppState>) -> Response {
+    ai_read("/api/ai/prompts", crate::ai::section(&state.db, "prompts").await)
+}
+
+/// Client rows of `table` whose `fk` is `id`, in `order`. `table`, `fk`, `order` are constants from this module.
+async fn children(state: &AppState, table: &str, fk: &str, id: &str, order: &str) -> anyhow::Result<Vec<Value>> {
+    let sql = format!(r#"SELECT row_to_json(t)::text FROM "{table}" t WHERE "{fk}" = $1 ORDER BY {order}"#);
+    let rows: Vec<String> = sqlx::query_scalar(&sql).bind(id).fetch_all(&state.db).await?;
+    rows.iter().map(|r| Ok(pages::to_client_row(serde_json::from_str(r)?))).collect()
+}
+
+const BY_ORDER: &str = r#""displayOrder" ASC, "createdAt" DESC"#;
+
+/// `GET /api/ai/skills/categories`: `listSkillCategories`, every category with its `skills`.
+pub async fn ai_skill_categories(State(state): State<AppState>) -> Response {
+    let result: anyhow::Result<Value> = async {
+        let mut cats = pages::client_rows(&state.db, "AiSkillCategory", r#"ORDER BY "displayOrder" ASC, "createdAt" DESC"#).await?;
+        for cat in cats.iter_mut() {
+            let id = cat["_id"].as_str().unwrap_or_default().to_string();
+            cat["skills"] = Value::Array(children(&state, "AiSkill", "categoryId", &id, BY_ORDER).await?);
+        }
+        Ok(json!({ "categories": cats }))
+    }
+    .await;
+    ai_read("/api/ai/skills/categories", result)
+}
+
+/// `handleAdmin` in src/app/api/legal/_shared.js for reads: session, then `no-store` JSON.
+async fn legal_admin(state: &AppState, headers: &axum::http::HeaderMap, result: impl std::future::Future<Output = anyhow::Result<Option<Value>>>, missing: &str) -> Response {
+    if !signed_in(state, headers).await {
+        return error(StatusCode::UNAUTHORIZED, "Unauthorized");
+    }
+    match result.await {
+        Ok(Some(v)) => {
+            let mut res = Json(v).into_response();
+            res.headers_mut().insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
+            res
+        }
+        Ok(None) => error(StatusCode::NOT_FOUND, missing),
+        Err(err) => {
+            log_error("/api/legal", &err);
+            error(StatusCode::INTERNAL_SERVER_ERROR, "Internal error")
+        }
+    }
+}
+
+/// `shapeAppWithDocs`: the app with every document, drafts included.
+async fn legal_app_with_docs(state: &AppState, mut app: Value) -> anyhow::Result<Value> {
+    let id = app["_id"].as_str().unwrap_or_default().to_string();
+    app["documents"] = Value::Array(children(state, "LegalDocument", "appId", &id, BY_ORDER).await?);
+    Ok(app)
+}
+
+/// `GET /api/legal/apps`
+pub async fn legal_apps(State(state): State<AppState>, headers: axum::http::HeaderMap) -> Response {
+    let result = async {
+        let mut out = vec![];
+        for app in pages::client_rows(&state.db, "LegalApp", r#"ORDER BY "createdAt" DESC"#).await? {
+            out.push(legal_app_with_docs(&state, app).await?);
+        }
+        Ok(Some(Value::Array(out)))
+    };
+    legal_admin(&state, &headers, result, "").await
+}
+
+/// `GET /api/legal/apps/{id}`
+pub async fn legal_app(State(state): State<AppState>, headers: axum::http::HeaderMap, axum::extract::Path(id): axum::extract::Path<String>) -> Response {
+    let result = async {
+        Ok(match row_by_id(&state, "LegalApp", &id).await? {
+            Some(app) => Some(legal_app_with_docs(&state, app).await?),
+            None => None,
+        })
+    };
+    legal_admin(&state, &headers, result, "Legal app not found.").await
+}
+
+/// `GET /api/legal/documents/{id}`: the document with its `app`.
+pub async fn legal_document(State(state): State<AppState>, headers: axum::http::HeaderMap, axum::extract::Path(id): axum::extract::Path<String>) -> Response {
+    let result = async {
+        let Some(mut doc) = row_by_id(&state, "LegalDocument", &id).await? else { return Ok(None) };
+        let app_id = doc["appId"].as_str().unwrap_or_default().to_string();
+        doc["app"] = row_by_id(&state, "LegalApp", &app_id).await?.unwrap_or(Value::Null);
+        Ok(Some(doc))
+    };
+    legal_admin(&state, &headers, result, "Legal page not found.").await
+}
+
+fn plain(status: StatusCode, body: &'static str) -> Response {
+    (status, [(header::CONTENT_TYPE, "text/plain;charset=UTF-8")], body).into_response()
+}
+
+/// `GET /api/resume`: the uploaded PDF stored as a data URI in the config.
+pub async fn resume(State(state): State<AppState>) -> Response {
+    let config = match pages::try_singleton(&state.db, "Config", false).await {
+        Ok(c) => c,
+        Err(err) => {
+            log_error("/api/resume", &err);
+            return plain(StatusCode::INTERNAL_SERVER_ERROR, "Internal Server Error");
+        }
+    };
+    let r = &config["resume"];
+    let Some(uri) = r["value"].as_str().filter(|v| r["type"] == "file" && !v.is_empty()) else {
+        return plain(StatusCode::NOT_FOUND, "Resume not found");
+    };
+    let parts: Vec<&str> = uri.split(',').collect();
+    if parts.len() != 2 {
+        return plain(StatusCode::INTERNAL_SERVER_ERROR, "Invalid resume data");
+    }
+    // `/:(.*?);/` on the prefix.
+    let mime = parts[0].split_once(':').and_then(|(_, rest)| rest.split_once(';')).map_or("application/pdf", |(m, _)| m);
+    let filename = r["filename"].as_str().filter(|f| !f.is_empty()).unwrap_or("resume");
+    let body = node_base64(parts[1]);
+    let mut res = body.into_response();
+    let h = res.headers_mut();
+    h.insert(header::CONTENT_TYPE, HeaderValue::from_str(mime).unwrap_or(HeaderValue::from_static("application/pdf")));
+    if let Ok(v) = HeaderValue::from_str(&format!("inline; filename=\"{filename}\"")) {
+        h.insert(header::CONTENT_DISPOSITION, v);
+    }
+    res
+}
+
+/// `GET /api/favicon`: the custom favicon from the config, cached forever.
+pub async fn favicon(State(state): State<AppState>) -> Response {
+    let config = match pages::try_singleton(&state.db, "Config", false).await {
+        Ok(c) => c,
+        Err(err) => {
+            log_error("/api/favicon", &err);
+            return plain(StatusCode::INTERNAL_SERVER_ERROR, "Internal Server Error");
+        }
+    };
+    let f = &config["favicon"];
+    let Some(value) = f["value"].as_str().filter(|v| !v.is_empty()) else { return plain(StatusCode::NOT_FOUND, "Not found") };
+    let data = value.rsplit(";base64,").next().unwrap_or(value);
+    let mime = f["mimeType"].as_str().filter(|m| !m.is_empty()).unwrap_or("image/x-icon");
+    let mut res = node_base64(data).into_response();
+    let h = res.headers_mut();
+    h.insert(header::CONTENT_TYPE, HeaderValue::from_str(mime).unwrap_or(HeaderValue::from_static("image/x-icon")));
+    h.insert(header::CACHE_CONTROL, HeaderValue::from_static("public, max-age=31536000, immutable"));
+    res
+}
+
+/// `Buffer.from(s, 'base64')`: lenient, skips characters outside the alphabet and stops at the first `=`.
+fn node_base64(s: &str) -> Vec<u8> {
+    use base64::{Engine, alphabet, engine::{DecodePaddingMode, GeneralPurpose, GeneralPurposeConfig}};
+    const LENIENT: GeneralPurpose = GeneralPurpose::new(
+        &alphabet::STANDARD,
+        GeneralPurposeConfig::new().with_decode_allow_trailing_bits(true).with_decode_padding_mode(DecodePaddingMode::Indifferent),
+    );
+    let mut clean: String = s
+        .chars()
+        .take_while(|c| *c != '=')
+        .filter_map(|c| match c {
+            '-' => Some('+'),
+            '_' => Some('/'),
+            c if c.is_ascii_alphanumeric() || c == '+' || c == '/' => Some(c),
+            _ => None,
+        })
+        .collect();
+    // A dangling single char carries no full byte: Node drops it.
+    if clean.len() % 4 == 1 {
+        clean.pop();
+    }
+    LENIENT.decode(clean).unwrap_or_default()
+}
+
+#[cfg(test)]
+mod base64_tests {
+    #[test]
+    fn node_base64_is_lenient() {
+        assert_eq!(super::node_base64("aGVsbG8="), b"hello");
+        assert_eq!(super::node_base64("aGVs\nbG8"), b"hello");
+        assert_eq!(super::node_base64("aGVsbG8x="), b"hello1");
+        assert_eq!(super::node_base64("aGVsbG8xY"), b"hello1");
+    }
+}
