@@ -12,7 +12,8 @@ import { createPublicCacheHeaders, RESPONSE_CACHE } from '@/lib/httpCache';
 // The allowlist deliberately points at the desktop feature's own source so the
 // editor genuinely shows "the source code of this app".
 const ALLOWLIST = [
-    'src/app/desktop/page.js',
+    'web/src/routes/desktop.tsx',
+    'server/src/web.rs',
     'src/app/components/desktop/Desktop.js',
     'src/app/components/desktop/Window.js',
     'src/app/components/desktop/Taskbar.js',

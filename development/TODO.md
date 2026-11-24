@@ -6,9 +6,12 @@ Branch: `migrate/rust-vite`. Baseline and method: `development/docs/PERFORMANCE.
 
 ## ▶ RESUME HERE (handoff 2026-11-24)
 
-Branch `migrate/rust-vite`. Ported and gated: `/games`, `/blogs`, `/about-me`, `/apps`, `/projects`, `/gallery`, `/github`, `/contact-us`, `/projects/[id]`, `/apps/[id]`, `/ai`, `/ai/[section]`, `/sitemap`, `/` (all of `(site)`), legal `/[legalApp]` + `/[legalApp]/[legalDoc]`. Then all `/admin` pages (user asked:
-everything must keep working). Next: the other header pages, one per commit, with the recipe below: `/` (home), `/projects` + `/projects/[id]`, `/apps` + `/apps/[id]`, `/gallery`,
-`/github`, `/contact-us`, `/ai` + `/ai/[section]`, `/sitemap`, legal `/[legalApp]`.
+Branch `migrate/rust-vite`. EVERY page is now served by Rust + Vite: all public pages, legal, `/desktop`, `/games`,
+and all `/admin` pages (`src/app/_admin/**/page.js`, routed by `web/src/routes/admin.tsx` through `import.meta.glob`;
+Next ignores `_` folders). Next only serves `/api/*`, `/.well-known/*`, `/docs/*`, sitemap.xml/robots.txt, uploads.
+Next step: Milestone 8 (API routes), then 5b/9 (SQLite), then 10 (cutover: remove Next).
+Admin pages call `/api/*`, so they keep working while APIs move one by one.
+e2e: `e2e/site-pages.spec.js` (public), `e2e/admin-pages.spec.js` (every admin route, one login; needs ADMIN_PASSWORD).
 
 Start everything locally (Postgres must be up: `pnpm db:up`):
 ```bash
@@ -116,59 +119,59 @@ Each page: Rust data + head + Vite route + e2e passing through Rust, then the Ne
 - [ ] `/ai` ships every skill twice (page data + a 695 KB JSON-LD ItemList): 1.4 MB. Trim the hub to the preview
   items (AiHub derives counts from the data, so pass totalCount) and decide whether the ItemList belongs on /ai/skills only
 - [ ] `/blogs` read time: cache per post (keyed on `updatedAt`) if the ~70 ms matters
-- [ ] `/admin`
-- [ ] `/admin/about`
-- [ ] `/admin/ads`
-- [ ] `/admin/ai`
-- [ ] `/admin/ai-page`
-- [ ] `/admin/analytics`
-- [ ] `/admin/api-reference`
-- [ ] `/admin/apps`
-- [ ] `/admin/apps/[id]`
-- [ ] `/admin/apps/new`
-- [ ] `/admin/blogs`
-- [ ] `/admin/blogs/api`
-- [ ] `/admin/blogs/config`
-- [ ] `/admin/blogs/[id]`
-- [ ] `/admin/blogs/new`
-- [ ] `/admin/config`
-- [ ] `/admin/config/crons`
-- [ ] `/admin/config/crons/logs`
-- [ ] `/admin/config/notification`
-- [ ] `/admin/contact`
-- [ ] `/admin/database`
-- [ ] `/admin/deployments`
-- [ ] `/admin/deployments/[id]`
-- [ ] `/admin/deployments/new`
-- [ ] `/admin/desktop`
-- [ ] `/admin/footer`
-- [ ] `/admin/footer/[id]`
-- [ ] `/admin/footer/new`
-- [ ] `/admin/gallery`
-- [ ] `/admin/github`
-- [ ] `/admin/header`
-- [ ] `/admin/health`
-- [ ] `/admin/home`
-- [ ] `/admin/legal`
-- [ ] `/admin/legal/[id]`
-- [ ] `/admin/legal/[id]/pages/[docId]`
-- [ ] `/admin/legal/[id]/pages/new`
-- [ ] `/admin/legal/new`
-- [ ] `/admin/login`
-- [ ] `/admin/mcp`
-- [ ] `/admin/projects`
-- [ ] `/admin/projects/[id]`
-- [ ] `/admin/projects/new`
-- [ ] `/admin/resources`
-- [ ] `/admin/resume`
-- [ ] `/admin/security`
-- [ ] `/admin/seo`
-- [ ] `/admin/settings`
-- [ ] `/admin/social`
-- [ ] `/admin/terminal`
-- [ ] `/admin/themes`
-- [ ] `/admin/version`
-- [ ] `/desktop`
+- [x] `/admin`
+- [x] `/admin/about`
+- [x] `/admin/ads`
+- [x] `/admin/ai`
+- [x] `/admin/ai-page`
+- [x] `/admin/analytics`
+- [x] `/admin/api-reference`
+- [x] `/admin/apps`
+- [x] `/admin/apps/[id]`
+- [x] `/admin/apps/new`
+- [x] `/admin/blogs`
+- [x] `/admin/blogs/api`
+- [x] `/admin/blogs/config`
+- [x] `/admin/blogs/[id]`
+- [x] `/admin/blogs/new`
+- [x] `/admin/config`
+- [x] `/admin/config/crons`
+- [x] `/admin/config/crons/logs`
+- [x] `/admin/config/notification`
+- [x] `/admin/contact`
+- [x] `/admin/database`
+- [x] `/admin/deployments`
+- [x] `/admin/deployments/[id]`
+- [x] `/admin/deployments/new`
+- [x] `/admin/desktop`
+- [x] `/admin/footer`
+- [x] `/admin/footer/[id]`
+- [x] `/admin/footer/new`
+- [x] `/admin/gallery`
+- [x] `/admin/github`
+- [x] `/admin/header`
+- [x] `/admin/health`
+- [x] `/admin/home`
+- [x] `/admin/legal`
+- [x] `/admin/legal/[id]`
+- [x] `/admin/legal/[id]/pages/[docId]`
+- [x] `/admin/legal/[id]/pages/new`
+- [x] `/admin/legal/new`
+- [x] `/admin/login`
+- [x] `/admin/mcp`
+- [x] `/admin/projects`
+- [x] `/admin/projects/[id]`
+- [x] `/admin/projects/new`
+- [x] `/admin/resources`
+- [x] `/admin/resume`
+- [x] `/admin/security`
+- [x] `/admin/seo`
+- [x] `/admin/settings`
+- [x] `/admin/social`
+- [x] `/admin/terminal`
+- [x] `/admin/themes`
+- [x] `/admin/version`
+- [x] `/desktop`
 - [x] `/games` (Vite, 2026-11-24)
 - [x] `/games/[slug]` (Vite, 2026-11-24)
 - [x] `/[legalApp]`

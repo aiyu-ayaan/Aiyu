@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { fileURLToPath } from 'node:url';
 import { mkdir, writeFile } from 'node:fs/promises';
+import { globSync } from 'node:fs';
 
 const src = fileURLToPath(new URL('../src', import.meta.url));
 const shim = (f: string) => fileURLToPath(new URL(`./src/shims/${f}`, import.meta.url));
@@ -44,6 +45,12 @@ const routeMeta: Plugin = {
     for (const g of GAMES) if (!g.hidden) meta[`/games/${g.slug}`] = { title: `${g.title} | Aiyu Arcade`, description: g.tagline };
     await mkdir(new URL('./dist/', import.meta.url), { recursive: true });
     await writeFile(new URL('./dist/route-meta.json', import.meta.url), JSON.stringify(meta, null, 2));
+    // Admin route patterns for the Rust server (404 for anything else under /admin): one per _admin page.
+    const adminDir = fileURLToPath(new URL('../src/app/_admin/', import.meta.url));
+    const adminRoutes = globSync('**/page.js', { cwd: adminDir })
+      .map((f) => `/admin/${f.replace(/\\/g, '/').replace(/\/?page\.js$/, '')}`.replace(/\/$/, ''))
+      .sort();
+    await writeFile(new URL('./dist/admin-routes.json', import.meta.url), JSON.stringify(adminRoutes, null, 2));
     // DEFAULT_AI_PAGE for the Rust AI Hub pages (one source of truth: src/lib/aiPageDefaults.js).
     const { DEFAULT_AI_PAGE } = await import('../src/lib/aiPageDefaults.js');
     await writeFile(new URL('./dist/ai-defaults.json', import.meta.url), JSON.stringify(DEFAULT_AI_PAGE));
@@ -65,6 +72,8 @@ export default defineConfig({
   // Hashed assets live under /_app/ so the Rust server can cache them forever without touching Next's paths.
   base: '/_app/',
   plugins: [jsxInJs, react(), tailwindcss(), prepaint, routeMeta, noNext],
+  // Some dependencies read Node's `global` (webpack polyfilled it for Next).
+  define: { global: 'globalThis' },
   resolve: {
     alias: [
       { find: /^next\/link$/, replacement: shim('link.tsx') },

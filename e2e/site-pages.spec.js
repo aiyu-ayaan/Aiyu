@@ -142,3 +142,14 @@ test('legal app and document pages render; other single-segment paths still work
     expect((await request.get('/robots.txt')).status()).toBe(200);
     expect((await request.get('/api/health')).status()).toBe(200);
 });
+
+test('/desktop boots the Aiyu OS shell', async ({ page }) => {
+    const errors = [];
+    page.on('pageerror', (err) => errors.push(err.message));
+    expect((await page.goto('/desktop')).status()).toBe(200);
+    await expect(page).toHaveTitle('Aiyu OS — a desktop environment in the browser');
+    await expect(page.getByRole('heading', { level: 1, name: /Aiyu OS/ })).toBeAttached();
+    await page.waitForTimeout(3000);
+    expect((await page.locator('button').count())).toBeGreaterThan(3);
+    expect(errors).toEqual([]);
+});

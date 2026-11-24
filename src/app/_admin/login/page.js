@@ -1,9 +1,10 @@
+import { useSearchParams } from 'next/navigation';
 import PasswordLoginForm from './PasswordLoginForm';
-import { isGithubAuthEnabled } from '@/lib/githubOAuth';
 
-// Server-driven toggle: the page reads the same flag the routes enforce, so the
-// UI can never present a path that the server has disabled. Generic, non-leaky
-// messages keyed off the `?error=` code the OAuth callback redirects with.
+// Server-driven toggle: the server (Rust, GITHUB_AUTH_ENABLED) passes the same
+// flag the routes enforce, so the UI can never present a path that the server
+// has disabled. Generic, non-leaky messages keyed off the `?error=` code the
+// OAuth callback redirects with.
 const GITHUB_ERROR_MESSAGES = {
     forbidden: 'This GitHub account is not authorized to access the admin.',
     state: 'Your sign-in session expired. Please try again.',
@@ -22,10 +23,9 @@ function GithubMark() {
     );
 }
 
-export default async function AdminLogin({ searchParams }) {
-    const githubEnabled = isGithubAuthEnabled();
-    const sp = (await searchParams) || {};
-    const githubError = githubEnabled ? GITHUB_ERROR_MESSAGES[sp.error] : undefined;
+export default function AdminLogin({ githubEnabled = false }) {
+    const error = useSearchParams().get('error');
+    const githubError = githubEnabled ? GITHUB_ERROR_MESSAGES[error] : undefined;
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white p-4">

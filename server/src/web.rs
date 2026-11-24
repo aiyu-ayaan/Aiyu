@@ -30,6 +30,8 @@ pub struct WebApp {
     meta: HashMap<String, PageMeta>,
     /// DEFAULT_AI_PAGE from src/lib/aiPageDefaults.js (written by the Vite build).
     ai_defaults: Value,
+    /// `/admin/...` page patterns (`[id]` segments match anything), one per src/app/_admin page.
+    admin_routes: Vec<String>,
 }
 
 impl WebApp {
@@ -37,7 +39,8 @@ impl WebApp {
         let template = std::fs::read_to_string(dir.join("index.html"))?;
         let meta = serde_json::from_str(&std::fs::read_to_string(dir.join("route-meta.json"))?)?;
         let ai_defaults = serde_json::from_str(&std::fs::read_to_string(dir.join("ai-defaults.json"))?)?;
-        Ok(Arc::new(Self { template, meta, ai_defaults }))
+        let admin_routes = serde_json::from_str(&std::fs::read_to_string(dir.join("admin-routes.json"))?)?;
+        Ok(Arc::new(Self { template, meta, ai_defaults, admin_routes }))
     }
 }
 
@@ -975,6 +978,117 @@ fn regex_ci(text: &str, any: &[&str]) -> bool {
     any.iter().any(|w| t.contains(w))
 }
 
+fn admin_route_exists(routes: &[String], path: &str) -> bool {
+    let want: Vec<&str> = path.split('/').collect();
+    routes.iter().any(|r| {
+        let pat: Vec<&str> = r.split('/').collect();
+        pat.len() == want.len() && pat.iter().zip(&want).all(|(p, w)| (p.starts_with('[') && !w.is_empty()) || p == w)
+    })
+}
+
+/// `/admin` and everything under it: the session gate from src/proxy.js (a valid session JWT, like Next's
+/// middleware; the API routes still check the Session row), the old redirect pages, then the Vite admin app.
+pub async fn admin(State(state): State<AppState>, req: Request) -> Response {
+    let web = web_or_next!(state, req);
+    let req = req.into_parts().0;
+    let path = req.uri.path().trim_end_matches('/').to_string();
+    let signed_in = req.headers.get(header::COOKIE).and_then(|v| v.to_str().ok()).and_then(session_cookie).is_some_and(|t| state.sessions.verify(t).is_some());
+    let login = path == "/admin/login";
+    if login && signed_in {
+        return Redirect::temporary("/admin").into_response();
+    }
+    if !login && !signed_in {
+        return Redirect::temporary("/admin/login").into_response();
+    }
+    // Pages that only redirected in Next.
+    let moved = match path.as_str() {
+        "/admin/blogs/api" => Some("/admin/api-reference".to_string()),
+        "/admin/deployments" => Some("/admin/apps".to_string()),
+        p => p.strip_prefix("/admin/deployments/").filter(|r| !r.is_empty() && !r.contains('/')).map(|r| format!("/admin/apps/{r}")),
+    };
+    if let Some(to) = moved {
+        return Redirect::temporary(&to).into_response();
+    }
+    let site = Site::load(&state).await;
+    if !admin_route_exists(&web.admin_routes, &path) {
+        return render(&web, &state, &path, &req.headers, &site, StatusCode::NOT_FOUND, site.not_found_head(), json!(null), json!(null), String::new());
+    }
+    // src/app/_admin/layout.js metadata (ads/page.js had its own title).
+    let title = if path == "/admin/ads" { "AdSense Config | Admin Dashboard" } else { "Admin | Aiyu Portfolio" };
+    let page = if login { json!({ "githubEnabled": std::env::var("GITHUB_AUTH_ENABLED").as_deref() == Ok("true") }) } else { Value::Null };
+    render(&web, &state, &path, &req.headers, &site, StatusCode::OK, site.root_head(title, "Admin Dashboard"), Value::Null, page, String::new())
+}
+
+/// `/desktop` apps, for the JSON-LD feature list and the crawler summary (same list as the Vite route shows).
+const DESKTOP_FEATURES: &[(&str, &str)] = &[
+    ("File Explorer", "Browse the portfolio as a file system — projects, blog posts, gallery images and the résumé as files."),
+    ("Code Editor", "A syntax-highlighted viewer for this site’s own source."),
+    ("Terminal", "A working shell with commands for navigating the portfolio."),
+    ("Browser", "An in-desktop browser that opens the live portfolio pages."),
+    ("Widgets Board", "A Windows 11 style feed of recent projects, open-source repositories, posts and photos."),
+    ("Markdown Viewer", "Reads README and post files from the file explorer."),
+    ("Photos & Whiteboard", "A gallery viewer and a freehand drawing surface."),
+];
+const DEFAULT_WALLPAPER: &str = "https://images.unsplash.com/photo-1702539336564-b37d0f3276e7?q=80&w=2064&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D";
+
+/// `/desktop`: port of src/app/desktop/page.js.
+pub async fn desktop(State(state): State<AppState>, req: Request) -> Response {
+    let web = web_or_next!(state, req);
+    let req = req.into_parts().0;
+    let site = Site::load(&state).await;
+    // Only the keys the desktop reads (the full Config blob carries the resume source and long copy).
+    let full = pages::singleton(&state.db, "Config", false).await;
+    let mut config = serde_json::Map::new();
+    for k in ["siteTitle", "authorName", "deviceName", "osVersion", "desktopDeviceName", "desktopOsVersion"] {
+        if let Some(v) = full.get(k) {
+            config.insert(k.into(), v.clone());
+        }
+    }
+    config.insert("hasCustomFavicon".into(), site.config["hasCustomFavicon"].clone());
+    let wallpaper = full["desktopWallpaper"].as_str().map(str::trim).filter(|w| !w.is_empty()).unwrap_or(DEFAULT_WALLPAPER).to_string();
+
+    let base = site.base_url.clone();
+    let title = "Aiyu OS — a desktop environment in the browser";
+    let description = "A Windows 11 style desktop built in the browser: file explorer, code editor, terminal, markdown viewer, photo gallery, widgets board and a working browser — all rendered in React.";
+    let base_name = site.config["siteTitle"].as_str().or(site.config["logoText"].as_str()).filter(|v| !v.is_empty()).unwrap_or("Aiyu Portfolio").to_string();
+    let image = site.config["ogImage"].as_str().map(str::trim).filter(|v| !v.is_empty()).map(str::to_string).unwrap_or_else(|| format!("{base}/og-image.png"));
+    let alt = "Aiyu OS desktop environment";
+    let mut head = Head::site(&site, title, description);
+    head.keywords = "browser desktop environment,web based operating system,Windows 11 clone,React desktop UI,Next.js portfolio,interactive portfolio,Aiyu OS".into();
+    head.googlebot = Some("index, follow, max-image-preview:large, max-snippet:-1");
+    head.canonical = format!("{base}/desktop");
+    head.og = vec![
+        ("og:title", format!("{title} | {base_name}")), ("og:description", description.into()), ("og:url", format!("{base}/desktop")),
+        ("og:image", image.clone()), ("og:image:width", "1200".into()), ("og:image:height", "630".into()), ("og:image:alt", alt.into()),
+        ("og:type", "website".into()),
+    ];
+    head.twitter = Some((title.into(), description.into(), image));
+    // Next copies the OpenGraph image (with its size and alt) into the Twitter card; the wallpaper is the LCP.
+    head.extra = format!(
+        r#"<meta name="twitter:image:width" content="1200" /><meta name="twitter:image:height" content="630" /><meta name="twitter:image:alt" content="{alt}" /><link rel="preload" as="image" href="{}" fetchpriority="high" />"#,
+        escape(&wallpaper)
+    );
+    let author = config.get("authorName").and_then(Value::as_str).filter(|a| !a.is_empty()).map(str::to_string)
+        .or_else(|| std::env::var("NEXT_PUBLIC_AUTHOR_NAME").ok())
+        .unwrap_or_else(|| "Aiyu".into());
+    head.json_ld.push(json!({
+        "@context": "https://schema.org", "@type": "WebApplication", "name": "Aiyu OS", "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "Any (web browser)", "url": format!("{base}/desktop"),
+        "description": "A Windows 11 style desktop environment running in the browser, built with React and Next.js.",
+        "browserRequirements": "Requires JavaScript.", "featureList": DESKTOP_FEATURES.iter().map(|(n, _)| *n).collect::<Vec<_>>(),
+        "author": { "@type": "Person", "name": author }, "isPartOf": { "@type": "WebSite", "url": base },
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    }));
+
+    let mut fallback = format!("<main><h1>{title}</h1><p>Aiyu OS is an interactive Windows 11 style desktop built with React, running entirely in the browser.</p><h2>Applications</h2><ul>");
+    for (n, d) in DESKTOP_FEATURES {
+        fallback.push_str(&format!("<li><strong>{}</strong>: {}</li>", escape(n), escape(d)));
+    }
+    fallback.push_str(r#"</ul><p><a href="/projects">Projects</a> · <a href="/blogs">Blog</a> · <a href="/about-me">About</a></p></main>"#);
+    let page = json!({ "wallpaper": wallpaper, "config": config, "features": DESKTOP_FEATURES });
+    render(&web, &state, req.uri.path(), &req.headers, &site, StatusCode::OK, head.render(), Value::Null, page, fallback)
+}
+
 /// `/_img/blog/{id}`: a blog cover stored inline as a data URI.
 pub async fn blog_image(State(state): State<AppState>, Path(id): Path<String>) -> Response {
     match pages::blog_inline_image(&state.db, &id).await {
@@ -1138,6 +1252,8 @@ struct Head {
     /// (title, description, image); the root's site card by default.
     twitter: Option<(String, String, String)>,
     twitter_card: &'static str,
+    /// Raw tags appended after the generated ones (already escaped).
+    extra: String,
     icon: String,
     json_ld: Vec<Value>,
 }
@@ -1165,6 +1281,7 @@ impl Head {
             ],
             twitter: Some((site.site_title.clone(), site.description.clone(), site.og_image.clone())),
             twitter_card: "summary_large_image",
+            extra: String::new(),
             icon: site.icon.clone(),
             json_ld: vec![],
         }
@@ -1197,6 +1314,7 @@ impl Head {
         for rel in ["shortcut icon", "icon", "apple-touch-icon"] {
             h.push_str(&format!(r#"<link rel="{rel}" href="{}" />"#, e(&self.icon)));
         }
+        h.push_str(&self.extra);
         for ld in &self.json_ld {
             h.push_str(&format!(r#"<script type="application/ld+json">{}</script>"#, script_json(ld)));
         }
@@ -1346,6 +1464,13 @@ mod tests {
         assert!(regex_word("Android App", "app") && !regex_word("Apps", "app") && regex_word("iOS", "ios"));
         assert!(regex_ci("SaaS tool", &["web", "site", "saas"]) && !regex_ci("Desktop", &["web"]));
         assert_eq!(js_slice("a😀b", 2), "a\u{FFFD}");
+    }
+
+    #[test]
+    fn admin_routes_match_patterns() {
+        let r = vec!["/admin".to_string(), "/admin/apps/[id]".to_string(), "/admin/legal/[id]/pages/[docId]".to_string()];
+        assert!(admin_route_exists(&r, "/admin") && admin_route_exists(&r, "/admin/apps/x1") && admin_route_exists(&r, "/admin/legal/a/pages/b"));
+        assert!(!admin_route_exists(&r, "/admin/apps") && !admin_route_exists(&r, "/admin/apps/x/y") && !admin_route_exists(&r, "/admin/nope"));
     }
 
     #[test]

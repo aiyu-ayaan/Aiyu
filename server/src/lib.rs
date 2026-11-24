@@ -110,6 +110,9 @@ pub fn router(state: AppState) -> Router {
         .route("/ai/{section}", get(web::ai_section))
         .route("/sitemap", get(web::sitemap_page))
         .route("/", get(web::home))
+        .route("/desktop", get(web::desktop))
+        .route("/admin", get(web::admin))
+        .route("/admin/{*rest}", get(web::admin))
         .layer(axum::middleware::from_fn(web::skip_next_rsc))
         .layer(axum::middleware::from_fn(compat::public_page));
 

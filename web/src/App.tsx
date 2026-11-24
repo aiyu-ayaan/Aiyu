@@ -10,6 +10,7 @@ import DynamicLiveCommitStream from '@/app/components/shared/DynamicLiveCommitSt
 import GoogleAnalytics from '@/app/components/GoogleAnalytics';
 import Script from 'next/script';
 import { BlogsIndex, SiteLayout } from './routes/site';
+import { adminRoutes } from './routes/admin';
 
 // Route chunks: a page only downloads its own code.
 const GamesLayout = lazy(() => import('./routes/games').then((m) => ({ default: m.GamesLayout })));
@@ -29,6 +30,7 @@ const AiSection = lazy(() => import('./routes/aiSection'));
 const Sitemap = lazy(() => import('./routes/sitemap'));
 const Home = lazy(() => import('./routes/home'));
 const LegalApp = lazy(() => import('./routes/legalApp'));
+const DesktopPage = lazy(() => import('./routes/desktop'));
 const LegalDoc = lazy(() => import('./routes/legalDoc'));
 import { NotFound } from './NotFound';
 
@@ -83,6 +85,8 @@ export function App({ data }: { data: BootData }) {
               <Route path="/:legalApp" element={<LegalApp />} />
               <Route path="/:legalApp/:legalDoc" element={<LegalDoc />} />
             </Route>
+            {adminRoutes}
+            <Route path="/desktop" element={<DesktopPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           </Suspense>
