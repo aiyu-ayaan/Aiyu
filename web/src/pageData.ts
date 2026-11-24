@@ -34,7 +34,8 @@ export function usePageData<T>(): PageState<T> {
     }
     let cancelled = false;
     setState((s) => ({ ...s, loading: true }));
-    fetch(key, { headers: { 'x-aiyu-data': '1', accept: 'application/json' } })
+    // `_data=1` gives the JSON its own CDN cache key (CDNs ignore Vary on custom headers); the header selects JSON.
+    fetch(`${key}${search ? '&' : '?'}_data=1`, { headers: { 'x-aiyu-data': '1', accept: 'application/json' } })
       .then(async (res) => {
         const body = await res.json().catch(() => ({}));
         if (cancelled) return;

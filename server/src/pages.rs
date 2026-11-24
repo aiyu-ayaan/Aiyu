@@ -85,6 +85,63 @@ pub async fn shell_data(state: &AppState, config: &Value) -> Value {
     })
 }
 
+/// Timestamp columns in the tables read here all end in `At` (createdAt, updatedAt, syncedAt, readmeFetchedAt).
+fn normalize_timestamps(row: &mut Map<String, Value>) {
+    for (k, v) in row.iter_mut() {
+        if k.ends_with("At") {
+            crate::export::normalize_timestamp_value(v);
+        }
+    }
+}
+
+/// `getSingleton(prisma, key)` for a json-blob model: `{ ...data, _id }` (+ timestamps when the model has them).
+/// `table` is always a constant from this crate.
+pub async fn singleton(db: &PgPool, table: &str, timestamps: bool) -> Value {
+    let sql = format!(r#"SELECT row_to_json(t)::text FROM "{table}" t LIMIT 1"#);
+    let Ok(Some(raw)) = sqlx::query_scalar::<_, String>(&sql).fetch_optional(db).await else { return Value::Null };
+    let Ok(Value::Object(mut row)) = serde_json::from_str::<Value>(&raw) else { return Value::Null };
+    normalize_timestamps(&mut row);
+    let mut out = match row.remove("data") {
+        Some(Value::Object(d)) => d,
+        _ => Map::new(),
+    };
+    out.insert("_id".into(), row.remove("id").unwrap_or(Value::Null));
+    if timestamps {
+        for k in ["createdAt", "updatedAt"] {
+            out.insert(k.into(), row.remove(k).unwrap_or(Value::Null));
+        }
+    }
+    Value::Object(out)
+}
+
+/// `toClientList(key, rows)` for a relational model: `id` becomes `_id` (first), other columns as-is.
+/// `table` and `rest` (WHERE/ORDER BY) are always constants from this crate.
+pub async fn client_rows(db: &PgPool, table: &str, rest: &str) -> anyhow::Result<Vec<Value>> {
+    let sql = format!(r#"SELECT row_to_json(t)::text FROM "{table}" t {rest}"#);
+    let rows: Vec<String> = sqlx::query_scalar(&sql).fetch_all(db).await?;
+    rows.iter().map(|raw| Ok(to_client_row(serde_json::from_str(raw)?))).collect()
+}
+
+pub fn to_client_row(v: Value) -> Value {
+    let Value::Object(mut row) = v else { return v };
+    normalize_timestamps(&mut row);
+    let mut out = Map::new();
+    out.insert("_id".into(), row.remove("id").unwrap_or(Value::Null));
+    out.extend(row);
+    Value::Object(out)
+}
+
+/// `getSocialMeta()` (src/lib/socialMeta.js): `{ defaultImage, pages }`, possibly empty.
+pub async fn social_meta(db: &PgPool) -> Value {
+    sqlx::query_scalar::<_, Option<Value>>(r#"SELECT (data->'social')::json FROM "SeoConfig" LIMIT 1"#)
+        .fetch_optional(db)
+        .await
+        .ok()
+        .flatten()
+        .flatten()
+        .unwrap_or(Value::Null)
+}
+
 /// Blog index rows: `getPublishedBlogs` (newest first, content cut to 500 chars, `readTime` from the full text).
 pub async fn blog_list(db: &PgPool) -> anyhow::Result<Vec<Value>> {
     let rows: Vec<(String, Option<String>, String, Option<String>, Option<chrono::NaiveDateTime>, Option<Vec<String>>, Option<String>, Option<String>, String)> =

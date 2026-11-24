@@ -16,6 +16,7 @@ const GamesLayout = lazy(() => import('./routes/games').then((m) => ({ default: 
 const GamesIndex = lazy(() => import('./routes/games').then((m) => ({ default: m.GamesIndex })));
 const GamePage = lazy(() => import('./routes/games').then((m) => ({ default: m.GamePage })));
 const BlogDetail = lazy(() => import('./routes/blogDetail'));
+const AboutMe = lazy(() => import('./routes/aboutMe'));
 import { NotFound } from './NotFound';
 
 export type BootData = {
@@ -53,6 +54,7 @@ export function App({ data }: { data: BootData }) {
             <Route element={<SiteLayout />}>
               <Route path="/blogs" element={<BlogsIndex />} />
               <Route path="/blogs/:id" element={<BlogDetail />} />
+              <Route path="/about-me" element={<AboutMe />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

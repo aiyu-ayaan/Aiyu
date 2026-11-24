@@ -1,5 +1,5 @@
 // Public pages inside the v2 chrome (port of src/app/(site)/layout.js) and the blog index.
-import { Outlet } from 'react-router';
+import { Outlet, useLocation } from 'react-router';
 import V2Chrome, { applyResumeLink } from '@/app/components/landing/v2/V2Chrome';
 import BlogsIndexView from '@/app/components/blogs/v2/BlogsIndexView';
 import { getShell, usePageData } from '../pageData';
@@ -14,6 +14,7 @@ type Shell = {
 };
 
 export function SiteLayout() {
+  const { pathname } = useLocation();
   const shell = getShell() as Shell | null;
   // Copy before applyResumeLink mutates the nav links.
   const header = shell?.header ? { ...shell.header, navLinks: [...(shell.header.navLinks ?? [])] } : null;
@@ -27,7 +28,10 @@ export function SiteLayout() {
       aboutName={shell?.aboutName}
       packageVersion={shell?.packageVersion}
     >
-      <Outlet />
+      {/* src/app/(site)/template.js: remount per page so the enter animation replays. */}
+      <div key={pathname} className="v2-page-enter">
+        <Outlet />
+      </div>
     </V2Chrome>
   );
 }

@@ -1,4 +1,5 @@
 pub mod auth;
+pub mod compat;
 pub mod config;
 pub mod db;
 pub mod crypto;
@@ -95,7 +96,9 @@ pub fn router(state: AppState) -> Router {
         .route("/blogs", get(web::blogs_index))
         .route("/blogs/", get(web::blogs_index))
         .route("/blogs/{id}", get(web::blog_detail))
-        .layer(axum::middleware::from_fn(web::skip_next_rsc));
+        .route("/about-me", get(web::about_me))
+        .layer(axum::middleware::from_fn(web::skip_next_rsc))
+        .layer(axum::middleware::from_fn(compat::public_page));
 
     Router::new()
         .route("/healthz", get(|| async { "ok" }))

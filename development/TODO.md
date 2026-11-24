@@ -6,8 +6,8 @@ Branch: `migrate/rust-vite`. Baseline and method: `development/docs/PERFORMANCE.
 
 ## ▶ RESUME HERE (handoff 2026-11-24)
 
-Branch `migrate/rust-vite`. `/games` and `/blogs` are ported and gated. Next: the other header pages, one per commit,
-with the recipe below: `/` (home), `/about-me`, `/projects` + `/projects/[id]`, `/apps` + `/apps/[id]`, `/gallery`,
+Branch `migrate/rust-vite`. Ported and gated: `/games`, `/blogs`, `/about-me`. Then all `/admin` pages (user asked:
+everything must keep working). Next: the other header pages, one per commit, with the recipe below: `/` (home), `/projects` + `/projects/[id]`, `/apps` + `/apps/[id]`, `/gallery`,
 `/github`, `/contact-us`, `/ai` + `/ai/[section]`, `/sitemap`, legal `/[legalApp]`.
 
 Start everything locally (Postgres must be up: `pnpm db:up`):
@@ -30,6 +30,10 @@ Run the bench with `--backups 3` at most per few minutes: login is rate limited 
 4. e2e spec (Next first, then Rust) -> delete the Next page -> commit.
 
 ### Watch out
+- Rust-owned pages get Next's page behavior from `server/src/compat.rs` (security headers, CDN cache policy,
+  `Accept: text/markdown`, canonical host); keep the CSP in sync with next.config.mjs.
+- Head diff + timing vs Next: snapshot every page from Next BEFORE deleting it (baselines of all remaining pages were
+  taken 2026-11-24 in the session scratchpad; re-take if lost).
 - Another process writes into this checkout while you work: a stray `Understood` line was appended to
   `src/proxy.js`, an email address was injected into `server/src/export.rs`, and commits `554a1c9`/`fe0abb2` are not
   part of this work. `git diff` before every commit; stage explicit paths only.
@@ -168,7 +172,7 @@ Each page: Rust data + head + Vite route + e2e passing through Rust, then the Ne
 - [ ] `/[legalApp]`
 - [ ] `/[legalApp]/[legalDoc]`
 - [ ] `/v2`
-- [ ] `/v2/about-me`
+- [x] `/v2/about-me`
 - [ ] `/v2/ai`
 - [ ] `/v2/ai/[section]`
 - [ ] `/v2/apps`

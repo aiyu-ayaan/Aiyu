@@ -14,6 +14,8 @@ use axum::{
 use serde_json::{Value, json};
 use std::{collections::HashMap, sync::Arc};
 
+use axum::http::request::Parts;
+
 use crate::{AppState, pages, session::session_cookie};
 
 #[derive(serde::Deserialize, Clone)]
@@ -47,7 +49,7 @@ pub async fn page(State(state): State<AppState>, req: Request) -> Response {
         Some(m) => (StatusCode::OK, site.root_head(&m.title, &m.description)),
         None => (StatusCode::NOT_FOUND, site.not_found_head()),
     };
-    render(&web, &state, req.headers(), &site, status, head, json!(null), json!(null), String::new())
+    render(&web, &state, req.uri().path(), req.headers(), &site, status, head, json!(null), json!(null), String::new())
 }
 
 /// `/blogs`: port of src/app/(site)/blogs/page.js.
@@ -80,7 +82,7 @@ pub async fn blogs_index(State(state): State<AppState>, req: Request) -> Respons
     fallback.push_str("</ul></main>");
 
     let page = json!({ "blogs": blogs, "config": site.config });
-    render(&web, &state, req.headers(), &site, StatusCode::OK, head.render(), shell, page, fallback)
+    render(&web, &state, req.uri().path(), req.headers(), &site, StatusCode::OK, head.render(), shell, page, fallback)
 }
 
 /// `/blogs/{id}`: port of src/app/(site)/blogs/[id]/page.js.
@@ -93,7 +95,7 @@ pub async fn blog_detail(State(state): State<AppState>, Path(id): Path<String>, 
         Ok(pages::BlogLookup::NotFound) => {
             let mut head = site.not_found_head();
             head = head.replace("404 - Page Not Found", &format!("Blog Not Found | {}", escape(&site.base_name)));
-            return render(&web, &state, req.headers(), &site, StatusCode::NOT_FOUND, head, json!(null), json!(null), String::new());
+            return render(&web, &state, req.uri().path(), req.headers(), &site, StatusCode::NOT_FOUND, head, json!(null), json!(null), String::new());
         }
         Err(err) => return server_error(err),
     };
@@ -160,7 +162,70 @@ pub async fn blog_detail(State(state): State<AppState>, Path(id): Path<String>, 
     };
     let fallback = format!("<main><article><h1>{}</h1>{}</article></main>", escape(&title), pages::markdown_html(&content));
     let page = json!({ "blog": blog, "config": site.config, "adsConfig": pages::ads_config(&state).await, "viewCount": view_count });
-    render(&web, &state, req.headers(), &site, StatusCode::OK, head.render(), shell, page, fallback)
+    render(&web, &state, req.uri().path(), req.headers(), &site, StatusCode::OK, head.render(), shell, page, fallback)
+}
+
+/// One public section page (`/about-me`, `/apps`, ...): metadata merged with the admin social overrides, breadcrumb.
+pub struct Section {
+    pub path: &'static str,
+    /// Breadcrumb label when the header nav has no link for `path`.
+    pub crumb: &'static str,
+    /// `${baseName} | <title>`
+    pub title: &'static str,
+    pub description: &'static str,
+}
+
+/// Render a section page. `page` is the data the Vite route reads; `fallback` is the crawler HTML.
+async fn section(web: &WebApp, state: &AppState, req: &Parts, sec: &Section, page: Value, fallback: String) -> Response {
+    let site = Site::load(state).await;
+    let social = pages::social_meta(&state.db).await;
+    let shell = pages::shell_data(state, &site.config).await;
+    let mut head = section_head(&site, &social, sec.path, &format!("{} | {}", site.base_name, sec.title), sec.description, sec.path);
+    head.json_ld.push(breadcrumb(&site, &shell, sec.path, sec.crumb, &[]));
+    render(web, state, req.uri.path(), &req.headers, &site, StatusCode::OK, head.render(), shell, page, fallback)
+}
+
+/// A page's `generateMetadata` after `applySocialOverrides(base, social, key, { baseUrl, fallbackImage: config.ogImage })`:
+/// the page's OpenGraph replaces the root's whole group (no site_name/locale); the image is optional.
+fn section_head(site: &Site, social: &Value, key: &str, title: &str, description: &str, path: &str) -> Head {
+    let pick = |v: &Value| v.as_str().map(str::trim).filter(|v| !v.is_empty()).map(str::to_string);
+    let entry = &social["pages"][key];
+    let title = pick(&entry["title"]).unwrap_or_else(|| title.to_string());
+    let description = pick(&entry["description"]).unwrap_or_else(|| description.to_string());
+    let image = pick(&entry["image"])
+        .or_else(|| pick(&social["defaultImage"]))
+        .or_else(|| pick(&site.config["ogImage"]))
+        .map(|i| pages::absolute(&site.base_url, &i))
+        .unwrap_or_default();
+    let url = format!("{}{path}", site.base_url);
+    let mut head = Head::site(site, &title, &description);
+    head.canonical = url.clone();
+    head.og = vec![("og:title", title.clone()), ("og:description", description.clone()), ("og:url", url), ("og:type", "website".into())];
+    if !image.is_empty() {
+        head.og.extend([("og:image", image.clone()), ("og:image:width", "1200".into()), ("og:image:height", "630".into())]);
+    }
+    head.twitter = Some((title, description, image));
+    head
+}
+
+macro_rules! web_or_next {
+    ($state:expr, $req:expr) => {
+        match $state.web.clone() {
+            Some(w) => w,
+            None => return crate::proxy::forward(State($state), $req).await,
+        }
+    };
+}
+
+/// `/about-me`: port of src/app/(site)/about-me/page.js.
+pub async fn about_me(State(state): State<AppState>, req: Request) -> Response {
+    let web = web_or_next!(state, req);
+    let req = req.into_parts().0;
+    let about = pages::singleton(&state.db, "About", false).await;
+    let s = |k: &str| about.get(k).and_then(Value::as_str).unwrap_or_default();
+    let fallback = format!("<main><h1>{}</h1><p>{}</p></main>", escape(s("name")), escape(s("professionalSummary")));
+    let sec = Section { path: "/about-me", crumb: "About Me", title: "About Me", description: "Learn more about my background, skills, and experience." };
+    section(&web, &state, &req, &sec, json!({ "about": about }), fallback).await
 }
 
 /// `/_img/blog/{id}`: a blog cover stored inline as a data URI.
@@ -197,7 +262,7 @@ pub async fn skip_next_rsc(req: Request, next: axum::middleware::Next) -> Respon
 // ── rendering ────────────────────────────────────────────────────────────────────────────────────────
 
 #[allow(clippy::too_many_arguments)]
-fn render(web: &WebApp, state: &AppState, headers: &HeaderMap, site: &Site, status: StatusCode, head: String, shell: Value, page: Value, fallback: String) -> Response {
+fn render(web: &WebApp, state: &AppState, path: &str, headers: &HeaderMap, site: &Site, status: StatusCode, head: String, shell: Value, page: Value, fallback: String) -> Response {
     // isAdminViewer: a valid JWT is enough (no Session row check), as in src/lib/adminPresence.js.
     let is_admin = headers
         .get(header::COOKIE)
@@ -210,7 +275,8 @@ fn render(web: &WebApp, state: &AppState, headers: &HeaderMap, site: &Site, stat
         let body = json!({ "status": status.as_u16(), "title": unescape(title), "shell": shell, "page": page });
         let mut res = axum::Json(body).into_response();
         *res.status_mut() = status;
-        res.headers_mut().insert(header::CACHE_CONTROL, HeaderValue::from_static("no-cache"));
+        // CDNs ignore Vary on custom headers: never let a cache hold the JSON variant.
+        res.headers_mut().insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
         res.headers_mut().append(header::VARY, HeaderValue::from_static("x-aiyu-data"));
         return res;
     }
@@ -231,8 +297,9 @@ fn render(web: &WebApp, state: &AppState, headers: &HeaderMap, site: &Site, stat
     *res.status_mut() = status;
     let h = res.headers_mut();
     h.insert(header::CONTENT_TYPE, HeaderValue::from_static("text/html; charset=utf-8"));
-    // Embeds per-request data (admin vs visitor); never cache it.
-    h.insert(header::CACHE_CONTROL, HeaderValue::from_static("no-cache"));
+    // Admins get their own HTML (no GA id): never shared. Visitor pages get the public CDN policy.
+    let public = !is_admin && status == StatusCode::OK && crate::compat::is_public_html(path);
+    h.insert(header::CACHE_CONTROL, if public { crate::compat::public_html_cache() } else { HeaderValue::from_static("no-cache") });
     // HTML and JSON share the URL: caches must key on the data header.
     h.append(header::VARY, HeaderValue::from_static("x-aiyu-data"));
     res
@@ -367,7 +434,10 @@ impl Head {
         }
         if let Some((t, d, i)) = &self.twitter {
             h.push_str(r#"<meta name="twitter:card" content="summary_large_image" />"#);
-            h.push_str(&format!(r#"<meta name="twitter:title" content="{}" /><meta name="twitter:description" content="{}" /><meta name="twitter:image" content="{}" />"#, e(t), e(d), e(i)));
+            h.push_str(&format!(r#"<meta name="twitter:title" content="{}" /><meta name="twitter:description" content="{}" />"#, e(t), e(d)));
+            if !i.is_empty() {
+                h.push_str(&format!(r#"<meta name="twitter:image" content="{}" />"#, e(i)));
+            }
         }
         for rel in ["shortcut icon", "icon", "apple-touch-icon"] {
             h.push_str(&format!(r#"<link rel="{rel}" href="{}" />"#, e(&self.icon)));
@@ -385,7 +455,9 @@ fn breadcrumb(site: &Site, shell: &Value, path: &str, name: &str, trail: &[(Stri
         .as_array()
         .and_then(|links| links.iter().find(|l| l["href"].as_str().map(|h| h.trim_end_matches('/')) == Some(path)))
         .and_then(|l| l["name"].as_str())
-        .unwrap_or(name);
+        .map(prettify_nav_name)
+        .filter(|n| !n.is_empty())
+        .unwrap_or_else(|| name.to_string());
     let base = &site.base_url;
     let mut items = vec![("Home".to_string(), base.clone()), (label.to_string(), format!("{base}{path}"))];
     items.extend(trail.iter().filter(|(n, _)| !n.is_empty()).map(|(n, p)| (n.clone(), format!("{base}{p}"))));
@@ -393,6 +465,31 @@ fn breadcrumb(site: &Site, shell: &Value, path: &str, name: &str, trail: &[(Stri
         "@context": "https://schema.org", "@type": "BreadcrumbList",
         "itemListElement": items.iter().enumerate().map(|(i, (n, u))| json!({ "@type": "ListItem", "position": i + 1, "name": n, "item": u })).collect::<Vec<_>>(),
     })
+}
+
+/// `prettifyNavName` in BreadcrumbSchema.js: "about-me" -> "About Me".
+fn prettify_nav_name(v: &str) -> String {
+    let word = |c: char| c.is_ascii_alphanumeric() || c == '_';
+    let mut cleaned = String::new();
+    let mut sep = false;
+    for c in v.trim_start_matches('_').chars() {
+        if c == '-' || c == '_' {
+            sep = true;
+        } else {
+            if sep {
+                cleaned.push(' ');
+                sep = false;
+            }
+            cleaned.push(c);
+        }
+    }
+    let mut out = String::new();
+    let mut prev_word = false;
+    for c in cleaned.trim().chars() {
+        out.push(if word(c) && !prev_word { c.to_ascii_uppercase() } else { c });
+        prev_word = word(c);
+    }
+    out
 }
 
 /// `getSafeCanonicalUrl`: only same-origin http(s) canonicals are kept.
@@ -482,6 +579,13 @@ mod tests {
         assert_eq!(safe_canonical(b, Some("https://evil.c/x"), "/blogs/x"), "https://a.b/blogs/x");
         assert_eq!(safe_canonical(b, Some("/blogs/y/"), "/blogs/x"), "https://a.b/blogs/y");
         assert_eq!(safe_canonical(b, Some("https://a.b.evil/x"), "/blogs/x"), "https://a.b/blogs/x");
+    }
+
+    #[test]
+    fn nav_names() {
+        assert_eq!(prettify_nav_name("about-me"), "About Me");
+        assert_eq!(prettify_nav_name("__blogs"), "Blogs");
+        assert_eq!(prettify_nav_name("open_source--x"), "Open Source X");
     }
 
     #[test]

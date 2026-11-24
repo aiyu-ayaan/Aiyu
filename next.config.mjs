@@ -196,7 +196,7 @@ const nextConfig = {
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' data: blob: https: http:",
       "font-src 'self' https://fonts.gstatic.com data:",
-      "connect-src 'self' https://*.githubusercontent.com https://api.github.com https://www.google-analytics.com https://pagead2.googlesyndication.com",
+      "connect-src 'self' https://*.githubusercontent.com https://api.github.com https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://*.googletagmanager.com https://www.google.com https://stats.g.doubleclick.net https://pagead2.googlesyndication.com",
       "frame-src 'self' https://pagead2.googlesyndication.com",
       "media-src 'self'",
       "object-src 'none'",

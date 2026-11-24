@@ -47,17 +47,28 @@ const routeMeta: Plugin = {
   },
 };
 
+// Every `next/*` import must hit a shim above: real Next modules would work through the proxy today and break at cutover.
+const noNext: Plugin = {
+  name: 'aiyu:no-next',
+  enforce: 'pre',
+  resolveId(id, importer) {
+    if (/^next(\/|$)/.test(id)) throw new Error(`unshimmed import "${id}" from ${importer}`);
+    return null;
+  },
+};
+
 export default defineConfig({
   root: fileURLToPath(new URL('.', import.meta.url)),
   // Hashed assets live under /_app/ so the Rust server can cache them forever without touching Next's paths.
   base: '/_app/',
-  plugins: [jsxInJs, react(), tailwindcss(), prepaint, routeMeta],
+  plugins: [jsxInJs, react(), tailwindcss(), prepaint, routeMeta, noNext],
   resolve: {
     alias: [
       { find: /^next\/link$/, replacement: shim('link.tsx') },
       { find: /^next\/navigation$/, replacement: shim('navigation.ts') },
       { find: /^next\/dynamic$/, replacement: shim('dynamic.tsx') },
       { find: /^next\/script$/, replacement: shim('script.tsx') },
+      { find: /^next\/image$/, replacement: shim('image.tsx') },
       { find: /^@\//, replacement: `${src}/` },
     ],
   },
