@@ -5,7 +5,7 @@
  *   /<app slug>               hub listing every published document of the app
  *   /<app slug>/<doc slug>    one document, e.g. /rewire/privacy-policy
  *
- * Those live at the site root (src/app/[legalApp]), so an app slug must never
+ * Those live at the site root (Rust: server/src/legal.rs), so an app slug must never
  * shadow a real top-level route — see RESERVED_LEGAL_SLUGS.
  *
  * This module is the single source of truth for validation, slug rules, reads,

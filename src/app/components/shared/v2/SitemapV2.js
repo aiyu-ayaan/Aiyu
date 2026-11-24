@@ -7,7 +7,7 @@ import { useV2Fx } from '../../landing/v2/gsap3d';
 
 /**
  * /v2/sitemap body — the index columns with the shared v2 reveal
- * choreography. The server page (src/app/(site)/sitemap/page.js) does the data
+ * choreography. The route (web/src/routes/sitemap.tsx) does the data
  * fetching and passes plain, serializable columns; this client shell wires
  * up useV2Fx so the head lines pivot in and each column staggers its links.
  */
