@@ -122,3 +122,23 @@ test('/sitemap lists every page', async ({ page, request }) => {
     const total = 9 + apps.length + projects.length + games + blogs.data.length;
     await expect(page.getByText(`${total} entries · 5 sections`)).toBeVisible();
 });
+
+test('legal app and document pages render; other single-segment paths still work', async ({ page, request }) => {
+    const xml = await (await request.get('/sitemap.xml')).text();
+    const known = /^\/(projects|apps|blogs|ai|games|gallery|github|about-me|contact-us|desktop)(\/|$)/;
+    const paths = [...xml.matchAll(/<loc>[^<]*?\/\/[^/]+(\/[^<]*)<\/loc>/g)].map((m) => m[1]).filter((p) => !known.test(p));
+    const doc = paths.find((p) => p.split('/').length === 3);
+    test.skip(!doc, 'no published legal document in this database');
+    const appPath = doc.split('/').slice(0, 2).join('/');
+
+    expect((await page.goto(appPath)).status()).toBe(200);
+    await expect(page.locator('h1').first()).toBeVisible();
+    await page.locator(`a[href="${doc}"]`).first().click();
+    await expect(page).toHaveURL(new RegExp(`${doc}$`));
+    await expect(page.locator('h1').first()).toBeVisible();
+
+    expect((await request.get(`${appPath}/does-not-exist-e2e`)).status()).toBe(404);
+    expect((await request.get('/does-not-exist-e2e')).status()).toBe(404);
+    expect((await request.get('/robots.txt')).status()).toBe(200);
+    expect((await request.get('/api/health')).status()).toBe(200);
+});

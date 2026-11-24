@@ -714,6 +714,267 @@ pub async fn home(State(state): State<AppState>, req: Request) -> Response {
     render(&web, &state, req.uri.path(), &req.headers, &site, StatusCode::OK, head.render(), shell, page, fallback)
 }
 
+/// JS `text.slice(0, n)` (UTF-16 units).
+fn js_slice(text: &str, n: usize) -> String {
+    let units: Vec<u16> = text.encode_utf16().take(n).collect();
+    String::from_utf16_lossy(&units)
+}
+
+/// Not a legal page: let Next answer (files, unported routes, its 404).
+async fn to_next(state: AppState, parts: Parts) -> Response {
+    crate::proxy::forward(State(state), Request::from_parts(parts, Body::empty())).await
+}
+
+/// Legal pages are served by Rust only after the database says so; RSC requests get the same empty reply as the
+/// other Vite pages, and the canonical-host redirect applies like Next's middleware.
+fn legal_guard(req: &Parts) -> Option<Response> {
+    if let Some(r) = crate::compat::canonical_redirect_for(&req.method, &req.headers, &req.uri) {
+        return Some(r);
+    }
+    req.headers.contains_key("rsc").then(|| {
+        let mut res = Response::new(Body::empty());
+        res.headers_mut().insert(header::CONTENT_TYPE, HeaderValue::from_static("text/plain"));
+        res.headers_mut().insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
+        res
+    })
+}
+
+/// `/{legalApp}`: port of src/app/[legalApp]/page.js. Paths that are not legal apps go on to Next.
+pub async fn legal_app(State(state): State<AppState>, Path(raw): Path<String>, req: Request) -> Response {
+    let (parts, body) = req.into_parts();
+    let (Some(web), Some(slug)) = (state.web.clone(), crate::legal::candidate(&raw)) else {
+        return crate::proxy::forward(State(state), Request::from_parts(parts, body)).await;
+    };
+    let app = match crate::legal::public_app(&state.db, &slug).await {
+        Ok(Some(a)) => a,
+        Ok(None) => return to_next(state, parts).await,
+        // The catch-all must never break other paths: on a database error, let Next answer.
+        Err(err) => {
+            tracing::warn!(error = %err, "legal lookup failed; passing to Next");
+            return to_next(state, parts).await;
+        }
+    };
+    if let Some(r) = legal_guard(&parts) {
+        return r;
+    }
+    let showcase = match crate::legal::showcase(&state.db, &app).await {
+        Ok(s) => s,
+        Err(err) => return server_error(err),
+    };
+    let docs = app["documents"].as_array().cloned().unwrap_or_default();
+    let product = &showcase["app"];
+    // Nothing to show: no linked product and no published legal pages.
+    if product.is_null() && docs.is_empty() {
+        return not_found_page(&web, &state, &parts).await;
+    }
+    let site = Site::load(&state).await;
+    let shell = pages::shell_data(&state, &site.config).await;
+    let base = site.base_url.clone();
+    let st = |v: &Value, k: &str| v[k].as_str().unwrap_or_default().to_string();
+    let name = st(&app, "name");
+    let url = format!("{base}/{}", st(&app, "slug"));
+    let label = |t: &str| if t.is_empty() { "App".to_string() } else if regex_word(t, "app") { t.to_string() } else { format!("{t} App") };
+    let title = if product.is_null() { format!("{name} — Legal") } else { format!("{name} — {}", label(&st(product, "type"))) };
+    let lede = [st(&app, "description"), st(product, "description"), st(&showcase["project"], "description")].into_iter().find(|t| !t.is_empty()).unwrap_or_default();
+    let description = if !lede.is_empty() {
+        if lede.encode_utf16().count() > 160 { format!("{}…", js_slice(&lede, 157).trim_end()) } else { lede.clone() }
+    } else {
+        let titles: Vec<String> = docs.iter().map(|d| st(d, "title")).collect();
+        js_slice(&format!("{name}: {}.", titles.join(", ")), 160)
+    };
+    let pick = |v: &Value| v.as_str().filter(|v| !v.is_empty()).map(str::to_string);
+    let image = pick(&product["image"]).or_else(|| pick(&showcase["project"]["image"])).or_else(|| pick(&site.config["ogImage"])).unwrap_or_else(|| format!("{base}/og-image.png"));
+    let mut keywords: Vec<String> = vec![];
+    let candidates = [Some(name.clone()), Some(format!("{name} app")), pick(&product["type"])]
+        .into_iter()
+        .flatten()
+        .chain(product["techStack"].as_array().into_iter().flatten().filter_map(|v| pick(v)))
+        .chain(docs.iter().map(|d| format!("{name} {}", st(d, "title"))));
+    for k in candidates {
+        if !k.is_empty() && !keywords.contains(&k) {
+            keywords.push(k);
+        }
+    }
+
+    let mut head = Head::site(&site, &format!("{title} | {}", site.base_name), &description);
+    head.keywords = keywords.join(",");
+    head.canonical = url.clone();
+    head.googlebot = Some("index, follow, max-image-preview:large, max-snippet:-1");
+    head.og = vec![
+        ("og:title", title.clone()), ("og:description", description.clone()), ("og:url", url.clone()), ("og:site_name", site.base_name.clone()),
+        ("og:image", image.clone()), ("og:image:width", "1200".into()), ("og:image:height", "630".into()), ("og:image:alt", name.clone()),
+        ("og:type", "website".into()),
+    ];
+    head.twitter = Some((title.clone(), description.clone(), image));
+
+    let package = st(&app, "packageName");
+    let mut graph = vec![];
+    let mut webpage = json!({
+        "@type": "WebPage", "@id": format!("{url}#webpage"), "url": url, "name": title, "description": description,
+        "isPartOf": { "@type": "WebSite", "url": base }, "breadcrumb": { "@id": format!("{url}#breadcrumb") },
+    });
+    if !product.is_null() {
+        webpage["mainEntity"] = json!({ "@id": format!("{url}#app") });
+    }
+    webpage["hasPart"] = docs.iter().map(|d| json!({ "@type": "WebPage", "name": d["title"], "url": format!("{url}/{}", st(d, "slug")) })).collect();
+    graph.push(webpage);
+    graph.push(json!({
+        "@type": "BreadcrumbList", "@id": format!("{url}#breadcrumb"),
+        "itemListElement": [
+            { "@type": "ListItem", "position": 1, "name": "Home", "item": if base.is_empty() { "/".to_string() } else { base.clone() } },
+            { "@type": "ListItem", "position": 2, "name": name, "item": url },
+        ],
+    }));
+    if !product.is_null() {
+        let kind = st(product, "type");
+        let os = if regex_ci(&kind, &["android"]) { Some("Android") }
+            else if regex_word(&kind, "ios") || regex_ci(&kind, &["iphone", "ipad"]) { Some("iOS") }
+            else if regex_ci(&kind, &["web", "site", "saas"]) { Some("Web") }
+            else if !package.is_empty() { Some("Android") } else { None };
+        let external = st(product, "externalUrl");
+        let external = (external.to_lowercase().starts_with("http://") || external.to_lowercase().starts_with("https://")).then_some(external);
+        let mut ld = serde_json::Map::new();
+        ld.insert("@type".into(), "SoftwareApplication".into());
+        ld.insert("@id".into(), format!("{url}#app").into());
+        ld.insert("name".into(), name.clone().into());
+        ld.insert("url".into(), url.clone().into());
+        if !lede.is_empty() { ld.insert("description".into(), lede.clone().into()); }
+        if let Some(i) = pick(&product["image"]) { ld.insert("image".into(), i.into()); }
+        ld.insert("applicationCategory".into(), (if kind.is_empty() { "Application".to_string() } else { kind.clone() }).into());
+        if let Some(os) = os { ld.insert("operatingSystem".into(), os.into()); }
+        if !package.is_empty() { ld.insert("identifier".into(), package.clone().into()); }
+        let stack: Vec<&str> = product["techStack"].as_array().map(|a| a.iter().filter_map(Value::as_str).collect()).unwrap_or_default();
+        if !stack.is_empty() { ld.insert("softwareRequirements".into(), stack.join(", ").into()); }
+        let mut same = vec![Value::from(format!("{base}{}", st(product, "href")))];
+        if let Some(e) = external { same.push(e.into()); }
+        ld.insert("sameAs".into(), same.into());
+        if !showcase["project"].is_null() {
+            ld.insert("isBasedOn".into(), json!({ "@type": "SoftwareSourceCode", "name": showcase["project"]["name"], "url": format!("{base}{}", st(&showcase["project"], "href")) }));
+        }
+        graph.push(Value::Object(ld));
+    }
+    head.json_ld.push(json!({ "@context": "https://schema.org", "@graph": graph }));
+
+    let mut fallback = format!("<main><h1>{}</h1><p>{}</p><ul>", escape(&name), escape(&lede));
+    for d in &docs {
+        fallback.push_str(&format!(r#"<li><a href="/{}/{}">{}</a></li>"#, escape(&st(&app, "slug")), escape(&st(d, "slug")), escape(&st(d, "title"))));
+    }
+    fallback.push_str("</ul></main>");
+    let page = json!({ "app": app, "showcase": showcase, "lede": lede });
+    render(&web, &state, parts.uri.path(), &parts.headers, &site, StatusCode::OK, head.render(), shell, page, fallback)
+}
+
+/// `/{legalApp}/{legalDoc}`: port of src/app/[legalApp]/[legalDoc]/page.js.
+pub async fn legal_doc(State(state): State<AppState>, Path((raw_app, raw_doc)): Path<(String, String)>, req: Request) -> Response {
+    let (parts, body) = req.into_parts();
+    let (Some(web), Some(slug)) = (state.web.clone(), crate::legal::candidate(&raw_app)) else {
+        return crate::proxy::forward(State(state), Request::from_parts(parts, body)).await;
+    };
+    let app = match crate::legal::public_app(&state.db, &slug).await {
+        Ok(Some(a)) => a,
+        Ok(None) => return to_next(state, parts).await,
+        // The catch-all must never break other paths: on a database error, let Next answer.
+        Err(err) => {
+            tracing::warn!(error = %err, "legal lookup failed; passing to Next");
+            return to_next(state, parts).await;
+        }
+    };
+    if let Some(r) = legal_guard(&parts) {
+        return r;
+    }
+    let want = raw_doc.trim().to_lowercase();
+    let Some(doc) = app["documents"].as_array().and_then(|d| d.iter().find(|d| d["slug"].as_str() == Some(want.as_str()))).cloned() else {
+        return not_found_page(&web, &state, &parts).await;
+    };
+    let linked = match crate::legal::linked_deployment(&state.db, &app).await {
+        Ok(l) => l,
+        Err(err) => return server_error(err),
+    };
+    let site = Site::load(&state).await;
+    let shell = pages::shell_data(&state, &site.config).await;
+    let base = site.base_url.clone();
+    let st = |v: &Value, k: &str| v[k].as_str().unwrap_or_default().to_string();
+    let (name, doc_title) = (st(&app, "name"), st(&doc, "title"));
+    let url = format!("{base}/{}/{}", st(&app, "slug"), st(&doc, "slug"));
+    let title = format!("{doc_title} — {name}");
+    let package = st(&app, "packageName");
+    let description = match st(&doc, "seoDescription") {
+        d if !d.is_empty() => d,
+        _ => js_slice(&format!("{doc_title} for {name}{}: how the app handles your information, your rights, and how to get in touch.", if package.is_empty() { String::new() } else { format!(" ({package})") }), 160),
+    };
+
+    let mut head = Head::site(&site, &format!("{title} | {}", site.base_name), &description);
+    head.canonical = url.clone();
+    if doc["noIndex"] == Value::Bool(true) {
+        head.robots = "noindex, follow".into();
+        head.googlebot = None;
+    } else {
+        head.googlebot = Some("index, follow, max-snippet:-1");
+    }
+    head.og = vec![("og:title", title.clone()), ("og:description", description.clone()), ("og:url", url.clone()), ("og:site_name", site.base_name.clone()), ("og:type", "article".into())];
+    if let Some(m) = doc["updatedAt"].as_str().filter(|m| !m.is_empty()) {
+        head.og.push(("article:modified_time", m.to_string()));
+    }
+    head.twitter = Some((title.clone(), description.clone(), String::new()));
+    head.twitter_card = "summary";
+
+    let mut page_ld = serde_json::Map::new();
+    page_ld.insert("@context".into(), "https://schema.org".into());
+    page_ld.insert("@type".into(), "WebPage".into());
+    page_ld.insert("name".into(), title.clone().into());
+    page_ld.insert("description".into(), description.clone().into());
+    page_ld.insert("url".into(), url.clone().into());
+    page_ld.insert("inLanguage".into(), "en".into());
+    for (k, from) in [("dateModified", "updatedAt"), ("datePublished", "createdAt")] {
+        if let Some(v) = doc[from].as_str().filter(|v| !v.is_empty()) {
+            page_ld.insert(k.into(), v.into());
+        }
+    }
+    let mut about = serde_json::Map::new();
+    about.insert("@type".into(), "SoftwareApplication".into());
+    about.insert("name".into(), name.clone().into());
+    if !linked.is_null() {
+        about.insert("url".into(), format!("{base}{}", st(&linked, "href")).into());
+    }
+    if !package.is_empty() {
+        about.insert("identifier".into(), package.into());
+    }
+    page_ld.insert("about".into(), Value::Object(about));
+    page_ld.insert("isPartOf".into(), json!({ "@type": "WebSite", "url": base }));
+    head.json_ld.push(json!([
+        Value::Object(page_ld),
+        {
+            "@context": "https://schema.org", "@type": "BreadcrumbList",
+            "itemListElement": [
+                { "@type": "ListItem", "position": 1, "name": "Home", "item": if base.is_empty() { "/".to_string() } else { base.clone() } },
+                { "@type": "ListItem", "position": 2, "name": name, "item": format!("{base}/{}", st(&app, "slug")) },
+                { "@type": "ListItem", "position": 3, "name": doc_title, "item": url },
+            ],
+        },
+    ]));
+
+    let fallback = format!("<main><article><h1>{}</h1>{}</article></main>", escape(&doc_title), pages::markdown_html(&st(&doc, "content")));
+    let page = json!({ "app": app, "document": doc, "linkedApp": linked });
+    render(&web, &state, parts.uri.path(), &parts.headers, &site, StatusCode::OK, head.render(), shell, page, fallback)
+}
+
+/// `/\bword\b/i` for an ASCII word.
+fn regex_word(text: &str, word: &str) -> bool {
+    let t = text.to_ascii_lowercase();
+    let is_w = |c: char| c.is_ascii_alphanumeric() || c == '_';
+    t.match_indices(word).any(|(i, _)| {
+        let before = t[..i].chars().next_back().is_none_or(|c| !is_w(c));
+        let after = t[i + word.len()..].chars().next().is_none_or(|c| !is_w(c));
+        before && after
+    })
+}
+
+/// `/a|b|c/i`
+fn regex_ci(text: &str, any: &[&str]) -> bool {
+    let t = text.to_ascii_lowercase();
+    any.iter().any(|w| t.contains(w))
+}
+
 /// `/_img/blog/{id}`: a blog cover stored inline as a data URI.
 pub async fn blog_image(State(state): State<AppState>, Path(id): Path<String>) -> Response {
     match pages::blog_inline_image(&state.db, &id).await {
@@ -876,6 +1137,7 @@ struct Head {
     og: Vec<(&'static str, String)>,
     /// (title, description, image); the root's site card by default.
     twitter: Option<(String, String, String)>,
+    twitter_card: &'static str,
     icon: String,
     json_ld: Vec<Value>,
 }
@@ -902,6 +1164,7 @@ impl Head {
                 ("og:type", "website".into()),
             ],
             twitter: Some((site.site_title.clone(), site.description.clone(), site.og_image.clone())),
+            twitter_card: "summary_large_image",
             icon: site.icon.clone(),
             json_ld: vec![],
         }
@@ -925,7 +1188,7 @@ impl Head {
             h.push_str(&format!(r#"<meta property="{p}" content="{}" />"#, e(v)));
         }
         if let Some((t, d, i)) = &self.twitter {
-            h.push_str(r#"<meta name="twitter:card" content="summary_large_image" />"#);
+            h.push_str(&format!(r#"<meta name="twitter:card" content="{}" />"#, self.twitter_card));
             h.push_str(&format!(r#"<meta name="twitter:title" content="{}" /><meta name="twitter:description" content="{}" />"#, e(t), e(d)));
             if !i.is_empty() {
                 h.push_str(&format!(r#"<meta name="twitter:image" content="{}" />"#, e(i)));
@@ -1076,6 +1339,13 @@ mod tests {
         assert_eq!(safe_canonical(b, Some("https://evil.c/x"), "/blogs/x"), "https://a.b/blogs/x");
         assert_eq!(safe_canonical(b, Some("/blogs/y/"), "/blogs/x"), "https://a.b/blogs/y");
         assert_eq!(safe_canonical(b, Some("https://a.b.evil/x"), "/blogs/x"), "https://a.b/blogs/x");
+    }
+
+    #[test]
+    fn js_regex_helpers() {
+        assert!(regex_word("Android App", "app") && !regex_word("Apps", "app") && regex_word("iOS", "ios"));
+        assert!(regex_ci("SaaS tool", &["web", "site", "saas"]) && !regex_ci("Desktop", &["web"]));
+        assert_eq!(js_slice("a😀b", 2), "a\u{FFFD}");
     }
 
     #[test]

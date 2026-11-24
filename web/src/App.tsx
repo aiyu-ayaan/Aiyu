@@ -28,6 +28,8 @@ const AiHub = lazy(() => import('./routes/aiHub'));
 const AiSection = lazy(() => import('./routes/aiSection'));
 const Sitemap = lazy(() => import('./routes/sitemap'));
 const Home = lazy(() => import('./routes/home'));
+const LegalApp = lazy(() => import('./routes/legalApp'));
+const LegalDoc = lazy(() => import('./routes/legalDoc'));
 import { NotFound } from './NotFound';
 
 export type BootData = {
@@ -77,6 +79,9 @@ export function App({ data }: { data: BootData }) {
               <Route path="/ai/:section" element={<AiSection />} />
               <Route path="/sitemap" element={<Sitemap />} />
               <Route path="/" element={<Home />} />
+              {/* Legal pages: the server only sends real legal apps here (links to them are full loads). */}
+              <Route path="/:legalApp" element={<LegalApp />} />
+              <Route path="/:legalApp/:legalDoc" element={<LegalDoc />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

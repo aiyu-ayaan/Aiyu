@@ -79,18 +79,21 @@ fn accepts_markdown(headers: &HeaderMap) -> bool {
 
 /// `getCanonicalHostRedirect`: GET/HEAD on a non-local host other than SITE_URL's goes there (308).
 fn canonical_redirect(req: &Request) -> Option<Response> {
-    if !matches!(*req.method(), Method::GET | Method::HEAD) || std::env::var("CANONICAL_HOST_REDIRECT").as_deref() == Ok("false") {
+    canonical_redirect_for(req.method(), req.headers(), req.uri())
+}
+
+pub fn canonical_redirect_for(method: &Method, h: &HeaderMap, uri: &axum::http::Uri) -> Option<Response> {
+    if !matches!(*method, Method::GET | Method::HEAD) || std::env::var("CANONICAL_HOST_REDIRECT").as_deref() == Ok("false") {
         return None;
     }
     let site = std::env::var("SITE_URL").ok().filter(|v| !v.is_empty()).or_else(|| std::env::var("NEXT_PUBLIC_BASE_URL").ok())?;
     let canonical = reqwest::Url::parse(&site).ok().filter(|u| matches!(u.scheme(), "http" | "https"))?;
-    let h = req.headers();
     let raw = h.get("x-forwarded-host").or_else(|| h.get(header::HOST)).and_then(|v| v.to_str().ok()).unwrap_or("");
     let host = raw.split(',').next().unwrap_or("").trim().split(':').next().unwrap_or("").to_ascii_lowercase();
     if host.is_empty() || is_local(&host) || Some(host.as_str()) == canonical.host_str() {
         return None;
     }
-    let pq = req.uri().path_and_query().map(|p| p.as_str()).unwrap_or("/");
+    let pq = uri.path_and_query().map(|p| p.as_str()).unwrap_or("/");
     Some(Redirect::permanent(&format!("{}{pq}", canonical.origin().ascii_serialization())).into_response())
 }
 

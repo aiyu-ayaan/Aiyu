@@ -1,5 +1,6 @@
 pub mod ai;
 pub mod auth;
+pub mod legal;
 pub mod compat;
 pub mod config;
 pub mod db;
@@ -116,6 +117,9 @@ pub fn router(state: AppState) -> Router {
         .route("/healthz", get(|| async { "ok" }))
         .merge(web_pages)
         .route("/_img/blog/{id}", get(web::blog_image))
+        // Catch-alls: answer only for legal apps in the database, everything else goes on to Next.
+        .route("/{legal_app}", get(web::legal_app))
+        .route("/{legal_app}/{legal_doc}", get(web::legal_doc))
         .route("/api/admin/export", get(export::export))
         .merge(next_static)
         .merge(web_assets)
