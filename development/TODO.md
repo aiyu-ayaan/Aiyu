@@ -6,7 +6,7 @@ Branch: `migrate/rust-vite`. Baseline and method: `development/docs/PERFORMANCE.
 
 ## ▶ RESUME HERE (handoff 2026-11-24)
 
-Branch `migrate/rust-vite`. Ported and gated: `/games`, `/blogs`, `/about-me`, `/apps`, `/projects`, `/gallery`, `/github`, `/contact-us`. Then all `/admin` pages (user asked:
+Branch `migrate/rust-vite`. Ported and gated: `/games`, `/blogs`, `/about-me`, `/apps`, `/projects`, `/gallery`, `/github`, `/contact-us`, `/projects/[id]`, `/apps/[id]`. Then all `/admin` pages (user asked:
 everything must keep working). Next: the other header pages, one per commit, with the recipe below: `/` (home), `/projects` + `/projects/[id]`, `/apps` + `/apps/[id]`, `/gallery`,
 `/github`, `/contact-us`, `/ai` + `/ai/[section]`, `/sitemap`, legal `/[legalApp]`.
 
@@ -176,14 +176,14 @@ Each page: Rust data + head + Vite route + e2e passing through Rust, then the Ne
 - [ ] `/v2/ai`
 - [ ] `/v2/ai/[section]`
 - [x] `/v2/apps`
-- [ ] `/v2/apps/[id]`
+- [x] `/v2/apps/[id]`
 - [x] `/v2/blogs`
 - [x] `/v2/blogs/[id]`
 - [x] `/v2/contact-us`
 - [x] `/v2/gallery`
 - [x] `/v2/github`
 - [x] `/v2/projects`
-- [ ] `/v2/projects/[id]`
+- [x] `/v2/projects/[id]`
 - [ ] `/v2/sitemap`
 
 ## Milestone 8: Port API routes

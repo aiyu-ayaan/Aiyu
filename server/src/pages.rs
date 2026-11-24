@@ -153,6 +153,148 @@ pub async fn projects(db: &PgPool, list: bool) -> anyhow::Result<Vec<Value>> {
     Ok(rows)
 }
 
+pub enum Lookup {
+    Found(Value),
+    /// Reached through a non-canonical identifier: 308 to this path.
+    Redirect(String),
+    NotFound,
+}
+
+/// `generateSlug` in src/lib/seoHelper.js.
+pub fn generate_slug(text: &str) -> String {
+    let kept: String = text.to_lowercase().trim().chars().filter(|c| c.is_ascii_alphanumeric() || *c == '_' || c.is_whitespace() || *c == '-').collect();
+    let mut out = String::new();
+    let mut in_space = false;
+    for c in kept.chars() {
+        if c.is_whitespace() {
+            in_space = true;
+            continue;
+        }
+        if in_space {
+            out.push('-');
+            in_space = false;
+        }
+        out.push(c);
+    }
+    if in_space {
+        out.push('-');
+    }
+    let mut collapsed = String::new();
+    for c in out.chars() {
+        if !(c == '-' && collapsed.ends_with('-')) {
+            collapsed.push(c);
+        }
+    }
+    collapsed
+}
+
+/// `getProjectSlug` / `getDeploymentSlug`: the stored slug, else one made from the name (or `<prefix>-<id tail>`).
+pub fn entity_slug(row: &Value, prefix: &str) -> String {
+    if let Some(s) = row["slug"].as_str().map(str::trim).filter(|s| !s.is_empty()) {
+        return s.to_string();
+    }
+    let generated = generate_slug(row["name"].as_str().unwrap_or_default());
+    if !generated.is_empty() {
+        return generated;
+    }
+    let id = row["_id"].as_str().unwrap_or_default();
+    let tail: String = id.chars().rev().take(6).collect::<Vec<_>>().into_iter().rev().collect();
+    format!("{prefix}-{}", if tail.is_empty() { "entry" } else { &tail })
+}
+
+/// `resolveProjectByIdentifier` / `resolveDeploymentByIdentifier` + the canonical-slug redirect of the detail pages:
+/// slug, then id, then a slugless row whose generated slug matches. Next also wrote the generated slug back on
+/// read; that backfill is left to the admin save path.
+pub async fn entity_by_identifier(db: &PgPool, table: &str, prefix: &str, base: &str, ident: &str) -> anyhow::Result<Lookup> {
+    let norm = ident.trim();
+    if norm.is_empty() {
+        return Ok(Lookup::NotFound);
+    }
+    let one = |cond: &str| format!(r#"SELECT row_to_json(t)::text FROM "{table}" t WHERE {cond} LIMIT 1"#);
+    let mut found: Option<String> = sqlx::query_scalar(&one("slug = $1")).bind(norm).fetch_optional(db).await?;
+    if found.is_none() {
+        found = sqlx::query_scalar(&one("id = $1")).bind(norm).fetch_optional(db).await?;
+    }
+    let row = match found {
+        Some(raw) => to_client_row(serde_json::from_str(&raw)?),
+        None => {
+            let slugless = client_rows(db, table, "WHERE slug = ''").await?;
+            match slugless.into_iter().find(|r| entity_slug(r, prefix) == norm) {
+                Some(r) => r,
+                None => return Ok(Lookup::NotFound),
+            }
+        }
+    };
+    let canonical = entity_slug(&row, prefix);
+    if ident != canonical {
+        return Ok(Lookup::Redirect(format!("{base}/{canonical}")));
+    }
+    Ok(Lookup::Found(row))
+}
+
+/// `getLegalLinksForDeployment`: the first legal app linked to the deployment, with its published documents.
+pub async fn legal_links_for_deployment(db: &PgPool, deployment_id: &str) -> Value {
+    let row: Option<(String, String, Option<String>, Value)> = sqlx::query_as(
+        r#"SELECT a.name, a.slug, a."packageName",
+                  COALESCE((SELECT json_agg(json_build_object('title', d.title, 'href', '/' || a.slug || '/' || d.slug)
+                                            ORDER BY d."displayOrder" ASC, d."createdAt" DESC)
+                            FROM "LegalDocument" d WHERE d."appId" = a.id AND d.published), '[]'::json)
+           FROM "LegalApp" a WHERE a."deploymentId" = $1 ORDER BY a."createdAt" ASC LIMIT 1"#,
+    )
+    .bind(deployment_id)
+    .fetch_optional(db)
+    .await
+    .unwrap_or(None);
+    match row {
+        Some((name, slug, package, links)) if links.as_array().is_some_and(|l| !l.is_empty()) => {
+            json!({ "name": name, "packageName": package.unwrap_or_default(), "href": format!("/{slug}"), "links": links })
+        }
+        _ => Value::Null,
+    }
+}
+
+/// `getProductPathForDeployment`: `/<legal app slug>` when a legal app is linked to the deployment.
+pub async fn product_path(db: &PgPool, deployment_id: &str) -> Option<String> {
+    sqlx::query_scalar::<_, String>(r#"SELECT '/' || slug FROM "LegalApp" WHERE "deploymentId" = $1 ORDER BY "createdAt" ASC LIMIT 1"#)
+        .bind(deployment_id)
+        .fetch_optional(db)
+        .await
+        .ok()
+        .flatten()
+}
+
+/// `getAppLinksForProject`: every app built from the project, pointing at its product page when it has one.
+pub async fn app_links_for_project(db: &PgPool, project_id: &str) -> anyhow::Result<Vec<Value>> {
+    let rows = sqlx::query_scalar::<_, String>(r#"SELECT row_to_json(t)::text FROM "Deployment" t WHERE "projectId" = $1 ORDER BY "displayOrder" ASC"#)
+        .bind(project_id)
+        .fetch_all(db)
+        .await?;
+    let mut out = vec![];
+    for raw in rows {
+        let d = to_client_row(serde_json::from_str(&raw)?);
+        let id = d["_id"].as_str().unwrap_or_default().to_string();
+        let product = product_path(db, &id).await;
+        out.push(json!({
+            "id": id,
+            "name": d["name"],
+            "href": product.clone().unwrap_or_else(|| format!("/apps/{}", entity_slug(&d, "app"))),
+            "hostedUrl": d["hostedUrl"].as_str().unwrap_or_default(),
+            "isProduct": product.is_some(),
+        }));
+    }
+    Ok(out)
+}
+
+/// `getProjectLinkForDeployment`: `{ name, href }` of the project an app is built from.
+pub async fn project_link_for_deployment(db: &PgPool, project_id: Option<&str>) -> Value {
+    let Some(pid) = project_id.filter(|p| !p.is_empty()) else { return Value::Null };
+    let raw: Option<String> = sqlx::query_scalar(r#"SELECT row_to_json(t)::text FROM "Project" t WHERE id = $1"#).bind(pid).fetch_optional(db).await.unwrap_or(None);
+    match raw.and_then(|r| serde_json::from_str::<Value>(&r).ok()).map(to_client_row) {
+        Some(p) => json!({ "name": p["name"], "href": format!("/projects/{}", entity_slug(&p, "project")) }),
+        None => Value::Null,
+    }
+}
+
 /// `getSocialMeta()` (src/lib/socialMeta.js): `{ defaultImage, pages }`, possibly empty.
 pub async fn social_meta(db: &PgPool) -> Value {
     sqlx::query_scalar::<_, Option<Value>>(r#"SELECT (data->'social')::json FROM "SeoConfig" LIMIT 1"#)
@@ -351,6 +493,13 @@ pub fn absolute(base: &str, v: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn slugs_like_seo_helper() {
+        assert_eq!(generate_slug("  Hello,  World -- App! "), "hello-world-app");
+        assert_eq!(generate_slug("Ünïcode Name"), "ncode-name");
+        assert_eq!(entity_slug(&json!({"_id": "abcdef123456", "name": "!!!", "slug": ""}), "app"), "app-123456");
+    }
 
     #[test]
     fn strip_and_read_time_match_js() {

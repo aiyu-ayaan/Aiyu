@@ -62,3 +62,30 @@ test('header nav moves between ported pages and updates the title', async ({ pag
     await expect(page).toHaveURL(/\/blogs$/);
     await expect(page.getByRole('heading', { level: 1, name: 'Notes from the workbench.' })).toBeVisible();
 });
+
+for (const [kind, api] of [['projects', '/api/projects'], ['apps', '/api/deployments']]) {
+    test(`/${kind}/<slug> renders, id redirects, unknown is 404`, async ({ page, request }) => {
+        const [first] = await (await request.get(api)).json();
+        const res = await page.goto(`/${kind}/${first.slug}`);
+        expect(res.status()).toBe(200);
+        await expect(page).toHaveTitle(new RegExp(`\\| ${first.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`));
+        await expect(page.getByText(first.name).first()).toBeAttached();
+        await expect(page.locator('script[type="application/ld+json"]')).toHaveCount(2);
+
+        const byId = await request.get(`/${kind}/${first._id}`, { maxRedirects: 0 });
+        expect(byId.status()).toBe(308);
+        expect(new URL(byId.headers().location, 'http://x').pathname).toBe(`/${kind}/${first.slug}`);
+        expect((await request.get(`/${kind}/does-not-exist-e2e`)).status()).toBe(404);
+    });
+}
+
+test('index card opens the project, back link returns', async ({ page, request }) => {
+    const [first] = await (await request.get('/api/projects')).json();
+    await page.goto('/projects');
+    const card = page.locator(`a[href="/projects/${first.slug}"]`).first();
+    // Rows reveal on scroll (GSAP): bring the card on screen first.
+    await card.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await card.click();
+    await expect(page).toHaveURL(new RegExp(`/projects/${first.slug}$`));
+    await expect(page.getByText(first.name).first()).toBeAttached();
+});

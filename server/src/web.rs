@@ -122,7 +122,7 @@ pub async fn blog_detail(State(state): State<AppState>, Path(id): Path<String>, 
     let mut head = Head::site(&site, &format!("{} | {seo_title}", site.base_name), &description);
     head.keywords = keywords;
     head.robots = if blog.get("noIndex") == Some(&Value::Bool(true)) { "noindex, follow, nocache".into() } else { "index, follow".into() };
-    head.googlebot = false;
+    head.googlebot = None;
     head.canonical = canonical.clone();
     head.og = vec![
         ("og:title", social_title.clone()),
@@ -320,6 +320,177 @@ pub async fn contact(State(state): State<AppState>, req: Request) -> Response {
     section(&web, &state, &req, site, &sec, page, fallback).await
 }
 
+/// Head of the project/app detail pages: their own OpenGraph (no social overrides), raw image fallback chain.
+fn detail_head(site: &Site, row: &Value, canonical: &str, og_type: &str) -> Head {
+    let name = row["name"].as_str().unwrap_or_default().to_string();
+    let description: String = row["description"].as_str().filter(|d| !d.is_empty()).unwrap_or("").chars().take(160).collect();
+    let pick = |v: &Value| v.as_str().map(str::trim).filter(|v| !v.is_empty()).map(str::to_string);
+    let image = pick(&row["image"]).or_else(|| pick(&site.config["ogImage"])).unwrap_or_else(|| format!("{}/og-image.png", site.base_url));
+    let mut head = Head::site(site, &format!("{} | {name}", site.base_name), &description);
+    head.googlebot = Some(GOOGLEBOT_DETAIL);
+    head.canonical = canonical.to_string();
+    head.og = vec![
+        ("og:title", name.clone()),
+        ("og:description", description.clone()),
+        ("og:url", canonical.to_string()),
+        ("og:type", og_type.into()),
+        ("og:image", image.clone()),
+        ("og:image:width", "1200".into()),
+        ("og:image:height", "630".into()),
+    ];
+    head.twitter = Some((name, description, image));
+    head
+}
+
+fn is_http_url(v: &Value) -> bool {
+    v.as_str().and_then(|s| reqwest::Url::parse(s).ok()).is_some_and(|u| matches!(u.scheme(), "http" | "https"))
+}
+
+async fn not_found_page(web: &WebApp, state: &AppState, req: &Parts) -> Response {
+    let site = Site::load(state).await;
+    render(web, state, req.uri.path(), &req.headers, &site, StatusCode::NOT_FOUND, site.not_found_head(), json!(null), json!(null), String::new())
+}
+
+/// `/projects/{id}`: port of src/app/(site)/projects/[id]/page.js.
+pub async fn project_detail(State(state): State<AppState>, Path(id): Path<String>, req: Request) -> Response {
+    let web = web_or_next!(state, req);
+    let req = req.into_parts().0;
+    let project = match pages::entity_by_identifier(&state.db, "Project", "project", "/projects", &id).await {
+        Ok(pages::Lookup::Found(p)) => p,
+        Ok(pages::Lookup::Redirect(to)) => return Redirect::permanent(&to).into_response(),
+        Ok(pages::Lookup::NotFound) => return not_found_page(&web, &state, &req).await,
+        Err(err) => return server_error(err),
+    };
+    let site = Site::load(&state).await;
+    let shell = pages::shell_data(&state, &site.config).await;
+    let slug = pages::entity_slug(&project, "project");
+    let base = site.base_url.clone();
+    let canonical = format!("{base}/projects/{slug}");
+    let pid = project["_id"].as_str().unwrap_or_default().to_string();
+    let related_apps = match pages::app_links_for_project(&state.db, &pid).await {
+        Ok(a) => a,
+        Err(err) => return server_error(err),
+    };
+    // getLegalLinksForDeployments: every app's legal links, de-duplicated by href.
+    let mut legal: Vec<Value> = vec![];
+    for app in &related_apps {
+        if let Some(links) = pages::legal_links_for_deployment(&state.db, app["id"].as_str().unwrap_or_default()).await["links"].as_array() {
+            for l in links {
+                if !legal.iter().any(|x| x["href"] == l["href"]) {
+                    legal.push(l.clone());
+                }
+            }
+        }
+    }
+
+    let mut head = detail_head(&site, &project, &canonical, "article");
+    let stack: Vec<Value> = project["techStack"].as_array().cloned().unwrap_or_default();
+    let repo = &project["repoData"];
+    let mut ld = serde_json::Map::new();
+    ld.insert("@context".into(), "https://schema.org".into());
+    ld.insert("@type".into(), "SoftwareSourceCode".into());
+    ld.insert("name".into(), project["name"].clone());
+    if project["description"].as_str().is_some_and(|d| !d.is_empty()) {
+        ld.insert("description".into(), project["description"].clone());
+    }
+    ld.insert("url".into(), canonical.clone().into());
+    if project["image"].as_str().is_some_and(|i| !i.is_empty()) {
+        ld.insert("image".into(), project["image"].clone());
+    }
+    let lang = repo["language"].as_str().filter(|l| !l.is_empty());
+    if !stack.is_empty() || lang.is_some() {
+        let mut langs: Vec<Value> = vec![];
+        for v in lang.map(Value::from).into_iter().chain(stack.iter().cloned()) {
+            if v.as_str().is_some_and(|s| !s.is_empty()) && !langs.contains(&v) {
+                langs.push(v);
+            }
+        }
+        ld.insert("programmingLanguage".into(), langs.into());
+    }
+    for (k, from) in [("license", "license"), ("dateModified", "pushedAt"), ("dateCreated", "createdAt")] {
+        if repo[from].as_str().is_some_and(|v| !v.is_empty()) {
+            ld.insert(k.into(), repo[from].clone());
+        }
+    }
+    if repo["stars"].as_f64().is_some_and(|n| n > 0.0) {
+        ld.insert("interactionStatistic".into(), json!({ "@type": "InteractionCounter", "interactionType": "https://schema.org/LikeAction", "userInteractionCount": repo["stars"] }));
+    }
+    if is_http_url(&project["codeLink"]) {
+        ld.insert("codeRepository".into(), project["codeLink"].clone());
+    }
+    if !related_apps.is_empty() {
+        let products: Vec<Value> = related_apps.iter().map(|a| json!({ "@type": "SoftwareApplication", "name": a["name"], "url": format!("{base}{}", a["href"].as_str().unwrap_or_default()) })).collect();
+        ld.insert("targetProduct".into(), products.into());
+    }
+    ld.insert("author".into(), json!({ "@type": "Person", "name": std::env::var("NEXT_PUBLIC_AUTHOR_NAME").unwrap_or_else(|_| "Portfolio Owner".into()) }));
+    ld.insert("mainEntityOfPage".into(), json!({ "@type": "WebPage", "@id": canonical }));
+    head.json_ld.push(Value::Object(ld));
+    let name = project["name"].as_str().unwrap_or_default().to_string();
+    head.json_ld.push(breadcrumb(&site, &shell, "/projects", "Open Source", &[(name.clone(), format!("/projects/{slug}"))]));
+
+    let fallback = format!("<main><article><h1>{}</h1><p>{}</p></article></main>", escape(&name), escape(project["description"].as_str().unwrap_or_default()));
+    let page = json!({ "project": project, "relatedApps": related_apps, "legal": legal });
+    render(&web, &state, req.uri.path(), &req.headers, &site, StatusCode::OK, head.render(), shell, page, fallback)
+}
+
+/// `/apps/{id}`: port of src/app/(site)/apps/[id]/page.js.
+pub async fn app_detail(State(state): State<AppState>, Path(id): Path<String>, req: Request) -> Response {
+    let web = web_or_next!(state, req);
+    let req = req.into_parts().0;
+    let app = match pages::entity_by_identifier(&state.db, "Deployment", "app", "/apps", &id).await {
+        Ok(pages::Lookup::Found(a)) => a,
+        Ok(pages::Lookup::Redirect(to)) => return Redirect::permanent(&to).into_response(),
+        Ok(pages::Lookup::NotFound) => return not_found_page(&web, &state, &req).await,
+        Err(err) => return server_error(err),
+    };
+    let site = Site::load(&state).await;
+    let shell = pages::shell_data(&state, &site.config).await;
+    let slug = pages::entity_slug(&app, "app");
+    let base = site.base_url.clone();
+    let app_url = format!("{base}/apps/{slug}");
+    let aid = app["_id"].as_str().unwrap_or_default().to_string();
+    let project_link = pages::project_link_for_deployment(&state.db, app["projectId"].as_str()).await;
+    let legal = pages::legal_links_for_deployment(&state.db, &aid).await;
+    let product = pages::product_path(&state.db, &aid).await;
+    // A linked product page (/<slug>) is the canonical home of the product.
+    let canonical = product.as_ref().map(|p| format!("{base}{p}")).unwrap_or_else(|| app_url.clone());
+
+    let mut head = detail_head(&site, &app, &canonical, "website");
+    let mut ld = serde_json::Map::new();
+    ld.insert("@context".into(), "https://schema.org".into());
+    ld.insert("@type".into(), "SoftwareApplication".into());
+    ld.insert("name".into(), app["name"].clone());
+    if app["description"].as_str().is_some_and(|d| !d.is_empty()) {
+        ld.insert("description".into(), app["description"].clone());
+    }
+    let url = match &product {
+        Some(p) => format!("{base}{p}"),
+        None if is_http_url(&app["hostedUrl"]) => app["hostedUrl"].as_str().unwrap_or_default().to_string(),
+        None => app_url.clone(),
+    };
+    ld.insert("url".into(), url.into());
+    ld.insert("applicationCategory".into(), app["appType"].as_str().filter(|t| !t.is_empty()).unwrap_or("WebApplication").into());
+    ld.insert("operatingSystem".into(), "Web".into());
+    if app["image"].as_str().is_some_and(|i| !i.is_empty()) {
+        ld.insert("image".into(), app["image"].clone());
+    }
+    let stack: Vec<&str> = app["techStack"].as_array().map(|a| a.iter().filter_map(Value::as_str).collect()).unwrap_or_default();
+    if !stack.is_empty() {
+        ld.insert("softwareRequirements".into(), stack.join(", ").into());
+    }
+    if !project_link.is_null() {
+        ld.insert("isBasedOn".into(), json!({ "@type": "SoftwareSourceCode", "name": project_link["name"], "url": format!("{base}{}", project_link["href"].as_str().unwrap_or_default()) }));
+    }
+    ld.insert("mainEntityOfPage".into(), json!({ "@type": "WebPage", "@id": app_url }));
+    head.json_ld.push(Value::Object(ld));
+    let name = app["name"].as_str().unwrap_or_default().to_string();
+    head.json_ld.push(breadcrumb(&site, &shell, "/apps", "Apps", &[(name.clone(), format!("/apps/{slug}"))]));
+
+    let fallback = format!("<main><article><h1>{}</h1><p>{}</p></article></main>", escape(&name), escape(app["description"].as_str().unwrap_or_default()));
+    let page = json!({ "deployment": app, "relatedProject": project_link, "legal": legal, "productHref": product });
+    render(&web, &state, req.uri.path(), &req.headers, &site, StatusCode::OK, head.render(), shell, page, fallback)
+}
+
 /// `/_img/blog/{id}`: a blog cover stored inline as a data URI.
 pub async fn blog_image(State(state): State<AppState>, Path(id): Path<String>) -> Response {
     match pages::blog_inline_image(&state.db, &id).await {
@@ -466,13 +637,18 @@ impl Site {
     }
 }
 
+const GOOGLEBOT_ROOT: &str = "index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1";
+/// Project and app detail pages list the keys in another order.
+const GOOGLEBOT_DETAIL: &str = "index, follow, max-video-preview:-1, max-image-preview:large, max-snippet:-1";
+
 /// One page's `<head>`. Starts from the root layout's metadata; pages replace whole groups like Next does.
 struct Head {
     title: String,
     description: String,
     keywords: String,
     robots: String,
-    googlebot: bool,
+    /// `googleBot` robots as Next renders it; the order depends on how the page wrote the object.
+    googlebot: Option<&'static str>,
     canonical: String,
     og: Vec<(&'static str, String)>,
     /// (title, description, image); the root's site card by default.
@@ -488,7 +664,7 @@ impl Head {
             description: description.into(),
             keywords: site.keywords.clone(),
             robots: "index, follow".into(),
-            googlebot: true,
+            googlebot: Some(GOOGLEBOT_ROOT),
             canonical: site.base_url.clone(),
             og: vec![
                 ("og:title", site.site_title.clone()),
@@ -517,8 +693,8 @@ impl Head {
             h.push_str(&format!(r#"<meta name="keywords" content="{}" />"#, e(&self.keywords)));
         }
         h.push_str(&format!(r#"<meta name="robots" content="{}" />"#, e(&self.robots)));
-        if self.googlebot {
-            h.push_str(r#"<meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />"#);
+        if let Some(g) = self.googlebot {
+            h.push_str(&format!(r#"<meta name="googlebot" content="{g}" />"#));
         }
         h.push_str(&format!(r#"<link rel="canonical" href="{}" />"#, e(&self.canonical)));
         for (p, v) in &self.og {

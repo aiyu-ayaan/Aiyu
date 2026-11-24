@@ -19,6 +19,8 @@ const BlogDetail = lazy(() => import('./routes/blogDetail'));
 const AboutMe = lazy(() => import('./routes/aboutMe'));
 const Apps = lazy(() => import('./routes/apps'));
 const Projects = lazy(() => import('./routes/projects'));
+const ProjectDetail = lazy(() => import('./routes/projectDetail'));
+const AppDetail = lazy(() => import('./routes/appDetail'));
 const Gallery = lazy(() => import('./routes/gallery'));
 const GitHub = lazy(() => import('./routes/github'));
 const Contact = lazy(() => import('./routes/contact'));
@@ -61,7 +63,9 @@ export function App({ data }: { data: BootData }) {
               <Route path="/blogs/:id" element={<BlogDetail />} />
               <Route path="/about-me" element={<AboutMe />} />
               <Route path="/apps" element={<Apps />} />
+              <Route path="/apps/:id" element={<AppDetail />} />
               <Route path="/projects" element={<Projects />} />
+              <Route path="/projects/:id" element={<ProjectDetail />} />
               <Route path="/gallery" element={<Gallery />} />
               <Route path="/github" element={<GitHub />} />
               <Route path="/contact-us" element={<Contact />} />
