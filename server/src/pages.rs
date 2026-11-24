@@ -295,6 +295,29 @@ pub async fn project_link_for_deployment(db: &PgPool, project_id: Option<&str>) 
     }
 }
 
+/// The three newest published blogs for the home page (`toBlogPreview`: readTime from the full text, content cut to
+/// 320 chars). Inline `data:` covers go through /_img/blog/{id} like everywhere else.
+pub async fn recent_blogs(db: &PgPool) -> anyhow::Result<Vec<Value>> {
+    let rows = client_rows(db, "Blog", r#"WHERE published ORDER BY "createdAt" DESC LIMIT 3"#).await?;
+    Ok(rows
+        .into_iter()
+        .map(|mut b| {
+            if let Some(o) = b.as_object_mut() {
+                o.shift_remove("searchVector");
+                let content = o.get("content").and_then(Value::as_str).unwrap_or("").to_string();
+                o.insert("readTime".into(), read_time(&content).into());
+                // JS `slice` counts UTF-16 units.
+                let cut: Vec<u16> = content.encode_utf16().take(320).collect();
+                o.insert("content".into(), String::from_utf16_lossy(&cut).into());
+                if let (Some(Value::String(id)), Some(Value::String(img))) = (o.get("_id").cloned(), o.get("image").cloned()) {
+                    o.insert("image".into(), inline_image_url(&id, img).into());
+                }
+            }
+            b
+        })
+        .collect())
+}
+
 /// `getSocialMeta()` (src/lib/socialMeta.js): `{ defaultImage, pages }`, possibly empty.
 pub async fn social_meta(db: &PgPool) -> Value {
     sqlx::query_scalar::<_, Option<Value>>(r#"SELECT (data->'social')::json FROM "SeoConfig" LIMIT 1"#)

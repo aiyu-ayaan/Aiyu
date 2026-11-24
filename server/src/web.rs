@@ -657,6 +657,63 @@ pub async fn sitemap_page(State(state): State<AppState>, req: Request) -> Respon
     render(&web, &state, req.uri.path(), &req.headers, &site, StatusCode::OK, head.render(), shell, page, fallback)
 }
 
+/// `/`: port of src/app/(site)/page.js.
+pub async fn home(State(state): State<AppState>, req: Request) -> Response {
+    let web = web_or_next!(state, req);
+    let req = req.into_parts().0;
+    let db = &state.db;
+    let (projects, blogs) = match (pages::projects(db, true).await, pages::recent_blogs(db).await) {
+        (Ok(p), Ok(b)) => (p, b),
+        (Err(err), _) | (_, Err(err)) => return server_error(err),
+    };
+    let home = pages::singleton(db, "Home", false).await;
+    let about = pages::singleton(db, "About", false).await;
+    let site = Site::load(&state).await;
+    let social = pages::social_meta(db).await;
+    let shell = pages::shell_data(&state, &site.config).await;
+    let base = site.base_url.clone();
+    let c = &site.config;
+    let cs = |k: &str| c[k].as_str().filter(|v| !v.is_empty());
+
+    let mut head = section_head(&site, &social, "/", &site.site_title, &site.description, "");
+    head.googlebot = Some(GOOGLEBOT_ROOT);
+    head.og.insert(4, ("og:locale", "en_US".into()));
+    head.og.insert(5, ("og:site_name", site.site_title.clone()));
+    // generateWebsiteSchema, generateOrganizationSchema, generatePersonSchema (the public config has none of the
+    // Person fields, so those are the defaults).
+    head.json_ld.push(json!([
+        {
+            "@context": "https://schema.org", "@type": "WebSite", "url": base, "name": cs("siteTitle").unwrap_or("Portfolio"),
+            "description": "Portfolio & Blog",
+            "potentialAction": { "@type": "SearchAction", "target": { "@type": "EntryPoint", "urlTemplate": format!("{base}/search?q={{search_term_string}}") }, "query_input": "required name=search_term_string" },
+        },
+        {
+            "@context": "https://schema.org", "@type": "Organization", "name": cs("siteName").or(cs("siteTitle")).unwrap_or("Portfolio"), "url": base,
+            "logo": cs("logo").unwrap_or("/logo.png"), "description": cs("siteDescription").unwrap_or("Full Stack Developer Portfolio"),
+            "contactPoint": { "@type": "ContactPoint", "contactType": "General Inquiries", "email": cs("contactEmail").unwrap_or("contact@example.com") },
+            "sameAs": c.get("socialLinks").cloned().unwrap_or(json!([])),
+        },
+        {
+            "@context": "https://schema.org", "@type": "Person", "name": cs("name").unwrap_or("Portfolio Owner"), "url": base,
+            "description": cs("description").unwrap_or("Full Stack Developer & Designer"), "image": cs("profileImage").unwrap_or("/og-image.png"),
+            "email": cs("email").unwrap_or("contact@example.com"), "jobTitle": cs("title").unwrap_or("Full Stack Developer"),
+            "worksFor": cs("company").unwrap_or("Self-employed"), "sameAs": c.get("socialLinks").cloned().unwrap_or(json!([])),
+        },
+    ]));
+
+    let s = |v: &Value, k: &str| v[k].as_str().unwrap_or_default().to_string();
+    let mut fallback = format!("<main><h1>{}</h1><p>{}</p><ul>", escape(&s(&home, "name")), escape(&site.description));
+    for p in projects.iter().take(6) {
+        fallback.push_str(&format!(r#"<li><a href="/projects/{}">{}</a></li>"#, escape(&pages::entity_slug(p, "project")), escape(&s(p, "name"))));
+    }
+    for b in &blogs {
+        fallback.push_str(&format!(r#"<li><a href="/blogs/{}">{}</a></li>"#, escape(&s(b, "slug")), escape(&s(b, "title"))));
+    }
+    fallback.push_str("</ul></main>");
+    let page = json!({ "home": home, "about": about, "projects": projects, "blogs": blogs, "config": site.config });
+    render(&web, &state, req.uri.path(), &req.headers, &site, StatusCode::OK, head.render(), shell, page, fallback)
+}
+
 /// `/_img/blog/{id}`: a blog cover stored inline as a data URI.
 pub async fn blog_image(State(state): State<AppState>, Path(id): Path<String>) -> Response {
     match pages::blog_inline_image(&state.db, &id).await {

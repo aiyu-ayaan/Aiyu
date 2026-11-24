@@ -27,6 +27,7 @@ const Contact = lazy(() => import('./routes/contact'));
 const AiHub = lazy(() => import('./routes/aiHub'));
 const AiSection = lazy(() => import('./routes/aiSection'));
 const Sitemap = lazy(() => import('./routes/sitemap'));
+const Home = lazy(() => import('./routes/home'));
 import { NotFound } from './NotFound';
 
 export type BootData = {
@@ -75,6 +76,7 @@ export function App({ data }: { data: BootData }) {
               <Route path="/ai" element={<AiHub />} />
               <Route path="/ai/:section" element={<AiSection />} />
               <Route path="/sitemap" element={<Sitemap />} />
+              <Route path="/" element={<Home />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

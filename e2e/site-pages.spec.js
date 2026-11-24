@@ -6,6 +6,10 @@ const severe = (msg) => msg.type() === 'error' && !/favicon|Failed to load resou
 
 // [path, <title> pattern, extra check]
 const PAGES = [
+    ['/', /\| .* Portfolio$/, async (page, request) => {
+        const home = await (await request.get('/api/home')).json();
+        if (home?.name) await expect(page.getByText(home.name, { exact: false }).first()).toBeAttached();
+    }],
     ['/about-me', /\| About Me$/, async (page, request) => {
         const about = await (await request.get('/api/about')).json();
         await expect(page.getByText(about.name, { exact: false }).first()).toBeVisible();
