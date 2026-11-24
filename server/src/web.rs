@@ -180,6 +180,20 @@ pub async fn blog_image(State(state): State<AppState>, Path(id): Path<String>) -
     }
 }
 
+/// Next's router asks for RSC payloads (`RSC: 1`), and prefetches every visible link to these pages. Answer with an
+/// empty non-RSC body: Next then does a full page load instead of costing a whole page render per prefetch.
+pub async fn skip_next_rsc(req: Request, next: axum::middleware::Next) -> Response {
+    if req.headers().contains_key("rsc") {
+        let mut res = Response::new(Body::empty());
+        let h = res.headers_mut();
+        h.insert(header::CONTENT_TYPE, HeaderValue::from_static("text/plain"));
+        h.insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
+        h.append(header::VARY, HeaderValue::from_static("rsc"));
+        return res;
+    }
+    next.run(req).await
+}
+
 // ── rendering ────────────────────────────────────────────────────────────────────────────────────────
 
 #[allow(clippy::too_many_arguments)]

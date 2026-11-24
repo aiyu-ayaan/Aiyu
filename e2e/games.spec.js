@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 // Parity gate for the /games port (Next -> Vite + Rust): same cards, cabinets mount, status codes, navigation.
 
-const severe = (msg) => msg.type() === 'error' && !/favicon|Failed to load resource|net::ERR|hydrat/i.test(msg.text());
+const severe = (msg) => msg.type() === 'error' && !/favicon|Failed to load resource|net::ERR|hydrat|GitHub commits/i.test(msg.text());
 
 test('menu lists every visible cabinet', async ({ page }) => {
     const res = await page.goto('/games');

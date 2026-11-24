@@ -87,14 +87,19 @@ pub fn router(state: AppState) -> Router {
             HeaderValue::from_static("public, max-age=31536000, immutable"),
         ));
 
-    Router::new()
-        .route("/healthz", get(|| async { "ok" }))
+    // Pages owned by the Vite app (keep in sync with web/src/appRoutes.ts).
+    let web_pages = Router::new()
         .route("/games", get(web::page))
         .route("/games/", get(web::page))
         .route("/games/{slug}", get(web::page))
         .route("/blogs", get(web::blogs_index))
         .route("/blogs/", get(web::blogs_index))
         .route("/blogs/{id}", get(web::blog_detail))
+        .layer(axum::middleware::from_fn(web::skip_next_rsc));
+
+    Router::new()
+        .route("/healthz", get(|| async { "ok" }))
+        .merge(web_pages)
         .route("/_img/blog/{id}", get(web::blog_image))
         .route("/api/admin/export", get(export::export))
         .merge(next_static)

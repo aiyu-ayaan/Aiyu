@@ -97,3 +97,13 @@ fn rejects_bad_trusted_entries() {
     assert!(parse_trusted("not-an-ip").is_err());
     assert_eq!(parse_trusted(" 127.0.0.1 , ::1 ,").unwrap().len(), 2);
 }
+
+#[tokio::test]
+async fn next_rsc_requests_to_vite_pages_get_an_empty_non_rsc_reply() {
+    let mut req = Request::builder().uri("/blogs").header("rsc", "1").header("next-router-prefetch", "1").body(Body::empty()).unwrap();
+    req.extensions_mut().insert(ConnectInfo::<SocketAddr>("127.0.0.1:5555".parse().unwrap()));
+    let res = app("").await.oneshot(req).await.unwrap();
+    assert_eq!(res.status(), StatusCode::OK);
+    assert_eq!(res.headers()["content-type"], "text/plain");
+    assert!(res.into_body().collect().await.unwrap().to_bytes().is_empty());
+}

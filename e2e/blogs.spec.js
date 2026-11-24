@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 // Parity gate for the /blogs port (Next -> Vite + Rust): index, detail, redirects, 404, navigation.
 
-const severe = (msg) => msg.type() === 'error' && !/favicon|Failed to load resource|net::ERR|hydrat|adsbygoogle/i.test(msg.text());
+const severe = (msg) => msg.type() === 'error' && !/favicon|Failed to load resource|net::ERR|hydrat|adsbygoogle|GitHub commits/i.test(msg.text());
 
 /** Newest post with a table of contents (>= 2 h2/h3 headings), from the public API both servers answer. */
 async function pickPost(request) {

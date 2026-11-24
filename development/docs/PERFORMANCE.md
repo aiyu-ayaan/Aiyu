@@ -175,3 +175,38 @@ Same machine and data, bench through Rust on :8080 (Next on :3100 serves the unp
 - Remaining `/blogs` cost: ~21 ms SQL (2.5 MB of post content) + regex markdown stripping for read time on all
   307 posts. Next step if it matters: cache read time per post keyed on `updatedAt`.
 - Release binary: 8.1 MB (was 3.75 MB; pulldown-cmark, ammonia, regex for the blog pages).
+
+#### Two server fixes found by this bench
+
+1. **TCP_NODELAY.** axum 0.8 leaves Nagle on for accepted sockets. With delayed ACK, every response on a
+   kept-alive connection waited ~40 ms (curl, one connection: `/robots.txt` 42 ms through Rust vs 1 ms direct).
+   The Milestone 4 "on-the-fly compression" slowdown above was mostly this. Fixed with `tap_io(set_nodelay)`.
+2. **Next RSC prefetches.** Next prefetches every visible `<Link>`, including `[blogs]` in the header of every
+   Next page. Rust rendered the whole 389 KB `/blogs` (77 ms) for each prefetch. Vite-owned routes now answer
+   `RSC: 1` requests with an empty `text/plain` body (0.3 ms): Next then does a full page load on click.
+
+Full bench through Rust after both fixes (Node fetch, kept-alive; bytes are decoded bytes):
+
+| Route | Baseline Next p50 / p90 ms | Through Rust p50 / p90 ms | Bytes (baseline -> now) |
+|---|---|---|---|
+| `/` | 25.7 / 86.8 | 55.3 / 114.7 | 785,898 -> 1,090,731 |
+| `/about-me` | 15.3 / 22.0 | 25.2 / 31.3 | 423,759 -> 430,298 |
+| `/blogs` (Rust) | 172.6 / 320.0 | 82.6 / 148.7 | 5,711,724 -> 389,240 |
+| `/projects` | 17.1 / 23.8 | 53.5 / 59.5 | 757,842 -> 1,146,322 |
+| `/gallery` | 27.6 / 35.3 | 48.6 / 52.0 | 820,161 -> 833,980 |
+| `/apps` | 14.7 / 17.9 | 26.2 / 31.9 | 389,229 -> 435,568 |
+| `/github` | 12.8 / 15.2 | 21.9 / 26.8 | 386,284 -> 389,191 |
+| `/contact-us` | 13.8 / 17.1 | 23.4 / 25.7 | 393,664 -> 396,533 |
+| `/ai` | 40.7 / 129.9 | 78.0 / 127.1 | 2,580,718 -> 2,583,622 |
+| `/desktop` | 13.4 / 28.9 | 11.4 / 22.2 | 53,964 -> 53,813 |
+| `/games` (Rust) | 8.5 / 15.2 | 10.8 / 11.9 | 39,899 -> 8,464 |
+| `/sitemap.xml` | 12.8 / 25.4 | 13.6 / 16.9 | 75,481 -> 80,114 |
+| `/robots.txt` | 2.7 / 5.1 | 1.9 / 7.6 | 488 -> 488 |
+| `/api/config` | 3.8 / 5.9 | 14.6 / 18.5 | 337,204 -> 337,142 |
+
+- Proxied pages still cost ~10-40 ms more than Next direct: brotli of large HTML on the fly (Node fetch asks for
+  it; Next direct sends it uncompressed). This goes away per page as pages are ported and shrink.
+- `/` and `/projects` grew ~300-390 KB in Next itself (same bytes direct on :3100): `/` still embeds the base64
+  resume PDF from config. Fix lands with the `/` port.
+- RSS: Rust 8 MB idle, 25 MB after warmup + 3 backups (0.85-0.93 s each, 80 MB zip). Next 496 MB beside it.
+  Total ~520 MB until Next is gone.

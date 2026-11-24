@@ -1,5 +1,6 @@
 use aiyu_server::{AppState, config::Config, router};
 use std::net::SocketAddr;
+use axum::serve::ListenerExt;
 
 fn main() -> anyhow::Result<()> {
     // Few threads keep RSS low on a 1 GB VPS: each worker has its own stack and allocator cache.
@@ -22,7 +23,12 @@ async fn run() -> anyhow::Result<()> {
     tracing::info!(%listen, upstream = %config.next_upstream, "aiyu-server starting");
 
     let app = router(AppState::new(config).await?);
-    let listener = tokio::net::TcpListener::bind(listen).await?;
+    // Nagle + delayed ACK added ~40 ms to every response on a kept-alive connection.
+    let listener = tokio::net::TcpListener::bind(listen).await?.tap_io(|tcp| {
+        if let Err(err) = tcp.set_nodelay(true) {
+            tracing::warn!(%err, "set TCP_NODELAY");
+        }
+    });
     axum::serve(listener, app.into_make_service_with_connect_info::<SocketAddr>())
         .with_graceful_shutdown(shutdown_signal())
         .await?;

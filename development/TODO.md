@@ -107,6 +107,8 @@ Each page: Rust data + head + Vite route + e2e passing through Rust, then the Ne
 - [x] `/v2` folder removed: public pages live in `src/app/(site)` at their real paths (old `/v2/*` -> 308)
 - [x] v2 chrome shared (`V2Chrome.js`, `applyResumeLink`); Rust `shell_data` (header, socials, public config without the resume body, about name, version)
 - [x] `/blogs`, `/blogs/[id]` (Rust + Vite, 2026-11-24): e2e `e2e/blogs.spec.js` passes on Next and Rust, Next pages deleted, `Vary: x-aiyu-data`; numbers in PERFORMANCE.md
+- [x] TCP_NODELAY on accepted sockets (~40 ms per kept-alive response); Next RSC prefetches of Vite pages get an empty reply
+- [ ] `/` embeds the base64 resume PDF (Next): strip it in the `/` port
 - [ ] `/blogs` read time: cache per post (keyed on `updatedAt`) if the ~70 ms matters
 - [ ] `/admin`
 - [ ] `/admin/about`
