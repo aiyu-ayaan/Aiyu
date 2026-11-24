@@ -118,6 +118,8 @@ Each page: Rust data + head + Vite route + e2e passing through Rust, then the Ne
 - [ ] `/` embeds the base64 resume PDF (Next): strip it in the `/` port
 - [ ] `/ai` ships every skill twice (page data + a 695 KB JSON-LD ItemList): 1.4 MB. Trim the hub to the preview
   items (AiHub derives counts from the data, so pass totalCount) and decide whether the ItemList belongs on /ai/skills only
+- [ ] Vite entry chunk grew 488 -> 569 KB during the page ports (admin route table ~23 KB); find the rest with a
+  sourcemap build and move it into route chunks
 - [ ] `/blogs` read time: cache per post (keyed on `updatedAt`) if the ~70 ms matters
 - [x] `/admin`
 - [x] `/admin/about`

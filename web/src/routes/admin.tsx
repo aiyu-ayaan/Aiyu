@@ -2,7 +2,6 @@
 // `[id]` folders become `:id`. The Rust server gates the whole tree on the session cookie, like src/proxy.js did.
 import { lazy, Suspense, type ComponentType } from 'react';
 import { Outlet, Route } from 'react-router';
-import AdminLayout from '@/app/_admin/layout';
 import { usePageData } from '../pageData';
 
 type Loader = () => Promise<{ default: ComponentType<Record<string, unknown>> }>;
@@ -14,6 +13,8 @@ function routePath(file: string): string {
 }
 
 const LoginPage = lazy(pages['../../../src/app/_admin/login/page.js']);
+// Lazy: the admin shell must not ship in the public pages' entry chunk.
+const AdminLayout = lazy(() => import('@/app/_admin/layout')) as ComponentType<{ children?: React.ReactNode }>;
 
 /** The login page needs the server's GitHub-auth flag. */
 function Login() {
@@ -23,11 +24,13 @@ function Login() {
 
 function Layout() {
   return (
-    <AdminLayout>
-      <Suspense fallback={null}>
-        <Outlet />
-      </Suspense>
-    </AdminLayout>
+    <Suspense fallback={null}>
+      <AdminLayout>
+        <Suspense fallback={null}>
+          <Outlet />
+        </Suspense>
+      </AdminLayout>
+    </Suspense>
   );
 }
 

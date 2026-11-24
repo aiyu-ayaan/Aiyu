@@ -210,3 +210,34 @@ Full bench through Rust after both fixes (Node fetch, kept-alive; bytes are deco
   resume PDF from config. Fix lands with the `/` port.
 - RSS: Rust 8 MB idle, 25 MB after warmup + 3 backups (0.85-0.93 s each, 80 MB zip). Next 496 MB beside it.
   Total ~520 MB until Next is gone.
+
+### Milestone 7 done: every page served by Rust + Vite (2026-11-24)
+
+Next now serves only `/api/*`, `/.well-known/*`, `/docs/*`, `sitemap.xml`, `robots.txt` and uploads. Same bench
+(through Rust on :8080, NODE_ENV=production, kept-alive Node fetch, decoded bytes):
+
+| Route | Baseline Next bytes | Now bytes | Baseline p50 / p90 ms | Now p50 / p90 ms |
+|---|---|---|---|---|
+| `/` | 785,898 | 54,732 | 25.7 / 86.8 | 19.4 / 63.5 |
+| `/about-me` | 423,759 | 17,487 | 15.3 / 22.0 | 12.1 / 12.5 |
+| `/blogs` | 5,711,724 | 389,482 | 172.6 / 320.0 | 71.5 / 77.1 |
+| `/projects` | 757,842 | 43,325 | 17.1 / 23.8 | 16.7 / 19.2 |
+| `/gallery` | 820,161 | 43,367 | 27.6 / 35.3 | 12.9 / 14.4 |
+| `/apps` | 389,229 | 27,426 | 14.7 / 17.9 | 12.3 / 13.0 |
+| `/github` | 386,284 | 11,676 | 12.8 / 15.2 | 11.2 / 12.9 |
+| `/contact-us` | 393,664 | 11,750 | 13.8 / 17.1 | 11.3 / 12.2 |
+| `/ai` | 2,580,718 | 1,416,702 | 40.7 / 129.9 | 64.9 / 70.2 |
+| `/desktop` | 53,964 | 11,868 | 13.4 / 28.9 | 12.4 / 12.7 |
+| `/games` | 39,899 | 8,753 | 8.5 / 15.2 | 10.6 / 11.0 |
+| `/sitemap.xml` (Next) | 75,481 | 80,114 | 12.8 / 25.4 | 13.8 / 21.0 |
+| `/robots.txt` (Next) | 488 | 488 | 2.7 / 5.1 | 2.0 / 2.2 |
+
+Detail pages (curl p50, ms; Next bytes -> Rust bytes): `/projects/findex-rust` 11.5 (447 KB -> 28 KB),
+`/apps/findex-rust` (399 KB -> 14 KB), `/rewire` 12.2 (411 KB -> 40 KB), `/rewire/privacy-policy` (432 KB -> 55 KB),
+`/admin/login` 9.8.
+
+- Memory: Next 348 MB (was 496 MB with every page rendering in it) + Rust 51-55 MB. Backups through Rust: 0.77-0.90 s
+  each (80 MB zip), Rust RSS flat at 55 MB.
+- `/ai` is still 1.4 MB and slower than Next: every skill is sent twice (data and JSON-LD). See TODO.
+- Vite entry JS 569 KB (180 KB gzip), up from 488 KB: ~23 KB is the admin route table, the rest arrived with the public
+  page ports (see TODO). Release binary 8.5 MB.
