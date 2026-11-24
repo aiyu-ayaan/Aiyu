@@ -621,6 +621,42 @@ pub async fn ai_section(State(state): State<AppState>, Path(slug): Path<String>,
     render(&web, &state, req.uri.path(), &req.headers, &site, StatusCode::OK, head.render(), shell, page, fallback)
 }
 
+/// `/sitemap` (HTML): port of src/app/(site)/sitemap/page.js. The Vite route builds the columns (it owns the games list).
+pub async fn sitemap_page(State(state): State<AppState>, req: Request) -> Response {
+    let web = web_or_next!(state, req);
+    let req = req.into_parts().0;
+    let db = &state.db;
+    let blogs: Vec<String> = match sqlx::query_scalar(r#"SELECT slug FROM "Blog" WHERE published AND slug <> '' ORDER BY "createdAt" DESC"#).fetch_all(db).await {
+        Ok(b) => b,
+        Err(err) => return server_error(err.into()),
+    };
+    let entry = |rows: Vec<Value>, prefix: &str| -> Vec<Value> { rows.iter().map(|r| json!({ "name": r["name"], "slug": pages::entity_slug(r, prefix) })).collect() };
+    let (projects, apps) = match (pages::projects(db, true).await, pages::deployments(db).await) {
+        (Ok(p), Ok(a)) => (entry(p, "project"), entry(a, "app")),
+        (Err(err), _) | (_, Err(err)) => return server_error(err),
+    };
+    let site = Site::load(&state).await;
+    let shell = pages::shell_data(&state, &site.config).await;
+    let mut head = Head::site(&site, &format!("{} | HTML Sitemap", site.base_name), &format!("Complete HTML Sitemap of {} covering all projects, blogs, apps, and pages.", site.base_name));
+    head.robots = "noindex, follow".into();
+    head.googlebot = None;
+    head.canonical = format!("{}/sitemap", site.base_url);
+    head.json_ld.push(breadcrumb(&site, &shell, "/sitemap", "Sitemap", &[]));
+
+    let mut fallback = String::from("<main><h1>Sitemap</h1><ul>");
+    for (prefix, list) in [("/apps", &apps), ("/projects", &projects)] {
+        for e in list {
+            fallback.push_str(&format!(r#"<li><a href="{prefix}/{}">{}</a></li>"#, escape(e["slug"].as_str().unwrap_or_default()), escape(e["name"].as_str().unwrap_or_default())));
+        }
+    }
+    for b in &blogs {
+        fallback.push_str(&format!(r#"<li><a href="/blogs/{0}">{1}</a></li>"#, escape(b), escape(&b.replace('-', " "))));
+    }
+    fallback.push_str("</ul></main>");
+    let page = json!({ "blogs": blogs, "projects": projects, "apps": apps });
+    render(&web, &state, req.uri.path(), &req.headers, &site, StatusCode::OK, head.render(), shell, page, fallback)
+}
+
 /// `/_img/blog/{id}`: a blog cover stored inline as a data URI.
 pub async fn blog_image(State(state): State<AppState>, Path(id): Path<String>) -> Response {
     match pages::blog_inline_image(&state.db, &id).await {
@@ -805,6 +841,7 @@ impl Head {
                 ("og:image", site.og_image.clone()),
                 ("og:image:width", "1200".into()),
                 ("og:image:height", "630".into()),
+                ("og:image:alt", site.base_name.clone()),
                 ("og:type", "website".into()),
             ],
             twitter: Some((site.site_title.clone(), site.description.clone(), site.og_image.clone())),
