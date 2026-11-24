@@ -43,7 +43,7 @@ fn no_store(mut res: Response) -> Response {
     res
 }
 
-fn log_error(route: &str, err: &anyhow::Error) {
+pub(crate) fn log_error(route: &str, err: &anyhow::Error) {
     tracing::error!(route, error = %err, "api route failed");
 }
 
@@ -116,7 +116,7 @@ pub async fn health(State(state): State<AppState>, RawQuery(q): RawQuery) -> Res
     no_store(json_status(status, body(if up { "healthy" } else { "degraded" }, if up { "up" } else { "down" })))
 }
 
-async fn signed_in(state: &AppState, headers: &axum::http::HeaderMap) -> bool {
+pub(crate) async fn signed_in(state: &AppState, headers: &axum::http::HeaderMap) -> bool {
     crate::auth::require_session(state, headers).await.is_ok()
 }
 
@@ -174,7 +174,7 @@ pub async fn config(State(state): State<AppState>, req: axum::extract::Request) 
     public_json(Value::Object(out), PUBLIC_MEDIUM, "db:config:public:api")
 }
 
-fn truthy(v: &Value) -> bool {
+pub(crate) fn truthy(v: &Value) -> bool {
     match v {
         Value::Null => false,
         Value::Bool(b) => *b,
@@ -243,7 +243,7 @@ pub async fn deployment(State(state): State<AppState>, axum::extract::Path(id): 
     item(&state, "Deployment", &id, "Deployment not found", "Failed to fetch deployment").await
 }
 
-fn medium(value: Value) -> Response {
+pub(crate) fn medium(value: Value) -> Response {
     let mut res = Json(value).into_response();
     for name in ["cache-control", "cdn-cache-control", "vercel-cdn-cache-control"] {
         res.headers_mut().insert(name, HeaderValue::from_static(PUBLIC_MEDIUM));
@@ -304,7 +304,7 @@ pub async fn gallery(State(state): State<AppState>, req: axum::extract::Request)
 
 // ── blogs ─────────────────────────────────────────────────────────────────────────────────────────────
 
-fn query_map(q: &Option<String>) -> std::collections::HashMap<String, String> {
+pub(crate) fn query_map(q: &Option<String>) -> std::collections::HashMap<String, String> {
     url::form_urlencoded_parse(q.as_deref().unwrap_or(""))
 }
 

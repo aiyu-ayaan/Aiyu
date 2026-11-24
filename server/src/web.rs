@@ -30,6 +30,10 @@ pub struct WebApp {
     meta: HashMap<String, PageMeta>,
     /// DEFAULT_AI_PAGE from src/lib/aiPageDefaults.js (written by the Vite build).
     pub ai_defaults: Value,
+    /// `{ presets, legacy }` from src/lib/themePresets.js (written by the Vite build).
+    pub themes: Value,
+    /// The /.well-known documents and MCP card defaults (written by the Vite build), with this site's URL.
+    pub discovery: Value,
     /// `/admin/...` page patterns (`[id]` segments match anything), one per src/app/_admin page.
     admin_routes: Vec<String>,
 }
@@ -40,7 +44,11 @@ impl WebApp {
         let meta = serde_json::from_str(&std::fs::read_to_string(dir.join("route-meta.json"))?)?;
         let ai_defaults = serde_json::from_str(&std::fs::read_to_string(dir.join("ai-defaults.json"))?)?;
         let admin_routes = serde_json::from_str(&std::fs::read_to_string(dir.join("admin-routes.json"))?)?;
-        Ok(Arc::new(Self { template, meta, ai_defaults, admin_routes }))
+        let themes = serde_json::from_str(&std::fs::read_to_string(dir.join("themes.json"))?)?;
+        // The build writes a placeholder origin; the site URL is only known at runtime.
+        let discovery = std::fs::read_to_string(dir.join("discovery.json"))?.replace("https://aiyu-site.invalid", &site_url());
+        let discovery = serde_json::from_str(&discovery)?;
+        Ok(Arc::new(Self { template, meta, ai_defaults, themes, discovery, admin_routes }))
     }
 }
 
@@ -1413,7 +1421,7 @@ pub fn absolute_url(value: &str) -> String {
 }
 
 /// `getSiteUrl()` in src/lib/siteUrl.js.
-fn site_url() -> String {
+pub(crate) fn site_url() -> String {
     let raw = std::env::var("SITE_URL").ok().filter(|v| !v.trim().is_empty())
         .or_else(|| std::env::var("NEXT_PUBLIC_BASE_URL").ok().filter(|v| !v.trim().is_empty()))
         .unwrap_or_default();

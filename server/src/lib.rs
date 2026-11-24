@@ -11,6 +11,7 @@ pub mod export;
 pub mod pages;
 pub mod proxy;
 pub mod session;
+pub mod site_api;
 pub mod web;
 
 use axum::{
@@ -156,6 +157,21 @@ pub fn router(state: AppState) -> Router {
         .route("/api/legal/documents/{id}", get(api::legal_document))
         .route("/api/resume", get(api::resume))
         .route("/api/favicon", get(api::favicon))
+        .route("/api/themes", get(site_api::themes))
+        .route("/api/themes/active", get(site_api::active_theme))
+        .route("/api/themes/{id}", get(site_api::theme))
+        .route("/api/desktop/widgets", get(site_api::desktop_widgets))
+        .route("/api/desktop/source", get(site_api::desktop_source))
+        .route("/api/global-search", get(site_api::global_search))
+        .route("/.well-known/api-catalog", get(site_api::api_catalog))
+        .route("/.well-known/openapi.json", get(site_api::openapi))
+        .route("/.well-known/oauth-authorization-server", get(site_api::oauth_metadata))
+        .route("/.well-known/openid-configuration", get(site_api::oauth_metadata))
+        .route("/.well-known/oauth-protected-resource", get(site_api::protected_resource))
+        .route("/.well-known/jwks.json", get(site_api::jwks))
+        .route("/.well-known/agent-skills/index.json", get(site_api::skills_index))
+        .route("/.well-known/agent-skills/{skill}/SKILL.md", get(site_api::skill_md))
+        .route("/.well-known/mcp/server-card.json", get(site_api::mcp_server_card))
         .merge(next_static)
         .merge(web_assets)
         .fallback(proxy::forward)

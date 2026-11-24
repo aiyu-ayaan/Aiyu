@@ -1,4 +1,4 @@
-import { defineConfig, transformWithOxc, type Plugin } from 'vite';
+import { createServer, defineConfig, transformWithOxc, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { fileURLToPath } from 'node:url';
@@ -54,8 +54,48 @@ const routeMeta: Plugin = {
     // DEFAULT_AI_PAGE for the Rust AI Hub pages (one source of truth: src/lib/aiPageDefaults.js).
     const { DEFAULT_AI_PAGE } = await import('../src/lib/aiPageDefaults.js');
     await writeFile(new URL('./dist/ai-defaults.json', import.meta.url), JSON.stringify(DEFAULT_AI_PAGE));
+    // Theme presets for /api/themes* (src/lib/themePresets.js).
+    const { themePresets, legacyThemePresets } = await import('../src/lib/themePresets.js');
+    await writeFile(new URL('./dist/themes.json', import.meta.url), JSON.stringify({ presets: themePresets, legacy: legacyThemePresets }));
+    await writeFile(new URL('./dist/discovery.json', import.meta.url), JSON.stringify(await discoveryDocs()));
   },
 };
+
+// The /.well-known documents (src/lib/agentDiscovery.js, mcpConfig.js). They import through the `@/` alias, so load
+// them with Vite's SSR loader. The site URL is a placeholder the Rust server swaps for SITE_URL at startup.
+async function discoveryDocs() {
+  const previous = process.env.SITE_URL;
+  process.env.SITE_URL = 'https://aiyu-site.invalid';
+  const server = await createServer({
+    configFile: false,
+    root: fileURLToPath(new URL('..', import.meta.url)),
+    logLevel: 'error',
+    resolve: { alias: { '@': src } },
+    server: { middlewareMode: true, hmr: false, watch: null },
+    appType: 'custom',
+    optimizeDeps: { noDiscovery: true, include: [] },
+  });
+  try {
+    const d = await server.ssrLoadModule(`${src}/lib/agentDiscovery.js`);
+    const { DEFAULT_MCP_CONFIG } = await server.ssrLoadModule(`${src}/lib/mcpConfig.js`);
+    const { builtinToolCards } = await server.ssrLoadModule(`${src}/lib/mcp/tools.js`);
+    return {
+      apiCatalog: d.getApiCatalog(),
+      openapi: d.getOpenApiDocument(),
+      oauth: d.getOAuthIssuerMetadata(),
+      protectedResource: d.getProtectedResourceMetadata(),
+      jwks: d.getJwks(),
+      skillsIndex: d.getAgentSkillsIndex(),
+      skills: d.AGENT_SKILL_ARTIFACTS,
+      mcpDefaults: DEFAULT_MCP_CONFIG,
+      mcpBuiltinTools: builtinToolCards(),
+    };
+  } finally {
+    await server.close();
+    if (previous === undefined) delete process.env.SITE_URL;
+    else process.env.SITE_URL = previous;
+  }
+}
 
 // Every `next/*` import must hit a shim above: real Next modules would work through the proxy today and break at cutover.
 const noNext: Plugin = {

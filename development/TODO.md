@@ -15,6 +15,8 @@ loopback endpoint with the export's HMAC internal key, and keep audit/autoPing/n
 integrations (Drive, crons, MCP, AI, GitHub sync, sharp/HEIC: port or keep a small Node sidecar, user's call).
 Every group: `node --env-file=.env scripts/perf/api-parity.mjs --cookie-jar <jar> scripts/perf/api/<group>.txt`
 (Next on :3100 vs Rust on :8080, signed out and in) must be all-equal before commit.
+Build exports for Rust (web/vite.config.mts `routeMeta`): ai-defaults.json, themes.json, discovery.json (the
+/.well-known docs, rendered with a placeholder origin that Rust swaps for SITE_URL at startup).
 Known pre-existing issue (kept for parity, ask the user): GET /api/blogs/{id} returns unpublished drafts to anyone.
 Then 5b/9 (SQLite), then 10 (cutover: remove Next).
 Admin pages call `/api/*`, so they keep working while APIs move one by one.
@@ -287,15 +289,15 @@ Each page: Rust data + head + Vite route + e2e passing through Rust, then the Ne
 - [~] `/api/deployments/[id]` (GET in Rust; writes still Next)
 - [x] `/api/deployments/[id]/links` (Rust)
 - [ ] `/api/deployments/reorder`
-- [ ] `/api/desktop/source`
-- [ ] `/api/desktop/widgets`
+- [x] `/api/desktop/source` (Rust)
+- [x] `/api/desktop/widgets` (Rust)
 - [x] `/api/favicon` (Rust)
 - [~] `/api/gallery` (GET in Rust; writes still Next)
 - [ ] `/api/github/config`
 - [ ] `/api/github/stats`
 - [ ] `/api/github/sync`
 - [ ] `/api/github/webhook`
-- [ ] `/api/global-search`
+- [x] `/api/global-search` (Rust)
 - [~] `/api/header` (GET in Rust; writes still Next)
 - [x] `/api/health` (Rust)
 - [~] `/api/home` (GET in Rust; writes still Next)
@@ -312,21 +314,21 @@ Each page: Rust data + head + Vite route + e2e passing through Rust, then the Ne
 - [x] `/api/resume` (Rust)
 - [~] `/api/socials` (GET in Rust; writes still Next)
 - [~] `/api/socials/[id]` (GET in Rust; writes still Next)
-- [ ] `/api/themes`
-- [ ] `/api/themes/active`
-- [ ] `/api/themes/[id]`
+- [~] `/api/themes` (GET in Rust; writes still Next)
+- [~] `/api/themes/active` (GET in Rust; writes still Next)
+- [~] `/api/themes/[id]` (GET in Rust; writes still Next)
 - [ ] `/api/upload`
 - [ ] `/api/uploads/[filename]`
 - [x] `/api/version` (Rust)
-- [ ] `/.well-known/agent-skills/index.json`
-- [ ] `/.well-known/agent-skills/[skill]/SKILL.md`
-- [ ] `/.well-known/api-catalog`
-- [ ] `/.well-known/jwks.json`
-- [ ] `/.well-known/mcp/server-card.json`
-- [ ] `/.well-known/oauth-authorization-server`
-- [ ] `/.well-known/oauth-protected-resource`
-- [ ] `/.well-known/openapi.json`
-- [ ] `/.well-known/openid-configuration`
+- [x] `/.well-known/agent-skills/index.json` (Rust)
+- [x] `/.well-known/agent-skills/[skill]/SKILL.md` (Rust)
+- [x] `/.well-known/api-catalog` (Rust)
+- [x] `/.well-known/jwks.json` (Rust)
+- [x] `/.well-known/mcp/server-card.json` (Rust)
+- [x] `/.well-known/oauth-authorization-server` (Rust)
+- [x] `/.well-known/oauth-protected-resource` (Rust)
+- [x] `/.well-known/openapi.json` (Rust)
+- [x] `/.well-known/openid-configuration` (Rust)
 
 ## Milestone 9: Models in SQLite
 - [ ] `Blog`
