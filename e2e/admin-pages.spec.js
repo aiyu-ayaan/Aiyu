@@ -79,3 +79,15 @@ test('old admin paths redirect like the Next pages did', async () => {
     expect((await page.request.get('/admin/does-not-exist-e2e')).status()).toBe(404);
     await page.close();
 });
+
+test('admin writes reach the API through the server (About saved unchanged)', async () => {
+    // Every other admin test only reads; a GET-only route once swallowed POST/PUT with a 405.
+    const page = await context.newPage();
+    const before = await (await page.request.get('/api/about')).json();
+    const res = await page.request.put('/api/about', { data: before });
+    expect(res.status()).toBe(200);
+    const after = await (await page.request.get('/api/about')).json();
+    expect(after).toEqual(before);
+    expect((await page.request.post('/api/upload', { multipart: {} })).status()).not.toBe(405);
+    await page.close();
+});

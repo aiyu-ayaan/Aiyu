@@ -242,6 +242,7 @@ export default function GalleryManager() {
         setUploading(true);
         let successCount = 0;
         let failCount = 0;
+        let lastError = ''; // the server's reason (e.g. an unreadable HEIC), shown to the admin
 
         try {
             for (let i = 0; i < files.length; i++) {
@@ -258,14 +259,15 @@ export default function GalleryManager() {
                     successCount++;
                 } catch (error) {
                     failCount++;
+                    lastError = `${fileObj.file.name}: ${error.message}`;
                 }
             }
 
             if (successCount > 0) {
-                showNotification(true, `Successfully uploaded ${successCount} images.${failCount > 0 ? ` Failed: ${failCount}` : ''}`);
+                showNotification(true, `Successfully uploaded ${successCount} images.${failCount > 0 ? ` Failed: ${failCount} (${lastError})` : ''}`);
                 clearFiles(); // Only clear on success (or partial success)
             } else {
-                showNotification(false, 'All uploads failed. Please try again.');
+                showNotification(false, `All uploads failed. ${lastError}`);
             }
 
         } catch (error) {

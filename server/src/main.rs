@@ -22,7 +22,12 @@ async fn run() -> anyhow::Result<()> {
     let listen = config.listen;
     tracing::info!(%listen, upstream = %config.next_upstream, "aiyu-server starting");
 
-    let app = router(AppState::new(config).await?);
+    let state = AppState::new(config).await?;
+    // Next no longer has any pages: without the Vite build every page would be a 404. Fail loudly instead.
+    if state.web.is_none() {
+        anyhow::bail!("web app not loaded (WEB_DIR must hold index.html, route-meta.json, ai-defaults.json, admin-routes.json)");
+    }
+    let app = router(state);
     // Nagle + delayed ACK added ~40 ms to every response on a kept-alive connection.
     let listener = tokio::net::TcpListener::bind(listen).await?.tap_io(|tcp| {
         if let Err(err) = tcp.set_nodelay(true) {
