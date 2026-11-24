@@ -294,7 +294,8 @@ Each page: Rust data + head + Vite route + e2e passing through Rust, then the Ne
 - [x] `/api/favicon` (Rust)
 - [~] `/api/gallery` (GET in Rust; writes still Next)
 - [ ] `/api/github/config`
-- [ ] `/api/github/stats`
+- [x] `/api/github/stats` (Rust; reqwest now has rustls. Without a token the event fallback series follows the
+  server's local date in Node and UTC in Rust: equal only under TZ=UTC, as in Docker. Not re-checked under TZ=UTC)
 - [ ] `/api/github/sync`
 - [ ] `/api/github/webhook`
 - [x] `/api/global-search` (Rust)

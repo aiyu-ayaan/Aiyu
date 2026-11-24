@@ -1,0 +1,2 @@
+# GitHub stats (live upstream: run twice, Next may answer from its 60 s cache)
+GET /api/github/stats

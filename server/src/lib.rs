@@ -8,6 +8,7 @@ pub mod config;
 pub mod db;
 pub mod crypto;
 pub mod export;
+pub mod github;
 pub mod pages;
 pub mod proxy;
 pub mod session;
@@ -37,6 +38,8 @@ pub struct AppState {
     pub db: sqlx::PgPool,
     /// None when the Vite build is missing: those routes then fall through to Next.
     pub web: Option<std::sync::Arc<web::WebApp>>,
+    /// Outbound HTTPS (GitHub API, later the other integrations).
+    pub http: reqwest::Client,
     /// package.json version, shown in the footer.
     pub package_version: Option<String>,
 }
@@ -64,6 +67,7 @@ impl AppState {
             .and_then(|t| serde_json::from_str::<serde_json::Value>(&t).ok())
             .and_then(|v| v.get("version").and_then(|v| v.as_str()).map(str::to_string));
         Ok(Self {
+            http: reqwest::Client::builder().user_agent("Portfolio-App").build()?,
             package_version,
             web,
             db: db::connect(&config.database_url).await?,
@@ -163,6 +167,7 @@ pub fn router(state: AppState) -> Router {
         .route("/api/desktop/widgets", get(site_api::desktop_widgets))
         .route("/api/desktop/source", get(site_api::desktop_source))
         .route("/api/global-search", get(site_api::global_search))
+        .route("/api/github/stats", get(github::stats))
         .route("/.well-known/api-catalog", get(site_api::api_catalog))
         .route("/.well-known/openapi.json", get(site_api::openapi))
         .route("/.well-known/oauth-authorization-server", get(site_api::oauth_metadata))
