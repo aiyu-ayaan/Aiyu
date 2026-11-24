@@ -573,7 +573,7 @@ export default function DeploymentForm({ initialData, isEdit = false, defaultPro
                                 <input
                                     type="file"
                                     className="hidden"
-                                    accept="image/*"
+                                    accept="image/*,.heic,.heif"
                                     onChange={handleFileUpload}
                                     disabled={uploadingFile}
                                 />

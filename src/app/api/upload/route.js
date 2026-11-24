@@ -74,6 +74,11 @@ async function uploadHandler(request) {
             time: new Date().toISOString()
         });
 
+        // Validation and conversion errors are written for the uploader; anything else stays generic.
+        if (error.status === 400) {
+            return NextResponse.json({ success: false, error: error.message }, { status: 400 });
+        }
+
         // Don't expose internal error details to client
         return NextResponse.json({
             success: false,

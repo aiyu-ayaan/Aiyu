@@ -15,6 +15,7 @@ import { join } from 'path';
 import { writeFile, unlink } from 'fs/promises';
 
 import heicConvert from 'heic-convert';
+import { detectHeif } from './fileValidation';
 
 // Thumbnail configuration
 const THUMBNAIL_WIDTH = 800; // Max width for thumbnail
@@ -48,11 +49,7 @@ export async function generateThumbnail(imageBuffer, originalFilename) {
             // Convert to JPEG first using heic-convert
             if (isHeic(imageBuffer)) {
                 console.log('[INFO] Using heic-convert for thumbnail generation');
-                const jpegBuffer = await heicConvert({
-                    buffer: imageBuffer,
-                    format: 'JPEG',
-                    quality: 0.8
-                });
+                const jpegBuffer = await heifToJpeg(imageBuffer, 0.8);
                 image = sharp(jpegBuffer);
             } else {
                 throw e;
@@ -171,17 +168,24 @@ export async function deleteThumbnail(thumbnailUrl) {
     }
 }
 
-/**
- * Helper to check if buffer is HEIC
- */
 function isHeic(buffer) {
-    if (!buffer || buffer.length < 12) return false;
-    // Check for 'ftyp' + 'heic' or 'mif1'
-    // Offset 4 is 'ftyp', offset 8 is brand
-    const ftyp = buffer.slice(4, 8).toString('ascii');
-    const brand = buffer.slice(8, 12).toString('ascii');
+    return detectHeif(buffer) !== null;
+}
 
-    return ftyp === 'ftyp' && (brand === 'heic' || brand === 'heix' || brand === 'mif1' || brand === 'msf1');
+/**
+ * HEIC/HEIF -> JPEG buffer. heic-convert handles HEVC-coded photos (iPhone, most Android); sharp's libvips
+ * handles AV1-coded HEIF (and anything heic-convert cannot find an image in).
+ */
+async function heifToJpeg(buffer, quality) {
+    try {
+        return await heicConvert({ buffer, format: 'JPEG', quality });
+    } catch (error) {
+        try {
+            return await sharp(buffer).jpeg({ quality: Math.round(quality * 100) }).toBuffer();
+        } catch {
+            throw error;
+        }
+    }
 }
 
 /**
@@ -198,12 +202,8 @@ export async function processUploadedImage(buffer) {
         // Check for HEIC and convert to JPEG first
         // Sharp may partially recognize HEIC but lack the decoder, so convert immediately
         if (isHeic(buffer)) {
-            console.log('[INFO] Detected HEIC file, converting to JPEG using heic-convert');
-            const jpegBuffer = await heicConvert({
-                buffer: buffer,
-                format: 'JPEG',
-                quality: 1
-            });
+            console.log('[INFO] Detected HEIC file, converting to JPEG');
+            const jpegBuffer = await heifToJpeg(buffer, 1);
             inputBuffer = jpegBuffer;
             console.log('[SUCCESS] HEIC converted to JPEG, size:', jpegBuffer.length);
         }

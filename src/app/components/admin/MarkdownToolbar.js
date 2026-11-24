@@ -484,7 +484,7 @@ export default function MarkdownToolbar({ textareaRef, value, onChange, showNoti
                                                     ref={fileInputRef}
                                                     type="file"
                                                     className="hidden"
-                                                    accept="image/*"
+                                                    accept="image/*,.heic,.heif"
                                                     onChange={(e) => {
                                                         if (e.target.files?.[0]) handleFileSelection(e.target.files[0]);
                                                     }}

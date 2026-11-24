@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+  detectHeif,
   validateFileSignature,
   sanitizeFilename,
   generateSecureFilename,
@@ -88,4 +89,30 @@ describe('validateUploadedFile', () => {
     expect(res.valid).toBe(false);
     expect(res.error).toMatch(/signature/i);
   });
+});
+
+describe('detectHeif', () => {
+    const ftyp = (size, brand) => Buffer.concat([Buffer.from([0, 0, 0, size]), Buffer.from(`ftyp${brand}`), Buffer.alloc(16)]);
+
+    it('recognizes HEIC/HEIF photos whatever the ftyp box size', () => {
+        expect(detectHeif(ftyp(0x18, 'heic'))).toBe('image/heic'); // iPhone, most Android
+        expect(detectHeif(ftyp(0x24, 'heic'))).toBe('image/heic'); // box size not in the old prefix list
+        expect(detectHeif(ftyp(0x1c, 'heix'))).toBe('image/heic');
+        expect(detectHeif(ftyp(0x18, 'hevc'))).toBe('image/heic');
+        expect(detectHeif(ftyp(0x18, 'mif1'))).toBe('image/heif');
+        expect(detectHeif(ftyp(0x18, 'msf1'))).toBe('image/heif');
+    });
+
+    it('rejects other ISO-BMFF files and junk', () => {
+        expect(detectHeif(ftyp(0x18, 'isom'))).toBeNull(); // mp4
+        expect(detectHeif(Buffer.from([0xff, 0xd8, 0xff, 0xe0]))).toBeNull();
+        expect(detectHeif(Buffer.alloc(0))).toBeNull();
+    });
+
+    it('accepts a HEIC with no browser type and a .heif name, or labelled heif but branded heic', () => {
+        const buffer = ftyp(0x24, 'heic');
+        expect(validateUploadedFile({ name: 'IMG_1.HEIC', type: '', size: buffer.length }, buffer)).toMatchObject({ valid: true, detectedType: 'image/heic' });
+        expect(validateUploadedFile({ name: 'x.heif', type: 'application/octet-stream', size: buffer.length }, buffer).valid).toBe(true);
+        expect(validateUploadedFile({ name: 'x.heif', type: 'image/heif', size: buffer.length }, buffer).valid).toBe(true);
+    });
 });

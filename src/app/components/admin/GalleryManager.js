@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Upload, X, Trash2, Image as ImageIcon, Loader2, RefreshCw, CheckSquare, Square, Check, Sparkles, Pin } from 'lucide-react';
 import Image from 'next/image';
 import Toast from './Toast';
+import { heicPreviewUrl, isHeicFile } from '@/utils/heicPreview';
 import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
 
 export default function GalleryManager() {
@@ -95,7 +96,7 @@ export default function GalleryManager() {
 
     const handleFiles = (newFiles) => {
         const fileObjects = newFiles.map(file => {
-            const isHeic = file.name.toLowerCase().endsWith('.heic') || file.type === 'image/heic';
+            const isHeic = isHeicFile(file);
             const preview = isHeic ? 'HEIC_PLACEHOLDER' : URL.createObjectURL(file);
 
             return {
@@ -103,11 +104,22 @@ export default function GalleryManager() {
                 file,
                 preview,
                 description: '', // Individual description
-                isHeic
+                isHeic,
+                converting: isHeic,
             };
         });
 
         setFiles(prev => [...fileObjects, ...prev]);
+
+        // Browsers (except Safari) cannot show HEIC: decode a JPEG preview in the background.
+        for (const obj of fileObjects.filter((f) => f.isHeic)) {
+            heicPreviewUrl(obj.file)
+                .then((url) => setFiles(prev => prev.map(f => (f.id === obj.id ? { ...f, preview: url, converting: false } : f))))
+                .catch((error) => {
+                    console.warn(`HEIC preview failed for ${obj.file.name}:`, error);
+                    setFiles(prev => prev.map(f => (f.id === obj.id ? { ...f, converting: false } : f)));
+                });
+        }
     };
 
     const removeFile = (id) => {
@@ -567,7 +579,7 @@ export default function GalleryManager() {
                             id="file-upload"
                             className="hidden"
                             onChange={handleChange}
-                            accept="image/*"
+                            accept="image/*,.heic,.heif"
                             multiple
                         />
                         <label htmlFor="file-upload" className="cursor-pointer flex flex-col items-center gap-4">
@@ -605,6 +617,9 @@ export default function GalleryManager() {
                                             {fileObj.preview === 'HEIC_PLACEHOLDER' ? (
                                                 <div className="text-center p-2">
                                                     <div className="text-pink-500 text-xs font-bold font-mono">HEIC</div>
+                                                    <div className="mt-1 text-slate-500 text-[10px] font-mono">
+                                                        {fileObj.converting ? 'loading preview…' : 'no preview'}
+                                                    </div>
                                                 </div>
                                             ) : (
                                                 <Image

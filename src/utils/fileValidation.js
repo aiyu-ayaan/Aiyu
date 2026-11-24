@@ -21,19 +21,8 @@ const FILE_SIGNATURES = {
         [0x47, 0x49, 0x46, 0x38, 0x37, 0x61], // GIF87a
         [0x47, 0x49, 0x46, 0x38, 0x39, 0x61]  // GIF89a
     ],
-    'image/heic': [
-        // HEIC format: ISO Base Media file with 'ftyp' box and 'heic' brand
-        // Structure: [size][ftyp][heic] where ftyp = 0x66747970, heic = 0x68656963
-        [0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70, 0x68, 0x65, 0x69, 0x63], // 24-byte header
-        [0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70, 0x68, 0x65, 0x69, 0x63], // 28-byte header variant
-        [0x00, 0x00, 0x00, 0x20, 0x66, 0x74, 0x79, 0x70, 0x68, 0x65, 0x69, 0x63]  // 32-byte header variant
-    ],
-    'image/heif': [
-        // HEIF format: ISO Base Media file with 'ftyp' box and 'mif1' brand
-        // Structure: [size][ftyp][mif1] where ftyp = 0x66747970, mif1 = 0x6D696631
-        [0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70, 0x6D, 0x69, 0x66, 0x31], // 24-byte header
-        [0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70, 0x6D, 0x69, 0x66, 0x31]  // 28-byte header variant
-    ]
+    // image/heic and image/heif are matched by detectHeif() below: the ISO-BMFF `ftyp` box size and the
+    // major brand vary between phones, so fixed byte prefixes rejected real photos.
 };
 
 // Maximum file size: 10MB
@@ -49,6 +38,24 @@ export const ALLOWED_MIME_TYPES = [
     'image/heif'
 ];
 
+// Major brands of HEIF/HEIC stills and sequences (ISO/IEC 23008-12).
+const HEIC_BRANDS = new Set(['heic', 'heix', 'hevc', 'hevx', 'heim', 'heis', 'hevm', 'hevs']);
+const HEIF_BRANDS = new Set(['mif1', 'msf1', 'mif2']);
+
+/**
+ * 'image/heic' | 'image/heif' when the buffer is an ISO-BMFF file with a HEIF major brand, else null.
+ * @param {Buffer|Uint8Array} buffer
+ */
+export function detectHeif(buffer) {
+    if (!buffer || buffer.length < 12) return null;
+    const text = (start, end) => String.fromCharCode(...buffer.subarray(start, end));
+    if (text(4, 8) !== 'ftyp') return null;
+    const brand = text(8, 12);
+    if (HEIC_BRANDS.has(brand)) return 'image/heic';
+    if (HEIF_BRANDS.has(brand)) return 'image/heif';
+    return null;
+}
+
 /**
  * Validates file by checking magic numbers (file signature)
  * This prevents attackers from uploading malicious files with fake extensions
@@ -58,6 +65,11 @@ export const ALLOWED_MIME_TYPES = [
  * @returns {boolean} - True if file signature matches MIME type
  */
 export function validateFileSignature(buffer, mimeType) {
+    // Browsers label HEIC/HEIF inconsistently; either label accepts either family.
+    if (mimeType === 'image/heic' || mimeType === 'image/heif') {
+        return detectHeif(buffer) !== null;
+    }
+
     const signatures = FILE_SIGNATURES[mimeType];
 
     if (!signatures) {
@@ -139,18 +151,16 @@ export function validateUploadedFile(file, buffer) {
 
     // Attempt to detect MIME type from buffer if browser didn't provide it or provided generic
     let mimeType = file.type;
-    const isHeicExt = file.name.toLowerCase().endsWith('.heic');
-
-    // HEIC files often have empty or application/octet-stream mime type on some browsers
-    if ((!mimeType || mimeType === 'application/octet-stream') && isHeicExt) {
-        mimeType = 'image/heic';
+    // HEIC files often have an empty or application/octet-stream type (Chrome/Firefox on Windows and Linux).
+    if (!mimeType || mimeType === 'application/octet-stream') {
+        mimeType = detectHeif(buffer) || mimeType;
     }
 
     // Check MIME type
     if (!ALLOWED_MIME_TYPES.includes(mimeType)) {
         // Double check against signatures if type is unknown/generic
         // This helps when browser sends 'application/octet-stream' but we support the file
-        const detectedType = Object.keys(FILE_SIGNATURES).find(type => validateFileSignature(buffer, type));
+        const detectedType = detectHeif(buffer) || Object.keys(FILE_SIGNATURES).find(type => validateFileSignature(buffer, type));
         if (detectedType) {
             mimeType = detectedType;
         } else {

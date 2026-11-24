@@ -580,7 +580,7 @@ export default function BlogEditorForm({ mode = 'create', blogId = null }) {
                                 <input
                                     ref={coverInputRef}
                                     type="file"
-                                    accept="image/*"
+                                    accept="image/*,.heic,.heif"
                                     className="hidden"
                                     onChange={(event) => uploadImage(event.target.files?.[0], 'image')}
                                 />
@@ -741,7 +741,7 @@ export default function BlogEditorForm({ mode = 'create', blogId = null }) {
                                             <input
                                                 ref={socialInputRef}
                                                 type="file"
-                                                accept="image/*"
+                                                accept="image/*,.heic,.heif"
                                                 className="hidden"
                                                 onChange={(event) => uploadImage(event.target.files?.[0], 'socialImage')}
                                             />

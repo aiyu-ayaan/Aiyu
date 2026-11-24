@@ -497,7 +497,7 @@ const ProjectForm = ({ initialData, isEdit = false }) => {
                                 <input
                                     type="file"
                                     className="hidden"
-                                    accept="image/*"
+                                    accept="image/*,.heic,.heif"
                                     onChange={handleFileUpload}
                                     disabled={uploadingFile}
                                 />

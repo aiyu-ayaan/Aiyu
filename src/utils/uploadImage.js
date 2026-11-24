@@ -24,6 +24,13 @@ function normalizePreferredName(preferredName, fallbackName) {
     return fallbackExt ? `${trimmed}.${fallbackExt}` : trimmed;
 }
 
+/** An error whose message is safe to show the uploader (status 400). */
+function clientError(message, cause) {
+    const error = new Error(message, cause ? { cause } : undefined);
+    error.status = 400;
+    return error;
+}
+
 /**
  * Shared image upload pipeline used by /api/upload and blog image update routes.
  */
@@ -37,7 +44,7 @@ export async function storeOptimizedImage(file, options = {}) {
     const validation = validateUploadedFile(file, buffer);
 
     if (!validation.valid) {
-        throw new Error(validation.error || 'Invalid upload');
+        throw clientError(validation.error || 'Invalid upload');
     }
 
     let finalBuffer = buffer;
@@ -57,8 +64,9 @@ export async function storeOptimizedImage(file, options = {}) {
         }
     } catch (error) {
         console.error('[WARN] Image processing failed, falling back to original:', error);
-        if (validation.detectedType === 'image/heic') {
-            throw new Error(`Failed to process HEIC image: ${error.message}`, { cause: error });
+        // Browsers other than Safari cannot show HEIC/HEIF: never store one unconverted.
+        if (validation.detectedType === 'image/heic' || validation.detectedType === 'image/heif') {
+            throw clientError('Could not convert this HEIC/HEIF photo. Try exporting it as JPEG.', error);
         }
     }
 

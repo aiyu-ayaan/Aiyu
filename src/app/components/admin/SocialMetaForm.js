@@ -303,7 +303,7 @@ const SocialMetaForm = () => {
                                             <span className="text-sm opacity-70">Select image</span>
                                             <input
                                                 type="file"
-                                                accept="image/*"
+                                                accept="image/*,.heic,.heif"
                                                 onChange={handleGlobalImageUpload}
                                                 className="hidden"
                                             />
@@ -401,7 +401,7 @@ const SocialMetaForm = () => {
                                                             <span className="text-sm opacity-70">Select image</span>
                                                             <input
                                                                 type="file"
-                                                                accept="image/*"
+                                                                accept="image/*,.heic,.heif"
                                                                 onChange={(e) => handlePageImageUpload(page.key, e)}
                                                                 className="hidden"
                                                             />
