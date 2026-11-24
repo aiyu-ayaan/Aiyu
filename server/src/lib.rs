@@ -1,3 +1,4 @@
+pub mod ai;
 pub mod auth;
 pub mod compat;
 pub mod config;
@@ -104,6 +105,8 @@ pub fn router(state: AppState) -> Router {
         .route("/gallery", get(web::gallery))
         .route("/github", get(web::github))
         .route("/contact-us", get(web::contact))
+        .route("/ai", get(web::ai_hub))
+        .route("/ai/{section}", get(web::ai_section))
         .layer(axum::middleware::from_fn(web::skip_next_rsc))
         .layer(axum::middleware::from_fn(compat::public_page));
 

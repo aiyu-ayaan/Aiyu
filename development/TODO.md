@@ -6,7 +6,7 @@ Branch: `migrate/rust-vite`. Baseline and method: `development/docs/PERFORMANCE.
 
 ## ▶ RESUME HERE (handoff 2026-11-24)
 
-Branch `migrate/rust-vite`. Ported and gated: `/games`, `/blogs`, `/about-me`, `/apps`, `/projects`, `/gallery`, `/github`, `/contact-us`, `/projects/[id]`, `/apps/[id]`. Then all `/admin` pages (user asked:
+Branch `migrate/rust-vite`. Ported and gated: `/games`, `/blogs`, `/about-me`, `/apps`, `/projects`, `/gallery`, `/github`, `/contact-us`, `/projects/[id]`, `/apps/[id]`, `/ai`, `/ai/[section]`. Then all `/admin` pages (user asked:
 everything must keep working). Next: the other header pages, one per commit, with the recipe below: `/` (home), `/projects` + `/projects/[id]`, `/apps` + `/apps/[id]`, `/gallery`,
 `/github`, `/contact-us`, `/ai` + `/ai/[section]`, `/sitemap`, legal `/[legalApp]`.
 
@@ -113,6 +113,8 @@ Each page: Rust data + head + Vite route + e2e passing through Rust, then the Ne
 - [x] `/blogs`, `/blogs/[id]` (Rust + Vite, 2026-11-24): e2e `e2e/blogs.spec.js` passes on Next and Rust, Next pages deleted, `Vary: x-aiyu-data`; numbers in PERFORMANCE.md
 - [x] TCP_NODELAY on accepted sockets (~40 ms per kept-alive response); Next RSC prefetches of Vite pages get an empty reply
 - [ ] `/` embeds the base64 resume PDF (Next): strip it in the `/` port
+- [ ] `/ai` ships every skill twice (page data + a 695 KB JSON-LD ItemList): 1.4 MB. Trim the hub to the preview
+  items (AiHub derives counts from the data, so pass totalCount) and decide whether the ItemList belongs on /ai/skills only
 - [ ] `/blogs` read time: cache per post (keyed on `updatedAt`) if the ~70 ms matters
 - [ ] `/admin`
 - [ ] `/admin/about`
@@ -173,8 +175,8 @@ Each page: Rust data + head + Vite route + e2e passing through Rust, then the Ne
 - [ ] `/[legalApp]/[legalDoc]`
 - [ ] `/v2`
 - [x] `/v2/about-me`
-- [ ] `/v2/ai`
-- [ ] `/v2/ai/[section]`
+- [x] `/v2/ai`
+- [x] `/v2/ai/[section]`
 - [x] `/v2/apps`
 - [x] `/v2/apps/[id]`
 - [x] `/v2/blogs`

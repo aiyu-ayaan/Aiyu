@@ -89,3 +89,22 @@ test('index card opens the project, back link returns', async ({ page, request }
     await expect(page).toHaveURL(new RegExp(`/projects/${first.slug}$`));
     await expect(page.getByText(first.name).first()).toBeAttached();
 });
+
+test('/ai hub and a section sub-page render, unknown section is 404', async ({ page, request }) => {
+    const errors = [];
+    page.on('console', (msg) => severe(msg) && errors.push(msg.text()));
+    page.on('pageerror', (err) => errors.push(err.message));
+
+    expect((await page.goto('/ai')).status()).toBe(200);
+    await expect(page).toHaveTitle(/\| AI Hub$/);
+    await expect(page.locator('h1').first()).toBeVisible({ timeout: 15_000 });
+
+    expect((await page.goto('/ai/stack')).status()).toBe(200);
+    await expect(page.locator('main h2, main h1').first()).toBeAttached();
+    await page.locator('main a[href="/ai"]').first().click();
+    await expect(page).toHaveURL(/\/ai$/);
+    await expect(page).toHaveTitle(/\| AI Hub$/);
+
+    expect((await request.get('/ai/does-not-exist-e2e')).status()).toBe(404);
+    expect(errors).toEqual([]);
+});

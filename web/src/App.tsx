@@ -24,6 +24,8 @@ const AppDetail = lazy(() => import('./routes/appDetail'));
 const Gallery = lazy(() => import('./routes/gallery'));
 const GitHub = lazy(() => import('./routes/github'));
 const Contact = lazy(() => import('./routes/contact'));
+const AiHub = lazy(() => import('./routes/aiHub'));
+const AiSection = lazy(() => import('./routes/aiSection'));
 import { NotFound } from './NotFound';
 
 export type BootData = {
@@ -69,6 +71,8 @@ export function App({ data }: { data: BootData }) {
               <Route path="/gallery" element={<Gallery />} />
               <Route path="/github" element={<GitHub />} />
               <Route path="/contact-us" element={<Contact />} />
+              <Route path="/ai" element={<AiHub />} />
+              <Route path="/ai/:section" element={<AiSection />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

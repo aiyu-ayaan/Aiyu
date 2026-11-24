@@ -44,6 +44,9 @@ const routeMeta: Plugin = {
     for (const g of GAMES) if (!g.hidden) meta[`/games/${g.slug}`] = { title: `${g.title} | Aiyu Arcade`, description: g.tagline };
     await mkdir(new URL('./dist/', import.meta.url), { recursive: true });
     await writeFile(new URL('./dist/route-meta.json', import.meta.url), JSON.stringify(meta, null, 2));
+    // DEFAULT_AI_PAGE for the Rust AI Hub pages (one source of truth: src/lib/aiPageDefaults.js).
+    const { DEFAULT_AI_PAGE } = await import('../src/lib/aiPageDefaults.js');
+    await writeFile(new URL('./dist/ai-defaults.json', import.meta.url), JSON.stringify(DEFAULT_AI_PAGE));
   },
 };
 

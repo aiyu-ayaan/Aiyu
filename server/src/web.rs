@@ -28,13 +28,16 @@ pub struct PageMeta {
 pub struct WebApp {
     template: String,
     meta: HashMap<String, PageMeta>,
+    /// DEFAULT_AI_PAGE from src/lib/aiPageDefaults.js (written by the Vite build).
+    ai_defaults: Value,
 }
 
 impl WebApp {
     pub fn load(dir: &std::path::Path) -> anyhow::Result<Arc<Self>> {
         let template = std::fs::read_to_string(dir.join("index.html"))?;
         let meta = serde_json::from_str(&std::fs::read_to_string(dir.join("route-meta.json"))?)?;
-        Ok(Arc::new(Self { template, meta }))
+        let ai_defaults = serde_json::from_str(&std::fs::read_to_string(dir.join("ai-defaults.json"))?)?;
+        Ok(Arc::new(Self { template, meta, ai_defaults }))
     }
 }
 
@@ -491,6 +494,133 @@ pub async fn app_detail(State(state): State<AppState>, Path(id): Path<String>, r
     render(&web, &state, req.uri.path(), &req.headers, &site, StatusCode::OK, head.render(), shell, page, fallback)
 }
 
+const AI_HUB_DESCRIPTION: &str = "The AI stack I build with — skills my agents can use, recommended tools, free-credit resources, live telemetry, and a reusable prompt library.";
+// Next joins a keywords array with "," (no space).
+const AI_HUB_KEYWORDS: &str = "AI developer,AI agent skills,AI tools,free AI credits,free AI API,RAG,prompt engineering,LLM,Groq,OpenRouter,Gemini";
+
+fn breadcrumb_list(items: &[(String, String)]) -> Value {
+    json!({
+        "@type": "BreadcrumbList",
+        "itemListElement": items.iter().enumerate().map(|(i, (n, u))| json!({ "@type": "ListItem", "position": i + 1, "name": n, "item": u })).collect::<Vec<_>>(),
+    })
+}
+
+/// `/ai`: port of src/app/(site)/ai/page.js.
+pub async fn ai_hub(State(state): State<AppState>, req: Request) -> Response {
+    let web = web_or_next!(state, req);
+    let req = req.into_parts().0;
+    let (config, stats) = match crate::ai::page_data(&state.db, &web.ai_defaults).await {
+        Ok(d) => d,
+        Err(err) => return server_error(err),
+    };
+    let site = Site::load(&state).await;
+    let social = pages::social_meta(&state.db).await;
+    let shell = pages::shell_data(&state, &site.config).await;
+    let base = site.base_url.clone();
+    let url = format!("{base}/ai");
+    let title = format!("{} | AI Hub", site.base_name);
+
+    let mut head = section_head(&site, &social, "/ai", &title, AI_HUB_DESCRIPTION, "/ai");
+    head.keywords = AI_HUB_KEYWORDS.into();
+    head.og.insert(4, ("og:site_name", site.base_name.clone()));
+    // generateAiHubSchema: the WebPage, then an ItemList of every skill.
+    let mut schemas = vec![json!({
+        "@context": "https://schema.org", "@type": "WebPage", "@id": url, "url": url, "name": title, "description": AI_HUB_DESCRIPTION,
+        "isPartOf": { "@type": "WebSite", "url": base },
+        "breadcrumb": breadcrumb_list(&[("Home".into(), base.clone()), (nav_label(&shell, "/ai", "AI Hub"), url.clone())]),
+    })];
+    if let Some(skills) = crate::ai::renderable_section(&config, "skills") {
+        let items: Vec<&Value> = skills["data"]["categories"].as_array().into_iter().flatten()
+            .flat_map(|c| c["items"].as_array().into_iter().flatten())
+            .filter(|i| i["name"].as_str().is_some_and(|n| !n.is_empty()))
+            .collect();
+        if !items.is_empty() {
+            let list: Vec<Value> = items.iter().enumerate().map(|(i, it)| {
+                let mut o = serde_json::Map::new();
+                o.insert("@type".into(), "ListItem".into());
+                o.insert("position".into(), (i + 1).into());
+                o.insert("name".into(), it["name"].clone());
+                for k in ["description", "url"] {
+                    if it[k].as_str().is_some_and(|v| !v.is_empty()) {
+                        o.insert(k.into(), it[k].clone());
+                    }
+                }
+                Value::Object(o)
+            }).collect();
+            let name = skills["title"].as_str().filter(|t| !t.is_empty()).unwrap_or("AI skills & specializations");
+            schemas.push(json!({ "@context": "https://schema.org", "@type": "ItemList", "name": name, "numberOfItems": items.len(), "itemListElement": list }));
+        }
+    }
+    head.json_ld.push(Value::Array(schemas));
+
+    let mut fallback = format!("<main><h1>{}</h1><p>{}</p><ul>", escape(&title), escape(AI_HUB_DESCRIPTION));
+    for (kind, slug, fallback_title) in crate::ai::SUBPAGES {
+        if let Some(s) = crate::ai::renderable_section(&config, kind) {
+            fallback.push_str(&format!(r#"<li><a href="/ai/{slug}">{}</a></li>"#, escape(s["title"].as_str().unwrap_or(fallback_title))));
+        }
+    }
+    fallback.push_str("</ul></main>");
+    render(&web, &state, req.uri.path(), &req.headers, &site, StatusCode::OK, head.render(), shell, json!({ "config": config, "stats": stats }), fallback)
+}
+
+/// `/ai/{section}`: port of src/app/(site)/ai/[section]/page.js.
+pub async fn ai_section(State(state): State<AppState>, Path(slug): Path<String>, req: Request) -> Response {
+    let web = web_or_next!(state, req);
+    let req = req.into_parts().0;
+    let Some(&(kind, slug, fallback_title)) = crate::ai::SUBPAGES.iter().find(|(_, s, _)| *s == slug) else {
+        return not_found_page(&web, &state, &req).await;
+    };
+    let (config, stats) = match crate::ai::page_data(&state.db, &web.ai_defaults).await {
+        Ok(d) => d,
+        Err(err) => return server_error(err),
+    };
+    let Some(section) = crate::ai::renderable_section(&config, kind).cloned() else {
+        return not_found_page(&web, &state, &req).await;
+    };
+    let site = Site::load(&state).await;
+    let shell = pages::shell_data(&state, &site.config).await;
+    let base = site.base_url.clone();
+    let url = format!("{base}/ai/{slug}");
+    let heading = section["title"].as_str().filter(|t| !t.is_empty()).unwrap_or(fallback_title).to_string();
+    let title = format!("{} | {heading}", site.base_name);
+    // describeSection: subtitle, else title, else the fallback title; 160 chars.
+    let description: String = section["subtitle"].as_str().filter(|t| !t.is_empty())
+        .or(section["title"].as_str().filter(|t| !t.is_empty()))
+        .unwrap_or(fallback_title)
+        .trim()
+        .chars()
+        .take(160)
+        .collect();
+    let og_image = site.config["ogImage"].as_str().map(str::trim).filter(|v| !v.is_empty())
+        .map(|v| pages::absolute(&base, v))
+        .unwrap_or_else(|| format!("{base}/og-image.png"));
+
+    let mut head = Head::site(&site, &title, &description);
+    head.canonical = url.clone();
+    head.og = vec![
+        ("og:title", title.clone()),
+        ("og:description", description.clone()),
+        ("og:url", url.clone()),
+        ("og:site_name", site.base_name.clone()),
+        ("og:image", og_image.clone()),
+        ("og:image:width", "1200".into()),
+        ("og:image:height", "630".into()),
+        ("og:image:alt", format!("{} — {heading}", site.base_name)),
+        ("og:type", "website".into()),
+    ];
+    head.twitter = Some((title.clone(), description.clone(), og_image));
+    let hub_label = nav_label(&shell, "/ai", "AI Hub");
+    let mut crumbs = json!({ "@context": "https://schema.org" });
+    if let (Some(o), Value::Object(list)) = (crumbs.as_object_mut(), breadcrumb_list(&[("Home".into(), base.clone()), (hub_label.clone(), format!("{base}/ai")), (heading.clone(), url.clone())])) {
+        o.extend(list);
+    }
+    head.json_ld.push(crumbs);
+
+    let fallback = format!("<main><h1>{}</h1><p>{}</p></main>", escape(&heading), escape(&description));
+    let page = json!({ "section": section, "stats": if kind == "stats" { stats } else { Value::Null }, "slug": slug, "hubLabel": hub_label });
+    render(&web, &state, req.uri.path(), &req.headers, &site, StatusCode::OK, head.render(), shell, page, fallback)
+}
+
 /// `/_img/blog/{id}`: a blog cover stored inline as a data URI.
 pub async fn blog_image(State(state): State<AppState>, Path(id): Path<String>) -> Response {
     match pages::blog_inline_image(&state.db, &id).await {
@@ -719,13 +849,7 @@ impl Head {
 
 /// BreadcrumbSchema: Home, the section (labelled from the header nav when present), then `trail`.
 fn breadcrumb(site: &Site, shell: &Value, path: &str, name: &str, trail: &[(String, String)]) -> Value {
-    let label = shell["header"]["navLinks"]
-        .as_array()
-        .and_then(|links| links.iter().find(|l| l["href"].as_str().map(|h| h.trim_end_matches('/')) == Some(path)))
-        .and_then(|l| l["name"].as_str())
-        .map(prettify_nav_name)
-        .filter(|n| !n.is_empty())
-        .unwrap_or_else(|| name.to_string());
+    let label = nav_label(shell, path, name);
     let base = &site.base_url;
     let mut items = vec![("Home".to_string(), base.clone()), (label.to_string(), format!("{base}{path}"))];
     items.extend(trail.iter().filter(|(n, _)| !n.is_empty()).map(|(n, p)| (n.clone(), format!("{base}{p}"))));
@@ -733,6 +857,17 @@ fn breadcrumb(site: &Site, shell: &Value, path: &str, name: &str, trail: &[(Stri
         "@context": "https://schema.org", "@type": "BreadcrumbList",
         "itemListElement": items.iter().enumerate().map(|(i, (n, u))| json!({ "@type": "ListItem", "position": i + 1, "name": n, "item": u })).collect::<Vec<_>>(),
     })
+}
+
+/// `resolveNavLabel`: the header nav's name for `path` (prettified), else `fallback`.
+fn nav_label(shell: &Value, path: &str, fallback: &str) -> String {
+    shell["header"]["navLinks"]
+        .as_array()
+        .and_then(|links| links.iter().find(|l| l["href"].as_str().map(|h| h.trim().trim_end_matches('/')) == Some(path)))
+        .and_then(|l| l["name"].as_str())
+        .map(prettify_nav_name)
+        .filter(|n| !n.is_empty())
+        .unwrap_or_else(|| fallback.to_string())
 }
 
 /// `prettifyNavName` in BreadcrumbSchema.js: "about-me" -> "About Me".
