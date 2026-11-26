@@ -375,7 +375,9 @@ fn is_http_url(v: &Value) -> bool {
 
 async fn not_found_page(web: &WebApp, state: &AppState, req: &Parts) -> Response {
     let site = Site::load(state).await;
-    render(web, state, req.uri.path(), &req.headers, &site, StatusCode::NOT_FOUND, site.not_found_head(), json!(null), json!(null), String::new())
+    // The site's own header and socials, not the built-in defaults.
+    let shell = pages::shell_data(state, &site.config).await;
+    render(web, state, req.uri.path(), &req.headers, &site, StatusCode::NOT_FOUND, site.not_found_head(), shell, json!(null), String::new())
 }
 
 /// `/projects/{id}`: port of src/app/(site)/projects/[id]/page.js.
