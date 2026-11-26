@@ -174,7 +174,12 @@ pub fn prepare(table: &Table, doc: &Value) -> anyhow::Result<Map<String, Value>>
 }
 
 fn client(raw: &str) -> anyhow::Result<Value> {
-    Ok(pages::to_client_row(serde_json::from_str(raw)?))
+    let mut row = pages::to_client_row(serde_json::from_str(raw)?);
+    // The blog search index is not part of the document (RELATIONAL_OMIT).
+    if let Some(fields) = row.as_object_mut() {
+        fields.shift_remove("searchVector");
+    }
+    Ok(row)
 }
 
 /// The columns of `data`, quoted. Names come from the table's constant list.

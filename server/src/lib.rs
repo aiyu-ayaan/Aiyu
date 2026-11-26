@@ -1,3 +1,4 @@
+pub mod admin_blogs;
 pub mod admin_content;
 pub mod admin_site;
 pub mod ai;
@@ -86,6 +87,7 @@ impl AppState {
 /// Every ported `/api` route that Next's proxy rate limits belongs here (all POST, PUT, PATCH and DELETE, plus a
 /// few listed paths): the limit is applied once, to all of them.
 fn limited_api(state: &AppState) -> Router<AppState> {
+    use admin_blogs as posts;
     use admin_content as content;
     use admin_site as site;
     Router::new()
@@ -110,6 +112,10 @@ fn limited_api(state: &AppState) -> Router<AppState> {
         .route("/api/deployments/reorder", patch(content::reorder_deployments))
         .route("/api/deployments/{id}", put(content::update_deployment).delete(content::delete_deployment))
         .route("/api/gallery", post(content::create_gallery_item).put(content::update_gallery).delete(content::delete_gallery_item))
+        .route("/api/blogs", post(posts::create))
+        .route("/api/blogs/{id}", put(posts::update).delete(posts::delete))
+        // POST (the public contact form, with its notifications) stays in Next.
+        .route("/api/contact/message", get(posts::messages).delete(posts::delete_message))
         .route_layer(axum::middleware::from_fn_with_state(state.clone(), limit::api))
 }
 
