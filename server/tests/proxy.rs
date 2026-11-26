@@ -112,10 +112,35 @@ async fn next_rsc_requests_to_vite_pages_get_an_empty_non_rsc_reply() {
 async fn non_get_methods_on_rust_page_patterns_reach_next() {
     // `/{legal_app}/{legal_doc}` and the page routes are GET-only in Rust; uploads and admin saves must still
     // reach Next instead of getting a 405.
-    for (method, uri) in [("POST", "/api/upload"), ("PUT", "/api/about"), ("DELETE", "/api/gallery"), ("POST", "/blogs")] {
+    for (method, uri) in [("POST", "/api/upload"), ("PUT", "/api/admin/ads"), ("PATCH", "/api/about"), ("POST", "/blogs")] {
         let mut req = Request::builder().method(method).uri(uri).header("host", "example.com").body(Body::empty()).unwrap();
         req.extensions_mut().insert(ConnectInfo::<SocketAddr>("127.0.0.1:5555".parse().unwrap()));
         let res = app("").await.oneshot(req).await.unwrap();
         assert_eq!(res.status(), StatusCode::OK, "{method} {uri}");
+    }
+}
+
+#[tokio::test]
+async fn internal_routes_are_not_reachable_from_outside() {
+    for method in ["GET", "POST"] {
+        let mut req = Request::builder().method(method).uri("/api/internal/hooks").body(Body::empty()).unwrap();
+        req.extensions_mut().insert(ConnectInfo::<SocketAddr>("127.0.0.1:5555".parse().unwrap()));
+        let res = app("").await.oneshot(req).await.unwrap();
+        assert_eq!(res.status(), StatusCode::NOT_FOUND, "{method}");
+    }
+}
+
+#[tokio::test]
+async fn ported_writes_refuse_anonymous_callers() {
+    for (method, uri) in [
+        ("PUT", "/api/about"), ("PUT", "/api/home"), ("PUT", "/api/header"), ("POST", "/api/config"), ("PATCH", "/api/themes/active"),
+        ("PUT", "/api/ai/layout"), ("POST", "/api/socials"), ("DELETE", "/api/socials/x"), ("POST", "/api/themes"), ("PUT", "/api/themes/x"),
+        ("POST", "/api/projects"), ("PATCH", "/api/projects/reorder"), ("DELETE", "/api/projects/x"), ("POST", "/api/deployments"),
+        ("PUT", "/api/deployments/x"), ("POST", "/api/gallery"), ("DELETE", "/api/gallery?id=x"),
+    ] {
+        let mut req = Request::builder().method(method).uri(uri).header("content-type", "application/json").body(Body::from("{}")).unwrap();
+        req.extensions_mut().insert(ConnectInfo::<SocketAddr>("127.0.0.1:5555".parse().unwrap()));
+        let res = app("").await.oneshot(req).await.unwrap();
+        assert_eq!(res.status(), StatusCode::UNAUTHORIZED, "{method} {uri}");
     }
 }

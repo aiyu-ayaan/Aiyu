@@ -1,3 +1,5 @@
+pub mod admin_content;
+pub mod admin_site;
 pub mod ai;
 pub mod analytics;
 pub mod api;
@@ -15,11 +17,12 @@ pub mod proxy;
 pub mod session;
 pub mod site_api;
 pub mod web;
+pub mod write;
 
 use axum::{
     Router,
-    http::{HeaderValue, header},
-    routing::{get, post},
+    http::{HeaderValue, StatusCode, header},
+    routing::{any, get, patch, post, put},
 };
 use tower_http::{
     compression::{
@@ -80,11 +83,38 @@ impl AppState {
     }
 }
 
+/// Every ported `/api` route that Next's proxy rate limits belongs here (all POST, PUT, PATCH and DELETE, plus a
+/// few listed paths): the limit is applied once, to all of them.
+fn limited_api(state: &AppState) -> Router<AppState> {
+    use admin_content as content;
+    use admin_site as site;
+    Router::new()
+        .route("/api/global-search", get(site_api::global_search))
+        .route("/api/auth/login", post(auth::login))
+        .route("/api/auth/logout", post(auth::logout))
+        .route("/api/analytics/track", post(analytics::track))
+        .route("/api/about", put(site::put_about))
+        .route("/api/home", put(site::put_home))
+        .route("/api/header", put(site::put_header))
+        .route("/api/config", put(site::put_config).post(site::put_config))
+        .route("/api/themes/active", patch(site::set_active_theme))
+        .route("/api/ai/layout", put(site::put_ai_layout))
+        .route("/api/socials", post(content::create_social))
+        .route("/api/socials/{id}", put(content::update_social).delete(content::delete_social))
+        .route("/api/themes", post(content::create_theme))
+        .route("/api/themes/{id}", put(content::update_theme).delete(content::delete_theme))
+        .route("/api/projects", post(content::create_project))
+        .route("/api/projects/reorder", patch(content::reorder_projects))
+        .route("/api/projects/{id}", put(content::update_project).delete(content::delete_project))
+        .route("/api/deployments", post(content::create_deployment))
+        .route("/api/deployments/reorder", patch(content::reorder_deployments))
+        .route("/api/deployments/{id}", put(content::update_deployment).delete(content::delete_deployment))
+        .route("/api/gallery", post(content::create_gallery_item).put(content::update_gallery).delete(content::delete_gallery_item))
+        .route_layer(axum::middleware::from_fn_with_state(state.clone(), limit::api))
+}
+
 /// Routes ported to Rust are added here; everything else streams through to Next (strangler fallback).
 pub fn router(state: AppState) -> Router {
-    // The /api rate limit Next's proxy applies, for the handlers served here that it covers.
-    let api_limit = || axum::middleware::from_fn_with_state(state.clone(), limit::api);
-
     // Hashed build assets never change: serve them from disk with a one-year immutable cache.
     let next_static = Router::new()
         .nest_service("/_next/static", ServeDir::new(state.config.next_dir.join("static")))
@@ -170,10 +200,10 @@ pub fn router(state: AppState) -> Router {
         .route("/api/themes/{id}", get(site_api::theme))
         .route("/api/desktop/widgets", get(site_api::desktop_widgets))
         .route("/api/desktop/source", get(site_api::desktop_source))
-        .route("/api/global-search", get(site_api::global_search).route_layer(api_limit()))
-        .route("/api/auth/login", post(auth::login).route_layer(api_limit()))
-        .route("/api/auth/logout", post(auth::logout).route_layer(api_limit()))
-        .route("/api/analytics/track", post(analytics::track).route_layer(api_limit()))
+        // Ported writes, behind the /api rate limit.
+        .merge(limited_api(&state))
+        // Next's side of the writes: reached over loopback only, never for outside callers.
+        .route("/api/internal/{*rest}", any(|| async { StatusCode::NOT_FOUND }))
         .route("/api/github/stats", get(github::stats))
         .route("/.well-known/api-catalog", get(site_api::api_catalog))
         .route("/.well-known/openapi.json", get(site_api::openapi))
