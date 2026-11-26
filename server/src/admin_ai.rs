@@ -68,32 +68,32 @@ const fn field(name: &'static str, rule: Rule) -> Field {
     Field { name, create: rule, update: rule }
 }
 
-/// One kind of AI Hub entry.
-struct Entry {
-    table: &'static Table,
+///One kind of AI Hub entry.
+pub(crate) struct Entry {
+    pub table: &'static Table,
     /// For messages: "Skill category".
-    what: &'static str,
+    pub what: &'static str,
     /// Key of the reply: `{ ok, skill }`.
-    reply: &'static str,
+    pub reply: &'static str,
     /// In input order, which decides which error is reported.
     fields: &'static [Field],
 }
 
 use Rule::{Flag, Kept, Nullable, Number, Optional, Required, Tags};
 
-const CATEGORIES: Entry = Entry {
+pub(crate) const CATEGORIES: Entry = Entry {
     table: &CATEGORY,
     what: "Skill category",
     reply: "category",
     fields: &[field("label", Required(120)), Field { name: "accent", create: Optional(120, ACCENT), update: Kept(120) }],
 };
-const SKILLS: Entry = Entry {
+pub(crate) const SKILLS: Entry = Entry {
     table: &SKILL,
     what: "Skill",
     reply: "skill",
     fields: &[field("categoryId", Required(120)), field("name", Required(200)), field("description", Optional(2000, "")), field("url", Nullable(1000))],
 };
-const RECOMMENDATIONS: Entry = Entry {
+pub(crate) const RECOMMENDATIONS: Entry = Entry {
     table: &RECOMMENDATION,
     what: "Recommendation",
     reply: "recommendation",
@@ -102,7 +102,7 @@ const RECOMMENDATIONS: Entry = Entry {
         Field { name: "accent", create: Optional(120, ACCENT), update: Kept(120) }, field("blurb", Optional(2000, "")), field("tags", Tags),
     ],
 };
-const CREDITS: Entry = Entry {
+pub(crate) const CREDITS: Entry = Entry {
     table: &CREDIT,
     what: "Credit",
     reply: "credit",
@@ -111,7 +111,7 @@ const CREDITS: Entry = Entry {
         field("freeApi", Flag), field("note", Optional(500, "")),
     ],
 };
-const PROMPTS: Entry = Entry {
+pub(crate) const PROMPTS: Entry = Entry {
     table: &PROMPT,
     what: "Prompt",
     reply: "prompt",
@@ -120,7 +120,7 @@ const PROMPTS: Entry = Entry {
 
 /// `AiSectionError`: shown to the caller with its status.
 #[derive(Debug)]
-struct Refused(StatusCode, String);
+pub(crate) struct Refused(pub StatusCode, pub String);
 
 impl std::fmt::Display for Refused {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -134,7 +134,7 @@ fn invalid(message: String) -> anyhow::Error {
 }
 
 /// `str(value, field, { required, max })`
-fn string(value: Option<&Value>, name: &str, required: bool, max: usize) -> anyhow::Result<Option<String>> {
+pub(crate) fn string(value: Option<&Value>, name: &str, required: bool, max: usize) -> anyhow::Result<Option<String>> {
     let Some(value) = value.filter(|v| !v.is_null()) else {
         if required {
             return Err(invalid(format!("Missing required field: {name}")));
@@ -203,7 +203,7 @@ async fn changed(state: &AppState) {
     write::notify(state, json!({ "keys": ["db:aiPage", "db:aiPage:stats"] })).await;
 }
 
-async fn create(state: &AppState, entry: &Entry, input: Value) -> anyhow::Result<Value> {
+pub(crate) async fn create(state: &AppState, entry: &Entry, input: Value) -> anyhow::Result<Value> {
     anyhow::ensure!(!input.is_null(), "body is null");
     let mut data = Map::new();
     for f in entry.fields {
@@ -231,7 +231,7 @@ async fn create(state: &AppState, entry: &Entry, input: Value) -> anyhow::Result
     Ok(json!({ entry.reply: row }))
 }
 
-async fn update(state: &AppState, entry: &Entry, id: &str, patch: Value) -> anyhow::Result<Value> {
+pub(crate) async fn update(state: &AppState, entry: &Entry, id: &str, patch: Value) -> anyhow::Result<Value> {
     exists(&state.db, entry.table.name, entry.what, id).await?;
     anyhow::ensure!(!patch.is_null(), "body is null");
     let mut data = Map::new();
@@ -258,7 +258,7 @@ async fn update(state: &AppState, entry: &Entry, id: &str, patch: Value) -> anyh
     Ok(json!({ entry.reply: row }))
 }
 
-async fn remove(state: &AppState, entry: &Entry, id: &str) -> anyhow::Result<Value> {
+pub(crate) async fn remove(state: &AppState, entry: &Entry, id: &str) -> anyhow::Result<Value> {
     exists(&state.db, entry.table.name, entry.what, id).await?;
     write::delete(&state.db, entry.table.name, id).await?;
     changed(state).await;

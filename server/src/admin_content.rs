@@ -42,7 +42,7 @@ pub(crate) const PROJECT: Table = Table {
     created_at: true,
     updated_at: true,
 };
-const DEPLOYMENT: Table = Table {
+pub(crate) const DEPLOYMENT: Table = Table {
     name: "Deployment",
     columns: &[
         ("name", Text), ("slug", Text), ("techStack", List), ("status", Text), ("appType", Text), ("environment", Text),

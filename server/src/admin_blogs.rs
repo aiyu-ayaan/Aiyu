@@ -20,7 +20,7 @@ use crate::{
 
 use Kind::{Bool, Date, List, OptText, Text};
 
-const BLOG: Table = Table {
+pub(crate) const BLOG: Table = Table {
     name: "Blog",
     columns: &[
         ("title", Text), ("slug", Text), ("content", Text), ("image", OptText), ("imageAlt", Text), ("excerpt", Text),

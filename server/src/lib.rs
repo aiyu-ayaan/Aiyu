@@ -13,6 +13,7 @@ pub mod api;
 pub mod auth;
 pub mod legal;
 pub mod limit;
+pub mod mcp;
 pub mod misc;
 pub mod net;
 pub mod notify;
@@ -201,6 +202,7 @@ fn limited_api(state: &AppState) -> Router<AppState> {
         .route("/api/admin/resume", put(misc::save_resume))
         .route("/api/admin/resume/compile", post(misc::compile))
         .route("/api/admin/resume/publish", post(misc::publish))
+        .route("/api/mcp", post(mcp::post_mcp).delete(mcp::delete_mcp))
         // A backup can be hundreds of megabytes; the handler streams it to disk and enforces its own limit.
         .route("/api/admin/import", post(restore::import).layer(DefaultBodyLimit::disable()))
         .route_layer(axum::middleware::from_fn_with_state(state.clone(), limit::api))
@@ -298,6 +300,7 @@ pub fn router(state: AppState) -> Router {
         .route("/api/admin/resume", get(misc::resume))
         .route("/api/admin/ai/logs", get(misc::ai_logs))
         .route("/api/admin/system-prompt", get(misc::system_prompt))
+        .route("/api/mcp", get(mcp::get_mcp).options(mcp::options_mcp))
         .route("/api/uploads/{filename}", get(uploads::serve))
         // API routes ported from Next; other methods on these paths still go to Next.
         .route("/api/about", get(api::about))
