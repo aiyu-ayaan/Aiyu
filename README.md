@@ -9,7 +9,7 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
 [![SQLite](https://img.shields.io/badge/SQLite-WAL%20%2B%20FTS5-003B57?logo=sqlite&logoColor=white)](https://www.sqlite.org/)
 [![Docker](https://img.shields.io/badge/Docker-213MB-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
-[![License: Source-Available](https://img.shields.io/badge/License-Source--Available-ef4444)](LICENSE)
+[![License: Source-Available](https://img.shields.io/badge/License-Source%20Available-ef4444)](LICENSE)
 [![Wiki](https://img.shields.io/badge/Docs-Wiki-181717?logo=github&logoColor=white)](https://github.com/aiyu-ayaan/Aiyu/wiki)
 
 [![home](public/screenshots/desktop-dark-home.png)](http://aiyu.co.in)
