@@ -1,26 +1,43 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragOverlay } from '@dnd-kit/core';
+import Link from 'next/link';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, rectSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { getIconNames, IconList } from '@/lib/iconLibrary';
-import { Sparkles, Loader2, Wand2, Plus } from 'lucide-react';
+import {
+    FaFloppyDisk,
+    FaGripVertical,
+    FaPlus,
+    FaSpinner,
+    FaTrash,
+    FaWandMagicSparkles,
+    FaXmark,
+} from 'react-icons/fa6';
 import Toast from './Toast';
 import DatePickerInput from './DatePickerInput';
+import { Badge, EmptyState, Field, Loading, Panel } from './ui';
+import '@/app/styles/admin-showcase.css';
 
-// Helper for Icon Preview
+const SECTIONS = [
+    { id: 'about-bio', label: 'Bio & summary' },
+    { id: 'about-skills', label: 'Skills', countKey: 'skills' },
+    { id: 'about-experience', label: 'Experience', countKey: 'experiences' },
+    { id: 'about-education', label: 'Education', countKey: 'education' },
+    { id: 'about-certifications', label: 'Certifications', countKey: 'certifications' },
+];
+
 const IconPreview = ({ name }) => {
     const Icon = IconList[name];
-    if (Icon) return <Icon className="w-5 h-5 text-cyan-400" />;
+    if (Icon) return <Icon className="h-5 w-5 text-[var(--adm-accent-ink)]" />;
 
-    // Fallback to CDN if not in local list
     if (name) {
         return (
             <img
                 src={`https://cdn.simpleicons.org/${name.toLowerCase().replace(/[^a-z0-9]/g, '')}/22d3ee`}
                 alt={name}
-                className="w-5 h-5 object-contain"
+                className="h-5 w-5 object-contain"
                 loading="lazy"
                 decoding="async"
                 onError={(e) => { e.target.style.display = 'none'; }}
@@ -28,46 +45,56 @@ const IconPreview = ({ name }) => {
         );
     }
 
-    return <span className="text-xs text-gray-500">?</span>;
+    return <span className="font-mono text-xs text-[var(--adm-hint)]">?</span>;
 };
 
-// ... SortableItem (unchanged) ...
-function SortableItem({ id, children, className }) {
+function SortableRecord({ id, title, badge, onRemove, removeLabel = 'Delete item', children }) {
     const {
         attributes,
         listeners,
         setNodeRef,
         transform,
         transition,
+        isDragging,
     } = useSortable({ id });
 
     const style = {
         transform: CSS.Transform.toString(transform),
         transition,
+        opacity: isDragging ? 0.55 : 1,
     };
 
     return (
-        <div ref={setNodeRef} style={style} className={className}>
-            <div className="flex items-start gap-4 h-full">
+        <div ref={setNodeRef} style={style} className="adm-sc-item">
+            <div className="adm-sc-item-head">
                 <button
                     type="button"
                     {...attributes}
                     {...listeners}
-                    className="mt-4 text-slate-600 hover:text-cyan-400 cursor-grab active:cursor-grabbing touch-none transition-colors"
-                    title="Reorder Element"
+                    className="adm-icon-btn adm-sc-drag"
+                    title="Reorder"
+                    aria-label={`Reorder ${title}`}
                 >
-                    <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                        <line x1="8" y1="6" x2="21" y2="6"></line>
-                        <line x1="8" y1="12" x2="21" y2="12"></line>
-                        <line x1="8" y1="18" x2="21" y2="18"></line>
-                        <line x1="3" y1="6" x2="3.01" y2="6"></line>
-                        <line x1="3" y1="12" x2="3.01" y2="12"></line>
-                        <line x1="3" y1="18" x2="3.01" y2="18"></line>
-                    </svg>
+                    <FaGripVertical aria-hidden="true" />
                 </button>
-                <div className="flex-1 w-full">
-                    {children}
-                </div>
+                <span className="min-w-0 flex-1 truncate text-sm font-semibold text-[var(--text-bright)]">
+                    {title}
+                </span>
+                {badge}
+                {onRemove && (
+                    <button
+                        type="button"
+                        onClick={onRemove}
+                        className="adm-icon-btn"
+                        title={removeLabel}
+                        aria-label={removeLabel}
+                    >
+                        <FaTrash aria-hidden="true" />
+                    </button>
+                )}
+            </div>
+            <div className="adm-sc-item-body">
+                {children}
             </div>
         </div>
     );
@@ -94,16 +121,12 @@ const AboutForm = () => {
     // Icon Picker State
     const [iconSearchTerm, setIconSearchTerm] = useState('');
     const [activeIconIndex, setActiveIconIndex] = useState(null);
-    const [allCdnIcons, setAllCdnIcons] = useState([]); // Store 3000+ icons here
-    const availableIcons = getIconNames(); // Local icons
+    const [allCdnIcons, setAllCdnIcons] = useState([]);
+    const availableIcons = getIconNames();
 
-    // Fetch full icon list on mount
     useEffect(() => {
         const fetchIcons = async () => {
             try {
-                // Pull the {title, slug} catalog from the server route instead of
-                // importing `simple-icons/icons` on the client, which would drag a
-                // ~5MB chunk into the admin bundle just to populate this picker.
                 const res = await fetch('/api/admin/icons');
                 if (!res.ok) throw new Error(`icons request failed: ${res.status}`);
                 const data = await res.json();
@@ -168,7 +191,7 @@ const AboutForm = () => {
             if (data.success) {
                 if (mode === 'summary') {
                     setFormData(prev => ({ ...prev, professionalSummary: data.data }));
-                    showNotification(true, 'Narrative polished!');
+                    showNotification(true, 'Summary refined');
                 } else if (mode === 'skills') {
                     const skillNames = data.data.split(',').map(s => s.trim());
                     const newSkills = skillNames.map(name => ({
@@ -181,32 +204,29 @@ const AboutForm = () => {
                         ...prev,
                         skills: [...newSkills, ...prev.skills]
                     }));
-                    showNotification(true, 'Skill set expanded!');
+                    showNotification(true, 'Suggested skills added');
                 } else if (mode === 'experience') {
                     const newExperiences = formData.experiences.map(exp =>
                         exp._id === contextData.id ? { ...exp, description: data.data } : exp
                     );
                     setFormData(prev => ({ ...prev, experiences: newExperiences }));
-                    showNotification(true, 'Trajectory refined!');
+                    showNotification(true, 'Experience description refined');
                 }
             } else {
-                showNotification(false, data.error || 'AI synthesis failed');
+                showNotification(false, data.error || 'AI generation failed');
             }
         } catch (error) {
             console.error('AI Error:', error);
-            showNotification(false, 'AI uplink interrupted');
+            showNotification(false, 'Could not reach the AI service');
         } finally {
             setAiGenerating(null);
         }
     };
 
-    // Hybrid Search: Match local icons first, then CDN icons
-    // Hybrid Search: Match local icons first, then CDN icons
     const getFilteredIcons = () => {
-        // Prepare local matches first (always normalized to objects)
         const normalizedLocal = availableIcons.map(name => ({
             name,
-            slug: name, // Local icons use name as slug for key purposes
+            slug: name,
             isCdn: false
         }));
 
@@ -214,12 +234,10 @@ const AboutForm = () => {
 
         const term = iconSearchTerm.toLowerCase();
 
-        // 1. Local Matches
         const localMatches = normalizedLocal.filter(icon =>
             icon.name.toLowerCase().includes(term)
         );
 
-        // 2. CDN Matches (that aren't already in local)
         const cdnMatches = (allCdnIcons || [])
             .filter(icon => icon.title.toLowerCase().includes(term))
             .map(icon => ({
@@ -227,7 +245,7 @@ const AboutForm = () => {
                 slug: icon.slug,
                 isCdn: true
             }))
-            .filter(cdnIcon => !localMatches.some(local => local.name === cdnIcon.name)); // Dedup
+            .filter(cdnIcon => !localMatches.some(local => local.name === cdnIcon.name));
 
         return [...localMatches, ...cdnMatches].slice(0, 50);
     };
@@ -241,7 +259,6 @@ const AboutForm = () => {
         })
     );
 
-    // Helper to ensure all items have a unique ID for DnD
     const ensureIds = (items) => {
         return items.map(item => ({
             ...item,
@@ -284,6 +301,7 @@ const AboutForm = () => {
 
     const handleDragEnd = (event, listKey) => {
         const { active, over } = event;
+        if (!over) return;
 
         if (active.id !== over.id) {
             setFormData((prev) => {
@@ -371,7 +389,6 @@ const AboutForm = () => {
     const handleCertificationChange = (index, field, value) => {
         const newCertifications = [...formData.certifications];
         if (field === 'skills') {
-            // Handle skills as comma-separated string for input, array for state
             value = value.split(',').map(s => s.trim());
         }
         newCertifications[index] = { ...newCertifications[index], [field]: value };
@@ -391,7 +408,6 @@ const AboutForm = () => {
             certifications: prev.certifications.filter((_, i) => i !== index),
         }));
     };
-
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -413,14 +429,14 @@ const AboutForm = () => {
             });
 
             if (response.ok) {
-                showNotification(true, 'Identity Matrix Updated Successfully');
-                fetchData(); // Refresh data
+                showNotification(true, 'About page saved');
+                fetchData();
             } else {
                 const data = await response.json();
                 setError(data.error || 'Something went wrong');
                 showNotification(false, data.error || 'Failed to update');
             }
-        } catch (err) {
+        } catch {
             setError('An error occurred');
             showNotification(false, 'An error occurred');
         } finally {
@@ -428,607 +444,610 @@ const AboutForm = () => {
         }
     };
 
-    if (loading) return <div className="text-white">Loading...</div>;
+    if (loading) {
+        return <Panel><Loading label="Loading about page" rows={6} /></Panel>;
+    }
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-12 max-w-5xl mx-auto">
-            {/* Icon Picker Modal */}
+        <form onSubmit={handleSubmit} className="adm-sc-split">
             {activeIconIndex !== null && (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-slate-900/50 rounded-2xl p-6 w-full max-w-2xl border border-white/10 shadow-2xl space-y-6 max-h-[80vh] flex flex-col relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-[100px] pointer-events-none" />
-
-                        <div className="flex justify-between items-center border-b border-white/10 pb-4 relative z-10">
-                            <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                                <span className="w-1 h-6 bg-cyan-500 rounded-full" />
-                                Select Visualization Icon
-                            </h3>
+                <div className="adm-overlay" role="dialog" aria-modal="true" aria-labelledby="icon-picker-title">
+                    <div className="adm-dialog !max-w-2xl">
+                        <header className="adm-panel-head">
+                            <h3 id="icon-picker-title" className="adm-panel-title">Choose skill icon</h3>
                             <button
                                 type="button"
                                 onClick={() => setActiveIconIndex(null)}
-                                className="text-slate-400 hover:text-white transition-colors"
+                                className="adm-icon-btn"
+                                aria-label="Close icon picker"
                             >
-                                <div className="p-2 rounded-full hover:bg-white/10">✕</div>
+                                <FaXmark aria-hidden="true" />
                             </button>
+                        </header>
+                        <div className="adm-panel-body space-y-4">
+                            <Field label="Search icons">
+                                <input
+                                    type="text"
+                                    placeholder="Type a technology name (e.g. React, Rust, Docker)…"
+                                    className="adm-input"
+                                    value={iconSearchTerm}
+                                    onChange={(e) => setIconSearchTerm(e.target.value)}
+                                    autoFocus
+                                />
+                            </Field>
+
+                            <div className="grid max-h-[22rem] grid-cols-3 gap-2 overflow-y-auto sm:grid-cols-5">
+                                {filteredIcons.map(({ name, slug, isCdn }) => (
+                                    <button
+                                        key={`${isCdn ? 'cdn' : 'local'}-${slug}`}
+                                        type="button"
+                                        onClick={() => {
+                                            const value = isCdn ? slug : name;
+                                            handleSkillChange(activeIconIndex, 'icon', value);
+                                            setActiveIconIndex(null);
+                                            setIconSearchTerm('');
+                                        }}
+                                        className="adm-sc-choice flex-col items-center justify-center text-center"
+                                    >
+                                        <span className="flex h-7 w-7 items-center justify-center">
+                                            {isCdn ? (
+                                                <img
+                                                    src={`https://cdn.simpleicons.org/${slug}/22d3ee`}
+                                                    alt={name}
+                                                    className="h-5 w-5 object-contain"
+                                                    loading="lazy"
+                                                    decoding="async"
+                                                    onError={(e) => { e.target.style.opacity = '0.3'; }}
+                                                />
+                                            ) : (
+                                                <IconPreview name={name} />
+                                            )}
+                                        </span>
+                                        <span className="w-full truncate font-mono text-xs text-[var(--text-secondary)]">
+                                            {name}
+                                        </span>
+                                    </button>
+                                ))}
+
+                                {iconSearchTerm && filteredIcons.length === 0 && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const slug = iconSearchTerm.toLowerCase().replace(/[^a-z0-9]/g, '');
+                                            handleSkillChange(activeIconIndex, 'icon', slug);
+                                            setActiveIconIndex(null);
+                                            setIconSearchTerm('');
+                                        }}
+                                        className="adm-sc-choice col-span-full items-center justify-center"
+                                    >
+                                        <span className="font-mono text-xs">Use &quot;{iconSearchTerm}&quot;</span>
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <div className="adm-sc-col">
+                {error && <div role="alert" className="adm-notice adm-notice-error">{error}</div>}
+
+                <Panel id="about-bio" title="Bio & summary" className="adm-sc-anchor">
+                    <div className="space-y-4">
+                        <div className="adm-sc-fields">
+                            <Field label="Full name">
+                                <input
+                                    type="text"
+                                    name="name"
+                                    value={formData.name}
+                                    onChange={handleChange}
+                                    className="adm-input"
+                                    required
+                                />
+                            </Field>
+
+                            <Field label="Roles" help="Comma-separated roles.">
+                                <input
+                                    type="text"
+                                    name="roles"
+                                    value={formData.roles}
+                                    onChange={handleChange}
+                                    className="adm-input"
+                                    required
+                                />
+                            </Field>
                         </div>
 
-                        <div className="relative z-10">
-                            <input
-                                type="text"
-                                placeholder="Search icon matrix..."
-                                className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-white focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-600 font-mono text-sm"
-                                value={iconSearchTerm}
-                                onChange={(e) => setIconSearchTerm(e.target.value)}
-                                autoFocus
+                        <div className="adm-field">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                <label htmlFor="about-summary-input" className="adm-label">Professional summary</label>
+                                {aiEnabled && (
+                                    <button
+                                        type="button"
+                                        onClick={() => handleAiAction('summary')}
+                                        disabled={aiGenerating === 'summary' || !formData.professionalSummary}
+                                        className="adm-btn adm-btn-quiet"
+                                    >
+                                        {aiGenerating === 'summary' ? (
+                                            <FaSpinner className="animate-spin" aria-hidden="true" />
+                                        ) : (
+                                            <FaWandMagicSparkles aria-hidden="true" />
+                                        )}
+                                        Refine summary
+                                    </button>
+                                )}
+                            </div>
+                            <textarea
+                                id="about-summary-input"
+                                name="professionalSummary"
+                                value={formData.professionalSummary}
+                                onChange={handleChange}
+                                rows={5}
+                                className="adm-input"
+                                required
                             />
                         </div>
+                    </div>
+                </Panel>
 
-                        <div className="flex-1 overflow-y-auto grid grid-cols-4 sm:grid-cols-6 gap-3 min-h-[300px] content-start relative z-10 pr-2 custom-scrollbar">
-                            {filteredIcons.map(({ name, slug, isCdn }) => (
+                <Panel
+                    id="about-skills"
+                    title="Skills"
+                    className="adm-sc-anchor"
+                    actions={
+                        <>
+                            {aiEnabled && (
                                 <button
-                                    key={`${isCdn ? 'cdn' : 'local'}-${slug}`}
                                     type="button"
-                                    onClick={() => {
-                                        const value = isCdn ? slug : name;
-                                        handleSkillChange(activeIconIndex, 'icon', value);
-                                        setActiveIconIndex(null);
-                                        setIconSearchTerm('');
-                                    }}
-                                    className="p-3 rounded-xl bg-white/[0.02] hover:bg-cyan-500/10 border border-white/5 hover:border-cyan-500/30 flex flex-col items-center gap-3 transition-all aspect-square justify-center relative group"
+                                    onClick={() => handleAiAction('skills')}
+                                    disabled={aiGenerating === 'skills' || formData.experiences.length === 0}
+                                    className="adm-btn"
                                 >
-                                    <div className="text-2xl text-slate-400 group-hover:text-cyan-400 transition-colors w-8 h-8 flex items-center justify-center">
-                                        {isCdn ? (
-                                            <img
-                                                src={`https://cdn.simpleicons.org/${slug}/22d3ee`}
-                                                alt={name}
-                                                className="w-full h-full object-contain filter grayscale group-hover:grayscale-0 transition-all opacity-70 group-hover:opacity-100"
-                                                loading="lazy"
-                                                decoding="async"
-                                                onError={(e) => { e.target.style.opacity = '0.3'; }}
-                                            />
-                                        ) : (
-                                            <IconPreview name={name} />
-                                        )}
-                                    </div>
-                                    <span className="text-[10px] text-slate-500 group-hover:text-cyan-200 truncate w-full text-center font-mono">
-                                        {name}
-                                    </span>
-                                    {isCdn && (
-                                        <span className="absolute top-1 right-1 text-[8px] bg-cyan-900/50 text-cyan-300 px-1 rounded border border-cyan-500/20">
-                                            WEB
-                                        </span>
+                                    {aiGenerating === 'skills' ? (
+                                        <FaSpinner className="animate-spin" aria-hidden="true" />
+                                    ) : (
+                                        <FaWandMagicSparkles aria-hidden="true" />
                                     )}
-                                </button>
-                            ))}
-
-                            {/* Fallback */}
-                            {iconSearchTerm && filteredIcons.length === 0 && (
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        const slug = iconSearchTerm.toLowerCase().replace(/[^a-z0-9]/g, '');
-                                        handleSkillChange(activeIconIndex, 'icon', slug);
-                                        setActiveIconIndex(null);
-                                        setIconSearchTerm('');
-                                    }}
-                                    className="p-3 rounded-xl bg-white/[0.02] border-2 border-dashed border-white/10 hover:border-cyan-500/50 flex flex-col items-center gap-2 transition-all aspect-square justify-center group"
-                                >
-                                    <div className="text-xl text-cyan-400">?</div>
-                                    <span className="text-[10px] text-cyan-200 truncate w-full text-center">
-                                        Use &quot;{iconSearchTerm}&quot;
-                                    </span>
+                                    Suggest skills
                                 </button>
                             )}
-
-                            {filteredIcons.length === 0 && !iconSearchTerm && (
-                                <div className="col-span-full flex flex-col items-center justify-center text-slate-500 py-12 gap-2">
-                                    <span className="text-2xl opacity-20">⌨️</span>
-                                    <p className="text-sm font-mono">Awaiting search input...</p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {error && (
-                <div className="bg-red-500/20 border border-red-500 text-red-200 p-3 rounded">
-                    {error}
-                </div>
-            )}
-
-            {/* Basic Info Section */}
-            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 sm:p-6 md:p-8 relative group">
-                <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-[100px] transition-opacity opacity-50 group-hover:opacity-100" />
-                </div>
-
-                <h2 className="text-sm font-mono text-cyan-500/70 uppercase tracking-widest mb-8 flex items-center gap-4">
-                    Core Metadata
-                    <div className="h-px bg-cyan-500/10 flex-grow" />
-                </h2>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                    <div>
-                        <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Full Identification</label>
-                        <input
-                            type="text"
-                            name="name"
-                            value={formData.name}
-                            onChange={handleChange}
-                            className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-600 font-bold"
-                            required
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Role Vectors</label>
-                        <input
-                            type="text"
-                            name="roles"
-                            value={formData.roles}
-                            onChange={handleChange}
-                            className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-600 font-mono text-sm"
-                            required
-                        />
-                    </div>
-                </div>
-
-                <div className="flex justify-between items-center mb-2">
-                    <label className="block text-slate-400 text-xs font-mono uppercase tracking-wider">Professional Narrative</label>
-                    {aiEnabled && (
-                        <button
-                            type="button"
-                            onClick={() => handleAiAction('summary')}
-                            disabled={aiGenerating === 'summary' || !formData.professionalSummary}
-                            className="flex items-center gap-1.5 px-3 py-1 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 rounded-lg border border-cyan-500/20 transition-all text-[10px] font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed group/ai"
-                        >
-                            {aiGenerating === 'summary' ? (
-                                <Loader2 className="w-3 h-3 animate-spin" />
-                            ) : (
-                                <Wand2 className="w-3 h-3 group-hover/ai:scale-110 transition-transform" />
-                            )}
-                            Refine Narrative
-                        </button>
-                    )}
-                </div>
-                <textarea
-                    name="professionalSummary"
-                    value={formData.professionalSummary}
-                    onChange={handleChange}
-                    rows="6"
-                    className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-4 text-slate-300 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-600 leading-relaxed"
-                    required
-                />
-            </div>
-
-            {/* Skills Section */}
-            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 sm:p-6 md:p-8 relative group">
-                <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-green-500/5 rounded-full blur-[100px] transition-opacity opacity-50 group-hover:opacity-100" />
-                </div>
-
-                <div className="flex justify-between items-center mb-8 relative z-10">
-                    <h2 className="text-sm font-mono text-green-500/70 uppercase tracking-widest flex items-center gap-4">
-                        Skill Competencies
-                        <div className="h-px w-20 bg-green-500/10" />
-                    </h2>
-                    <div className="flex items-center gap-3">
-                        {aiEnabled && (
-                            <button
-                                type="button"
-                                onClick={() => handleAiAction('skills')}
-                                disabled={aiGenerating === 'skills' || formData.experiences.length === 0}
-                                className="text-[10px] bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 px-3 py-1.5 rounded-lg border border-cyan-500/20 hover:border-cyan-500/50 transition-all font-mono uppercase tracking-wide flex items-center gap-2"
-                            >
-                                {aiGenerating === 'skills' ? (
-                                    <Loader2 className="w-3 h-3 animate-spin" />
-                                ) : (
-                                    <Sparkles className="w-3 h-3" />
-                                )}
-                                AI Suggest
+                            <button type="button" onClick={addSkill} className="adm-btn">
+                                <FaPlus aria-hidden="true" /> Add skill
                             </button>
-                        )}
-                        <button
-                            type="button"
-                            onClick={addSkill}
-                            className="text-xs bg-green-500/10 hover:bg-green-500/20 text-green-400 px-4 py-2 rounded-lg border border-green-500/20 hover:border-green-500/50 transition-all font-mono uppercase tracking-wide flex items-center gap-2"
+                        </>
+                    }
+                >
+                    {formData.skills.length === 0 ? (
+                        <EmptyState
+                            title="No skills added yet"
+                            description="Add technologies and tools to display on your about page."
+                            action={
+                                <button type="button" onClick={addSkill} className="adm-btn">
+                                    <FaPlus aria-hidden="true" /> Add first skill
+                                </button>
+                            }
+                        />
+                    ) : (
+                        <DndContext
+                            sensors={sensors}
+                            collisionDetection={closestCenter}
+                            onDragEnd={(e) => handleDragEnd(e, 'skills')}
                         >
-                            <Plus className="w-3 h-3" /> Add Node
-                        </button>
-                    </div>
-                </div>
-
-                <DndContext
-                    sensors={sensors}
-                    collisionDetection={closestCenter}
-                    onDragEnd={(e) => handleDragEnd(e, 'skills')}
-                >
-                    <SortableContext
-                        items={formData.skills.map(s => s._id)}
-                        strategy={rectSortingStrategy}
-                    >
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
-                            {formData.skills.map((skill, index) => (
-                                <SortableItem key={skill._id} id={skill._id} className="bg-white/[0.02] p-4 rounded-xl border border-white/5 relative group hover:border-green-500/30 transition-colors">
-                                    <button
-                                        type="button"
-                                        onClick={() => removeSkill(index)}
-                                        className="absolute top-3 right-3 text-white/20 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all z-20"
-                                        title="Remove"
-                                    >
-                                        ✕
-                                    </button>
-                                    <div className="mb-4 flex items-center gap-4">
-                                        <button
-                                            type="button"
-                                            onClick={() => setActiveIconIndex(index)}
-                                            className="w-12 h-12 rounded-lg bg-slate-950/50 border border-white/10 flex items-center justify-center hover:border-green-500/50 transition-colors group/icon shrink-0"
-                                            title="Configure Icon"
+                            <SortableContext
+                                items={formData.skills.map(s => s._id)}
+                                strategy={rectSortingStrategy}
+                            >
+                                <div className="adm-sc-fields">
+                                    {formData.skills.map((skill, index) => (
+                                        <SortableRecord
+                                            key={skill._id}
+                                            id={skill._id}
+                                            title={skill.name || `Skill ${index + 1}`}
+                                            badge={<Badge>{getProficiencyLabel(skill.level)} · {skill.level}%</Badge>}
+                                            onRemove={() => removeSkill(index)}
+                                            removeLabel={`Remove ${skill.name || `skill ${index + 1}`}`}
                                         >
-                                            {skill.icon ? (
-                                                <div className="text-2xl text-slate-400 group-hover/icon:text-green-400 transition-colors">
-                                                    <IconPreview name={skill.icon} />
-                                                </div>
-                                            ) : (
-                                                <span className="text-[10px] text-slate-600 font-mono">ICON</span>
-                                            )}
-                                        </button>
-                                        <div className="flex-1">
-                                            <input
-                                                type="text"
-                                                value={skill.name}
-                                                onChange={(e) => handleSkillChange(index, 'name', e.target.value)}
-                                                placeholder="Skill Identifier"
-                                                className="w-full bg-transparent border-b border-white/10 focus:border-green-500/50 focus:outline-none text-slate-200 font-bold text-sm pb-1 transition-colors placeholder:text-slate-700"
-                                                required
-                                            />
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <div className="flex justify-between text-[10px] font-mono text-slate-500 mb-2 uppercase tracking-wider">
-                                            <span>{getProficiencyLabel(skill.level)}</span>
-                                            <span className="text-green-500/80">{skill.level}%</span>
-                                        </div>
-                                        <div className="relative h-1.5 w-full bg-slate-950/50 rounded-full overflow-hidden">
-                                            <input
-                                                type="range"
-                                                min="0"
-                                                max="100"
-                                                value={skill.level}
-                                                onChange={(e) => handleSkillChange(index, 'level', parseInt(e.target.value))}
-                                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                                            />
-                                            <div
-                                                className="h-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.3)] transition-all duration-300"
-                                                style={{ width: `${skill.level}%` }}
-                                            />
-                                        </div>
-                                    </div>
-                                </SortableItem>
-                            ))}
-                        </div>
-                    </SortableContext>
-                </DndContext>
-            </div>
-
-            {/* Experience Section */}
-            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 sm:p-6 md:p-8 relative group">
-                <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/5 rounded-full blur-[100px] transition-opacity opacity-50 group-hover:opacity-100" />
-                </div>
-
-                <div className="flex justify-between items-center mb-8 relative z-10">
-                    <h2 className="text-sm font-mono text-orange-500/70 uppercase tracking-widest flex items-center gap-4">
-                        Career Trajectory
-                        <div className="h-px w-20 bg-orange-500/10" />
-                    </h2>
-                    <button
-                        type="button"
-                        onClick={addExperience}
-                        className="text-xs bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 px-4 py-2 rounded-lg border border-orange-500/20 hover:border-orange-500/50 transition-all font-mono uppercase tracking-wide flex items-center gap-2"
-                    >
-                        + Add Event
-                    </button>
-                </div>
-
-                <DndContext
-                    sensors={sensors}
-                    collisionDetection={closestCenter}
-                    onDragEnd={(e) => handleDragEnd(e, 'experiences')}
-                >
-                    <SortableContext
-                        items={formData.experiences.map(e => e._id)}
-                        strategy={verticalListSortingStrategy}
-                    >
-                        <div className="space-y-6 relative z-10">
-                            {formData.experiences.map((exp, index) => (
-                                <SortableItem key={exp._id} id={exp._id} className="bg-white/[0.02] p-4 sm:p-6 md:p-8 rounded-xl border border-white/5 relative group hover:border-orange-500/30 transition-colors">
-                                    <button
-                                        type="button"
-                                        onClick={() => removeExperience(index)}
-                                        className="absolute top-4 right-4 text-xs font-mono uppercase tracking-wider text-red-400/50 hover:text-red-400 border border-red-500/10 hover:border-red-500/50 px-3 py-1 rounded transition-all opacity-0 group-hover:opacity-100 z-10"
-                                    >
-                                        Delete
-                                    </button>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                                        <div>
-                                            <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Organization</label>
-                                            <input
-                                                type="text"
-                                                value={exp.company}
-                                                onChange={(e) => handleExperienceChange(index, 'company', e.target.value)}
-                                                className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-2.5 text-slate-200 focus:border-orange-500/50 outline-none text-sm font-bold"
-                                                required
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Designation</label>
-                                            <input
-                                                type="text"
-                                                value={exp.role}
-                                                onChange={(e) => handleExperienceChange(index, 'role', e.target.value)}
-                                                className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-2.5 text-slate-200 focus:border-orange-500/50 outline-none text-sm"
-                                                required
-                                            />
-                                        </div>
-                                        <div className="md:col-span-2">
-                                            <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Timeline</label>
-                                            <DatePickerInput
-                                                value={exp.duration}
-                                                onChange={(val) => handleExperienceChange(index, 'duration', val)}
-                                                mode="range"
-                                                accentColor="orange"
-                                                placeholder="e.g. Jun 2025 - Present"
-                                                required
-                                            />
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <div className="flex justify-between items-center mb-2">
-                                            <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500">Responsibilities</label>
-                                            {aiEnabled && (
+                                            <div className="flex items-end gap-2">
                                                 <button
                                                     type="button"
-                                                    onClick={() => handleAiAction('experience', { id: exp._id, description: exp.description, company: exp.company, role: exp.role })}
-                                                    disabled={aiGenerating === exp._id || !exp.description}
-                                                    className="flex items-center gap-1.5 px-2 py-0.5 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 rounded border border-orange-500/20 transition-all text-[9px] font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed group/ai"
+                                                    onClick={() => setActiveIconIndex(index)}
+                                                    className="adm-btn h-10 w-10 !p-0"
+                                                    title="Choose icon"
+                                                    aria-label={`Choose icon for ${skill.name || `skill ${index + 1}`}`}
                                                 >
-                                                    {aiGenerating === exp._id ? (
-                                                        <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                                                    {skill.icon ? (
+                                                        <IconPreview name={skill.icon} />
                                                     ) : (
-                                                        <Wand2 className="w-2.5 h-2.5 group-hover/ai:scale-110 transition-transform" />
+                                                        <span className="font-mono text-xs text-[var(--adm-hint)]">Icon</span>
                                                     )}
-                                                    Optimize Description
                                                 </button>
-                                            )}
-                                        </div>
-                                        <textarea
-                                            value={exp.description}
-                                            onChange={(e) => handleExperienceChange(index, 'description', e.target.value)}
-                                            rows="3"
-                                            className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-300 focus:border-orange-500/50 outline-none text-sm leading-relaxed"
-                                            required
-                                        />
-                                    </div>
-                                </SortableItem>
+                                                <Field className="flex-1" label="Skill name">
+                                                    <input
+                                                        type="text"
+                                                        value={skill.name}
+                                                        onChange={(e) => handleSkillChange(index, 'name', e.target.value)}
+                                                        placeholder="e.g. TypeScript"
+                                                        className="adm-input"
+                                                        required
+                                                    />
+                                                </Field>
+                                            </div>
+                                            <Field label={`Proficiency (${skill.level}%)`}>
+                                                <input
+                                                    type="range"
+                                                    min="0"
+                                                    max="100"
+                                                    value={skill.level}
+                                                    onChange={(e) => handleSkillChange(index, 'level', parseInt(e.target.value, 10))}
+                                                    className="w-full accent-[var(--accent-cyan)]"
+                                                />
+                                            </Field>
+                                        </SortableRecord>
+                                    ))}
+                                </div>
+                            </SortableContext>
+                        </DndContext>
+                    )}
+                </Panel>
+
+                <Panel
+                    id="about-experience"
+                    title="Experience"
+                    className="adm-sc-anchor"
+                    actions={
+                        <button type="button" onClick={addExperience} className="adm-btn">
+                            <FaPlus aria-hidden="true" /> Add role
+                        </button>
+                    }
+                >
+                    {formData.experiences.length === 0 ? (
+                        <EmptyState
+                            title="No work experience listed"
+                            description="Add your roles and responsibilities."
+                            action={
+                                <button type="button" onClick={addExperience} className="adm-btn">
+                                    <FaPlus aria-hidden="true" /> Add first role
+                                </button>
+                            }
+                        />
+                    ) : (
+                        <DndContext
+                            sensors={sensors}
+                            collisionDetection={closestCenter}
+                            onDragEnd={(e) => handleDragEnd(e, 'experiences')}
+                        >
+                            <SortableContext
+                                items={formData.experiences.map(e => e._id)}
+                                strategy={verticalListSortingStrategy}
+                            >
+                                <div className="space-y-3">
+                                    {formData.experiences.map((exp, index) => (
+                                        <SortableRecord
+                                            key={exp._id}
+                                            id={exp._id}
+                                            title={exp.role || exp.company ? `${exp.role || 'Role'} · ${exp.company || 'Company'}` : `Experience ${index + 1}`}
+                                            badge={exp.duration ? <Badge>{exp.duration}</Badge> : null}
+                                            onRemove={() => removeExperience(index)}
+                                            removeLabel={`Delete experience ${index + 1}`}
+                                        >
+                                            <div className="adm-sc-fields">
+                                                <Field label="Company or organization">
+                                                    <input
+                                                        type="text"
+                                                        value={exp.company}
+                                                        onChange={(e) => handleExperienceChange(index, 'company', e.target.value)}
+                                                        className="adm-input"
+                                                        required
+                                                    />
+                                                </Field>
+                                                <Field label="Role title">
+                                                    <input
+                                                        type="text"
+                                                        value={exp.role}
+                                                        onChange={(e) => handleExperienceChange(index, 'role', e.target.value)}
+                                                        className="adm-input"
+                                                        required
+                                                    />
+                                                </Field>
+                                            </div>
+
+                                            <div className="adm-field">
+                                                <label className="adm-label">Dates</label>
+                                                <DatePickerInput
+                                                    value={exp.duration}
+                                                    onChange={(val) => handleExperienceChange(index, 'duration', val)}
+                                                    mode="range"
+                                                    placeholder="e.g. Jun 2025 - Present"
+                                                    required
+                                                />
+                                            </div>
+
+                                            <div className="adm-field">
+                                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                                    <label htmlFor={`exp-desc-${exp._id}`} className="adm-label">Responsibilities</label>
+                                                    {aiEnabled && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleAiAction('experience', { id: exp._id, description: exp.description, company: exp.company, role: exp.role })}
+                                                            disabled={aiGenerating === exp._id || !exp.description}
+                                                            className="adm-btn adm-btn-quiet"
+                                                        >
+                                                            {aiGenerating === exp._id ? (
+                                                                <FaSpinner className="animate-spin" aria-hidden="true" />
+                                                            ) : (
+                                                                <FaWandMagicSparkles aria-hidden="true" />
+                                                            )}
+                                                            Refine description
+                                                        </button>
+                                                    )}
+                                                </div>
+                                                <textarea
+                                                    id={`exp-desc-${exp._id}`}
+                                                    value={exp.description}
+                                                    onChange={(e) => handleExperienceChange(index, 'description', e.target.value)}
+                                                    rows={3}
+                                                    className="adm-input"
+                                                    required
+                                                />
+                                            </div>
+                                        </SortableRecord>
+                                    ))}
+                                </div>
+                            </SortableContext>
+                        </DndContext>
+                    )}
+                </Panel>
+
+                <Panel
+                    id="about-education"
+                    title="Education"
+                    className="adm-sc-anchor"
+                    actions={
+                        <button type="button" onClick={addEducation} className="adm-btn">
+                            <FaPlus aria-hidden="true" /> Add education
+                        </button>
+                    }
+                >
+                    {formData.education.length === 0 ? (
+                        <EmptyState
+                            title="No education records yet"
+                            description="Add degrees, schools, and graduation years."
+                            action={
+                                <button type="button" onClick={addEducation} className="adm-btn">
+                                    <FaPlus aria-hidden="true" /> Add first education record
+                                </button>
+                            }
+                        />
+                    ) : (
+                        <DndContext
+                            sensors={sensors}
+                            collisionDetection={closestCenter}
+                            onDragEnd={(e) => handleDragEnd(e, 'education')}
+                        >
+                            <SortableContext
+                                items={formData.education.map(e => e._id)}
+                                strategy={verticalListSortingStrategy}
+                            >
+                                <div className="space-y-3">
+                                    {formData.education.map((edu, index) => (
+                                        <SortableRecord
+                                            key={edu._id}
+                                            id={edu._id}
+                                            title={edu.degree || edu.institution ? `${edu.degree || 'Degree'} · ${edu.institution || 'Institution'}` : `Education ${index + 1}`}
+                                            badge={edu.cgpa ? <Badge>{edu.cgpa}</Badge> : null}
+                                            onRemove={() => removeEducation(index)}
+                                            removeLabel={`Delete education ${index + 1}`}
+                                        >
+                                            <div className="adm-sc-fields">
+                                                <Field label="Institution">
+                                                    <input
+                                                        type="text"
+                                                        value={edu.institution}
+                                                        onChange={(e) => handleEducationChange(index, 'institution', e.target.value)}
+                                                        className="adm-input"
+                                                        required
+                                                    />
+                                                </Field>
+                                                <Field label="Degree or major">
+                                                    <input
+                                                        type="text"
+                                                        value={edu.degree}
+                                                        onChange={(e) => handleEducationChange(index, 'degree', e.target.value)}
+                                                        className="adm-input"
+                                                        required
+                                                    />
+                                                </Field>
+                                            </div>
+                                            <div className="adm-sc-fields">
+                                                <div className="adm-field">
+                                                    <label className="adm-label">Years</label>
+                                                    <DatePickerInput
+                                                        value={edu.duration}
+                                                        onChange={(val) => handleEducationChange(index, 'duration', val)}
+                                                        mode="range"
+                                                        placeholder="e.g. Aug 2023 - May 2025"
+                                                        required
+                                                    />
+                                                </div>
+                                                <Field label="Grade or CGPA">
+                                                    <input
+                                                        type="text"
+                                                        value={edu.cgpa}
+                                                        onChange={(e) => handleEducationChange(index, 'cgpa', e.target.value)}
+                                                        className="adm-input font-mono"
+                                                    />
+                                                </Field>
+                                            </div>
+                                        </SortableRecord>
+                                    ))}
+                                </div>
+                            </SortableContext>
+                        </DndContext>
+                    )}
+                </Panel>
+
+                <Panel
+                    id="about-certifications"
+                    title="Certifications"
+                    className="adm-sc-anchor"
+                    actions={
+                        <button type="button" onClick={addCertification} className="adm-btn">
+                            <FaPlus aria-hidden="true" /> Add certification
+                        </button>
+                    }
+                >
+                    {formData.certifications.length === 0 ? (
+                        <EmptyState
+                            title="No certifications listed"
+                            description="Add licenses, certificates, and verification links."
+                            action={
+                                <button type="button" onClick={addCertification} className="adm-btn">
+                                    <FaPlus aria-hidden="true" /> Add first certification
+                                </button>
+                            }
+                        />
+                    ) : (
+                        <DndContext
+                            sensors={sensors}
+                            collisionDetection={closestCenter}
+                            onDragEnd={(e) => handleDragEnd(e, 'certifications')}
+                        >
+                            <SortableContext
+                                items={formData.certifications.map(c => c._id)}
+                                strategy={verticalListSortingStrategy}
+                            >
+                                <div className="space-y-3">
+                                    {formData.certifications.map((cert, index) => (
+                                        <SortableRecord
+                                            key={cert._id}
+                                            id={cert._id}
+                                            title={cert.name || `Certification ${index + 1}`}
+                                            badge={cert.issuer ? <Badge>{cert.issuer}</Badge> : null}
+                                            onRemove={() => removeCertification(index)}
+                                            removeLabel={`Delete certification ${index + 1}`}
+                                        >
+                                            <div className="adm-sc-fields">
+                                                <Field label="Certification name">
+                                                    <input
+                                                        type="text"
+                                                        value={cert.name}
+                                                        onChange={(e) => handleCertificationChange(index, 'name', e.target.value)}
+                                                        className="adm-input"
+                                                        required
+                                                    />
+                                                </Field>
+                                                <Field label="Issuing organization">
+                                                    <input
+                                                        type="text"
+                                                        value={cert.issuer}
+                                                        onChange={(e) => handleCertificationChange(index, 'issuer', e.target.value)}
+                                                        className="adm-input"
+                                                        required
+                                                    />
+                                                </Field>
+                                            </div>
+                                            <div className="adm-sc-fields">
+                                                <div className="adm-field">
+                                                    <label className="adm-label">Issue date</label>
+                                                    <DatePickerInput
+                                                        value={cert.date}
+                                                        onChange={(val) => handleCertificationChange(index, 'date', val)}
+                                                        mode="single"
+                                                        placeholder="e.g. July 2026"
+                                                        required
+                                                    />
+                                                </div>
+                                                <Field label="Verification URL (optional)">
+                                                    <input
+                                                        type="url"
+                                                        value={cert.url || ''}
+                                                        onChange={(e) => handleCertificationChange(index, 'url', e.target.value)}
+                                                        className="adm-input font-mono"
+                                                    />
+                                                </Field>
+                                            </div>
+                                            <Field label="Associated skills" help="Comma-separated list of skills covered.">
+                                                <input
+                                                    type="text"
+                                                    value={Array.isArray(cert.skills) ? cert.skills.join(', ') : cert.skills || ''}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value;
+                                                        const newCerts = [...formData.certifications];
+                                                        newCerts[index] = { ...newCerts[index], skills: val.split(',') };
+                                                        setFormData(prev => ({ ...prev, certifications: newCerts }));
+                                                    }}
+                                                    className="adm-input"
+                                                />
+                                            </Field>
+                                        </SortableRecord>
+                                    ))}
+                                </div>
+                            </SortableContext>
+                        </DndContext>
+                    )}
+                </Panel>
+            </div>
+
+            <aside className="adm-sc-aside">
+                <Panel title="Publish" className="adm-sc-save">
+                    <p className="adm-help mb-4">Save changes to update your public about page.</p>
+                    <div className="flex flex-wrap gap-2">
+                        <button
+                            type="submit"
+                            disabled={saving}
+                            className="adm-btn adm-btn-primary flex-1"
+                        >
+                            {saving ? <FaSpinner className="animate-spin" aria-hidden="true" /> : <FaFloppyDisk aria-hidden="true" />}
+                            {saving ? 'Saving' : 'Save changes'}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => router.back()}
+                            className="adm-btn"
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </Panel>
+
+                <Panel title="On this page" flush>
+                    <nav aria-label="About sections">
+                        <ul className="adm-list">
+                            {SECTIONS.map((s) => (
+                                <li key={s.id}>
+                                    <a href={`#${s.id}`} className="adm-row justify-between">
+                                        <span>{s.label}</span>
+                                        {s.countKey && (
+                                            <Badge>{formData[s.countKey]?.length || 0}</Badge>
+                                        )}
+                                    </a>
+                                </li>
                             ))}
-                        </div>
-                    </SortableContext>
-                </DndContext>
-            </div>
+                        </ul>
+                    </nav>
+                </Panel>
 
-            {/* Education Section */}
-            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 sm:p-6 md:p-8 relative group">
-                <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/5 rounded-full blur-[100px] transition-opacity opacity-50 group-hover:opacity-100" />
-                </div>
+                <Panel title="Related" flush>
+                    <ul className="adm-list">
+                        <li>
+                            <Link href="/admin/resume" className="adm-row adm-link">
+                                Resume studio
+                            </Link>
+                        </li>
+                        <li>
+                            <Link href="/admin/projects" className="adm-row adm-link">
+                                Projects portfolio
+                            </Link>
+                        </li>
+                        <li>
+                            <Link href="/admin/home" className="adm-row adm-link">
+                                Home page hero
+                            </Link>
+                        </li>
+                    </ul>
+                </Panel>
+            </aside>
 
-                <div className="flex justify-between items-center mb-8 relative z-10">
-                    <h2 className="text-sm font-mono text-purple-500/70 uppercase tracking-widest flex items-center gap-4">
-                        Academic Records
-                        <div className="h-px w-20 bg-purple-500/10" />
-                    </h2>
-                    <button
-                        type="button"
-                        onClick={addEducation}
-                        className="text-xs bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 px-4 py-2 rounded-lg border border-purple-500/20 hover:border-purple-500/50 transition-all font-mono uppercase tracking-wide flex items-center gap-2"
-                    >
-                        + Add Record
-                    </button>
-                </div>
-
-                <DndContext
-                    sensors={sensors}
-                    collisionDetection={closestCenter}
-                    onDragEnd={(e) => handleDragEnd(e, 'education')}
-                >
-                    <SortableContext
-                        items={formData.education.map(e => e._id)}
-                        strategy={verticalListSortingStrategy}
-                    >
-                        <div className="space-y-4 relative z-10">
-                            {formData.education.map((edu, index) => (
-                                <SortableItem key={edu._id} id={edu._id} className="bg-white/[0.02] p-6 rounded-xl border border-white/5 relative group hover:border-purple-500/30 transition-colors">
-                                    <button
-                                        type="button"
-                                        onClick={() => removeEducation(index)}
-                                        className="absolute top-3 right-3 text-white/20 hover:text-red-400 transition-colors z-20"
-                                    >
-                                        <div className="p-1">✕</div>
-                                    </button>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end w-full pr-8">
-                                        <div className="md:col-span-4">
-                                            <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Institution</label>
-                                            <input
-                                                type="text"
-                                                value={edu.institution}
-                                                onChange={(e) => handleEducationChange(index, 'institution', e.target.value)}
-                                                className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-2.5 text-slate-200 focus:border-purple-500/50 outline-none text-sm font-bold"
-                                                required
-                                            />
-                                        </div>
-                                        <div className="md:col-span-4">
-                                            <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Degree / Major</label>
-                                            <input
-                                                type="text"
-                                                value={edu.degree}
-                                                onChange={(e) => handleEducationChange(index, 'degree', e.target.value)}
-                                                className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-2.5 text-slate-200 focus:border-purple-500/50 outline-none text-sm"
-                                                required
-                                            />
-                                        </div>
-                                        <div className="md:col-span-3">
-                                            <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Years</label>
-                                            <DatePickerInput
-                                                value={edu.duration}
-                                                onChange={(val) => handleEducationChange(index, 'duration', val)}
-                                                mode="range"
-                                                accentColor="purple"
-                                                placeholder="e.g. Aug 2023 - May 2025"
-                                                required
-                                            />
-                                        </div>
-                                        <div className="md:col-span-1">
-                                            <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Grade</label>
-                                            <input
-                                                type="text"
-                                                value={edu.cgpa}
-                                                onChange={(e) => handleEducationChange(index, 'cgpa', e.target.value)}
-                                                className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-2.5 text-purple-400 focus:border-purple-500/50 outline-none text-sm font-mono text-center font-bold"
-                                            />
-                                        </div>
-                                    </div>
-                                </SortableItem>
-                            ))}
-                        </div>
-                    </SortableContext>
-                </DndContext>
-            </div>
-
-            {/* Certifications Section */}
-            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 sm:p-6 md:p-8 relative group">
-                <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-500/5 rounded-full blur-[100px] transition-opacity opacity-50 group-hover:opacity-100" />
-                </div>
-
-                <div className="flex justify-between items-center mb-8 relative z-10">
-                    <h2 className="text-sm font-mono text-yellow-500/70 uppercase tracking-widest flex items-center gap-4">
-                        Credentials & Licenses
-                        <div className="h-px w-20 bg-yellow-500/10" />
-                    </h2>
-                    <button
-                        type="button"
-                        onClick={addCertification}
-                        className="text-xs bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-400 px-4 py-2 rounded-lg border border-yellow-500/20 hover:border-yellow-500/50 transition-all font-mono uppercase tracking-wide flex items-center gap-2"
-                    >
-                        + Add Credential
-                    </button>
-                </div>
-
-                <DndContext
-                    sensors={sensors}
-                    collisionDetection={closestCenter}
-                    onDragEnd={(e) => handleDragEnd(e, 'certifications')}
-                >
-                    <SortableContext
-                        items={formData.certifications.map(c => c._id)}
-                        strategy={verticalListSortingStrategy}
-                    >
-                        <div className="space-y-4 relative z-10">
-                            {formData.certifications.map((cert, index) => (
-                                <SortableItem key={cert._id} id={cert._id} className="bg-white/[0.02] p-6 rounded-xl border border-white/5 relative group hover:border-yellow-500/30 transition-colors">
-                                    <button
-                                        type="button"
-                                        onClick={() => removeCertification(index)}
-                                        className="absolute top-3 right-3 text-white/20 hover:text-red-400 transition-colors z-20"
-                                    >
-                                        <div className="p-1">✕</div>
-                                    </button>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
-                                        <div>
-                                            <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">License Name</label>
-                                            <input
-                                                type="text"
-                                                value={cert.name}
-                                                onChange={(e) => handleCertificationChange(index, 'name', e.target.value)}
-                                                className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-2.5 text-slate-200 focus:border-yellow-500/50 outline-none text-sm font-bold"
-                                                required
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Issuing Authority</label>
-                                            <input
-                                                type="text"
-                                                value={cert.issuer}
-                                                onChange={(e) => handleCertificationChange(index, 'issuer', e.target.value)}
-                                                className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-2.5 text-slate-200 focus:border-yellow-500/50 outline-none text-sm"
-                                                required
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Date of Issue</label>
-                                            <DatePickerInput
-                                                value={cert.date}
-                                                onChange={(val) => handleCertificationChange(index, 'date', val)}
-                                                mode="single"
-                                                accentColor="yellow"
-                                                placeholder="e.g. July 2026"
-                                                required
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Validation URL (Optional)</label>
-                                            <input
-                                                type="url"
-                                                value={cert.url || ''}
-                                                onChange={(e) => handleCertificationChange(index, 'url', e.target.value)}
-                                                className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-2.5 text-slate-200 focus:border-yellow-500/50 outline-none text-sm font-mono"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Associated Skills (Comma Separated)</label>
-                                        <input
-                                            type="text"
-                                            value={Array.isArray(cert.skills) ? cert.skills.join(', ') : cert.skills || ''}
-                                            onChange={(e) => {
-                                                const val = e.target.value;
-                                                const newCerts = [...formData.certifications];
-                                                newCerts[index] = { ...newCerts[index], skills: val.split(',') };
-                                                setFormData(prev => ({ ...prev, certifications: newCerts }));
-                                            }}
-                                            className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-2.5 text-slate-200 focus:border-yellow-500/50 outline-none text-sm"
-                                        />
-                                    </div>
-                                </SortableItem>
-                            ))}
-                        </div>
-                    </SortableContext>
-                </DndContext>
-            </div>
-
-            {/* Sticky Action Footer */}
-            <div className="sticky bottom-8 flex justify-end gap-4 pt-6 border-t border-white/5 bg-slate-900/90 backdrop-blur-lg p-4 rounded-xl border border-white/5 shadow-2xl z-50">
-                <button
-                    type="button"
-                    onClick={() => router.back()}
-                    className="px-6 py-2 rounded bg-white/5 hover:bg-white/10 text-slate-400 transition-colors text-sm font-medium"
-                >
-                    CANCEL
-                </button>
-                <button
-                    type="submit"
-                    disabled={saving}
-                    className="px-8 py-2 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-bold transition-all shadow-[0_0_20px_rgba(8,145,178,0.3)] hover:shadow-[0_0_30px_rgba(8,145,178,0.5)] disabled:opacity-50 disabled:cursor-not-allowed text-sm tracking-wide"
-                >
-                    {saving ? 'UPDATING_MATRIX...' : 'CONFIRM_UPDATE'}
-                </button>
-            </div>
-
-            {/* Toast Notification */}
             <Toast notification={notification} />
         </form>
     );

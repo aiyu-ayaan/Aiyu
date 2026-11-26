@@ -1,32 +1,31 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { Loader2, Plus, ChevronDown, ChevronRight, Trash2, Save } from 'lucide-react';
+import {
+    FaChevronDown,
+    FaChevronRight,
+    FaFloppyDisk,
+    FaPlus,
+    FaSpinner,
+    FaTrash,
+} from 'react-icons/fa6';
 import {
     Field, TextInput, TextArea, NumberInput, SwitchRow, AccentPicker, StringListEditor,
 } from '../aiPage/fields';
 import { getJson, postJson, putJson, del } from './api';
 import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
+import { Badge, EmptyState, Loading, Panel } from '@/app/components/admin/ui';
 
 /**
  * Generic CRUD manager for a flat AI-section collection (recommendations,
  * credits, prompts). Driven by a `fields` schema; each card is an inline editor
  * that persists live to the section's REST endpoint. Skills has its own nested
  * manager.
- *
- * Props:
- *   endpoint  — collection URL (GET list, POST create); item URL is `${endpoint}/${id}`
- *   dataKey   — key holding the array in the GET response ('cards'|'rows'|'items')
- *   itemKey   — key holding the row in a write response ('recommendation'|'credit'|'prompt')
- *   fields    — [{ name, label, type, ...}] where type ∈ text|textarea|number|switch|accent|tags
- *   titleField— field used as the card heading
- *   blank     — factory returning a new empty item
- *   notify    — (ok:boolean, message:string) => void
  */
 export default function CardListManager({ endpoint, dataKey, itemKey, fields, titleField, blank, notify }) {
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [draft, setDraft] = useState(null); // new-item form or null
+    const [draft, setDraft] = useState(null);
 
     useEffect(() => {
         let alive = true;
@@ -42,71 +41,84 @@ export default function CardListManager({ endpoint, dataKey, itemKey, fields, ti
     const onSaveExisting = async (id, form) => {
         const res = await putJson(`${endpoint}/${id}`, form);
         setItems((prev) => prev.map((it) => (it.id === id ? res[itemKey] : it)));
-        notify?.(true, 'Saved.');
+        notify?.(true, 'Entry saved');
     };
 
     const onDelete = async (id) => {
         await del(`${endpoint}/${id}`);
         setItems((prev) => prev.filter((it) => it.id !== id));
-        notify?.(true, 'Deleted.');
+        notify?.(true, 'Entry deleted');
     };
 
     const onCreate = async (form) => {
         const res = await postJson(endpoint, form);
         setItems((prev) => [res[itemKey], ...prev]);
         setDraft(null);
-        notify?.(true, 'Added.');
+        notify?.(true, 'Entry created');
     };
 
     if (loading) {
-        return (
-            <div className="flex items-center gap-3 py-10 text-slate-400">
-                <Loader2 className="h-5 w-5 animate-spin" /> Loading…
-            </div>
-        );
+        return <Panel><Loading label="Loading entries" rows={4} /></Panel>;
     }
 
     return (
-        <div className="space-y-3">
-            {draft ? (
-                <ItemCard
-                    isNew
-                    startOpen
-                    item={draft}
-                    fields={fields}
-                    titleField={titleField}
-                    onSave={onCreate}
-                    onCancel={() => setDraft(null)}
-                    notify={notify}
-                />
-            ) : (
-                <button
-                    type="button"
-                    onClick={() => setDraft(blank())}
-                    className="flex items-center gap-1.5 rounded-lg border border-cyan-500/20 bg-cyan-500/10 px-3 py-2 font-mono text-xs uppercase tracking-wider text-cyan-400 transition-colors hover:bg-cyan-500/20"
-                >
-                    <Plus className="h-3.5 w-3.5" /> Add
-                </button>
-            )}
+        <Panel
+            title={`Entries (${items.length})`}
+            actions={
+                !draft ? (
+                    <button
+                        type="button"
+                        onClick={() => setDraft(blank())}
+                        className="adm-btn adm-btn-primary"
+                    >
+                        <FaPlus aria-hidden="true" /> Add entry
+                    </button>
+                ) : null
+            }
+        >
+            <div className="space-y-3">
+                {draft && (
+                    <ItemCard
+                        isNew
+                        startOpen
+                        item={draft}
+                        fields={fields}
+                        titleField={titleField}
+                        onSave={onCreate}
+                        onCancel={() => setDraft(null)}
+                        notify={notify}
+                    />
+                )}
 
-            {items.length === 0 && !draft && (
-                <p className="rounded-xl border border-dashed border-white/10 py-8 text-center font-mono text-xs text-slate-500">
-                    No entries yet — add one above.
-                </p>
-            )}
+                {items.length === 0 && !draft && (
+                    <EmptyState
+                        title="No entries yet"
+                        description="Add the first entry to publish it on the /ai page."
+                        action={
+                            <button
+                                type="button"
+                                onClick={() => setDraft(blank())}
+                                className="adm-btn"
+                            >
+                                <FaPlus aria-hidden="true" /> Add first entry
+                            </button>
+                        }
+                    />
+                )}
 
-            {items.map((item) => (
-                <ItemCard
-                    key={item.id}
-                    item={item}
-                    fields={fields}
-                    titleField={titleField}
-                    onSave={(form) => onSaveExisting(item.id, form)}
-                    onDelete={() => onDelete(item.id)}
-                    notify={notify}
-                />
-            ))}
-        </div>
+                {items.map((item) => (
+                    <ItemCard
+                        key={item.id}
+                        item={item}
+                        fields={fields}
+                        titleField={titleField}
+                        onSave={(form) => onSaveExisting(item.id, form)}
+                        onDelete={() => onDelete(item.id)}
+                        notify={notify}
+                    />
+                ))}
+            </div>
+        </Panel>
     );
 }
 
@@ -149,47 +161,65 @@ function ItemCard({ item, fields, titleField, onSave, onDelete, onCancel, notify
     const heading = form[titleField] || (isNew ? 'New entry' : 'Untitled');
 
     return (
-        <div className="rounded-2xl border border-white/10 bg-white/[0.02]">
-            <div className="flex items-center gap-3 p-4">
-                <button type="button" onClick={() => setOpen((v) => !v)} className="flex flex-1 items-center gap-3 text-left">
-                    {open ? <ChevronDown className="h-4 w-4 text-slate-500" /> : <ChevronRight className="h-4 w-4 text-slate-500" />}
-                    <span className="text-sm font-semibold text-white">{heading}</span>
+        <div className="adm-sc-item">
+            <div className="adm-sc-item-head">
+                <button
+                    type="button"
+                    onClick={() => setOpen((v) => !v)}
+                    aria-expanded={open}
+                    className="flex min-w-0 flex-1 items-center gap-2.5 text-left"
+                >
+                    {open ? (
+                        <FaChevronDown className="shrink-0 text-xs text-[var(--text-secondary)]" aria-hidden="true" />
+                    ) : (
+                        <FaChevronRight className="shrink-0 text-xs text-[var(--text-secondary)]" aria-hidden="true" />
+                    )}
+                    <span className="truncate text-sm font-semibold text-[var(--text-bright)]">{heading}</span>
+                    {isNew && <Badge tone="info">Draft</Badge>}
                 </button>
                 {!isNew && (
                     <button
                         type="button"
                         onClick={remove}
                         disabled={busy}
-                        className="rounded-md p-2 text-slate-600 transition-colors hover:bg-red-500/10 hover:text-red-400 disabled:opacity-50"
-                        title="Delete"
+                        className="adm-icon-btn"
+                        title="Delete entry"
+                        aria-label={`Delete ${heading}`}
                     >
-                        <Trash2 className="h-4 w-4" />
+                        <FaTrash aria-hidden="true" />
                     </button>
                 )}
             </div>
 
             {open && (
-                <div className="space-y-4 border-t border-white/5 p-5">
-                    {fields.map((field) => (
-                        <Field key={field.name} label={field.label} hint={field.hint}>
-                            <FieldInput field={field} value={form[field.name]} onChange={(v) => set(field.name, v)} />
-                        </Field>
-                    ))}
-                    <div className="flex items-center gap-3 pt-1">
+                <div className="adm-sc-item-body">
+                    <div className="adm-sc-fields">
+                        {fields.map((field) => {
+                            const fullSpan = field.type === 'textarea' || field.type === 'tags';
+                            return (
+                                <div key={field.name} className={fullSpan ? 'col-span-full' : ''}>
+                                    <Field label={field.label} hint={field.hint}>
+                                        <FieldInput field={field} value={form[field.name]} onChange={(v) => set(field.name, v)} />
+                                    </Field>
+                                </div>
+                            );
+                        })}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 pt-1">
                         <button
                             type="button"
                             onClick={save}
                             disabled={busy}
-                            className="flex items-center gap-2 rounded-lg border border-cyan-500/30 bg-cyan-500/15 px-4 py-2 font-mono text-xs uppercase tracking-wider text-cyan-300 transition-colors hover:bg-cyan-500/25 disabled:opacity-50"
+                            className="adm-btn adm-btn-primary"
                         >
-                            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                            {isNew ? 'Create' : 'Save'}
+                            {busy ? <FaSpinner className="animate-spin" aria-hidden="true" /> : <FaFloppyDisk aria-hidden="true" />}
+                            {isNew ? 'Create entry' : 'Save changes'}
                         </button>
                         {isNew && (
                             <button
                                 type="button"
                                 onClick={onCancel}
-                                className="rounded-lg border border-white/10 px-4 py-2 font-mono text-xs uppercase tracking-wider text-slate-400 transition-colors hover:bg-white/5"
+                                className="adm-btn"
                             >
                                 Cancel
                             </button>
@@ -212,7 +242,7 @@ function FieldInput({ field, value, onChange }) {
         case 'accent':
             return <AccentPicker value={value} onChange={onChange} />;
         case 'tags':
-            return <StringListEditor items={value} onChange={onChange} placeholder={field.placeholder || 'tag'} />;
+            return <StringListEditor items={value} onChange={onChange} placeholder={field.placeholder || 'Tag'} />;
         default:
             return <TextInput value={value} placeholder={field.placeholder} onChange={onChange} />;
     }

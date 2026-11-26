@@ -5,7 +5,17 @@
  * Results land in an output box with Insert / Replace-selection actions.
  */
 import React, { useState } from 'react';
-import { FaWandMagicSparkles, FaSpinner, FaBugSlash, FaBullseye, FaPenFancy, FaCopy, FaArrowRightToBracket, FaRetweet } from 'react-icons/fa6';
+import {
+    FaArrowRightToBracket,
+    FaBugSlash,
+    FaBullseye,
+    FaCopy,
+    FaPenFancy,
+    FaRetweet,
+    FaSpinner,
+    FaWandMagicSparkles,
+} from 'react-icons/fa6';
+import { Field } from '@/app/components/admin/ui';
 
 async function callAi({ prompt, mode, context }) {
     const res = await fetch('/api/admin/ai/text', {
@@ -18,10 +28,8 @@ async function callAi({ prompt, mode, context }) {
     return json.data;
 }
 
-const actionBtn = 'w-full flex items-center gap-2 rounded-lg border p-2 text-left text-xs font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed';
-
 export default function StudioAiPanel({ mode = 'code', editorApi, compileErrors, compileLog, toast }) {
-    const [busy, setBusy] = useState(null); // which action is running
+    const [busy, setBusy] = useState(null);
     const [output, setOutput] = useState('');
     const [outputKind, setOutputKind] = useState('latex'); // latex | advice
     const [jobDescription, setJobDescription] = useState('');
@@ -50,7 +58,6 @@ export default function StudioAiPanel({ mode = 'code', editorApi, compileErrors,
         if (!compileErrors?.length) return toast.error('No compile errors — run Compile first.');
         const doc = editorApi.getValue();
         const lines = doc.split('\n');
-        // Send only the neighborhoods of the failing lines, not the whole doc.
         const snippets = compileErrors.slice(0, 5).map((err) => {
             if (!err.line) return '';
             const from = Math.max(0, err.line - 6);
@@ -80,71 +87,103 @@ export default function StudioAiPanel({ mode = 'code', editorApi, compileErrors,
     };
 
     return (
-        <div className="space-y-2">
+        <div className="space-y-3">
             {mode === 'visual' ? (
-                <p className="rounded-lg border border-white/5 bg-white/[0.03] p-2 text-[10px] text-slate-500">
-                    Generated LaTeX is added as a new block you can drag into place. Switch to <span className="text-cyan-400 font-semibold">Code</span> mode to refine a specific selection.
-                </p>
+                <div className="adm-notice adm-notice-info">
+                    Generated LaTeX is added as a new block you can drag into place. Switch to <strong>Code</strong> mode to refine a specific selection.
+                </div>
             ) : (
-                <button onClick={refineSelection} disabled={!!busy} className={`${actionBtn} border-cyan-500/30 bg-cyan-500/10 text-cyan-300 hover:border-cyan-400`}>
-                    {busy === 'refine' ? <FaSpinner className="animate-spin" /> : <FaPenFancy />} Refine selection
+                <button
+                    type="button"
+                    onClick={refineSelection}
+                    disabled={!!busy}
+                    className="adm-btn w-full justify-start"
+                >
+                    {busy === 'refine' ? <FaSpinner className="animate-spin" aria-hidden="true" /> : <FaPenFancy aria-hidden="true" />}
+                    Refine selected LaTeX
                 </button>
             )}
-            <button onClick={fixErrors} disabled={!!busy || !compileErrors?.length} className={`${actionBtn} border-red-500/30 bg-red-500/10 text-red-300 hover:border-red-400`}>
-                {busy === 'fix' ? <FaSpinner className="animate-spin" /> : <FaBugSlash />} Fix compile errors ({compileErrors?.length || 0})
+
+            <button
+                type="button"
+                onClick={fixErrors}
+                disabled={!!busy || !compileErrors?.length}
+                className="adm-btn w-full justify-start"
+            >
+                {busy === 'fix' ? <FaSpinner className="animate-spin" aria-hidden="true" /> : <FaBugSlash aria-hidden="true" />}
+                Fix compile errors ({compileErrors?.length || 0})
             </button>
 
-            <div className="rounded-lg border border-white/5 bg-white/[0.03] p-2 space-y-2">
-                <textarea
-                    value={jobDescription}
-                    onChange={(e) => setJobDescription(e.target.value)}
-                    placeholder="Paste a job description…"
-                    rows={3}
-                    className="w-full bg-slate-950/60 border border-white/10 rounded-md p-2 text-xs text-slate-200 placeholder:text-slate-600 resize-y"
-                />
-                <button onClick={tailor} disabled={!!busy} className={`${actionBtn} border-amber-500/30 bg-amber-500/10 text-amber-300 hover:border-amber-400`}>
-                    {busy === 'tailor' ? <FaSpinner className="animate-spin" /> : <FaBullseye />} Tailor to this job
+            <div className="adm-sc-item p-3 space-y-2.5">
+                <Field label="Tailor to job description">
+                    <textarea
+                        value={jobDescription}
+                        onChange={(e) => setJobDescription(e.target.value)}
+                        placeholder="Paste a job description…"
+                        rows={3}
+                        className="adm-input !min-h-16"
+                    />
+                </Field>
+                <button
+                    type="button"
+                    onClick={tailor}
+                    disabled={!!busy}
+                    className="adm-btn w-full"
+                >
+                    {busy === 'tailor' ? <FaSpinner className="animate-spin" aria-hidden="true" /> : <FaBullseye aria-hidden="true" />}
+                    Tailor resume
                 </button>
             </div>
 
-            <div className="rounded-lg border border-white/5 bg-white/[0.03] p-2 space-y-2">
-                <textarea
-                    value={customPrompt}
-                    onChange={(e) => setCustomPrompt(e.target.value)}
-                    placeholder="Generate anything… e.g. 'a projects entry for a rust CLI that syncs dotfiles'"
-                    rows={3}
-                    className="w-full bg-slate-950/60 border border-white/10 rounded-md p-2 text-xs text-slate-200 placeholder:text-slate-600 resize-y"
-                />
-                <button onClick={generate} disabled={!!busy} className={`${actionBtn} border-purple-500/30 bg-purple-500/10 text-purple-300 hover:border-purple-400`}>
-                    {busy === 'generate' ? <FaSpinner className="animate-spin" /> : <FaWandMagicSparkles />} Generate LaTeX
+            <div className="adm-sc-item p-3 space-y-2.5">
+                <Field label="Generate LaTeX block">
+                    <textarea
+                        value={customPrompt}
+                        onChange={(e) => setCustomPrompt(e.target.value)}
+                        placeholder="e.g. A projects entry for a Rust CLI that syncs dotfiles"
+                        rows={3}
+                        className="adm-input !min-h-16"
+                    />
+                </Field>
+                <button
+                    type="button"
+                    onClick={generate}
+                    disabled={!!busy}
+                    className="adm-btn adm-btn-primary w-full"
+                >
+                    {busy === 'generate' ? <FaSpinner className="animate-spin" aria-hidden="true" /> : <FaWandMagicSparkles aria-hidden="true" />}
+                    Generate LaTeX
                 </button>
             </div>
 
             {output && (
-                <div className="rounded-lg border border-emerald-500/20 bg-emerald-950/20 p-2 space-y-2">
-                    <pre className="max-h-48 overflow-auto whitespace-pre-wrap text-[11px] text-emerald-100/90 font-mono">{output}</pre>
-                    <div className="flex gap-2">
+                <div className="adm-sc-item p-3 space-y-2.5">
+                    <pre className="adm-code max-h-48 whitespace-pre-wrap">{output}</pre>
+                    <div className="flex flex-wrap gap-2">
                         {outputKind === 'latex' && (
                             <>
                                 <button
+                                    type="button"
                                     onClick={() => { editorApi.insertAtCursor(`\n${output}\n`); toast.success('Inserted'); }}
-                                    className="flex items-center gap-1 text-[10px] uppercase font-bold text-cyan-400 hover:text-cyan-300"
+                                    className="adm-btn adm-btn-primary"
                                 >
-                                    <FaArrowRightToBracket /> Insert
+                                    <FaArrowRightToBracket aria-hidden="true" /> Insert
                                 </button>
                                 <button
+                                    type="button"
                                     onClick={() => { editorApi.replaceSelection(output); toast.success('Selection replaced'); }}
-                                    className="flex items-center gap-1 text-[10px] uppercase font-bold text-amber-400 hover:text-amber-300"
+                                    className="adm-btn"
                                 >
-                                    <FaRetweet /> Replace selection
+                                    <FaRetweet aria-hidden="true" /> Replace selection
                                 </button>
                             </>
                         )}
                         <button
+                            type="button"
                             onClick={() => { navigator.clipboard.writeText(output); toast.success('Copied'); }}
-                            className="flex items-center gap-1 text-[10px] uppercase font-bold text-slate-400 hover:text-slate-200"
+                            className="adm-btn"
                         >
-                            <FaCopy /> Copy
+                            <FaCopy aria-hidden="true" /> Copy
                         </button>
                     </div>
                 </div>

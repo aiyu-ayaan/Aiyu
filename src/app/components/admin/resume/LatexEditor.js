@@ -16,8 +16,21 @@ import { oneDark } from '@codemirror/theme-one-dark';
 import { latexLanguage, latexCompletionSource } from './latexLanguage';
 
 const editorTheme = EditorView.theme({
-    '&': { height: '100%', fontSize: '13px' },
-    '.cm-scroller': { fontFamily: 'var(--font-geist-mono, ui-monospace, monospace)', overflow: 'auto' },
+    '&': {
+        height: '100%',
+        fontSize: '13px',
+        backgroundColor: 'var(--bg-primary)',
+        color: 'var(--text-primary)',
+    },
+    '.cm-scroller': {
+        fontFamily: 'var(--font-geist-mono, ui-monospace, monospace)',
+        overflow: 'auto',
+    },
+    '.cm-gutters': {
+        backgroundColor: 'var(--bg-secondary)',
+        borderRight: '1px solid var(--hairline)',
+        color: 'var(--text-tertiary)',
+    },
     '.cm-content': { paddingBottom: '40vh' },
     '&.cm-focused': { outline: 'none' },
 });
@@ -78,7 +91,6 @@ const LatexEditor = forwardRef(function LatexEditor({ initialDoc, onDocChanged, 
             view.destroy();
             viewRef.current = null;
         };
-        // The editor owns the document after mount; initialDoc is mount-only.
     }, []);
 
     useImperativeHandle(ref, () => ({

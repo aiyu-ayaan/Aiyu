@@ -1,26 +1,20 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Loader2, Sparkles } from 'lucide-react';
+import { FaSpinner, FaWandMagicSparkles } from 'react-icons/fa6';
 import Toast from './Toast';
 import { postJson } from './aiSections/api';
 import SkillsManager from './aiSections/SkillsManager';
 import CardListManager from './aiSections/CardListManager';
 import LayoutManager from './aiSections/LayoutManager';
 import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
-
-/**
- * AI Hub editor. Card-based, live CRUD against the per-section REST APIs
- * (/api/ai/*): the four content sections are managed independently, and a
- * Layout tab controls section order/visibility/headings + hero/stats. There is
- * no single "big save" for content — each add/edit/delete persists immediately.
- */
+import '@/app/styles/admin-showcase.css';
 
 const CONTENT_TABS = [
     { id: 'skills', label: 'Skills' },
     { id: 'recommendations', label: 'Recommendations' },
-    { id: 'credits', label: 'Free Credits' },
-    { id: 'prompts', label: 'Prompt Library' },
+    { id: 'credits', label: 'Free credits' },
+    { id: 'prompts', label: 'Prompt library' },
 ];
 
 const RECOMMENDATION_FIELDS = [
@@ -34,16 +28,16 @@ const RECOMMENDATION_FIELDS = [
 
 const CREDIT_FIELDS = [
     { name: 'name', label: 'Name', type: 'text', placeholder: 'e.g. Google AI Studio' },
-    { name: 'offer', label: 'Offer', type: 'textarea', rows: 2 },
     { name: 'url', label: 'URL', type: 'text', placeholder: 'https://' },
+    { name: 'offer', label: 'Offer', type: 'textarea', rows: 2 },
+    { name: 'note', label: 'Note', type: 'text' },
     { name: 'freeApi', label: 'Free API key', type: 'switch' },
     { name: 'noCard', label: 'No credit card', type: 'switch' },
-    { name: 'note', label: 'Note', type: 'text' },
 ];
 
 const PROMPT_FIELDS = [
     { name: 'title', label: 'Title', type: 'text', placeholder: 'e.g. TypeScript Agent Developer' },
-    { name: 'role', label: 'Role / tag', type: 'text', placeholder: 'e.g. Engineering' },
+    { name: 'role', label: 'Role or tag', type: 'text', placeholder: 'e.g. Engineering' },
     { name: 'prompt', label: 'Prompt', type: 'textarea', rows: 6 },
 ];
 
@@ -79,45 +73,57 @@ export default function AiPageForm() {
 
     return (
         <div className="space-y-6">
-            {/* Top-level tabs */}
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/5 pb-3">
-                <div className="flex gap-2">
-                    <TopTab label="Content" active={tab === 'content'} onClick={() => setTab('content')} />
-                    <TopTab label="Layout" active={tab === 'layout'} onClick={() => setTab('layout')} />
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--hairline)]">
+                <div className="adm-tabs border-b-0" role="tablist" aria-label="AI hub workspace">
+                    <button
+                        type="button"
+                        role="tab"
+                        aria-selected={tab === 'content'}
+                        onClick={() => setTab('content')}
+                        className="adm-tab"
+                    >
+                        Content
+                    </button>
+                    <button
+                        type="button"
+                        role="tab"
+                        aria-selected={tab === 'layout'}
+                        onClick={() => setTab('layout')}
+                        className="adm-tab"
+                    >
+                        Layout
+                    </button>
                 </div>
+
                 <button
                     type="button"
                     onClick={seedDefaults}
                     disabled={seeding}
-                    className="flex items-center gap-2 rounded-lg border border-purple-500/25 bg-purple-500/10 px-3.5 py-2 font-mono text-[0.7rem] uppercase tracking-wider text-purple-300 transition-colors hover:bg-purple-500/20 disabled:opacity-50"
+                    className="adm-btn mb-2"
                     title="One-time backfill of empty sections from the bundled defaults"
                 >
-                    {seeding ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                    {seeding ? <FaSpinner className="animate-spin" aria-hidden="true" /> : <FaWandMagicSparkles aria-hidden="true" />}
                     Seed defaults
                 </button>
             </div>
 
             {tab === 'content' ? (
                 <div className="space-y-6">
-                    {/* Content section sub-tabs */}
-                    <div className="flex flex-wrap gap-2 font-mono text-xs">
+                    <div className="adm-tabs" role="tablist" aria-label="Content sections">
                         {CONTENT_TABS.map((t) => (
                             <button
                                 key={t.id}
                                 type="button"
+                                role="tab"
+                                aria-selected={contentTab === t.id}
                                 onClick={() => setContentTab(t.id)}
-                                className={`rounded-full px-4 py-2 uppercase tracking-wider transition-colors ${
-                                    contentTab === t.id
-                                        ? 'border border-cyan-400/40 bg-cyan-500/15 text-cyan-200'
-                                        : 'border border-white/10 bg-white/[0.02] text-slate-400 hover:bg-white/5'
-                                }`}
+                                className="adm-tab"
                             >
                                 {t.label}
                             </button>
                         ))}
                     </div>
 
-                    {/* Keep each manager mounted only when active so it (re)fetches fresh data. */}
                     {contentTab === 'skills' && <SkillsManager notify={notify} />}
                     {contentTab === 'recommendations' && (
                         <CardListManager
@@ -159,19 +165,5 @@ export default function AiPageForm() {
 
             <Toast notification={notification} />
         </div>
-    );
-}
-
-function TopTab({ label, active, onClick }) {
-    return (
-        <button
-            type="button"
-            onClick={onClick}
-            className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
-                active ? 'bg-white/10 text-white' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
-            }`}
-        >
-            {label}
-        </button>
     );
 }

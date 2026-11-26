@@ -45,44 +45,76 @@ export default function StudioIdeasPanel({ ideas, onSaveIdeas, editorApi, toast 
     };
 
     return (
-        <div className="space-y-2">
-            <div className="flex gap-1.5">
+        <div className="space-y-3">
+            <div className="flex gap-2">
                 <input
                     value={draft}
                     onChange={(e) => setDraft(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && addIdea()}
                     placeholder="Capture a resume idea…"
-                    className="min-w-0 flex-1 bg-slate-950/60 border border-white/10 rounded-md px-2 py-1.5 text-xs text-slate-200 placeholder:text-slate-600"
+                    aria-label="New resume idea"
+                    className="adm-input flex-1"
                 />
-                <button onClick={addIdea} className="shrink-0 rounded-md border border-cyan-500/30 bg-cyan-500/10 px-2.5 text-cyan-300 hover:border-cyan-400">
-                    <FaPlus className="text-[10px]" />
+                <button
+                    type="button"
+                    onClick={addIdea}
+                    className="adm-btn adm-btn-primary"
+                    aria-label="Add idea"
+                >
+                    <FaPlus aria-hidden="true" />
                 </button>
             </div>
 
             {ideas.length === 0 && (
-                <p className="text-[11px] text-slate-600">Jot down achievements, numbers, or sections you want on the resume — then expand them into bullets with AI.</p>
+                <p className="adm-help">
+                    Jot down achievements, numbers, or sections you want on the resume — then expand them into bullets with AI.
+                </p>
             )}
 
-            {ideas.map((idea) => (
-                <div key={idea.id} className={`rounded-lg border p-2 ${idea.done ? 'border-white/5 bg-white/[0.01] opacity-50' : 'border-white/5 bg-white/[0.03]'}`}>
-                    <label className="flex items-start gap-2 cursor-pointer">
-                        <input type="checkbox" checked={idea.done} onChange={() => toggle(idea)} className="mt-0.5 accent-cyan-500" />
-                        <span className={`text-xs text-slate-200 ${idea.done ? 'line-through' : ''}`}>{idea.text}</span>
-                    </label>
-                    <div className="flex gap-3 mt-1.5 pl-6">
-                        <button
-                            onClick={() => expand(idea)}
-                            disabled={expanding === idea.id}
-                            className="flex items-center gap-1 text-[10px] uppercase font-bold text-purple-400 hover:text-purple-300 disabled:opacity-50"
-                        >
-                            {expanding === idea.id ? <FaSpinner className="animate-spin" /> : <FaWandMagicSparkles />} Expand to LaTeX
-                        </button>
-                        <button onClick={() => remove(idea)} className="flex items-center gap-1 text-[10px] uppercase font-bold text-red-400/70 hover:text-red-300">
-                            <FaTrash /> Delete
-                        </button>
+            <div className="space-y-2">
+                {ideas.map((idea) => (
+                    <div
+                        key={idea.id}
+                        className={`adm-sc-item p-3 space-y-2 ${idea.done ? 'opacity-60' : ''}`}
+                    >
+                        <label className="flex cursor-pointer items-start gap-2.5">
+                            <input
+                                type="checkbox"
+                                checked={idea.done}
+                                onChange={() => toggle(idea)}
+                                className="adm-check mt-0.5"
+                            />
+                            <span className={`text-sm text-[var(--text-primary)] ${idea.done ? 'line-through' : ''}`}>
+                                {idea.text}
+                            </span>
+                        </label>
+                        <div className="flex flex-wrap items-center gap-2 pl-6">
+                            <button
+                                type="button"
+                                onClick={() => expand(idea)}
+                                disabled={expanding === idea.id}
+                                className="adm-btn"
+                            >
+                                {expanding === idea.id ? (
+                                    <FaSpinner className="animate-spin" aria-hidden="true" />
+                                ) : (
+                                    <FaWandMagicSparkles aria-hidden="true" />
+                                )}
+                                Expand to LaTeX
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => remove(idea)}
+                                className="adm-icon-btn"
+                                title="Delete idea"
+                                aria-label="Delete idea"
+                            >
+                                <FaTrash aria-hidden="true" />
+                            </button>
+                        </div>
                     </div>
-                </div>
-            ))}
+                ))}
+            </div>
         </div>
     );
 }

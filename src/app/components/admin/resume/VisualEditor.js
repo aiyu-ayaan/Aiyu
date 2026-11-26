@@ -14,21 +14,33 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import {
-    FaGripVertical, FaTrash, FaPlus, FaChevronDown, FaChevronRight,
-    FaArrowUp, FaArrowDown, FaBriefcase, FaFileLines, FaListCheck, FaAlignLeft, FaCode,
-    FaGraduationCap, FaCertificate, FaTrophy, FaHandshake, FaDiagramProject,
-    FaUser, FaPenToSquare,
+    FaAlignLeft,
+    FaArrowDown,
+    FaArrowUp,
+    FaBriefcase,
+    FaCertificate,
+    FaChevronDown,
+    FaChevronRight,
+    FaCode,
+    FaDiagramProject,
+    FaFileLines,
+    FaGraduationCap,
+    FaGripVertical,
+    FaHandshake,
+    FaListCheck,
+    FaPenToSquare,
+    FaPlus,
+    FaTrash,
+    FaTrophy,
+    FaUser,
 } from 'react-icons/fa6';
 import {
     blankItemFor, blankSection, blankContact,
     parseHeader, generateHeader, CONTACT_TYPES,
 } from '@/lib/resumeVisual';
 import { escapeLatex } from '@/lib/resumeStudio';
+import { Badge } from '@/app/components/admin/ui';
 
-const inputCls = 'w-full bg-slate-950/45 border border-white/5 focus:border-cyan-500/20 hover:border-white/10 rounded-lg px-3 py-2 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none transition-all';
-const miniBtn = 'p-1 rounded text-slate-500 hover:text-slate-200 transition-colors';
-
-// Badge labels shown per underlying section type.
 const SECTION_TYPES = [
     { type: 'entries', label: 'Experience / Education', icon: FaBriefcase },
     { type: 'projects', label: 'Projects', icon: FaFileLines },
@@ -37,9 +49,6 @@ const SECTION_TYPES = [
     { type: 'raw', label: 'Raw LaTeX', icon: FaCode },
 ];
 
-// Insertable section presets. Several map to the same underlying `type` but
-// give the GUI a resume-shaped starting point (title + relevant fields), so a
-// full resume can be assembled without touching LaTeX.
 const SECTION_MENU = [
     { key: 'experience', label: 'Experience', icon: FaBriefcase, type: 'entries', title: 'Experience' },
     { key: 'education', label: 'Education', icon: FaGraduationCap, type: 'entries', title: 'Education' },
@@ -62,30 +71,57 @@ function BulletsEditor({ bullets, onChange }) {
         onChange(next);
     };
     return (
-        <div className="space-y-1.5 mt-2">
+        <div className="space-y-2 mt-2">
             {bullets.map((bullet, i) => (
-                <div key={i} className="group flex items-start gap-2 relative">
-                    <span className="text-slate-600 text-xs mt-2">•</span>
+                <div key={i} className="flex items-start gap-2">
+                    <span className="mt-2.5 text-xs text-[var(--adm-hint)]" aria-hidden="true">•</span>
                     <textarea
                         value={bullet}
                         rows={1}
+                        aria-label={`Bullet point ${i + 1}`}
                         onChange={(e) => onChange(bullets.map((b, k) => (k === i ? e.target.value : b)))}
-                        className={`${inputCls} resize-none py-1.5 leading-normal overflow-hidden`}
-                        style={{ minHeight: '32px' }}
-                        placeholder="Describe achievement or responsibility..."
+                        className="adm-input !min-h-10 flex-1 py-1.5"
+                        placeholder="Describe achievement or responsibility…"
                     />
-                    <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-150 shrink-0 mt-0.5">
-                        <button onClick={() => move(i, -1)} className="p-1 rounded text-slate-500 hover:text-slate-200 hover:bg-white/5 transition-colors" title="Move up"><FaArrowUp className="text-[10px]" /></button>
-                        <button onClick={() => move(i, 1)} className="p-1 rounded text-slate-500 hover:text-slate-200 hover:bg-white/5 transition-colors" title="Move down"><FaArrowDown className="text-[10px]" /></button>
-                        <button onClick={() => onChange(bullets.filter((_, k) => k !== i))} className="p-1 rounded text-slate-500 hover:text-red-400 hover:bg-red-500/5 transition-colors" title="Delete bullet"><FaTrash className="text-[10px]" /></button>
+                    <div className="flex shrink-0 items-center gap-0.5">
+                        <button
+                            type="button"
+                            onClick={() => move(i, -1)}
+                            disabled={i === 0}
+                            className="adm-icon-btn"
+                            title="Move bullet up"
+                            aria-label="Move bullet up"
+                        >
+                            <FaArrowUp aria-hidden="true" />
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => move(i, 1)}
+                            disabled={i === bullets.length - 1}
+                            className="adm-icon-btn"
+                            title="Move bullet down"
+                            aria-label="Move bullet down"
+                        >
+                            <FaArrowDown aria-hidden="true" />
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => onChange(bullets.filter((_, k) => k !== i))}
+                            className="adm-icon-btn"
+                            title="Delete bullet"
+                            aria-label="Delete bullet"
+                        >
+                            <FaTrash aria-hidden="true" />
+                        </button>
                     </div>
                 </div>
             ))}
             <button
+                type="button"
                 onClick={() => onChange(['', ...bullets])}
-                className="mt-1 flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-cyan-500/20 bg-cyan-500/5 text-[9px] uppercase font-bold tracking-wider text-cyan-400 hover:bg-cyan-500/10 hover:text-cyan-300 transition-all cursor-pointer"
+                className="adm-btn !px-3 text-xs"
             >
-                <FaPlus className="text-[8px]" /> bullet
+                <FaPlus aria-hidden="true" /> Add bullet
             </button>
         </div>
     );
@@ -98,20 +134,29 @@ function SortableItem({ id, onDelete, children }) {
         <div
             ref={setNodeRef}
             style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.6 : 1 }}
-            className="group relative rounded-xl border border-white/5 bg-slate-900/20 p-3 hover:border-slate-800 transition-all"
+            className="adm-sc-item p-3"
         >
-            <div className="flex gap-2">
-                <button {...attributes} {...listeners} className="mt-1.5 shrink-0 cursor-grab text-slate-600 hover:text-slate-300 transition-colors" title="Drag to reorder">
-                    <FaGripVertical className="text-xs" />
+            <div className="flex items-start gap-2">
+                <button
+                    type="button"
+                    {...attributes}
+                    {...listeners}
+                    className="adm-icon-btn adm-sc-drag"
+                    title="Drag to reorder"
+                    aria-label="Drag item to reorder"
+                >
+                    <FaGripVertical aria-hidden="true" />
                 </button>
-                <div className="min-w-0 flex-1">{children}</div>
+                <div className="min-w-0 flex-1 space-y-2">{children}</div>
                 {onDelete && (
                     <button
+                        type="button"
                         onClick={onDelete}
-                        className="shrink-0 p-1.5 rounded-lg border border-red-500/10 hover:border-red-500/25 bg-red-500/5 hover:bg-red-500/10 text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-all self-start transition-opacity duration-150 cursor-pointer"
+                        className="adm-icon-btn"
                         title="Remove item"
+                        aria-label="Remove item"
                     >
-                        <FaTrash className="text-[10px]" />
+                        <FaTrash aria-hidden="true" />
                     </button>
                 )}
             </div>
@@ -134,7 +179,7 @@ function ItemsDnd({ items, onReorder, children }) {
     return (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
-                <div className="space-y-2">{children}</div>
+                <div className="space-y-2.5">{children}</div>
             </SortableContext>
         </DndContext>
     );
@@ -149,18 +194,46 @@ function EntriesBody({ section, patch }) {
             <ItemsDnd items={section.items} onReorder={setItems}>
                 {section.items.map((item) => (
                     <SortableItem key={item.id} id={item.id} onDelete={() => setItems(section.items.filter((i) => i.id !== item.id))}>
-                        <div className="grid grid-cols-2 gap-2">
-                            <input value={item.title} placeholder="Company / Institution" onChange={(e) => patchItem(item.id, { title: e.target.value })} className={inputCls} />
-                            <input value={item.right} placeholder="Dates (e.g. Jun 2025 -- Present)" onChange={(e) => patchItem(item.id, { right: e.target.value })} className={inputCls} />
-                            <input value={item.subtitle} placeholder="Role / Degree" onChange={(e) => patchItem(item.id, { subtitle: e.target.value })} className={inputCls} />
-                            <input value={item.subright} placeholder="Location / CGPA" onChange={(e) => patchItem(item.id, { subright: e.target.value })} className={inputCls} />
+                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                            <input
+                                value={item.title}
+                                aria-label="Company or institution"
+                                placeholder="Company or institution"
+                                onChange={(e) => patchItem(item.id, { title: e.target.value })}
+                                className="adm-input"
+                            />
+                            <input
+                                value={item.right}
+                                aria-label="Dates"
+                                placeholder="Dates (e.g. Jun 2025 -- Present)"
+                                onChange={(e) => patchItem(item.id, { right: e.target.value })}
+                                className="adm-input"
+                            />
+                            <input
+                                value={item.subtitle}
+                                aria-label="Role or degree"
+                                placeholder="Role or degree"
+                                onChange={(e) => patchItem(item.id, { subtitle: e.target.value })}
+                                className="adm-input"
+                            />
+                            <input
+                                value={item.subright}
+                                aria-label="Location or grade"
+                                placeholder="Location or CGPA"
+                                onChange={(e) => patchItem(item.id, { subright: e.target.value })}
+                                className="adm-input"
+                            />
                         </div>
                         <BulletsEditor bullets={item.bullets} onChange={(bullets) => patchItem(item.id, { bullets })} />
                     </SortableItem>
                 ))}
             </ItemsDnd>
-            <button onClick={() => setItems([blankItemFor('entries'), ...section.items])} className="mt-2.5 flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-cyan-500/20 bg-cyan-500/5 text-[10px] uppercase font-bold tracking-wider text-cyan-400 hover:bg-cyan-500/10 hover:text-cyan-300 transition-all cursor-pointer">
-                <FaPlus className="text-[8px]" /> Add entry
+            <button
+                type="button"
+                onClick={() => setItems([blankItemFor('entries'), ...section.items])}
+                className="adm-btn"
+            >
+                <FaPlus aria-hidden="true" /> Add entry
             </button>
         </>
     );
@@ -189,29 +262,58 @@ function ProjectsBody({ section, patch, portfolio }) {
                 {section.items.map((item) => (
                     <SortableItem key={item.id} id={item.id} onDelete={() => setItems(section.items.filter((i) => i.id !== item.id))}>
                         {item.rawTitle ? (
-                            <input value={item.rawTitle} placeholder="Title (LaTeX)" onChange={(e) => patchItem(item.id, { rawTitle: e.target.value })} className={inputCls} />
+                            <input
+                                value={item.rawTitle}
+                                aria-label="Project title (LaTeX)"
+                                placeholder="Title (LaTeX)"
+                                onChange={(e) => patchItem(item.id, { rawTitle: e.target.value })}
+                                className="adm-input"
+                            />
                         ) : (
-                            <div className="grid grid-cols-2 gap-2">
-                                <input value={item.name} placeholder="Project name" onChange={(e) => patchItem(item.id, { name: e.target.value })} className={inputCls} />
-                                <input value={item.tech} placeholder="Tech (Kotlin, Compose…)" onChange={(e) => patchItem(item.id, { tech: e.target.value })} className={inputCls} />
+                            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                <input
+                                    value={item.name}
+                                    aria-label="Project name"
+                                    placeholder="Project name"
+                                    onChange={(e) => patchItem(item.id, { name: e.target.value })}
+                                    className="adm-input"
+                                />
+                                <input
+                                    value={item.tech}
+                                    aria-label="Technologies"
+                                    placeholder="Tech (Kotlin, Compose…)"
+                                    onChange={(e) => patchItem(item.id, { tech: e.target.value })}
+                                    className="adm-input"
+                                />
                             </div>
                         )}
-                        <input value={item.right} placeholder="Dates / status" onChange={(e) => patchItem(item.id, { right: e.target.value })} className={`${inputCls} mt-2`} />
+                        <input
+                            value={item.right}
+                            aria-label="Dates or status"
+                            placeholder="Dates or status"
+                            onChange={(e) => patchItem(item.id, { right: e.target.value })}
+                            className="adm-input"
+                        />
                         <BulletsEditor bullets={item.bullets} onChange={(bullets) => patchItem(item.id, { bullets })} />
                     </SortableItem>
                 ))}
             </ItemsDnd>
-            <div className="mt-2.5 flex items-center gap-2">
-                <button onClick={() => setItems([blankItemFor('projects'), ...section.items])} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-cyan-500/20 bg-cyan-500/5 text-[10px] uppercase font-bold tracking-wider text-cyan-400 hover:bg-cyan-500/10 hover:text-cyan-300 transition-all cursor-pointer">
-                    <FaPlus className="text-[8px]" /> Add project
+            <div className="flex flex-wrap items-center gap-2">
+                <button
+                    type="button"
+                    onClick={() => setItems([blankItemFor('projects'), ...section.items])}
+                    className="adm-btn"
+                >
+                    <FaPlus aria-hidden="true" /> Add project
                 </button>
                 {portfolio.length > 0 && (
                     <select
                         value=""
+                        aria-label="Add project from portfolio"
                         onChange={(e) => e.target.value && addFromPortfolio(e.target.value)}
-                        className="bg-slate-800 border border-white/10 rounded-lg px-2.5 py-1.5 text-[10px] text-slate-300 cursor-pointer focus:outline-none focus:border-cyan-500/30"
+                        className="adm-input !w-auto"
                     >
-                        <option value="">+ from portfolio…</option>
+                        <option value="">Add from portfolio…</option>
                         {portfolio.map((p) => <option key={p._id} value={p._id}>{p.name}</option>)}
                     </select>
                 )}
@@ -229,15 +331,31 @@ function SkillsBody({ section, patch }) {
             <ItemsDnd items={section.rows} onReorder={setRows}>
                 {section.rows.map((row) => (
                     <SortableItem key={row.id} id={row.id} onDelete={() => setRows(section.rows.filter((r) => r.id !== row.id))}>
-                        <div className="flex gap-2">
-                            <input value={row.category} placeholder="Category" onChange={(e) => patchRow(row.id, { category: e.target.value })} className={`${inputCls} !w-40 shrink-0`} />
-                            <input value={row.items} placeholder="Comma-separated items" onChange={(e) => patchRow(row.id, { items: e.target.value })} className={inputCls} />
+                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-[10rem_minmax(0,1fr)]">
+                            <input
+                                value={row.category}
+                                aria-label="Skill category"
+                                placeholder="Category"
+                                onChange={(e) => patchRow(row.id, { category: e.target.value })}
+                                className="adm-input"
+                            />
+                            <input
+                                value={row.items}
+                                aria-label="Skill items"
+                                placeholder="Comma-separated items"
+                                onChange={(e) => patchRow(row.id, { items: e.target.value })}
+                                className="adm-input"
+                            />
                         </div>
                     </SortableItem>
                 ))}
             </ItemsDnd>
-            <button onClick={() => setRows([blankItemFor('skills'), ...section.rows])} className="mt-2.5 flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-cyan-500/20 bg-cyan-500/5 text-[10px] uppercase font-bold tracking-wider text-cyan-400 hover:bg-cyan-500/10 hover:text-cyan-300 transition-all cursor-pointer">
-                <FaPlus className="text-[8px]" /> Add row
+            <button
+                type="button"
+                onClick={() => setRows([blankItemFor('skills'), ...section.rows])}
+                className="adm-btn"
+            >
+                <FaPlus aria-hidden="true" /> Add row
             </button>
         </>
     );
@@ -253,37 +371,56 @@ function SectionCard({ section, patch, remove, portfolio }) {
         <div
             ref={setNodeRef}
             style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.6 : 1 }}
-            className="rounded-xl border border-white/5 bg-slate-900/30 hover:border-slate-800/80 transition-all shadow-md"
+            className="adm-sc-item"
         >
-            <div className="flex items-center gap-2 p-2.5 border-b border-white/5">
-                <button {...attributes} {...listeners} className="cursor-grab text-slate-600 hover:text-slate-300 shrink-0" title="Drag section">
-                    <FaGripVertical />
+            <div className="adm-sc-item-head">
+                <button
+                    type="button"
+                    {...attributes}
+                    {...listeners}
+                    className="adm-icon-btn adm-sc-drag"
+                    title="Drag section"
+                    aria-label={`Reorder ${section.title}`}
+                >
+                    <FaGripVertical aria-hidden="true" />
                 </button>
-                <button onClick={() => setOpen(!open)} className="text-slate-500 hover:text-slate-300 shrink-0">
-                    {open ? <FaChevronDown className="text-[10px]" /> : <FaChevronRight className="text-[10px]" />}
+                <button
+                    type="button"
+                    onClick={() => setOpen(!open)}
+                    aria-expanded={open}
+                    aria-label={open ? 'Collapse section' : 'Expand section'}
+                    className="adm-icon-btn"
+                >
+                    {open ? <FaChevronDown aria-hidden="true" /> : <FaChevronRight aria-hidden="true" />}
                 </button>
                 <input
                     value={section.title}
+                    aria-label="Section title"
                     onChange={(e) => patch({ title: e.target.value })}
-                    className="min-w-0 flex-1 bg-transparent text-sm font-bold text-white focus:outline-none focus:border-b focus:border-cyan-500/50"
+                    className="adm-input !min-h-8 flex-1 font-semibold"
                 />
-                <span className="shrink-0 text-[9px] uppercase font-bold tracking-wider text-slate-600 border border-white/10 rounded px-1.5 py-0.5">
-                    {typeMeta?.label || section.type}
-                </span>
-                <button onClick={remove} className="shrink-0 text-slate-600 hover:text-red-400 transition-colors" title="Delete section">
-                    <FaTrash className="text-[11px]" />
+                <Badge>{typeMeta?.label || section.type}</Badge>
+                <button
+                    type="button"
+                    onClick={remove}
+                    className="adm-icon-btn"
+                    title="Delete section"
+                    aria-label={`Delete ${section.title} section`}
+                >
+                    <FaTrash aria-hidden="true" />
                 </button>
             </div>
 
             {open && (
-                <div className="p-3 space-y-2.5">
+                <div className="adm-sc-item-body">
                     {section.type === 'text' && (
                         <textarea
                             value={section.content}
                             rows={5}
+                            aria-label="Section paragraph text"
                             onChange={(e) => patch({ content: e.target.value })}
-                            placeholder="Paragraph text (inline LaTeX like \\textbf{...} is fine)"
-                            className={`${inputCls} resize-y`}
+                            placeholder="Paragraph text (inline LaTeX like \textbf{...} is fine)"
+                            className="adm-input"
                         />
                     )}
                     {section.type === 'entries' && <EntriesBody section={section} patch={patch} />}
@@ -293,8 +430,9 @@ function SectionCard({ section, patch, remove, portfolio }) {
                         <textarea
                             value={section.raw}
                             rows={8}
+                            aria-label="Raw LaTeX content"
                             onChange={(e) => patch({ raw: e.target.value })}
-                            className={`${inputCls} resize-y font-mono`}
+                            className="adm-input font-mono"
                         />
                     )}
                 </div>
@@ -303,11 +441,6 @@ function SectionCard({ section, patch, remove, portfolio }) {
     );
 }
 
-/**
- * Structured GUI for the resume header (name, subtitle lines, contact links).
- * Falls back to a raw LaTeX textarea when the header can't be parsed into the
- * standard `\begin{center}` shape, so unusual headers are never lost.
- */
 function HeaderEditor({ header, onChange }) {
     const [open, setOpen] = useState(true);
     const [raw, setRaw] = useState(false);
@@ -320,108 +453,125 @@ function HeaderEditor({ header, onChange }) {
         update({ contacts: parsed.contacts.map((c, k) => (k === i ? { ...c, ...cPatch } : c)) });
 
     return (
-        <div className="rounded-xl border border-white/10 bg-slate-900/60">
-            <div className="flex items-center gap-2 p-2.5">
-                <button onClick={() => setOpen(!open)} className="flex items-center gap-2 text-left min-w-0 flex-1">
-                    {open ? <FaChevronDown className="text-[10px] text-slate-500 shrink-0" /> : <FaChevronRight className="text-[10px] text-slate-500 shrink-0" />}
-                    <FaUser className="text-[11px] text-slate-500 shrink-0" />
-                    <span className="text-sm font-bold text-white shrink-0">Header</span>
-                    <span className="text-[10px] text-slate-500 truncate">
-                        {canStructure ? (parsed.name || 'name') + ' · contacts' : 'edited as raw LaTeX'}
+        <div className="adm-sc-item">
+            <div className="adm-sc-item-head">
+                <button
+                    type="button"
+                    onClick={() => setOpen(!open)}
+                    aria-expanded={open}
+                    className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                >
+                    {open ? (
+                        <FaChevronDown className="shrink-0 text-xs text-[var(--text-secondary)]" aria-hidden="true" />
+                    ) : (
+                        <FaChevronRight className="shrink-0 text-xs text-[var(--text-secondary)]" aria-hidden="true" />
+                    )}
+                    <FaUser className="shrink-0 text-xs text-[var(--text-secondary)]" aria-hidden="true" />
+                    <span className="text-sm font-semibold text-[var(--text-bright)]">Header</span>
+                    <span className="adm-help truncate">
+                        {canStructure ? `${parsed.name || 'Name'} · contacts` : 'Raw LaTeX'}
                     </span>
                 </button>
                 {canStructure && (
                     <button
+                        type="button"
                         onClick={() => setRaw((v) => !v)}
-                        className={`shrink-0 flex items-center gap-1.5 px-2 py-1 rounded-md border text-[9px] font-bold uppercase tracking-wider transition-all ${
-                            raw ? 'border-cyan-500/30 bg-cyan-500/10 text-cyan-300' : 'border-white/10 text-slate-500 hover:text-slate-300'
-                        }`}
+                        className="adm-btn !px-3 text-xs"
                         title="Toggle raw LaTeX editing"
                     >
-                        {raw ? <FaPenToSquare className="text-[9px]" /> : <FaCode className="text-[9px]" />}
+                        {raw ? <FaPenToSquare aria-hidden="true" /> : <FaCode aria-hidden="true" />}
                         {raw ? 'Fields' : 'LaTeX'}
                     </button>
                 )}
             </div>
 
             {open && (
-                <div className="p-2.5 pt-0 space-y-3">
+                <div className="adm-sc-item-body">
                     {structured ? (
                         <>
-                            {/* Name + subtitle lines */}
                             <div className="space-y-2">
                                 <input
                                     value={parsed.name}
+                                    aria-label="Full name"
                                     onChange={(e) => update({ name: e.target.value })}
                                     placeholder="Full name"
-                                    className={`${inputCls} text-sm font-bold`}
+                                    className="adm-input font-semibold"
                                 />
                                 {parsed.lines.map((line, i) => (
-                                    <div key={i} className="group flex items-center gap-2">
+                                    <div key={i} className="flex items-center gap-2">
                                         <input
                                             value={line}
+                                            aria-label={`Subtitle line ${i + 1}`}
                                             onChange={(e) => update({ lines: parsed.lines.map((l, k) => (k === i ? e.target.value : l)) })}
                                             placeholder={i === 0 ? 'Title (e.g. Mobile Android Developer)' : 'Location or extra line'}
-                                            className={inputCls}
+                                            className="adm-input flex-1"
                                         />
                                         <button
+                                            type="button"
                                             onClick={() => update({ lines: parsed.lines.filter((_, k) => k !== i) })}
-                                            className={`${miniBtn} opacity-0 group-hover:opacity-100 hover:text-red-400 shrink-0`}
+                                            className="adm-icon-btn"
                                             title="Remove line"
+                                            aria-label="Remove subtitle line"
                                         >
-                                            <FaTrash className="text-[10px]" />
+                                            <FaTrash aria-hidden="true" />
                                         </button>
                                     </div>
                                 ))}
                                 <button
+                                    type="button"
                                     onClick={() => update({ lines: ['', ...parsed.lines] })}
-                                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-white/10 bg-white/[0.02] text-[9px] uppercase font-bold tracking-wider text-slate-500 hover:text-slate-300 hover:border-white/20 transition-all cursor-pointer"
+                                    className="adm-btn !px-3 text-xs"
                                 >
-                                    <FaPlus className="text-[8px]" /> subtitle line
+                                    <FaPlus aria-hidden="true" /> Add subtitle line
                                 </button>
                             </div>
 
-                            {/* Contact links */}
-                            <div className="space-y-2 border-t border-white/5 pt-2.5">
-                                <p className="text-[9px] font-bold uppercase tracking-widest text-slate-600">Contacts</p>
+                            <div className="space-y-2 border-t border-[var(--hairline)] pt-3">
+                                <p className="adm-label">Contacts</p>
                                 {parsed.contacts.map((c, i) => (
-                                    <div key={i} className="group flex items-center gap-2">
+                                    <div key={i} className="grid grid-cols-1 gap-2 sm:grid-cols-[8rem_minmax(0,1fr)_minmax(0,1fr)_auto]">
                                         <select
                                             value={c.type}
+                                            aria-label="Contact type"
                                             onChange={(e) => {
                                                 const meta = CONTACT_TYPES.find((t) => t.type === e.target.value);
                                                 patchContact(i, { type: meta.type, icon: meta.icon });
                                             }}
-                                            className="shrink-0 w-24 bg-slate-950/45 border border-white/5 rounded-lg px-2 py-2 text-[11px] text-slate-300 focus:outline-none focus:border-cyan-500/20"
+                                            className="adm-input"
                                         >
                                             {CONTACT_TYPES.map((t) => <option key={t.type} value={t.type}>{t.label}</option>)}
                                         </select>
                                         <input
                                             value={c.label}
+                                            aria-label="Contact displayed text"
                                             onChange={(e) => patchContact(i, { label: e.target.value })}
                                             placeholder="Displayed text"
-                                            className={inputCls}
+                                            className="adm-input"
                                         />
                                         <input
                                             value={c.url}
+                                            aria-label="Contact URL"
                                             onChange={(e) => patchContact(i, { url: e.target.value })}
                                             placeholder="Link URL (optional)"
-                                            className={inputCls}
+                                            className="adm-input"
                                         />
                                         <button
+                                            type="button"
                                             onClick={() => update({ contacts: parsed.contacts.filter((_, k) => k !== i) })}
-                                            className={`${miniBtn} opacity-0 group-hover:opacity-100 hover:text-red-400 shrink-0`}
+                                            className="adm-icon-btn"
                                             title="Remove contact"
+                                            aria-label="Remove contact"
                                         >
-                                            <FaTrash className="text-[10px]" />
+                                            <FaTrash aria-hidden="true" />
                                         </button>
                                     </div>
                                 ))}
                                 <button
+                                    type="button"
                                     onClick={() => update({ contacts: [blankContact(), ...parsed.contacts] })}
-                                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-cyan-500/20 bg-cyan-500/5 text-[9px] uppercase font-bold tracking-wider text-cyan-400 hover:bg-cyan-500/10 hover:text-cyan-300 transition-all cursor-pointer"
+                                    className="adm-btn !px-3 text-xs"
                                 >
-                                    <FaPlus className="text-[8px]" /> contact
+                                    <FaPlus aria-hidden="true" /> Add contact
                                 </button>
                             </div>
                         </>
@@ -429,8 +579,9 @@ function HeaderEditor({ header, onChange }) {
                         <textarea
                             value={header}
                             rows={9}
+                            aria-label="Raw header LaTeX"
                             onChange={(e) => onChange(e.target.value)}
-                            className={`${inputCls} resize-y font-mono`}
+                            className="adm-input font-mono"
                         />
                     )}
                 </div>
@@ -474,14 +625,12 @@ export default function VisualEditor({ model, onChange }) {
     };
 
     return (
-        <div className="h-full overflow-auto p-3 space-y-3">
-            {/* Header block */}
+        <div className="h-full overflow-y-auto p-3 space-y-3">
             <HeaderEditor
                 header={model.header}
                 onChange={(header) => onChange({ ...model, header })}
             />
 
-            {/* Sections */}
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleSectionDrag}>
                 <SortableContext items={model.sections.map((s) => s.id)} strategy={verticalListSortingStrategy}>
                     <div className="space-y-3">
@@ -498,33 +647,35 @@ export default function VisualEditor({ model, onChange }) {
                 </SortableContext>
             </DndContext>
 
-            {/* Add section */}
             <div className="relative">
                 <button
+                    type="button"
                     onClick={() => setAddOpen(!addOpen)}
-                    className="w-full rounded-xl border border-dashed border-white/10 hover:border-cyan-500/30 bg-white/[0.01] hover:bg-cyan-500/5 py-3 text-xs font-bold uppercase tracking-wider text-slate-500 hover:text-cyan-400 transition-all cursor-pointer"
+                    aria-expanded={addOpen}
+                    className="adm-btn w-full"
                 >
-                    <FaPlus className="inline mr-2 text-[10px]" /> Add section
+                    <FaPlus aria-hidden="true" /> Add section
                 </button>
                 {addOpen && (
                     <>
                         <div className="fixed inset-0 z-10" onClick={() => setAddOpen(false)} />
-                        <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 z-20 w-[19rem] max-w-[calc(100vw-2rem)] rounded-xl border border-white/10 bg-slate-800 shadow-2xl p-2">
-                            <p className="px-1.5 pt-0.5 pb-1.5 text-[9px] font-bold uppercase tracking-widest text-slate-500">Add a section</p>
-                            <div className="grid grid-cols-3 gap-1">
+                        <div className="adm-dialog absolute bottom-full left-1/2 z-20 mb-2 w-80 max-w-[calc(100vw-2rem)] -translate-x-1/2 p-3">
+                            <p className="adm-label mb-2">Choose a section type</p>
+                            <div className="grid grid-cols-3 gap-1.5">
                                 {SECTION_MENU.map(({ key, label, icon: Icon, type, title }) => (
                                     <button
                                         key={key}
+                                        type="button"
                                         onClick={() => {
                                             const base = blankSection(type);
                                             onChange({ ...model, sections: [{ ...base, title }, ...model.sections] });
                                             setAddOpen(false);
                                         }}
-                                        className="flex flex-col items-center gap-1.5 rounded-lg border border-transparent px-2 py-2.5 text-slate-300 hover:border-cyan-500/30 hover:bg-cyan-500/10 hover:text-cyan-300 transition-all"
+                                        className="adm-sc-choice flex-col items-center justify-center p-2 text-center"
                                         title={title}
                                     >
-                                        <Icon className="text-sm" />
-                                        <span className="text-[9px] text-center leading-tight">{label}</span>
+                                        <Icon className="text-sm text-[var(--adm-accent-ink)]" aria-hidden="true" />
+                                        <span className="text-xs text-[var(--text-primary)]">{label}</span>
                                     </button>
                                 ))}
                             </div>

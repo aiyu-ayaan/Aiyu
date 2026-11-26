@@ -57,19 +57,18 @@ export default function SectionBodyEditor({ type, data, onChange }) {
             return <PromptsEditor data={data} set={set} />;
 
         default:
-            return <p className="font-mono text-xs text-slate-500">No editor for type “{type}”.</p>;
+            return <p className="adm-help">No editor for type &ldquo;{type}&rdquo;.</p>;
     }
 }
 
-// ── nested-item wrapper ─────────────────────────────────────────────
 function ItemCard({ title, onRemove, children }) {
     return (
-        <div className="rounded-xl border border-white/10 bg-black/20 p-4">
-            <div className="mb-3 flex items-center justify-between">
-                <span className="font-mono text-[0.7rem] uppercase tracking-wider text-slate-500">{title}</span>
-                <RemoveButton onClick={onRemove} />
+        <div className="adm-sc-item">
+            <div className="adm-sc-item-head">
+                <span className="min-w-0 flex-1 truncate text-sm font-semibold text-[var(--text-bright)]">{title}</span>
+                <RemoveButton onClick={onRemove} label={`Remove ${title}`} />
             </div>
-            <div className="space-y-3">{children}</div>
+            <div className="adm-sc-item-body">{children}</div>
         </div>
     );
 }
@@ -85,10 +84,10 @@ function SkillsEditor({ data, set }) {
             {categories.map((cat, i) => (
                 <ItemCard
                     key={cat.id || i}
-                    title={`Category · ${cat.label || 'untitled'}`}
+                    title={`Category · ${cat.label || 'Untitled'}`}
                     onRemove={() => setCats(categories.filter((_, idx) => idx !== i))}
                 >
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div className="adm-sc-fields">
                         <Field label="Label">
                             <TextInput value={cat.label} onChange={(label) => updateCat(i, { label })} />
                         </Field>
@@ -117,22 +116,24 @@ function SkillItems({ items, onChange }) {
     return (
         <div className="space-y-2">
             {list.map((item, i) => (
-                <div key={i} className="flex items-start gap-2 rounded-lg border border-white/5 bg-black/20 p-2">
-                    <div className="flex-1 space-y-2">
-                        <TextInput value={item.name} onChange={(name) => update(i, { name })} placeholder="Skill name" />
-                        <TextArea
-                            value={item.description}
-                            rows={2}
-                            onChange={(description) => update(i, { description })}
-                            placeholder="What this skill does…"
-                        />
-                        <TextInput
-                            value={item.url}
-                            onChange={(url) => update(i, { url })}
-                            placeholder="Link (optional) — https://"
-                        />
+                <div key={i} className="adm-sc-item p-3">
+                    <div className="flex items-start gap-2">
+                        <div className="min-w-0 flex-1 space-y-2">
+                            <TextInput value={item.name} onChange={(name) => update(i, { name })} placeholder="Skill name" />
+                            <TextArea
+                                value={item.description}
+                                rows={2}
+                                onChange={(description) => update(i, { description })}
+                                placeholder="What this skill does…"
+                            />
+                            <TextInput
+                                value={item.url}
+                                onChange={(url) => update(i, { url })}
+                                placeholder="Link (optional) — https://"
+                            />
+                        </div>
+                        <RemoveButton onClick={() => onChange(list.filter((_, idx) => idx !== i))} label={`Remove ${item.name || 'skill'}`} />
                     </div>
-                    <RemoveButton onClick={() => onChange(list.filter((_, idx) => idx !== i))} />
                 </div>
             ))}
             <AddButton label="Add skill" onClick={() => onChange([{ name: '', description: '', url: '' }, ...list])} />
@@ -151,10 +152,10 @@ function RecommendationsEditor({ data, set }) {
             {cards.map((card, i) => (
                 <ItemCard
                     key={card.id || i}
-                    title={`Tool · ${card.name || 'untitled'}`}
+                    title={`Tool · ${card.name || 'Untitled'}`}
                     onRemove={() => setCards(cards.filter((_, idx) => idx !== i))}
                 >
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div className="adm-sc-fields">
                         <Field label="Name">
                             <TextInput value={card.name} onChange={(name) => update(i, { name })} />
                         </Field>
@@ -197,10 +198,10 @@ function CreditsEditor({ data, set }) {
             {rows.map((row, i) => (
                 <ItemCard
                     key={row.id || i}
-                    title={`Provider · ${row.name || 'untitled'}`}
+                    title={`Provider · ${row.name || 'Untitled'}`}
                     onRemove={() => setRows(rows.filter((_, idx) => idx !== i))}
                 >
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div className="adm-sc-fields">
                         <Field label="Name">
                             <TextInput value={row.name} onChange={(name) => update(i, { name })} />
                         </Field>
@@ -214,9 +215,9 @@ function CreditsEditor({ data, set }) {
                     <Field label="Note">
                         <TextInput value={row.note} onChange={(note) => update(i, { note })} />
                     </Field>
-                    <div className="flex flex-wrap gap-5 pt-1">
-                        <SwitchRow label="free API" checked={!!row.freeApi} onChange={(freeApi) => update(i, { freeApi })} />
-                        <SwitchRow label="no card" checked={!!row.noCard} onChange={(noCard) => update(i, { noCard })} />
+                    <div className="flex flex-wrap gap-6 pt-1">
+                        <SwitchRow label="Free API key" checked={!!row.freeApi} onChange={(freeApi) => update(i, { freeApi })} />
+                        <SwitchRow label="No credit card" checked={!!row.noCard} onChange={(noCard) => update(i, { noCard })} />
                     </div>
                 </ItemCard>
             ))}
@@ -241,14 +242,14 @@ function PromptsEditor({ data, set }) {
             {items.map((item, i) => (
                 <ItemCard
                     key={item.id || i}
-                    title={`Prompt · ${item.title || 'untitled'}`}
+                    title={`Prompt · ${item.title || 'Untitled'}`}
                     onRemove={() => setItems(items.filter((_, idx) => idx !== i))}
                 >
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div className="adm-sc-fields">
                         <Field label="Title">
                             <TextInput value={item.title} onChange={(title) => update(i, { title })} />
                         </Field>
-                        <Field label="Role / tag">
+                        <Field label="Role or tag">
                             <TextInput value={item.role} onChange={(role) => update(i, { role })} />
                         </Field>
                     </div>
