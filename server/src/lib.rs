@@ -40,7 +40,6 @@ pub mod heif;
 pub mod images;
 pub mod indexing;
 pub mod pages;
-pub mod proxy;
 pub mod restore;
 pub mod seo;
 pub mod seo_admin;
@@ -56,8 +55,8 @@ pub mod write;
 use axum::{
     Router,
     extract::DefaultBodyLimit,
-    http::{HeaderValue, StatusCode, header},
-    routing::{any, delete, get, patch, post, put},
+    http::{HeaderValue, header},
+    routing::{delete, get, patch, post, put},
 };
 use tower_http::{
     compression::{
@@ -71,11 +70,10 @@ use tower_http::{
 #[derive(Clone)]
 pub struct AppState {
     pub config: config::Config,
-    pub upstream: proxy::Upstream,
     pub cipher: crypto::FieldCipher,
     pub sessions: session::SessionKeys,
     pub db: sqlx::PgPool,
-    /// None when the Vite build is missing: those routes then fall through to Next.
+    /// None when the Vite build is missing (tests): the routes that need it answer 503.
     pub web: Option<std::sync::Arc<web::WebApp>>,
     /// Outbound HTTPS (GitHub API, later the other integrations).
     pub http: reqwest::Client,
@@ -84,21 +82,13 @@ pub struct AppState {
 }
 
 impl AppState {
-    pub fn upstream_base(&self) -> &str {
-        &self.upstream.base
-    }
-
-    pub fn upstream_client(&self) -> &reqwest::Client {
-        &self.upstream.client
-    }
-
     /// The pool connects lazily, so this never blocks or fails on a down database.
     pub async fn new(config: config::Config) -> anyhow::Result<Self> {
         health::start_clock();
         let web = match web::WebApp::load(&config.web_dir) {
             Ok(w) => Some(w),
             Err(err) => {
-                tracing::warn!(dir = ?config.web_dir, error = %err, "web app not loaded; its routes go to Next");
+                tracing::warn!(dir = ?config.web_dir, error = %err, "web app not loaded");
                 None
             }
         };
@@ -111,7 +101,6 @@ impl AppState {
             package_version,
             web,
             db: db::connect(&config.database_url).await?,
-            upstream: proxy::Upstream::new(&config.next_upstream),
             cipher: crypto::FieldCipher::new(&config.jwt_secret),
             sessions: session::SessionKeys::new(&config.jwt_secret),
             config,
@@ -222,16 +211,8 @@ fn limited_api(state: &AppState) -> Router<AppState> {
         .route_layer(axum::middleware::from_fn_with_state(state.clone(), limit::api))
 }
 
-/// Routes ported to Rust are added here; everything else streams through to Next (strangler fallback).
+/// Every route; what none of them claims goes to `site_static::fallback`.
 pub fn router(state: AppState) -> Router {
-    // Hashed build assets never change: serve them from disk with a one-year immutable cache.
-    let next_static = Router::new()
-        .nest_service("/_next/static", ServeDir::new(state.config.next_dir.join("static")))
-        .layer(SetResponseHeaderLayer::overriding(
-            header::CACHE_CONTROL,
-            HeaderValue::from_static("public, max-age=31536000, immutable"),
-        ));
-
     // Vite assets: content-hashed, so cache forever.
     let web_assets = Router::new()
         .nest_service("/_app", ServeDir::new(&state.config.web_dir))
@@ -263,7 +244,6 @@ pub fn router(state: AppState) -> Router {
         .route("/desktop", get(web::desktop))
         .route("/admin", get(web::admin))
         .route("/admin/{*rest}", get(web::admin))
-        .layer(axum::middleware::from_fn(web::skip_next_rsc))
         .layer(axum::middleware::from_fn(compat::public_page));
 
     // Agent documents: the proxy sends other hosts to the canonical one first.
@@ -281,7 +261,7 @@ pub fn router(state: AppState) -> Router {
         .route("/sitemap.xml", get(site_files::sitemap))
         .route("/ads.txt", get(site_files::ads_txt))
         .route("/_img/blog/{id}", get(web::blog_image))
-        // Catch-alls: answer only for legal apps in the database, everything else goes on to Next.
+        // Catch-alls: answer only for legal apps in the database, everything else goes to the fallback.
         .route("/{legal_app}", get(web::legal_app))
         .route("/{legal_app}/{legal_doc}", get(web::legal_doc))
         .route("/api/admin/export", get(export::export))
@@ -319,7 +299,7 @@ pub fn router(state: AppState) -> Router {
         .route("/api/admin/system-prompt", get(misc::system_prompt))
         .route("/api/mcp", get(mcp::get_mcp).options(mcp::options_mcp))
         .route("/api/uploads/{filename}", get(uploads::serve))
-        // API routes ported from Next; other methods on these paths still go to Next.
+        // Reads.
         .route("/api/about", get(api::about))
         .route("/api/home", get(api::home))
         .route("/api/header", get(api::header_data))
@@ -356,8 +336,6 @@ pub fn router(state: AppState) -> Router {
         .route("/api/desktop/source", get(site_api::desktop_source))
         // Ported writes, behind the /api rate limit.
         .merge(limited_api(&state))
-        // Next's side of the writes: reached over loopback only, never for outside callers.
-        .route("/api/internal/{*rest}", any(|| async { StatusCode::NOT_FOUND }))
         .route("/api/github/stats", get(github::stats))
         .route("/api/github/config", get(github_admin::config))
         .route("/api/github/sync", get(github_admin::preview))
@@ -370,12 +348,10 @@ pub fn router(state: AppState) -> Router {
         .route("/.well-known/agent-skills/index.json", get(site_api::skills_index))
         .route("/.well-known/agent-skills/{skill}/SKILL.md", get(site_api::skill_md))
         .route("/.well-known/mcp/server-card.json", get(site_api::mcp_server_card))
-        .merge(next_static)
         .merge(web_assets)
         .merge(site_static::uploads(&state))
         .fallback(site_static::fallback)
-        // A path Rust serves only for GET (pages, the legal catch-alls) still belongs to Next for other methods.
-        .method_not_allowed_fallback(proxy::forward)
+        .method_not_allowed_fallback(site_static::method_not_allowed)
         .layer(axum::middleware::from_fn(site_static::redirects))
         .layer(
             CompressionLayer::new().quality(tower_http::CompressionLevel::Precise(4)).br(true).gzip(true).compress_when(

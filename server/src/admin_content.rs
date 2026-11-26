@@ -1,5 +1,5 @@
 //! Admin writes for socials, themes, projects, deployments and the gallery. Each handler mirrors its Next route:
-//! same status codes and bodies, same cache invalidation and indexing pings.
+//! same status codes and bodies, same indexing pings.
 
 use axum::{
     extract::{Path, RawQuery, Request, State},
@@ -84,10 +84,6 @@ async fn admin_body(state: &AppState, req: Request) -> Result<Option<Value>, Res
 
 // ── socials ────────────────────────────────────────────────────────────────────────────────────────────
 
-fn socials_changed() -> Value {
-    json!({ "prefixes": ["db:socials"] })
-}
-
 pub async fn create_social(State(state): State<AppState>, req: Request) -> Response {
     const MESSAGE: &str = "Failed to create social link";
     let body = match admin_body(&state, req).await {
@@ -98,7 +94,6 @@ pub async fn create_social(State(state): State<AppState>, req: Request) -> Respo
     let created = async { write::insert(&state.db, &SOCIAL, write::prepare(&SOCIAL, &body)?).await }.await;
     match created {
         Ok(row) => {
-            write::notify(&state, socials_changed()).await;
             json_status(StatusCode::CREATED, row)
         }
         Err(err) => failed("/api/socials", &err, MESSAGE),
@@ -115,7 +110,6 @@ pub async fn update_social(State(state): State<AppState>, Path(id): Path<String>
     let updated = async { write::update(&state.db, &SOCIAL, &id, write::prepare(&SOCIAL, &body)?).await }.await;
     match updated {
         Ok(Some(row)) => {
-            write::notify(&state, socials_changed()).await;
             json_status(StatusCode::OK, row)
         }
         Ok(None) => error(StatusCode::NOT_FOUND, "Social link not found"),
@@ -129,7 +123,6 @@ pub async fn delete_social(State(state): State<AppState>, Path(id): Path<String>
     }
     match write::delete(&state.db, "Social", &id).await {
         Ok(Some(_)) => {
-            write::notify(&state, socials_changed()).await;
             json_status(StatusCode::OK, json!({ "message": "Social link deleted successfully" }))
         }
         Ok(None) => error(StatusCode::NOT_FOUND, "Social link not found"),
@@ -146,10 +139,6 @@ fn theme_failure(status: StatusCode, message: &str) -> Response {
 fn theme_error(err: &anyhow::Error) -> Response {
     log_error("/api/themes", err);
     theme_failure(FAILED, &err.to_string())
-}
-
-fn themes_changed() -> Value {
-    json!({ "prefixes": ["db:themes", "db:theme:detail:", "db:config"] })
 }
 
 fn predefined(state: &AppState, slug: &str) -> bool {
@@ -196,7 +185,6 @@ pub async fn create_theme(State(state): State<AppState>, req: Request) -> Respon
     .await;
     match result {
         Ok(Some(row)) => {
-            write::notify(&state, themes_changed()).await;
             json_status(StatusCode::CREATED, json!({ "success": true, "data": row }))
         }
         Ok(None) => theme_failure(StatusCode::BAD_REQUEST, "A theme with this name already exists"),
@@ -226,7 +214,6 @@ pub async fn update_theme(State(state): State<AppState>, Path(id): Path<String>,
     .await;
     match result {
         Ok(Some(row)) => {
-            write::notify(&state, themes_changed()).await;
             json_status(StatusCode::OK, json!({ "success": true, "data": row }))
         }
         Ok(None) => theme_failure(StatusCode::NOT_FOUND, "Theme not found"),
@@ -251,7 +238,6 @@ pub async fn delete_theme(State(state): State<AppState>, Path(id): Path<String>,
             None => None,
         };
         let Some(row) = deleted else { return Ok(theme_failure(StatusCode::NOT_FOUND, "Theme not found")) };
-        write::notify(&state, themes_changed()).await;
         Ok(json_status(StatusCode::OK, json!({ "success": true, "message": "Theme deleted successfully", "data": row })))
     }
     .await;
@@ -269,20 +255,15 @@ struct Entry {
     /// Public list page: "/projects".
     base: &'static str,
     slug_prefix: &'static str,
-    cache: &'static str,
 }
 
-const PROJECTS: Entry = Entry { table: &PROJECT, noun: "project", title: "Project", base: "/projects", slug_prefix: "project", cache: "db:projects" };
+const PROJECTS: Entry = Entry { table: &PROJECT, noun: "project", title: "Project", base: "/projects", slug_prefix: "project" };
 const DEPLOYMENTS: Entry =
-    Entry { table: &DEPLOYMENT, noun: "deployment", title: "Deployment", base: "/apps", slug_prefix: "app", cache: "db:deployments" };
+    Entry { table: &DEPLOYMENT, noun: "deployment", title: "Deployment", base: "/apps", slug_prefix: "app" };
 
 impl Entry {
     fn path(&self, row: &Value) -> String {
         format!("{}/{}", self.base, pages::entity_slug(row, self.slug_prefix))
-    }
-
-    fn effects(&self, pings: Vec<Value>) -> Value {
-        json!({ "prefixes": [self.cache], "pings": pings })
     }
 
     fn not_found(&self) -> Response {
@@ -335,7 +316,7 @@ async fn create_entry(state: AppState, req: Request, entry: &Entry) -> Response 
     match result {
         Ok(Some(row)) => {
             let paths = [entry.path(&row), entry.base.to_string()];
-            write::notify(&state, entry.effects(vec![write::ping(&paths, "URL_UPDATED")])).await;
+            crate::indexing::auto(&state, vec![write::ping(&paths, "URL_UPDATED")]);
             json_status(StatusCode::CREATED, row)
         }
         Ok(None) => unknown_project(),
@@ -387,7 +368,7 @@ async fn update_entry(state: AppState, id: String, req: Request, entry: &Entry) 
     match result {
         Ok(Ok(Some(row))) => {
             let paths = [entry.path(&row), entry.base.to_string()];
-            write::notify(&state, entry.effects(vec![write::ping(&paths, "URL_UPDATED")])).await;
+            crate::indexing::auto(&state, vec![write::ping(&paths, "URL_UPDATED")]);
             json_status(StatusCode::OK, row)
         }
         Ok(Ok(None)) => entry.not_found(),
@@ -403,7 +384,7 @@ async fn delete_entry(state: AppState, id: String, req: Request, entry: &Entry) 
     match write::delete(&state.db, entry.table.name, &id).await {
         Ok(Some(row)) => {
             let pings = vec![write::ping(&[entry.path(&row)], "URL_DELETED"), write::ping(&[entry.base.to_string()], "URL_UPDATED")];
-            write::notify(&state, entry.effects(pings)).await;
+            crate::indexing::auto(&state, pings);
             json_status(StatusCode::OK, json!({ "message": format!("{} deleted successfully", entry.title) }))
         }
         Ok(None) => entry.not_found(),
@@ -458,7 +439,6 @@ async fn reorder(state: AppState, req: Request, entry: &Entry) -> Response {
     .await;
     match result {
         Ok(true) => {
-            write::notify(&state, entry.effects(vec![])).await;
             json_status(StatusCode::OK, json!({ "message": format!("{} order updated successfully", entry.title) }))
         }
         Ok(false) => error(StatusCode::NOT_FOUND, &format!("One or more {}s were not found", entry.noun)),
@@ -508,10 +488,6 @@ fn gallery_error(err: &anyhow::Error) -> Response {
     gallery_failure(StatusCode::BAD_REQUEST, &err.to_string())
 }
 
-fn gallery_changed() -> Value {
-    json!({ "keys": ["db:gallery"] })
-}
-
 pub async fn create_gallery_item(State(state): State<AppState>, req: Request) -> Response {
     let (parts, body) = req.into_parts();
     if !signed_in(&state, &parts.headers).await {
@@ -528,7 +504,6 @@ pub async fn create_gallery_item(State(state): State<AppState>, req: Request) ->
     .await;
     match created {
         Ok(row) => {
-            write::notify(&state, gallery_changed()).await;
             json_status(StatusCode::CREATED, json!({ "success": true, "data": row }))
         }
         Err(err) => gallery_error(&err),
@@ -544,7 +519,6 @@ pub async fn delete_gallery_item(State(state): State<AppState>, RawQuery(query):
     };
     match write::delete(&state.db, "Gallery", &id).await {
         Ok(Some(row)) => {
-            write::notify(&state, gallery_changed()).await;
             // The thumbnail file goes too; only its name is used, so the path stays inside the uploads folder.
             let name = row["thumbnail"].as_str().and_then(|t| std::path::Path::new(t).file_name());
             if let Some(name) = name {
@@ -584,7 +558,6 @@ pub async fn update_gallery(State(state): State<AppState>, req: Request) -> Resp
     if let Some(items) = body["items"].as_array() {
         return match reorder_gallery(&state.db, items).await {
             Ok(()) => {
-                write::notify(&state, gallery_changed()).await;
                 json_status(StatusCode::OK, json!({ "success": true, "message": "Ordering updated successfully" }))
             }
             Err(err) => gallery_error(&err),
@@ -597,7 +570,6 @@ pub async fn update_gallery(State(state): State<AppState>, req: Request) -> Resp
     let updated = async { write::update(&state.db, &GALLERY, id, write::prepare(&GALLERY, &body["update"])?).await }.await;
     match updated {
         Ok(Some(row)) => {
-            write::notify(&state, gallery_changed()).await;
             json_status(StatusCode::OK, json!({ "success": true, "data": row }))
         }
         Ok(None) => gallery_failure(StatusCode::NOT_FOUND, "Item not found"),

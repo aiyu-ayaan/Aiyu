@@ -186,16 +186,13 @@ pub async fn put_config(State(state): State<AppState>, req: Request) -> Response
             anyhow::ensure!(!truthy(token) || token.is_string(), "githubToken must be a string");
             let patch = seal("encryptedGithubToken", token.as_str().map(str::to_string));
             write::upsert_singleton(&state.db, &crate::admin_site::CONFIG, &patch).await?;
-            write::notify(&state, json!({ "prefixes": ["db:github", "db:config"] })).await;
         }
         if let Some(webhook) = body.get("webhookSecret") {
             let Some(webhook) = webhook.as_str() else { return Ok(failure(StatusCode::BAD_REQUEST, "Invalid webhook secret")) };
             let patch = seal("encryptedGithubWebhookSecret", Some(webhook.trim().to_string()));
             write::upsert_singleton(&state.db, &crate::admin_site::CONFIG, &patch).await?;
-            write::notify(&state, json!({ "prefixes": ["db:config"] })).await;
         }
         let saved = write::upsert_singleton(&state.db, &GITHUB, &patch).await?;
-        write::notify(&state, json!({ "prefixes": ["db:github"] })).await;
         Ok(ok(json!({ "success": true, "data": saved })))
     }
     .await;

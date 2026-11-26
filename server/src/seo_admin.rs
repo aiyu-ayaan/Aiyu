@@ -445,15 +445,12 @@ pub async fn fix(State(state): State<AppState>, req: Request) -> Response {
         }
         let kind = js_string(&body["type"]);
         let missing = |what: &str| Ok(failure(StatusCode::from_u16(444).expect("a valid status"), &format!("{what} not found.")));
-        let (table, prefix, what, subject, label) = match kind.as_str() {
-            "blog" => (&admin_blogs::BLOG, "db:blogs", "Blog post", "", ""),
-            "project" => (&admin_content::PROJECT, "db:projects", "Project", "project description (50-160 characters) for a developer portfolio", "Project Name"),
-            "app" => (&admin_content::DEPLOYMENT, "db:deployments", "App/Deployment", "description (50-160 characters) for a hosted web application", "App Name"),
+        let (table, what, subject, label) = match kind.as_str() {
+            "blog" => (&admin_blogs::BLOG, "Blog post", "", ""),
+            "project" => (&admin_content::PROJECT, "Project", "project description (50-160 characters) for a developer portfolio", "Project Name"),
+            "app" => (&admin_content::DEPLOYMENT, "App/Deployment", "description (50-160 characters) for a hosted web application", "App Name"),
             "static" => {
                 let fixed = fix_site(&state, &config).await?;
-                if !fixed.is_empty() {
-                    write::notify(&state, json!({ "prefixes": ["db:config"] })).await;
-                }
                 return Ok(ok(json!({ "success": true, "fixedIssues": fixed })));
             }
             other => return Ok(failure(StatusCode::BAD_REQUEST, &format!("Unsupported type: {other}"))),
@@ -465,9 +462,6 @@ pub async fn fix(State(state): State<AppState>, req: Request) -> Response {
         } else {
             describe(&state, &config, table, id, &row, (subject, label)).await?
         };
-        if !fixed.is_empty() {
-            write::notify(&state, json!({ "prefixes": [prefix] })).await;
-        }
         Ok(ok(json!({ "success": true, "fixedIssues": fixed })))
     }
     .await;

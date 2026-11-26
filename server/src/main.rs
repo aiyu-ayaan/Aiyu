@@ -21,10 +21,10 @@ async fn run() -> anyhow::Result<()> {
     aiyu_server::api::mark_start();
     let config = Config::from_env()?;
     let listen = config.listen;
-    tracing::info!(%listen, upstream = %config.next_upstream, "aiyu-server starting");
+    tracing::info!(%listen, "aiyu-server starting");
 
     let state = AppState::new(config).await?;
-    // Next no longer has any pages: without the Vite build every page would be a 404. Fail loudly instead.
+    // Without the Vite build no page can be served. Fail loudly instead.
     if state.web.is_none() {
         anyhow::bail!("web app not loaded (WEB_DIR must hold index.html, route-meta.json, ai-defaults.json, admin-routes.json)");
     }

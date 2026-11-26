@@ -109,7 +109,7 @@ pub struct TempFile(pub PathBuf);
 impl TempFile {
     /// A fresh path in the backup scratch folder (on disk: `/tmp` is memory in the container).
     pub async fn new(extension: &str) -> anyhow::Result<Self> {
-        let dir = std::env::var("BACKUP_TMP_DIR").ok().filter(|v| !v.is_empty()).unwrap_or_else(|| ".next/cache/backups".into());
+        let dir = std::env::var("BACKUP_TMP_DIR").ok().filter(|v| !v.is_empty()).unwrap_or_else(|| ".cache/backups".into());
         tokio::fs::create_dir_all(&dir).await?;
         Ok(Self(Path::new(&dir).join(format!("{}.{extension}", new_id()))))
     }
@@ -503,7 +503,6 @@ pub async fn restore_file(state: &AppState, path: &Path) -> Result<Map<String, V
             results.insert("images".into(), json!({ "count": count, "status": "restored" }));
         }
     }
-    write::notify(state, json!({ "prefixes": [""] })).await;
     Ok(results)
 }
 

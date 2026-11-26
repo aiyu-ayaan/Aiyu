@@ -292,10 +292,10 @@ pub async fn ads_txt(State(state): State<AppState>) -> Response {
 macro_rules! markdown_doc {
     ($name:ident, $key:literal) => {
         /// A markdown document exported by the web build.
-        pub async fn $name(State(state): State<AppState>, req: axum::extract::Request) -> Response {
+        pub async fn $name(State(state): State<AppState>) -> Response {
             match state.web.as_ref().and_then(|w| w.discovery[$key].as_str()) {
                 Some(md) => file("text/markdown; charset=utf-8", "public, max-age=300, s-maxage=300", md.to_string()),
-                None => crate::proxy::forward(State(state), req).await,
+                None => crate::web::unavailable(),
             }
         }
     };

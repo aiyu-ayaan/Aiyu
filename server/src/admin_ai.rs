@@ -199,10 +199,6 @@ async fn exists(db: &PgPool, table: &str, what: &str, id: &str) -> anyhow::Resul
     Ok(())
 }
 
-async fn changed(state: &AppState) {
-    write::notify(state, json!({ "keys": ["db:aiPage", "db:aiPage:stats"] })).await;
-}
-
 pub(crate) async fn create(state: &AppState, entry: &Entry, input: Value) -> anyhow::Result<Value> {
     anyhow::ensure!(!input.is_null(), "body is null");
     let mut data = Map::new();
@@ -227,7 +223,6 @@ pub(crate) async fn create(state: &AppState, entry: &Entry, input: Value) -> any
     };
     data.insert("displayOrder".into(), order.into());
     let row = write::insert(&state.db, entry.table, data).await?;
-    changed(state).await;
     Ok(json!({ entry.reply: row }))
 }
 
@@ -254,14 +249,12 @@ pub(crate) async fn update(state: &AppState, entry: &Entry, id: &str, patch: Val
         return Err(invalid("No updatable fields provided.".into()));
     }
     let row = write::update(&state.db, entry.table, id, data).await?;
-    changed(state).await;
     Ok(json!({ entry.reply: row }))
 }
 
 pub(crate) async fn remove(state: &AppState, entry: &Entry, id: &str) -> anyhow::Result<Value> {
     exists(&state.db, entry.table.name, entry.what, id).await?;
     write::delete(&state.db, entry.table.name, id).await?;
-    changed(state).await;
     Ok(json!({ "deletedId": id }))
 }
 
@@ -330,7 +323,6 @@ async fn seed(state: &AppState, defaults: &Value) -> anyhow::Result<Value> {
             prompts += 1;
         }
     }
-    changed(state).await;
     Ok(json!({ "seeded": { "skills": skills, "recommendations": recommendations, "credits": credits, "prompts": prompts } }))
 }
 

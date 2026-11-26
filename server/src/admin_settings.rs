@@ -163,7 +163,6 @@ pub async fn put_ads(State(state): State<AppState>, req: Request) -> Response {
             patch.insert("placements".into(), Value::Object(placements));
         }
         write::upsert_singleton(&state.db, &ADS, &patch).await?;
-        write::notify(&state, json!({ "keys": ["db:ads"] })).await;
         Ok(())
     }
     .await;
@@ -198,7 +197,6 @@ pub async fn put_social(State(state): State<AppState>, req: Request) -> Response
     if let Err(err) = write::upsert_singleton(&state.db, &SEO, &patch).await {
         return failed("/api/admin/social", StatusCode::BAD_REQUEST, err);
     }
-    write::notify(&state, json!({ "prefixes": ["db:socialmeta"] })).await;
     ok(json!({ "success": true, "social": clean }))
 }
 
@@ -261,7 +259,6 @@ pub async fn put_seo_config(State(state): State<AppState>, req: Request) -> Resp
     }
     let result: anyhow::Result<Value> = async {
         write::upsert_singleton(&state.db, &SEO, &patch).await?;
-        write::notify(&state, json!({ "prefixes": ["db:seoconfig"] })).await;
         let (config, status) = seo_state(&state).await?;
         Ok(json!({ "success": true, "config": config, "serviceAccount": status }))
     }
@@ -500,7 +497,7 @@ fn mcp_payload(web: &crate::web::WebApp, stored: &Value) -> Value {
     let defaults = &web.discovery["mcpDefaults"];
     let config = merge_mcp_config(stored, defaults);
     let site = crate::web::site_url();
-    let card = mcp_card(&config, defaults, &web.discovery["mcpBuiltinTools"], &site);
+    let card = mcp_card(&config, defaults, &site);
     json!({ "success": true, "config": config, "card": card, "cardUrl": format!("{site}/.well-known/mcp/server-card.json") })
 }
 
@@ -510,7 +507,7 @@ pub async fn mcp_config(State(state): State<AppState>, req: Request) -> Response
     if !signed_in(&state, req.headers()).await {
         return unauthorized();
     }
-    let Some(web) = state.web.clone() else { return crate::proxy::forward(State(state), req).await };
+    let Some(web) = state.web.clone() else { return crate::web::unavailable() };
     let stored = pages::singleton(&state.db, MCP.table, true).await;
     ok(mcp_payload(&web, &stored))
 }
@@ -523,7 +520,6 @@ pub async fn put_mcp_config(State(state): State<AppState>, req: Request) -> Resp
     let normalized = object(merge_mcp_config(&body, &web.discovery["mcpDefaults"]));
     match write::upsert_singleton(&state.db, &MCP, &normalized).await {
         Ok(saved) => {
-            write::notify(&state, json!({ "prefixes": ["db:mcpconfig"] })).await;
             ok(mcp_payload(&web, &saved))
         }
         Err(err) => failed("/api/admin/mcp/config", StatusCode::BAD_REQUEST, err),

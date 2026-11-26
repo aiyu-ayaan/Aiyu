@@ -541,7 +541,7 @@ pub async fn sync(state: &AppState, names: &[String], token: Option<&str>, only_
     }
     if !paths.is_empty() {
         paths.push("/projects".into());
-        write::notify(state, json!({ "prefixes": ["db:projects"], "pings": [write::ping(&paths, "URL_UPDATED")] })).await;
+        crate::indexing::auto(state, vec![write::ping(&paths, "URL_UPDATED")]);
     }
     results
 }

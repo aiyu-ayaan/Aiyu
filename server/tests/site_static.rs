@@ -32,8 +32,6 @@ fn site(name: &str) -> PathBuf {
 async fn app(root: &std::path::Path) -> Router {
     router(AppState::new(Config {
         listen: "127.0.0.1:0".parse().unwrap(),
-        next_upstream: "http://127.0.0.1:1".into(),
-        next_dir: "/nonexistent".into(),
         jwt_secret: "s".into(),
         trusted_proxies: vec![],
         uploads_dir: root.join("uploads"),

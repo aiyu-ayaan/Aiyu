@@ -1,18 +1,16 @@
-//! Shared pieces of the ported admin writes: who may write, how the body is read, the typed inserts and updates
-//! Prisma did, and the side effects that still run in Next.
+//! Shared pieces of the admin writes: who may write, how the body is read, the typed inserts and updates, and the
+//! search-engine ping of a content change.
 
 use axum::{
     body::Body,
     http::{HeaderMap, header},
 };
 use chrono::{DateTime, NaiveDate, NaiveDateTime, Utc};
-use hmac::{Hmac, Mac};
 use serde_json::{Map, Value, json};
 use sha2::{Digest, Sha256};
 use sqlx::PgPool;
-use std::time::Duration;
 
-use crate::{AppState, db::new_id, export::INTERNAL_HEADER, pages, session::constant_time_eq, site_api::js_string};
+use crate::{AppState, db::new_id, pages, session::constant_time_eq, site_api::js_string};
 
 /// Blog covers, favicons and the resume arrive as base64 inside the JSON.
 const BODY_LIMIT: usize = 20 * 1024 * 1024;
@@ -52,38 +50,7 @@ pub async fn json_body(body: Body) -> Option<Value> {
     serde_json::from_slice(&bytes).ok()
 }
 
-// ── side effects that stay in Next ─────────────────────────────────────────────────────────────────────
-
-pub fn hooks_key(jwt_secret: &str) -> String {
-    let mut mac = Hmac::<Sha256>::new_from_slice(jwt_secret.as_bytes()).expect("any key length");
-    mac.update(b"internal:hooks");
-    hex::encode(mac.finalize().into_bytes())
-}
-
-/// What follows a write: `{ prefixes, keys, revalidate, pings: [{ paths, type }] }`. The pings run here; Next's
-/// caches are cleared through `/api/internal/hooks`. The write has happened, so a failure is only logged.
-pub async fn notify(state: &AppState, mut effects: Value) {
-    if let Some(Value::Array(pings)) = effects.as_object_mut().and_then(|e| e.shift_remove("pings")) {
-        crate::indexing::auto(state, pings);
-    }
-    if effects.as_object().is_some_and(Map::is_empty) {
-        return;
-    }
-    let sent = state
-        .upstream_client()
-        .post(format!("{}/api/internal/hooks", state.upstream_base()))
-        .header(INTERNAL_HEADER, hooks_key(&state.config.jwt_secret))
-        .header(header::CONTENT_TYPE, "application/json")
-        .body(effects.to_string())
-        .timeout(Duration::from_secs(5))
-        .send()
-        .await
-        .and_then(|r| r.error_for_status());
-    if let Err(err) = sent {
-        tracing::warn!(error = %err, "Next hooks failed: its caches stay until they expire");
-    }
-}
-
+/// One search-engine ping of a content change, for `indexing::auto`.
 pub fn ping(paths: &[String], kind: &str) -> Value {
     json!({ "paths": paths, "type": kind })
 }
@@ -345,12 +312,5 @@ mod tests {
             Value::Object(row),
             json!({ "token": "5", "updatedAt": "2026-01-02T00:00:00.000", "createdAt": "2026-01-01T00:00:00.000", "data": { "a": 1, "b": 3 } })
         );
-    }
-
-    #[test]
-    fn hooks_key_is_not_the_export_key() {
-        // node -e "console.log(require('crypto').createHmac('sha256','s').update('internal:hooks').digest('hex'))"
-        assert_eq!(hooks_key("s"), "f5d14c7867abee830008f37d32709061ec74a3d38fabcebda793bb00ca7e1af3");
-        assert_ne!(hooks_key("s"), crate::export::internal_key("s"));
     }
 }

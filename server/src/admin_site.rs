@@ -29,7 +29,7 @@ const AI_PAGE: Singleton = Singleton { table: "AiPage", timestamps: true, secret
 const SECTION_PATHS: [&str; 8] = ["/", "/about-me", "/projects", "/apps", "/blogs", "/gallery", "/github", "/contact-us"];
 
 /// The shared shape of `PUT /api/{about,home,header,config}`: merge the JSON object into the document.
-async fn save(state: AppState, req: Request, model: &Singleton, failed: &str, effects: Value) -> Response {
+async fn save(state: AppState, req: Request, model: &Singleton, failed: &str, pings: Vec<Value>) -> Response {
     let (parts, body) = req.into_parts();
     if !signed_in(&state, &parts.headers).await {
         return error(StatusCode::UNAUTHORIZED, "Unauthorized");
@@ -37,7 +37,7 @@ async fn save(state: AppState, req: Request, model: &Singleton, failed: &str, ef
     let Some(Value::Object(patch)) = write::json_body(body).await else { return error(StatusCode::INTERNAL_SERVER_ERROR, failed) };
     match write::upsert_singleton(&state.db, model, &patch).await {
         Ok(saved) => {
-            write::notify(&state, effects).await;
+            crate::indexing::auto(&state, pings);
             json_status(StatusCode::OK, saved)
         }
         Err(err) => {
@@ -48,23 +48,22 @@ async fn save(state: AppState, req: Request, model: &Singleton, failed: &str, ef
 }
 
 pub async fn put_about(State(state): State<AppState>, req: Request) -> Response {
-    save(state, req, &ABOUT, "Failed to update about data", json!({ "prefixes": ["db:about"] })).await
+    save(state, req, &ABOUT, "Failed to update about data", vec![]).await
 }
 
 pub async fn put_home(State(state): State<AppState>, req: Request) -> Response {
-    save(state, req, &HOME, "Failed to update home data", json!({ "keys": ["db:home"] })).await
+    save(state, req, &HOME, "Failed to update home data", vec![]).await
 }
 
 pub async fn put_header(State(state): State<AppState>, req: Request) -> Response {
     // The header is on every page, so the section landing pages are pinged again.
     let paths = SECTION_PATHS.map(str::to_string);
-    let effects = json!({ "keys": ["db:header"], "pings": [write::ping(&paths, "URL_UPDATED")] });
-    save(state, req, &HEADER, "Failed to update header data", effects).await
+    save(state, req, &HEADER, "Failed to update header data", vec![write::ping(&paths, "URL_UPDATED")]).await
 }
 
 /// `PUT` and `POST /api/config`.
 pub async fn put_config(State(state): State<AppState>, req: Request) -> Response {
-    save(state, req, &CONFIG, "Failed to update config", json!({ "prefixes": ["db:config", "db:themes"] })).await
+    save(state, req, &CONFIG, "Failed to update config", vec![]).await
 }
 
 fn failure(status: StatusCode, message: &str) -> Response {
@@ -114,7 +113,6 @@ pub async fn set_active_theme(State(state): State<AppState>, req: Request) -> Re
             patch.insert("perPageThemes".into(), Value::Object(merged));
         }
         let updated = write::upsert_singleton(&state.db, &CONFIG, &patch).await?;
-        write::notify(&state, json!({ "prefixes": ["db:themes", "db:config"] })).await;
         // `undefined` fields drop out of the JSON.
         let data: Map<String, Value> = ["activeTheme", "activeThemeVariant", "perPageThemes"]
             .iter()
@@ -171,7 +169,6 @@ pub async fn put_ai_layout(State(state): State<AppState>, req: Request) -> Respo
     }
     match write::upsert_singleton(&state.db, &AI_PAGE, &patch).await {
         Ok(saved) => {
-            write::notify(&state, json!({ "keys": ["db:aiPage", "db:aiPage:stats"] })).await;
             let mut out = Map::new();
             out.insert("ok".into(), true.into());
             out.extend(saved.as_object().cloned().unwrap_or_default());

@@ -356,9 +356,6 @@ pub async fn migrate_webp(state: &AppState) -> anyhow::Result<Value> {
             Err(err) => details.push(json!({ "original": file.name, "success": false, "error": err.to_string() })),
         }
     }
-    if migrated > 0 {
-        write::notify(state, json!({ "prefixes": ["db:"] })).await;
-    }
     Ok(json!({ "migratedCount": migrated, "reclaimedBytes": reclaimed, "reclaimedString": readable(reclaimed), "details": details }))
 }
 
@@ -483,9 +480,6 @@ async fn gallery_batch(state: &AppState, batch: i64, skip: i64) -> anyhow::Resul
             Ok(()) => success += 1,
             Err(err) => errors.push(format!("{id}: {err}")),
         }
-    }
-    if success > 0 {
-        write::notify(state, json!({ "prefixes": ["db:gallery"] })).await;
     }
     let total = rows.len() as i64;
     let more = skip + batch < count;

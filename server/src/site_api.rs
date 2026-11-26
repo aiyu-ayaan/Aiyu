@@ -100,8 +100,8 @@ fn preset<'a>(themes: &'a Value, slug: &str) -> Option<&'a Value> {
 }
 
 /// `GET /api/themes`: predefined, legacy, then custom themes (newest first).
-pub async fn themes(State(state): State<AppState>, req: axum::extract::Request) -> Response {
-    let Some(web) = state.web.clone() else { return crate::proxy::forward(State(state), req).await };
+pub async fn themes(State(state): State<AppState>) -> Response {
+    let Some(web) = state.web.clone() else { return crate::web::unavailable() };
     let custom = match pages::client_rows(&state.db, "Theme", r#"ORDER BY "createdAt" DESC"#).await {
         Ok(rows) => rows,
         Err(err) => return theme_error(&err),
@@ -126,15 +126,20 @@ pub async fn themes(State(state): State<AppState>, req: axum::extract::Request) 
 }
 
 /// `GET /api/themes/active`: the active theme, variant and per-page settings from the config.
-pub async fn active_theme(State(state): State<AppState>, req: axum::extract::Request) -> Response {
-    let Some(web) = state.web.clone() else { return crate::proxy::forward(State(state), req).await };
-    let config = match pages::try_singleton(&state.db, "Config", false).await {
+pub async fn active_theme(State(state): State<AppState>) -> Response {
+    let Some(web) = state.web.clone() else { return crate::web::unavailable() };
+    let mut config = match pages::try_singleton(&state.db, "Config", false).await {
         Ok(c) => c,
         Err(err) => return theme_error(&err),
     };
-    // No config row: Next creates one with the defaults; leave that write to it.
+    // No config row: create one with the default theme.
     if config.is_null() {
-        return crate::proxy::forward(State(state), req).await;
+        let defaults = json!({ "activeTheme": "vs-code-dark", "activeThemeVariant": "dark", "allowThemeSwitching": true });
+        let patch = defaults.as_object().cloned().unwrap_or_default();
+        config = match crate::write::upsert_singleton(&state.db, &crate::admin_site::CONFIG, &patch).await {
+            Ok(c) => c,
+            Err(err) => return theme_error(&err),
+        };
     }
     let slug = config["activeTheme"].as_str().filter(|s| !s.is_empty()).unwrap_or("vs-code-dark").to_string();
     let mut theme = match preset(&web.themes, &slug) {
@@ -164,8 +169,8 @@ pub async fn active_theme(State(state): State<AppState>, req: axum::extract::Req
 }
 
 /// `GET /api/themes/{id}`: a preset by slug, else a custom theme by slug or id.
-pub async fn theme(State(state): State<AppState>, Path(id): Path<String>, req: axum::extract::Request) -> Response {
-    let Some(web) = state.web.clone() else { return crate::proxy::forward(State(state), req).await };
+pub async fn theme(State(state): State<AppState>, Path(id): Path<String>) -> Response {
+    let Some(web) = state.web.clone() else { return crate::web::unavailable() };
     if let Some(t) = preset(&web.themes, &id) {
         return with_public_cache(Json(json!({ "success": true, "data": t })).into_response(), PUBLIC_MEDIUM);
     }
@@ -562,10 +567,10 @@ fn discovery_json(value: &Value, content_type: Option<&'static str>) -> Response
 
 macro_rules! discovery_doc {
     ($name:ident, $key:literal, $type:expr) => {
-        pub async fn $name(State(state): State<AppState>, req: axum::extract::Request) -> Response {
+        pub async fn $name(State(state): State<AppState>) -> Response {
             match state.web.clone() {
                 Some(web) => discovery_json(&web.discovery[$key], $type),
-                None => crate::proxy::forward(State(state), req).await,
+                None => crate::web::unavailable(),
             }
         }
     };
@@ -579,8 +584,8 @@ discovery_doc!(jwks, "jwks", None);
 discovery_doc!(skills_index, "skillsIndex", None);
 
 /// `GET /.well-known/agent-skills/{skill}/SKILL.md`
-pub async fn skill_md(State(state): State<AppState>, Path(skill): Path<String>, req: axum::extract::Request) -> Response {
-    let Some(web) = state.web.clone() else { return crate::proxy::forward(State(state), req).await };
+pub async fn skill_md(State(state): State<AppState>, Path(skill): Path<String>) -> Response {
+    let Some(web) = state.web.clone() else { return crate::web::unavailable() };
     match web.discovery["skills"].get(&skill).and_then(Value::as_str) {
         Some(md) => (
             [(header::CONTENT_TYPE, "text/markdown; charset=utf-8"), (header::CACHE_CONTROL, DISCOVERY_CACHE)],
@@ -592,14 +597,14 @@ pub async fn skill_md(State(state): State<AppState>, Path(skill): Path<String>, 
 }
 
 /// `GET /.well-known/mcp/server-card.json`: `buildMcpServerCard(getMcpConfig())`.
-pub async fn mcp_server_card(State(state): State<AppState>, req: axum::extract::Request) -> Response {
-    let Some(web) = state.web.clone() else { return crate::proxy::forward(State(state), req).await };
+pub async fn mcp_server_card(State(state): State<AppState>) -> Response {
+    let Some(web) = state.web.clone() else { return crate::web::unavailable() };
     // getMcpConfig never throws: a database error serves the defaults.
     let stored = pages::try_singleton(&state.db, "McpConfig", true).await.unwrap_or_else(|err| {
         tracing::warn!(error = %err, "mcp config read failed, using defaults");
         Value::Null
     });
-    let card = mcp_card(&stored, &web.discovery["mcpDefaults"], &web.discovery["mcpBuiltinTools"], &crate::web::site_url());
+    let card = mcp_card(&stored, &web.discovery["mcpDefaults"], &crate::web::site_url());
     discovery_json(&card, None)
 }
 
@@ -693,8 +698,8 @@ pub fn merge_mcp_config(stored: &Value, defaults: &Value) -> Value {
 }
 
 /// `buildMcpServerCard(mergeMcpConfig(stored))` from src/lib/mcpConfig.js. `defaults` is DEFAULT_MCP_CONFIG,
-/// `builtin` is `builtinToolCards()`, `base` the site URL.
-pub fn mcp_card(stored: &Value, defaults: &Value, builtin: &Value, base: &str) -> Value {
+/// `base` is the site URL. Every tool `/api/mcp` serves is listed after the configured ones.
+pub fn mcp_card(stored: &Value, defaults: &Value, base: &str) -> Value {
     let data = as_object(stored);
     let pick = |key: &str| if data.contains_key(key) { as_array(&data[key]) } else { as_array(&defaults[key]) };
     let resolve = |v: &Value| -> String {
@@ -768,7 +773,7 @@ pub fn mcp_card(stored: &Value, defaults: &Value, builtin: &Value, base: &str) -
             tools.push(Value::Object(out));
         }
         let names: Vec<Value> = tools.iter().map(|t| t["name"].clone()).collect();
-        tools.extend(as_array(builtin).into_iter().filter(|t| !names.contains(&t["name"])));
+        tools.extend(crate::mcp::read_tool_schemas().into_iter().filter(|t| !names.contains(&t["name"])));
         capabilities.insert("tools".into(), json!({ "listChanged": flag(&tools_cap, "listChanged"), "tools": tools }));
     }
     let res_cap = cap("resources");
@@ -902,10 +907,11 @@ mod tests {
                 "logging": { "enabled": false }, "completions": { "enabled": false } },
             "tools": [], "links": [{ "name": "docs", "url": "/docs/api" }, { "name": "ext", "url": "https://x.dev" }],
         });
-        let card = mcp_card(&Value::Null, &defaults, &json!([{ "name": "b" }]), "https://s.io");
+        let card = mcp_card(&Value::Null, &defaults, "https://s.io");
         assert_eq!(card["transports"][0]["endpoint"], "https://s.io/api/mcp");
         assert_eq!(card["links"]["docs"], "https://s.io/docs/api");
         assert_eq!(card["links"]["ext"], "https://x.dev");
-        assert_eq!(card["capabilities"]["tools"]["tools"], json!([{ "name": "b" }]));
+        let tools = card["capabilities"]["tools"]["tools"].as_array().unwrap();
+        assert!(tools.iter().any(|t| t["name"] == "search_portfolio"));
     }
 }

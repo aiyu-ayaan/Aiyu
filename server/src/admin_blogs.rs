@@ -241,12 +241,6 @@ fn slug_of(row: &Value) -> Option<&str> {
     row["slug"].as_str().filter(|s| !s.is_empty())
 }
 
-fn effects(slugs: &[&str], pings: Vec<Value>) -> Value {
-    let mut revalidate = vec!["/".to_string(), "/blogs".into(), "/sitemap.xml".into()];
-    revalidate.extend(slugs.iter().map(|s| format!("/blogs/{s}")));
-    json!({ "prefixes": ["db:blogs", "db:blog"], "revalidate": revalidate, "pings": pings })
-}
-
 /// `POST /api/blogs`: the admin, or a tool with the bearer token (whose posts are marked automated).
 pub async fn create(State(state): State<AppState>, req: Request) -> Response {
     let (parts, body) = req.into_parts();
@@ -288,7 +282,7 @@ pub async fn create(State(state): State<AppState>, req: Request) -> Response {
             if let Some(slug) = slug_of(&row).filter(|_| truthy(&row["published"]) && !truthy(&row["noIndex"])) {
                 pings.push(write::ping(&[format!("/blogs/{slug}"), "/blogs".into()], "URL_UPDATED"));
             }
-            write::notify(&state, effects(slug_of(&row).as_slice(), pings)).await;
+            crate::indexing::auto(&state, pings);
             json_status(StatusCode::CREATED, json!({ "success": true, "data": row }))
         }
         Ok(None) => failure(StatusCode::CONFLICT, DUPLICATE),
@@ -333,16 +327,14 @@ pub async fn update(State(state): State<AppState>, Path(id): Path<String>, req: 
     match result {
         Ok(Updated::Saved { before, after }) => {
             let mut pings = vec![];
-            let mut slugs: Vec<&str> = slug_of(&before).into_iter().collect();
             if let Some(slug) = slug_of(&after) {
-                slugs.push(slug);
                 let kind = if truthy(&after["published"]) && !truthy(&after["noIndex"]) { "URL_UPDATED" } else { "URL_DELETED" };
                 pings.push(write::ping(&[format!("/blogs/{slug}"), "/blogs".into()], kind));
                 if let Some(old) = slug_of(&before).filter(|old| *old != slug) {
                     pings.push(write::ping(&[format!("/blogs/{old}")], "URL_DELETED"));
                 }
             }
-            write::notify(&state, effects(&slugs, pings)).await;
+            crate::indexing::auto(&state, pings);
             json_status(StatusCode::OK, json!({ "success": true, "data": after }))
         }
         Ok(Updated::Missing) => failure(StatusCode::NOT_FOUND, "Blog not found"),
@@ -361,7 +353,7 @@ pub async fn delete(State(state): State<AppState>, Path(id): Path<String>, req: 
             let pings = slug_of(&row).map_or(vec![], |slug| {
                 vec![write::ping(&[format!("/blogs/{slug}")], "URL_DELETED"), write::ping(&["/blogs".into()], "URL_UPDATED")]
             });
-            write::notify(&state, effects(slug_of(&row).as_slice(), pings)).await;
+            crate::indexing::auto(&state, pings);
             json_status(StatusCode::OK, json!({ "success": true, "data": {} }))
         }
         Ok(None) => failure(StatusCode::NOT_FOUND, "Blog not found"),

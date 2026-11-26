@@ -54,6 +54,11 @@ static CACHE: LazyLock<Mutex<HashMap<String, (Value, Instant)>>> = LazyLock::new
 /// One GitHub refresh at a time: a cold cache under a burst costs one round of upstream calls, not one per request.
 static REFRESH: LazyLock<tokio::sync::Mutex<()>> = LazyLock::new(|| tokio::sync::Mutex::new(()));
 
+/// Drops the cached statistics (`POST /api/admin/purge-cache`).
+pub fn purge() {
+    CACHE.lock().unwrap_or_else(|e| e.into_inner()).clear();
+}
+
 fn cache_get(key: &str) -> Option<Value> {
     let mut map = CACHE.lock().unwrap_or_else(|e| e.into_inner());
     match map.get(key) {

@@ -54,9 +54,22 @@ impl WebApp {
 
 // ── routes ───────────────────────────────────────────────────────────────────────────────────────────
 
+/// A route that needs the web build, which is not loaded.
+pub fn unavailable() -> Response {
+    (StatusCode::SERVICE_UNAVAILABLE, "web build missing").into_response()
+}
+
+/// The 404 page, with the status.
+pub async fn not_found(state: &AppState, req: &Parts) -> Response {
+    match state.web.clone() {
+        Some(web) => not_found_page(&web, state, req).await,
+        None => (StatusCode::NOT_FOUND, "Not found").into_response(),
+    }
+}
+
 /// `/games`, `/games/{slug}`: title/description from route-meta.json; unknown or hidden cabinets are 404.
 pub async fn page(State(state): State<AppState>, req: Request) -> Response {
-    let Some(web) = state.web.clone() else { return crate::proxy::forward(State(state), req).await };
+    let Some(web) = state.web.clone() else { return unavailable() };
     let path = req.uri().path().trim_end_matches('/').to_string();
     let site = Site::load(&state).await;
     let (status, head) = match web.meta.get(&path) {
@@ -68,7 +81,7 @@ pub async fn page(State(state): State<AppState>, req: Request) -> Response {
 
 /// `/blogs`: port of src/app/(site)/blogs/page.js.
 pub async fn blogs_index(State(state): State<AppState>, req: Request) -> Response {
-    let Some(web) = state.web.clone() else { return crate::proxy::forward(State(state), req).await };
+    let Some(web) = state.web.clone() else { return unavailable() };
     let site = Site::load(&state).await;
     let blogs = match pages::blog_list(&state.db).await {
         Ok(b) => b,
@@ -101,7 +114,7 @@ pub async fn blogs_index(State(state): State<AppState>, req: Request) -> Respons
 
 /// `/blogs/{id}`: port of src/app/(site)/blogs/[id]/page.js.
 pub async fn blog_detail(State(state): State<AppState>, Path(id): Path<String>, req: Request) -> Response {
-    let Some(web) = state.web.clone() else { return crate::proxy::forward(State(state), req).await };
+    let Some(web) = state.web.clone() else { return unavailable() };
     let site = Site::load(&state).await;
     let blog = match pages::blog_by_identifier(&state.db, &id).await {
         Ok(pages::BlogLookup::Found(b)) => b,
@@ -225,7 +238,7 @@ macro_rules! web_or_next {
     ($state:expr, $req:expr) => {
         match $state.web.clone() {
             Some(w) => w,
-            None => return crate::proxy::forward(State($state), $req).await,
+            None => return crate::web::unavailable(),
         }
     };
 }
@@ -734,26 +747,17 @@ fn js_slice(text: &str, n: usize) -> String {
     String::from_utf16_lossy(&units)
 }
 
-/// Not a legal page: a public file, else the fallback.
+/// Not a legal page: a public file, else the 404 page.
 async fn not_legal(state: AppState, parts: Parts) -> Response {
     crate::site_static::fallback(State(state), Request::from_parts(parts, Body::empty())).await
 }
 
-/// Legal pages are served by Rust only after the database says so; RSC requests get the same empty reply as the
-/// other Vite pages, and the canonical-host redirect applies like Next's middleware.
+/// Legal pages are served only after the database says so, with the canonical-host redirect of the public pages.
 fn legal_guard(req: &Parts) -> Option<Response> {
-    if let Some(r) = crate::compat::canonical_redirect_for(&req.method, &req.headers, &req.uri) {
-        return Some(r);
-    }
-    req.headers.contains_key("rsc").then(|| {
-        let mut res = Response::new(Body::empty());
-        res.headers_mut().insert(header::CONTENT_TYPE, HeaderValue::from_static("text/plain"));
-        res.headers_mut().insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
-        res
-    })
+    crate::compat::canonical_redirect_for(&req.method, &req.headers, &req.uri)
 }
 
-/// `/{legalApp}`: port of src/app/[legalApp]/page.js. Paths that are not legal apps go on to Next.
+/// `/{legalApp}`: port of src/app/[legalApp]/page.js. Paths that are not legal apps go to the fallback.
 pub async fn legal_app(State(state): State<AppState>, Path(raw): Path<String>, req: Request) -> Response {
     let (parts, body) = req.into_parts();
     let (Some(web), Some(slug)) = (state.web.clone(), crate::legal::candidate(&raw)) else {
@@ -762,11 +766,7 @@ pub async fn legal_app(State(state): State<AppState>, Path(raw): Path<String>, r
     let app = match crate::legal::public_app(&state.db, &slug).await {
         Ok(Some(a)) => a,
         Ok(None) => return not_legal(state, parts).await,
-        // The catch-all must never break other paths: on a database error, let Next answer.
-        Err(err) => {
-            tracing::warn!(error = %err, "legal lookup failed; passing to Next");
-            return not_legal(state, parts).await;
-        }
+        Err(err) => return server_error(err),
     };
     if let Some(r) = legal_guard(&parts) {
         return r;
@@ -887,11 +887,7 @@ pub async fn legal_doc(State(state): State<AppState>, Path((raw_app, raw_doc)): 
     let app = match crate::legal::public_app(&state.db, &slug).await {
         Ok(Some(a)) => a,
         Ok(None) => return not_legal(state, parts).await,
-        // The catch-all must never break other paths: on a database error, let Next answer.
-        Err(err) => {
-            tracing::warn!(error = %err, "legal lookup failed; passing to Next");
-            return not_legal(state, parts).await;
-        }
+        Err(err) => return server_error(err),
     };
     if let Some(r) = legal_guard(&parts) {
         return r;
@@ -1115,20 +1111,6 @@ pub async fn blog_image(State(state): State<AppState>, Path(id): Path<String>) -
         }
         None => StatusCode::NOT_FOUND.into_response(),
     }
-}
-
-/// Next's router asks for RSC payloads (`RSC: 1`), and prefetches every visible link to these pages. Answer with an
-/// empty non-RSC body: Next then does a full page load instead of costing a whole page render per prefetch.
-pub async fn skip_next_rsc(req: Request, next: axum::middleware::Next) -> Response {
-    if req.headers().contains_key("rsc") {
-        let mut res = Response::new(Body::empty());
-        let h = res.headers_mut();
-        h.insert(header::CONTENT_TYPE, HeaderValue::from_static("text/plain"));
-        h.insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
-        h.append(header::VARY, HeaderValue::from_static("rsc"));
-        return res;
-    }
-    next.run(req).await
 }
 
 // ── rendering ────────────────────────────────────────────────────────────────────────────────────────

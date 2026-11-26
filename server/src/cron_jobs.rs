@@ -1,5 +1,5 @@
-//! Running the scheduled tasks (src/utils/cronRunner.js) and the scheduler. The scheduler runs only when
-//! `CRON_RUNNER=rust`; Next then leaves its own off, so no job runs twice.
+//! Running the scheduled tasks (src/utils/cronRunner.js) and the scheduler. The scheduler runs unless
+//! `CRON_RUNNER=off` (set it on all but one server when several share a database).
 
 use chrono::{DateTime, Timelike, Utc};
 use serde_json::{Map, Value, json};
@@ -550,7 +550,7 @@ async fn tick(state: &AppState, now: DateTime<Utc>) -> anyhow::Result<()> {
 }
 
 pub fn enabled() -> bool {
-    std::env::var("CRON_RUNNER").as_deref() == Ok("rust")
+    std::env::var("CRON_RUNNER").as_deref() != Ok("off")
 }
 
 /// Checks once in every minute which jobs are due. Never returns.

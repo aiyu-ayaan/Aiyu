@@ -604,7 +604,6 @@ async fn call_tool(state: &AppState, auth_ctx: &AuthCtx<'_>, name: &str, args: &
                 }
             }
             let client = write::insert(&state.db, &admin_content::PROJECT, write::prepare(&admin_content::PROJECT, &doc)?).await?;
-            write::notify(state, json!({ "prefixes": ["db:projects"] })).await;
             auth::audit(state, auth_ctx.parts, "MCP_CREATE_PROJECT", "content", &format!("Created project \"{}\" ({})", doc["name"].as_str().unwrap_or(""), client["_id"].as_str().unwrap_or(""))).await;
             Ok(json!({ "ok": true, "project": client }))
         }
@@ -640,7 +639,6 @@ async fn call_tool(state: &AppState, auth_ctx: &AuthCtx<'_>, name: &str, args: &
             let updated = write::update(&state.db, &admin_content::PROJECT, &id, write::prepare(&admin_content::PROJECT, &Value::Object(patch))?)
                 .await?
                 .ok_or_else(|| anyhow::anyhow!("Project not found."))?;
-            write::notify(state, json!({ "prefixes": ["db:projects"] })).await;
             auth::audit(state, auth_ctx.parts, "MCP_UPDATE_PROJECT", "content", &format!("Updated project {id} [{}]", keys.join(", "))).await;
             Ok(json!({ "ok": true, "project": updated }))
         }
@@ -651,7 +649,6 @@ async fn call_tool(state: &AppState, auth_ctx: &AuthCtx<'_>, name: &str, args: &
                 anyhow::bail!("Project not found.");
             };
             write::delete(&state.db, "Project", &id).await?;
-            write::notify(state, json!({ "prefixes": ["db:projects"] })).await;
             auth::audit(state, auth_ctx.parts, "MCP_DELETE_PROJECT", "content", &format!("Deleted project \"{}\" ({id})", existing["name"].as_str().unwrap_or(""))).await;
             Ok(json!({ "ok": true, "deletedId": id }))
         }
@@ -679,7 +676,6 @@ async fn call_tool(state: &AppState, auth_ctx: &AuthCtx<'_>, name: &str, args: &
                 doc["imageAlt"] = alt.into();
             }
             let client = write::insert(&state.db, &admin_blogs::BLOG, write::prepare(&admin_blogs::BLOG, &doc)?).await?;
-            write::notify(state, json!({ "prefixes": ["db:blogs"] })).await;
             auth::audit(
                 state,
                 auth_ctx.parts,
@@ -712,7 +708,6 @@ async fn call_tool(state: &AppState, auth_ctx: &AuthCtx<'_>, name: &str, args: &
                 doc["image"] = img.into();
             }
             let client = write::insert(&state.db, &admin_content::DEPLOYMENT, write::prepare(&admin_content::DEPLOYMENT, &doc)?).await?;
-            write::notify(state, json!({ "prefixes": ["db:deployments"] })).await;
             auth::audit(state, auth_ctx.parts, "MCP_CREATE_DEPLOYMENT", "content", &format!("Created deployment \"{name}\" ({})", client["_id"].as_str().unwrap_or(""))).await;
             Ok(json!({ "ok": true, "deployment": client }))
         }
@@ -774,7 +769,7 @@ fn no_args() -> Value {
     json!({ "type": "object", "properties": {}, "additionalProperties": false })
 }
 
-fn read_tool_schemas() -> Vec<Value> {
+pub fn read_tool_schemas() -> Vec<Value> {
     let ro = || json!({ "readOnlyHint": true });
     let ro_idem = || json!({ "readOnlyHint": true, "idempotentHint": true });
     vec![

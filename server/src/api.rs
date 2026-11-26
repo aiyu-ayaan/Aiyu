@@ -142,11 +142,17 @@ pub async fn config(State(state): State<AppState>, req: axum::extract::Request) 
         }
     };
     if admin {
-        // No row yet: Next creates an empty one (upsertSingleton); leave that write to it.
-        if config.is_null() {
-            return crate::proxy::forward(State(state), req).await;
+        if !config.is_null() {
+            return Json(config).into_response();
         }
-        return Json(config).into_response();
+        // No row yet: the admin's first read creates an empty one.
+        return match crate::write::upsert_singleton(&state.db, &crate::admin_site::CONFIG, &serde_json::Map::new()).await {
+            Ok(created) => Json(created).into_response(),
+            Err(err) => {
+                log_error("/api/config", &err);
+                error(StatusCode::INTERNAL_SERVER_ERROR, "Failed to fetch config")
+            }
+        };
     }
     let Value::Object(full) = config else {
         let mut res = Json(json!({})).into_response();
@@ -567,9 +573,9 @@ pub async fn social(State(state): State<AppState>, axum::extract::Path(id): axum
 }
 
 /// `GET /api/ai-page`: the skeleton hydrated from the four section tables.
-pub async fn ai_page(State(state): State<AppState>, req: axum::extract::Request) -> Response {
+pub async fn ai_page(State(state): State<AppState>) -> Response {
     // DEFAULT_AI_PAGE comes with the Vite build; without it Next answers.
-    let Some(web) = state.web.clone() else { return crate::proxy::forward(State(state), req).await };
+    let Some(web) = state.web.clone() else { return crate::web::unavailable() };
     match crate::ai::hydrated(&state.db, &web.ai_defaults).await {
         Ok(v) => public_json(v, PUBLIC_LONG, "db:aiPage"),
         Err(err) => {
@@ -580,8 +586,8 @@ pub async fn ai_page(State(state): State<AppState>, req: axum::extract::Request)
 }
 
 /// `GET /api/ai/layout`: the skeleton only, no cache headers.
-pub async fn ai_layout(State(state): State<AppState>, req: axum::extract::Request) -> Response {
-    let Some(web) = state.web.clone() else { return crate::proxy::forward(State(state), req).await };
+pub async fn ai_layout(State(state): State<AppState>) -> Response {
+    let Some(web) = state.web.clone() else { return crate::web::unavailable() };
     match crate::ai::skeleton(&state.db, &web.ai_defaults).await {
         Ok(v) => Json(v).into_response(),
         Err(err) => {

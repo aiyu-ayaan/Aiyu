@@ -163,7 +163,7 @@ fn app_paths(app: &Value) -> Vec<String> {
     std::iter::once(app_path(app)).chain(listed.map(|d| document_path(app, d))).collect()
 }
 
-/// `invalidate(paths)`: legal caches and the app pages that link here, then the pings.
+/// `invalidate(paths)`: the pings for the legal pages that changed.
 async fn changed(state: &AppState, updated: Vec<String>, deleted: Vec<String>) {
     let mut pings = vec![];
     for (paths, kind) in [(deleted, "URL_DELETED"), (updated, "URL_UPDATED")] {
@@ -171,7 +171,7 @@ async fn changed(state: &AppState, updated: Vec<String>, deleted: Vec<String>) {
             pings.push(write::ping(&paths, kind));
         }
     }
-    write::notify(state, json!({ "prefixes": ["db:legal", "db:deployments"], "pings": pings })).await;
+    crate::indexing::auto(state, pings);
 }
 
 fn duplicate(err: anyhow::Error, message: String) -> anyhow::Error {

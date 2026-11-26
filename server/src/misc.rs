@@ -33,12 +33,12 @@ fn ok(value: Value) -> Response {
     json_status(StatusCode::OK, value)
 }
 
-/// `POST /api/admin/purge-cache`: empty Next's in-memory cache (this server keeps none of the content).
+/// `POST /api/admin/purge-cache`: the GitHub statistics are the only content kept in memory.
 pub async fn purge_cache(State(state): State<AppState>, headers: HeaderMap) -> Response {
     if !signed_in(&state, &headers).await {
         return error(StatusCode::UNAUTHORIZED, "Unauthorized");
     }
-    write::notify(&state, json!({ "prefixes": [""] })).await;
+    crate::github::purge();
     ok(json!({ "success": true, "message": "Cache purged successfully" }))
 }
 
@@ -56,7 +56,7 @@ pub async fn resume(State(state): State<AppState>, req: Request) -> Response {
     if !signed_in(&state, req.headers()).await {
         return refused();
     }
-    let Some(web) = state.web.clone() else { return crate::proxy::forward(State(state), req).await };
+    let Some(web) = state.web.clone() else { return crate::web::unavailable() };
     match pages::try_singleton(&state.db, STUDIO.table, true).await {
         Ok(stored) => ok(json!({ "success": true, "data": studio(&web.discovery["resumeStudio"], &stored) })),
         Err(err) => {
@@ -252,7 +252,6 @@ pub async fn publish(State(state): State<AppState>, req: Request) -> Response {
     .await;
     match result {
         Ok(()) => {
-            write::notify(&state, json!({ "prefixes": ["db:config"] })).await;
             ok(json!({ "success": true, "data": { "publishedAt": published } }))
         }
         Err(err) => {

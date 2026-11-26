@@ -243,8 +243,6 @@ mod tests {
     async fn text_without_models_is_filled_from_env_and_site() {
         let state = AppState::new(crate::config::Config {
             listen: "127.0.0.1:0".parse().unwrap(),
-            next_upstream: String::new(),
-            next_dir: ".next".into(),
             jwt_secret: "s".into(),
             trusted_proxies: vec![],
             uploads_dir: "u".into(),

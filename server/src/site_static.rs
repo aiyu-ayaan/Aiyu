@@ -1,18 +1,19 @@
-//! Paths no page or API handler owns: the old-address redirects (`next.config.mjs` `redirects()`, src/proxy.js)
-//! and the files under `public/` with the uploads.
+//! Paths no page or API handler owns: the old-address redirects, the files under `public/` with the uploads, and
+//! the 404 reply.
 
 use axum::{
-    Router,
+    Json, Router,
     body::Body,
-    extract::{Request, State},
+    extract::{MatchedPath, Request, State},
     http::{HeaderMap, HeaderValue, Method, StatusCode, header},
     middleware::Next,
     response::{IntoResponse, Response},
 };
+use serde_json::json;
 use tower::ServiceExt;
 use tower_http::services::ServeDir;
 
-use crate::{AppState, compat};
+use crate::{AppState, compat, web};
 
 /// `redirects()` in next.config.mjs: old first segment, new one, and whether paths below it move too.
 const MOVED: &[(&str, &str, bool)] = &[
@@ -138,22 +139,32 @@ pub async fn public_file(state: &AppState, method: &Method, uri: &axum::http::Ur
     Some(res)
 }
 
-/// Whatever no route claimed: a public file, else the page Next would have answered.
+/// Whatever no route claimed: a public file, else a 404.
 pub async fn fallback(State(state): State<AppState>, req: Request) -> Response {
     if let Some(res) = public_file(&state, req.method(), req.uri(), req.headers()).await {
         return res;
     }
-    // src/proxy.js: the canonical host and the markdown variant also apply to paths below the public pages.
     let path = req.uri().path();
-    if path != "/api" && !path.starts_with("/api/") {
-        if let Some(redirect) = compat::canonical_redirect_for(req.method(), req.headers(), req.uri()) {
-            return redirect;
-        }
-        if let Some(markdown) = compat::accepts_markdown(req.headers()).then(|| compat::markdown_response(path)).flatten() {
-            return markdown;
-        }
+    if below(path, "/api").is_some() {
+        return (StatusCode::NOT_FOUND, Json(json!({ "success": false, "error": "Not found" }))).into_response();
     }
-    crate::proxy::forward(State(state), req).await
+    // The canonical host and the markdown variant also apply to paths below the public pages.
+    if let Some(redirect) = compat::canonical_redirect_for(req.method(), req.headers(), req.uri()) {
+        return redirect;
+    }
+    if let Some(markdown) = compat::accepts_markdown(req.headers()).then(|| compat::markdown_response(path)).flatten() {
+        return markdown;
+    }
+    web::not_found(&state, &req.into_parts().0).await
+}
+
+/// A method the matched route does not take. The legal catch-alls match any one or two segments, so for those the
+/// path simply does not exist.
+pub async fn method_not_allowed(state: State<AppState>, matched: Option<MatchedPath>, req: Request) -> Response {
+    match matched.as_ref().map(MatchedPath::as_str) {
+        Some("/{legal_app}" | "/{legal_app}/{legal_doc}") => fallback(state, req).await,
+        _ => StatusCode::METHOD_NOT_ALLOWED.into_response(),
+    }
 }
 
 #[cfg(test)]

@@ -252,7 +252,6 @@ async fn save_config(state: &AppState, body: Value) -> anyhow::Result<Value> {
     }
     patch.insert("ai".into(), Value::Object(ai));
     let updated = write::upsert_singleton(&state.db, &CONFIG, &patch).await?;
-    write::notify(state, json!({ "prefixes": ["db:config"] })).await;
     Ok(json!({ "success": true, "data": shown(&updated["ai"], "") }))
 }
 
