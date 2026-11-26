@@ -1,13 +1,14 @@
 # 🌟 Aiyu — Developer Portfolio & CMS
 
-[![Rust](https://img.shields.io/badge/Rust-Axum%200.8-DEA584?style=for-the-badge&logo=rust&logoColor=black)](https://www.rust-lang.org/)
-[![Vite](https://img.shields.io/badge/Vite-8-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vite.dev/)
-[![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
-[![SQLite](https://img.shields.io/badge/SQLite-WAL%20%2B%20FTS5-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://www.sqlite.org/)
-[![Docker](https://img.shields.io/badge/Docker-213MB-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-F7DF1E?style=for-the-badge)](https://opensource.org/licenses/MIT)
-[![Wiki](https://img.shields.io/badge/Docs-Wiki-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/aiyu-ayaan/Aiyu/wiki)
+[![Rust](https://img.shields.io/badge/Rust-Axum%200.8-DEA584?logo=rust&logoColor=black)](https://www.rust-lang.org/)
+[![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)](https://vite.dev/)
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
+[![SQLite](https://img.shields.io/badge/SQLite-WAL%20%2B%20FTS5-003B57?logo=sqlite&logoColor=white)](https://www.sqlite.org/)
+[![Docker](https://img.shields.io/badge/Docker-213MB-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-F7DF1E)](https://opensource.org/licenses/MIT)
+[![Wiki](https://img.shields.io/badge/Docs-Wiki-181717?logo=github&logoColor=white)](https://github.com/aiyu-ayaan/Aiyu/wiki)
+[![wakatime](https://wakatime.com/badge/github/aiyu-ayaan/Aiyu.svg)](https://wakatime.com/badge/github/aiyu-ayaan/Aiyu)
 
 ![home](public/screenshots/desktop-dark-home.png)
 
