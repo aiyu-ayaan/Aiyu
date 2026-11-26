@@ -9,11 +9,18 @@ Branch: `migrate/rust-vite`. Baseline and method: `development/docs/PERFORMANCE.
 Branch `migrate/rust-vite`. EVERY page is now served by Rust + Vite: all public pages, legal, `/desktop`, `/games`,
 and all `/admin` pages (`src/app/_admin/**/page.js`, routed by `web/src/routes/admin.tsx` through `import.meta.glob`;
 Next ignores `_` folders). Next only serves `/api/*`, `/.well-known/*`, `/docs/*`, sitemap.xml/robots.txt, uploads.
-Milestone 8 (API routes) IN PROGRESS. Order: public GETs (done) -> auth + analytics/track (done 2026-11-26)
--> NEXT: admin writes (each must invalidate Next's in-memory cache through a
-loopback endpoint with the export's HMAC internal key, and keep audit/autoPing/notification side effects) ->
-integrations (Drive, crons, MCP, AI, GitHub sync, sharp/HEIC: port or keep a small Node sidecar, user's call).
-Every group: `node --env-file=.env scripts/perf/api-parity.mjs --cookie-jar <jar> scripts/perf/api/<group>.txt`
+Milestone 8 (API routes) IN PROGRESS. Done 2026-11-26: public GETs, auth + analytics/track, and every content
+write outside `/api/admin/*` (site documents, socials, themes, projects, deployments, gallery, blogs, legal, AI Hub,
+admin side of contact messages). NEXT: the plain `/api/admin/*` CRUD (ads, social, notifications config, security
+sessions and audit, blogs token, mcp config and token, seo config, analytics, health targets, cron timezone) ->
+integrations (Drive, import, uploads/sharp/HEIC, crons, MCP, AI generation, GitHub sync and webhook, SEO crawl and
+fix, contact form notifications, notification test, resume compile, storage): port or keep a small Node sidecar,
+user's call.
+Writes: `server/src/write.rs` (body, typed insert/update, singleton merge, bearer token) and `admin_*.rs`; after a
+write call `write::notify` so Next (`/api/internal/hooks`) clears its caches and pings search engines. Check with
+`node --env-file=.env scripts/perf/write-parity.mjs scripts/perf/writes/<group>.mjs` (local database only, Rust with
+`TRUSTED_PROXIES=127.0.0.1`): each case runs on Next and Rust from the same state; response and row changes must match.
+Reads: `node --env-file=.env scripts/perf/api-parity.mjs --cookie-jar <jar> scripts/perf/api/<group>.txt`
 (Next on :3100 vs Rust on :8080, signed out and in) must be all-equal before commit.
 Auth and analytics: `node --env-file=.env scripts/perf/auth-parity.mjs` (local database only; needs Rust with
 `TRUSTED_PROXIES=127.0.0.1`). Every ported `/api` route that src/proxy.js rate limits (any POST/PUT/PATCH/DELETE,
@@ -21,6 +28,8 @@ and a few listed paths) needs `.route_layer(api_limit())` in `server/src/lib.rs`
 explicit UTC timestamps (Prisma filled both).
 Build exports for Rust (web/vite.config.mts `routeMeta`): ai-defaults.json, themes.json, discovery.json (the
 /.well-known docs, rendered with a placeholder origin that Rust swaps for SITE_URL at startup).
+Fixed 2026-11-26, still open on `master`: PUT/DELETE /api/blogs/{id} and GET/DELETE /api/contact/message had no
+sign-in check.
 Known pre-existing issues (kept for parity, ask the user): GET /api/blogs/{id} returns unpublished drafts to anyone.
 Analytics treats only `localhost` as its own host (Next's `request.url` never carries the public host), so views
 referred by the site itself are counted as `external`; fix: compare with SITE_URL's host (server/src/analytics.rs).
@@ -209,7 +218,7 @@ Each page: Rust data + head + Vite route + e2e passing through Rust, then the Ne
 - [x] `/v2/sitemap`
 
 ## Milestone 8: Port API routes
-- [~] `/api/about` (GET in Rust; writes still Next)
+- [x] `/api/about` (Rust)
 - [ ] `/api/admin/ads`
 - [ ] `/api/admin/ai/config`
 - [ ] `/api/admin/ai/generate`
@@ -267,63 +276,63 @@ Each page: Rust data + head + Vite route + e2e passing through Rust, then the Ne
 - [ ] `/api/admin/storage/migrate`
 - [ ] `/api/admin/storage/unreferenced`
 - [ ] `/api/admin/system-prompt`
-- [~] `/api/ai/credits` (GET in Rust; writes still Next)
-- [ ] `/api/ai/credits/[id]`
-- [~] `/api/ai/layout` (GET in Rust; writes still Next)
+- [x] `/api/ai/credits` (Rust)
+- [x] `/api/ai/credits/[id]` (Rust)
+- [x] `/api/ai/layout` (Rust)
 - [x] `/api/ai-page` (Rust)
-- [~] `/api/ai/prompts` (GET in Rust; writes still Next)
-- [ ] `/api/ai/prompts/[id]`
-- [~] `/api/ai/recommendations` (GET in Rust; writes still Next)
-- [ ] `/api/ai/recommendations/[id]`
-- [ ] `/api/ai/seed`
+- [x] `/api/ai/prompts` (Rust)
+- [x] `/api/ai/prompts/[id]` (Rust)
+- [x] `/api/ai/recommendations` (Rust)
+- [x] `/api/ai/recommendations/[id]` (Rust)
+- [x] `/api/ai/seed` (Rust)
 - [x] `/api/ai/skills` (Rust)
-- [~] `/api/ai/skills/categories` (GET in Rust; writes still Next)
-- [ ] `/api/ai/skills/categories/[id]`
-- [ ] `/api/ai/skills/items`
-- [ ] `/api/ai/skills/items/[id]`
+- [x] `/api/ai/skills/categories` (Rust)
+- [x] `/api/ai/skills/categories/[id]` (Rust)
+- [x] `/api/ai/skills/items` (Rust)
+- [x] `/api/ai/skills/items/[id]` (Rust)
 - [x] `/api/analytics/track` (Rust)
 - [ ] `/api/auth/github` (Next; writes the same Session row and cookie)
 - [ ] `/api/auth/github/callback`
 - [x] `/api/auth/login` (Rust)
 - [x] `/api/auth/logout` (Rust)
-- [~] `/api/blogs` (GET in Rust; writes still Next)
-- [~] `/api/blogs/[id]` (GET in Rust; writes still Next)
-- [~] `/api/config` (GET in Rust; writes still Next)
-- [ ] `/api/contact/message`
+- [x] `/api/blogs` (Rust)
+- [x] `/api/blogs/[id]` (Rust)
+- [x] `/api/config` (Rust)
+- [~] `/api/contact/message` (GET and DELETE in Rust; the public POST and its notifications still Next)
 - [ ] `/api/debug-groq`
-- [~] `/api/deployments` (GET in Rust; writes still Next)
-- [~] `/api/deployments/[id]` (GET in Rust; writes still Next)
+- [x] `/api/deployments` (Rust)
+- [x] `/api/deployments/[id]` (Rust)
 - [x] `/api/deployments/[id]/links` (Rust)
-- [ ] `/api/deployments/reorder`
+- [x] `/api/deployments/reorder` (Rust)
 - [x] `/api/desktop/source` (Rust)
 - [x] `/api/desktop/widgets` (Rust)
 - [x] `/api/favicon` (Rust)
-- [~] `/api/gallery` (GET in Rust; writes still Next)
+- [x] `/api/gallery` (Rust)
 - [ ] `/api/github/config`
 - [x] `/api/github/stats` (Rust; reqwest now has rustls. Without a token the event fallback series follows the
   server's local date in Node and UTC in Rust: equal only under TZ=UTC, as in Docker. Not re-checked under TZ=UTC)
 - [ ] `/api/github/sync`
 - [ ] `/api/github/webhook`
 - [x] `/api/global-search` (Rust)
-- [~] `/api/header` (GET in Rust; writes still Next)
+- [x] `/api/header` (Rust)
 - [x] `/api/health` (Rust)
-- [~] `/api/home` (GET in Rust; writes still Next)
-- [~] `/api/legal/apps` (GET in Rust; writes still Next)
-- [~] `/api/legal/apps/[id]` (GET in Rust; writes still Next)
-- [ ] `/api/legal/apps/[id]/documents`
-- [~] `/api/legal/documents/[id]` (GET in Rust; writes still Next)
+- [x] `/api/home` (Rust)
+- [x] `/api/legal/apps` (Rust)
+- [x] `/api/legal/apps/[id]` (Rust)
+- [x] `/api/legal/apps/[id]/documents` (Rust)
+- [x] `/api/legal/documents/[id]` (Rust)
 - [ ] `/api/mcp`
 - [ ] `/api/og-preview`
-- [~] `/api/projects` (GET in Rust; writes still Next)
-- [~] `/api/projects/[id]` (GET in Rust; writes still Next)
+- [x] `/api/projects` (Rust)
+- [x] `/api/projects/[id]` (Rust)
 - [x] `/api/projects/[id]/links` (Rust)
-- [ ] `/api/projects/reorder`
+- [x] `/api/projects/reorder` (Rust)
 - [x] `/api/resume` (Rust)
-- [~] `/api/socials` (GET in Rust; writes still Next)
-- [~] `/api/socials/[id]` (GET in Rust; writes still Next)
-- [~] `/api/themes` (GET in Rust; writes still Next)
-- [~] `/api/themes/active` (GET in Rust; writes still Next)
-- [~] `/api/themes/[id]` (GET in Rust; writes still Next)
+- [x] `/api/socials` (Rust)
+- [x] `/api/socials/[id]` (Rust)
+- [x] `/api/themes` (Rust)
+- [x] `/api/themes/active` (Rust)
+- [x] `/api/themes/[id]` (Rust)
 - [ ] `/api/upload`
 - [ ] `/api/uploads/[filename]`
 - [x] `/api/version` (Rust)

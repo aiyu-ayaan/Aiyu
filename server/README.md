@@ -6,6 +6,8 @@ Today it sits in front of Next:
 - `GET /api/admin/export` (backup zip) is served by Rust: rows stream from Postgres and files from disk into
   the zip, so memory stays flat (about 10 MB) whatever the data size
 - signs the admin in and out (`/api/auth/login`, `/api/auth/logout`) and records `/api/analytics/track`
+- handles the content writes outside `/api/admin/*`, then calls Next's `/api/internal/hooks` (keyed with the
+  JWT secret, never proxied from outside) so Next clears its caches and pings search engines
 - serves `/_next/static/*` from `.next/static` with a one-year immutable cache
 - compresses responses (brotli, gzip; skips zips, PDFs, fonts, video)
 - streams every other request to Next (`NEXT_UPSTREAM`) and back, so large bodies such as backups never sit in memory
@@ -31,6 +33,7 @@ pnpm server:test
 | `GITHUB_AUTH_ENABLED` | `false` | `true` turns password login off |
 | `NODE_ENV` | unset | the session cookie is `Secure` unless this is `development` |
 | `ANALYTICS_SALT` | `AUTH_SECRET`, then a constant | visitor hash salt, same as Next |
+| `SITE_URL` | `https://me.aiyu.co.in` | canonical URLs of blog posts, same as Next |
 | `RUST_WORKERS` | `2` | tokio worker threads; fewer threads, less memory |
 | `RUST_LISTEN` | `0.0.0.0:8080` | |
 | `NEXT_UPSTREAM` | `http://127.0.0.1:3000` | Next server for unported routes |
