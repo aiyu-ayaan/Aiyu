@@ -1,5 +1,8 @@
 # 🌟 Aiyu — Developer Portfolio & CMS
 
+[![Live Demo](https://img.shields.io/badge/Live-aiyu.co.in-22c55e?logo=googlechrome&logoColor=white)](http://aiyu.co.in)
+[![Release](https://img.shields.io/github/v/release/aiyu-ayaan/Aiyu?logo=github)](https://github.com/aiyu-ayaan/Aiyu/releases)
+[![CI](https://github.com/aiyu-ayaan/Aiyu/actions/workflows/pr.yml/badge.svg)](https://github.com/aiyu-ayaan/Aiyu/actions/workflows/pr.yml)
 [![Rust](https://img.shields.io/badge/Rust-Axum%200.8-DEA584?logo=rust&logoColor=black)](https://www.rust-lang.org/)
 [![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)](https://vite.dev/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
@@ -9,12 +12,12 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-F7DF1E)](https://opensource.org/licenses/MIT)
 [![Wiki](https://img.shields.io/badge/Docs-Wiki-181717?logo=github&logoColor=white)](https://github.com/aiyu-ayaan/Aiyu/wiki)
 
-![home](public/screenshots/desktop-dark-home.png)
+[![home](public/screenshots/desktop-dark-home.png)](http://aiyu.co.in)
 
 A fast, self-contained developer portfolio and CMS built with **Rust (Axum)**, **Vite**, **React 19**, **Tailwind CSS 4**, and **SQLite** — engineered for **sub-10 ms responses and minimal memory overhead** with an integrated Admin Panel, Gemini AI Core, LaTeX Resume Studio, Cron Scheduler, and MCP Server.
 
 > [!TIP]
-> **Full guides:** [Documentation Wiki](https://github.com/aiyu-ayaan/Aiyu/wiki) · [Quick Start](https://github.com/aiyu-ayaan/Aiyu/wiki/Quick-Start) · [Full Benchmarks](development/benchmark.md)
+> **Live Site:** [aiyu.co.in](http://aiyu.co.in) · **Docs:** [Wiki](https://github.com/aiyu-ayaan/Aiyu/wiki) · [Quick Start](https://github.com/aiyu-ayaan/Aiyu/wiki/Quick-Start) · [Full Benchmarks](development/benchmark.md)
 
 ---
 
@@ -131,6 +134,33 @@ pnpm dev                # starts Vite (:3000) + debug aiyu-server (:8080)
 - **Admin Panel:** `http://localhost:3000/admin/login`
 - **Local Production Build:** `pnpm build && pnpm start` (serves release binary + `web/dist` on `http://localhost:8080`)
 - **Backup / Restore:** Export or import full site ZIPs (DB + uploads) directly from **Admin → Database** (`/api/admin/export` & `/api/admin/import`).
+
+<details>
+<summary><strong>⚙️ Environment Variables (<code>.env</code>)</strong></summary>
+
+| Variable | Required | Purpose |
+|---|:-:|---|
+| `JWT_SECRET` | Yes | Signs admin session tokens (64-byte hex recommended) |
+| `ADMIN_USERNAME` / `ADMIN_PASSWORD` | Yes | Admin panel login credentials |
+| `NEXT_PUBLIC_BASE_URL` / `SITE_URL` | Optional | Canonical URL for SEO, sitemap, and OpenGraph tags |
+| `NEXT_PUBLIC_AUTHOR_NAME` | Optional | Default author name in metadata |
+| `NEXT_PUBLIC_N8N_WEBHOOK_URL` | Optional | Webhook endpoint for contact form routing |
+| `GITHUB_AUTH_ENABLED` / `GITHUB_CLIENT_*` / `GITHUB_ALLOWED_ID` | Optional | GitHub OAuth sign-in for Admin |
+| `APP_PORT` / `NGINX_HTTP_PORT` | Optional | Port overrides for Docker/local runs |
+
+</details>
+
+---
+
+## 📁 Project Structure
+
+```text
+├── server/        # Rust (Axum) API, SPA/static serving, SQLite migrations, cron & MCP
+├── web/           # Vite 8 config, React Router 7 entry, route modules
+├── src/           # Shared React 19 UI components, contexts, hooks, styles, libs
+├── scripts/       # Dev runner, security verification, screenshots, k6 & perf bench
+└── docs/          # Guides, architecture notes, and benchmark charts
+```
 
 ---
 
