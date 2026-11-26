@@ -1,8 +1,10 @@
 "use client";
 import React, { useEffect, useState } from 'react';
-import SocialForm from '@/app/components/admin/SocialForm';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import SocialForm from '@/app/components/admin/SocialForm';
+import { EmptyState, Loading, PageHeader, Panel } from '@/app/components/admin/ui';
+import '@/app/styles/admin-structure.css';
 
 export default function EditSocialPage() {
     const { id } = useParams();
@@ -29,19 +31,38 @@ export default function EditSocialPage() {
         }
     }, [id]);
 
-    if (loading) return <div className="p-4 md:p-8 text-white">Loading...</div>;
-    if (!social) return <div className="p-4 md:p-8 text-white">Social link not found</div>;
-
     return (
-        <div className="p-4 md:p-8 max-w-7xl mx-auto min-h-screen">
-            <div className="mb-12">
-                <Link href="/admin/footer" className="text-cyan-400 hover:text-cyan-300 flex items-center gap-2 transition-colors mb-4 text-sm font-mono opacity-60 hover:opacity-100 uppercase tracking-widest">
-                    ← BACK_TO_FOOTER_SETTINGS
-                </Link>
-                <h1 className="text-4xl font-bold text-white mb-2 tracking-tight">Social Connection</h1>
-                <p className="text-slate-400">Update parameters for specific social network uplink.</p>
-            </div>
-            <SocialForm initialData={social} isEdit={true} />
+        <div className="adm-page">
+            <PageHeader
+                command="edit"
+                title={social?.name ? `Edit ${social.name}` : 'Edit social link'}
+                description="Update the network label, destination URL, icon identifier, or visibility."
+                actions={
+                    <Link href="/admin/footer" className="adm-btn">
+                        Back to footer
+                    </Link>
+                }
+            />
+
+            {loading ? (
+                <Panel>
+                    <Loading label="Loading social link" rows={4} />
+                </Panel>
+            ) : !social ? (
+                <Panel flush>
+                    <EmptyState
+                        title="Social link not found"
+                        description="This social link may have been removed."
+                        action={
+                            <Link href="/admin/footer" className="adm-btn adm-btn-primary">
+                                Back to footer
+                            </Link>
+                        }
+                    />
+                </Panel>
+            ) : (
+                <SocialForm initialData={social} isEdit={true} />
+            )}
         </div>
     );
 }

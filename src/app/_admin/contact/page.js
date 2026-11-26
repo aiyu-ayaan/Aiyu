@@ -1,11 +1,23 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, ArrowLeft, MapPin, Activity, Mail, Trash2, MessageSquare, Webhook, Bell, ToggleLeft, ToggleRight, ShieldAlert } from 'lucide-react';
 import Link from 'next/link';
+import {
+    FaBell,
+    FaCopy,
+    FaEnvelope,
+    FaFloppyDisk,
+    FaKey,
+    FaReply,
+    FaRotate,
+    FaSpinner,
+    FaTrashCan,
+} from 'react-icons/fa6';
 import Toast from '@/app/components/admin/Toast';
 import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
+import { Badge, EmptyState, Field, Loading, PageHeader, Panel, Stat } from '@/app/components/admin/ui';
+import '@/app/styles/admin-structure.css';
 
 export default function ContactAdminPage() {
     const { confirm } = useAdminFeedback();
@@ -14,7 +26,6 @@ export default function ContactAdminPage() {
     const [saving, setSaving] = useState(false);
     const [notification, setNotification] = useState(null);
 
-    // Config state
     const [config, setConfig] = useState({
         contactLocation: '',
         contactEmail: '',
@@ -24,13 +35,14 @@ export default function ContactAdminPage() {
         contactStatus: 'Open to opportunities',
         resume: {
             type: 'url',
-            value: ''
-        }
+            value: '',
+        },
     });
 
     const [messages, setMessages] = useState([]);
+    const [selectedId, setSelectedId] = useState(null);
+    const [searchQuery, setSearchQuery] = useState('');
 
-    // Notification Link States
     const [notificationConfigured, setNotificationConfigured] = useState(false);
     const [notifyOnContact, setNotifyOnContact] = useState(false);
     const [activeChannels, setActiveChannels] = useState([]);
@@ -51,7 +63,7 @@ export default function ContactAdminPage() {
                     (configData.telegram?.enabled && configData.telegram?.botToken && configData.telegram?.chatId) ||
                     (configData.discord?.enabled && configData.discord?.webhookUrl)
                 );
-                setNotificationConfigured(isLinked);
+                setNotificationConfigured(Boolean(isLinked));
                 setNotifyOnContact(configData.notifyOnContactMessage || false);
 
                 const channels = [];
@@ -83,7 +95,7 @@ export default function ContactAdminPage() {
                     n8nWebhookAuthKey: data.n8nWebhookAuthKey || '',
                     n8nWebhookEnabled: data.n8nWebhookEnabled !== undefined ? data.n8nWebhookEnabled : true,
                     contactStatus: data.contactStatus || 'Open to opportunities',
-                    resume: data.resume || { type: 'url', value: '' }
+                    resume: data.resume || { type: 'url', value: '' },
                 });
             }
         } catch (error) {
@@ -97,8 +109,11 @@ export default function ContactAdminPage() {
         try {
             const res = await fetch('/api/contact/message');
             const data = await res.json();
-            if (data.success) {
+            if (data.success && Array.isArray(data.data)) {
                 setMessages(data.data);
+                if (data.data.length > 0) {
+                    setSelectedId((prev) => prev || data.data[0]._id);
+                }
             }
         } catch (error) {
             console.error('Failed to fetch messages:', error);
@@ -115,11 +130,17 @@ export default function ContactAdminPage() {
 
         try {
             const res = await fetch(`/api/contact/message?id=${id}`, {
-                method: 'DELETE'
+                method: 'DELETE',
             });
             if (res.ok) {
-                setMessages(prev => prev.filter(msg => msg._id !== id));
-                showNotification(true, 'Message deleted successfully');
+                setMessages((prev) => {
+                    const next = prev.filter((msg) => msg._id !== id);
+                    if (selectedId === id) {
+                        setSelectedId(next[0]?._id || null);
+                    }
+                    return next;
+                });
+                showNotification(true, 'Message deleted');
             } else {
                 showNotification(false, 'Failed to delete message');
             }
@@ -134,22 +155,20 @@ export default function ContactAdminPage() {
         setSaving(true);
 
         try {
-            // Save general coordinates and webhook configurations
             const res = await fetch('/api/config', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(config)
+                body: JSON.stringify(config),
             });
 
-            // Save push integration channel toggles
             const notifRes = await fetch('/api/admin/notifications', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ notifyOnContactMessage: notifyOnContact })
+                body: JSON.stringify({ notifyOnContactMessage: notifyOnContact }),
             });
 
             if (res.ok && notifRes.ok) {
-                showNotification(true, 'Contact Settings Updated Successfully');
+                showNotification(true, 'Contact settings saved');
             } else {
                 showNotification(false, 'Failed to save settings');
             }
@@ -161,356 +180,393 @@ export default function ContactAdminPage() {
         }
     };
 
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center min-h-screen">
-                <span className="font-mono text-cyan-400 animate-pulse">ESTABLISHING_UPLINK...</span>
-            </div>
+    const filteredMessages = useMemo(() => {
+        const q = searchQuery.trim().toLowerCase();
+        if (!q) return messages;
+        return messages.filter(
+            (m) =>
+                m.name?.toLowerCase().includes(q) ||
+                m.email?.toLowerCase().includes(q) ||
+                m.message?.toLowerCase().includes(q)
         );
-    }
+    }, [messages, searchQuery]);
+
+    const activeMessage = useMemo(() => {
+        if (filteredMessages.length === 0) return null;
+        return filteredMessages.find((m) => m._id === selectedId) || filteredMessages[0];
+    }, [filteredMessages, selectedId]);
+
+    const webhookReady = Boolean(config.n8nWebhookEnabled && config.n8nWebhookUrl);
+    const pushReady = Boolean(notificationConfigured && notifyOnContact);
 
     return (
-        <div className="p-4 md:p-8 max-w-7xl mx-auto min-h-screen w-full flex flex-col">
-            <div className="mb-8">
-                <Link
-                    href="/admin"
-                    className="text-cyan-400 hover:text-cyan-300 flex items-center gap-2 transition-colors mb-4 text-sm font-mono opacity-60 hover:opacity-100"
-                >
-                    ← BACK_TO_COMMAND_CENTER
-                </Link>
-                <h1 className="text-4xl font-bold text-white mb-2 tracking-tight">Comms Array</h1>
-                <p className="text-slate-400">Manage incoming transmissions and contact protocols.</p>
+        <div className="adm-page">
+            <PageHeader
+                command="mail"
+                title="Contact and messages"
+                description="Read messages sent through the contact form and configure contact coordinates and forwarding."
+            />
+
+            <div className="adm-stats">
+                <Stat
+                    label="Inbox messages"
+                    value={messages.length}
+                    hint={messages[0]?.createdAt ? `Latest ${new Date(messages[0].createdAt).toLocaleDateString()}` : 'No messages yet'}
+                />
+                <Stat
+                    label="Availability"
+                    value={config.contactStatus || 'Open'}
+                    hint={config.contactLocation || 'Location not set'}
+                />
+                <Stat
+                    label="Push alerts"
+                    value={pushReady ? 'Active' : 'Off'}
+                    hint={activeChannels.length > 0 ? activeChannels.join(', ') : 'No channels configured'}
+                />
+                <Stat
+                    label="Webhook routing"
+                    value={webhookReady ? 'Active' : 'Off'}
+                    hint={config.n8nWebhookUrl ? 'n8n / webhook URL set' : 'No webhook URL'}
+                />
             </div>
 
-            <form onSubmit={handleSave} className="space-y-12">
-
-                {/* General Coordinates Section */}
-                <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 md:p-8 relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
-
-                    <h2 className="text-sm font-mono text-cyan-500/70 uppercase tracking-widest mb-8 flex items-center gap-4 relative z-10">
-                        General Coordinates
-                        <div className="h-px bg-cyan-500/10 flex-grow" />
-                    </h2>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative z-10">
-                        {/* Location */}
-                        <div>
-                            <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider flex items-center gap-2">
-                                <MapPin className="w-3 h-3 text-cyan-400" /> Location Coordinates
-                            </label>
-                            <input
-                                type="text"
-                                value={config.contactLocation}
-                                onChange={(e) => setConfig({ ...config, contactLocation: e.target.value })}
-                                placeholder="e.g. San Francisco, CA"
-                                className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-600 font-mono text-sm"
+            {loading ? (
+                <section className="adm-panel">
+                    <Loading label="Loading contact configuration" rows={6} />
+                </section>
+            ) : (
+                <>
+                    <Panel
+                        title="Messages inbox"
+                        actions={
+                            <div className="flex flex-wrap items-center gap-2">
+                                {messages.length > 0 && (
+                                    <input
+                                        type="search"
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        placeholder="Filter messages…"
+                                        aria-label="Filter messages"
+                                        className="adm-input !min-h-9 sm:w-56"
+                                    />
+                                )}
+                                <Badge tone={messages.length > 0 ? 'info' : undefined}>
+                                    {filteredMessages.length} {filteredMessages.length === 1 ? 'message' : 'messages'}
+                                </Badge>
+                            </div>
+                        }
+                        flush
+                    >
+                        {messages.length === 0 ? (
+                            <EmptyState
+                                title="No messages in inbox"
+                                description="Messages submitted through the public contact form will appear here."
                             />
-                        </div>
-
-                        {/* Status */}
-                        <div>
-                            <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider flex items-center gap-2">
-                                <Activity className="w-3 h-3 text-green-400" /> Operative Status
-                            </label>
-                            <select
-                                value={config.contactStatus}
-                                onChange={(e) => setConfig({ ...config, contactStatus: e.target.value })}
-                                className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all appearance-none text-sm"
-                            >
-                                <option value="Open to opportunities" className="bg-slate-900">Open to opportunities</option>
-                                <option value="Busy with projects" className="bg-slate-900">Busy with projects</option>
-                                <option value="Not looking" className="bg-slate-900">Not looking</option>
-                            </select>
-                        </div>
-
-                        {/* Email */}
-                        <div>
-                            <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider flex items-center gap-2">
-                                <Mail className="w-3 h-3 text-purple-400" /> Direct Uplink (Email)
-                            </label>
-                            <input
-                                type="email"
-                                value={config.contactEmail}
-                                onChange={(e) => setConfig({ ...config, contactEmail: e.target.value })}
-                                placeholder="your.name@example.com"
-                                className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/50 outline-none transition-all placeholder:text-slate-600 font-mono text-sm"
+                        ) : filteredMessages.length === 0 ? (
+                            <EmptyState
+                                title="No matching messages"
+                                description="Try clearing or changing your search filter."
+                                action={
+                                    <button type="button" onClick={() => setSearchQuery('')} className="adm-btn">
+                                        Clear filter
+                                    </button>
+                                }
                             />
-                        </div>
-                    </div>
-                </div>
-
-                {/* Notification Transmission Routing Card */}
-                <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 md:p-8 relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-pink-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
-                    
-                    <h2 className="text-sm font-mono text-pink-500/70 uppercase tracking-widest mb-8 flex items-center gap-4 relative z-10">
-                        Transmission Routing Protocols
-                        <div className="h-px bg-pink-500/10 flex-grow" />
-                    </h2>
-
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 relative z-10">
-                        
-                        {/* Channel A: Built-in Push Integration */}
-                        <div className={`rounded-2xl border p-6 flex flex-col justify-between transition-all duration-300 ${
-                            notifyOnContact 
-                                ? 'border-pink-500/30 bg-pink-500/[0.02] hover:border-pink-500/40 shadow-[0_0_15px_rgba(236,72,153,0.05)]' 
-                                : 'border-white/5 bg-slate-950/20 hover:border-white/10'
-                        }`}>
-                            <div className={notifyOnContact ? '' : 'opacity-65 transition-opacity duration-300'}>
-                                <div className="flex justify-between items-start mb-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className={`p-2.5 rounded-xl border transition-colors duration-300 ${
-                                            notifyOnContact 
-                                                ? 'bg-pink-500/10 border-pink-500/20 text-pink-400' 
-                                                : 'bg-white/5 border-white/10 text-slate-400'
-                                        }`}>
-                                            <Bell className="w-5 h-5" />
-                                        </div>
-                                        <div>
-                                            <h3 className="font-bold text-white text-sm">Direct Push Alert Uplink</h3>
-                                            <span className="text-[10px] font-mono text-slate-500">Built-in Dispatch Gateway</span>
-                                        </div>
-                                    </div>
-
-                                    {notificationConfigured ? (
-                                        <button
-                                            type="button"
-                                            onClick={() => setNotifyOnContact(!notifyOnContact)}
-                                            className="text-slate-400 hover:text-white transition shrink-0 z-20"
-                                        >
-                                            {notifyOnContact ? (
-                                                <ToggleRight className="w-9 h-9 text-pink-400" />
-                                            ) : (
-                                                <ToggleLeft className="w-9 h-9 text-slate-600" />
-                                            )}
-                                        </button>
-                                    ) : (
-                                        <div className="text-slate-600 cursor-not-allowed" title="Configure Push Integrations in global settings first">
-                                            <ToggleLeft className="w-9 h-9 opacity-40" />
-                                        </div>
-                                    )}
-                                </div>
-
-                                <p className="text-slate-400 text-xs leading-relaxed mb-6">
-                                    Instantly deliver contact form messages to your linked push alert integrations (Telegram, Discord, ntfy).
-                                </p>
-
-                                {notificationConfigured ? (
-                                    <div className="p-3 bg-emerald-500/5 rounded-xl border border-emerald-500/10 text-[11px] text-emerald-400 font-mono flex items-center gap-2">
-                                        <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-ping shrink-0" />
-                                        <span>[ROUTING_ACTIVE] Active: {activeChannels.join(', ')}</span>
-                                    </div>
-                                ) : (
-                                    <div className="p-4 rounded-xl border border-white/5 bg-slate-950/40">
-                                        <div className="flex items-start gap-2.5">
-                                            <ShieldAlert size={14} className="text-amber-400 shrink-0 mt-0.5" />
-                                            <div className="space-y-1">
-                                                <div className="text-[10px] font-bold text-amber-400">Push Gateway Inactive</div>
-                                                <p className="text-[9px] text-slate-400 leading-normal mb-1">
-                                                    Your push integration credentials are empty or globally disabled.
-                                                </p>
-                                                <Link
-                                                    href="/admin/config/notification"
-                                                    target="_blank"
-                                                    className="inline-flex items-center gap-1 text-[9px] text-cyan-400 hover:text-cyan-300 font-semibold"
+                        ) : (
+                            <div className="adm-inbox">
+                                <ul
+                                    role="listbox"
+                                    aria-label="Contact messages"
+                                    className="adm-list adm-inbox-list max-h-[32rem] overflow-y-auto"
+                                >
+                                    {filteredMessages.map((msg) => {
+                                        const isSelected = activeMessage?._id === msg._id;
+                                        return (
+                                            <li key={msg._id}>
+                                                <button
+                                                    type="button"
+                                                    role="option"
+                                                    aria-selected={isSelected}
+                                                    onClick={() => setSelectedId(msg._id)}
+                                                    className="adm-inbox-item"
                                                 >
-                                                    Configure Push Gateway →
-                                                </Link>
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <span className="truncate font-semibold text-[var(--text-bright)]">
+                                                            {msg.name}
+                                                        </span>
+                                                        <span className="adm-num adm-help shrink-0 text-xs">
+                                                            {new Date(msg.createdAt).toLocaleDateString()}
+                                                        </span>
+                                                    </div>
+                                                    <span className="truncate font-mono text-xs text-[var(--text-secondary)]">
+                                                        {msg.email}
+                                                    </span>
+                                                    <p className="line-clamp-2 text-xs text-[var(--adm-hint)]">
+                                                        {msg.message}
+                                                    </p>
+                                                </button>
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+
+                                {activeMessage && (
+                                    <div className="flex flex-col justify-between p-4 sm:p-6">
+                                        <div>
+                                            <div className="flex flex-wrap items-start justify-between gap-4 border-b border-[var(--hairline)] pb-4">
+                                                <div className="min-w-0">
+                                                    <h3 className="text-lg font-semibold text-[var(--text-bright)]">
+                                                        {activeMessage.name}
+                                                    </h3>
+                                                    <p className="mt-0.5 flex flex-wrap items-center gap-2 font-mono text-xs text-[var(--text-secondary)]">
+                                                        <a href={`mailto:${activeMessage.email}`} className="adm-link">
+                                                            {activeMessage.email}
+                                                        </a>
+                                                        <span>·</span>
+                                                        <time dateTime={activeMessage.createdAt}>
+                                                            {new Date(activeMessage.createdAt).toLocaleString()}
+                                                        </time>
+                                                    </p>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <a
+                                                        href={`mailto:${activeMessage.email}?subject=Re: Contact from portfolio`}
+                                                        className="adm-btn"
+                                                    >
+                                                        <FaReply aria-hidden="true" /> Reply
+                                                    </a>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleDeleteMessage(activeMessage._id)}
+                                                        className="adm-btn adm-btn-danger"
+                                                        aria-label={`Delete message from ${activeMessage.name}`}
+                                                    >
+                                                        <FaTrashCan aria-hidden="true" /> Delete
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <div className="mt-4 rounded-[10px] border border-[var(--hairline)] bg-[var(--bg-secondary)] p-4 text-sm leading-relaxed text-[var(--text-primary)] whitespace-pre-wrap">
+                                                {activeMessage.message}
                                             </div>
                                         </div>
                                     </div>
                                 )}
                             </div>
-                        </div>
+                        )}
+                    </Panel>
 
-                        {/* Channel B: Custom Webhook Forwarder (n8n) */}
-                        <div className={`rounded-2xl border p-6 flex flex-col justify-between transition-all duration-300 ${
-                            config.n8nWebhookEnabled 
-                                ? 'border-orange-500/30 bg-orange-500/[0.02] hover:border-orange-500/40 shadow-[0_0_15px_rgba(249,115,22,0.05)]' 
-                                : 'border-white/5 bg-slate-950/20 hover:border-white/10'
-                        }`}>
-                            <div className={config.n8nWebhookEnabled ? '' : 'opacity-65 transition-opacity duration-300'}>
-                                <div className="flex justify-between items-start mb-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className={`p-2.5 rounded-xl border transition-colors duration-300 ${
-                                            config.n8nWebhookEnabled 
-                                                ? 'bg-orange-500/10 border-orange-500/20 text-orange-400' 
-                                                : 'bg-white/5 border-white/10 text-slate-400'
-                                        }`}>
-                                            <Webhook className="w-5 h-5" />
+                    <form onSubmit={handleSave} className="adm-split">
+                        <div className="adm-stack">
+                            <Panel title="Public contact details">
+                                <div className="grid gap-4 md:grid-cols-3">
+                                    <Field label="Location" help="Displayed on the public contact section.">
+                                        <input
+                                            type="text"
+                                            value={config.contactLocation}
+                                            onChange={(e) => setConfig({ ...config, contactLocation: e.target.value })}
+                                            placeholder="San Francisco, CA"
+                                            className="adm-input"
+                                        />
+                                    </Field>
+
+                                    <Field label="Availability status" help="Current work availability state.">
+                                        <select
+                                            value={config.contactStatus}
+                                            onChange={(e) => setConfig({ ...config, contactStatus: e.target.value })}
+                                            className="adm-input"
+                                        >
+                                            <option value="Open to opportunities">Open to opportunities</option>
+                                            <option value="Busy with projects">Busy with projects</option>
+                                            <option value="Not looking">Not looking</option>
+                                        </select>
+                                    </Field>
+
+                                    <Field label="Direct email" help="Public contact address.">
+                                        <input
+                                            type="email"
+                                            value={config.contactEmail}
+                                            onChange={(e) => setConfig({ ...config, contactEmail: e.target.value })}
+                                            placeholder="your.name@example.com"
+                                            className="adm-input font-mono"
+                                        />
+                                    </Field>
+                                </div>
+                            </Panel>
+
+                            <div className="grid gap-6 lg:grid-cols-2">
+                                <Panel
+                                    title="Push notification forwarding"
+                                    actions={
+                                        <div className="flex items-center gap-2">
+                                            <Badge tone={pushReady ? 'ok' : 'warn'}>
+                                                {pushReady ? 'Active' : 'Inactive'}
+                                            </Badge>
+                                            <button
+                                                type="button"
+                                                role="switch"
+                                                aria-checked={Boolean(notifyOnContact)}
+                                                aria-label="Forward contact messages to push channels"
+                                                disabled={!notificationConfigured}
+                                                onClick={() => setNotifyOnContact(!notifyOnContact)}
+                                                className="adm-switch"
+                                            />
                                         </div>
-                                        <div>
-                                            <h3 className="font-bold text-white text-sm">Custom Webhook Forwarder</h3>
-                                            <span className="text-[10px] font-mono text-slate-500">n8n Automation Uplink</span>
+                                    }
+                                >
+                                    <p className="adm-help mb-4">
+                                        Deliver incoming contact form submissions directly to your configured push channels (Telegram, Discord, or ntfy).
+                                    </p>
+
+                                    {notificationConfigured ? (
+                                        <div className="adm-notice adm-notice-ok flex items-center gap-2">
+                                            <FaBell aria-hidden="true" />
+                                            <span>Connected channels: {activeChannels.join(', ')}</span>
+                                        </div>
+                                    ) : (
+                                        <div className="adm-notice adm-notice-warn space-y-2">
+                                            <p className="font-semibold">Push gateway not configured</p>
+                                            <p className="text-xs">
+                                                Set up Telegram, Discord, or ntfy credentials first to enable instant push alerts.
+                                            </p>
+                                            <Link href="/admin/config/notification" className="adm-link inline-block text-xs font-semibold">
+                                                Configure notification channels
+                                            </Link>
+                                        </div>
+                                    )}
+                                </Panel>
+
+                                <Panel
+                                    title="Webhook forwarding (n8n)"
+                                    actions={
+                                        <div className="flex items-center gap-2">
+                                            <Badge tone={webhookReady ? 'ok' : undefined}>
+                                                {webhookReady ? 'Active' : 'Suspended'}
+                                            </Badge>
+                                            <button
+                                                type="button"
+                                                role="switch"
+                                                aria-checked={Boolean(config.n8nWebhookEnabled)}
+                                                aria-label="Enable webhook forwarding"
+                                                onClick={() => setConfig({ ...config, n8nWebhookEnabled: !config.n8nWebhookEnabled })}
+                                                className="adm-switch"
+                                            />
+                                        </div>
+                                    }
+                                >
+                                    <div className="space-y-4">
+                                        <Field
+                                            label="Webhook URL"
+                                            help="External automation endpoint (n8n, Make, Zapier) triggered on new messages."
+                                        >
+                                            <input
+                                                type="url"
+                                                value={config.n8nWebhookUrl}
+                                                onChange={(e) => setConfig({ ...config, n8nWebhookUrl: e.target.value })}
+                                                placeholder="https://n8n.example.com/webhook/…"
+                                                className="adm-input font-mono"
+                                            />
+                                        </Field>
+
+                                        <div className="adm-field">
+                                            <label htmlFor="n8n-webhook-token" className="adm-label">
+                                                Webhook authorization token
+                                            </label>
+                                            <div className="flex flex-wrap gap-2">
+                                                <input
+                                                    id="n8n-webhook-token"
+                                                    type="text"
+                                                    value={config.n8nWebhookAuthKey}
+                                                    disabled
+                                                    placeholder="No token generated"
+                                                    className="adm-input flex-1 basis-44 font-mono"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        navigator.clipboard.writeText(config.n8nWebhookAuthKey);
+                                                        showNotification(true, 'Token copied to clipboard');
+                                                    }}
+                                                    disabled={!config.n8nWebhookAuthKey}
+                                                    className="adm-btn"
+                                                >
+                                                    <FaCopy aria-hidden="true" /> Copy
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const token = crypto.randomUUID();
+                                                        setConfig({ ...config, n8nWebhookAuthKey: token });
+                                                    }}
+                                                    className="adm-btn"
+                                                >
+                                                    <FaKey aria-hidden="true" /> Generate
+                                                </button>
+                                            </div>
+                                            <p className="adm-help">
+                                                Sent in the <code className="adm-code">Authorization</code> request header.
+                                            </p>
                                         </div>
                                     </div>
+                                </Panel>
+                            </div>
+                        </div>
 
-                                    <button
-                                        type="button"
-                                        onClick={() => setConfig({ ...config, n8nWebhookEnabled: !config.n8nWebhookEnabled })}
-                                        className="text-slate-400 hover:text-white transition shrink-0 z-20"
-                                    >
-                                        {config.n8nWebhookEnabled ? (
-                                            <ToggleRight className="w-9 h-9 text-orange-400" />
-                                        ) : (
-                                            <ToggleLeft className="w-9 h-9 text-slate-600" />
-                                        )}
+                        <aside className="adm-stack adm-side">
+                            <Panel title="Publish">
+                                <dl className="adm-facts mb-4">
+                                    <div>
+                                        <dt>Email</dt>
+                                        <dd>{config.contactEmail || 'Not set'}</dd>
+                                    </div>
+                                    <div>
+                                        <dt>Location</dt>
+                                        <dd>{config.contactLocation || 'Not set'}</dd>
+                                    </div>
+                                </dl>
+                                <p className="adm-help mb-4">
+                                    Saves public contact coordinates, webhook credentials, and push forwarding preferences.
+                                </p>
+                                <div className="flex flex-wrap gap-2">
+                                    <button type="submit" disabled={saving} className="adm-btn adm-btn-primary flex-1">
+                                        {saving ? <FaSpinner className="animate-spin" aria-hidden="true" /> : <FaFloppyDisk aria-hidden="true" />}
+                                        {saving ? 'Saving' : 'Save changes'}
+                                    </button>
+                                    <button type="button" onClick={() => router.back()} className="adm-btn">
+                                        Cancel
                                     </button>
                                 </div>
+                            </Panel>
 
-                                <p className="text-slate-400 text-xs leading-relaxed mb-6">
-                                    Ping an external automation node or webhook payload router (like n8n, Make, Zapier) when messages arrive.
-                                </p>
-
-                                {config.n8nWebhookEnabled && config.n8nWebhookUrl ? (
-                                    <div className="p-3 mb-6 bg-emerald-500/5 rounded-xl border border-emerald-500/10 text-[11px] text-emerald-400 font-mono flex items-center gap-2">
-                                        <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-ping shrink-0" />
-                                        <span>[ROUTING_ACTIVE] Webhook uplink established</span>
-                                    </div>
-                                ) : (
-                                    <div className="p-3 mb-6 bg-slate-500/5 rounded-xl border border-white/5 text-[11px] text-slate-400 font-mono flex items-center gap-2">
-                                        <span className="w-1.5 h-1.5 bg-slate-500 rounded-full shrink-0" />
-                                        <span>[ROUTING_SUSPENDED] Webhook integration offline</span>
-                                    </div>
-                                )}
-
-                                <div className="space-y-4">
-                                    <div>
-                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Webhook URL</label>
-                                        <input
-                                            type="url"
-                                            value={config.n8nWebhookUrl}
-                                            onChange={(e) => setConfig({ ...config, n8nWebhookUrl: e.target.value })}
-                                            placeholder="https://..."
-                                            className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-2.5 text-xs text-slate-200 focus:border-orange-500 outline-none transition font-mono"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Webhook Auth Token</label>
-                                        <div className="flex gap-2">
-                                            <input
-                                                type="text"
-                                                value={config.n8nWebhookAuthKey}
-                                                disabled
-                                                placeholder="Generated Token"
-                                                className="flex-grow bg-slate-950/50 border border-white/10 rounded-lg p-2.5 text-xs text-slate-400 outline-none font-mono cursor-not-allowed pr-2"
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    navigator.clipboard.writeText(config.n8nWebhookAuthKey);
-                                                    showNotification(true, 'Token copied to clipboard');
-                                                }}
-                                                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg border border-white/10 transition text-[10px] font-mono whitespace-nowrap"
-                                            >
-                                                COPY
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    const token = crypto.randomUUID();
-                                                    setConfig({ ...config, n8nWebhookAuthKey: token });
-                                                }}
-                                                className="px-3 py-1.5 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-400 rounded-lg border border-yellow-500/20 transition text-[10px] font-mono whitespace-nowrap"
-                                            >
-                                                GENERATE
-                                            </button>
-                                        </div>
-                                        <p className="text-slate-500 text-[9px] font-mono mt-1">
-                                            In n8n, set Header Name to <span className="text-yellow-400 font-bold">Authorization</span> and Value to this token.
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
-
-                {/* Sticky Action Footer */}
-                <div className="sticky bottom-8 flex justify-end gap-4 pt-6 border-t border-white/5 bg-slate-900/90 backdrop-blur-lg p-4 rounded-xl border border-white/5 shadow-2xl z-50 mt-12">
-                    <button
-                        type="button"
-                        onClick={() => router.back()}
-                        className="px-6 py-2 rounded bg-white/5 hover:bg-white/10 text-slate-400 transition-colors text-sm font-medium"
-                    >
-                        CANCEL
-                    </button>
-                    <button
-                        type="submit"
-                        disabled={saving}
-                        className="px-8 py-2 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-bold transition-all shadow-[0_0_20px_rgba(8,145,178,0.3)] hover:shadow-[0_0_30px_rgba(8,145,178,0.5)] disabled:opacity-50 disabled:cursor-not-allowed text-sm tracking-wide flex items-center gap-2"
-                    >
-                        {saving ? (
-                            <>
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                                UPDATING_SYSTEM...
-                            </>
-                        ) : (
-                            'CONFIRM_UPDATE'
-                        )}
-                    </button>
-                </div>
-            </form >
-
-            {/* Messages Inbox */}
-            < div className="w-full mt-16" >
-                <div className="flex justify-between items-center mb-8">
-                    <h2 className="text-xl font-bold flex items-center gap-3 text-white">
-                        <span className="w-2 h-8 bg-cyan-500 rounded-full" />
-                        <MessageSquare className="text-cyan-400 w-5 h-5" />
-                        Incoming Transmissions
-                        <span className="text-sm bg-white/10 text-slate-400 px-2 py-0.5 rounded-full font-mono">{messages.length}</span>
-                    </h2>
-                </div>
-
-                <div className="grid grid-cols-1 gap-4">
-                    {messages.length === 0 ? (
-                        <div className="text-slate-500 text-center py-12 bg-white/[0.02] border border-white/5 rounded-2xl font-mono text-sm">
-                            [NO_TRANSMISSIONS_DETECTED]
-                        </div>
-                    ) : (
-                        messages.map((msg) => (
-                            <div key={msg._id} className="bg-slate-900/40 backdrop-blur-xl p-6 rounded-2xl border border-white/10 hover:border-cyan-500/30 transition-all group relative">
-                                <div className="flex justify-between items-start mb-4">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center border border-white/10 text-cyan-400 font-bold text-lg">
-                                            {msg.name.charAt(0).toUpperCase()}
-                                        </div>
-                                        <div>
-                                            <h3 className="font-bold text-white tracking-wide">{msg.name}</h3>
-                                            <a href={`mailto:${msg.email}`} className="text-slate-400 hover:text-cyan-400 text-xs font-mono transition-colors">
-                                                {msg.email}
-                                            </a>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-4">
-                                        <div className="text-[10px] font-mono text-slate-500">
-                                            {new Date(msg.createdAt).toLocaleString()}
-                                        </div>
+                            <Panel title="Related" flush>
+                                <ul className="adm-list">
+                                    <li>
+                                        <Link href="/admin/config/notification" className="adm-row adm-link">
+                                            <FaBell aria-hidden="true" /> Notification channels
+                                        </Link>
+                                    </li>
+                                    <li>
+                                        <Link href="/admin/footer" className="adm-row adm-link">
+                                            <FaEnvelope aria-hidden="true" /> Footer and social links
+                                        </Link>
+                                    </li>
+                                    <li>
                                         <button
-                                            onClick={() => handleDeleteMessage(msg._id)}
-                                            className="p-2 text-slate-600 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
-                                            title="Purge Transmission"
+                                            type="button"
+                                            onClick={fetchMessages}
+                                            className="adm-row adm-link"
                                         >
-                                            <Trash2 className="w-4 h-4" />
+                                            <FaRotate aria-hidden="true" /> Refresh inbox
                                         </button>
-                                    </div>
-                                </div>
-                                <div className="pl-14">
-                                    <div className="bg-black/40 p-4 rounded-lg border border-white/5 text-slate-300 text-sm leading-relaxed font-mono">
-                                        {msg.message}
-                                    </div>
-                                </div>
-                            </div>
-                        ))
-                    )}
-                </div>
-            </div >
+                                    </li>
+                                </ul>
+                            </Panel>
+                        </aside>
+                    </form>
+                </>
+            )}
 
-            {/* Toast Notification */}
-            < Toast notification={notification} />
-        </div >
+            <Toast notification={notification} />
+        </div>
     );
 }

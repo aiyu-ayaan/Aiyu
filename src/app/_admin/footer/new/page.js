@@ -1,17 +1,23 @@
 "use client";
 import React from 'react';
-import SocialForm from '@/app/components/admin/SocialForm';
 import Link from 'next/link';
+import SocialForm from '@/app/components/admin/SocialForm';
+import { PageHeader } from '@/app/components/admin/ui';
+import '@/app/styles/admin-structure.css';
 
 export default function NewSocialPage() {
     return (
-        <div className="p-4 md:p-8">
-            <div className="mb-6">
-                <Link href="/admin/footer" className="text-cyan-400 hover:text-cyan-300 flex items-center gap-2 transition-colors">
-                    ← Back to Footer
-                </Link>
-            </div>
-            <h1 className="text-3xl font-bold text-white mb-8 text-center">Create New Social Link</h1>
+        <div className="adm-page">
+            <PageHeader
+                command="touch"
+                title="New social link"
+                description="Add an external profile link to the public site footer."
+                actions={
+                    <Link href="/admin/footer" className="adm-btn">
+                        Back to footer
+                    </Link>
+                }
+            />
             <SocialForm />
         </div>
     );

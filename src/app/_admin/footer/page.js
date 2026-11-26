@@ -1,8 +1,12 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Loader2, CheckCircle, XCircle } from 'lucide-react';
+import { FaEye, FaEyeSlash, FaFloppyDisk, FaLink, FaPenToSquare, FaPlus, FaSpinner, FaTrashCan } from 'react-icons/fa6';
 import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
+import Toast from '@/app/components/admin/Toast';
+import { Badge, EmptyState, Field, Loading, PageHeader, Panel, Stat } from '@/app/components/admin/ui';
+import { getIconByName } from '@/lib/icons';
+import '@/app/styles/admin-structure.css';
 
 export default function AdminFooter() {
     const { confirm } = useAdminFeedback();
@@ -11,7 +15,7 @@ export default function AdminFooter() {
     const [config, setConfig] = useState({
         footerText: '',
         workStatus: '',
-        showWorkStatus: true
+        showWorkStatus: true,
     });
     const [saving, setSaving] = useState(false);
     const [notification, setNotification] = useState(null);
@@ -34,7 +38,7 @@ export default function AdminFooter() {
                 setConfig({
                     footerText: data.footerText || '',
                     workStatus: data.workStatus || '',
-                    showWorkStatus: data.showWorkStatus ?? true
+                    showWorkStatus: data.showWorkStatus ?? true,
                 });
             }
         } catch (error) {
@@ -46,7 +50,7 @@ export default function AdminFooter() {
         try {
             const res = await fetch('/api/socials');
             const data = await res.json();
-            setSocials(data);
+            setSocials(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error('Failed to fetch socials', error);
         } finally {
@@ -64,13 +68,13 @@ export default function AdminFooter() {
                 body: JSON.stringify(config),
             });
             if (res.ok) {
-                showNotification(true, 'SYSTEM_UPDATED_SUCCESSFULLY');
+                showNotification(true, 'Footer settings saved');
             } else {
-                showNotification(false, 'FAILED_TO_UPDATE_CONFIG');
+                showNotification(false, 'Failed to update footer settings');
             }
         } catch (error) {
             console.error('Error updating config', error);
-            showNotification(false, 'SYSTEM_ERROR_OCCURRED');
+            showNotification(false, 'An error occurred while saving');
         } finally {
             setSaving(false);
         }
@@ -87,13 +91,13 @@ export default function AdminFooter() {
             });
             if (res.ok) {
                 setSocials(socials.map((s) => (s._id === id ? { ...s, isHidden: !currentStatus } : s)));
-                showNotification(true, `UPLINK_${currentStatus ? 'RE-ESTABLISHED' : 'DEACTIVATED'}`);
+                showNotification(true, currentStatus ? 'Social link shown' : 'Social link hidden');
             } else {
-                showNotification(false, 'FAILED_TO_UPDATE_VISIBILITY');
+                showNotification(false, 'Failed to update visibility');
             }
         } catch (error) {
             console.error('Error updating visibility', error);
-            showNotification(false, 'COMMUNICATION_LINK_ERROR');
+            showNotification(false, 'Could not update visibility');
         }
     };
 
@@ -111,171 +115,216 @@ export default function AdminFooter() {
             });
             if (res.ok) {
                 setSocials(socials.filter((s) => s._id !== id));
-                showNotification(true, 'UPLINK_PERMANENTLY_TERMINATED');
+                showNotification(true, 'Social link deleted');
             } else {
-                showNotification(false, 'FAILED_TO_DELETE_UPLINK');
+                showNotification(false, 'Failed to delete social link');
             }
         } catch (error) {
             console.error('Error deleting social link', error);
-            showNotification(false, 'TERMINATION_SEQUENCE_FAILURE');
+            showNotification(false, 'Could not delete social link');
         }
     };
 
-    if (loading) return <div className="p-4 md:p-8 text-white">Loading...</div>;
+    const visibleCount = socials.filter((s) => !s.isHidden).length;
+    const hiddenCount = socials.length - visibleCount;
 
     return (
-        <div className="p-4 md:p-8 max-w-7xl mx-auto">
-            <div className="mb-8">
-                <Link href="/admin" className="text-cyan-400 hover:text-cyan-300 flex items-center gap-2 transition-colors mb-4 text-sm font-mono opacity-60 hover:opacity-100">
-                    ← BACK_TO_COMMAND_CENTER
-                </Link>
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
-                    <div>
-                        <h1 className="text-3xl md:text-4xl font-bold text-white mb-2 tracking-tight">Communication Grid</h1>
-                        <p className="text-slate-400">Configure footer metrics and external communication uplinks.</p>
-                    </div>
-                    <Link href="/admin/footer/new" className="group relative px-6 py-3 rounded-lg overflow-hidden bg-cyan-500/10 border border-cyan-500/20 hover:border-cyan-500/50 transition-all hover:shadow-[0_0_20px_rgba(34,211,238,0.2)]">
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-500/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700" />
-                        <span className="relative text-cyan-400 font-bold tracking-wide flex items-center gap-2">
-                            <span className="text-lg">+</span> ESTABLISH_UPLINK
-                        </span>
+        <div className="adm-page">
+            <PageHeader
+                command="ls"
+                title="Footer and social links"
+                description="Manage footer copyright text, availability indicator, and external profile links."
+                actions={
+                    <Link href="/admin/footer/new" className="adm-btn adm-btn-primary">
+                        <FaPlus aria-hidden="true" /> Add social link
                     </Link>
-                </div>
+                }
+            />
+
+            <div className="adm-stats">
+                <Stat
+                    label="Social links"
+                    value={socials.length}
+                    hint={`${visibleCount} visible, ${hiddenCount} hidden`}
+                />
+                <Stat
+                    label="Availability badge"
+                    value={config.showWorkStatus ? 'Visible' : 'Hidden'}
+                    hint={config.workStatus || 'Default status text'}
+                />
+                <Stat
+                    label="Copyright notice"
+                    value={config.footerText ? 'Custom' : 'Default'}
+                    hint={config.footerText || 'Using site default'}
+                />
             </div>
 
-            {/* Config Section */}
-            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 md:p-8 mb-12 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-[100px] pointer-events-none" />
-
-                <h2 className="text-sm font-mono text-cyan-500/70 uppercase tracking-widest mb-8 flex items-center gap-4">
-                    Global Footer Protocols
-                    <div className="h-px bg-cyan-500/10 flex-grow" />
-                </h2>
-
-                <form onSubmit={handleConfigSubmit} className="space-y-6 relative z-10">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div>
-                            <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Copyright Signature</label>
-                            <input
-                                type="text"
-                                value={config.footerText}
-                                onChange={(e) => setConfig({ ...config, footerText: e.target.value })}
-                                className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-600"
-                                placeholder="© 2025 Ayaan. All rights reserved."
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Operation Status</label>
-                            <input
-                                type="text"
-                                value={config.workStatus}
-                                onChange={(e) => setConfig({ ...config, workStatus: e.target.value })}
-                                className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-600"
-                                placeholder="Available for work"
-                            />
-                        </div>
-                    </div>
-
-                    <div className="flex items-center gap-3 p-4 rounded-lg bg-white/5 border border-white/5 w-fit">
-                        <div className="relative flex items-center">
-                            <input
-                                type="checkbox"
-                                checked={config.showWorkStatus}
-                                onChange={(e) => setConfig({ ...config, showWorkStatus: e.target.checked })}
-                                className="peer h-4 w-4 cursor-pointer appearance-none rounded border border-slate-600 bg-slate-900/50 checked:border-cyan-500 checked:bg-cyan-500 transition-all"
-                                id="showWorkStatus"
-                            />
-                            <svg className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none opacity-0 peer-checked:opacity-100 text-black transition-opacity" viewBox="0 0 14 14" fill="none">
-                                <path d="M3 8L6 11L11 3.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                            </svg>
-                        </div>
-                        <label htmlFor="showWorkStatus" className="text-slate-300 cursor-pointer text-sm font-medium">Display Operational Status Indicator</label>
-                    </div>
-
-                    <div className="flex justify-end pt-4 border-t border-white/5">
-                        <button
-                            type="submit"
-                            disabled={saving}
-                            className="px-6 py-2 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 hover:border-emerald-500/40 transition-all text-sm font-bold tracking-wide uppercase flex items-center gap-2"
+            {loading ? (
+                <section className="adm-panel">
+                    <Loading label="Loading footer settings" rows={5} />
+                </section>
+            ) : (
+                <div className="adm-split">
+                    <div className="adm-stack">
+                        <Panel
+                            title="Social links"
+                            actions={
+                                <Badge tone={visibleCount > 0 ? 'ok' : 'warn'}>
+                                    {visibleCount} active
+                                </Badge>
+                            }
+                            flush
                         >
-                            {saving ? (
-                                <>
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                    COMMITTING...
-                                </>
-                            ) : (
-                                'Commit Changes'
-                            )}
-                        </button>
-                    </div>
-                </form>
-            </div>
-
-            <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
-                <span className="w-2 h-8 bg-cyan-500 rounded-full" />
-                Active Uplinks
-            </h2>
-
-            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                        <thead className="bg-white/5 border-b border-white/10 text-xs uppercase tracking-wider text-slate-400 font-medium">
-                            <tr>
-                                <th className="px-6 py-5">Network Name</th>
-                                <th className="px-6 py-5">Target URL</th>
-                                <th className="px-6 py-5">Icon Identifier</th>
-                                <th className="px-6 py-5 text-right">Controls</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-white/5 text-sm">
-                            {socials.map((social) => (
-                                <tr key={social._id} className="group hover:bg-white/[0.02] transition-colors">
-                                    <td className="px-6 py-5 font-medium text-slate-200">
-                                        <div className="flex items-center gap-3">
-                                            {social.name}
-                                            {social.isHidden && (
-                                                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-500/20 text-red-400 border border-red-500/20 uppercase tracking-widest">
-                                                    Offline
-                                                </span>
-                                            )}
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-5 text-cyan-400/80 font-mono text-xs truncate max-w-xs">{social.url}</td>
-                                    <td className="px-6 py-5 text-slate-500 font-mono text-xs">{social.iconName}</td>
-                                    <td className="px-6 py-5 text-right space-x-3 opacity-60 group-hover:opacity-100 transition-opacity">
-                                        <button
-                                            onClick={() => handleToggleVisibility(social._id, social.isHidden)}
-                                            className={`${social.isHidden ? 'text-slate-400 hover:text-slate-200' : 'text-amber-400 hover:text-amber-300'} transition-colors text-xs uppercase font-bold tracking-wider`}
-                                        >
-                                            {social.isHidden ? 'Enable' : 'Disable'}
-                                        </button>
-                                        <Link href={`/admin/footer/${social._id}`} className="text-cyan-400 hover:text-cyan-300 transition-colors text-xs uppercase font-bold tracking-wider">
-                                            Edit
+                            {socials.length === 0 ? (
+                                <EmptyState
+                                    title="No social links yet"
+                                    description="Add your GitHub, LinkedIn, or other profiles to display in the site footer."
+                                    action={
+                                        <Link href="/admin/footer/new" className="adm-btn adm-btn-primary">
+                                            <FaPlus aria-hidden="true" /> Add social link
                                         </Link>
-                                        <button
-                                            onClick={() => handleDelete(social._id)}
-                                            className="text-red-400 hover:text-red-300 transition-colors text-xs uppercase font-bold tracking-wider"
-                                        >
-                                            Delete
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+                                    }
+                                />
+                            ) : (
+                                <div className="adm-table-wrap">
+                                    <table className="adm-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Network</th>
+                                                <th>Destination URL</th>
+                                                <th>Icon</th>
+                                                <th>State</th>
+                                                <th className="text-right">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {socials.map((social) => {
+                                                const IconComponent = getIconByName(social.iconName) || FaLink;
+                                                return (
+                                                    <tr key={social._id}>
+                                                        <td>
+                                                            <div className="flex items-center gap-2.5 font-semibold text-[var(--text-bright)]">
+                                                                <IconComponent aria-hidden="true" className="adm-nav-icon shrink-0" />
+                                                                <span>{social.name}</span>
+                                                            </div>
+                                                        </td>
+                                                        <td className="max-w-xs truncate font-mono text-xs">
+                                                            <a
+                                                                href={social.url}
+                                                                target="_blank"
+                                                                rel="noreferrer"
+                                                                className="adm-link"
+                                                            >
+                                                                {social.url}
+                                                            </a>
+                                                        </td>
+                                                        <td>
+                                                            <code className="adm-code">{social.iconName}</code>
+                                                        </td>
+                                                        <td>
+                                                            <Badge tone={social.isHidden ? 'warn' : 'ok'}>
+                                                                {social.isHidden ? 'Hidden' : 'Visible'}
+                                                            </Badge>
+                                                        </td>
+                                                        <td>
+                                                            <div className="flex items-center justify-end gap-1">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleToggleVisibility(social._id, social.isHidden)}
+                                                                    className="adm-btn adm-btn-quiet"
+                                                                    aria-label={`${social.isHidden ? 'Show' : 'Hide'} ${social.name}`}
+                                                                >
+                                                                    {social.isHidden ? <FaEye aria-hidden="true" /> : <FaEyeSlash aria-hidden="true" />}
+                                                                    <span>{social.isHidden ? 'Show' : 'Hide'}</span>
+                                                                </button>
+                                                                <Link
+                                                                    href={`/admin/footer/${social._id}`}
+                                                                    className="adm-icon-btn"
+                                                                    aria-label={`Edit ${social.name}`}
+                                                                >
+                                                                    <FaPenToSquare aria-hidden="true" />
+                                                                </Link>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleDelete(social._id)}
+                                                                    className="adm-icon-btn"
+                                                                    aria-label={`Delete ${social.name}`}
+                                                                >
+                                                                    <FaTrashCan aria-hidden="true" />
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </Panel>
+                    </div>
 
-            {/* Notification Toast */}
-            {notification && (
-                <div className={`fixed bottom-8 right-8 p-4 rounded-xl border shadow-2xl backdrop-blur-xl z-50 flex items-center gap-3 animate-in slide-in-from-bottom-5 fade-in duration-300 ${notification.success
-                    ? 'bg-green-500/10 border-green-500/20 text-green-400'
-                    : 'bg-red-500/10 border-red-500/20 text-red-400'
-                    }`}>
-                    {notification.success ? <CheckCircle className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
-                    <span className="font-mono text-sm font-bold">{notification.message}</span>
+                    <aside className="adm-stack adm-side">
+                        <Panel title="Footer settings">
+                            <form onSubmit={handleConfigSubmit} className="space-y-4">
+                                <Field
+                                    label="Copyright text"
+                                    help="Shown at the bottom of public pages."
+                                >
+                                    <input
+                                        type="text"
+                                        value={config.footerText}
+                                        onChange={(e) => setConfig({ ...config, footerText: e.target.value })}
+                                        className="adm-input"
+                                        placeholder="© 2025 Ayaan. All rights reserved."
+                                    />
+                                </Field>
+
+                                <Field
+                                    label="Availability status"
+                                    help="Short message displayed beside the status indicator."
+                                >
+                                    <input
+                                        type="text"
+                                        value={config.workStatus}
+                                        onChange={(e) => setConfig({ ...config, workStatus: e.target.value })}
+                                        className="adm-input"
+                                        placeholder="Available for work"
+                                    />
+                                </Field>
+
+                                <div className="flex items-center justify-between gap-3 rounded-[10px] border border-[var(--hairline)] bg-[var(--bg-secondary)] px-3.5 py-2.5">
+                                    <div>
+                                        <p id="show-work-status-label" className="text-sm font-medium text-[var(--text-bright)]">
+                                            Show status indicator
+                                        </p>
+                                        <p className="adm-help">Display availability dot in the footer.</p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        role="switch"
+                                        aria-checked={Boolean(config.showWorkStatus)}
+                                        aria-labelledby="show-work-status-label"
+                                        onClick={() => setConfig({ ...config, showWorkStatus: !config.showWorkStatus })}
+                                        className="adm-switch"
+                                    />
+                                </div>
+
+                                <button
+                                    type="submit"
+                                    disabled={saving}
+                                    className="adm-btn adm-btn-primary w-full"
+                                >
+                                    {saving ? <FaSpinner className="animate-spin" aria-hidden="true" /> : <FaFloppyDisk aria-hidden="true" />}
+                                    {saving ? 'Saving' : 'Save footer settings'}
+                                </button>
+                            </form>
+                        </Panel>
+                    </aside>
                 </div>
             )}
+
+            <Toast notification={notification} />
         </div>
     );
 }

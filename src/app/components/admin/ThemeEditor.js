@@ -1,7 +1,16 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { X, Save, Eraser, Palette, Eye, Layout, Type, Box, Hash, Sun, Moon, Layers, Sparkles, Loader2, Wand2 } from 'lucide-react';
+import {
+    FaFloppyDisk,
+    FaMoon,
+    FaSpinner,
+    FaSun,
+    FaWandMagicSparkles,
+    FaXmark,
+} from 'react-icons/fa6';
 import Toast from './Toast';
+import { Field, Panel } from './ui';
+import '@/app/styles/admin-structure.css';
 
 const defaultVariant = {
     backgrounds: {
@@ -67,6 +76,56 @@ const defaultVariant = {
     },
 };
 
+const COLOR_SECTIONS = [
+    { title: 'Backgrounds and surfaces', category: 'backgrounds' },
+    { title: 'Typography', category: 'text' },
+    { title: 'Accent colours', category: 'accents' },
+    { title: 'Borders and dividers', category: 'borders' },
+    { title: 'Status indicators', category: 'status' },
+    { title: 'Code syntax tokens', category: 'syntax' },
+    { title: 'Shadows and depth', category: 'shadows' },
+];
+
+const formatTokenLabel = (key) => {
+    const spaced = key.replace(/([A-Z])/g, ' $1').trim();
+    return spaced.charAt(0).toUpperCase() + spaced.slice(1).toLowerCase();
+};
+
+function ColorInput({ label, value, onChange, category, colorKey, activeTab }) {
+    const inputId = `theme-${activeTab}-${category}-${colorKey}`;
+    const isHex = typeof value === 'string' && /^#[0-9a-fA-F]{6}$/.test(value.trim());
+
+    return (
+        <div className="adm-color-item">
+            <label
+                className="adm-color-swatch"
+                style={{ backgroundColor: value }}
+                title={`Pick colour for ${label}`}
+            >
+                <span className="sr-only">Pick colour for {label}</span>
+                <input
+                    type="color"
+                    value={isHex ? value.trim() : '#0d1117'}
+                    onChange={(e) => onChange(category, colorKey, e.target.value)}
+                    aria-label={`Colour picker for ${label}`}
+                />
+            </label>
+            <div className="min-w-0 flex-1">
+                <label htmlFor={inputId} className="block truncate text-xs font-medium text-[var(--text-secondary)]">
+                    {label}
+                </label>
+                <input
+                    id={inputId}
+                    type="text"
+                    value={value}
+                    onChange={(e) => onChange(category, colorKey, e.target.value)}
+                    className="adm-input mt-1 !min-h-8 !px-2 !py-1 font-mono text-xs"
+                />
+            </div>
+        </div>
+    );
+}
+
 export default function ThemeEditor({ theme, onSave, onCancel }) {
     const [name, setName] = useState(theme?.name || '');
     const [description, setDescription] = useState(theme?.description || '');
@@ -104,8 +163,8 @@ export default function ThemeEditor({ theme, onSave, onCancel }) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     mode: 'generate_theme',
-                    prompt: aiPrompt
-                })
+                    prompt: aiPrompt,
+                }),
             });
 
             const data = await res.json();
@@ -113,7 +172,7 @@ export default function ThemeEditor({ theme, onSave, onCancel }) {
             if (data.success) {
                 try {
                     const parsedTheme = typeof data.data === 'string' ? JSON.parse(data.data) : data.data;
-                    
+
                     const mergeVariant = (defaultVar, newVar) => {
                         if (!newVar) return defaultVar;
                         const merged = { ...defaultVar };
@@ -127,18 +186,18 @@ export default function ThemeEditor({ theme, onSave, onCancel }) {
 
                     if (parsedTheme.light) setLightVariant(mergeVariant(defaultVariant, parsedTheme.light));
                     if (parsedTheme.dark) setDarkVariant(mergeVariant(defaultVariant, parsedTheme.dark));
-                    
-                    showNotification(true, 'Interface skin synthesized!');
+
+                    showNotification(true, 'Theme palette generated');
                 } catch (parseError) {
                     console.error('Failed to parse AI theme JSON:', parseError);
-                    showNotification(false, 'Synthesis payload format mismatch');
+                    showNotification(false, 'Could not parse generated theme JSON');
                 }
             } else {
-                showNotification(false, data.error || 'AI synthesis failed');
+                showNotification(false, data.error || 'AI theme generation failed');
             }
         } catch (error) {
             console.error('AI Error:', error);
-            showNotification(false, 'AI uplink interrupted');
+            showNotification(false, 'Could not reach AI service');
         } finally {
             setAiGenerating(false);
         }
@@ -153,12 +212,12 @@ export default function ThemeEditor({ theme, onSave, onCancel }) {
     const setCurrentVariant = activeTab === 'light' ? setLightVariant : setDarkVariant;
 
     const updateColor = (category, key, value) => {
-        setCurrentVariant(prev => ({
+        setCurrentVariant((prev) => ({
             ...prev,
             [category]: {
                 ...prev[category],
-                [key]: value
-            }
+                [key]: value,
+            },
         }));
     };
 
@@ -173,222 +232,163 @@ export default function ThemeEditor({ theme, onSave, onCancel }) {
             description: description.trim(),
             variants: {
                 light: lightVariant,
-                dark: darkVariant
-            }
+                dark: darkVariant,
+            },
         });
     };
 
-    const ColorInput = ({ label, value, onChange, category, colorKey }) => (
-        <div className="flex items-center gap-3 p-3 bg-white/[0.02] border border-white/10 rounded-lg hover:border-white/20 transition-colors group">
-            <div className="relative">
-                <input
-                    type="color"
-                    value={value}
-                    onChange={(e) => onChange(category, colorKey, e.target.value)}
-                    className="w-10 h-10 rounded cursor-pointer opacity-0 absolute inset-0 z-10"
-                />
-                <div
-                    className="w-10 h-10 rounded border border-white/10 shadow-inner"
-                    style={{ backgroundColor: value }}
-                />
-            </div>
-            <div className="flex-1 min-w-0">
-                <label className="text-xs text-slate-400 block mb-1 truncate font-mono uppercase tracking-wide">{label}</label>
-                <input
-                    type="text"
-                    value={value}
-                    onChange={(e) => onChange(category, colorKey, e.target.value)}
-                    className="w-full bg-slate-950/50 text-slate-200 px-2 py-1 rounded text-xs font-mono border border-white/10 focus:border-cyan-500/50 outline-none"
-                />
-            </div>
-        </div>
-    );
-
-    const ColorSection = ({ title, icon: Icon, category, colors }) => (
-        <div className="mb-8">
-            <div className="flex items-center gap-2 mb-4">
-                <Icon className="w-4 h-4 text-cyan-400" />
-                <h4 className="text-sm font-bold text-white uppercase tracking-wider">{title}</h4>
-                <div className="h-px bg-white/10 flex-1 ml-4" />
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                {Object.entries(colors).map(([key, value]) => (
-                    <ColorInput
-                        key={key}
-                        label={key.replace(/([A-Z])/g, ' $1').trim()}
-                        value={value}
-                        onChange={updateColor}
-                        category={category}
-                        colorKey={key}
-                    />
-                ))}
-            </div>
-        </div>
-    );
-
     return (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-xl flex items-center justify-center z-[100] p-4 animate-in fade-in duration-200">
-            <div className="bg-slate-900 rounded-2xl w-full max-w-7xl h-[90vh] flex flex-col border border-white/10 shadow-2xl relative overflow-hidden">
-
-                {/* Background Decorative Elements */}
-                <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/5 rounded-full blur-[120px] pointer-events-none" />
-                <div className="absolute bottom-0 left-0 w-96 h-96 bg-purple-500/5 rounded-full blur-[120px] pointer-events-none" />
-
-                {/* Header */}
-                <div className="p-6 border-b border-white/10 flex justify-between items-start bg-slate-900/50 relative z-10 shrink-0">
-                    <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="p-2 bg-cyan-500/10 rounded-lg text-cyan-400">
-                                <Palette className="w-6 h-6" />
-                            </div>
-                            <div>
-                                <h2 className="text-2xl font-bold text-white tracking-tight">
-                                    {theme ? 'Edit System Theme' : 'Initialize New Theme'}
-                                </h2>
-                                <p className="text-sm text-slate-500 font-mono">Configure color variables and syntax highlighting.</p>
-                            </div>
-                        </div>
-
-                        <div className="flex flex-col lg:flex-row gap-4 mb-4">
-                            <div className="w-full lg:w-[450px] shrink-0 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <input
-                                    type="text"
-                                    placeholder="THEME_DESIGNATION"
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
-                                    className="w-full bg-slate-950/50 text-white px-4 py-3 rounded-xl border border-white/10 focus:border-cyan-500/50 outline-none text-sm font-bold placeholder:text-slate-700 font-mono"
-                                />
-                                <input
-                                    type="text"
-                                    placeholder="Description (Optional context)"
-                                    value={description}
-                                    onChange={(e) => setDescription(e.target.value)}
-                                    className="w-full bg-slate-950/50 text-slate-300 px-4 py-3 rounded-xl border border-white/10 focus:border-cyan-500/50 outline-none text-sm placeholder:text-slate-700"
-                                />
-                            </div>
-
-                            {aiEnabled && (
-                                <div className="flex-1 flex gap-2 p-1 bg-white/5 rounded-xl border border-white/10 backdrop-blur-sm group/ai-box">
-                                    <input
-                                        type="text"
-                                        placeholder="AI_GENERATE (e.g. 'Midnight Cyberpunk')"
-                                        value={aiPrompt}
-                                        onChange={(e) => setAiPrompt(e.target.value)}
-                                        className="flex-1 bg-transparent text-cyan-400 px-3 py-1 outline-none text-xs font-mono placeholder:text-slate-700"
-                                    />
-                                    <button
-                                        onClick={handleAiGenerate}
-                                        disabled={aiGenerating || !aiPrompt.trim()}
-                                        className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 disabled:bg-slate-800 text-white rounded-lg transition-all flex items-center gap-2 text-xs font-bold uppercase tracking-tighter shadow-lg shadow-cyan-900/20"
-                                    >
-                                        {aiGenerating ? (
-                                            <Loader2 className="w-3 h-3 animate-spin" />
-                                        ) : (
-                                            <Sparkles className="w-3 h-3 group-hover/ai-box:rotate-12 transition-transform" />
-                                        )}
-                                        {aiGenerating ? 'Synthesizing...' : 'Generate Theme'}
-                                    </button>
-                                </div>
-                            )}
-                        </div>
+        <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="theme-editor-title"
+            className="adm-overlay"
+        >
+            <div className="adm-dialog adm-dialog-framed adm-dialog-wide">
+                <header className="adm-dialog-head">
+                    <div>
+                        <h2 id="theme-editor-title" className="text-lg font-semibold text-[var(--text-bright)]">
+                            {theme ? `Edit theme: ${theme.name}` : 'Create custom theme'}
+                        </h2>
+                        <p className="adm-help">
+                            Configure colour tokens and syntax highlighting for both light and dark variants.
+                        </p>
                     </div>
                     <button
+                        type="button"
                         onClick={onCancel}
-                        className="text-slate-500 hover:text-white transition-colors bg-white/5 hover:bg-white/10 p-2 rounded-lg"
+                        className="adm-icon-btn"
+                        aria-label="Close theme editor"
                     >
-                        <X className="w-6 h-6" />
+                        <FaXmark aria-hidden="true" />
                     </button>
-                </div>
+                </header>
 
-                {/* Variant Tabs */}
-                <div className="flex px-6 pt-6 gap-2 bg-slate-900/50 shrink-0 relative z-10">
-                    <button
-                        onClick={() => setActiveTab('light')}
-                        className={`px-6 py-3 rounded-t-xl transition-all flex items-center gap-2 text-sm font-bold border-t border-x ${activeTab === 'light'
-                            ? 'bg-slate-900 border-white/10 text-white border-b-transparent translate-y-px z-10'
-                            : 'bg-white/5 border-transparent text-slate-500 hover:text-slate-300 hover:bg-white/10'}`}
-                    >
-                        <Sun className="w-4 h-4" /> Light Mode
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('dark')}
-                        className={`px-6 py-3 rounded-t-xl transition-all flex items-center gap-2 text-sm font-bold border-t border-x ${activeTab === 'dark'
-                            ? 'bg-slate-900 border-white/10 text-white border-b-transparent translate-y-px z-10'
-                            : 'bg-white/5 border-transparent text-slate-500 hover:text-slate-300 hover:bg-white/10'}`}
-                    >
-                        <Moon className="w-4 h-4" /> Dark Mode
-                    </button>
-                </div>
+                <div className="adm-dialog-body space-y-6">
+                    <div className="grid gap-4 md:grid-cols-2">
+                        <Field label="Theme name">
+                            <input
+                                type="text"
+                                placeholder="Solarized Ocean"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                className="adm-input"
+                            />
+                        </Field>
+                        <Field label="Description">
+                            <input
+                                type="text"
+                                placeholder="Short summary of the palette mood and contrast"
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                                className="adm-input"
+                            />
+                        </Field>
+                    </div>
 
-                <div className="h-px bg-white/10 w-full shrink-0 relative z-0" />
+                    {aiEnabled && (
+                        <div className="adm-field">
+                            <label htmlFor="ai-theme-prompt" className="adm-label">
+                                Generate palette with AI
+                            </label>
+                            <div className="flex flex-wrap gap-2">
+                                <input
+                                    id="ai-theme-prompt"
+                                    type="text"
+                                    placeholder="Describe a palette (e.g. Warm editorial paper & deep slate)"
+                                    value={aiPrompt}
+                                    onChange={(e) => setAiPrompt(e.target.value)}
+                                    className="adm-input flex-1 basis-64"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={handleAiGenerate}
+                                    disabled={aiGenerating || !aiPrompt.trim()}
+                                    className="adm-btn"
+                                >
+                                    {aiGenerating ? (
+                                        <FaSpinner className="animate-spin" aria-hidden="true" />
+                                    ) : (
+                                        <FaWandMagicSparkles aria-hidden="true" />
+                                    )}
+                                    {aiGenerating ? 'Generating' : 'Generate palette'}
+                                </button>
+                            </div>
+                        </div>
+                    )}
 
-                {/* Color Editor Content */}
-                <div className="flex-1 overflow-y-auto p-4 sm:p-8 hide-scrollbar relative z-10 scroll-smooth">
-                    <div className="max-w-5xl mx-auto space-y-2">
-                        <ColorSection
-                            title="Structure & Backgrounds"
-                            icon={Layout}
-                            category="backgrounds"
-                            colors={currentVariant.backgrounds}
-                        />
-                        <ColorSection
-                            title="Typography"
-                            icon={Type}
-                            category="text"
-                            colors={currentVariant.text}
-                        />
-                        <ColorSection
-                            title="Primary Accents"
-                            icon={Eraser}
-                            category="accents"
-                            colors={currentVariant.accents}
-                        />
-                        <ColorSection
-                            title="Borders & Dividers"
-                            icon={Box}
-                            category="borders"
-                            colors={currentVariant.borders}
-                        />
-                        <ColorSection
-                            title="UI Indicators"
-                            icon={Layers}
-                            category="status"
-                            colors={currentVariant.status}
-                        />
-                        <ColorSection
-                            title="Code Syntax"
-                            icon={Hash}
-                            category="syntax"
-                            colors={currentVariant.syntax}
-                        />
-                        <ColorSection
-                            title="Depth & Shadow"
-                            icon={Eye}
-                            category="shadows"
-                            colors={currentVariant.shadows}
-                        />
+                    <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[var(--hairline)] pb-3">
+                        <div role="tablist" aria-label="Theme variant" className="adm-tabs !border-b-0">
+                            <button
+                                type="button"
+                                role="tab"
+                                aria-selected={activeTab === 'light'}
+                                onClick={() => setActiveTab('light')}
+                                className="adm-tab"
+                            >
+                                <FaSun aria-hidden="true" /> Light variant
+                            </button>
+                            <button
+                                type="button"
+                                role="tab"
+                                aria-selected={activeTab === 'dark'}
+                                onClick={() => setActiveTab('dark')}
+                                className="adm-tab"
+                            >
+                                <FaMoon aria-hidden="true" /> Dark variant
+                            </button>
+                        </div>
+
+                        {/* Intentional live colour sample for the selected variant */}
+                        <div
+                            className="flex items-center gap-3 rounded-[10px] border px-3.5 py-2 text-xs font-mono"
+                            style={{
+                                backgroundColor: currentVariant.backgrounds?.primary,
+                                borderColor: currentVariant.borders?.primary,
+                                color: currentVariant.text?.primary,
+                            }}
+                        >
+                            <span>Sample surface</span>
+                            <span style={{ color: currentVariant.accents?.cyan }}>--accent-cyan</span>
+                            <span style={{ color: currentVariant.accents?.purple }}>~/path</span>
+                        </div>
+                    </div>
+
+                    <div className="space-y-6">
+                        {COLOR_SECTIONS.map(({ title, category }) => {
+                            const colors = currentVariant[category] || {};
+                            return (
+                                <Panel key={category} title={title}>
+                                    <div className="adm-color-grid">
+                                        {Object.entries(colors).map(([key, value]) => (
+                                            <ColorInput
+                                                key={key}
+                                                label={formatTokenLabel(key)}
+                                                value={value}
+                                                onChange={updateColor}
+                                                category={category}
+                                                colorKey={key}
+                                                activeTab={activeTab}
+                                            />
+                                        ))}
+                                    </div>
+                                </Panel>
+                            );
+                        })}
                     </div>
                 </div>
 
-                {/* Footer Action Bar */}
-                <div className="p-6 border-t border-white/10 bg-slate-900 flex gap-4 justify-end shrink-0 relative z-10">
-                    <button
-                        onClick={onCancel}
-                        className="px-6 py-3 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors text-sm font-bold"
-                    >
-                        CANCEL
+                <footer className="adm-dialog-foot">
+                    <button type="button" onClick={onCancel} className="adm-btn">
+                        Cancel
                     </button>
-                    <button
-                        onClick={handleSubmit}
-                        className="px-8 py-3 rounded-lg bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40 transition-all text-sm font-bold tracking-wide flex items-center gap-2"
-                    >
-                        <Save className="w-4 h-4" />
-                        {theme ? 'SAVE_MODIFICATIONS' : 'CREATE_THEME'}
+                    <button type="button" onClick={handleSubmit} className="adm-btn adm-btn-primary">
+                        <FaFloppyDisk aria-hidden="true" />
+                        {theme ? 'Save changes' : 'Create theme'}
                     </button>
-                </div>
+                </footer>
             </div>
 
-            {/* Toast Notification */}
             <Toast notification={notification} />
         </div>
     );
