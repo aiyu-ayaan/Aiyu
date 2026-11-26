@@ -2,12 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, Save } from 'lucide-react';
+import { FaCheck, FaSpinner } from 'react-icons/fa6';
 import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
-import {
-    panelClass, headingClass, labelClass, inputClass, hintClass, primaryButtonClass,
-    slugify, requestJson,
-} from './legalUi';
+import { Panel, Field } from '@/app/components/admin/ui';
+import { slugify, requestJson } from './legalUi';
+import '@/app/styles/admin-blogs.css';
 
 const EMPTY = { name: '', slug: '', packageName: '', description: '', contactEmail: '', deploymentId: '' };
 
@@ -76,75 +75,143 @@ export default function LegalAppForm({ initialData = null, onSaved, defaultDeplo
     };
 
     const previewSlug = form.slug || slugify(form.name) || 'app';
+    const slugChanged = isEdit && form.slug !== initialData.slug;
 
-    return (
-        <form onSubmit={handleSubmit} className={panelClass}>
-            <h2 className={headingClass}>
-                Application
-                <div className="h-px bg-cyan-500/20 grow" />
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="md:col-span-2">
-                    <label className={labelClass} htmlFor="legal-link">Link to app on /apps (optional)</label>
+    const fieldsPanel = (
+        <Panel
+            title="Application details"
+            actions={
+                isEdit ? (
+                    <button type="submit" disabled={saving} className="adm-btn adm-btn-primary">
+                        {saving ? <FaSpinner aria-hidden="true" className="animate-spin" /> : <FaCheck aria-hidden="true" />}
+                        {saving ? 'Saving...' : 'Save app'}
+                    </button>
+                ) : null
+            }
+        >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <Field
+                    id="legal-link"
+                    label="Link to app on /apps (optional)"
+                    help="The app page will list these legal pages, and each legal page links back to the app."
+                    className="md:col-span-2"
+                >
                     <select
                         id="legal-link"
                         value={form.deploymentId}
                         onChange={(e) => handleLink(e.target.value)}
-                        className={inputClass}
+                        className="adm-input"
                     >
                         <option value="">— Not linked —</option>
                         {deployments.map((d) => (
                             <option key={d._id} value={d._id}>{d.name} (/apps/{d.slug})</option>
                         ))}
                     </select>
-                    <p className={hintClass}>The app page will list these legal pages, and each legal page links back to the app.</p>
-                </div>
+                </Field>
 
-                <div>
-                    <label className={labelClass} htmlFor="legal-name">App name</label>
-                    <input id="legal-name" className={inputClass} value={form.name} onChange={(e) => set('name', e.target.value)} placeholder="Rewire" required />
-                </div>
+                <Field id="legal-name" label="App name">
+                    <input
+                        id="legal-name"
+                        className="adm-input"
+                        value={form.name}
+                        onChange={(e) => set('name', e.target.value)}
+                        placeholder="Rewire"
+                        required
+                    />
+                </Field>
 
-                <div>
-                    <label className={labelClass} htmlFor="legal-slug">URL slug</label>
+                <Field
+                    id="legal-slug"
+                    label="URL slug"
+                    help={`Pages live at /${previewSlug}/privacy-policy`}
+                    error={slugChanged ? 'Changing the slug breaks links already submitted to app stores.' : undefined}
+                >
                     <input
                         id="legal-slug"
-                        className={`${inputClass} font-mono`}
+                        className="adm-input font-mono"
                         value={form.slug}
                         onChange={(e) => { setSlugTouched(true); set('slug', slugify(e.target.value)); }}
                         placeholder="rewire"
                     />
-                    <p className={hintClass}>Pages live at <span className="font-mono text-slate-300">/{previewSlug}/privacy-policy</span></p>
-                    {isEdit && form.slug !== initialData.slug && (
-                        <p className="mt-2 text-xs text-amber-400">Changing the slug breaks links already submitted to app stores.</p>
-                    )}
-                </div>
+                </Field>
 
-                <div>
-                    <label className={labelClass} htmlFor="legal-package">Package name (optional)</label>
-                    <input id="legal-package" className={`${inputClass} font-mono`} value={form.packageName} onChange={(e) => set('packageName', e.target.value.trim())} placeholder="com.aiyu.rewire" />
-                </div>
+                <Field
+                    id="legal-package"
+                    label="Package name (optional)"
+                    help="Android package name or iOS bundle identifier."
+                >
+                    <input
+                        id="legal-package"
+                        className="adm-input font-mono"
+                        value={form.packageName}
+                        onChange={(e) => set('packageName', e.target.value.trim())}
+                        placeholder="com.aiyu.rewire"
+                    />
+                </Field>
 
-                <div>
-                    <label className={labelClass} htmlFor="legal-email">Contact email (optional)</label>
-                    <input id="legal-email" type="email" className={inputClass} value={form.contactEmail} onChange={(e) => set('contactEmail', e.target.value)} placeholder="privacy@example.com" />
-                    <p className={hintClass}>Shown at the bottom of every page of this app.</p>
-                </div>
+                <Field
+                    id="legal-email"
+                    label="Contact email (optional)"
+                    help="Shown at the bottom of every page of this app."
+                >
+                    <input
+                        id="legal-email"
+                        type="email"
+                        className="adm-input"
+                        value={form.contactEmail}
+                        onChange={(e) => set('contactEmail', e.target.value)}
+                        placeholder="privacy@example.com"
+                    />
+                </Field>
 
-                <div className="md:col-span-2">
-                    <label className={labelClass} htmlFor="legal-description">Short description (optional)</label>
-                    <textarea id="legal-description" rows={2} maxLength={500} className={`${inputClass} resize-none`} value={form.description} onChange={(e) => set('description', e.target.value)} placeholder="Legal information for the Rewire Android app." />
-                    <p className={hintClass}>Used as the meta description of the /{previewSlug} hub.</p>
-                </div>
+                <Field
+                    id="legal-description"
+                    label="Short description (optional)"
+                    help={`Used as the meta description of the /${previewSlug} hub.`}
+                    className="md:col-span-2"
+                >
+                    <textarea
+                        id="legal-description"
+                        rows={3}
+                        maxLength={500}
+                        className="adm-input"
+                        value={form.description}
+                        onChange={(e) => set('description', e.target.value)}
+                        placeholder="Legal information for the Rewire Android app."
+                    />
+                </Field>
             </div>
+        </Panel>
+    );
 
-            <div className="mt-8 flex justify-end">
-                <button type="submit" disabled={saving} className={primaryButtonClass}>
-                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                    {isEdit ? 'Save app' : 'Create app'}
-                </button>
-            </div>
+    if (isEdit) {
+        return <form onSubmit={handleSubmit}>{fieldsPanel}</form>;
+    }
+
+    return (
+        <form onSubmit={handleSubmit} className="adm-split">
+            <div className="adm-stack">{fieldsPanel}</div>
+            <aside className="adm-stack adm-side">
+                <Panel title="Create application">
+                    <p className="adm-help mb-4">
+                        Once created, you can add a privacy policy, terms &amp; conditions, account deletion instructions, or custom legal pages.
+                    </p>
+                    <dl className="adm-facts mb-4">
+                        <div>
+                            <dt>Hub route</dt>
+                            <dd className="font-mono">/{previewSlug}</dd>
+                        </div>
+                        <div>
+                            <dt>Example policy URL</dt>
+                            <dd className="font-mono">/{previewSlug}/privacy-policy</dd>
+                        </div>
+                    </dl>
+                    <button type="submit" disabled={saving} className="adm-btn adm-btn-primary w-full">
+                        {saving ? <FaSpinner aria-hidden="true" className="animate-spin" /> : <FaCheck aria-hidden="true" />}
+                        {saving ? 'Creating...' : 'Create app'}
+                    </button>
+                </Panel>
+            </aside>
         </form>
     );
 }
