@@ -21,6 +21,10 @@ Milestone 8 (API routes) IN PROGRESS.
 - NEXT: 5b/9 (SQLite), then 10 (cutover: remove Next; see the cutover list in HANDOFF.md).
 - Done 2026-11-27: SEO audit, crawl, indexing and AI fixer, and the automatic search-engine pings now run in Rust
   (`scripts/perf/ai-parity.mjs`: 31/31 SEO cases against a local stand-in; NOT verified against real Google).
+- Checked 2026-11-27 after the last server change: write parity 431/440 (site, content, blogs, legal, ai, admin, misc,
+  crons, github; run against `pnpm dev`). The 9 differences: 7 new blog posts dated by local time in Next and UTC in
+  Rust (run at 01:20 IST; containers are UTC), the known 0 ms for a refused uptime check, and the Drive callback URL
+  naming each server's own port.
 - Done 2026-11-27: MCP (`writes/mcp.mjs` 83/83: every tool, resource and prompt; JSON carried as text differs only in
   key order). Admin redesign finished. `pnpm dev` runs Vite, aiyu-server and `next dev` together; unused files removed.
 - Done: cron jobs (`CRON_RUNNER=rust`, `writes/crons.mjs`).
