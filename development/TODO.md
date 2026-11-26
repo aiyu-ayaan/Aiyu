@@ -17,12 +17,15 @@ Milestone 8 (API routes) IN PROGRESS.
 - Decided 2026-11-26 (user): port every integration to Rust, no Node sidecar.
 - Done: sitemap.xml, robots.txt, ads.txt, auth.md, /docs/api, /docs/mcp (byte-equal to Next apart from request-time
   `lastmod` values).
-- NEXT, in this order: `/api/admin/ai/{config,models,validate-provider,text,generate}`, `/api/admin/health/analyze`,
-  `/api/admin/seo/{audit,crawl,fix,index}`, the search-engine
+- NEXT, in this order: `/api/admin/seo/{audit,crawl,fix,index}`, the open page optimisations of milestone 7 (`/ai`
+  payload, Vite entry chunk, `/` payload; asked for on 2026-11-27), the search-engine
   pings of `/api/internal/hooks`, then 5b/9 (SQLite) and 10 (cutover).
 - Done 2026-11-27: MCP (`writes/mcp.mjs` 83/83: every tool, resource and prompt; JSON carried as text differs only in
   key order). Admin redesign finished. `pnpm dev` runs Vite, aiyu-server and `next dev` together; unused files removed.
 - Done: cron jobs (`CRON_RUNNER=rust`, `writes/crons.mjs`).
+- Done 2026-11-27: the AI Core routes and the health analyzer (`scripts/perf/ai-parity.mjs` 129/129 against a local
+  stand-in). NOT verified against any real provider. Deliberate differences: error messages for a body that is not
+  JSON are Rust's own; an empty Gemini reply counts as a failure (Next stored the raw reply as the text).
 - Done: contact form `POST`, notification service and test, link previews (`scripts/perf/outbound-parity.mjs` 18/18).
   Telegram delivery is checked by unit test only (its address is fixed). Rust refuses private addresses in
   `/api/og-preview`; Next (and `master`) fetch any address an anonymous caller names.
@@ -264,12 +267,12 @@ Each page: Rust data + head + Vite route + e2e passing through Rust, then the Ne
 ## Milestone 8: Port API routes
 - [x] `/api/about` (Rust)
 - [x] `/api/admin/ads` (Rust)
-- [ ] `/api/admin/ai/config`
-- [ ] `/api/admin/ai/generate`
+- [x] `/api/admin/ai/config` (Rust)
+- [x] `/api/admin/ai/generate` (Rust)
 - [x] `/api/admin/ai/logs` (Rust)
-- [ ] `/api/admin/ai/models`
-- [ ] `/api/admin/ai/text`
-- [ ] `/api/admin/ai/validate-provider`
+- [x] `/api/admin/ai/models` (Rust)
+- [x] `/api/admin/ai/text` (Rust)
+- [x] `/api/admin/ai/validate-provider` (Rust)
 - [x] `/api/admin/analytics` (Rust)
 - [x] `/api/admin/blogs/token` (Rust)
 - [x] `/api/admin/crons` (Rust)
@@ -290,7 +293,7 @@ Each page: Rust data + head + Vite route + e2e passing through Rust, then the Ne
 - [x] `/api/admin/gdrive/list` (Rust)
 - [x] `/api/admin/gdrive/restore` (Rust)
 - [x] `/api/admin/gdrive/status` (Rust)
-- [ ] `/api/admin/health/analyze`
+- [x] `/api/admin/health/analyze` (Rust)
 - [x] `/api/admin/health/metrics` (Rust)
 - [x] `/api/admin/health/targets` (Rust)
 - [x] `/api/admin/health/uptime` (Rust)

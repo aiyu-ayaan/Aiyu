@@ -112,7 +112,7 @@ async fn next_rsc_requests_to_vite_pages_get_an_empty_non_rsc_reply() {
 async fn non_get_methods_on_rust_page_patterns_reach_next() {
     // `/{legal_app}/{legal_doc}` and the page routes are GET-only in Rust; uploads and admin saves must still
     // reach Next instead of getting a 405.
-    for (method, uri) in [("POST", "/api/debug-groq"), ("PUT", "/api/admin/storage"), ("PATCH", "/api/about"), ("POST", "/blogs")] {
+    for (method, uri) in [("POST", "/api/admin/seo/crawl"), ("PUT", "/api/admin/storage"), ("PATCH", "/api/about"), ("POST", "/blogs")] {
         let mut req = Request::builder().method(method).uri(uri).header("host", "example.com").body(Body::empty()).unwrap();
         req.extensions_mut().insert(ConnectInfo::<SocketAddr>("127.0.0.1:5555".parse().unwrap()));
         let res = app("").await.oneshot(req).await.unwrap();
@@ -165,6 +165,9 @@ async fn ported_writes_refuse_anonymous_callers() {
         ("POST", "/api/admin/gdrive/restore"), ("POST", "/api/admin/gdrive/delete"), ("POST", "/api/admin/gdrive/disconnect"),
         ("PUT", "/api/github/config"), ("GET", "/api/github/sync?repo=x"), ("POST", "/api/github/sync"),
         ("POST", "/api/admin/notifications/test"), ("GET", "/api/admin/security/audit"), ("GET", "/api/admin/security/sessions"),
+        ("GET", "/api/admin/ai/config"), ("PUT", "/api/admin/ai/config"), ("GET", "/api/admin/ai/models"), ("POST", "/api/admin/ai/models"),
+        ("POST", "/api/admin/ai/validate-provider"), ("POST", "/api/admin/ai/text"), ("POST", "/api/admin/ai/generate"),
+        ("POST", "/api/admin/health/analyze"),
         ("POST", "/api/admin/security/sessions/x/revoke"), ("GET", "/api/admin/analytics"), ("DELETE", "/api/admin/analytics"),
     ] {
         let mut req = Request::builder().method(method).uri(uri).header("content-type", "application/json").body(Body::from("{}")).unwrap();

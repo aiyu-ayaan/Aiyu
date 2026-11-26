@@ -23,6 +23,7 @@ bodies such as backups never sit in memory.
 | Crawler and agent files | `robots.txt`, `sitemap.xml`, `ads.txt`, `auth.md`, `/docs/api`, `/docs/mcp` |
 | Uploads and storage | `/api/upload`, `/api/uploads/{file}`, `/api/admin/{images/upload,icons,storage,storage/migrate,storage/unreferenced,migrate-gallery}`. HEIC needs the system `libheif1` (loaded at run time) |
 | Health, resume, misc | `/api/admin/{health/metrics,health/uptime,health/uptime/check,purge-cache,resume,resume/compile,resume/publish,ai/logs,system-prompt}` |
+| AI Core | `/api/admin/ai/{config,models,validate-provider,text,generate}`, `/api/admin/health/analyze` |
 | MCP | `/api/mcp` |
 | Backup | `GET /api/admin/export`: rows and files stream into the zip, about 10 MB of memory whatever the data size |
 | Restore, Google Drive | `/api/admin/import`, `/api/admin/gdrive/*`: everything goes through temporary files (`BACKUP_TMP_DIR`) |
@@ -64,6 +65,7 @@ SEO tools read through them) and queues search-engine pings. The call carries an
 | `health.rs`, `misc.rs` | server metrics, uptime checks, cache purge, Resume Studio, AI log, system prompt |
 | `restore.rs`, `drive.rs` | restore of backups, Google Drive |
 | `mcp.rs` | the MCP endpoint: tools, resources, prompts |
+| `ai_core.rs`, `ai_modes.rs` | AI settings, provider calls, writing modes, captions, health analyzer |
 | `db.rs`, `export.rs` | database pool and ids, backup zip |
 
 `crypto.rs` and `session.rs` read values written by the Node code (encrypted DB fields, the `session` cookie).
@@ -87,6 +89,8 @@ pnpm server:test
 | `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `GITHUB_ALLOWED_ID`, `GITHUB_OAUTH_CALLBACK_URL` | unset | GitHub sign-in, same as Next |
 | `BACKUP_TMP_DIR` | `.next/cache/backups` | scratch folder for backups and restores (must be on disk) |
 | `GOOGLE_API_BASE_URL` | unset | tests only: a local stand-in for Google |
+| `AI_API_BASE_URL` | unset | tests only: a local stand-in for the AI providers |
+| `AI_GATEWAY_URL`, `AI_GATEWAY_API_KEY` | unset | Vercel AI Gateway defaults, same as Next |
 | `GITHUB_TOKEN` | unset | used when no token is stored in the admin settings |
 | `ADMIN_USERNAME`, `ADMIN_PASSWORD` | empty (login always fails) | password login; `$` is read by dotenv rules, which differ from Next's in `.env` files |
 | `GITHUB_AUTH_ENABLED` | `false` | `true` turns password login off |
@@ -115,6 +119,8 @@ node --env-file=.env scripts/perf/auth-parity.mjs
 node --env-file=.env scripts/perf/write-parity.mjs scripts/perf/writes/{site,content,blogs,legal,ai,admin,github,misc,crons,mcp}.mjs   # mcp: PARITY_NEXT=<Next URL> if not :3100
 # Outgoing requests: contact form, notification channels, n8n webhook
 node --env-file=.env scripts/perf/outbound-parity.mjs
+# AI routes against a stand-in for every provider (see the script's header for how to start both servers)
+node --env-file=.env scripts/perf/ai-parity.mjs
 # Uploads: the same files to both servers, stored pictures compared
 node --env-file=.env scripts/perf/upload-parity.mjs
 # Restore round trip and the Drive routes, on a scratch database (see the scripts' headers)

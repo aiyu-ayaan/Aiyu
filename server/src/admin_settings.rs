@@ -51,7 +51,7 @@ pub(crate) fn unauthorized() -> Response {
 }
 
 /// The refusal of `withAuth` in src/middleware/auth.js.
-fn unauthorized_with_message() -> Response {
+pub(crate) fn unauthorized_with_message() -> Response {
     json_status(StatusCode::UNAUTHORIZED, json!({ "success": false, "error": "Unauthorized", "message": "No authentication token provided" }))
 }
 

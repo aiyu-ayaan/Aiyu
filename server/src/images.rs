@@ -255,6 +255,22 @@ pub fn thumbnail(data: &[u8]) -> anyhow::Result<Processed> {
     Ok(Processed { data: encode(&picture, 80.0, true)?, width, height })
 }
 
+/// A JPEG at most 1024 px a side, for a model that looks at pictures. Transparency turns black, as sharp does it.
+pub fn preview_jpeg(data: &[u8]) -> anyhow::Result<Vec<u8>> {
+    let mut picture = decode(data)?;
+    let (width, height) = fit(picture.width, picture.height, 1024, 1024);
+    picture = resize(picture, width, height)?;
+    let pixels = if picture.alpha {
+        let blend = |colour: u8, alpha: u8| ((u16::from(colour) * u16::from(alpha) + 127) / 255) as u8;
+        picture.pixels.chunks_exact(4).flat_map(|p| [blend(p[0], p[3]), blend(p[1], p[3]), blend(p[2], p[3])]).collect()
+    } else {
+        picture.pixels
+    };
+    let mut out = Vec::new();
+    image::codecs::jpeg::JpegEncoder::new_with_quality(&mut out, 80).encode(&pixels, width, height, image::ExtendedColorType::Rgb8)?;
+    Ok(out)
+}
+
 /// `-thumb.webp` beside a file name.
 pub fn thumbnail_name(filename: &str) -> String {
     let stem = match filename.rfind('.') {

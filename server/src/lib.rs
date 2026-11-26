@@ -8,6 +8,8 @@ pub mod admin_security;
 pub mod admin_settings;
 pub mod admin_site;
 pub mod ai;
+pub mod ai_core;
+pub mod ai_modes;
 pub mod analytics;
 pub mod api;
 pub mod auth;
@@ -203,6 +205,12 @@ fn limited_api(state: &AppState) -> Router<AppState> {
         .route("/api/admin/resume/compile", post(misc::compile))
         .route("/api/admin/resume/publish", post(misc::publish))
         .route("/api/mcp", post(mcp::post_mcp).delete(mcp::delete_mcp))
+        .route("/api/admin/ai/config", put(ai_core::put_config))
+        .route("/api/admin/ai/models", post(ai_core::discover_models))
+        .route("/api/admin/ai/validate-provider", post(ai_core::validate_provider))
+        .route("/api/admin/ai/text", post(ai_core::text))
+        .route("/api/admin/ai/generate", post(ai_core::generate).layer(DefaultBodyLimit::max(uploads::BODY_LIMIT)))
+        .route("/api/admin/health/analyze", post(ai_core::analyze))
         // A backup can be hundreds of megabytes; the handler streams it to disk and enforces its own limit.
         .route("/api/admin/import", post(restore::import).layer(DefaultBodyLimit::disable()))
         .route_layer(axum::middleware::from_fn_with_state(state.clone(), limit::api))
@@ -299,6 +307,8 @@ pub fn router(state: AppState) -> Router {
         .route("/api/admin/health/uptime", get(health::uptime))
         .route("/api/admin/resume", get(misc::resume))
         .route("/api/admin/ai/logs", get(misc::ai_logs))
+        .route("/api/admin/ai/config", get(ai_core::config))
+        .route("/api/admin/ai/models", get(ai_core::models))
         .route("/api/admin/system-prompt", get(misc::system_prompt))
         .route("/api/mcp", get(mcp::get_mcp).options(mcp::options_mcp))
         .route("/api/uploads/{filename}", get(uploads::serve))
