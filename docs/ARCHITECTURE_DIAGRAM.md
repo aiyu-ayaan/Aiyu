@@ -2,470 +2,213 @@
 
 ## System Architecture Overview
 
+```text
+┌──────────────────────────────────────────────────────────────────────┐
+│                           User / Browser                             │
+│                 (Public Visitors, Admin UI, AI Agents)               │
+└──────────────────────────────────┬───────────────────────────────────┘
+                                   │ HTTPS (terminated at Cloudflare / edge)
+                                   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│                   NGINX Reverse Proxy (nginx:alpine)                 │
+│  Port 80 (HTTP-only origin; upstream TLS)                            │
+│  - Direct static serving: /srv/public, /uploads/, /api/uploads/      │
+│  - Proxy cache: /_app/* (365d immutable), /api/github/stats (2m)     │
+│  - Gzip compression, security headers, /nginx-health                 │
+│  - No-store for /api/* and /admin; 404s are never cached             │
+└──────────────────────────────────┬───────────────────────────────────┘
+                                   │ Docker bridge network (aiyu-network)
+                                   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│              Rust / Axum Server — aiyu-server (Port 3000)            │
+│              Image: debian:bookworm-slim (~213 MB), UID 1001 (aiyu)  │
+│              Runtime: 2 Tokio workers, MALLOC_ARENA_MAX=2            │
+│ ┌──────────────────────────────────────────────────────────────────┐ │
+│ │  SPA Serving & Metadata Injection (web/dist)                     │ │
+│ │  - Serves Vite + React 19 + Tailwind CSS 4 frontend              │ │
+│ │  - Injects per-route SEO/OG tags and bootstrap payload into HTML │ │
+│ │  - Serves hashed /_app/* assets (immutable cache headers)        │ │
+│ └──────────────────────────────────────────────────────────────────┘ │
+│ ┌──────────────────────────────────────────────────────────────────┐ │
+│ │  REST API & Admin Backend (/api/*)                               │ │
+│ │  - Auth (JWT sessions + optional single-user GitHub OAuth)       │ │
+│ │  - Content CRUD (Projects, Blogs, Gallery, Apps, AI Hub, Legal)  │ │
+│ │  - Image processing & HEIC/HEIF decoding (libheif1)              │ │
+│ │  - Per-IP rate limiting (TRUSTED_PROXIES-aware) & audit logging  │ │
+│ │  - Full ZIP backup/restore, Google Drive sync, scheduled crons   │ │
+│ │  - AI provider integrations, SEO audit/indexing, analytics       │ │
+│ └──────────────────────────────────────────────────────────────────┘ │
+│ ┌──────────────────────────────────────────────────────────────────┐ │
+│ │  Static Files, Redirects, Discovery & MCP                        │ │
+│ │  - Serves public/, uploads (/api/uploads/{file}, /uploads/)      │ │
+│ │  - Legacy URL redirects & canonical host handling                │ │
+│ │  - /robots.txt, /sitemap.xml, /ads.txt, /.well-known/*           │ │
+│ │  - /api/mcp (MCP StreamableHTTP JSON-RPC 2.0 server)             │ │
+│ │  - SQLite FTS5 full-text blog search (/api/global-search)        │ │
+│ └──────────────────────────────────────────────────────────────────┘ │
+└─────────────────┬────────────────────────────────┬───────────────────┘
+                  │                                │
+                  ▼                                ▼
+┌────────────────────────────────────┐  ┌──────────────────────────────┐
+│  SQLite Database (data/aiyu.db)    │  │  Named Volumes & External    │
+│  - Single file, WAL mode           │  │  Volumes:                    │
+│  - 36 tables + FTS5 search index   │  │  - sqlite_data (/app/data)   │
+│  - Embedded SQL migrations         │  │  - uploads_data              │
+│  - Startup auto-seed (RUN_SEED)    │  │  - backup_cache              │
+│  - BEGIN IMMEDIATE write txns      │  │  - nginx_cache               │
+│  - 10s busy timeout                │  │  External APIs:              │
+│                                    │  │  - GitHub API / OAuth        │
+│  (Optional one-time cutover tool:  │  │  - AI providers, Google      │
+│   `aiyu-server import-postgres`)   │  │  - n8n webhooks, Telegram    │
+└────────────────────────────────────┘  └──────────────────────────────┘
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                         User/Browser                                 │
-│                    (Public & Admin Access)                           │
-└────────────────┬────────────────────────────────────────────────────┘
-                 │ HTTP/HTTPS
+
+---
+
+## Frontend Architecture (Vite + React 19)
+
+The frontend is built at compile time by Vite (`pnpm run web:build` -> `web/dist`) using Node.js 24. Node.js is **not** part of the runtime container.
+
+- **Entry & Routing**: `web/` (Vite config, TypeScript entrypoints, route metadata) + `src/` (React 19 components, pages, admin modules, hooks, utilities).
+- **Styling & Motion**: Tailwind CSS 4 (`@tailwindcss/vite`), Framer Motion, GSAP, Lenis, Three.js.
+- **Public Surfaces**: Home (scroll-driven story), About, Projects, Apps/Deployments, Blogs (Markdown + syntax highlighting), Gallery, Games, GitHub stats, AI Hub (`/ai`), Desktop OS (`/desktop`), Contact, Legal pages.
+- **Admin Panel (`/admin/*`)**: Content management, Theme studio, Analytics, Security/Sessions/Audit log, MCP configuration, Crons, SEO, Resume studio, Health/Uptime metrics, Backup & Restore.
+
+---
+
+## Production Deployment (`docker-compose.yml`)
+
+```text
+Internet / Cloudflare Edge (HTTPS 443)
+                 │ HTTP (port 80)
                  ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                        NGINX Reverse Proxy                           │
-│    (Production Only - Port 80/443, Gzip, Static Cache, SSL)          │
-│                   Routes & Load Balancing                            │
-└────────────────┬────────────────────────────────────────────────────┘
-                 │ Internal Network (docker network: aiyu-network)
-                 ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│              Next.js Application (Port 3000)                         │
-│ ┌─────────────────────────────────────────────────────────────────┐ │
-│ │  Frontend (React 19)                                            │ │
-│ │  - Public Pages (Home, About, Projects, Blogs, Gallery)         │ │
-│ │  - Admin Panel (/admin)                                         │ │
-│ │  - Theme System (21+ presets + custom themes)                   │ │
-│ │  - Markdown Rendering with Syntax Highlighting                 │ │
-│ │  - Real-time UI Updates (Framer Motion)                         │ │
-│ └─────────────────────────────────────────────────────────────────┘ │
-│ ┌─────────────────────────────────────────────────────────────────┐ │
-│ │  Backend (Next.js API Routes)                                   │ │
-│ │  - Authentication (JWT)                                         │ │
-│ │  - Content Management (CRUD operations)                         │ │
-│ │  - Image Processing (Sharp - HEIC, JPEG, PNG, WebP)             │ │
-│ │  - Rate Limiting & Security Middleware                          │ │
-│ │  - Webhook Integration (n8n, Notion, etc.)                      │ │
-│ │  - Database Operations (Mongoose ODM)                           │ │
-│ │  - AI Features (Google Gemini Integration)                      │ │
-│ └─────────────────────────────────────────────────────────────────┘ │
-│ ┌─────────────────────────────────────────────────────────────────┐ │
-│ │  Security Features                                              │ │
-│ │  ✓ Non-root user execution (nextjs user)                        │ │
-│ │  ✓ Read-only filesystem (tmpfs for writable dirs)               │ │
-│ │  ✓ /tmp with noexec (crypto miner prevention)                   │ │
-│ │  ✓ Capability dropping (ALL dropped, NET_BIND_SERVICE only)     │ │
-│ │  ✓ CPU/Memory limits (1 core / 512MB max)                       │ │
-│ │  ✓ No privilege escalation allowed                              │ │
-│ └─────────────────────────────────────────────────────────────────┘ │
-└────────────────┬──────────────────┬──────────────────┬───────────────┘
-                 │                  │                  │
-                 ▼                  ▼                  ▼
-    ┌──────────────────────┐  ┌──────────────────┐  ┌──────────────────┐
-    │  MongoDB Cluster     │  │  Persistent Data │  │  External APIs   │
-    │  (Replica Set)       │  │  (Named Volumes) │  │  - Google Gemini │
-    │                      │  │                  │  │  - n8n Webhooks  │
-    │  Primary: mongo1     │  │  - uploads_data  │  │  - GitHub API    │
-    │  Secondary: mongo2   │  │  - mongodb_data  │  │  - MongoDB Atlas │
-    │  Secondary: mongo3   │  │  - nginx_cache   │  │                  │
-    │                      │  │  - nextjs_cache  │  │                  │
-    │  Replica Set: rs0    │  │                  │  │                  │
-    │  Port: 27017         │  └──────────────────┘  └──────────────────┘
-    │  Auth: Enabled       │
-    │  Persistence: Yes    │
-    │  Network: aiyu-net   │
-    └──────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│  nginx (nginx:alpine)                                       │
+│  - Listens on ${NGINX_HTTP_PORT:-80}                        │
+│  - Serves ./public (/srv/public) & uploads_data             │
+│  - Caches /_app/* and /api/github/stats in nginx_cache      │
+│  - Healthcheck: wget http://127.0.0.1:80/nginx-health       │
+└────────────────────────────┬────────────────────────────────┘
+                             │ http://app:3000 (keepalive)
+                             ▼
+┌─────────────────────────────────────────────────────────────┐
+│  app (aiyuayaan/aiyu:${APP_IMAGE_TAG:-latest})              │
+│  - Debian bookworm-slim (~213 MB), user aiyu (1001:1001)    │
+│  - Read-only root FS + noexec tmpfs (/tmp, /var/tmp, /run)  │
+│  - Volumes: sqlite_data, uploads_data, backup_cache         │
+│  - Healthcheck: /app/aiyu-server healthcheck                │
+└─────────────────────────────────────────────────────────────┘
+
+Optional cutover-only service (disabled by default):
+  postgres (postgres:17-alpine, profiles: ["postgres"])
+  - Started only when running `aiyu-server import-postgres`
+    (see development/docs/SQLITE_CUTOVER.md).
 ```
 
 ---
 
-## Production Deployment (docker-compose.yml)
+## Local Workflows
 
-```
-User/Browser
-     │
-     │ HTTP/HTTPS (Port 80/443)
-     ▼
-┌─────────────────────────────────────────────────────────────────┐
-│              NGINX Reverse Proxy                                │
-│  - SSL/TLS Termination                                          │
-│  - Static File Serving (public, uploads)                        │
-│  - Gzip Compression                                             │
-│  - Response Caching (nginx_cache volume)                        │
-│  - Route-level Proxy Behavior                                   │
-│  - Health Checks (/nginx-health endpoint)                       │
-│  Container: nginx:alpine                                        │
-│  Port: 80 (internal) → APP_PORT (external, default 3000)        │
-└────────────┬──────────────────────────────────────────────────┘
-             │ Port 3000 (internal)
-             ▼
-┌──────────────────────────────────────────────────────────────┐
-│         Next.js Application (Docker Image)                   │
-│  aiyuayaan/aiyu:${APP_IMAGE_TAG:-latest}                     │
-│  - Pre-built, optimized image                                │
-│  - Environment: production                                   │
-│  - Health check: ENABLED (150s start period)                 │
-│  - Resource limits: CPU 1.0, Memory 512MB                    │
-│  - Security hardened                                         │
-│  - Pulls from Docker Hub                                     │
-│  Container: aiyu-app                                         │
-└────────┬───────────────────────┬───────────────────┬─────────┘
-         │                       │                   │
-    Port 27017              Internal Network    External APIs
-         │                    (aiyu-network)          │
-         ▼                       ▼                     │
-┌──────────────────────┐  ┌──────────────────┐       │
-│   MongoDB Cluster    │  │  Named Volumes   │       ▼
-│   (Replica Set)      │  │                  │  ┌────────────────┐
-│                      │  │  uploads_data    │  │ External APIs  │
-│ mongo1:27017 (Primary)  │  mongodb_data    │  │ - Google Gemini│
-│ mongo2:27017           │  mongodb_config   │  │ - n8n Webhooks │
-│ mongo3:27017           │  nginx_cache      │  │ - GitHub API   │
-│                      │  nextjs_cache      │  │ - Email Service│
-│ Replica Set: rs0     │                    │  └────────────────┘
-│ Auth: Enabled        │  Persistence: Yes  │
-│ Persistence: Yes     └──────────────────┘
-└──────────────────────┘
-```
+### Local Docker (`docker-compose.local.yml`)
 
-**Key Production Features:**
-- Pre-built Docker image from Docker Hub (faster startup)
-- NGINX reverse proxy with SSL/TLS support
-- MongoDB replica set for high availability & failover
-- Persistent named volumes for data durability
-- Health checks on all services
-- Zero-downtime deployments possible
-- Suitable for cloud platforms (AWS, DigitalOcean, etc.)
+- Builds `Dockerfile` directly from the local checkout.
+- Runs `app` (exposed on `${APP_PORT:-3000}:3000`) and `nginx` (exposed on `${NGINX_HTTP_PORT:-80}:80`).
+- Uses the same hardened container settings, healthcheck, and SQLite volume as production.
+
+### Native Development (`pnpm dev`)
+
+- `scripts/dev.mjs` runs Vite dev server (HMR) alongside the local Rust server (`aiyu-server`) connected to `data/aiyu.db`.
+- No Docker or external database server is required.
 
 ---
 
-## Local Development (docker-compose.local.yml)
+## Request Lifecycle
 
-```
-Developer's Machine
-      │
-      │ Port 3000
-      ▼
-┌─────────────────────────────────────────────────────────────────┐
-│         Next.js Application (Local Build)                       │
-│  - Built from local source (docker-compose.local.yml)           │
-│  - Dockerfile in project root                                   │
-│  - Environment: production                                      │
-│  - Health check: ENABLED (40s start period)                     │
-│  - Resource limits: CPU 1.0, Memory 512MB                       │
-│  - Security hardened                                            │
-│  - Direct port exposure (NO NGINX)                              │
-│  Container: aiyu-app                                            │
-└────────────┬───────────────────────────────────────────────────┘
-             │ Port 27017
-             ▼
-        ┌─────────────────────────┐
-        │  MongoDB (Single Node)   │
-        │  image: mongo:7          │
-        │  Container: aiyu-mongodb │
-        │  Port: 27017             │
-        │  Auth: Enabled           │
-        │  Persistence: Named vol  │
-        │  (NO replica set)        │
-        │  Health check: ENABLED   │
-        └─────────────────────────┘
-```
-
-**Key Local Development Features:**
-- Built from local source code (instant code updates with rebuild)
-- No NGINX (direct app access on port 3000)
-- Single MongoDB instance (not replica set)
-- Faster startup time than production
-- Ideal for testing Docker changes before production
-- Same security configurations as production
-- Mount local directories for development
-
----
-
-## Data Flow & Request Lifecycle
-
-```
-┌──────────────────────────────────────────────────────────────────────────┐
-│                     USER REQUEST LIFECYCLE                                │
-└──────────────────────────────────────────────────────────────────────────┘
-
+```text
 1. INCOMING REQUEST (Production)
-   ├─ User Browser sends HTTP/HTTPS request
-   │  │
-   │  └─→ NGINX Reverse Proxy (Port 80/443)
-   │      ├─ Parse request
-   │      ├─ Check SSL/TLS (if HTTPS)
-   │      ├─ Serve static files if available (public/, uploads/)
-   │      └─ Forward to Next.js app:3000 (if dynamic)
+   Browser / Agent
+     └─► NGINX (:80)
+         ├─ /nginx-health             → 200 "ok"
+         ├─ /uploads/*, /api/uploads/* → served directly from uploads_data (30d immutable)
+         ├─ Static files in /srv/public → served directly (7d cache), fallback to @app
+         ├─ /_app/*                   → proxied to app:3000 & cached 365d
+         ├─ /api/github/stats         → proxied to app:3000 & cached 2m
+         └─ /api/*, /admin, SPA pages → proxied to app:3000 (proxy_cache off)
 
-2. APPLICATION PROCESSING
-   ├─ Next.js App receives request
-   │  │
-   │  ├─ Check route type:
-   │  │  ├─ Static page → Serve from cache
-   │  │  ├─ API route → Process request
-   │  │  └─ Dynamic page → Render with data
-   │  │
-   │  └─ API Route Processing:
-   │      ├─ Middleware checks:
-   │      │  ├─ Rate limiting
-   │      │  ├─ Authentication (JWT)
-   │      │  └─ Input validation
-   │      │
-   │      ├─ Business Logic:
-   │      │  ├─ Process request
-   │      │  ├─ Image processing (if needed)
-   │      │  └─ Data transformation
-   │      │
-   │      └─ Database Operations:
-   │          ├─ Connect to MongoDB
-   │          ├─ Execute query (Mongoose)
-   │          └─ Return results
+2. RUST / AXUM PROCESSING (aiyu-server :3000)
+   ├─ Compression layer (Brotli + Gzip, skipping already-compressed types)
+   ├─ Redirect middleware (legacy paths & canonical host where configured)
+   ├─ Route dispatch:
+   │   ├─ SPA pages (/, /blogs/*, /projects/*, /admin/*, ...)
+   │   │   → queries SQLite if needed, injects meta/bootstrap JSON into web/dist/index.html
+   │   ├─ REST API (/api/*)
+   │   │   → rate-limit middleware (writes & select reads)
+   │   │   → auth check (JWT cookie or Bearer token)
+   │   │   → SQLite query via sqlx pool (WAL mode)
+   │   ├─ MCP endpoint (/api/mcp)
+   │   │   → JSON-RPC 2.0 StreamableHTTP dispatch (read tools public; write tools Bearer-authed)
+   │   ├─ Discovery & SEO (/robots.txt, /sitemap.xml, /.well-known/*)
+   │   └─ Fallback → public/ static files or SPA 404 page (with site header)
 
-3. DATABASE OPERATIONS (MongoDB)
-   ├─ Connect to Primary Node (mongo1)
-   │  │
-   │  ├─ Read Operations:
-   │  │  └─ Primary node responds
-   │  │
-   │  └─ Write Operations:
-   │      ├─ Primary receives write
-   │      ├─ Replicates to Secondary nodes (mongo2, mongo3)
-   │      ├─ Waits for majority acknowledgment
-   │      └─ Returns success
-
-4. RESPONSE GENERATION
-   ├─ Next.js app prepares response
-   │  ├─ Generate HTML/JSON
-   │  ├─ Add security headers
-   │  └─ Compress if needed
-   │
-   └─ Return response (if production → through NGINX first)
-
-5. RESPONSE DELIVERY (Production)
-   ├─ Response travels through NGINX
-   │  ├─ Apply gzip compression
-   │  ├─ Cache if applicable
-   │  └─ Set cache headers
-   │
-   └─ Browser receives response
-      ├─ Render page/handle API response
-      └─ Execute client-side JavaScript (React)
+3. DATABASE (SQLite)
+   ├─ Concurrent readers + serialized writers (BEGIN IMMEDIATE, 10s busy timeout)
+   ├─ FTS5 virtual table for full-text blog search
+   └─ All 36 tables persisted in /app/data/aiyu.db (+ -wal / -shm)
 ```
 
 ---
 
-## Service Dependencies & Startup Order
+## Startup Sequence (`docker-compose.yml`)
 
-### Production (docker-compose.yml)
+```text
+1. Start `app`
+   ├─ Read config from environment variables
+   ├─ Verify SQLite guard (refuse to create empty DB if DATABASE_URL points to Postgres)
+   ├─ Open/create /app/data/aiyu.db in WAL mode & run embedded SQL migrations
+   ├─ Load Vite bundle metadata from /app/web/dist
+   ├─ Run startup seed if RUN_SEED=auto and DB is empty
+   ├─ Start background cron scheduler (if enabled)
+   ├─ Bind TCP listener on 0.0.0.0:3000 (TCP_NODELAY enabled)
+   └─ Pass healthcheck: `/app/aiyu-server healthcheck` -> GET 127.0.0.1:3000/api/health
 
-```
-Startup Sequence:
-1. Start mongo1, mongo2, mongo3 (parallel)
-   └─ Wait for health checks (30s each)
-
-2. Start mongo-init (depends on all 3 healthy)
-   └─ Initialize replica set (waits for all nodes ready)
-
-3. Start app (depends on mongo-init success)
-   ├─ Load environment variables
-   ├─ Connect to MongoDB replica set
-   ├─ Start Next.js server
-   └─ Wait for health check (150s max startup time)
-
-4. Start nginx (depends on app started)
-   ├─ Load nginx.conf
-   ├─ Configure reverse proxy
-   └─ Ready to accept requests
-
-Ready for Traffic:
-   Browser → NGINX (port 3000) → App (port 3000) → MongoDB (port 27017)
-```
-
-### Local Development (docker-compose.local.yml)
-
-```
-Startup Sequence:
-1. Start mongodb (single instance)
-   └─ Wait for health check (10s startup period)
-
-2. Build app image from local Dockerfile
-   └─ Install dependencies
-   └─ Build Next.js app
-
-3. Start app (depends on mongodb healthy)
-   ├─ Load environment variables
-   ├─ Connect to MongoDB
-   ├─ Start Next.js server
-   └─ Wait for health check (40s max startup time)
-
-Ready for Traffic:
-   Browser → App (port 3000) → MongoDB (port 27017)
+2. Start `nginx` (waits for `app` service_healthy)
+   ├─ Load ./nginx.conf
+   ├─ Mount ./public and uploads_data (read-only)
+   └─ Pass healthcheck: GET 127.0.0.1:80/nginx-health
 ```
 
 ---
 
-## Volume & Data Persistence
+## Volumes & Persistence
 
-### Named Volumes (Persistent Data)
-
-```
-Volume Type: Named Volumes (Docker-managed)
-Location: /var/lib/docker/volumes/ (Docker host)
-Persistence: Survives container restarts and recreations
-
-Production (docker-compose.yml):
-├─ mongo1_data       → /data/db (mongo1 data files)
-├─ mongo1_config     → /data/configdb (mongo1 replica set config)
-├─ mongo2_data       → /data/db (mongo2 data files)
-├─ mongo2_config     → /data/configdb (mongo2 replica set config)
-├─ mongo3_data       → /data/db (mongo3 data files)
-├─ mongo3_config     → /data/configdb (mongo3 replica set config)
-├─ uploads_data      → /app/public/uploads (user uploads)
-├─ nextjs_cache      → /app/.next/cache (Next.js build cache)
-└─ nginx_cache       → /var/cache/nginx (NGINX response cache)
-
-Local (docker-compose.local.yml):
-├─ mongodb_data      → /data/db (MongoDB data)
-├─ mongodb_config    → /data/configdb (MongoDB config)
-├─ uploads_data      → /app/public/uploads (user uploads)
-└─ nextjs_cache      → /app/.next/cache (Next.js build cache)
-
-tmpfs Mounts (In-Memory, Non-Persistent):
-├─ /tmp              → noexec,nosuid,nodev (100-500MB, crypto miner prevention)
-├─ /var/tmp          → noexec,nosuid,nodev (50MB, temporary files)
-└─ /run              → noexec,nosuid,nodev (10MB, PID files only)
-```
+| Mount | Type | Container Path | Purpose |
+|---|---|---|---|
+| `sqlite_data` | Named volume | `/app/data` | SQLite database (`aiyu.db`, `-wal`, `-shm`) |
+| `uploads_data` | Named volume | `/app/public/uploads` (app), `/srv/uploads` (nginx, ro) | Uploaded images and media |
+| `backup_cache` | Named volume | `/app/.cache` | Temporary backup/restore archives |
+| `nginx_cache` | Named volume | `/var/cache/nginx` | NGINX proxy cache |
+| `/tmp` | `tmpfs` | `/tmp` | Ephemeral scratch (`noexec,nosuid,nodev`) |
+| `/var/tmp` | `tmpfs` | `/var/tmp` | Ephemeral scratch (`noexec,nosuid,nodev`) |
+| `/run` | `tmpfs` | `/run` | Runtime files (`noexec,nosuid,nodev`) |
 
 ---
 
 ## Security Layers
 
-```
-┌────────────────────────────────────────────────────────────────────┐
-│                         SECURITY ARCHITECTURE                       │
-└────────────────────────────────────────────────────────────────────┘
-
-Layer 1: Network Security
-├─ Internal Docker network (aiyu-network)
-│  └─ Services communicate internally only
-├─ NGINX reverse proxy (production)
-│  └─ Single entry point (port 80/443)
-├─ Firewall rules (on VPS)
-│  └─ Only ports 22, 80, 443 open
-└─ No direct MongoDB exposure to internet
-   └─ No external port mapping
-
-Layer 2: Container Security
-├─ Non-root user execution
-│  └─ Container runs as 'nextjs' user (UID 1000)
-├─ Capability dropping
-│  └─ ALL capabilities dropped except NET_BIND_SERVICE
-├─ Read-only root filesystem
-│  └─ Only /tmp, /var/tmp, /run are writable
-├─ /tmp protection (noexec flag)
-│  └─ Prevents crypto miner script execution
-├─ Resource limits
-│  ├─ CPU: 1.0 core maximum
-│  └─ Memory: 512MB maximum
-└─ No privilege escalation
-   └─ no-new-privileges security option enabled
-
-Layer 3: Application Security
-├─ JWT-based authentication
-│  └─ Admin panel & API routes protected
-├─ Rate limiting
-│  └─ Protection against brute force attacks
-├─ Input validation & sanitization
-│  └─ All user inputs validated
-├─ CORS & security headers
-│  ├─ Strict-Transport-Security
-│  ├─ Content-Security-Policy
-│  └─ X-Frame-Options
-└─ Environment variable protection
-   └─ Sensitive data never in image layers
-
-Layer 4: Database Security
-├─ Authentication enabled
-│  └─ Root username/password required
-├─ Replica set key authentication
-│  └─ Inter-node communication secured
-├─ Network isolation
-│  └─ Only accessible from app container
-├─ Data encryption in transit
-│  └─ SSL/TLS for replication
-└─ Persistent backups
-   └─ Named volumes for recovery
-
-Layer 5: Cryptographic Security
-├─ JWT Secret (64 chars)
-│  └─ Signs authentication tokens
-├─ Blog API bearer token (SHA-256 hashed at rest)
-│  └─ Secures automated blog posting API
-├─ MongoDB passwords
-│  └─ Strong random 32+ characters
-└─ Replica set keyfile
-   └─ 48 bytes random key for node auth
-
-Layer 6: Monitoring & Auditing
-├─ Health checks on all services
-│  └─ Detect unhealthy containers
-├─ Log monitoring
-│  └─ Application logs viewable via Docker
-├─ Resource monitoring
-│  └─ CPU/memory usage tracked
-└─ Startup verification
-   └─ Security checks on deployment (npm run docker:verify)
-```
+1. **Network**: Internal Docker bridge (`aiyu-network`); only NGINX port 80 is exposed in production (TLS terminated upstream). `TRUSTED_PROXIES` restricts which peers may set `X-Real-IP` / `X-Forwarded-For`.
+2. **Container**: Non-root `aiyu` user (UID 1001), `read_only: true` root filesystem, `noexec` tmpfs mounts, `cap_drop: ALL`, `no-new-privileges:true`.
+3. **Application & Auth**:
+   - Admin authentication via signed JWT sessions (or optional single-user GitHub OAuth locked to `GITHUB_ALLOWED_ID`).
+   - Sensitive stored secrets encrypted at rest with a cipher derived from `JWT_SECRET`.
+   - Blog API and MCP write bearer tokens stored as SHA-256 hashes and verified in constant time.
+   - Per-IP rate limiting on write endpoints, login, global search, and MCP write calls (20/min).
+   - Security headers set by NGINX (`X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`).
 
 ---
 
-## Development vs Production Differences
+## Performance & Scaling Notes
 
-```
-┌─────────────────────────────┬─────────────────────────────┐
-│     Development (Local)     │    Production (Cloud/VPS)   │
-├─────────────────────────────┼─────────────────────────────┤
-│ Source: Local source code   │ Source: Docker Hub image    │
-│ Build: On-demand (docker)   │ Build: CI/CD pipeline       │
-│ MongoDB: Single node        │ MongoDB: Replica set (3)    │
-│ Network: Direct app access  │ Network: NGINX + app        │
-│ Port: 3000 (direct)         │ Port: 80/443 (NGINX)        │
-│ SSL: None (localhost)       │ SSL: Let's Encrypt          │
-│ Startup: 40s                │ Startup: 150s (+replica)    │
-│ Monitoring: Basic           │ Monitoring: Full logging    │
-│ Backup: Manual              │ Backup: Automated           │
-│ Scaling: Not needed         │ Scaling: Horizontal ready   │
-└─────────────────────────────┴─────────────────────────────┘
-```
-
----
-
-## Environment Separation
-
-### Production Environment (.env.production)
-```
-NODE_ENV=production
-MONGODB_URI=mongodb://admin:PASSWORD@mongo1:27017,mongo2:27017,mongo3:27017/aiyu?replicaSet=rs0&authSource=admin
-MONGO_REPLICA_SET_KEY=<64-char-key>
-NEXT_PUBLIC_BASE_URL=https://yourdomain.com
-SITE_URL=https://yourdomain.com
-APP_IMAGE_TAG=latest (or specific version)
-```
-
-### Local Development Environment (.env)
-```
-NODE_ENV=production (for testing)
-MONGODB_URI=mongodb://localhost:27017/aiyu (or docker: mongodb URI)
-NEXT_PUBLIC_BASE_URL=http://localhost:3000
-SITE_URL=http://localhost:3000
-```
-
----
-
-## Scaling Considerations
-
-### Horizontal Scaling
-- Multiple app instances behind NGINX load balancer
-- MongoDB replica set already supports high availability
-- Static assets cached by NGINX
-- Session data stored in MongoDB (no in-memory state)
-
-### Vertical Scaling
-- Increase CPU/memory limits in deployment.resources
-- Increase MongoDB storage volumes
-- Increase NGINX worker processes
-
-### Performance Optimization
-- NGINX response caching (nginx_cache volume)
-- Next.js image optimization (Sharp)
-- MongoDB indexes on frequently queried fields
-- CDN for static assets (optional)
-- Gzip compression enabled in NGINX
+- **Low Memory Footprint**: Built to run comfortably on a 1 GB VPS (~27 MB idle RSS in Docker, ~71 MB after a full read sweep with `MALLOC_ARENA_MAX=2` and 2 Tokio worker threads).
+- **Vertical Scaling**: Increase `RUST_WORKERS` if running on multi-core hosts; SQLite WAL mode handles high concurrent read throughput with a single writer.
+- **Caching**: NGINX caches immutable Vite `/_app/*` bundles (365 days), serves static files and uploads directly from disk, and caches `/api/github/stats` (2 minutes).
+- **Full-Text Search**: Blog search uses SQLite FTS5 with English stemming, avoiding external search services.

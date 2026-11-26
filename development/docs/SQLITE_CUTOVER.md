@@ -31,7 +31,7 @@ volume `postgres_data` is not touched by any step below.
 
    ```bash
    docker compose pull app
-   docker compose --profile postgres up -d postgres
+   docker compose --profile postgres up -d --wait postgres
    ```
 
    The last release on Postgres must have run against this database at least once, so that its migrations are

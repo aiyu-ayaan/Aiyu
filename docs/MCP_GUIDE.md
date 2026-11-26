@@ -1,156 +1,192 @@
 # Model Context Protocol (MCP) & API Integration Guide
 
-Welcome to the Aiyu Model Context Protocol (MCP) and API Integration Guide. This document provides a complete walkthrough of how to use and configure the MCP Server capabilities in your dashboard and how to consume or expose your resume/portfolio data to AI agents.
+This guide covers Aiyu's built-in **Model Context Protocol (MCP)** server implemented in `server/src/mcp.rs`, how to configure it from `/admin/mcp`, and how to connect AI clients.
 
 ---
 
-## 1. What is Model Context Protocol (MCP)?
+## 1. Overview & Discovery Endpoints
 
-The **Model Context Protocol (MCP)** is an open standard developed by Anthropic that enables Large Language Models (LLMs) and AI agents to connect securely to data sources and tools. 
+Aiyu exposes a standard **MCP StreamableHTTP** JSON-RPC 2.0 server directly from the Rust/Axum backend—no separate sidecar or stdio script is required.
 
-Instead of writing custom API integration code for every single AI client, tool, or browser sandbox, MCP provides a unified way to describe:
-- **Resources**: Data sources that an AI agent can read (similar to files or endpoints).
-- **Tools**: Dynamic functions that an AI agent can execute (similar to calling a function).
-- **Prompts**: Injected prompt templates or instructions that guide the AI agent's behavior.
+| Endpoint | Method | Purpose |
+|---|---|---|
+| `/api/mcp` | `POST` | MCP StreamableHTTP JSON-RPC 2.0 endpoint (single or batched requests) |
+| `/api/mcp` | `DELETE` | Terminates an active session (`Mcp-Session-Id` header) → `204 No Content` |
+| `/api/mcp` | `OPTIONS` | CORS preflight (`Access-Control-Allow-Origin: *`) |
+| `/api/mcp` | `GET` | Returns `405 Method Not Allowed` (`Allow: POST, DELETE, OPTIONS`) |
+| `/.well-known/mcp/server-card.json` | `GET` | Published MCP Server Card (metadata, transports, capabilities, read tools) |
+| `/docs/mcp` | `GET` | Markdown MCP documentation for agents |
+| `/.well-known/api-catalog` | `GET` | Public REST API catalog |
+| `/.well-known/openapi.json` | `GET` | OpenAPI specification |
 
-When an AI agent (such as Claude Desktop, a browser-based agent, or Antigravity) connects to Aiyu, it discovers these capabilities automatically via a published **Server Card** served at `/.well-known/mcp/server-card.json`.
+### Protocol & Sessions
+
+- **Supported MCP Protocol Versions**: `2025-11-25` (default/latest), `2025-06-18`, `2025-03-26`, `2024-11-05`, `2024-10-07`.
+- **Sessions**: Calling `initialize` returns an `Mcp-Session-Id` header. Include `Mcp-Session-Id` on subsequent requests (sessions expire after 30 minutes of inactivity). Send `DELETE /api/mcp` with `Mcp-Session-Id` to close a session explicitly.
+- **Notifications**: JSON-RPC notifications (messages without an `id`) return `202 Accepted`.
 
 ---
 
-## 2. Using the `/admin/mcp` Dashboard
+## 2. Authentication & Rate Limiting
 
-The `/admin/mcp` Command Center module is the control panel for your portfolio's MCP Server. It is split into seven configuration sections:
+- **Read operations** (`tools/list`, read-only `tools/call`, `resources/*`, `prompts/*`): Public when the MCP server is enabled in `/admin/mcp`.
+- **Write operations** (creating, updating, or deleting projects, blogs, deployments, or AI Hub items):
+  1. Write access must be enabled in `/admin/mcp` (`write.enabled = true`).
+  2. The client must send `Authorization: Bearer <token>`.
+  3. Generate or revoke the bearer token in `/admin/mcp` (backed by `POST /api/admin/mcp/token` and `DELETE /api/admin/mcp/token`). Only the SHA-256 hash (`mcpTokenHash`) is stored in SQLite and verified in constant time.
+  4. Write tools only appear in `tools/list` when **both** write access is enabled and the request carries a valid bearer token.
+- **Rate Limits & Auditing**: Write tool calls are limited to **20 requests per minute per client IP** (in addition to the general `/api` rate limiter) and every write action is recorded in the admin security audit log.
 
-### 1. Server
-This section sets the main metadata for your MCP Server.
-- **Enabled Switch**: Master toggle. If disabled, the server card is still served, but no active tools or resources will be advertised.
-- **Name**: Machine-readable identifier for your server (e.g., `aiyu`).
-- **Version**: Version of your integration (e.g., `1.0.0`).
-- **Title**: Display name shown to connecting clients (e.g., `Aiyu`).
-- **Website URL**: Absolute link to your site.
-- **Description**: High-level explanation of what your server does.
-- **Instructions**: Guidelines sent directly to the connecting AI agent, advising it on *how* to use the server. This is a powerful way to steer the agent's behavior (e.g., "Always search the blog posts before answering general queries about the developer.").
+---
 
-### 2. Transports
-Transports define *how* clients communicate with your MCP Server. Aiyu supports:
-- **`webmcp`**: Direct, browser-level integration. When an agent is running inside the user's browser, Aiyu registers its tools directly to the browser runtime via `navigator.modelContext`.
-- **`sse` (Server-Sent Events)**: Exposes a live streaming endpoint. Best for server-to-server connections where clients listen for updates and send actions over HTTP.
-- **`http` / `streamable-http`**: Standard HTTP POST/GET endpoint structure.
-- **`stdio`**: Standard input/output transport, used primarily when running Aiyu locally via command line.
+## 3. Supported JSON-RPC Methods
 
-### 3. Capabilities
-Toggle which features of MCP are advertised to clients:
-- **Tools**: Enable function calling.
-- **Resources**: Enable reading raw data resources.
-- **Prompts**: Enable loading prompt templates.
-- **Logging**: Enable forwarding log events to the client.
-- **Completions**: Enable auto-completing arguments.
+| Method | Capability Flag | Description |
+|---|---|---|
+| `initialize` | always | Negotiates protocol version, returns `serverInfo`, `capabilities`, and optional `instructions` |
+| `ping` | always | Liveness check (`{}`) |
+| `tools/list` | `capabilities.tools.enabled` | Lists read tools (plus write tools if write mode is enabled and caller is authenticated) |
+| `tools/call` | `capabilities.tools.enabled` | Executes a tool by `name` and `arguments` |
+| `resources/list` | `capabilities.resources.enabled` | Lists built-in `aiyu://` resources |
+| `resources/read` | `capabilities.resources.enabled` | Reads a resource by `uri` (`application/json`) |
+| `prompts/list` | `capabilities.prompts.enabled` | Lists available prompt templates |
+| `prompts/get` | `capabilities.prompts.enabled` | Renders a prompt template with optional arguments |
 
-### 4. Tools
-Define the actions that AI agents can take on your site. Each tool has:
-- **Name**: The identifier (e.g., `aiyu.navigate`).
-- **Title / Description**: Details that help the LLM decide when to call the tool.
-- **Input Schema**: A JSON schema representing the arguments the tool expects. For example:
-  ```json
-  {
-    "type": "object",
-    "properties": {
-      "query": { "type": "string" }
-    },
-    "required": ["query"]
+---
+
+## 4. Available Tools, Resources & Prompts
+
+### Read Tools (Public — 14 tools)
+
+| Tool | Description | Required Args |
+|---|---|---|
+| `search_portfolio` | Search across projects, published blogs, and deployments | `query` |
+| `list_projects` | List all portfolio projects with tech stack and links | — |
+| `list_blogs` | List published blog post summaries | — |
+| `get_blog` | Fetch a single published blog post by `id` or `slug` | `id` |
+| `list_deployments` | List live deployments / hosted apps | — |
+| `get_profile` | Fetch the developer About / resume profile | — |
+| `get_api_catalog` | Fetch the public REST API catalog | — |
+| `get_ai_page` | Fetch the full AI Hub (`/ai`) section configuration | — |
+| `list_ai_sections` | List compact AI Hub section summaries | — |
+| `get_ai_section` | Fetch a single AI Hub section by `id` | `id` |
+| `list_ai_skills` | List AI Hub skills grouped by category | — |
+| `list_ai_recommendations` | List recommended AI stack cards | — |
+| `list_ai_credits` | List AI free-credits / free-tier rows | — |
+| `list_ai_prompts` | List AI Hub prompt-library entries | — |
+
+### Write Tools (Bearer Token + Write Enabled — 20 tools)
+
+- **Projects**: `create_project`, `update_project`, `delete_project`
+- **Blogs**: `create_blog_post` (defaults to `published: false` draft)
+- **Deployments**: `create_deployment`
+- **AI Hub Skill Categories**: `create_ai_skill_category`, `update_ai_skill_category`, `delete_ai_skill_category`
+- **AI Hub Skills**: `create_ai_skill`, `update_ai_skill`, `delete_ai_skill`
+- **AI Hub Recommendations**: `create_ai_recommendation`, `update_ai_recommendation`, `delete_ai_recommendation`
+- **AI Hub Credits**: `create_ai_credit`, `update_ai_credit`, `delete_ai_credit`
+- **AI Hub Prompts**: `create_ai_prompt`, `update_ai_prompt`, `delete_ai_prompt`
+
+### Built-in Resources (`resources/read` — 10 URIs)
+
+All resources return `application/json`:
+
+- `aiyu://profile` — Developer About / resume profile
+- `aiyu://projects` — All portfolio projects
+- `aiyu://blogs` — Published blog post summaries
+- `aiyu://deployments` — Live deployments / hosted apps
+- `aiyu://api-catalog` — Public REST API catalog
+- `aiyu://ai-page` — Full AI Hub (`/ai`) configuration
+- `aiyu://ai-skills` — AI skills grouped by category
+- `aiyu://ai-recommendations` — Recommended AI stack cards
+- `aiyu://ai-credits` — Free credits & free-tier providers
+- `aiyu://ai-prompts` — Reusable prompt library
+
+### Built-in Prompts (`prompts/get`)
+
+- `introduce_developer` — Instructs the client to read `aiyu://profile` and call `list_projects` to draft a developer introduction. Optional argument: `tone` (e.g., `"formal"` or `"casual"`).
+
+---
+
+## 5. Using the `/admin/mcp` Dashboard
+
+The `/admin/mcp` panel manages your MCP server settings (stored in the `McpConfig` SQLite table):
+
+- **Server**: Master enable/disable switch, `name`, `version`, `title`, `websiteUrl`, `description`, and agent `instructions`.
+- **Write Access & Token**: Toggle write tools on/off and generate or revoke the Bearer token.
+- **Transports**: Configure advertised transports (default: `streamable-http` at `/api/mcp`, plus optional `webmcp` browser integration).
+- **Capabilities**: Toggle `tools`, `resources`, `prompts`, `logging`, and `completions`.
+- **Tools / Resources / Prompts / Links**: Customize advertised server-card metadata and discovery links (`/.well-known/api-catalog`, `/.well-known/openapi.json`).
+
+---
+
+## 6. Connecting MCP Clients
+
+### Remote StreamableHTTP Client Configuration
+
+Point any MCP client that supports StreamableHTTP directly at `/api/mcp`:
+
+```json
+{
+  "mcpServers": {
+    "aiyu-portfolio": {
+      "url": "https://your-domain.com/api/mcp"
+    }
   }
-  ```
-- **Annotations**: Flags like `readOnlyHint` (safe to call), `destructiveHint` (requires confirmation), or `idempotentHint` (safe to retry).
+}
+```
 
-### 5. Resources
-Expose read-only documents to the AI.
-- **URI**: A unique URI string identifying the resource (e.g., `about://resume` or `http://localhost:3000/api/about`).
-- **Name & Title**: Text describing the resource.
-- **MimeType**: Identifies content structure (e.g., `application/json` or `text/markdown`).
+To enable write tools, add the Bearer token generated in `/admin/mcp`:
 
-### 6. Prompts
-Define reusable system instructions that the user or agent can select (e.g., `write_cover_letter` prompt with arguments like `companyName` and `position`).
+```json
+{
+  "mcpServers": {
+    "aiyu-portfolio": {
+      "url": "https://your-domain.com/api/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR_MCP_TOKEN"
+      }
+    }
+  }
+}
+```
 
-### 7. Links
-Provide links that help agents discover API catalogs (`/.well-known/api-catalog`) or OpenAPI definitions (`/.well-known/openapi.json`).
+For local development against a running server (`pnpm dev` or `docker-compose.local.yml`), use `http://localhost:3000/api/mcp`.
 
----
+### Testing with `curl`
 
-## 3. How to Use & Expose Your Resume over API
+```bash
+# 1. Initialize a session (note the Mcp-Session-Id response header)
+curl -i -X POST http://localhost:3000/api/mcp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "initialize",
+    "params": { "protocolVersion": "2025-11-25", "capabilities": {}, "clientInfo": { "name": "curl", "version": "1.0" } }
+  }'
 
-Your resume and profile information are managed in the database via the **About** singleton and associated relational tables (Projects, Blogs). You can consume these via the REST API or configure them as MCP Resources.
+# 2. List available tools
+curl -s -X POST http://localhost:3000/api/mcp \
+  -H "Content-Type: application/json" \
+  -H "Mcp-Session-Id: <SESSION_ID>" \
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}'
 
-### Method A: Consuming Resume Data via the REST API
-
-You or your agent can query the portfolio content directly using the following public JSON endpoints:
-
-1. **Get Resume Biography & Skills**:
-   - **Endpoint**: `GET /api/about`
-   - **Description**: Returns your bio, career history, education, and skill lists.
-   - **Response Format**:
-     ```json
-     {
-       "id": "cuid...",
-       "data": {
-         "name": "Your Name",
-         "title": "Software Engineer",
-         "bio": "...",
-         "skills": ["React", "Next.js", "PostgreSQL"],
-         "experience": [
-           { "role": "Senior Developer", "company": "Tech Corp", "years": "2024-Present" }
-         ]
-       }
-     }
-     ```
-
-2. **Get Projects**:
-   - **Endpoint**: `GET /api/projects`
-   - **Description**: Returns all public projects, including status, tech stacks, and live urls.
-
-3. **Get GitHub Stats**:
-   - **Endpoint**: `GET /api/github/stats`
-   - **Description**: Returns the public stats configured in your GitHub module.
+# 3. Call a read tool
+curl -s -X POST http://localhost:3000/api/mcp \
+  -H "Content-Type: application/json" \
+  -H "Mcp-Session-Id: <SESSION_ID>" \
+  -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"get_profile","arguments":{}}}'
+```
 
 ---
 
-### Method B: Exposing Resume Data via MCP Resources
+## 7. Consuming Portfolio Data via REST API
 
-To make your resume immediately readable by any MCP-compliant AI client, follow these steps in the `/admin/mcp` panel:
+If you prefer plain REST endpoints instead of MCP JSON-RPC, the same public data is available at:
 
-1. Navigate to the **Resources** tab in `/admin/mcp`.
-2. Click **+ RESOURCE**.
-3. Configure the fields as follows:
-   - **URI**: `about://resume`
-   - **Enabled**: `ON`
-   - **Name**: `resume`
-   - **Title**: `Developer Resume & Biography`
-   - **MimeType**: `application/json`
-   - **Description**: `Fetches the primary developer bio, career history, and skill list.`
-4. Click **SAVE** at the top right.
-
-When an AI agent connects to your server card, it will find `about://resume` listed as an available resource. It can then request a resource read to ingest your full resume instantly.
-
----
-
-### Method C: Connecting External Clients (e.g., Claude Desktop)
-
-To connect an external client like **Claude Desktop** directly to your portfolio's MCP Server so it can access your resume:
-
-1. Open your Claude Desktop configuration file:
-   - **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
-   - **Mac**: `~/Library/Application Support/Claude/claude_desktop_config.json`
-2. Add your Aiyu MCP server under the `mcpServers` key using our stdio server script:
-   ```json
-   {
-     "mcpServers": {
-       "aiyu-portfolio": {
-         "command": "node",
-         "args": [
-           "--env-file=.env",
-           "/absolute/path/to/aiyu/scripts/mcp-server.mjs"
-         ]
-       }
-     }
-   }
-   ```
-3. Alternatively, if your client supports remote HTTP/SSE servers, you can configure it to connect directly to your hosted `/api/mcp/sse` endpoint (once implemented) or fetch the `server-card.json` file for dynamic configuration.
+- `GET /api/about` — Developer bio, skills, education, and experience
+- `GET /api/projects` — All public projects
+- `GET /api/blogs` — Published blog posts
+- `GET /api/deployments` — Live deployments
+- `GET /api/github/stats` — Cached GitHub stats
+- `GET /api/ai-page` — AI Hub configuration

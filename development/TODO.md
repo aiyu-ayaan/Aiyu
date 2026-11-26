@@ -15,7 +15,8 @@ Current plan (started 2026-11-27), one or more commits per stage, never pushed:
    order, request times, ports, and blog search, which returned nothing from this Postgres because its search trigger
    is missing); writes 522/523 (one port in a URL); backups 19918 rows and 687 files equal, also after restoring the
    Postgres build's backup into an empty SQLite site.
-5. NEXT: Docker, compose, CI, docs without a Node runtime or Prisma.
+5. DONE: Docker, compose, CI, and repo docs without a Node runtime or Prisma; tested in Docker (see HANDOFF.md).
+6. NEXT: production cutover and 1 GB VM benchmark (see HANDOFF.md).
 
 Older notes:
 

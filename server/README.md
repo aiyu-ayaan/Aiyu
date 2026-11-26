@@ -16,7 +16,7 @@ and runs the scheduled tasks. Plan and progress: `development/TODO.md`.
 | Content writes | socials, themes, projects, deployments (and their reorder), gallery, blogs, legal apps and pages |
 | AI Hub writes | skill categories, skills, recommendations, credits, prompts, `/api/ai/seed` |
 | Contact form | `/api/contact/message`: the public `POST` (with notifications and the n8n webhook), the admin `GET` and `DELETE` |
-| Notifications, previews | `/api/admin/notifications/test`, `/api/og-preview` (public hosts only, unlike Next) |
+| Notifications, previews | `/api/admin/notifications/test`, `/api/og-preview` (public hosts only) |
 | Admin settings | `/api/admin/{ads,social,notifications}`, `seo/config`, `blogs/token`, `mcp/{config,token}`, `crons`, `crons/{id}`, `crons/{id}/run`, `crons/{env,logs,preview,timezone}`, `health/targets`, `analytics`, `security/*` |
 | Crawler and agent files | `robots.txt`, `sitemap.xml`, `ads.txt`, `auth.md`, `/docs/api`, `/docs/mcp` |
 | Uploads and storage | `/api/upload`, `/api/uploads/{file}`, `/api/admin/{images/upload,icons,storage,storage/migrate,storage/unreferenced,migrate-gallery}`. HEIC needs the system `libheif1` (loaded at run time) |
@@ -27,7 +27,7 @@ and runs the scheduled tasks. Plan and progress: `development/TODO.md`.
 | Backup | `GET /api/admin/export`: rows and files stream into the zip, about 10 MB of memory whatever the data size |
 | Restore, Google Drive | `/api/admin/import`, `/api/admin/gdrive/*`: everything goes through temporary files (`BACKUP_TMP_DIR`) |
 | Static | `/_app/*` (one-year immutable cache), `public/` files, `/uploads/*` |
-| Old addresses | the `next.config.mjs` redirects, `/v1/*`, `/v2/*`, removed pages, trailing slashes (`src/site_static.rs`). A target can never leave the site |
+| Old addresses | legacy redirects, `/v1/*`, `/v2/*`, removed pages, trailing slashes (`src/site_static.rs`). A target can never leave the site |
 
 Responses are compressed (brotli, gzip; zips, PDFs, fonts and video are skipped). The route list is `src/lib.rs`.
 
@@ -107,9 +107,20 @@ pnpm server:test
 
 Reads `.env` from the working directory.
 
+## Database, migrations & seeding
+
+- **SQLite (`DATABASE_PATH`, default `data/aiyu.db`)**: opened in WAL mode with FTS5 full-text search for blogs. If the file does not exist, the server creates its parent directory and initializes a new database on startup — unless `DATABASE_URL` points to PostgreSQL, in which case startup aborts so an upgraded Postgres install cannot accidentally come up empty (override with `START_EMPTY=true`).
+- **Embedded migrations (`server/migrations/`)**: SQL migrations (`0001_init.sql`) are embedded into the binary and applied automatically at startup (`db::migrate`).
+- **Seeding (`RUN_SEED`)**: driven by `seed.json` and AI page defaults emitted by the Vite build in `WEB_DIR`. `auto` (default) populates an empty database, `force` replaces base content (projects, apps, about, home, header, socials — destructive), and `false` disables seeding.
+
+## CLI subcommands
+
+| Command | Purpose |
+|---|---|
+| `aiyu-server` | Run the HTTP server, apply embedded migrations, seed (per `RUN_SEED`), and start the cron runner |
+| `aiyu-server healthcheck` | Probe `http://127.0.0.1:<port>/api/health` (port from `RUST_LISTEN`) and exit `0` on 2xx; used by Docker `HEALTHCHECK` |
+| `aiyu-server import-postgres` | One-time read-only snapshot copy from Postgres (`DATABASE_URL`) into a new SQLite file (`DATABASE_PATH`), hash-verifying all 36 tables before renaming into place; requires the default `pg-import` Cargo feature (see [`development/docs/SQLITE_CUTOVER.md`](../development/docs/SQLITE_CUTOVER.md)) |
+
 ## Checks
 
-`pnpm server:test`, `pnpm test`, and the browser tests (headless): `pnpm exec playwright test`.
-
-Commands besides serving: `aiyu-server healthcheck` (exit 0 when the server answers) and
-`aiyu-server import-postgres` (`development/docs/SQLITE_CUTOVER.md`).
+`pnpm server:test`, `pnpm test`, and the browser tests (headless): `pnpm test:ui` (or `pnpm exec playwright test`).

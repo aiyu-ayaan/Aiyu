@@ -1,10 +1,10 @@
 # 🌟 Aiyu - The Ultimate Developer Portfolio & CMS
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org/)
+[![Rust](https://img.shields.io/badge/Rust-Axum-000000?logo=rust)](https://www.rust-lang.org/)
+[![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)](https://vite.dev/)
 [![React](https://img.shields.io/badge/React-19-blue?logo=react)](https://reactjs.org/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-336791?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
-[![Prisma](https://img.shields.io/badge/Prisma-ORM-2D3748?logo=prisma)](https://www.prisma.io/)
+[![SQLite](https://img.shields.io/badge/SQLite-WAL%20%2B%20FTS5-003B57?logo=sqlite&logoColor=white)](https://www.sqlite.org/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker)](https://www.docker.com/)
 [![Documentation](https://img.shields.io/badge/Wiki-Documentation-blue?logo=github)](https://github.com/aiyu-ayaan/Aiyu/wiki)
 [![wakatime](https://wakatime.com/badge/github/aiyu-ayaan/Aiyu.svg)](https://wakatime.com/badge/github/aiyu-ayaan/Aiyu)
@@ -12,7 +12,7 @@
 
 ![home](public/screenshots/desktop-dark-home.png)
 
-A modern, responsive, and **fully customizable** portfolio website and Content Management System built with **Next.js 16 (App Router)**, **React 19**, **Tailwind CSS 4**, and **PostgreSQL (Prisma ORM)**. 
+A modern, responsive, and **fully customizable** portfolio website and Content Management System built with **Rust (Axum)**, **Vite**, **React 19**, **Tailwind CSS 4**, and **SQLite**. 
 
 Featuring a gorgeous space-themed user interface, a highly advanced **Admin Panel**, an integrated **AI Neural Core (Gemini)**, and a visual **Task Scheduler**, `Aiyu` is designed for developers who want a production-ready, security-hardened portfolio with zero-hassle content management.
 
@@ -106,7 +106,10 @@ The previews run at 3× the recording. Click one to watch the full 2× MP4 in Gi
 
 ## 🚀 Quick Start (Docker Deployment)
 
-The fastest, most secure way to deploy `Aiyu` is using Docker.
+The fastest, most secure way to deploy `Aiyu` is using Docker. Everything runs in a lightweight Debian-slim Rust + Vite container (~213 MB) backed by a single SQLite file (`/app/data/aiyu.db`), fronted by Nginx — no external database container required.
+
+> [!NOTE]
+> **Upgrading an existing PostgreSQL installation?** Follow the one-time cutover guide in [development/docs/SQLITE_CUTOVER.md](development/docs/SQLITE_CUTOVER.md) to copy and hash-verify your Postgres database into SQLite using `aiyu-server import-postgres`.
 
 ### 1. Clone & Configure
 ```bash
@@ -116,80 +119,63 @@ cp .env.example .env
 ```
 
 ### 2. Generate Secure Credentials
-Run these node commands to generate secure keys for your `.env` file:
+Generate a `JWT_SECRET` and set `ADMIN_USERNAME` / `ADMIN_PASSWORD` in `.env`:
 ```bash
 # JWT Secret Key
 node -e "console.log('JWT_SECRET=' + require('crypto').randomBytes(64).toString('hex'))"
-# PostgreSQL password
-node -e "console.log('POSTGRES_PASSWORD=' + require('crypto').randomBytes(24).toString('hex'))"
 ```
-Set `DATABASE_URL` to match your `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB`
-(use host `postgres` inside Docker, `localhost` for host-based development).
+Leave `DATABASE_URL` and `POSTGRES_*` unset on a fresh install — SQLite (`data/aiyu.db`) is created automatically.
 
 ### 3. Build & Deploy
-Start all services (App + PostgreSQL + Nginx Proxy):
+Start the stack (Rust + Vite App + Nginx Proxy):
 ```bash
-pnpm docker:build
-pnpm docker:up
+pnpm docker:up          # prebuilt image via docker-compose.yml
 ```
-> The app container runs `prisma migrate deploy` on startup (`RUN_MIGRATIONS=true`),
-> so the schema is created/updated automatically against the Postgres service.
-> For a high-availability primary + read-replica Postgres topology, use
-> `docker compose -f docker-compose.replication.yml up -d` instead.
+Or build and run locally from source (`docker-compose.local.yml`):
+```bash
+pnpm docker:up:dev
+```
+> On startup, `aiyu-server` creates `/app/data/aiyu.db` in the `sqlite_data` volume, runs embedded SQLite migrations, and seeds initial site content automatically (`RUN_SEED=auto`).
 
 ### 4. Verify Security Hardening
-Check if non-root user settings, read-only root system, and miner-prevention capabilities are active:
+Check if non-root user settings, read-only root filesystem, and capability drops are active:
 ```bash
 pnpm docker:verify
 ```
 
-### 5. Access and Seed
-Visit the link or run a curl request to populate your fresh database:
-```bash
-curl http://localhost/api/seed
-```
+### 5. Access
 - **Portfolio**: [http://localhost](http://localhost)
 - **Admin Panel**: [http://localhost/admin](http://localhost/admin)
 
 ---
 
-## 💻 Local Development (Rust/Vite app + Next.js upstream)
+## 💻 Local Development
 
-The app is moving from Next.js to Rust (axum) and Vite; progress is tracked in
-`development/TODO.md`. You need Node 24, pnpm, a stable Rust toolchain (`cargo`)
-and Docker for PostgreSQL (and optional pgAdmin). HEIC uploads also need the
-system `libheif` library.
+You need Node 24, pnpm, and a stable Rust toolchain (`cargo`). HEIC uploads also need the system `libheif1` library (loaded at runtime). No external database is required — SQLite (`data/aiyu.db`) is created, migrated, and seeded automatically on first start.
 
 ```bash
-cp .env.example .env              # set DATABASE_URL to localhost
-pnpm install                      # postinstall runs `prisma generate`
-pnpm db:up                        # start Postgres + pgAdmin
-pnpm exec prisma migrate deploy   # apply the schema
-pnpm db:seed                      # optional sample data
+cp .env.example .env              # set JWT_SECRET, ADMIN_USERNAME, ADMIN_PASSWORD
+pnpm install
 pnpm dev                          # the whole site on http://localhost:3000
 ```
 
-`pnpm dev` starts all three processes and stops them together:
+`pnpm dev` starts both processes and stops them together:
 
 | Process | Port | Reloads on save |
 |---------|------|-----------------|
-| Vite (public and admin pages) | `3000`, the one you open | yes |
+| Vite (public and admin SPA) | `3000`, the one you open | yes |
 | `aiyu-server`, debug build (Rust) | `8080` | no, restart `pnpm dev` |
-| `next dev` (API routes not ported yet) | `3001` | yes |
 
-Change the ports with `PORT`, `RUST_PORT` and `NEXT_PORT`. The first start
-compiles the Rust server and builds `web/dist` if it is missing. The admin panel
-is at `http://localhost:3000/admin/login`, pgAdmin at `http://localhost:5050`.
-Other scripts: `pnpm db:studio` (Prisma Studio) and `pnpm db:down` (stop the
-database).
+Change the ports with `PORT` and `RUST_PORT`. The first start compiles the Rust server and builds `web/dist` if it is missing. The admin panel is at `http://localhost:3000/admin/login`.
+
+> [!NOTE]
+> If your `.env` still sets `DATABASE_URL` to PostgreSQL, `aiyu-server` refuses to create an empty SQLite database so existing installs cannot accidentally boot empty. Either copy your Postgres data once (see [development/docs/SQLITE_CUTOVER.md](development/docs/SQLITE_CUTOVER.md); `pnpm db:up` / `pnpm db:down` start and stop the optional Postgres container in `docker-compose.dev.local.yml`) or set `START_EMPTY=true`.
 
 To run the production build locally:
 
 ```bash
-pnpm build                        # Next.js and web/dist
-pnpm start -p 3100 &              # Next.js as the upstream
-pnpm server:build
-NEXT_UPSTREAM=http://127.0.0.1:3100 server/target/release/aiyu-server   # http://localhost:8080
+pnpm build                        # builds web/dist (Vite) and server/target/release/aiyu-server
+pnpm start                        # starts the release server (default http://localhost:8080)
 ```
 
 ---
@@ -203,14 +189,14 @@ pnpm test         # run once
 pnpm test:watch
 ```
 
-UI / end-to-end tests (Playwright — auto-starts the dev server with real clicks):
+UI / end-to-end tests (Playwright — auto-starts the server with real clicks):
 
 ```bash
 pnpm test:ui          # headless
 pnpm test:ui:headed   # watch the browser
 ```
 
-Run everything: `pnpm test:all`. Rust server tests: `pnpm server:test`.
+Run everything: `pnpm test:all`. Rust server tests: `pnpm server:test`. Lint & typecheck: `pnpm lint`, `pnpm web:typecheck`.
 
 The admin e2e reads `ADMIN_USERNAME` / `ADMIN_PASSWORD` from `.env` (same as the
 screenshot script); the valid-login test is skipped if `ADMIN_PASSWORD` is unset.
@@ -219,12 +205,13 @@ screenshot script); the valid-login test is skipped if `ADMIN_PASSWORD` is unset
 
 ## 🛠️ The Tech Stack
 
-- **Core**: Next.js 16 (App Router), React 19, Tailwind CSS 4, Framer Motion
-- **Database**: PostgreSQL 17 with Prisma ORM (Postgres full-text search for blogs)
-- **Image Processing**: Sharp (with HEIC support)
-- **Authentication**: JWT (`jose`), AES-256 encrypted secrets storage
-- **Security Protocols**: Non-root execution, Capability dropping, `noexec /tmp` directory, rate limiting, and secure headers.
-- **Testing & Tooling**: Playwright, ESLint
+- **Backend**: Rust (Axum), Tokio, SQLx, embedded SQLite migrations, built-in cron scheduler & HTTP MCP server
+- **Frontend**: Vite, React 19, React Router 7, Tailwind CSS 4, Framer Motion, GSAP
+- **Database**: SQLite (`data/aiyu.db`, WAL mode, FTS5 full-text search for blogs)
+- **Image Processing**: Native Rust (`image`, `fast_image_resize`, `libwebp-sys`) + runtime `libheif1` for HEIC/HEIF
+- **Authentication**: JWT (`jsonwebtoken`), AES-256-CBC encrypted secrets storage
+- **Security Protocols**: Non-root Debian-slim container, capability dropping, `noexec /tmp`, read-only root filesystem, rate limiting, and secure headers.
+- **Testing & Tooling**: Vitest, Playwright, Cargo test, ESLint, TypeScript
 
 ---
 
