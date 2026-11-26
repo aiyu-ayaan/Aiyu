@@ -1,10 +1,11 @@
 #!/usr/bin/env node
-// Parity of the AI routes: both servers talk to a local stand-in for every provider, and the replies, the requests
-// they send and the rows they write are compared. IT WRITES TO THE DATABASE IN DATABASE_URL: local databases only.
-// Start both servers with AI_API_BASE_URL=http://127.0.0.1:8799, Next also with
-// NODE_OPTIONS=--import=$PWD/scripts/perf/ai-preload.mjs
+// Parity of the AI and SEO routes: both servers talk to a local stand-in for every AI provider, for Google's Indexing
+// API and for the crawled site, and the replies, the requests they send and the rows they write are compared.
+// IT WRITES TO THE DATABASE IN DATABASE_URL: local databases only. Start both servers with
+//   AI_API_BASE_URL=http://127.0.0.1:8799 GOOGLE_API_BASE_URL=http://127.0.0.1:8799 SITE_URL=http://127.0.0.1:8799
+// and Next also with NODE_OPTIONS=--import=$PWD/scripts/perf/ai-preload.mjs
 // Usage: node --env-file=.env scripts/perf/ai-parity.mjs [--next url] [--rust url] [--only <substring>]
-import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'node:crypto';
+import { createCipheriv, createDecipheriv, createHash, generateKeyPairSync, randomBytes, verify } from 'node:crypto';
 import { createServer } from 'node:http';
 import { isDeepStrictEqual } from 'node:util';
 import { PrismaClient } from '@prisma/client';
@@ -35,6 +36,26 @@ const opened = (value) => {
 };
 
 // ── the stand-in ──
+const { privateKey, publicKey } = generateKeyPairSync('rsa', { modulusLength: 2048, privateKeyEncoding: { type: 'pkcs8', format: 'pem' }, publicKeyEncoding: { type: 'spki', format: 'pem' } });
+const account = JSON.stringify({ type: 'service_account', client_email: 'parity@example.iam', private_key: privateKey });
+// A signed assertion differs by its times: compare what it claims, and that the signature holds.
+function claims(form) {
+    const params = new URLSearchParams(form);
+    const [head, body, signature] = String(params.get('assertion')).split('.');
+    const { iat, exp, ...rest } = JSON.parse(Buffer.from(body, 'base64url'));
+    const signed = verify('RSA-SHA256', Buffer.from(`${head}.${body}`), publicKey, Buffer.from(signature, 'base64url'));
+    return { grant: params.get('grant_type'), header: JSON.parse(Buffer.from(head, 'base64url')), claims: rest, lasts: exp - iat, signed };
+}
+const html = (head) => `<!doctype html><html><head>${head}</head><body></body></html>`;
+function site(path, res) {
+    if (path === '/sitemap.xml') {
+        const urls = ['/page/ok', '/page/other', '/page/noindex', '/page/moved', '/page/missing'].map((p) => `<url><loc> ${STANDIN}${p} </loc></url>`);
+        return res.writeHead(200, { 'content-type': 'application/xml' }).end(`<urlset>${urls.join('')}</urlset>`);
+    }
+    if (path === '/page/moved') return res.writeHead(308, { location: '/page/ok' }).end();
+    const head = { '/page/ok': `<link rel="canonical" href="${STANDIN}/page/ok/">`, '/page/other': `<link rel="canonical" href="${STANDIN}/page/ok">`, '/page/noindex': '<meta name="robots" content="noindex, nofollow">' }[path];
+    return res.writeHead(head === undefined ? 404 : 200, { 'content-type': 'text/html' }).end(html(head ?? ''));
+}
 let captured = [];
 let behaviour = {};
 const HEADERS = ['authorization', 'x-api-key', 'x-goog-api-key', 'anthropic-version', 'content-type', 'http-referer', 'x-title'];
@@ -76,6 +97,19 @@ const server = createServer((req, res) => {
         if (req.method === 'GET') delete headers['content-type'];
         const path = req.url;
         const send = (status, value) => res.writeHead(status, { 'content-type': 'application/json' }).end(typeof value === 'string' ? value : JSON.stringify(value));
+        if (path === '/sitemap.xml' || path.startsWith('/page/')) {
+            captured.push({ method: req.method, path, agent: req.headers['user-agent'] });
+            return site(path, res);
+        }
+        if (path === '/token') {
+            captured.push({ method: req.method, path, body: claims(raw) });
+            return behaviour.failPath === path ? send(400, { error: 'invalid_grant', error_description: 'bad key' }) : send(200, { access_token: 'access' });
+        }
+        if (path.startsWith('/v3/urlNotifications')) {
+            captured.push({ method: req.method, path, headers, body });
+            if (String(body.url).includes('refused')) return send(403, { error: { message: 'not yours' } });
+            return send(200, { urlNotificationMetadata: String(body.url).includes('quiet') ? {} : { latestUpdate: { notifyTime: '2026-01-01T00:00:00Z' } } });
+        }
         captured.push({ method: req.method, path, headers, body: await pictures(body) });
         const gateway = path.startsWith('/gw/') || path.startsWith('/ai-gateway.vercel.sh/');
         const failing = behaviour.fail === 'all' || (behaviour.fail === 'gateway' && gateway) || (behaviour.failPath && path.includes(behaviour.failPath));
@@ -191,6 +225,53 @@ add('POST', ANALYZE, 'no provider enabled', { ai: ai({ enabledProviders: [] }), 
 add('POST', ANALYZE, 'disabled', { ai: ai({ enabled: false }), body: { logText: 'x' } });
 add('POST', ANALYZE, 'anonymous', { anonymous: true, body: {} });
 
+// SEO tools. Fixture rows have ids starting with `sp-` and are removed after each run.
+const dates = { createdAt: new Date('2025-01-02T03:04:05.678Z'), updatedAt: new Date('2025-01-02T03:04:05.678Z') };
+const blog = (extra) => (p) => p.blog.create({ data: { id: 'sp-blog', title: 'Parity post', slug: 'sp-post', content: 'Body '.repeat(500), date: '2025-01-01', published: true, ...dates, ...extra } });
+const project = (extra) => (p) => p.project.create({ data: { id: 'sp-project', name: 'SP', year: '2025', status: 'Live', projectType: 'Web', description: '', techStack: ['Rust', 'Vite'], ...dates, ...extra } });
+const app = (extra) => (p) => p.deployment.create({ data: { id: 'sp-app', name: 'SP App', status: 'Live', appType: 'Web', environment: 'Production', hostingProvider: 'Self', description: '', ...dates, ...extra } });
+const AUDIT = '/api/admin/seo/audit';
+const CRAWL = '/api/admin/seo/crawl';
+const INDEX = '/api/admin/seo/index';
+const FIX = '/api/admin/seo/fix';
+add('GET', AUDIT, 'content', { setup: async (p) => { await blog({ image: '/a.png', slug: '', noIndex: true })(p); await project({ description: 'd'.repeat(161) })(p); await app({ slug: '', name: '!!' })(p); } });
+add('GET', AUDIT, 'anonymous', { anonymous: true });
+for (const [name, body] of [['everything', {}], ['two pages', { limit: 2 }], ['limit below one', { limit: -4 }], ['limit not a number', { limit: '2' }]]) add('POST', CRAWL, name, { body });
+add('POST', CRAWL, 'anonymous', { anonymous: true, body: {} });
+const serviceKey = (value) => async (p) => p.seoConfig.updateMany({ data: { encryptedGoogleServiceAccount: value } });
+const urls = [' https://s.example/a ', 'https://s.example/refused', 'https://s.example/quiet', '', 7];
+add('POST', INDEX, 'send', { setup: serviceKey(seal(account)), body: { urls } });
+add('POST', INDEX, 'removal', { setup: serviceKey(seal(account)), body: { urls: ['https://s.example/a'], type: 'URL_DELETED' } });
+add('POST', INDEX, 'token refused', { setup: serviceKey(seal(account)), body: { urls }, behaviour: { failPath: '/token' } });
+add('POST', INDEX, 'no urls', { setup: serviceKey(seal(account)), body: { urls: [] } });
+add('POST', INDEX, 'no account', { setup: serviceKey(null), body: { urls } });
+add('POST', INDEX, 'unreadable account', { setup: serviceKey(`${'0'.repeat(32)}:${'0'.repeat(32)}`), body: { urls } });
+add('POST', INDEX, 'not a service account', { setup: serviceKey(seal('{"type":"user"}')), body: { urls } });
+add('POST', INDEX, 'anonymous', { anonymous: true, body: { urls } });
+const google = ai({ textPriority: ['m-google'] });
+const through = ai({ gatewayUrl: `${STANDIN}/gw` });
+add('POST', FIX, 'blog description and alt', { ai: through, setup: blog({ image: '/a.png' }), body: { type: 'blog', id: 'sp-blog' }, behaviour: { text: ' Written ' } });
+add('POST', FIX, 'blog by gemini', { ai: google, setup: blog({}), body: { type: 'blog', id: 'sp-blog' } });
+add('POST', FIX, 'blog already fine', { ai: through, setup: blog({ excerpt: 'e'.repeat(80), image: '/a.png', imageAlt: 'a' }), body: { type: 'blog', id: 'sp-blog' } });
+add('POST', FIX, 'project', { ai: through, setup: project({}), body: { type: 'project', id: 'sp-project' } });
+add('POST', FIX, 'app', { ai: through, setup: app({}), body: { type: 'app', id: 'sp-app' } });
+add('POST', FIX, 'site settings', { ai: through, secrets, blank: ['siteTitle', 'logoText', 'seoDescription', 'description', 'siteDescription'], body: { type: 'static', id: 'config' } });
+add('POST', FIX, 'direct call not supported', { ai: ai(), setup: project({}), body: { type: 'project', id: 'sp-project' } });
+add('POST', FIX, 'empty answer', { ai: through, setup: project({}), body: { type: 'project', id: 'sp-project' }, behaviour: { text: '' } });
+add('POST', FIX, 'no models', { ai: ai({ textPriority: [], providers: [] }), setup: project({}), body: { type: 'project', id: 'sp-project' } });
+for (const type of ['blog', 'project', 'app']) add('POST', FIX, `missing ${type}`, { ai: through, body: { type, id: 'sp-none' } });
+add('POST', FIX, 'unknown type', { ai: through, body: { type: 'x', id: 'y' } });
+add('POST', FIX, 'no id', { ai: through, body: { type: 'blog' } });
+add('POST', FIX, 'disabled', { ai: ai({ enabled: false }), body: { type: 'blog', id: 'x' } });
+add('POST', FIX, 'anonymous', { anonymous: true, body: { type: 'blog', id: 'x' } });
+// The automatic ping after a content change: it runs after the reply, so give it time.
+const autoPing = async (p) => {
+    const row = await p.seoConfig.findFirst();
+    await p.seoConfig.update({ where: { id: row.id }, data: { data: { ...row.data, indexing: { enabled: true, autoPing: true } }, encryptedGoogleServiceAccount: seal(account) } });
+    await blog({})(p);
+};
+add('PUT', '/api/blogs/sp-blog', 'automatic indexing ping', { setup: autoPing, body: { title: 'Parity post', excerpt: 'changed' }, wait: 4000, only: ['captured', 'indexing'] });
+
 // ── run ──
 // Rows hold large documents: show only where two values part.
 function firstDifference(a, b, path = '') {
@@ -205,7 +286,10 @@ async function run(target, test) {
     await restore();
     const data = { ...original.data };
     if (test.ai !== undefined) { if (test.ai === null) delete data.ai; else data.ai = test.ai; }
+    for (const k of test.blank ?? []) delete data[k];
     await prisma.config.update({ where: { id: original.id }, data: { data, updatedAt: original.updatedAt, ...test.secrets } });
+    await clean();
+    await test.setup?.(prisma);
     // Next keeps nothing about the settings between calls; the rows written are the ones newer than this.
     const since = new Date(Date.now() - 5);
     captured = [];
@@ -214,16 +298,41 @@ async function run(target, test) {
     if (!test.anonymous) headers.cookie = cookie;
     let body = test.form?.();
     if (test.body !== undefined) { body = JSON.stringify(test.body); headers['content-type'] = 'application/json'; }
-    const res = await fetch(SERVERS[target] + test.path, { method: test.method, headers, body });
+    // A refusal sent before the upload was read closes the connection, and the next request may still pick it up.
+    const request = () => fetch(SERVERS[target] + test.path, { method: test.method, headers, body });
+    const res = await request().catch(request);
     const text = await res.text();
     let reply = text;
     try { reply = JSON.parse(text); } catch { /* not JSON */ }
+    if (test.wait) await new Promise((r) => setTimeout(r, test.wait));
+    // Timings differ by nature, and so do rows with equal update times.
+    if (reply?.results && reply.summary) { reply.summary.avgMs = 0; for (const r of reply.results) r.ms = 0; }
+    for (const group of Object.values(reply?.groups ?? {})) group.sort((a, b) => a.id.localeCompare(b.id));
+    captured.sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
+    const indexing = (await prisma.indexingLog.findMany({ where: { createdAt: { gte: since } } }));
+    await prisma.indexingLog.deleteMany({ where: { id: { in: indexing.map((r) => r.id) } } });
+    const content = {};
+    for (const model of ['blog', 'project', 'deployment']) {
+        content[model] = (await prisma[model].findMany({ where: { id: { startsWith: 'sp-' } } })).map(({ updatedAt, searchVector: _s, ...rest }) => ({ ...rest, updated: updatedAt >= since }));
+    }
     const logs = await prisma.aiLog.findMany({ where: { createdAt: { gte: since } } });
     await prisma.aiLog.deleteMany({ where: { id: { in: logs.map((l) => l.id) } } });
     const row = await prisma.config.findFirst();
     // `updatedAt` is the time of the write: only whether it moved is compared.
-    const stored = test.method === 'PUT' ? opened({ ...row, id: undefined, updatedAt: row.updatedAt >= since }) : undefined;
-    return { status: res.status, reply, captured, logs: logs.map(({ id: _i, createdAt: _c, updatedAt: _u, ...rest }) => rest), stored };
+    const stored = test.method === 'PUT' || test.path === FIX ? opened({ ...row, id: undefined, updatedAt: row.updatedAt >= since }) : undefined;
+    await clean();
+    const result = {
+        status: res.status, reply, captured, stored, content,
+        // Rows come back in no fixed order.
+        logs: logs.map(({ id: _i, createdAt: _c, updatedAt: _u, ...rest }) => rest).sort((a, b) => a.prompt.localeCompare(b.prompt)),
+        indexing: indexing.map(({ id: _i, createdAt: _c, ...rest }) => rest).sort((a, b) => a.url.localeCompare(b.url)),
+    };
+    return test.only ? { status: res.status, ...Object.fromEntries(test.only.map((k) => [k, result[k]])), logs: [], captured: result.captured } : result;
+}
+const seoOriginal = await prisma.seoConfig.findFirst();
+async function clean() {
+    for (const model of ['blog', 'project', 'deployment']) await prisma[model].deleteMany({ where: { id: { startsWith: 'sp-' } } });
+    await prisma.seoConfig.update({ where: { id: seoOriginal.id }, data: { data: seoOriginal.data, encryptedGoogleServiceAccount: seoOriginal.encryptedGoogleServiceAccount } });
 }
 
 let failed = 0;
@@ -241,6 +350,7 @@ try {
         failed += wrong.length ? 1 : 0;
     }
 } finally {
+    await clean();
     await restore();
     await prisma.session.deleteMany({ where: { userAgent: 'ai-parity' } });
     await prisma.auditLog.deleteMany({ where: { userAgent: 'ai-parity' } });

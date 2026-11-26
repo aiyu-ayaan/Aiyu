@@ -60,9 +60,15 @@ pub fn hooks_key(jwt_secret: &str) -> String {
     hex::encode(mac.finalize().into_bytes())
 }
 
-/// Clear Next's caches and queue indexing pings (`/api/internal/hooks`):
-/// `{ prefixes, keys, revalidate, pings: [{ paths, type }] }`. The write has happened, so a failure is only logged.
-pub async fn notify(state: &AppState, effects: Value) {
+/// What follows a write: `{ prefixes, keys, revalidate, pings: [{ paths, type }] }`. The pings run here; Next's
+/// caches are cleared through `/api/internal/hooks`. The write has happened, so a failure is only logged.
+pub async fn notify(state: &AppState, mut effects: Value) {
+    if let Some(Value::Array(pings)) = effects.as_object_mut().and_then(|e| e.shift_remove("pings")) {
+        crate::indexing::auto(state, pings);
+    }
+    if effects.as_object().is_some_and(Map::is_empty) {
+        return;
+    }
     let sent = state
         .upstream_client()
         .post(format!("{}/api/internal/hooks", state.upstream_base()))

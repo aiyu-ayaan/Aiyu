@@ -17,9 +17,10 @@ Milestone 8 (API routes) IN PROGRESS.
 - Decided 2026-11-26 (user): port every integration to Rust, no Node sidecar.
 - Done: sitemap.xml, robots.txt, ads.txt, auth.md, /docs/api, /docs/mcp (byte-equal to Next apart from request-time
   `lastmod` values).
-- NEXT, in this order: `/api/admin/seo/{audit,crawl,fix,index}`, the open page optimisations of milestone 7 (`/ai`
-  payload, Vite entry chunk, `/` payload; asked for on 2026-11-27), the search-engine
-  pings of `/api/internal/hooks`, then 5b/9 (SQLite) and 10 (cutover).
+- Every `/api` route is now Rust except `/api/internal/hooks`, which only clears Next's caches and goes with Next.
+- NEXT: 5b/9 (SQLite), then 10 (cutover: remove Next; see the cutover list in HANDOFF.md).
+- Done 2026-11-27: SEO audit, crawl, indexing and AI fixer, and the automatic search-engine pings now run in Rust
+  (`scripts/perf/ai-parity.mjs`: 31/31 SEO cases against a local stand-in; NOT verified against real Google).
 - Done 2026-11-27: MCP (`writes/mcp.mjs` 83/83: every tool, resource and prompt; JSON carried as text differs only in
   key order). Admin redesign finished. `pnpm dev` runs Vite, aiyu-server and `next dev` together; unused files removed.
 - Done: cron jobs (`CRON_RUNNER=rust`, `writes/crons.mjs`).
@@ -314,11 +315,11 @@ Each page: Rust data + head + Vite route + e2e passing through Rust, then the Ne
 - [x] `/api/admin/security/audit` (Rust)
 - [x] `/api/admin/security/sessions` (Rust)
 - [x] `/api/admin/security/sessions/[id]/revoke` (Rust)
-- [ ] `/api/admin/seo/audit`
+- [x] `/api/admin/seo/audit` (Rust)
 - [x] `/api/admin/seo/config` (Rust)
-- [ ] `/api/admin/seo/crawl`
-- [ ] `/api/admin/seo/fix`
-- [ ] `/api/admin/seo/index`
+- [x] `/api/admin/seo/crawl` (Rust)
+- [x] `/api/admin/seo/fix` (Rust)
+- [x] `/api/admin/seo/index` (Rust)
 - [x] `/api/admin/social` (Rust)
 - [x] `/api/admin/storage` (Rust)
 - [x] `/api/admin/storage/migrate` (Rust)

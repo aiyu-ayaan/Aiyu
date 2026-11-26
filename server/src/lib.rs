@@ -38,10 +38,12 @@ pub mod github_sync;
 pub mod health;
 pub mod heif;
 pub mod images;
+pub mod indexing;
 pub mod pages;
 pub mod proxy;
 pub mod restore;
 pub mod seo;
+pub mod seo_admin;
 pub mod session;
 pub mod site_api;
 pub mod site_files;
@@ -211,6 +213,9 @@ fn limited_api(state: &AppState) -> Router<AppState> {
         .route("/api/admin/ai/text", post(ai_core::text))
         .route("/api/admin/ai/generate", post(ai_core::generate).layer(DefaultBodyLimit::max(uploads::BODY_LIMIT)))
         .route("/api/admin/health/analyze", post(ai_core::analyze))
+        .route("/api/admin/seo/crawl", post(seo_admin::crawl))
+        .route("/api/admin/seo/index", post(seo_admin::index))
+        .route("/api/admin/seo/fix", post(seo_admin::fix))
         // A backup can be hundreds of megabytes; the handler streams it to disk and enforces its own limit.
         .route("/api/admin/import", post(restore::import).layer(DefaultBodyLimit::disable()))
         .route_layer(axum::middleware::from_fn_with_state(state.clone(), limit::api))
@@ -282,6 +287,7 @@ pub fn router(state: AppState) -> Router {
         .route("/api/admin/ads", get(admin_settings::ads))
         .route("/api/admin/social", get(admin_settings::social))
         .route("/api/admin/seo/config", get(admin_settings::seo_config))
+        .route("/api/admin/seo/audit", get(seo_admin::audit))
         .route("/api/admin/notifications", get(admin_settings::notifications))
         .route("/api/admin/blogs/token", get(admin_settings::blog_token))
         .route("/api/admin/mcp/token", get(admin_settings::mcp_token))

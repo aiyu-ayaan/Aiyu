@@ -35,7 +35,7 @@ const TIMEOUT: Duration = Duration::from_secs(30);
 const TRANSFER_TIMEOUT: Duration = Duration::from_secs(30 * 60);
 
 /// Google's address, or `GOOGLE_API_BASE_URL` (a local stand-in used by the tests).
-fn google(default_host: &str, path: &str) -> String {
+pub(crate) fn google(default_host: &str, path: &str) -> String {
     match std::env::var("GOOGLE_API_BASE_URL").ok().filter(|v| !v.is_empty()) {
         Some(base) => format!("{}{path}", base.trim_end_matches('/')),
         None => format!("https://{default_host}{path}"),

@@ -24,6 +24,7 @@ bodies such as backups never sit in memory.
 | Uploads and storage | `/api/upload`, `/api/uploads/{file}`, `/api/admin/{images/upload,icons,storage,storage/migrate,storage/unreferenced,migrate-gallery}`. HEIC needs the system `libheif1` (loaded at run time) |
 | Health, resume, misc | `/api/admin/{health/metrics,health/uptime,health/uptime/check,purge-cache,resume,resume/compile,resume/publish,ai/logs,system-prompt}` |
 | AI Core | `/api/admin/ai/{config,models,validate-provider,text,generate}`, `/api/admin/health/analyze` |
+| SEO tools | `/api/admin/seo/{audit,crawl,fix,index}`; indexing pings after content writes |
 | MCP | `/api/mcp` |
 | Backup | `GET /api/admin/export`: rows and files stream into the zip, about 10 MB of memory whatever the data size |
 | Restore, Google Drive | `/api/admin/import`, `/api/admin/gdrive/*`: everything goes through temporary files (`BACKUP_TMP_DIR`) |
@@ -42,11 +43,11 @@ Other methods on these paths, and all other `/api/admin/*` routes, are still Nex
 - The rate limit of `src/proxy.js` is applied to the ported routes by `limited_api()` in `src/lib.rs`: add every new
   `POST`, `PUT`, `PATCH` or `DELETE` route there.
 
-### Side effects that stay in Next
+### Side effects of a write
 
-After a write Rust calls `POST /api/internal/hooks` on Next, which clears Next's in-memory caches (MCP, sitemap and
-SEO tools read through them) and queues search-engine pings. The call carries an HMAC of `JWT_SECRET`; Rust answers
-404 for `/api/internal/*` to outside callers. If the call fails, the write still succeeds and a warning is logged.
+Search-engine pings run in `aiyu-server`, after the reply (`indexing.rs`). It also calls `POST /api/internal/hooks`
+on Next to clear Next's in-memory caches. The call carries an HMAC of `JWT_SECRET`; Rust answers 404 for
+`/api/internal/*` to outside callers. If the call fails, the write still succeeds and a warning is logged.
 
 ## Source layout
 
@@ -66,6 +67,7 @@ SEO tools read through them) and queues search-engine pings. The call carries an
 | `restore.rs`, `drive.rs` | restore of backups, Google Drive |
 | `mcp.rs` | the MCP endpoint: tools, resources, prompts |
 | `ai_core.rs`, `ai_modes.rs` | AI settings, provider calls, writing modes, captions, health analyzer |
+| `seo_admin.rs`, `indexing.rs` | SEO audit, crawl and fixer; Google Indexing API and automatic pings |
 | `db.rs`, `export.rs` | database pool and ids, backup zip |
 
 `crypto.rs` and `session.rs` read values written by the Node code (encrypted DB fields, the `session` cookie).
@@ -88,7 +90,7 @@ pnpm server:test
 | `UPLOADS_DIR` | `public/uploads` | files added to backups |
 | `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `GITHUB_ALLOWED_ID`, `GITHUB_OAUTH_CALLBACK_URL` | unset | GitHub sign-in, same as Next |
 | `BACKUP_TMP_DIR` | `.next/cache/backups` | scratch folder for backups and restores (must be on disk) |
-| `GOOGLE_API_BASE_URL` | unset | tests only: a local stand-in for Google |
+| `GOOGLE_API_BASE_URL` | unset | tests only: a local stand-in for Google (Drive and Indexing) |
 | `AI_API_BASE_URL` | unset | tests only: a local stand-in for the AI providers |
 | `AI_GATEWAY_URL`, `AI_GATEWAY_API_KEY` | unset | Vercel AI Gateway defaults, same as Next |
 | `GITHUB_TOKEN` | unset | used when no token is stored in the admin settings |
@@ -119,7 +121,7 @@ node --env-file=.env scripts/perf/auth-parity.mjs
 node --env-file=.env scripts/perf/write-parity.mjs scripts/perf/writes/{site,content,blogs,legal,ai,admin,github,misc,crons,mcp}.mjs   # mcp: PARITY_NEXT=<Next URL> if not :3100
 # Outgoing requests: contact form, notification channels, n8n webhook
 node --env-file=.env scripts/perf/outbound-parity.mjs
-# AI routes against a stand-in for every provider (see the script's header for how to start both servers)
+# AI and SEO routes against a stand-in for every provider (see the script's header for how to start both servers)
 node --env-file=.env scripts/perf/ai-parity.mjs
 # Uploads: the same files to both servers, stored pictures compared
 node --env-file=.env scripts/perf/upload-parity.mjs

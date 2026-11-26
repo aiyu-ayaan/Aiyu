@@ -75,7 +75,7 @@ fn head(text: &str, units: usize) -> String {
 }
 
 /// The stored configuration with its secret columns (`getSingleton(..., { withSecrets: true })`), or null.
-async fn stored_config(state: &AppState) -> anyhow::Result<Value> {
+pub(crate) async fn stored_config(state: &AppState) -> anyhow::Result<Value> {
     let raw: Option<String> = sqlx::query_scalar(r#"SELECT row_to_json(t)::text FROM "Config" t LIMIT 1"#).fetch_optional(&state.db).await?;
     let Some(raw) = raw else { return Ok(Value::Null) };
     let mut row: Map<String, Value> = serde_json::from_str(&raw)?;
@@ -478,14 +478,14 @@ pub async fn validate_provider(State(state): State<AppState>, req: Request) -> R
 // ── asking a model ─────────────────────────────────────────────────────────────────────────────────────
 
 #[derive(Default)]
-struct Answer {
-    text: String,
+pub(crate) struct Answer {
+    pub text: String,
     input: i64,
     output: i64,
     total: i64,
 }
 
-struct Image {
+pub(crate) struct Image {
     mime: String,
     base64: String,
 }
@@ -631,14 +631,29 @@ async fn gateway(state: &AppState, base: &str, gateway_key: &str, ask: &Ask<'_>)
     Ok(openai_answer(&reply_json(request, ask.timeout(), |status, text| format!("AI Gateway Error ({status}): {text}")).await?))
 }
 
-struct Won {
-    answer: Answer,
-    provider: Value,
-    model: Value,
+pub(crate) struct Won {
+    pub answer: Answer,
+    pub provider: Value,
+    pub model: Value,
+}
+
+/// Why no model answered.
+pub(crate) enum Miss {
+    NoModels,
+    /// The last provider's error.
+    Failed(String),
+}
+
+#[derive(Default, Clone, Copy)]
+pub(crate) struct Rules {
+    /// The SEO fixer calls only Gemini directly: any other provider must go through the gateway.
+    pub google_only: bool,
+    /// The SEO fixer takes the first reply, even an empty one.
+    pub accept_empty: bool,
 }
 
 /// The configured models in the order of `priority`, until one answers.
-async fn first_answer(state: &AppState, ai: &Value, priority: &str, system: &str, prompt: &Value, image: Option<&Image>) -> Result<Won, Response> {
+pub(crate) async fn first_answer(state: &AppState, ai: &Value, priority: &str, system: &str, prompt: &Value, image: Option<&Image>, rules: Rules) -> Result<Won, Miss> {
     let providers = items(&ai["providers"]);
     let mut chosen: Vec<Value> = items(&ai[priority])
         .iter()
@@ -651,10 +666,8 @@ async fn first_answer(state: &AppState, ai: &Value, priority: &str, system: &str
             chosen.push(json!({ "modelId": or(&ai["model"], "gemini-1.5-flash"), "providerId": google["id"] }));
         }
     }
-    let vision = if image.is_some() { " vision" } else { "" };
     if chosen.is_empty() {
-        let message = if image.is_some() { "No AI vision models configured for captioning." } else { "No AI models configured in priority list. Please check settings." };
-        return Err(failure(StatusCode::FORBIDDEN, message));
+        return Err(Miss::NoModels);
     }
     let env = |name: &str| std::env::var(name).unwrap_or_default();
     let gateway_url = ai["gatewayUrl"].as_str().filter(|u| !u.is_empty()).map_or_else(|| env("AI_GATEWAY_URL"), str::to_string);
@@ -670,19 +683,23 @@ async fn first_answer(state: &AppState, ai: &Value, priority: &str, system: &str
         let Some(key) = open(state, &provider["apiKey"]) else { continue };
         let kind = provider["type"].as_str().unwrap_or("");
         let ask = Ask { kind, model: &model["modelId"], key: &key, system, prompt, image };
+        let fallback = || async {
+            anyhow::ensure!(!rules.google_only || kind == "google", "Direct calls to {kind} are not supported. This provider must be routed through Vercel AI Gateway.");
+            direct(state, &ask).await
+        };
         let result = if through_gateway && kind != "openrouter" {
             match gateway(state, &gateway_url, &sent_key, &ask).await {
                 Ok(answer) => Ok(answer),
                 Err(err) => {
                     tracing::warn!(kind, error = %err, "AI gateway failed, calling the provider");
-                    direct(state, &ask).await
+                    fallback().await
                 }
             }
         } else {
-            direct(state, &ask).await
+            fallback().await
         };
         match result {
-            Ok(answer) if !answer.text.is_empty() => return Ok(Won { answer, provider: provider["type"].clone(), model: model["modelId"].clone() }),
+            Ok(answer) if rules.accept_empty || !answer.text.is_empty() => return Ok(Won { answer, provider: provider["type"].clone(), model: model["modelId"].clone() }),
             Ok(_) => {}
             Err(err) => {
                 tracing::warn!(kind, error = %err, "AI model failed");
@@ -690,12 +707,25 @@ async fn first_answer(state: &AppState, ai: &Value, priority: &str, system: &str
             }
         }
     }
-    let last = last.unwrap_or_else(|| "Unknown configuration issue.".into());
-    Err(failure(StatusCode::INTERNAL_SERVER_ERROR, &format!("All configured AI{vision} fallback mechanisms failed. Last API error: {last}")))
+    Err(Miss::Failed(last.unwrap_or_else(|| "Unknown configuration issue.".into())))
+}
+
+/// The refusal of the text and caption routes.
+fn refusal(miss: Miss, vision: bool) -> Response {
+    match miss {
+        Miss::NoModels => {
+            let message = if vision { "No AI vision models configured for captioning." } else { "No AI models configured in priority list. Please check settings." };
+            failure(StatusCode::FORBIDDEN, message)
+        }
+        Miss::Failed(last) => {
+            let vision = if vision { " vision" } else { "" };
+            failure(StatusCode::INTERNAL_SERVER_ERROR, &format!("All configured AI{vision} fallback mechanisms failed. Last API error: {last}"))
+        }
+    }
 }
 
 /// The usage record. A failure to write it does not fail the request.
-async fn record(state: &AppState, provider: &Value, model: &Value, mode: Value, prompt: &Value, answer: &Answer) {
+pub(crate) async fn record(state: &AppState, provider: &Value, model: &Value, mode: Value, prompt: &Value, answer: &Answer) {
     let row = json!({
         "provider": provider, "model": model, "mode": mode, "prompt": prompt, "response": answer.text.trim(),
         "inputTokens": answer.input, "outputTokens": answer.output, "totalTokens": answer.total,
@@ -786,9 +816,9 @@ pub async fn text(State(state): State<AppState>, req: Request) -> Response {
         Ok(composed) => composed,
         Err(err) => return failed(ROUTE, StatusCode::INTERNAL_SERVER_ERROR, err),
     };
-    let won = match first_answer(&state, ai, "textPriority", &system, &asked, None).await {
+    let won = match first_answer(&state, ai, "textPriority", &system, &asked, None, Rules::default()).await {
         Ok(won) => won,
-        Err(refusal) => return refusal,
+        Err(miss) => return refusal(miss, false),
     };
     record(&state, &won.provider, &won.model, or(mode, "text"), prompt, &won.answer).await;
     json_status(StatusCode::OK, json!({ "success": true, "data": unfence(&won.answer.text) }))
@@ -846,9 +876,9 @@ pub async fn generate(State(state): State<AppState>, req: Request) -> Response {
     };
     let ai = &config["ai"];
     let system = js_string(&or(&ai["systemInstruction"], "You are a helpful assistant."));
-    let won = match first_answer(&state, ai, "imagePriority", &system, &prompt, Some(&image)).await {
+    let won = match first_answer(&state, ai, "imagePriority", &system, &prompt, Some(&image), Rules::default()).await {
         Ok(won) => won,
-        Err(refusal) => return refusal,
+        Err(miss) => return refusal(miss, true),
     };
     record(&state, &won.provider, &won.model, "generate_caption".into(), &prompt, &won.answer).await;
     let caption = won.answer.text.trim().trim_matches(['"', '\'']).trim().to_string();
