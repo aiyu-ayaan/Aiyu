@@ -1,211 +1,82 @@
-# Stage 1: Dependencies
-# Use Debian (glibc) instead of Alpine (musl) for more reliable native builds on Windows/WSL.
-FROM node:24-bookworm-slim AS deps
+# Stage 1: web build (Vite). Node is needed to build the pages, and until the SQLite switch for migrations and the seed.
+FROM node:24-bookworm-slim AS web
 WORKDIR /app
-
-# Install compiler toolchain for native modules (e.g. sharp/canvas-related transitive deps).
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends python3 make g++ openssl \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy manifests for deterministic installs.
-# The prisma schema is needed because the `postinstall` script runs `prisma generate`.
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY prisma ./prisma
-
-# pnpm comes from corepack (version pinned by package.json "packageManager").
-# node-linker=hoisted gives a flat npm-style node_modules, so the standalone
-# pruning below can copy node_modules/.prisma and @prisma/client by path.
 RUN corepack enable \
     && pnpm config set fetch-retries 5 \
     && pnpm config set fetch-retry-mintimeout 20000 \
     && pnpm config set fetch-retry-maxtimeout 120000 \
-    && pnpm install --frozen-lockfile --config.node-linker=hoisted
-
-# Stage 2: Builder
-FROM node:24-bookworm-slim AS builder
-WORKDIR /app
-
-# OpenSSL is required by the Prisma query engine at generate/runtime.
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends openssl \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy dependencies from deps stage
-COPY --from=deps /app/node_modules ./node_modules
+    && pnpm install --frozen-lockfile
 COPY . .
+RUN pnpm run web:build
 
-# Ensure the Prisma client is generated against the committed schema.
-RUN corepack enable && pnpm exec prisma generate
-
-# Build-time args
-ARG NEXT_PUBLIC_N8N_WEBHOOK_URL
-ARG NEXT_PUBLIC_AUTHOR_NAME
-ARG NEXT_PUBLIC_BASE_URL
-ARG SITE_URL
-
-# Build with ephemeral env values (prevents secret-name warnings from ENV instructions).
-# DATABASE_URL is a dummy here; no DB connection happens during the build.
-RUN DATABASE_URL="postgresql://dummy:dummy@dummy:5432/dummy?schema=public" \
-    NEXT_PUBLIC_N8N_WEBHOOK_URL="${NEXT_PUBLIC_N8N_WEBHOOK_URL}" \
-    NEXT_PUBLIC_AUTHOR_NAME="${NEXT_PUBLIC_AUTHOR_NAME}" \
-    NEXT_PUBLIC_BASE_URL="${NEXT_PUBLIC_BASE_URL}" \
-    SITE_URL="${SITE_URL}" \
-    ADMIN_USERNAME="dummy" \
-    ADMIN_PASSWORD="dummy" \
-    JWT_SECRET="dummy" \
-    NEXT_TELEMETRY_DISABLED=1 \
-    pnpm run build
-
-# Assemble the complete runtime tree in /out so the runner ships ONE layer.
-# Copying standalone and the Prisma packages as separate layers stored the
-# overlapping files twice; assembling here also lets us prune before copying.
-#
-# Pruning rationale:
-#   * The generated client (.prisma/client/index.js) loads exactly one runtime,
-#     runtime/library.js, plus the native libquery_engine-*.so.node next to it.
-#   * The *wasm-base64* files are the query engine for EVERY database
-#     (mysql/sqlite/sqlserver/cockroachdb/...) inlined as base64 for edge
-#     deployments — ~54MB never read by a Node server.
-#   * @prisma/engines is the dev-time engine downloader (schema engine +
-#     another copy of the query engine, ~36MB); the runtime never touches it.
-#   * prisma is copied with `prisma/.` (contents-merge) — NOT `cp -a prisma`.
-#     outputFileTracingIncludes traces prisma/schema.prisma into the standalone
-#     tree, so /out/prisma may already exist; `cp -a prisma` would then NEST the
-#     directory (/out/prisma/prisma), leaving migrations invisible to
-#     `migrate deploy` at container start (schema drift in prod).
-RUN mkdir -p /out/.next/static /out/public \
-    && cp -a .next/standalone/. /out/ \
-    && cp -a .next/static/. /out/.next/static/ \
-    && cp -a public/. /out/public/ \
-    && mkdir -p /out/prisma \
-    && cp -a prisma/. /out/prisma/ \
-    && mkdir -p /out/node_modules/@prisma \
-    && rm -rf /out/node_modules/.prisma \
-              /out/node_modules/@prisma/client \
-              /out/node_modules/@prisma/engines \
-    && cp -a node_modules/.prisma /out/node_modules/.prisma \
-    && cp -a node_modules/@prisma/client /out/node_modules/@prisma/client \
-    && rm -f /out/node_modules/@prisma/client/runtime/*wasm-base64* \
-             /out/node_modules/@prisma/client/runtime/*.map \
-             /out/node_modules/@prisma/client/runtime/*.d.ts \
-             /out/node_modules/@prisma/client/runtime/*.d.mts \
-             /out/node_modules/@prisma/client/runtime/react-native.* \
-             /out/node_modules/.prisma/client/*.d.ts \
-             /out/node_modules/.prisma/client/query_engine_bg.wasm
-
-# Stage 2.5: Isolated Prisma CLI
-# Prisma 6.19's CLI loads @prisma/config, which pulls a large transitive
-# closure (effect, c12, and ~20 more). None of it is part of the Next.js
-# standalone trace, and hand-copying the closure is brittle (it changes between
-# Prisma releases — that is what caused "Cannot find module 'effect'"). Install
-# the CLI on its own so the runner can copy a complete, self-consistent
-# node_modules used solely for `migrate deploy`. Pinned to match @prisma/client.
-FROM node:24-bookworm-slim AS prismacli
-WORKDIR /prismacli
+# Stage 2: the Prisma CLI and client, used only by the entrypoint (`migrate deploy` and the seed scripts).
+FROM node:24-bookworm-slim AS prisma
+WORKDIR /prisma-runtime
 RUN apt-get update \
     && apt-get install -y --no-install-recommends openssl \
     && rm -rf /var/lib/apt/lists/*
+COPY prisma ./prisma
 RUN npm init -y >/dev/null 2>&1 \
-    && npm install prisma@6.19.3 --no-audit --no-fund
-# Prune the CLI to what `migrate deploy` actually uses: it drives the schema
-# engine only, so drop the query engines/compilers for every database, the
-# embedded prisma-client generator sources, and Studio's web assets. effect is
-# required via CJS (`require("effect")` in @prisma/config), so its ESM build,
-# typings, and TS sources are dead weight too (fast-check must stay — the CJS
-# barrel loads it). Together ~75MB.
-RUN rm -rf node_modules/prisma/prisma-client \
-           node_modules/prisma/build/public \
-           node_modules/effect/dist/esm \
-           node_modules/effect/dist/dts \
-           node_modules/effect/src \
-    && rm -f node_modules/@prisma/engines/libquery_engine-* \
-             node_modules/prisma/build/query_engine_bg.* \
-             node_modules/prisma/build/query_compiler_bg.*
+    && npm install prisma@6.19.3 @prisma/client@6.19.3 --no-audit --no-fund \
+    && npx prisma generate --schema=prisma/schema.prisma
 
-# Stage 2.6: Rust server (axum). Sits in front of Next and takes over routes as they are ported.
+# Stage 3: Rust server
 FROM rust:1-slim-bookworm AS rust
 WORKDIR /server
 COPY server/Cargo.toml server/Cargo.lock ./
 COPY server/src ./src
 RUN cargo build --release --locked && strip target/release/aiyu-server
 
-# Stage 3: Runner
+# Stage 4: Runner
 FROM node:24-bookworm-slim AS runner
 WORKDIR /app
 
-# OpenSSL is required by the Prisma engines at runtime (migrate deploy + client).
+# OpenSSL is required by the Prisma engines (migrate deploy and the seed).
 # libheif1 decodes HEIC/HEIF uploads; aiyu-server loads it at run time.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends openssl libheif1 \
     && rm -rf /var/lib/apt/lists/*
 
-# Runtime environment
 ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
-
-# Full-host profile: no artificial caps. V8 sizes its old-space off the host's
-# total RAM, sharp/libvips scale their worker pool to the available cores, and
-# glibc uses its default per-core arena count. Set NODE_OPTIONS /
-# MALLOC_ARENA_MAX / VIPS_CONCURRENCY at deploy time only if you must bound a
-# shared host.
 
 # Create a non-root user
 RUN groupadd --system --gid 1001 nodejs \
     && useradd --system --uid 1001 --gid nodejs --create-home nextjs
 
-# The complete pruned runtime tree (standalone server + static assets + public
-# + prisma schema/migrations + generated Prisma client) assembled and pruned in
-# the builder. One COPY = one layer, with no duplicated Prisma artifacts.
-COPY --from=builder --chown=nextjs:nodejs /out ./
-
-# Self-contained Prisma CLI (with its full @prisma/config -> effect/c12 closure)
-# kept in its own directory so it can't shadow the app's runtime node_modules.
-# Used only by the entrypoint to run `migrate deploy` at container start.
-COPY --from=prismacli --chown=nextjs:nodejs /prismacli/node_modules /app/prisma-cli/node_modules
-
 COPY --from=rust --chown=nextjs:nodejs /server/target/release/aiyu-server /app/aiyu-server
-# Vite app (pages ported off Next), served by aiyu-server.
-COPY --from=builder --chown=nextjs:nodejs /app/web/dist /app/web/dist
+COPY --from=web --chown=nextjs:nodejs /app/web/dist /app/web/dist
+COPY --chown=nextjs:nodejs public /app/public
+COPY --chown=nextjs:nodejs package.json /app/package.json
+COPY --from=prisma --chown=nextjs:nodejs /prisma-runtime/node_modules /app/node_modules
+COPY --chown=nextjs:nodejs prisma /app/prisma
 
-# Copy healthcheck script and the entrypoint
+# Healthcheck and entrypoint
 COPY --chown=nextjs:nodejs scripts/healthcheck.sh /app/healthcheck.sh
 COPY --chown=nextjs:nodejs scripts/docker-entrypoint.sh /app/docker-entrypoint.sh
 
-# Seeder. The Next.js standalone trace only contains what the server imports, so
-# the seed scripts and the plain data modules they read must be copied
-# explicitly. They resolve @prisma/client from /app/node_modules and are run by
-# the entrypoint when RUN_SEED is set (see scripts/seed-bootstrap.mjs).
+# Seeder: the scripts and the plain data modules they read (see scripts/seed-bootstrap.mjs).
 COPY --chown=nextjs:nodejs scripts/seed-bootstrap.mjs scripts/seed.mjs scripts/seed-ai-sections.mjs /app/scripts/
 COPY --chown=nextjs:nodejs src/app/data /app/src/app/data
 COPY --chown=nextjs:nodejs src/lib/aiPageDefaults.js /app/src/lib/aiPageDefaults.js
-# Those data modules are ESM `.js` with no "type" field at the repo root (Next
-# transpiles them). Marking /app/src as ESM makes `node` parse them the same way
-# instead of depending on Node's module-syntax detection.
+# Those data modules are ESM `.js` with no "type" field at the repo root. Marking /app/src as ESM makes `node`
+# parse them as the bundler does.
 RUN echo '{"type":"module"}' > /app/src/package.json \
     && chown nextjs:nodejs /app/src/package.json
 
-# Create writable directories needed when running with read-only root fs.
-# Strip any CR characters first: when the build context comes from a Windows
-# checkout the .sh files can carry CRLF endings, which makes `sh` fail with
-# "set: Illegal option -" and the container exits immediately on start.
+# Writable directories for a read-only root filesystem.
+# Strip CR characters first: a Windows checkout can give the .sh files CRLF endings, which `sh` refuses.
 RUN sed -i 's/\r$//' /app/healthcheck.sh /app/docker-entrypoint.sh \
-    && mkdir -p /app/public/uploads \
-    && mkdir -p /app/.next/cache \
+    && mkdir -p /app/public/uploads /app/.cache/backups \
     && chmod +x /app/healthcheck.sh /app/docker-entrypoint.sh \
-    && chown -R nextjs:nodejs /app/public/uploads /app/.next/cache
+    && chown -R nextjs:nodejs /app/public/uploads /app/.cache
 
 # Switch to non-root user
 USER nextjs
 
-# Expose the port the app runs on
 EXPOSE 3000
-
-# Runtime network settings
 ENV PORT=3000
-ENV HOSTNAME="0.0.0.0"
 
-# Apply migrations (when RUN_MIGRATIONS=true) then start one Next.js server
-# process. This is much lighter than PM2 clustering and is the best default
-# for small VPS/Docker Desktop deployments.
+# Apply migrations (when RUN_MIGRATIONS=true), seed (RUN_SEED), then start the server.
 ENTRYPOINT ["bash", "/app/docker-entrypoint.sh"]

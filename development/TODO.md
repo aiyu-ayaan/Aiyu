@@ -8,8 +8,8 @@ Branch: `migrate/rust-vite`. Baseline and method: `development/docs/PERFORMANCE.
 
 Current plan (started 2026-11-27), one or more commits per stage, never pushed:
 1. DONE: Rust serves `public/`, `/uploads/*` and every old-address redirect (`server/src/site_static.rs`).
-2. NEXT: drop the Next proxy and `/api/internal/hooks`; delete the Next server code; tag `pg-baseline` locally.
-3. SQLite schema, embedded migrations, Postgres copy tool, then the queries module by module; seed in Rust.
+2. DONE: no Next server any more (proxy, hooks, routes and their tests deleted); local tag `pg-baseline`.
+3. NEXT: SQLite schema, embedded migrations, Postgres copy tool, then the queries module by module; seed in Rust.
 4. Docker, healthcheck, compose, CI, docs without a Node runtime or Prisma.
 
 Older notes:

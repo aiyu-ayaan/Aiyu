@@ -55,7 +55,7 @@ services:
       TRUSTED_PROXIES: ${TRUSTED_PROXIES:-172.16.0.0/12,192.168.0.0/16,10.0.0.0/8}
     volumes:
       - uploads_data:/app/public/uploads
-      - nextjs_cache:/app/.next/cache
+      - backup_cache:/app/.cache
     tmpfs:
       - /tmp:noexec,nosuid,nodev,mode=1777
       - /var/tmp:noexec,nosuid,nodev,mode=1777
@@ -68,9 +68,7 @@ services:
     security_opt:
       - no-new-privileges:true
     read_only: true
-    # No memory cap: the app uses the full host. The Node heap sizes itself off
-    # host RAM (no --max-old-space-size in the image), and sharp/libvips scale
-    # to available cores. The kernel reclaims page cache under real pressure.
+    # No memory cap: the app uses the full host.
     healthcheck:
       test: ["CMD", "sh", "/app/healthcheck.sh"]
       interval: 15s
@@ -109,7 +107,7 @@ services:
 volumes:
   postgres_data:
     driver: local
-  nextjs_cache:
+  backup_cache:
     driver: local
   uploads_data:
     driver: local

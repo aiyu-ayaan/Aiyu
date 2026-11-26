@@ -1,12 +1,9 @@
 #!/usr/bin/env bash
-# Container entrypoint for the Next.js standalone server.
+# Container entrypoint of aiyu-server.
 #
 # When RUN_MIGRATIONS=true (and DATABASE_URL is set) it applies any pending
 # Prisma migrations with `prisma migrate deploy` before starting the app.
-# The CLI lives in an isolated /app/prisma-cli/node_modules (with its full
-# @prisma/config -> effect/c12 dependency closure) so it resolves its own deps
-# and cannot shadow the app's runtime node_modules. Invoked via `node` directly
-# so it works inside the slim standalone image without a .bin symlink.
+# The CLI and client live in /app/node_modules; nothing else uses Node at run time.
 set -e
 
 if [ "${RUN_MIGRATIONS}" = "true" ] && [ -n "${DATABASE_URL}" ]; then
@@ -27,7 +24,7 @@ if [ "${RUN_MIGRATIONS}" = "true" ] && [ -n "${DATABASE_URL}" ]; then
   MIGRATED=false
   # The database container may still be booting; retry before giving up.
   for attempt in 1 2 3 4 5; do
-    if node /app/prisma-cli/node_modules/prisma/build/index.js migrate deploy --schema=/app/prisma/schema.prisma; then
+    if node /app/node_modules/prisma/build/index.js migrate deploy --schema=/app/prisma/schema.prisma; then
       MIGRATED=true
       break
     fi
@@ -59,33 +56,12 @@ if [ -n "${RUN_SEED}" ] && [ "${RUN_SEED}" != "false" ] && [ -n "${DATABASE_URL}
   fi
 fi
 
-# Next listens on loopback only; the Rust server (aiyu-server) owns the public
-# port, serves the routes ported to Rust and streams the rest to Next.
-PUBLIC_PORT="${PORT:-3000}"
-NEXT_PORT="${NEXT_INTERNAL_PORT:-3001}"
+export RUST_LISTEN="0.0.0.0:${PORT:-3000}"
+export UPLOADS_DIR="${UPLOADS_DIR:-/app/public/uploads}"
+export PUBLIC_DIR=/app/public
+export WEB_DIR=/app/web/dist
+export BACKUP_TMP_DIR="${BACKUP_TMP_DIR:-/app/.cache/backups}"
+export TRUSTED_PROXIES="${TRUSTED_PROXIES:-127.0.0.1}"
 
-# One scheduler only: aiyu-server runs the cron jobs and Next, which sees the same variable, leaves its own off.
-export CRON_RUNNER="${CRON_RUNNER:-rust}"
-
-echo "[entrypoint] Starting Next.js server on 127.0.0.1:${NEXT_PORT}..."
-PORT="${NEXT_PORT}" HOSTNAME=127.0.0.1 AIYU_SERVER_URL="http://127.0.0.1:${PUBLIC_PORT}" node server.js &
-NEXT_PID=$!
-
-echo "[entrypoint] Starting aiyu-server on 0.0.0.0:${PUBLIC_PORT}..."
-RUST_LISTEN="0.0.0.0:${PUBLIC_PORT}" \
-NEXT_UPSTREAM="http://127.0.0.1:${NEXT_PORT}" \
-NEXT_DIR=/app/.next \
-UPLOADS_DIR=/app/public/uploads \
-WEB_DIR=/app/web/dist \
-TRUSTED_PROXIES="${TRUSTED_PROXIES:-127.0.0.1}" \
-  /app/aiyu-server &
-RUST_PID=$!
-
-# Forward stop signals to both; if either process exits, stop the other so the
-# container exits and the restart policy brings both back.
-trap 'kill -TERM "$NEXT_PID" "$RUST_PID" 2>/dev/null' TERM INT
-wait -n "$NEXT_PID" "$RUST_PID"
-STATUS=$?
-kill -TERM "$NEXT_PID" "$RUST_PID" 2>/dev/null
-wait
-exit "$STATUS"
+# exec: the server receives the container's stop signal itself.
+exec /app/aiyu-server

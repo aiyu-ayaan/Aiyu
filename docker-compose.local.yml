@@ -23,7 +23,7 @@ services:
       retries: 5
       start_period: 10s
 
-  # Next.js Application Service
+  # Application Service
   app:
     build:
       context: .
@@ -72,8 +72,8 @@ services:
     volumes:
       # Persistent uploads directory (named volume for proper permissions)
       - uploads_data:/app/public/uploads
-      # Writable Next.js cache directory (volume for read-only filesystem)
-      - nextjs_cache:/app/.next/cache
+      # Scratch space for backups and restores (on disk; the root filesystem is read-only)
+      - backup_cache:/app/.cache
     tmpfs:
       # CRITICAL SECURITY: Mount /tmp with noexec to prevent crypto miners from executing
       - /tmp:noexec,nosuid,nodev,mode=1777,size=100M
@@ -133,7 +133,7 @@ services:
 volumes:
   postgres_data:
     driver: local
-  nextjs_cache:
+  backup_cache:
     driver: local
   uploads_data:
     driver: local

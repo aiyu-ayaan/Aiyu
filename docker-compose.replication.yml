@@ -113,7 +113,7 @@ services:
       NODE_ENV: production
     volumes:
       - uploads_data:/app/public/uploads
-      - nextjs_cache:/app/.next/cache
+      - backup_cache:/app/.cache
     tmpfs:
       - /tmp:noexec,nosuid,nodev,mode=1777
       - /var/tmp:noexec,nosuid,nodev,mode=1777
@@ -170,7 +170,7 @@ volumes:
     driver: local
   postgres_replica2_data:
     driver: local
-  nextjs_cache:
+  backup_cache:
     driver: local
   uploads_data:
     driver: local

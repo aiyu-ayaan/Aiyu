@@ -2,8 +2,8 @@ import { defineConfig, devices } from '@playwright/test';
 import fs from 'fs';
 import path from 'path';
 
-// Load .env into the test-runner process (Next loads it for the dev server, but
-// the Playwright process needs ADMIN_USERNAME/ADMIN_PASSWORD for the admin e2e).
+// Load .env into the test-runner process (the server reads it itself, but the
+// Playwright process needs ADMIN_USERNAME/ADMIN_PASSWORD for the admin e2e).
 const envPath = path.resolve('.env');
 if (fs.existsSync(envPath)) {
   for (const line of fs.readFileSync(envPath, 'utf8').split('\n')) {
@@ -48,6 +48,5 @@ export default defineConfig({
     timeout: 600_000,
     reuseExistingServer: !process.env.CI,
     stdout: 'pipe',
-    env: { NEXT_DISABLE_PROGRESS_BAR: '1' },
   },
 });

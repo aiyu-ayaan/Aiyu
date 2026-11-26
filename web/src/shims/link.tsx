@@ -1,5 +1,4 @@
-// `next/link` for the Vite app: client-side navigation inside this app, a plain <a> (full load) for pages
-// Next still serves.
+// `next/link` for the Vite app: client-side navigation inside this app, a plain <a> (full load) for everything else.
 import { forwardRef, type AnchorHTMLAttributes, type ReactNode } from 'react';
 import { Link as RouterLink } from 'react-router';
 import { isAppRoute } from '../appRoutes';

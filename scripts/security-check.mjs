@@ -100,8 +100,8 @@ try {
 // Check 5: Security files exist
 console.log('5. Checking security implementation...');
 const securityFiles = [
-    'src/utils/fileValidation.js',
-    'src/middleware/auth.js',
+    'server/src/uploads.rs',
+    'server/src/limit.rs',
     'SECURITY_INCIDENT.md'
 ];
 

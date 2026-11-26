@@ -26,12 +26,13 @@ const jsxInJs = {
 
 export default defineConfig({
   plugins: [jsxInJs],
-  // Mirror the `@/` -> `src/` path alias used by Next.js/jsconfig so modules
-  // importing via the alias are resolvable under Vitest.
+  // The `@/` -> `src/` alias, and the `next/*` imports the components use, as in web/vite.config.mts.
   resolve: {
-    alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url)),
-    },
+    alias: [
+      ...Object.entries({ link: 'link.tsx', navigation: 'navigation.ts', dynamic: 'dynamic.tsx', script: 'script.tsx', image: 'image.tsx' })
+        .map(([name, file]) => ({ find: new RegExp(`^next/${name}$`), replacement: fileURLToPath(new URL(`./web/src/shims/${file}`, import.meta.url)) })),
+      { find: /^@\//, replacement: fileURLToPath(new URL('./src/', import.meta.url)) },
+    ],
   },
   // Native .jsx/.tsx files use the automatic React runtime.
   oxc: { jsx: { runtime: 'automatic', importSource: 'react' } },

@@ -20,7 +20,7 @@ const jsxInJs: Plugin = {
   },
 };
 
-// One copy of the pre-paint scripts, shared with the Next root layout.
+// One copy of the pre-paint scripts.
 const prepaint: Plugin = {
   name: 'aiyu:prepaint',
   async transformIndexHtml(html) {
@@ -85,7 +85,6 @@ async function discoveryDocs() {
   try {
     const d = await server.ssrLoadModule(`${src}/lib/agentDiscovery.js`);
     const { DEFAULT_MCP_CONFIG } = await server.ssrLoadModule(`${src}/lib/mcpConfig.js`);
-    const { builtinToolCards } = await server.ssrLoadModule(`${src}/lib/mcp/tools.js`);
     const { defaultStudio } = await server.ssrLoadModule(`${src}/lib/resumeStudio.js`);
     const { GAMES } = await server.ssrLoadModule(`${src}/app/components/games/registry.js`);
     return {
@@ -97,7 +96,6 @@ async function discoveryDocs() {
       skillsIndex: d.getAgentSkillsIndex(),
       skills: d.AGENT_SKILL_ARTIFACTS,
       mcpDefaults: DEFAULT_MCP_CONFIG,
-      mcpBuiltinTools: builtinToolCards(),
       resumeStudio: defaultStudio(),
       authMd: d.getAuthMarkdown(),
       apiDocs: d.getApiDocsMarkdown(),
@@ -114,7 +112,7 @@ async function discoveryDocs() {
 // `pnpm dev`: Vite serves the app with hot reload, aiyu-server everything else (scripts/dev.mjs).
 const RUST = process.env.AIYU_SERVER_URL || 'http://127.0.0.1:8080';
 // Paths that stay the server's even when a browser asks for HTML.
-const SERVER_PATHS = /^\/(api|docs|\.well-known|_img|_next)(\/|\?|$)|^\/[^?]*\.[a-z0-9]+(\?|$)/i;
+const SERVER_PATHS = /^\/(api|docs|\.well-known|_img)(\/|\?|$)|^\/[^?]*\.[a-z0-9]+(\?|$)/i;
 const VITE_PATHS = /^\/(@|src\/|node_modules\/)/;
 const HEAD_TAGS = /<title>[\s\S]*?<\/title>|<script type="application\/ld\+json">[\s\S]*?<\/script>|<meta (?!charset|name="(?:viewport|theme-color)")[^>]*>|<link (?![^>]*\/_app\/)[^>]*>/g;
 
@@ -141,8 +139,8 @@ const devPages: Plugin = {
         }
         if (reply.headers.getSetCookie().length) res.setHeader('set-cookie', reply.headers.getSetCookie());
         const data = body.match(/<script id="__DATA__" type="application\/json">([\s\S]*?)<\/script>/)?.[1];
-        // Anything that is not an app page (a redirect, the markdown variant) goes through as it is. An unknown path is
-        // Next's 404 page, which cannot load here: the app shows its own, with the same status.
+        // Anything that is not an app page (a redirect, the markdown variant) goes through as it is. An unknown path
+        // gets the app's own 404 page, with the same status.
         if (data === undefined && reply.status !== 404) return res.end(body);
         const template = await readFile(new URL('./index.html', import.meta.url), 'utf8');
         // The server's head tags (title, metadata, structured data), without its links to the built assets.
@@ -154,7 +152,7 @@ const devPages: Plugin = {
   },
 };
 
-// Every `next/*` import must hit a shim above: real Next modules would work through the proxy today and break at cutover.
+// Every `next/*` import must hit a shim above: Next is not installed.
 const noNext: Plugin = {
   name: 'aiyu:no-next',
   enforce: 'pre',
@@ -166,7 +164,7 @@ const noNext: Plugin = {
 
 export default defineConfig(({ command }) => ({
   root: fileURLToPath(new URL('.', import.meta.url)),
-  // Hashed assets live under /_app/ so the Rust server can cache them forever without touching Next's paths.
+  // Hashed assets live under /_app/ so the server can cache them forever.
   // In dev the app owns the root, so Vite's own paths never collide with the proxy.
   base: command === 'build' ? '/_app/' : '/',
   plugins: [jsxInJs, react(), tailwindcss(), prepaint, routeMeta, devPages, noNext],
@@ -182,7 +180,7 @@ export default defineConfig(({ command }) => ({
       { find: /^@\//, replacement: `${src}/` },
     ],
   },
-  // Tailwind runs as a Vite plugin; skip the Next-style postcss.config.mjs at the repo root.
+  // Tailwind runs as a Vite plugin; no PostCSS config.
   css: { postcss: { plugins: [] } },
   oxc: { jsx: { runtime: 'automatic', importSource: 'react' } },
   // The dev server's dependency scan does not run the plugins above: tell it about JSX in .js too.

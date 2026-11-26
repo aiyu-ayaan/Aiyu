@@ -34,7 +34,7 @@ export default function AdminLogin({ githubEnabled = false }) {
                                     {githubError}
                                 </div>
                             )}
-                            {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- OAuth route requires full browser navigation */}
+                            {/* A plain link: the OAuth route needs a full browser navigation. */}
                             <a href="/api/auth/github" className="adm-btn adm-btn-primary w-full min-h-11">
                                 <FaGithub aria-hidden="true" className="text-lg" />
                                 Continue with GitHub

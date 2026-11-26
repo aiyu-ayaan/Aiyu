@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router';
 
 let mockPathname = '/v2';
 
@@ -28,7 +29,7 @@ describe('V2Header mobile menu', () => {
 
     it('keeps the overlay hidden until [menu] is tapped', async () => {
         const user = userEvent.setup();
-        render(<V2Header />);
+        render(<V2Header />, { wrapper: MemoryRouter });
 
         const overlay = document.getElementById('v2-mobile-menu');
         expect(overlay).toHaveAttribute('aria-hidden', 'true');
@@ -40,7 +41,7 @@ describe('V2Header mobile menu', () => {
 
     it('lists every nav link plus contact in the overlay', async () => {
         const user = userEvent.setup();
-        render(<V2Header />);
+        render(<V2Header />, { wrapper: MemoryRouter });
         await user.click(screen.getByRole('button', { name: /open navigation menu/i }));
 
         const overlayNav = screen.getByRole('navigation', { name: /v2 mobile navigation/i });
@@ -52,7 +53,7 @@ describe('V2Header mobile menu', () => {
 
     it('closes on [x] and restores body scroll', async () => {
         const user = userEvent.setup();
-        render(<V2Header />);
+        render(<V2Header />, { wrapper: MemoryRouter });
         await user.click(screen.getByRole('button', { name: /open navigation menu/i }));
         await user.click(screen.getByRole('button', { name: /close navigation menu/i }));
 
@@ -62,7 +63,7 @@ describe('V2Header mobile menu', () => {
 
     it('closes on Escape', async () => {
         const user = userEvent.setup();
-        render(<V2Header />);
+        render(<V2Header />, { wrapper: MemoryRouter });
         await user.click(screen.getByRole('button', { name: /open navigation menu/i }));
         await user.keyboard('{Escape}');
 
@@ -71,7 +72,7 @@ describe('V2Header mobile menu', () => {
 
     it('has no classic (/v1) link', async () => {
         const user = userEvent.setup();
-        render(<V2Header />);
+        render(<V2Header />, { wrapper: MemoryRouter });
         await user.click(screen.getByRole('button', { name: /open navigation menu/i }));
 
         const overlayNav = screen.getByRole('navigation', { name: /v2 mobile navigation/i });
@@ -88,7 +89,7 @@ describe('V2Header mobile menu', () => {
             ],
         };
         const user = userEvent.setup();
-        render(<V2Header data={mockData} />);
+        render(<V2Header data={mockData} />, { wrapper: MemoryRouter });
         await user.click(screen.getByRole('button', { name: /open navigation menu/i }));
 
         const overlayNav = screen.getByRole('navigation', { name: /v2 mobile navigation/i });
@@ -105,7 +106,7 @@ describe('V2Header mobile menu', () => {
             ]
         };
         const user = userEvent.setup();
-        render(<V2Header data={mockData} />);
+        render(<V2Header data={mockData} />, { wrapper: MemoryRouter });
         await user.click(screen.getByRole('button', { name: /open navigation menu/i }));
 
         const overlayNav = screen.getByRole('navigation', { name: /v2 mobile navigation/i });
@@ -117,7 +118,7 @@ describe('V2Header mobile menu', () => {
             contactLink: { name: 'ping me', href: '/ping' }
         };
         const user = userEvent.setup();
-        render(<V2Header data={mockData} />);
+        render(<V2Header data={mockData} />, { wrapper: MemoryRouter });
         await user.click(screen.getByRole('button', { name: /open navigation menu/i }));
 
         const overlayNav = screen.getByRole('navigation', { name: /v2 mobile navigation/i });
