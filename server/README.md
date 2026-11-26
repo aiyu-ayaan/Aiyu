@@ -22,6 +22,7 @@ bodies such as backups never sit in memory.
 | Admin settings | `/api/admin/{ads,social,notifications}`, `seo/config`, `blogs/token`, `mcp/{config,token}`, `crons/timezone`, `health/targets`, `analytics`, `security/*` |
 | Crawler and agent files | `robots.txt`, `sitemap.xml`, `ads.txt`, `auth.md`, `/docs/api`, `/docs/mcp` |
 | Uploads and storage | `/api/upload`, `/api/uploads/{file}`, `/api/admin/{images/upload,icons,storage,storage/migrate,storage/unreferenced,migrate-gallery}`. HEIC needs the system `libheif1` (loaded at run time) |
+| Health, resume, misc | `/api/admin/{health/metrics,health/uptime,health/uptime/check,purge-cache,resume,resume/compile,resume/publish,ai/logs,system-prompt}` |
 | Backup | `GET /api/admin/export`: rows and files stream into the zip, about 10 MB of memory whatever the data size |
 | Static | `/_app/*` and `/_next/static/*` with a one-year immutable cache |
 
@@ -58,6 +59,7 @@ SEO tools read through them) and queues search-engine pings. The call carries an
 | `contact.rs`, `notify.rs`, `og.rs`, `net.rs` | contact form, notification channels, link previews, fetching of user-supplied URLs |
 | `github_admin.rs`, `github_sync.rs`, `oauth.rs` | GitHub settings, webhook, repo sync, sign-in |
 | `uploads.rs`, `images.rs`, `heif.rs`, `storage.rs` | uploads, WebP conversion and thumbnails, HEIC through libheif, cleanup and migration of files |
+| `health.rs`, `misc.rs` | server metrics, uptime checks, cache purge, Resume Studio, AI log, system prompt |
 | `db.rs`, `export.rs` | database pool and ids, backup zip |
 
 `crypto.rs` and `session.rs` read values written by the Node code (encrypted DB fields, the `session` cookie).
@@ -102,7 +104,7 @@ node --env-file=.env scripts/perf/api-parity.mjs scripts/perf/api/batch1.txt
 # Sign-in and analytics
 node --env-file=.env scripts/perf/auth-parity.mjs
 # Writes: same response and same row changes
-node --env-file=.env scripts/perf/write-parity.mjs scripts/perf/writes/{site,content,blogs,legal,ai,admin,github}.mjs
+node --env-file=.env scripts/perf/write-parity.mjs scripts/perf/writes/{site,content,blogs,legal,ai,admin,github,misc}.mjs
 # Outgoing requests: contact form, notification channels, n8n webhook
 node --env-file=.env scripts/perf/outbound-parity.mjs
 # Uploads: the same files to both servers, stored pictures compared

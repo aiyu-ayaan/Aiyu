@@ -507,18 +507,18 @@ fn mcp_payload(web: &crate::web::WebApp, stored: &Value) -> Value {
 /// `GET /api/admin/mcp/config`
 pub async fn mcp_config(State(state): State<AppState>, req: Request) -> Response {
     // The defaults come from the web build; without it Next answers.
-    let Some(web) = state.web.clone() else { return crate::proxy::forward(State(state), req).await };
     if !signed_in(&state, req.headers()).await {
         return unauthorized();
     }
+    let Some(web) = state.web.clone() else { return crate::proxy::forward(State(state), req).await };
     let stored = pages::singleton(&state.db, MCP.table, true).await;
     ok(mcp_payload(&web, &stored))
 }
 
 /// `PUT /api/admin/mcp/config`: the whole document, replaced.
 pub async fn put_mcp_config(State(state): State<AppState>, req: Request) -> Response {
-    let Some(web) = state.web.clone() else { return crate::proxy::forward(State(state), req).await };
     let Some((_, body)) = admin_body(&state, req).await else { return unauthorized() };
+    let Some(web) = state.web.clone() else { return failure(StatusCode::INTERNAL_SERVER_ERROR, "web build missing") };
     let Some(body) = body else { return failure(StatusCode::BAD_REQUEST, "Invalid JSON body") };
     let normalized = object(merge_mcp_config(&body, &web.discovery["mcpDefaults"]));
     match write::upsert_singleton(&state.db, &MCP, &normalized).await {

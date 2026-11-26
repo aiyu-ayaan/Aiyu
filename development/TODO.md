@@ -36,6 +36,9 @@ Milestone 8 (API routes) IN PROGRESS.
   the AI Hub, SEO, ads and the resume studio, so it deleted their pictures. Rust also never overwrites an existing
   `.webp` during migration and renames whole file names only. `panic = "unwind"` so a decoder panic cannot stop the
   server.
+- Done: health metrics and uptime, cache purge, Resume Studio, AI call log, system prompt (`writes/misc.mjs`
+  16/17: the one difference is a refused connection measured as 0 ms). Metrics have no managed heap to report: data
+  sizes stand in. The LaTeX compile call to texlive.net is not verified against the real service.
 - Cutover also needs what Next's proxy and static serving still do for unported paths: `public/` files and uploads,
   `/v1` and `/v2` redirects, removed-page redirects, the `/admin` sign-in redirect, markdown negotiation on `/`.
 - Checked 2026-11-26: write parity 249/249, auth parity all equal, read parity batch1 42/42, batch2 32/32, blogs 22/22,
@@ -255,7 +258,7 @@ Each page: Rust data + head + Vite route + e2e passing through Rust, then the Ne
 - [x] `/api/admin/ads` (Rust)
 - [ ] `/api/admin/ai/config`
 - [ ] `/api/admin/ai/generate`
-- [ ] `/api/admin/ai/logs`
+- [x] `/api/admin/ai/logs` (Rust)
 - [ ] `/api/admin/ai/models`
 - [ ] `/api/admin/ai/text`
 - [ ] `/api/admin/ai/validate-provider`
@@ -280,10 +283,10 @@ Each page: Rust data + head + Vite route + e2e passing through Rust, then the Ne
 - [ ] `/api/admin/gdrive/restore`
 - [ ] `/api/admin/gdrive/status`
 - [ ] `/api/admin/health/analyze`
-- [ ] `/api/admin/health/metrics`
+- [x] `/api/admin/health/metrics` (Rust)
 - [x] `/api/admin/health/targets` (Rust)
-- [ ] `/api/admin/health/uptime`
-- [ ] `/api/admin/health/uptime/check`
+- [x] `/api/admin/health/uptime` (Rust)
+- [x] `/api/admin/health/uptime/check` (Rust)
 - [x] `/api/admin/icons` (Rust)
 - [x] `/api/admin/images/upload` (Rust)
 - [ ] `/api/admin/import`
@@ -292,10 +295,10 @@ Each page: Rust data + head + Vite route + e2e passing through Rust, then the Ne
 - [x] `/api/admin/migrate-gallery` (Rust)
 - [x] `/api/admin/notifications` (Rust)
 - [x] `/api/admin/notifications/test` (Rust)
-- [ ] `/api/admin/purge-cache`
-- [ ] `/api/admin/resume`
-- [ ] `/api/admin/resume/compile`
-- [ ] `/api/admin/resume/publish`
+- [x] `/api/admin/purge-cache` (Rust)
+- [x] `/api/admin/resume` (Rust)
+- [x] `/api/admin/resume/compile` (Rust)
+- [x] `/api/admin/resume/publish` (Rust)
 - [x] `/api/admin/security/audit` (Rust)
 - [x] `/api/admin/security/sessions` (Rust)
 - [x] `/api/admin/security/sessions/[id]/revoke` (Rust)
@@ -308,7 +311,7 @@ Each page: Rust data + head + Vite route + e2e passing through Rust, then the Ne
 - [x] `/api/admin/storage` (Rust)
 - [x] `/api/admin/storage/migrate` (Rust)
 - [x] `/api/admin/storage/unreferenced` (Rust)
-- [ ] `/api/admin/system-prompt`
+- [x] `/api/admin/system-prompt` (Rust)
 - [x] `/api/ai/credits` (Rust)
 - [x] `/api/ai/credits/[id]` (Rust)
 - [x] `/api/ai/layout` (Rust)

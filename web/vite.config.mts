@@ -83,6 +83,7 @@ async function discoveryDocs() {
     const d = await server.ssrLoadModule(`${src}/lib/agentDiscovery.js`);
     const { DEFAULT_MCP_CONFIG } = await server.ssrLoadModule(`${src}/lib/mcpConfig.js`);
     const { builtinToolCards } = await server.ssrLoadModule(`${src}/lib/mcp/tools.js`);
+    const { defaultStudio } = await server.ssrLoadModule(`${src}/lib/resumeStudio.js`);
     const { GAMES } = await server.ssrLoadModule(`${src}/app/components/games/registry.js`);
     return {
       apiCatalog: d.getApiCatalog(),
@@ -94,6 +95,7 @@ async function discoveryDocs() {
       skills: d.AGENT_SKILL_ARTIFACTS,
       mcpDefaults: DEFAULT_MCP_CONFIG,
       mcpBuiltinTools: builtinToolCards(),
+      resumeStudio: defaultStudio(),
       authMd: d.getAuthMarkdown(),
       apiDocs: d.getApiDocsMarkdown(),
       mcpDocs: d.getMcpDocsMarkdown(),

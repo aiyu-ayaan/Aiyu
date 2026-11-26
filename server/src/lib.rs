@@ -12,6 +12,7 @@ pub mod api;
 pub mod auth;
 pub mod legal;
 pub mod limit;
+pub mod misc;
 pub mod net;
 pub mod notify;
 pub mod oauth;
@@ -27,6 +28,7 @@ pub mod geoip;
 pub mod github;
 pub mod github_admin;
 pub mod github_sync;
+pub mod health;
 pub mod heif;
 pub mod images;
 pub mod pages;
@@ -81,6 +83,7 @@ impl AppState {
 
     /// The pool connects lazily, so this never blocks or fails on a down database.
     pub async fn new(config: config::Config) -> anyhow::Result<Self> {
+        health::start_clock();
         let web = match web::WebApp::load(&config.web_dir) {
             Ok(w) => Some(w),
             Err(err) => {
@@ -177,6 +180,11 @@ fn limited_api(state: &AppState) -> Router<AppState> {
         .route("/api/admin/storage/unreferenced", delete(storage::remove))
         .route("/api/admin/storage/migrate", post(storage::migrate))
         .route("/api/admin/migrate-gallery", post(storage::gallery_thumbnails))
+        .route("/api/admin/health/uptime/check", post(health::check_now))
+        .route("/api/admin/purge-cache", post(misc::purge_cache))
+        .route("/api/admin/resume", put(misc::save_resume))
+        .route("/api/admin/resume/compile", post(misc::compile))
+        .route("/api/admin/resume/publish", post(misc::publish))
         .route_layer(axum::middleware::from_fn_with_state(state.clone(), limit::api))
 }
 
@@ -258,6 +266,11 @@ pub fn router(state: AppState) -> Router {
         .route("/api/admin/storage", get(storage::usage))
         .route("/api/admin/storage/migrate", get(storage::preview))
         .route("/api/admin/icons", get(uploads::icons))
+        .route("/api/admin/health/metrics", get(health::metrics))
+        .route("/api/admin/health/uptime", get(health::uptime))
+        .route("/api/admin/resume", get(misc::resume))
+        .route("/api/admin/ai/logs", get(misc::ai_logs))
+        .route("/api/admin/system-prompt", get(misc::system_prompt))
         .route("/api/uploads/{filename}", get(uploads::serve))
         // API routes ported from Next; other methods on these paths still go to Next.
         .route("/api/about", get(api::about))
