@@ -70,26 +70,6 @@ jobs:
     name: E2E tests (playwright)
     runs-on: ubuntu-latest
 
-    # Real Postgres so the e2e suite exercises actual data paths (seeded
-    # content, admin auth) instead of the app's empty-DB fallbacks.
-    services:
-      postgres:
-        image: postgres:17-alpine
-        env:
-          POSTGRES_USER: aiyu
-          POSTGRES_PASSWORD: aiyu
-          POSTGRES_DB: aiyu
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U aiyu -d aiyu"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    env:
-      DATABASE_URL: postgresql://aiyu:aiyu@localhost:5432/aiyu?schema=public
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -104,7 +84,6 @@ jobs:
         # rejects weak secrets).
         run: |
           cat > .env << 'EOF'
-          DATABASE_URL=postgresql://aiyu:aiyu@localhost:5432/aiyu?schema=public
           NEXT_PUBLIC_N8N_WEBHOOK_URL=https://dummy-webhook.example.com
           NEXT_PUBLIC_AUTHOR_NAME=Portfolio Author
           NEXT_PUBLIC_BASE_URL=http://localhost:3000
@@ -113,12 +92,6 @@ jobs:
           JWT_SECRET=ci-jwt-secret-0123456789abcdef0123456789abcdef0123456789abcdef
           GITHUB_TOKEN=dummy-github-token
           EOF
-
-      - name: Apply database schema
-        run: pnpm exec prisma migrate deploy
-
-      - name: Seed database
-        run: pnpm run db:seed
 
       - name: Cache Playwright browsers
         id: pw-cache

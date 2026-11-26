@@ -8,7 +8,6 @@ yarn-error.log*
 # Testing
 coverage
 
-# Next.js
 .next
 out
 build
@@ -77,3 +76,11 @@ docker-compose.yml
 # Rust build output (rebuilt in the image)
 server/target
 web/dist
+
+# Local data: never part of an image
+data
+*.db
+*.db-wal
+*.db-shm
+.cache
+public/uploads

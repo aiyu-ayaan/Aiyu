@@ -24,7 +24,5 @@ runs:
 
     - name: Install dependencies
       shell: bash
-      # Installs straight from the lockfile; peer and build-script rules live in
-      # pnpm-workspace.yaml. The repo's `postinstall` runs `prisma generate`, so
-      # the Prisma client is ready for build and e2e jobs after this step.
+      # Installs straight from the lockfile; peer and build-script rules live in pnpm-workspace.yaml.
       run: pnpm install --frozen-lockfile

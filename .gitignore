@@ -15,6 +15,12 @@
 /test-results/
 /playwright-report/
 /playwright/.cache/
+# the SQLite database
+/data/
+*.db
+*.db-wal
+*.db-shm
+*.db.importing*
 
 # next.js
 /.next/
@@ -66,6 +72,12 @@ brag-*
 # rust server
 /server/target
 /.cache/
+# the SQLite database
+/data/
+*.db
+*.db-wal
+*.db-shm
+*.db.importing*
 
 # vite build output
 /web/dist
