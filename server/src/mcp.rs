@@ -1,5 +1,6 @@
 //! `/api/mcp`: standard MCP StreamableHTTP JSON-RPC endpoint (src/app/api/mcp/route.js, src/lib/mcp/*).
 
+use crate::db;
 use axum::{
     body::Body,
     extract::{Request, State},
@@ -389,7 +390,7 @@ async fn resolve_published_blog(state: &AppState, ident: &str) -> anyhow::Result
     if ident.is_empty() {
         return Ok(None);
     }
-    let one = |cond: &str| format!(r#"SELECT row_to_json(t)::text FROM "Blog" t WHERE {cond} LIMIT 1"#);
+    let one = |cond: &str| format!(r#"SELECT {} FROM "Blog" WHERE {cond} LIMIT 1"#, db::row_json("Blog"));
     let mut found = None;
     for cond in ["slug = $1", "lower(slug) = lower($1)", "id = $1"] {
         if let Some(raw) = sqlx::query_scalar::<_, String>(&one(cond)).bind(ident).fetch_optional(&state.db).await? {

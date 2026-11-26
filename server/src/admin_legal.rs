@@ -1,5 +1,6 @@
 //! Admin writes for the legal apps and their pages: port of src/lib/legal.js and `handleAdmin`.
 
+use crate::db;
 use axum::{
     extract::{Path, Request, State},
     http::{HeaderValue, StatusCode, header},
@@ -7,7 +8,7 @@ use axum::{
 };
 use regex::Regex;
 use serde_json::{Map, Value, json};
-use sqlx::PgPool;
+use crate::db::Db;
 use std::sync::LazyLock;
 
 use crate::{
@@ -121,7 +122,7 @@ fn package_name(input: &Value) -> anyhow::Result<Option<String>> {
 }
 
 /// The linked /apps entry: None to unlink.
-async fn deployment_id(db: &PgPool, value: &Value) -> anyhow::Result<Value> {
+async fn deployment_id(db: &Db, value: &Value) -> anyhow::Result<Value> {
     let id = text(value).trim().to_string();
     if id.is_empty() {
         return Ok(Value::Null);
@@ -134,17 +135,20 @@ async fn deployment_id(db: &PgPool, value: &Value) -> anyhow::Result<Value> {
 }
 
 /// The app with every document, drafts included.
-async fn app_with_docs(db: &PgPool, id: &str) -> anyhow::Result<Value> {
+async fn app_with_docs(db: &Db, id: &str) -> anyhow::Result<Value> {
     let Some(mut app) = write::find(db, "LegalApp", id).await? else { return Err(refuse(StatusCode::NOT_FOUND, "Legal app not found.")) };
-    let sql = r#"SELECT row_to_json(t)::text FROM "LegalDocument" t WHERE "appId" = $1 ORDER BY "displayOrder" ASC, "createdAt" DESC"#;
-    let rows: Vec<String> = sqlx::query_scalar(sql).bind(id).fetch_all(db).await?;
+    let sql = format!(
+        r#"SELECT {} FROM "LegalDocument" WHERE "appId" = $1 ORDER BY "displayOrder" ASC, "createdAt" DESC"#,
+        db::row_json("LegalDocument")
+    );
+    let rows: Vec<String> = sqlx::query_scalar(&sql).bind(id).fetch_all(db).await?;
     let documents = rows.iter().map(|r| Ok(pages::to_client_row(serde_json::from_str(r)?))).collect::<anyhow::Result<Vec<_>>>()?;
     app["documents"] = documents.into();
     Ok(app)
 }
 
 /// A document with its `app`.
-async fn document(db: &PgPool, id: &str) -> anyhow::Result<Value> {
+async fn document(db: &Db, id: &str) -> anyhow::Result<Value> {
     let Some(mut doc) = write::find(db, "LegalDocument", id).await? else { return Err(refuse(StatusCode::NOT_FOUND, "Legal page not found.")) };
     let app_id = doc["appId"].as_str().unwrap_or_default().to_string();
     doc["app"] = write::find(db, "LegalApp", &app_id).await?.unwrap_or(Value::Null);

@@ -248,7 +248,7 @@ mod tests {
             uploads_dir: "u".into(),
             public_dir: "p".into(),
             web_dir: "missing".into(),
-            database_url: "postgres://localhost:1/x".into(),
+            database_path: "/nonexistent/aiyu.db".into(),
         })
         .await
         .unwrap();

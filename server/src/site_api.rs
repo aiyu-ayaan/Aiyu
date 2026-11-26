@@ -2,6 +2,7 @@
 //! themes, the /desktop widgets and source browser, global search, agent discovery and the MCP server card.
 //! Same JSON, status codes and cache headers as the Next handlers.
 
+use crate::db;
 use axum::{
     Json,
     extract::{Path, RawQuery, State},
@@ -144,7 +145,7 @@ pub async fn active_theme(State(state): State<AppState>) -> Response {
     let slug = config["activeTheme"].as_str().filter(|s| !s.is_empty()).unwrap_or("vs-code-dark").to_string();
     let mut theme = match preset(&web.themes, &slug) {
         Some(t) => t.clone(),
-        None => match sqlx::query_scalar::<_, String>(r#"SELECT row_to_json(t)::text FROM "Theme" t WHERE slug = $1 LIMIT 1"#)
+        None => match sqlx::query_scalar::<_, String>(&format!(r#"SELECT {} FROM "Theme" WHERE slug = $1 LIMIT 1"#, db::row_json("Theme")))
             .bind(&slug)
             .fetch_optional(&state.db)
             .await
@@ -174,7 +175,8 @@ pub async fn theme(State(state): State<AppState>, Path(id): Path<String>) -> Res
     if let Some(t) = preset(&web.themes, &id) {
         return with_public_cache(Json(json!({ "success": true, "data": t })).into_response(), PUBLIC_MEDIUM);
     }
-    let row = sqlx::query_scalar::<_, String>(r#"SELECT row_to_json(t)::text FROM "Theme" t WHERE slug = $1 OR id = $1 LIMIT 1"#)
+    let sql = format!(r#"SELECT {} FROM "Theme" WHERE slug = $1 OR id = $1 LIMIT 1"#, db::row_json("Theme"));
+    let row = sqlx::query_scalar::<_, String>(&sql)
         .bind(&id)
         .fetch_optional(&state.db)
         .await;
@@ -453,24 +455,74 @@ pub async fn global_search(State(state): State<AppState>, RawQuery(q): RawQuery)
     }
 }
 
+/// Words that carry no meaning in a search (the common ones Postgres's English dictionary dropped).
+const STOP_WORDS: &[&str] = &[
+    "a", "an", "and", "are", "as", "at", "be", "but", "by", "for", "from", "how", "i", "in", "is", "it", "its", "my", "no",
+    "not", "of", "on", "or", "so", "such", "that", "the", "their", "then", "there", "these", "they", "this", "to", "was",
+    "what", "when", "where", "which", "who", "will", "with",
+];
+
+/// A search box query as an FTS5 expression, read like Postgres's `websearch_to_tsquery`: all words, `"a phrase"`,
+/// `or`, `-word`. Every term is quoted, so nothing the visitor types is FTS5 syntax. None when nothing is asked for.
+fn fts_query(query: &str) -> Option<String> {
+    let (mut any, mut none): (Vec<Vec<String>>, Vec<String>) = (vec![vec![]], vec![]);
+    // Odd pieces are inside quotes.
+    for (index, piece) in query.split('"').enumerate() {
+        let quoted = index % 2 == 1;
+        let terms: Vec<&str> = if quoted { vec![piece] } else { piece.split_whitespace().collect() };
+        for term in terms {
+            let negated = !quoted && term.starts_with('-');
+            let words: Vec<&str> = term.split(|c: char| !c.is_alphanumeric()).filter(|w| !w.is_empty()).collect();
+            if words.is_empty() {
+                continue;
+            }
+            if !quoted && term.eq_ignore_ascii_case("or") {
+                any.push(vec![]);
+                continue;
+            }
+            if !quoted && words.len() == 1 && STOP_WORDS.contains(&words[0].to_lowercase().as_str()) {
+                continue;
+            }
+            let phrase = format!("\"{}\"", words.join(" "));
+            if negated {
+                none.push(phrase);
+            } else if let Some(group) = any.last_mut() {
+                group.push(phrase);
+            }
+        }
+    }
+    let groups: Vec<String> = any.into_iter().filter(|g| !g.is_empty()).map(|g| g.join(" AND ")).collect();
+    if groups.is_empty() {
+        return None;
+    }
+    let mut expression = format!("({})", groups.join(" OR "));
+    for phrase in none {
+        expression.push_str(&format!(" NOT {phrase}"));
+    }
+    Some(expression)
+}
+
 async fn search(state: &AppState, query: &str) -> anyhow::Result<Vec<Value>> {
     // `new RegExp(escapeRegex(q), 'i')`: a literal, case-insensitive substring test.
     let needle = query.to_lowercase();
     let matches = |v: &Value| js_string(v).to_lowercase().contains(&needle);
-    // Escape LIKE wildcards so the query matches literally.
-    let pattern = format!("%{}%", query.replace('\\', "\\\\").replace('%', "\\%").replace('_', "\\_"));
+    let pattern = db::like(query);
     let now_iso = chrono::Utc::now().format("%Y-%m-%dT%H:%M:%S%.3fZ").to_string();
 
-    let blog_sql = r#"SELECT row_to_json(t)::text FROM (SELECT id, title, content, date, slug FROM "Blog"
-        WHERE published = true AND "searchVector" @@ websearch_to_tsquery('english', $1)
-        ORDER BY ts_rank("searchVector", websearch_to_tsquery('english', $1)) DESC, "createdAt" DESC LIMIT 12) t"#;
-    let project_sql = r#"SELECT row_to_json(t)::text FROM (SELECT id, name, slug, description, year FROM "Project"
-        WHERE name ILIKE $1 OR description ILIKE $1 OR array_to_string("techStack", ' ') ILIKE $1
-        ORDER BY "displayOrder" ASC, year DESC LIMIT 12) t"#;
-    let deployment_sql = r#"SELECT row_to_json(t)::text FROM (SELECT id, name, slug, description, "hostingProvider", environment FROM "Deployment"
-        WHERE name ILIKE $1 OR description ILIKE $1 OR array_to_string("techStack", ' ') ILIKE $1
-           OR "hostingProvider" ILIKE $1 OR "appType" ILIKE $1 OR environment ILIKE $1
-        ORDER BY "displayOrder" ASC, "updatedAt" DESC LIMIT 10) t"#;
+    let blog_sql = r#"SELECT json_object('id', b.id, 'title', b.title, 'content', b.content, 'date', b.date, 'slug', b.slug)
+        FROM "BlogSearch" JOIN "Blog" b ON b.id = "BlogSearch".id
+        WHERE "BlogSearch" MATCH $1 AND b.published
+        ORDER BY bm25("BlogSearch", 0.0, 10.0, 4.0, 1.0), b."createdAt" DESC LIMIT 12"#;
+    let project_sql = r#"SELECT json_object('id', id, 'name', name, 'slug', slug, 'description', description, 'year', year) FROM "Project"
+        WHERE name LIKE $1 ESCAPE '\' OR description LIKE $1 ESCAPE '\'
+           OR (SELECT group_concat(value, ' ') FROM json_each("techStack")) LIKE $1 ESCAPE '\'
+        ORDER BY "displayOrder" ASC, year DESC LIMIT 12"#;
+    let deployment_sql = r#"SELECT json_object('id', id, 'name', name, 'slug', slug, 'description', description,
+            'hostingProvider', "hostingProvider", 'environment', environment) FROM "Deployment"
+        WHERE name LIKE $1 ESCAPE '\' OR description LIKE $1 ESCAPE '\'
+           OR (SELECT group_concat(value, ' ') FROM json_each("techStack")) LIKE $1 ESCAPE '\'
+           OR "hostingProvider" LIKE $1 ESCAPE '\' OR "appType" LIKE $1 ESCAPE '\' OR environment LIKE $1 ESCAPE '\'
+        ORDER BY "displayOrder" ASC, "updatedAt" DESC LIMIT 10"#;
     let fetch = |sql: &'static str, bind: String| {
         let db = state.db.clone();
         async move {
@@ -479,7 +531,12 @@ async fn search(state: &AppState, query: &str) -> anyhow::Result<Vec<Value>> {
         }
     };
     let (blogs, projects, deployments, home, about) = tokio::join!(
-        fetch(blog_sql, query.to_string()),
+        async {
+            match fts_query(query) {
+                Some(expression) => fetch(blog_sql, expression).await,
+                None => Ok(vec![]),
+            }
+        },
         fetch(project_sql, pattern.clone()),
         fetch(deployment_sql, pattern.clone()),
         pages::try_singleton(&state.db, "Home", false),
@@ -896,6 +953,21 @@ mod tests {
         assert_eq!(locale_cmp("apps", "Browser.js"), Ordering::Less);
         assert_eq!(locale_cmp("a", "A"), Ordering::Less);
         assert_eq!(locale_cmp("2026", "2025-12-01"), Ordering::Greater);
+    }
+
+    #[test]
+    fn searches_become_safe_fts_expressions() {
+        for (query, want) in [
+            ("rust async", Some(r#"("rust" AND "async")"#)),
+            ("the \"borrow checker\" or lifetimes -unsafe", Some(r#"("borrow checker" OR "lifetimes") NOT "unsafe""#)),
+            ("c++ node.js", Some(r#"("c" AND "node js")"#)),
+            ("NEAR(a b) col:x *", Some(r#"("NEAR a" AND "b" AND "col x")"#)),
+            ("-only", None),
+            ("the", None),
+            ("\" * ( )", None),
+        ] {
+            assert_eq!(fts_query(query).as_deref(), want, "{query}");
+        }
     }
 
     #[test]

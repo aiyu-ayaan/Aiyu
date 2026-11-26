@@ -1,6 +1,6 @@
 //! `GET /api/admin/export`: the backup zip, built in Rust and streamed.
 //!
-//! Port of src/app/api/admin/export/route.js. Rows stream from Postgres one at a time straight into the
+//! Port of src/app/api/admin/export/route.js. Rows stream from the database one at a time straight into the
 //! zip, and upload files stream from disk, so memory stays flat whatever the data size (Next loaded every
 //! table whole and grew by ~270 MB per export). Layout and JSON shape match Node (`toClient` in
 //! src/lib/serialize.js): `data/<key>.json`, `uploads/<file>`, `manifest.json`.
@@ -15,11 +15,10 @@ use axum::{
 use chrono::{NaiveDateTime, Utc};
 use futures_util::TryStreamExt;
 use serde_json::{Map, Value};
-use sqlx::PgPool;
 use std::path::{Path, PathBuf};
 use tokio_util::{compat::FuturesAsyncWriteCompatExt, io::ReaderStream};
 
-use crate::{AppState, auth::require_session};
+use crate::{AppState, auth::require_session, db::{Col, Db}};
 
 #[derive(Clone, Copy)]
 enum Kind {
@@ -134,7 +133,7 @@ pub async fn export(State(state): State<AppState>, RawQuery(query): RawQuery, re
     res
 }
 
-pub async fn write_backup<W>(out: W, db: &PgPool, keys: &[&str], uploads: Option<&Path>, exported_at: NaiveDateTime) -> anyhow::Result<()>
+pub async fn write_backup<W>(out: W, db: &Db, keys: &[&str], uploads: Option<&Path>, exported_at: NaiveDateTime) -> anyhow::Result<()>
 where
     W: tokio::io::AsyncWrite + Unpin,
 {
@@ -190,19 +189,13 @@ where
 }
 
 /// Stream one table as a pretty JSON array (2-space indent, like `JSON.stringify(v, null, 2)`). Returns the row count.
-async fn write_collection<W: tokio::io::AsyncWrite + Unpin>(db: &PgPool, c: &Collection, out: &mut W) -> anyhow::Result<u64> {
+async fn write_collection<W: tokio::io::AsyncWrite + Unpin>(db: &Db, c: &Collection, out: &mut W) -> anyhow::Result<u64> {
     use tokio::io::AsyncWriteExt;
 
-    let ts_cols: Vec<String> = sqlx::query_scalar(
-        "SELECT column_name::text FROM information_schema.columns
-         WHERE table_schema = current_schema() AND table_name = $1 AND data_type LIKE 'timestamp%'",
-    )
-    .bind(c.table)
-    .fetch_all(db)
-    .await?;
+    let ts_cols: Vec<&str> = crate::db::columns(c.table).iter().filter(|(_, col)| *col == Col::Time).map(|(name, _)| *name).collect();
 
     // Table names come from the constant list above, never from the request.
-    let sql = format!(r#"SELECT row_to_json(t)::text FROM "{}" t"#, c.table);
+    let sql = format!(r#"SELECT {} FROM "{}""#, crate::db::row_json(c.table), c.table);
     let mut rows = sqlx::query_scalar::<_, String>(&sql).fetch(db);
 
     let mut n = 0u64;
@@ -210,7 +203,7 @@ async fn write_collection<W: tokio::io::AsyncWrite + Unpin>(db: &PgPool, c: &Col
     while let Some(raw) = rows.try_next().await? {
         let Value::Object(mut row) = serde_json::from_str::<Value>(&raw)? else { continue };
         for col in &ts_cols {
-            if let Some(v) = row.get_mut(col) {
+            if let Some(v) = row.get_mut(*col) {
                 normalize_timestamp_value(v);
             }
         }
@@ -260,7 +253,7 @@ fn truthy(v: &Value) -> bool {
     !matches!(v, Value::Null | Value::Bool(false)) && v.as_str() != Some("")
 }
 
-/// Postgres renders `timestamp(3)` as `2026-11-23T19:54:14.96`; JS Date JSON is `2026-11-23T19:54:14.960Z`.
+/// A stored time (`2026-11-23T19:54:14.960`) as JS Date JSON, with its `Z`.
 pub fn normalize_timestamp_value(v: &mut Value) {
     if let Some(s) = v.as_str() {
         if let Ok(t) = NaiveDateTime::parse_from_str(s, "%Y-%m-%dT%H:%M:%S%.f") {

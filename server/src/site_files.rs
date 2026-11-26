@@ -1,6 +1,7 @@
 //! The files crawlers and agents read: robots.txt, sitemap.xml, ads.txt, auth.md and /docs/*
 //! (src/app/robots.js, sitemap.js, ads.txt, auth.md and docs).
 
+use crate::db::{Stamp};
 use axum::{
     extract::State,
     http::{StatusCode, header},
@@ -191,7 +192,7 @@ async fn ai_routes(state: &AppState, base: &str, now: &str) -> Vec<Entry> {
 }
 
 /// `(id, slug, name, updatedAt)` of a content table.
-type Row = (String, String, String, NaiveDateTime);
+type Row = (String, String, String, Stamp);
 
 fn slug(row: &Row, prefix: &str) -> String {
     pages::entity_slug(&json!({ "_id": row.0, "slug": row.1, "name": row.2 }), prefix)
@@ -203,41 +204,41 @@ async fn content_routes(state: &AppState, base: &str) -> anyhow::Result<(Changed
     let blogs = rows(r#"SELECT id, COALESCE(slug, ''), title, "updatedAt" FROM "Blog" WHERE published AND NOT "noIndex""#).await?;
     let projects = rows(r#"SELECT id, COALESCE(slug, ''), name, "updatedAt" FROM "Project""#).await?;
     let apps = rows(r#"SELECT id, COALESCE(slug, ''), name, "updatedAt" FROM "Deployment""#).await?;
-    let latest = |r: &[Row]| r.iter().map(|r| r.3).max();
+    let latest = |r: &[Row]| r.iter().map(|r| r.3.0).max();
     let changed = Changed { blogs: latest(&blogs), projects: latest(&projects), apps: latest(&apps) };
 
     // A legal app pointing at a live deployment is that product's main page.
-    let legal: Vec<(String, String, Option<String>, NaiveDateTime, bool)> = sqlx::query_as(
+    let legal: Vec<(String, String, Option<String>, Stamp, bool)> = sqlx::query_as(
         r#"SELECT a.id, a.slug, a."deploymentId", a."updatedAt", EXISTS (SELECT 1 FROM "Deployment" d WHERE d.id = a."deploymentId")
            FROM "LegalApp" a"#,
     )
     .fetch_all(&state.db)
     .await?;
-    let documents: Vec<(String, String, NaiveDateTime)> =
+    let documents: Vec<(String, String, Stamp)> =
         sqlx::query_as(r#"SELECT "appId", slug, "updatedAt" FROM "LegalDocument" WHERE published AND NOT "noIndex""#).fetch_all(&state.db).await?;
     let products: HashSet<&str> = legal.iter().filter_map(|a| a.2.as_deref()).collect();
 
     let mut out = Vec::new();
     for b in &blogs {
-        out.push(entry(canonical(base, &format!("/blogs/{}", slug(b, "blog"))), &iso(b.3), "monthly", 0.7));
+        out.push(entry(canonical(base, &format!("/blogs/{}", slug(b, "blog"))), &iso(b.3.0), "monthly", 0.7));
     }
     for p in &projects {
-        out.push(entry(canonical(base, &format!("/projects/{}", slug(p, "project"))), &iso(p.3), "monthly", 0.75));
+        out.push(entry(canonical(base, &format!("/projects/{}", slug(p, "project"))), &iso(p.3.0), "monthly", 0.75));
     }
     // An app with a product page canonicalizes to it, so only that page is listed.
     for a in apps.iter().filter(|a| !products.contains(a.0.as_str())) {
-        out.push(entry(canonical(base, &format!("/apps/{}", slug(a, "app"))), &iso(a.3), "weekly", 0.74));
+        out.push(entry(canonical(base, &format!("/apps/{}", slug(a, "app"))), &iso(a.3.0), "weekly", 0.74));
     }
     for (id, app, _, updated, product) in &legal {
         let own: Vec<_> = documents.iter().filter(|d| &d.0 == id).collect();
         if own.is_empty() && !product {
             continue;
         }
-        let newest = own.iter().map(|d| d.2).fold(*updated, NaiveDateTime::max);
+        let newest = own.iter().map(|d| d.2.0).fold(updated.0, NaiveDateTime::max);
         let (frequency, priority) = if *product { ("weekly", 0.85) } else { ("yearly", 0.3) };
         out.push(entry(canonical(base, &format!("/{app}")), &iso(newest), frequency, priority));
         for d in own {
-            out.push(entry(canonical(base, &format!("/{app}/{}", d.1)), &iso(d.2), "yearly", 0.3));
+            out.push(entry(canonical(base, &format!("/{app}/{}", d.1)), &iso(d.2.0), "yearly", 0.3));
         }
     }
     Ok((changed, out))

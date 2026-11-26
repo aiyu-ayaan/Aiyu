@@ -1,6 +1,7 @@
 //! Running the scheduled tasks (src/utils/cronRunner.js) and the scheduler. The scheduler runs unless
 //! `CRON_RUNNER=off` (set it on all but one server when several share a database).
 
+use crate::db::{Stamp};
 use chrono::{DateTime, Timelike, Utc};
 use serde_json::{Map, Value, json};
 use sqlx::FromRow;
@@ -291,7 +292,7 @@ async fn connected(state: &AppState, what: &str) -> anyhow::Result<drive::Settin
 async fn prune_sessions(state: &AppState) -> anyhow::Result<u64> {
     let cutoff = Utc::now().naive_utc() - chrono::TimeDelta::days(SESSION_RETENTION_DAYS);
     let gone = sqlx::query(r#"DELETE FROM "Session" WHERE ("revokedAt" IS NOT NULL AND "revokedAt" < $1) OR ("revokedAt" IS NULL AND "expiresAt" < $1)"#)
-        .bind(cutoff)
+        .bind(Stamp(cutoff))
         .execute(&state.db)
         .await?;
     Ok(gone.rows_affected())
@@ -392,11 +393,11 @@ fn delay(retry_type: &str, base: i32, attempt: u32) -> u64 {
 async fn record(state: &AppState, job: &Job, success: bool, log: &str, sent: &Sent, duration: Duration) -> anyhow::Result<()> {
     let ran: DateTime<Utc> = Utc::now();
     let status = if success { "success" } else { "failure" };
-    let next = cron::next_run(&job.schedule, ran, zone(state).await).map(|t| t.naive_utc());
+    let next = cron::next_run(&job.schedule, ran, zone(state).await).map(|t| Stamp(t.naive_utc()));
     // Postgres text cannot hold NUL, which a webhook response may.
     let log = log.replace('\0', "");
     let updated = sqlx::query(r#"UPDATE "Cron" SET "lastRun" = $1, "lastRunStatus" = $2, "lastRunLog" = $3, "nextRun" = $4, "updatedAt" = $1 WHERE id = $5"#)
-        .bind(ran.naive_utc())
+        .bind(Stamp(ran.naive_utc()))
         .bind(status)
         .bind(&log)
         .bind(next)
@@ -414,7 +415,7 @@ async fn record(state: &AppState, job: &Job, success: bool, log: &str, sent: &Se
         .bind(&sent.url)
         .bind(&log)
         .bind(i32::try_from(duration.as_millis()).unwrap_or(i32::MAX))
-        .bind(ran.naive_utc())
+        .bind(Stamp(ran.naive_utc()))
         .execute(&state.db)
         .await?;
     Ok(())
@@ -485,8 +486,8 @@ async fn ensure_system_jobs(state: &AppState, zone: chrono_tz::Tz) -> anyhow::Re
             .bind(schedule)
             .bind(enabled)
             .bind(action)
-            .bind(cron::next_run(schedule, now, zone).map(|t| t.naive_utc()))
-            .bind(now.naive_utc())
+            .bind(cron::next_run(schedule, now, zone).map(|t| Stamp(t.naive_utc())))
+            .bind(Stamp(now.naive_utc()))
             .execute(&state.db)
             .await?;
         tracing::info!(name, "system cron job created");
@@ -499,13 +500,13 @@ pub async fn heal_next_runs(state: &AppState) -> anyhow::Result<()> {
     let zone = zone(state).await;
     let now = Utc::now();
     let stale: Vec<(String, String)> = sqlx::query_as(r#"SELECT id, schedule FROM "Cron" WHERE enabled AND ("nextRun" IS NULL OR "nextRun" < $1)"#)
-        .bind(now.naive_utc())
+        .bind(Stamp(now.naive_utc()))
         .fetch_all(&state.db)
         .await?;
     for (id, schedule) in stale {
         sqlx::query(r#"UPDATE "Cron" SET "nextRun" = $1, "updatedAt" = $2 WHERE id = $3"#)
-            .bind(cron::next_run(&schedule, now, zone).map(|t| t.naive_utc()))
-            .bind(now.naive_utc())
+            .bind(cron::next_run(&schedule, now, zone).map(|t| Stamp(t.naive_utc())))
+            .bind(Stamp(now.naive_utc()))
             .bind(id)
             .execute(&state.db)
             .await?;

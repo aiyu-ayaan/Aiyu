@@ -2,6 +2,7 @@
 //! under `gdriveConfig` in the config document. Backups are built, uploaded and downloaded through temporary files,
 //! never held in memory.
 
+use crate::db::{self, Stamp};
 use axum::{
     extract::{RawQuery, Request, State},
     http::{HeaderMap, HeaderValue, StatusCode, header},
@@ -164,7 +165,7 @@ pub async fn save(state: &AppState, updates: Value) -> anyhow::Result<()> {
     };
     let current = data.get("gdriveConfig").and_then(Value::as_object).cloned().unwrap_or_default();
     let gdrive = Value::Object(merge(state, current, &updates));
-    let now = Utc::now().naive_utc();
+    let now = Stamp(Utc::now().naive_utc());
     if id.is_empty() {
         data.insert("gdriveConfig".into(), gdrive);
         sqlx::query(r#"INSERT INTO "Config" (id, data, "createdAt", "updatedAt") VALUES ($1, $2, $3, $3)"#)
@@ -175,7 +176,7 @@ pub async fn save(state: &AppState, updates: Value) -> anyhow::Result<()> {
             .await?;
     } else {
         // Only this key is written, so a settings save made meanwhile is not undone.
-        sqlx::query(r#"UPDATE "Config" SET data = jsonb_set(data::jsonb, '{gdriveConfig}', $1), "updatedAt" = $2 WHERE id = $3"#)
+        sqlx::query(r#"UPDATE "Config" SET data = json_set(data, '$.gdriveConfig', json($1)), "updatedAt" = $2 WHERE id = $3"#)
             .bind(sqlx::types::Json(gdrive))
             .bind(now)
             .bind(id)
@@ -600,7 +601,8 @@ fn job_json(job: Option<&Value>, default_schedule: &str) -> Value {
 }
 
 async fn job(state: &AppState, action: &str) -> anyhow::Result<Option<Value>> {
-    let raw: Option<String> = sqlx::query_scalar(r#"SELECT row_to_json(t)::text FROM "Cron" t WHERE action = $1 LIMIT 1"#).bind(action).fetch_optional(&state.db).await?;
+    let sql = format!(r#"SELECT {} FROM "Cron" WHERE action = $1 LIMIT 1"#, db::row_json("Cron"));
+    let raw: Option<String> = sqlx::query_scalar(&sql).bind(action).fetch_optional(&state.db).await?;
     raw.map(|r| Ok(pages::to_client_row(serde_json::from_str(&r)?))).transpose()
 }
 
@@ -643,8 +645,8 @@ pub async fn save_schedule(State(state): State<AppState>, req: Request) -> Respo
             existing.as_ref().and_then(|j| j["schedule"].as_str().filter(|s| !s.is_empty())).unwrap_or(default_schedule).to_string()
         };
         let enabled = body.get("enabled").map(truthy).unwrap_or_else(|| existing.as_ref().is_some_and(|j| j["enabled"] == true));
-        let next = enabled.then(|| cron::next_run(&schedule, Utc::now(), zone)).flatten().map(|t| t.naive_utc());
-        let now = Utc::now().naive_utc();
+        let next = enabled.then(|| cron::next_run(&schedule, Utc::now(), zone)).flatten().map(|t| Stamp(t.naive_utc()));
+        let now = Stamp(Utc::now().naive_utc());
         match existing.as_ref().and_then(|j| j["_id"].as_str()) {
             Some(id) => {
                 sqlx::query(r#"UPDATE "Cron" SET schedule = $1, enabled = $2, "nextRun" = $3, "updatedAt" = $4 WHERE id = $5"#)

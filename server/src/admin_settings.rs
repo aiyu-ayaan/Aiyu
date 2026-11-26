@@ -1,6 +1,7 @@
 //! The admin settings routes under `/api/admin`: ads, social metadata, SEO, notifications, API tokens, the MCP
 //! config, the cron time zone and the extra uptime targets.
 
+use crate::db::{Stamp};
 use axum::{
     extract::{RawQuery, Request, State},
     http::{HeaderMap, StatusCode, request::Parts},
@@ -404,7 +405,7 @@ pub async fn delete_blog_token(State(state): State<AppState>, headers: HeaderMap
 }
 
 /// The MCP config row's id and token columns.
-async fn mcp_row(state: &AppState) -> anyhow::Result<Option<(String, Option<String>, String, Option<chrono::NaiveDateTime>)>> {
+async fn mcp_row(state: &AppState) -> anyhow::Result<Option<(String, Option<String>, String, Option<Stamp>)>> {
     Ok(sqlx::query_as(r#"SELECT id, "mcpTokenHash", "mcpTokenLast4", "mcpTokenUpdatedAt" FROM "McpConfig" LIMIT 1"#)
         .fetch_optional(&state.db)
         .await?)
@@ -418,7 +419,7 @@ pub async fn mcp_token(State(state): State<AppState>, headers: HeaderMap) -> Res
     match mcp_row(&state).await {
         Ok(row) => {
             let (_, hash, last4, updated) = row.unwrap_or_default();
-            let updated = updated.map(|t| t.and_utc().to_rfc3339_opts(SecondsFormat::Millis, true));
+            let updated = updated.map(|t| t.0.and_utc().to_rfc3339_opts(SecondsFormat::Millis, true));
             ok(json!({ "success": true, "data": { "hasToken": hash.is_some_and(|h| !h.is_empty()), "last4": last4, "updatedAt": updated } }))
         }
         Err(err) => {
@@ -443,7 +444,7 @@ pub async fn create_mcp_token(State(state): State<AppState>, req: Request) -> Re
             None => r#"INSERT INTO "McpConfig" ("mcpTokenHash", "mcpTokenLast4", "mcpTokenUpdatedAt", "updatedAt", id, "createdAt") VALUES ($1, $2, $3, $3, $4, $3)"#,
         };
         let id = row.as_ref().map(|r| r.0.clone()).unwrap_or_else(crate::db::new_id);
-        sqlx::query(sql).bind(&hash).bind(&last4).bind(now.naive_utc()).bind(id).execute(&state.db).await?;
+        sqlx::query(sql).bind(&hash).bind(&last4).bind(Stamp(now.naive_utc())).bind(id).execute(&state.db).await?;
         Ok(row.and_then(|r| r.1).is_some_and(|h| !h.is_empty()))
     }
     .await;
@@ -469,7 +470,7 @@ pub async fn delete_mcp_token(State(state): State<AppState>, req: Request) -> Re
     let result: anyhow::Result<bool> = async {
         let Some((id, ..)) = mcp_row(&state).await? else { return Ok(false) };
         sqlx::query(r#"UPDATE "McpConfig" SET "mcpTokenHash" = NULL, "mcpTokenLast4" = '', "mcpTokenUpdatedAt" = NULL, "updatedAt" = $1 WHERE id = $2"#)
-            .bind(Utc::now().naive_utc())
+            .bind(Stamp(Utc::now().naive_utc()))
             .bind(id)
             .execute(&state.db)
             .await?;
@@ -561,8 +562,8 @@ pub async fn save_timezone(State(state): State<AppState>, req: Request) -> Respo
         let jobs: Vec<(String, String)> = sqlx::query_as(r#"SELECT id, schedule FROM "Cron" WHERE enabled"#).fetch_all(&state.db).await?;
         for (id, schedule) in jobs {
             sqlx::query(r#"UPDATE "Cron" SET "nextRun" = $1, "updatedAt" = $2 WHERE id = $3"#)
-                .bind(cron::next_run(&schedule, now, zone).map(|t| t.naive_utc()))
-                .bind(Utc::now().naive_utc())
+                .bind(cron::next_run(&schedule, now, zone).map(|t| Stamp(t.naive_utc())))
+                .bind(Stamp(Utc::now().naive_utc()))
                 .bind(id)
                 .execute(&state.db)
                 .await?;

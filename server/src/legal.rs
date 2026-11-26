@@ -1,7 +1,7 @@
 //! Public legal pages data (src/lib/legal.js): `/<app>` and `/<app>/<doc>`.
 
 use serde_json::{Value, json};
-use sqlx::PgPool;
+use crate::db::{Db, row_json};
 
 use crate::pages::{entity_slug, to_client_row};
 
@@ -22,15 +22,18 @@ pub fn candidate(slug: &str) -> Option<String> {
 }
 
 /// `getPublicLegalApp`: the app with only its published documents.
-pub async fn public_app(db: &PgPool, slug: &str) -> anyhow::Result<Option<Value>> {
-    let row: Option<String> = sqlx::query_scalar(r#"SELECT row_to_json(t)::text FROM "LegalApp" t WHERE slug = $1"#).bind(slug).fetch_optional(db).await?;
+pub async fn public_app(db: &Db, slug: &str) -> anyhow::Result<Option<Value>> {
+    let sql = format!(r#"SELECT {} FROM "LegalApp" WHERE slug = $1"#, row_json("LegalApp"));
+    let row: Option<String> = sqlx::query_scalar(&sql).bind(slug).fetch_optional(db).await?;
     let Some(raw) = row else { return Ok(None) };
     let mut app = to_client_row(serde_json::from_str(&raw)?);
     let id = app["_id"].as_str().unwrap_or_default().to_string();
     // `id` is a cuid from the row above; bound, never interpolated as text from the request.
-    let docs = sqlx::query_scalar::<_, String>(
-        r#"SELECT row_to_json(t)::text FROM "LegalDocument" t WHERE "appId" = $1 AND published ORDER BY "displayOrder" ASC, "createdAt" DESC"#,
-    )
+    let sql = format!(
+        r#"SELECT {} FROM "LegalDocument" WHERE "appId" = $1 AND published ORDER BY "displayOrder" ASC, "createdAt" DESC"#,
+        row_json("LegalDocument")
+    );
+    let docs = sqlx::query_scalar::<_, String>(&sql)
     .bind(&id)
     .fetch_all(db)
     .await?;
@@ -40,7 +43,7 @@ pub async fn public_app(db: &PgPool, slug: &str) -> anyhow::Result<Option<Value>
 }
 
 /// `getLegalAppShowcase`: `{ app, project }` cards for the linked /apps entry and its project.
-pub async fn showcase(db: &PgPool, app: &Value) -> anyhow::Result<Value> {
+pub async fn showcase(db: &Db, app: &Value) -> anyhow::Result<Value> {
     let Some(dep_id) = app["deploymentId"].as_str().filter(|d| !d.is_empty()) else { return Ok(json!({ "app": null, "project": null })) };
     let Some(d) = by_id(db, "Deployment", dep_id).await? else {
         return Ok(json!({ "app": null, "project": null }));
@@ -68,7 +71,7 @@ pub async fn showcase(db: &PgPool, app: &Value) -> anyhow::Result<Value> {
 }
 
 /// `getLinkedDeployment`: `{ name, href, hostedUrl }` of the /apps entry a legal app points at.
-pub async fn linked_deployment(db: &PgPool, app: &Value) -> anyhow::Result<Value> {
+pub async fn linked_deployment(db: &Db, app: &Value) -> anyhow::Result<Value> {
     let Some(dep_id) = app["deploymentId"].as_str().filter(|d| !d.is_empty()) else { return Ok(Value::Null) };
     Ok(match by_id(db, "Deployment", dep_id).await? {
         Some(d) => json!({ "name": d["name"], "href": format!("/apps/{}", entity_slug(&d, "app")), "hostedUrl": d["hostedUrl"].as_str().unwrap_or_default() }),
@@ -77,8 +80,8 @@ pub async fn linked_deployment(db: &PgPool, app: &Value) -> anyhow::Result<Value
 }
 
 /// One row by id, client-shaped. `table` is a constant from this module.
-async fn by_id(db: &PgPool, table: &str, id: &str) -> anyhow::Result<Option<Value>> {
-    let sql = format!(r#"SELECT row_to_json(t)::text FROM "{table}" t WHERE id = $1"#);
+async fn by_id(db: &Db, table: &str, id: &str) -> anyhow::Result<Option<Value>> {
+    let sql = format!(r#"SELECT {} FROM "{table}" WHERE id = $1"#, row_json(table));
     let raw: Option<String> = sqlx::query_scalar(&sql).bind(id).fetch_optional(db).await?;
     Ok(match raw {
         Some(r) => Some(to_client_row(serde_json::from_str(&r)?)),

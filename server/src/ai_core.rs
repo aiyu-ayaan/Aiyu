@@ -1,6 +1,7 @@
 //! The AI Core: provider settings, model lists, key checks, text and caption generation, and the health analyzer
 //! (src/app/api/admin/ai/*, src/app/api/admin/health/analyze, src/lib/aiText.js).
 
+use crate::db;
 use std::{sync::LazyLock, time::Duration};
 
 use axum::{
@@ -76,7 +77,8 @@ fn head(text: &str, units: usize) -> String {
 
 /// The stored configuration with its secret columns (`getSingleton(..., { withSecrets: true })`), or null.
 pub(crate) async fn stored_config(state: &AppState) -> anyhow::Result<Value> {
-    let raw: Option<String> = sqlx::query_scalar(r#"SELECT row_to_json(t)::text FROM "Config" t LIMIT 1"#).fetch_optional(&state.db).await?;
+    let sql = format!(r#"SELECT {} FROM "Config" LIMIT 1"#, db::row_json("Config"));
+    let raw: Option<String> = sqlx::query_scalar(&sql).fetch_optional(&state.db).await?;
     let Some(raw) = raw else { return Ok(Value::Null) };
     let mut row: Map<String, Value> = serde_json::from_str(&raw)?;
     let mut out = match row.shift_remove("data") {

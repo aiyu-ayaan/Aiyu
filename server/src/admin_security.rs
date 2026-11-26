@@ -1,5 +1,6 @@
 //! `/api/admin/security`: the audit log and the signed-in devices.
 
+use crate::db::{self, Stamp};
 use axum::{
     extract::{Path, RawQuery, Request, State},
     http::{HeaderMap, StatusCode},
@@ -19,12 +20,6 @@ use crate::{
 const MAX_LIMIT: i64 = 100;
 const RETENTION_DAYS: i64 = 7;
 
-/// `%`, `_` and `\` as literal characters of an ILIKE pattern.
-fn like(text: &str) -> String {
-    let escaped = text.replace('\\', "\\\\").replace('%', "\\%").replace('_', "\\_");
-    format!("%{escaped}%")
-}
-
 /// `GET /api/admin/security/audit?category=&action=&limit=&cursor=`: newest first, paged by the last row's id.
 pub async fn audit_log(State(state): State<AppState>, RawQuery(q): RawQuery, headers: HeaderMap) -> Response {
     if auth::require_session(&state, &headers).await.is_err() {
@@ -35,15 +30,17 @@ pub async fn audit_log(State(state): State<AppState>, RawQuery(q): RawQuery, hea
     let (category, action, cursor) = (param("category"), param("action"), param("cursor"));
     let limit = param("limit").parse::<f64>().ok().filter(|n| n.is_finite() && *n >= 1.0).map_or(50, |n| n as i64).min(MAX_LIMIT);
     let result: anyhow::Result<Value> = async {
-        let rows: Vec<String> = sqlx::query_scalar(
-            r#"SELECT row_to_json(t)::text FROM "AuditLog" t
-               WHERE ($1 = '' OR category = $1) AND ($2 = '' OR action ILIKE $3)
+        let sql = format!(
+            r#"SELECT {} FROM "AuditLog"
+               WHERE ($1 = '' OR category = $1) AND ($2 = '' OR action LIKE $3 ESCAPE '\')
                  AND ($4 = '' OR ("createdAt", id) < (SELECT "createdAt", id FROM "AuditLog" WHERE id = $4))
                ORDER BY "createdAt" DESC, id DESC LIMIT $5"#,
-        )
+            db::row_json("AuditLog")
+        );
+        let rows: Vec<String> = sqlx::query_scalar(&sql)
         .bind(&category)
         .bind(&action)
-        .bind(like(&action))
+        .bind(db::like(&action))
         .bind(&cursor)
         .bind(limit + 1)
         .fetch_all(&state.db)
@@ -95,7 +92,7 @@ pub async fn sessions(State(state): State<AppState>, headers: HeaderMap) -> Resp
     let Ok(claims) = auth::require_session(&state, &headers).await else { return unauthorized() };
     let result: anyhow::Result<Value> = async {
         let current = own_session(&state, claims.jti.as_deref()).await?;
-        let rows = pages::client_rows(&state.db, "Session", r#"ORDER BY "revokedAt" ASC, "lastSeenAt" DESC LIMIT 100"#).await?;
+        let rows = pages::client_rows(&state.db, "Session", r#"ORDER BY "revokedAt" ASC NULLS LAST, "lastSeenAt" DESC LIMIT 100"#).await?;
         let mut addresses: Vec<&str> = rows.iter().filter_map(|r| r["ipAddress"].as_str()).filter(|ip| !ip.is_empty()).collect();
         addresses.sort_unstable();
         addresses.dedup();
@@ -126,7 +123,7 @@ pub async fn revoke(State(state): State<AppState>, Path(id): Path<String>, req: 
         // Read first: revoking your own session must still know it was yours.
         let current = own_session(&state, claims.jti.as_deref()).await?;
         let changed = sqlx::query(r#"UPDATE "Session" SET "revokedAt" = $1 WHERE id = $2 AND "revokedAt" IS NULL"#)
-            .bind(Utc::now().naive_utc())
+            .bind(Stamp(Utc::now().naive_utc()))
             .bind(&id)
             .execute(&state.db)
             .await?;
@@ -161,6 +158,6 @@ mod tests {
 
     #[test]
     fn like_patterns_are_literal() {
-        assert_eq!(like("a%_\\"), "%a\\%\\_\\\\%");
+        assert_eq!(db::like("a%_\\"), "%a\\%\\_\\\\%");
     }
 }

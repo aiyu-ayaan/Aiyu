@@ -2,6 +2,7 @@
 //! is not enough, the `Session` row for its `jti` must exist, not be revoked and not be expired. That is what
 //! makes remote logout work. GitHub OAuth is still served by Next, which writes the same rows and cookie.
 
+use crate::db::{Stamp};
 use axum::{
     Json,
     body::Body,
@@ -9,7 +10,7 @@ use axum::{
     http::{HeaderMap, StatusCode, header, request::Parts},
     response::{IntoResponse, Response},
 };
-use chrono::{DateTime, NaiveDateTime, SecondsFormat, TimeDelta, Utc};
+use chrono::{DateTime, SecondsFormat, TimeDelta, Utc};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 use std::{collections::HashMap, time::Duration};
@@ -40,8 +41,7 @@ pub async fn require_session(state: &AppState, headers: &HeaderMap) -> Result<Cl
     let claims = state.sessions.verify(token).ok_or_else(unauthorized)?;
     let jti = claims.jti.clone().ok_or_else(unauthorized)?;
 
-    // Prisma DateTime columns are `timestamp(3)` holding UTC.
-    let row: Option<(String, Option<NaiveDateTime>, NaiveDateTime, NaiveDateTime)> =
+    let row: Option<(String, Option<Stamp>, Stamp, Stamp)> =
         sqlx::query_as(r#"SELECT id, "revokedAt", "expiresAt", "lastSeenAt" FROM "Session" WHERE jti = $1"#)
             .bind(&jti)
             .fetch_optional(&state.db)
@@ -52,14 +52,14 @@ pub async fn require_session(state: &AppState, headers: &HeaderMap) -> Result<Cl
             })?;
     let (id, revoked_at, expires_at, last_seen_at) = row.ok_or_else(unauthorized)?;
     let now = Utc::now().naive_utc();
-    if revoked_at.is_some() || expires_at <= now {
+    if revoked_at.is_some() || expires_at.0 <= now {
         return Err(unauthorized());
     }
 
-    if now - last_seen_at > LAST_SEEN_THROTTLE {
+    if now - last_seen_at.0 > LAST_SEEN_THROTTLE {
         let db = state.db.clone();
         tokio::spawn(async move {
-            let _ = sqlx::query(r#"UPDATE "Session" SET "lastSeenAt" = $1 WHERE id = $2"#).bind(now).bind(id).execute(&db).await;
+            let _ = sqlx::query(r#"UPDATE "Session" SET "lastSeenAt" = $1 WHERE id = $2"#).bind(Stamp(now)).bind(id).execute(&db).await;
         });
     }
     Ok(claims)
@@ -78,7 +78,7 @@ pub(crate) async fn audit(state: &AppState, parts: &Parts, action: &str, categor
         .bind(details.chars().take(2000).collect::<String>())
         .bind(limit::client_ip(state, parts))
         .bind(header_str(&parts.headers, "user-agent"))
-        .bind(Utc::now().naive_utc())
+        .bind(Stamp(Utc::now().naive_utc()))
         .execute(&state.db)
         .await;
     if let Err(err) = written {
@@ -151,8 +151,8 @@ pub(crate) async fn create_session(state: &AppState, parts: &Parts, user: Value)
         .bind(&jti)
         .bind(limit::client_ip(state, parts))
         .bind(header_str(&parts.headers, "user-agent"))
-        .bind(now.naive_utc())
-        .bind(expires.naive_utc())
+        .bind(Stamp(now.naive_utc()))
+        .bind(Stamp(expires.naive_utc()))
         .execute(&state.db)
         .await?;
     let iat = now.timestamp() as u64;
@@ -215,7 +215,7 @@ pub async fn logout(State(state): State<AppState>, parts: Parts) -> Response {
     let cookies = header_str(&parts.headers, "cookie");
     if let Some(jti) = session_cookie(&cookies).and_then(|t| state.sessions.verify(t)).and_then(|c| c.jti) {
         let revoked = sqlx::query(r#"UPDATE "Session" SET "revokedAt" = $1 WHERE jti = $2 AND "revokedAt" IS NULL"#)
-            .bind(Utc::now().naive_utc())
+            .bind(Stamp(Utc::now().naive_utc()))
             .bind(jti)
             .execute(&state.db)
             .await;

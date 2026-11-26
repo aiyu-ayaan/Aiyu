@@ -8,7 +8,7 @@ use axum::{
 use chrono::Utc;
 use regex::Regex;
 use serde_json::{Map, Value, json};
-use sqlx::PgPool;
+use crate::db::Db;
 use std::sync::LazyLock;
 
 use crate::{
@@ -207,7 +207,7 @@ fn review(post: &Map<String, Value>, config: &Value) -> Vec<String> {
 // ── writes ─────────────────────────────────────────────────────────────────────────────────────────────
 
 /// `createUniqueBlogSlug`: the title's slug, numbered until no other post has it.
-async fn unique_slug(db: &PgPool, title: &str, own: Option<&str>) -> anyhow::Result<String> {
+async fn unique_slug(db: &Db, title: &str, own: Option<&str>) -> anyhow::Result<String> {
     let mut base = pages::generate_slug(title);
     if base.is_empty() {
         let id = own.unwrap_or("");
@@ -229,7 +229,7 @@ async fn unique_slug(db: &PgPool, title: &str, own: Option<&str>) -> anyhow::Res
     Ok(candidate)
 }
 
-async fn title_taken(db: &PgPool, title: &str, own: Option<&str>) -> anyhow::Result<bool> {
+async fn title_taken(db: &Db, title: &str, own: Option<&str>) -> anyhow::Result<bool> {
     Ok(sqlx::query_scalar(r#"SELECT EXISTS(SELECT 1 FROM "Blog" WHERE lower(title) = lower($1) AND id IS DISTINCT FROM $2)"#)
         .bind(title)
         .bind(own)

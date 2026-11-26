@@ -1,6 +1,7 @@
 //! `/api/*` routes ported from src/app/api (Next keeps the methods not ported yet: see `method_not_allowed_fallback`).
 //! Responses match the Next handlers: same JSON, status codes and cache headers.
 
+use crate::db;
 use axum::{
     Json,
     extract::{RawQuery, State},
@@ -214,7 +215,7 @@ pub async fn deployments(State(state): State<AppState>) -> Response {
 
 /// One client-shaped row by id. `table` is a constant from this module.
 async fn row_by_id(state: &AppState, table: &str, id: &str) -> anyhow::Result<Option<Value>> {
-    let sql = format!(r#"SELECT row_to_json(t)::text FROM "{table}" t WHERE id = $1"#);
+    let sql = format!(r#"SELECT {} FROM "{table}" WHERE id = $1"#, db::row_json(table));
     let raw: Option<String> = sqlx::query_scalar(&sql).bind(id).fetch_optional(&state.db).await?;
     Ok(match raw {
         Some(r) => Some(pages::to_client_row(serde_json::from_str(&r)?)),
@@ -370,10 +371,11 @@ fn without_search_vector(rows: Vec<Value>) -> Vec<Value> {
 
 async fn blog_views(state: &AppState, ids: &[String]) -> anyhow::Result<std::collections::HashMap<String, i64>> {
     let rows: Vec<(String, i64)> = sqlx::query_as(
-        r#"SELECT "entityId", COALESCE(SUM(views), 0)::bigint FROM "AnalyticsDaily"
-           WHERE type = 'entity_view' AND "entityType" = 'blog' AND "entityId" = ANY($1) GROUP BY "entityId""#,
+        r#"SELECT "entityId", COALESCE(SUM(views), 0) FROM "AnalyticsDaily"
+           WHERE type = 'entity_view' AND "entityType" = 'blog' AND "entityId" IN (SELECT value FROM json_each($1))
+           GROUP BY "entityId""#,
     )
-    .bind(ids)
+    .bind(db::json_list(ids))
     .fetch_all(&state.db)
     .await?;
     Ok(rows.into_iter().collect())
@@ -446,7 +448,8 @@ async fn blogs_admin(state: &AppState, p: &std::collections::HashMap<String, Str
             if dir == "ASC" { va.cmp(&vb) } else { vb.cmp(&va) }
         });
         let page_ids: Vec<String> = ranked.into_iter().skip(offset as usize).take(limit as usize).collect();
-        let rows = sqlx::query_scalar::<_, String>(r#"SELECT row_to_json(t)::text FROM "Blog" t WHERE id = ANY($1)"#).bind(&page_ids).fetch_all(&state.db).await?;
+        let sql = format!(r#"SELECT {} FROM "Blog" WHERE id IN (SELECT value FROM json_each($1))"#, db::row_json("Blog"));
+        let rows = sqlx::query_scalar::<_, String>(&sql).bind(db::json_list(&page_ids)).fetch_all(&state.db).await?;
         let mut by_id: std::collections::HashMap<String, Value> = std::collections::HashMap::new();
         for r in rows {
             let v = pages::to_client_row(serde_json::from_str(&r)?);
@@ -502,7 +505,7 @@ pub async fn blog(State(state): State<AppState>, axum::extract::Path(id): axum::
         if ident.is_empty() {
             return Ok(None);
         }
-        let one = |cond: &str| format!(r#"SELECT row_to_json(t)::text FROM "Blog" t WHERE {cond} LIMIT 1"#);
+        let one = |cond: &str| format!(r#"SELECT {} FROM "Blog" WHERE {cond} LIMIT 1"#, db::row_json("Blog"));
         for cond in ["slug = $1", "lower(slug) = lower($1)", "id = $1"] {
             if let Some(raw) = sqlx::query_scalar::<_, String>(&one(cond)).bind(ident).fetch_optional(&state.db).await? {
                 return Ok(Some(pages::to_client_row(serde_json::from_str(&raw)?)));
@@ -626,7 +629,7 @@ pub async fn ai_prompts(State(state): State<AppState>) -> Response {
 
 /// Client rows of `table` whose `fk` is `id`, in `order`. `table`, `fk`, `order` are constants from this module.
 async fn children(state: &AppState, table: &str, fk: &str, id: &str, order: &str) -> anyhow::Result<Vec<Value>> {
-    let sql = format!(r#"SELECT row_to_json(t)::text FROM "{table}" t WHERE "{fk}" = $1 ORDER BY {order}"#);
+    let sql = format!(r#"SELECT {} FROM "{table}" WHERE "{fk}" = $1 ORDER BY {order}"#, db::row_json(table));
     let rows: Vec<String> = sqlx::query_scalar(&sql).bind(id).fetch_all(&state.db).await?;
     rows.iter().map(|r| Ok(pages::to_client_row(serde_json::from_str(r)?))).collect()
 }

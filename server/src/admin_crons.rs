@@ -1,5 +1,6 @@
 //! `/api/admin/crons`: the scheduled tasks, their secrets, logs, the template preview and "run now".
 
+use crate::db;
 use axum::{
     extract::{Path, RawQuery, Request, State},
     http::{HeaderMap, StatusCode},
@@ -327,11 +328,11 @@ pub async fn logs(State(state): State<AppState>, RawQuery(q): RawQuery, headers:
     let status = Some(text("status")).filter(|s| s == "success" || s == "failure").unwrap_or_default();
     let cron_id = text("cronId");
     let term = text("search").trim().to_string();
-    let pattern = format!("%{}%", term.replace('\\', "\\\\").replace('%', "\\%").replace('_', "\\_"));
+    let pattern = db::like(&term);
     const WHERE: &str = r#"WHERE ($1 = '' OR status = $1) AND ($2 = '' OR "cronId" = $2)
-        AND ($3 = '' OR "cronName" ILIKE $4 OR url ILIKE $4 OR log ILIKE $4)"#;
+        AND ($3 = '' OR "cronName" LIKE $4 ESCAPE '\' OR url LIKE $4 ESCAPE '\' OR log LIKE $4 ESCAPE '\')"#;
     let result: anyhow::Result<Value> = async {
-        let sql = format!(r#"SELECT row_to_json(t)::text FROM "CronLog" t {WHERE} ORDER BY "ranAt" DESC LIMIT $5 OFFSET $6"#);
+        let sql = format!(r#"SELECT {} FROM "CronLog" {WHERE} ORDER BY "ranAt" DESC LIMIT $5 OFFSET $6"#, db::row_json("CronLog"));
         let rows: Vec<String> = sqlx::query_scalar(&sql)
             .bind(&status)
             .bind(&cron_id)

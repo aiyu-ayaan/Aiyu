@@ -8,9 +8,14 @@ use axum::{
 use chrono::{DateTime, NaiveDate, NaiveDateTime, Utc};
 use serde_json::{Map, Value, json};
 use sha2::{Digest, Sha256};
-use sqlx::PgPool;
 
-use crate::{AppState, db::new_id, pages, session::constant_time_eq, site_api::js_string};
+use crate::{
+    AppState,
+    db::{Db, format_time, insert_row, new_id, row_json, update_row},
+    pages,
+    session::constant_time_eq,
+    site_api::js_string,
+};
 
 /// Blog covers, favicons and the resume arrive as base64 inside the JSON.
 const BODY_LIMIT: usize = 20 * 1024 * 1024;
@@ -28,7 +33,8 @@ pub async fn bearer(state: &AppState, headers: &HeaderMap) -> bool {
     }
     let provided = hex::encode(Sha256::digest(token.trim().as_bytes()));
     let stored: Result<Vec<Option<String>>, _> = sqlx::query_scalar(
-        r#"(SELECT "blogApiTokenHash" FROM "Config" LIMIT 1) UNION ALL (SELECT "mcpTokenHash" FROM "McpConfig" LIMIT 1)"#,
+        r#"SELECT * FROM (SELECT "blogApiTokenHash" FROM "Config" LIMIT 1)
+           UNION ALL SELECT * FROM (SELECT "mcpTokenHash" FROM "McpConfig" LIMIT 1)"#,
     )
     .fetch_all(&state.db)
     .await;
@@ -79,7 +85,7 @@ pub struct Table {
     pub updated_at: bool,
 }
 
-/// `new Date(value)` as the stored UTC timestamp. Postgres would drop an offset silently, so convert here.
+/// `new Date(value)` as the stored UTC timestamp.
 pub fn js_date_value(value: &Value) -> Option<NaiveDateTime> {
     match value {
         Value::Number(n) => DateTime::from_timestamp_millis(n.as_f64()? as i64).map(|d| d.naive_utc()),
@@ -97,7 +103,7 @@ pub fn js_date_value(value: &Value) -> Option<NaiveDateTime> {
 }
 
 fn sql_time(t: NaiveDateTime) -> Value {
-    Value::String(t.format("%Y-%m-%dT%H:%M:%S%.3f").to_string())
+    Value::String(format_time(t))
 }
 
 /// `Number.parseInt(value, 10)`
@@ -147,21 +153,11 @@ pub fn prepare(table: &Table, doc: &Value) -> anyhow::Result<Map<String, Value>>
 }
 
 fn client(raw: &str) -> anyhow::Result<Value> {
-    let mut row = pages::to_client_row(serde_json::from_str(raw)?);
-    // The blog search index is not part of the document (RELATIONAL_OMIT).
-    if let Some(fields) = row.as_object_mut() {
-        fields.shift_remove("searchVector");
-    }
-    Ok(row)
-}
-
-/// The columns of `data`, quoted. Names come from the table's constant list.
-fn column_list(data: &Map<String, Value>) -> String {
-    data.keys().map(|k| format!(r#""{k}""#)).collect::<Vec<_>>().join(", ")
+    Ok(pages::to_client_row(serde_json::from_str(raw)?))
 }
 
 /// `prisma.<model>.create`: omitted columns take their database defaults.
-pub async fn insert(db: &PgPool, table: &Table, mut data: Map<String, Value>) -> anyhow::Result<Value> {
+pub async fn insert(db: &Db, table: &Table, mut data: Map<String, Value>) -> anyhow::Result<Value> {
     let now = sql_time(Utc::now().naive_utc());
     data.insert("id".into(), new_id().into());
     if table.created_at {
@@ -170,37 +166,29 @@ pub async fn insert(db: &PgPool, table: &Table, mut data: Map<String, Value>) ->
     if table.updated_at {
         data.entry("updatedAt").or_insert(now);
     }
-    let columns = column_list(&data);
-    let t = table.name;
-    let sql = format!(r#"INSERT INTO "{t}" ({columns}) SELECT {columns} FROM jsonb_populate_record(NULL::"{t}", $1::jsonb) RETURNING row_to_json("{t}".*)::text"#);
-    let raw: String = sqlx::query_scalar(&sql).bind(Value::Object(data).to_string()).fetch_one(db).await?;
-    client(&raw)
+    client(&insert_row(db, table.name, &data).await?)
 }
 
 /// `prisma.<model>.update` by id. None when there is no such row.
-pub async fn update(db: &PgPool, table: &Table, id: &str, mut data: Map<String, Value>) -> anyhow::Result<Option<Value>> {
+pub async fn update(db: &Db, table: &Table, id: &str, mut data: Map<String, Value>) -> anyhow::Result<Option<Value>> {
     if data.is_empty() {
         return find(db, table.name, id).await;
     }
     if table.updated_at {
         data.entry("updatedAt").or_insert_with(|| sql_time(Utc::now().naive_utc()));
     }
-    let t = table.name;
-    let set = data.keys().map(|k| format!(r#""{k}" = r."{k}""#)).collect::<Vec<_>>().join(", ");
-    let sql = format!(r#"UPDATE "{t}" t SET {set} FROM jsonb_populate_record(NULL::"{t}", $1::jsonb) r WHERE t.id = $2 RETURNING row_to_json(t.*)::text"#);
-    let raw: Option<String> = sqlx::query_scalar(&sql).bind(Value::Object(data).to_string()).bind(id).fetch_optional(db).await?;
-    raw.as_deref().map(client).transpose()
+    update_row(db, table.name, id, &data).await?.as_deref().map(client).transpose()
 }
 
 /// `prisma.<model>.delete` by id: the deleted row, or None. `table` is a constant.
-pub async fn delete(db: &PgPool, table: &str, id: &str) -> anyhow::Result<Option<Value>> {
-    let sql = format!(r#"DELETE FROM "{table}" t WHERE id = $1 RETURNING row_to_json(t.*)::text"#);
+pub async fn delete(db: &Db, table: &str, id: &str) -> anyhow::Result<Option<Value>> {
+    let sql = format!(r#"DELETE FROM "{table}" WHERE id = $1 RETURNING {}"#, row_json(table));
     let raw: Option<String> = sqlx::query_scalar(&sql).bind(id).fetch_optional(db).await?;
     raw.as_deref().map(client).transpose()
 }
 
-pub async fn find(db: &PgPool, table: &str, id: &str) -> anyhow::Result<Option<Value>> {
-    let sql = format!(r#"SELECT row_to_json(t)::text FROM "{table}" t WHERE id = $1"#);
+pub async fn find(db: &Db, table: &str, id: &str) -> anyhow::Result<Option<Value>> {
+    let sql = format!(r#"SELECT {} FROM "{table}" WHERE id = $1"#, row_json(table));
     let raw: Option<String> = sqlx::query_scalar(&sql).bind(id).fetch_optional(db).await?;
     raw.as_deref().map(client).transpose()
 }
@@ -248,7 +236,7 @@ fn singleton_columns(model: &Singleton, current: Map<String, Value>, patch: &Map
 }
 
 /// `upsertSingleton(prisma, key, patch)`; returns the document as the API shows it.
-pub async fn upsert_singleton(db: &PgPool, model: &Singleton, patch: &Map<String, Value>) -> anyhow::Result<Value> {
+pub async fn upsert_singleton(db: &Db, model: &Singleton, patch: &Map<String, Value>) -> anyhow::Result<Value> {
     let table = model.table;
     let current = match pages::try_singleton(db, table, model.timestamps).await? {
         Value::Object(m) => m,
@@ -259,16 +247,12 @@ pub async fn upsert_singleton(db: &PgPool, model: &Singleton, patch: &Map<String
     let mut row = singleton_columns(model, current, patch, now);
     match id {
         Some(id) => {
-            let set = row.keys().map(|k| format!(r#""{k}" = r."{k}""#)).collect::<Vec<_>>().join(", ");
-            let sql = format!(r#"UPDATE "{table}" t SET {set} FROM jsonb_populate_record(NULL::"{table}", $1::jsonb) r WHERE t.id = $2"#);
-            sqlx::query(&sql).bind(Value::Object(row).to_string()).bind(id).execute(db).await?;
+            update_row(db, table, &id, &row).await?;
         }
         None => {
             row.insert("id".into(), new_id().into());
             row.entry("createdAt").or_insert_with(|| sql_time(now));
-            let columns = column_list(&row);
-            let sql = format!(r#"INSERT INTO "{table}" ({columns}) SELECT {columns} FROM jsonb_populate_record(NULL::"{table}", $1::jsonb)"#);
-            sqlx::query(&sql).bind(Value::Object(row).to_string()).execute(db).await?;
+            insert_row(db, table, &row).await?;
         }
     }
     pages::try_singleton(db, table, model.timestamps).await

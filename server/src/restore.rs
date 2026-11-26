@@ -2,6 +2,7 @@
 //! file and the zip is read entry by entry, so memory holds one collection at a time. All tables are replaced in one
 //! transaction; upload files are written only after it succeeds.
 
+use crate::db::{self, Col};
 use async_zip::tokio::read::seek::ZipFileReader;
 use axum::{
     body::Body,
@@ -11,9 +12,8 @@ use axum::{
 };
 use futures_util::{AsyncReadExt as _, StreamExt};
 use serde_json::{Map, Value, json};
-use sqlx::PgConnection;
+use sqlx::SqliteConnection;
 use std::{
-    collections::{BTreeMap, HashMap},
     path::{Path, PathBuf},
 };
 use tokio::io::{AsyncReadExt, AsyncSeekExt, AsyncWriteExt, BufReader};
@@ -321,17 +321,6 @@ impl Source {
 
 // ── writing the database ───────────────────────────────────────────────────────────────────────────────
 
-/// Column name to type, as the database declares them.
-async fn columns(db: &mut PgConnection, table: &str) -> anyhow::Result<HashMap<String, String>> {
-    let rows: Vec<(String, String)> = sqlx::query_as(
-        "SELECT column_name::text, data_type::text FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = $1",
-    )
-    .bind(table)
-    .fetch_all(db)
-    .await?;
-    Ok(rows.into_iter().collect())
-}
-
 /// `_id` (or `id`, or Mongo's `{ $oid }`) as the row id.
 fn row_id(doc: &Map<String, Value>) -> Option<String> {
     let raw = doc.get("_id").filter(|v| !v.is_null()).or_else(|| doc.get("id")).filter(|v| !v.is_null())?;
@@ -340,11 +329,11 @@ fn row_id(doc: &Map<String, Value>) -> Option<String> {
 }
 
 fn sql_date(value: &Value) -> Value {
-    write::js_date_value(value).map_or(Value::Null, |t| t.format("%Y-%m-%dT%H:%M:%S%.3f").to_string().into())
+    write::js_date_value(value).map_or(Value::Null, |t| db::format_time(t).into())
 }
 
 /// `fromClient`: the columns one backup document fills.
-fn row(collection: &Collection, columns: &HashMap<String, String>, doc: Value) -> anyhow::Result<Map<String, Value>> {
+fn row(collection: &Collection, doc: Value) -> anyhow::Result<Map<String, Value>> {
     let Value::Object(mut doc) = doc else { anyhow::bail!("{}: every entry must be an object", collection.key) };
     let id = row_id(&doc).unwrap_or_else(new_id);
     let mut row = Map::new();
@@ -370,10 +359,11 @@ fn row(collection: &Collection, columns: &HashMap<String, String>, doc: Value) -
         row.insert("data".into(), Value::Object(doc));
     } else {
         for (name, value) in doc {
-            let Some(kind) = columns.get(&name).filter(|_| name != "id" && name != "searchVector") else { continue };
-            let value = if kind.starts_with("timestamp") {
+            // Fields the table does not have (`_id`, old `searchVector`s) are dropped.
+            let Some(col) = db::column(collection.table, &name).filter(|_| name != "id") else { continue };
+            let value = if col == Col::Time {
                 sql_date(&value)
-            } else if kind == "integer" && !value.is_null() {
+            } else if col == Col::Int && !value.is_null() {
                 match write::parse_int(&value) {
                     Some(n) => n.into(),
                     None => continue,
@@ -386,40 +376,21 @@ fn row(collection: &Collection, columns: &HashMap<String, String>, doc: Value) -
     }
     row.insert("id".into(), id.into());
     // Prisma filled these in when a document lacked them.
-    let now = Value::from(chrono::Utc::now().format("%Y-%m-%dT%H:%M:%S%.3f").to_string());
+    let now = Value::from(db::format_time(chrono::Utc::now().naive_utc()));
     for key in ["createdAt", "updatedAt"] {
-        if columns.contains_key(key) {
+        if db::column(collection.table, key).is_some() {
             row.entry(key).or_insert_with(|| now.clone());
         }
     }
     Ok(row)
 }
 
-/// Rows that name the same columns go in one statement; columns a row leaves out get their defaults.
-async fn insert(db: &mut PgConnection, table: &str, rows: Vec<Map<String, Value>>) -> anyhow::Result<()> {
-    let mut shapes: BTreeMap<Vec<String>, Vec<Value>> = BTreeMap::new();
-    for row in rows {
-        let mut names: Vec<String> = row.keys().cloned().collect();
-        names.sort();
-        shapes.entry(names).or_default().push(Value::Object(row));
-    }
-    for (names, rows) in shapes {
-        // Names are columns the database reported, or the fixed ones of `row`.
-        let list = names.iter().map(|n| format!(r#""{n}""#)).collect::<Vec<_>>().join(", ");
-        let sql = format!(r#"INSERT INTO "{table}" ({list}) SELECT {list} FROM jsonb_populate_recordset(NULL::"{table}", $1::jsonb)"#);
-        for batch in rows.chunks(500) {
-            sqlx::query(&sql).bind(Value::Array(batch.to_vec()).to_string()).execute(&mut *db).await?;
-        }
-    }
-    Ok(())
-}
-
 /// The current values of the columns a backup leaves out, by row id.
-async fn kept(db: &mut PgConnection, collection: &Collection) -> anyhow::Result<Vec<(String, Map<String, Value>)>> {
+async fn kept(db: &mut SqliteConnection, collection: &Collection) -> anyhow::Result<Vec<(String, Map<String, Value>)>> {
     if collection.keep.is_empty() {
         return Ok(vec![]);
     }
-    let sql = format!(r#"SELECT row_to_json(t)::text FROM "{}" t"#, collection.table);
+    let sql = format!(r#"SELECT {} FROM "{}""#, db::row_json(collection.table), collection.table);
     let rows: Vec<String> = sqlx::query_scalar(&sql).fetch_all(db).await?;
     rows.iter()
         .map(|raw| {
@@ -443,19 +414,20 @@ fn carry_over(collection: &Collection, rows: &mut [Map<String, Value>], kept: &[
 
 async fn replace_tables(state: &AppState, source: &mut Source) -> Result<Map<String, Value>, RestoreError> {
     let mut results = Map::new();
-    let mut transaction = state.db.begin().await?;
+    let mut transaction = db::begin(&state.db).await?;
     for collection in &COLLECTIONS {
         let Some(documents) = source.take(collection.key, true).await? else {
             results.insert(collection.key.into(), json!({ "status": "skipped", "reason": "missing_or_invalid" }));
             continue;
         };
         let count = documents.len();
-        let columns = columns(&mut transaction, collection.table).await?;
-        let mut rows = documents.into_iter().map(|d| row(collection, &columns, d)).collect::<anyhow::Result<Vec<_>>>()?;
+        let mut rows = documents.into_iter().map(|d| row(collection, d)).collect::<anyhow::Result<Vec<_>>>()?;
         let old = kept(&mut transaction, collection).await?;
         carry_over(collection, &mut rows, &old);
         sqlx::query(&format!(r#"DELETE FROM "{}""#, collection.table)).execute(&mut *transaction).await?;
-        insert(&mut transaction, collection.table, rows).await?;
+        for row in &rows {
+            db::insert_row(&mut *transaction, collection.table, row).await?;
+        }
         results.insert(collection.key.into(), json!({ "count": count, "status": "imported" }));
     }
     transaction.commit().await?;
@@ -513,14 +485,6 @@ pub fn reply(outcome: Result<Map<String, Value>, RestoreError>) -> Response {
         Err(RestoreError::Backup(message)) => failure(StatusCode::BAD_REQUEST, &message),
         Err(RestoreError::Failed(err)) => {
             log_error("/api/admin/import", &err);
-            let code = err.downcast_ref::<sqlx::Error>().and_then(|e| e.as_database_error()).and_then(|e| e.code().map(|c| c.into_owned()));
-            // Undefined column or table: migrations are pending.
-            if matches!(code.as_deref(), Some("42703" | "42P01")) {
-                return failure(
-                    StatusCode::CONFLICT,
-                    "Restore aborted: database schema is out of date (pending migrations). All changes were rolled back — no data was lost. Run `prisma migrate deploy` and retry.",
-                );
-            }
             failure(StatusCode::INTERNAL_SERVER_ERROR, &err.to_string())
         }
     }
@@ -567,28 +531,22 @@ mod tests {
         COLLECTIONS.iter().find(|c| c.key == key).unwrap()
     }
 
-    fn types(pairs: &[(&str, &str)]) -> HashMap<String, String> {
-        pairs.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect()
-    }
-
     #[test]
     fn relational_rows_keep_known_columns_and_ids() {
-        let columns = types(&[("id", "text"), ("title", "text"), ("order", "integer"), ("createdAt", "timestamp without time zone"), ("searchVector", "tsvector")]);
-        let out = row(collection("gallery"), &columns, json!({ "_id": { "$oid": "abc" }, "title": "t", "order": "7x", "createdAt": "2026-01-02T03:04:05.000Z", "searchVector": "v", "evil": 1 })).unwrap();
-        assert_eq!(Value::Object(out), json!({ "title": "t", "order": 7, "createdAt": "2026-01-02T03:04:05.000", "id": "abc" }));
-        assert!(row(collection("gallery"), &columns, json!(5)).is_err());
+        let out = row(collection("gallery"), json!({ "_id": { "$oid": "abc" }, "description": "t", "order": "7x", "createdAt": "2026-01-02T03:04:05.000Z", "searchVector": "v", "evil": 1 })).unwrap();
+        assert_eq!(Value::Object(out), json!({ "description": "t", "order": 7, "createdAt": "2026-01-02T03:04:05.000", "id": "abc" }));
+        assert!(row(collection("gallery"), json!(5)).is_err());
     }
 
     #[test]
     fn documents_move_secrets_and_dates_to_columns() {
-        let columns = types(&[("data", "jsonb"), ("createdAt", "timestamp"), ("updatedAt", "timestamp")]);
-        let mut config = row(collection("config"), &columns, json!({ "_id": "c", "logoText": "x", "encryptedGithubWebhookSecret": "w" })).unwrap();
+        let mut config = row(collection("config"), json!({ "_id": "c", "logoText": "x", "encryptedGithubWebhookSecret": "w" })).unwrap();
         assert_eq!((config["data"].clone(), config["encryptedGithubWebhookSecret"].clone()), (json!({ "logoText": "x" }), json!("w")));
         let kept = vec![("old".to_string(), Map::from_iter([("encryptedGithubToken".to_string(), json!("t")), ("encryptedGithubWebhookSecret".to_string(), json!("older"))]))];
         carry_over(collection("config"), std::slice::from_mut(&mut config), &kept);
         // The token the backup never held survives; the secret it does hold wins.
         assert_eq!((config["encryptedGithubToken"].clone(), config["encryptedGithubWebhookSecret"].clone()), (json!("t"), json!("w")));
-        let ads = row(collection("ads"), &columns, json!({ "k": 1, "createdAt": "2025-01-01T00:00:00Z" })).unwrap();
+        let ads = row(collection("ads"), json!({ "k": 1, "createdAt": "2025-01-01T00:00:00Z" })).unwrap();
         assert_eq!((ads["data"].clone(), ads["createdAt"].clone()), (json!({ "k": 1 }), json!("2025-01-01T00:00:00.000")));
     }
 

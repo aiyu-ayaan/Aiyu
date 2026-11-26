@@ -43,6 +43,7 @@ pub mod pages;
 pub mod restore;
 pub mod seo;
 pub mod seo_admin;
+pub mod seed;
 pub mod session;
 pub mod site_api;
 pub mod site_files;
@@ -72,7 +73,7 @@ pub struct AppState {
     pub config: config::Config,
     pub cipher: crypto::FieldCipher,
     pub sessions: session::SessionKeys,
-    pub db: sqlx::PgPool,
+    pub db: db::Db,
     /// None when the Vite build is missing (tests): the routes that need it answer 503.
     pub web: Option<std::sync::Arc<web::WebApp>>,
     /// Outbound HTTPS (GitHub API, later the other integrations).
@@ -82,7 +83,7 @@ pub struct AppState {
 }
 
 impl AppState {
-    /// The pool connects lazily, so this never blocks or fails on a down database.
+    /// The pool connects lazily, so this never blocks or fails on a missing database; `main` creates and migrates it.
     pub async fn new(config: config::Config) -> anyhow::Result<Self> {
         health::start_clock();
         let web = match web::WebApp::load(&config.web_dir) {
@@ -100,7 +101,7 @@ impl AppState {
             http: reqwest::Client::builder().user_agent("Portfolio-App").build()?,
             package_version,
             web,
-            db: db::connect(&config.database_url).await?,
+            db: db::connect(&config.database_path, false),
             cipher: crypto::FieldCipher::new(&config.jwt_secret),
             sessions: session::SessionKeys::new(&config.jwt_secret),
             config,

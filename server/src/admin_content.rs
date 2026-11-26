@@ -1,6 +1,7 @@
 //! Admin writes for socials, themes, projects, deployments and the gallery. Each handler mirrors its Next route:
 //! same status codes and bodies, same indexing pings.
 
+use crate::db::{self, Stamp};
 use axum::{
     extract::{Path, RawQuery, Request, State},
     http::StatusCode,
@@ -8,7 +9,7 @@ use axum::{
 };
 use chrono::Utc;
 use serde_json::{Map, Value, json};
-use sqlx::PgPool;
+use crate::db::Db;
 
 use crate::{
     AppState,
@@ -19,7 +20,7 @@ use crate::{
 
 use Kind::{Bool, Date, Int, Json, List, OptDate, OptJson, OptText, Text};
 
-const SOCIAL: Table = Table {
+pub(crate) const SOCIAL: Table = Table {
     name: "Social",
     columns: &[("name", Text), ("url", Text), ("iconName", Text), ("isHidden", Bool)],
     created_at: false,
@@ -145,12 +146,12 @@ fn predefined(state: &AppState, slug: &str) -> bool {
     state.web.as_ref().is_some_and(|w| w.themes["presets"].get(slug).or_else(|| w.themes["legacy"].get(slug)).is_some())
 }
 
-pub(crate) async fn theme_slug_taken(db: &PgPool, slug: &str) -> anyhow::Result<bool> {
+pub(crate) async fn theme_slug_taken(db: &Db, slug: &str) -> anyhow::Result<bool> {
     Ok(sqlx::query_scalar(r#"SELECT EXISTS(SELECT 1 FROM "Theme" WHERE slug = $1)"#).bind(slug).fetch_one(db).await?)
 }
 
 /// A custom theme by slug or id.
-async fn theme_id(db: &PgPool, identifier: &str) -> anyhow::Result<Option<String>> {
+async fn theme_id(db: &Db, identifier: &str) -> anyhow::Result<Option<String>> {
     Ok(sqlx::query_scalar(r#"SELECT id FROM "Theme" WHERE slug = $1 OR id = $1 LIMIT 1"#).bind(identifier).fetch_optional(db).await?)
 }
 
@@ -272,7 +273,7 @@ impl Entry {
 }
 
 /// `normalizeProjectIdInput`: absent leaves the link alone, empty unlinks, an unknown id is refused.
-async fn link_project(db: &PgPool, doc: &mut Map<String, Value>) -> anyhow::Result<bool> {
+async fn link_project(db: &Db, doc: &mut Map<String, Value>) -> anyhow::Result<bool> {
     let Some(value) = doc.get("projectId") else { return Ok(true) };
     let id = if truthy(value) { crate::site_api::js_string(value).trim().to_string() } else { String::new() };
     if id.is_empty() {
@@ -289,7 +290,7 @@ fn unknown_project() -> Response {
 }
 
 /// A number below every existing one, so a new entry lists first.
-async fn first_position(db: &PgPool, table: &str, column: &str) -> anyhow::Result<i64> {
+async fn first_position(db: &Db, table: &str, column: &str) -> anyhow::Result<i64> {
     let min: Option<i32> = sqlx::query_scalar(&format!(r#"SELECT min("{column}") FROM "{table}""#)).fetch_one(db).await?;
     Ok(min.map_or(0, |m| i64::from(m) - 1))
 }
@@ -422,16 +423,18 @@ async fn reorder(state: AppState, req: Request, entry: &Entry) -> Response {
     };
     let table = entry.table.name;
     let result: anyhow::Result<bool> = async {
-        let known: i64 = sqlx::query_scalar(&format!(r#"SELECT count(*) FROM "{table}" WHERE id = ANY($1)"#)).bind(&ids).fetch_one(&state.db).await?;
+        let list = db::json_list(&ids);
+        let sql = format!(r#"SELECT count(*) FROM "{table}" WHERE id IN (SELECT value FROM json_each($1))"#);
+        let known: i64 = sqlx::query_scalar(&sql).bind(&list).fetch_one(&state.db).await?;
         if known != ids.len() as i64 {
             return Ok(false);
         }
+        // `key` is the position in the list.
         sqlx::query(&format!(
-            r#"UPDATE "{table}" t SET "displayOrder" = o.pos - 1, "updatedAt" = $2
-               FROM unnest($1::text[]) WITH ORDINALITY AS o(id, pos) WHERE t.id = o.id"#
+            r#"UPDATE "{table}" AS t SET "displayOrder" = o.key, "updatedAt" = $2 FROM json_each($1) AS o WHERE t.id = o.value"#
         ))
-        .bind(&ids)
-        .bind(Utc::now().naive_utc())
+        .bind(&list)
+        .bind(Stamp(Utc::now().naive_utc()))
         .execute(&state.db)
         .await?;
         Ok(true)
@@ -534,8 +537,8 @@ pub async fn delete_gallery_item(State(state): State<AppState>, RawQuery(query):
 }
 
 /// New positions for several items: all or none.
-async fn reorder_gallery(db: &PgPool, items: &[Value]) -> anyhow::Result<()> {
-    let mut tx = db.begin().await?;
+async fn reorder_gallery(db: &Db, items: &[Value]) -> anyhow::Result<()> {
+    let mut tx = db::begin(db).await?;
     for item in items {
         let (Some(id), Some(order)) = (item["id"].as_str(), item.get("order").and_then(|o| write::parse_int(o))) else {
             anyhow::bail!("every item needs an id and an order");

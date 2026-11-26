@@ -10,7 +10,8 @@ pub struct Config {
     pub uploads_dir: PathBuf,
     /// The static files served at the site root (`public/`).
     pub public_dir: PathBuf,
-    pub database_url: String,
+    /// The SQLite database file.
+    pub database_path: PathBuf,
     /// Vite build output (`web/dist`): index.html, route-meta.json and the /_app assets.
     pub web_dir: PathBuf,
 }
@@ -26,7 +27,7 @@ impl Config {
             uploads_dir: env::var("UPLOADS_DIR").unwrap_or_else(|_| "public/uploads".into()).into(),
             public_dir: env::var("PUBLIC_DIR").unwrap_or_else(|_| "public".into()).into(),
             web_dir: env::var("WEB_DIR").unwrap_or_else(|_| "web/dist".into()).into(),
-            database_url: env::var("DATABASE_URL").map_err(|_| anyhow::anyhow!("DATABASE_URL environment variable must be set"))?,
+            database_path: env::var("DATABASE_PATH").ok().filter(|v| !v.is_empty()).unwrap_or_else(|| "data/aiyu.db".into()).into(),
         })
     }
 }

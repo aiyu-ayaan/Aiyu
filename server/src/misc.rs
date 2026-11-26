@@ -295,8 +295,8 @@ pub async fn ai_logs(State(state): State<AppState>, headers: HeaderMap) -> Respo
     let result: anyhow::Result<Value> = async {
         let logs = pages::client_rows(&state.db, "AiLog", r#"ORDER BY "createdAt" DESC LIMIT 50"#).await?;
         let rows: Vec<(String, i64, i64, i64, i64)> = sqlx::query_as(
-            r#"SELECT provider, COALESCE(sum("inputTokens"), 0)::bigint, COALESCE(sum("outputTokens"), 0)::bigint,
-                      COALESCE(sum("totalTokens"), 0)::bigint, count(*) FROM "AiLog" GROUP BY provider"#,
+            r#"SELECT provider, COALESCE(sum("inputTokens"), 0), COALESCE(sum("outputTokens"), 0),
+                      COALESCE(sum("totalTokens"), 0), count(*) FROM "AiLog" GROUP BY provider"#,
         )
         .fetch_all(&state.db)
         .await?;

@@ -6,7 +6,7 @@ use axum::{
     response::Response,
 };
 use serde_json::{Map, Value, json};
-use sqlx::PgPool;
+use crate::db::Db;
 
 use crate::{
     AppState,
@@ -191,7 +191,7 @@ fn column(rule: Rule, input: &Value, name: &str) -> anyhow::Result<Option<Value>
     })
 }
 
-async fn exists(db: &PgPool, table: &str, what: &str, id: &str) -> anyhow::Result<()> {
+async fn exists(db: &Db, table: &str, what: &str, id: &str) -> anyhow::Result<()> {
     let found: bool = sqlx::query_scalar(&format!(r#"SELECT EXISTS(SELECT 1 FROM "{table}" WHERE id = $1)"#)).bind(id).fetch_one(db).await?;
     if !found {
         return Err(Refused(StatusCode::NOT_FOUND, format!("{what} not found.")).into());
@@ -215,9 +215,14 @@ pub(crate) async fn create(state: &AppState, entry: &Entry, input: Value) -> any
         Some(n) => n,
         // New entries go to the top; skills are ordered within their category.
         None => {
-            let sql = format!(r#"SELECT min("displayOrder") FROM "{}" t WHERE $1::text IS NULL OR to_jsonb(t)->>'categoryId' = $1"#, entry.table.name);
             let category = data.get("categoryId").and_then(Value::as_str);
-            let min: Option<i32> = sqlx::query_scalar(&sql).bind(category).fetch_one(&state.db).await?;
+            let within = if category.is_some() { r#"WHERE "categoryId" = $1"# } else { "" };
+            let sql = format!(r#"SELECT min("displayOrder") FROM "{}" {within}"#, entry.table.name);
+            let mut query = sqlx::query_scalar(&sql);
+            if let Some(category) = category {
+                query = query.bind(category);
+            }
+            let min: Option<i32> = query.fetch_one(&state.db).await?;
             min.map_or(0, |m| i64::from(m) - 1)
         }
     };
@@ -266,7 +271,7 @@ fn or(value: &Value, fallback: Value) -> Value {
 }
 
 /// `seedDefaultsIfEmpty`: fill each empty table from the stored page, else from the bundled defaults.
-async fn seed(state: &AppState, defaults: &Value) -> anyhow::Result<Value> {
+pub(crate) async fn seed(state: &AppState, defaults: &Value) -> anyhow::Result<Value> {
     let db = &state.db;
     let stored = pages::try_singleton(db, "AiPage", true).await?;
     let source = if stored["sections"].is_array() { &stored } else { defaults };

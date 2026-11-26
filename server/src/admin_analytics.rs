@@ -1,6 +1,7 @@
 //! `/api/admin/analytics`: the dashboard numbers (totals and the daily series from the `AnalyticsDaily` rollup,
 //! top lists from the raw events), and the reset.
 
+use crate::db::{self, Stamp};
 use axum::{
     extract::{RawQuery, State},
     http::{HeaderMap, StatusCode},
@@ -117,8 +118,8 @@ async fn name_entities(state: &AppState, kind: &str, items: &mut [Value]) -> any
     };
     let (table, title, image, text) = columns;
     let ids: Vec<String> = items.iter().filter_map(|i| i["id"].as_str().filter(|s| !s.is_empty()).map(str::to_string)).collect();
-    let sql = format!(r#"SELECT id, {title}, {image}, {text} FROM "{table}" WHERE id = ANY($1)"#);
-    let rows: Vec<(String, Option<String>, Option<String>, Option<String>)> = sqlx::query_as(&sql).bind(ids).fetch_all(&state.db).await?;
+    let sql = format!(r#"SELECT id, {title}, {image}, {text} FROM "{table}" WHERE id IN (SELECT value FROM json_each($1))"#);
+    let rows: Vec<(String, Option<String>, Option<String>, Option<String>)> = sqlx::query_as(&sql).bind(db::json_list(&ids)).fetch_all(&state.db).await?;
     for item in items {
         let Some((_, title, image, text)) = rows.iter().find(|r| item["id"] == r.0.as_str()) else { continue };
         item["title"] = if kind == "gallery" { json!(gallery_title(title.as_deref())) } else { json!(title) };
@@ -143,7 +144,7 @@ async fn breakdown(state: &AppState, column: &str, since: NaiveDateTime) -> anyh
            WHERE "createdAt" >= $1 AND NOT "isBot" AND type = 'pageview' AND "{column}" IS NOT NULL
            GROUP BY "{column}" ORDER BY count(*) DESC"#
     );
-    Ok(sqlx::query_as(&sql).bind(since).fetch_all(&state.db).await?)
+    Ok(sqlx::query_as(&sql).bind(Stamp(since)).fetch_all(&state.db).await?)
 }
 
 async fn dashboard(state: &AppState, range: &str, days: u64) -> anyhow::Result<Value> {
@@ -191,7 +192,7 @@ async fn dashboard(state: &AppState, range: &str, days: u64) -> anyhow::Result<V
            WHERE "createdAt" >= $1 AND NOT "isBot" AND type = 'entity_view' AND "entityType" <> ''
            GROUP BY "entityType", "entityId", "entitySlug" ORDER BY count(*) DESC"#,
     )
-    .bind(start)
+    .bind(Stamp(start))
     .fetch_all(&state.db)
     .await?;
     let mut grouped: Vec<(String, Vec<Value>)> = Vec::new();
@@ -226,7 +227,7 @@ async fn dashboard(state: &AppState, range: &str, days: u64) -> anyhow::Result<V
         .map(|(code, views)| json!({ "code": code, "views": views }))
         .collect();
     let bots: i64 = sqlx::query_scalar(r#"SELECT count(*) FROM "AnalyticsEvent" WHERE "createdAt" >= $1 AND "isBot" AND type = 'pageview'"#)
-        .bind(start)
+        .bind(Stamp(start))
         .fetch_one(&state.db)
         .await?;
 

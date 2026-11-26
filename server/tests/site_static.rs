@@ -36,7 +36,7 @@ async fn app(root: &std::path::Path) -> Router {
         trusted_proxies: vec![],
         uploads_dir: root.join("uploads"),
         public_dir: root.join("public"),
-        database_url: "postgres://localhost/none".into(),
+        database_path: "/nonexistent/aiyu.db".into(),
         web_dir: "/nonexistent".into(),
     }).await.unwrap())
 }

@@ -1,6 +1,7 @@
 //! Storage upkeep (src/lib/storageAudit.js): which uploads the content refers to, removing the rest, converting old
 //! uploads to WebP, and gallery thumbnails.
 
+use crate::db;
 use axum::{
     extract::{RawQuery, Request, State},
     http::{HeaderMap, StatusCode},
@@ -291,9 +292,10 @@ fn replace_in(value: &mut Value, old: &str, new: &str) -> bool {
 /// Points every row that names `old` at `new`; only the changed columns are written. Returns the rows changed.
 async fn rewrite_references(state: &AppState, old: &str, new: &str) -> anyhow::Result<usize> {
     let mut changed_rows = 0;
-    let mut transaction = state.db.begin().await?;
+    let mut transaction = db::begin(&state.db).await?;
     for (_, _, table, ..) in SECTIONS {
-        let sql = format!(r#"SELECT row_to_json(t)::text FROM "{table}" t WHERE strpos(row_to_json(t)::text, $1) > 0 FOR UPDATE"#);
+        let json = db::row_json(table);
+        let sql = format!(r#"SELECT {json} FROM "{table}" WHERE instr({json}, $1) > 0"#);
         let rows: Vec<String> = sqlx::query_scalar(&sql).bind(old).fetch_all(&mut *transaction).await?;
         for raw in rows {
             let Value::Object(row) = serde_json::from_str::<Value>(&raw)? else { continue };
@@ -308,10 +310,8 @@ async fn rewrite_references(state: &AppState, old: &str, new: &str) -> anyhow::R
                 continue;
             }
             // Column names come from the database row itself.
-            let set = changed.keys().map(|k| format!(r#""{k}" = r."{k}""#)).collect::<Vec<_>>().join(", ");
-            let sql = format!(r#"UPDATE "{table}" t SET {set} FROM jsonb_populate_record(NULL::"{table}", $1::jsonb) r WHERE t.id = $2"#);
             let id = row.get("id").and_then(Value::as_str).unwrap_or_default().to_string();
-            sqlx::query(&sql).bind(Value::Object(changed).to_string()).bind(id).execute(&mut *transaction).await?;
+            db::update_row(&mut *transaction, table, &id, &changed).await?;
             changed_rows += 1;
         }
     }

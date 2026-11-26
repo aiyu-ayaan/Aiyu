@@ -1,5 +1,6 @@
 //! `/api/admin/health`: live server numbers (src/lib/serverMetrics.js) and uptime checks (src/lib/uptime.js).
 
+use crate::db::{Stamp};
 use axum::{
     extract::State,
     http::{HeaderMap, HeaderValue, StatusCode, header},
@@ -212,7 +213,7 @@ pub async fn run_checks(state: &AppState) -> anyhow::Result<Vec<Value>> {
             .bind(i32::from(p.status))
             .bind(p.latency)
             .bind(&p.error)
-            .bind(chrono::Utc::now().naive_utc())
+            .bind(Stamp(chrono::Utc::now().naive_utc()))
             .execute(&state.db)
             .await?;
         results.push(json!({ "target": t.url, "label": t.label, "source": t.source, "status": state_of(p.status), "statusCode": p.status, "latencyMs": p.latency, "error": p.error }));

@@ -1,6 +1,7 @@
 //! `POST /api/analytics/track`: port of the route and of `recordEvent` (src/lib/analytics.js, src/lib/geoip.js).
 //! Always 204, also when recording fails, so tracking never disturbs a visitor.
 
+use crate::db::{Stamp};
 use axum::{
     body::Bytes,
     extract::{ConnectInfo, State},
@@ -168,14 +169,14 @@ async fn record(state: &AppState, parts: &Parts, client: &str, payload: &Value) 
     let seen: bool = sqlx::query_scalar(r#"SELECT EXISTS(SELECT 1 FROM "AnalyticsEvent" WHERE "visitorHash" = $1 AND type = $2 AND "createdAt" >= $3)"#)
         .bind(&hash)
         .bind(kind)
-        .bind(now.date().and_time(chrono::NaiveTime::MIN))
+        .bind(Stamp(now.date().and_time(chrono::NaiveTime::MIN)))
         .fetch_one(&state.db)
         .await?;
 
     sqlx::query(
         r#"INSERT INTO "AnalyticsEvent" (id, type, path, "entityType", "entityId", "entitySlug", referrer, "referrerType",
             device, country, "visitorHash", "sessionId", "isBot", meta, "createdAt")
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14::jsonb, $15)"#,
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)"#,
     )
     .bind(new_id())
     .bind(kind)
@@ -191,7 +192,7 @@ async fn record(state: &AppState, parts: &Parts, client: &str, payload: &Value) 
     .bind(clean(&payload["sessionId"], 64))
     .bind(BOT.is_match(&ua))
     .bind(meta.to_string())
-    .bind(now)
+    .bind(Stamp(now))
     .execute(&state.db)
     .await?;
 
@@ -213,7 +214,7 @@ async fn record(state: &AppState, parts: &Parts, client: &str, payload: &Value) 
         .bind(entity_type)
         .bind(entity_id)
         .bind(i32::from(!seen))
-        .bind(now)
+        .bind(Stamp(now))
         .execute(&state.db)
         .await?;
     }

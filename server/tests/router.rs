@@ -17,7 +17,7 @@ async fn app(trusted: &str) -> Router {
         trusted_proxies: parse_trusted(trusted).unwrap(),
         uploads_dir: "/nonexistent".into(),
         public_dir: "/nonexistent".into(),
-        database_url: "postgres://localhost/none".into(),
+        database_path: "/nonexistent/aiyu.db".into(),
         web_dir: "/nonexistent".into(),
     }).await.unwrap())
 }

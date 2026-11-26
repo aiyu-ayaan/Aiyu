@@ -1,4 +1,5 @@
 use aiyu_server::{AppState, config::Config, router};
+use anyhow::Context;
 use std::net::SocketAddr;
 use axum::serve::ListenerExt;
 
@@ -10,7 +11,23 @@ fn main() -> anyhow::Result<()> {
         .max_blocking_threads(8)
         .enable_all()
         .build()?
-        .block_on(run())
+        .block_on(async {
+            match std::env::args().nth(1).as_deref() {
+                None => run().await,
+                Some("healthcheck") => healthcheck().await,
+                Some(other) => anyhow::bail!("unknown command {other}: use none (serve) or healthcheck"),
+            }
+        })
+}
+
+/// For Docker: succeeds when the server on this machine answers.
+async fn healthcheck() -> anyhow::Result<()> {
+    let _ = dotenvy::dotenv();
+    let listen = std::env::var("RUST_LISTEN").unwrap_or_else(|_| "0.0.0.0:8080".into());
+    let port = listen.parse::<SocketAddr>()?.port();
+    let client = reqwest::Client::builder().no_proxy().timeout(std::time::Duration::from_secs(5)).build()?;
+    client.get(format!("http://127.0.0.1:{port}/api/health")).send().await?.error_for_status()?;
+    Ok(())
 }
 
 async fn run() -> anyhow::Result<()> {
@@ -23,10 +40,16 @@ async fn run() -> anyhow::Result<()> {
     let listen = config.listen;
     tracing::info!(%listen, "aiyu-server starting");
 
+    open_database(&config).await?;
     let state = AppState::new(config).await?;
     // Without the Vite build no page can be served. Fail loudly instead.
     if state.web.is_none() {
         anyhow::bail!("web app not loaded (WEB_DIR must hold index.html, route-meta.json, ai-defaults.json, admin-routes.json)");
+    }
+    let mode = aiyu_server::seed::mode(std::env::var("RUN_SEED").ok().as_deref());
+    // A failed seed leaves the database as it was; the site still starts.
+    if let Err(err) = aiyu_server::seed::run(&state, mode).await {
+        tracing::warn!(error = %format!("{err:#}"), "seeding failed");
     }
     if aiyu_server::cron_jobs::enabled() {
         tokio::spawn(aiyu_server::cron_jobs::schedule(state.clone()));
@@ -41,6 +64,28 @@ async fn run() -> anyhow::Result<()> {
     axum::serve(listener, app.into_make_service_with_connect_info::<SocketAddr>())
         .with_graceful_shutdown(shutdown_signal())
         .await?;
+    Ok(())
+}
+
+/// Creates the database when there is none, and applies the migrations.
+async fn open_database(config: &Config) -> anyhow::Result<()> {
+    let path = &config.database_path;
+    if !path.exists() {
+        // An upgraded Postgres install must not come up empty, looking as if the content were gone.
+        let postgres = std::env::var("DATABASE_URL").is_ok_and(|u| u.starts_with("postgres"));
+        anyhow::ensure!(
+            !postgres || std::env::var("START_EMPTY").as_deref() == Ok("true"),
+            "no database at {}, but DATABASE_URL names a Postgres database. Set START_EMPTY=true \
+             to start a new, empty site.",
+            path.display()
+        );
+        if let Some(parent) = path.parent().filter(|p| !p.as_os_str().is_empty()) {
+            std::fs::create_dir_all(parent)?;
+        }
+    }
+    let db = aiyu_server::db::connect(path, true);
+    aiyu_server::db::migrate(&db).await.with_context(|| format!("database {}", path.display()))?;
+    db.close().await;
     Ok(())
 }
 

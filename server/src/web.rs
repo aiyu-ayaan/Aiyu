@@ -1193,15 +1193,12 @@ impl Site {
         let has_favicon = config.get("hasCustomFavicon") == Some(&Value::Bool(true));
         let icon = pages::absolute(&base_url, if has_favicon { "/api/favicon" } else { "/favicon.ico" });
         let ga_id = s("googleAnalyticsId").or_else(|| std::env::var("NEXT_PUBLIC_GA_MEASUREMENT_ID").ok());
-        let ads: Option<(Option<bool>, Option<String>)> =
-            sqlx::query_as(r#"SELECT (data->>'adsenseEnabled')::boolean, data->>'encryptedClientId' FROM "Ads" LIMIT 1"#)
-                .fetch_optional(&state.db)
-                .await
-                .unwrap_or(None);
-        let adsense_client_id = ads
-            .filter(|(enabled, _)| *enabled == Some(true))
-            .and_then(|(_, enc)| enc)
-            .and_then(|enc| state.cipher.decrypt(&enc))
+        let ads = pages::singleton(&state.db, "Ads", false).await;
+        let enabled = ads["adsenseEnabled"] == json!(true) || ads["adsenseEnabled"] == "true";
+        let adsense_client_id = ads["encryptedClientId"]
+            .as_str()
+            .filter(|_| enabled)
+            .and_then(|enc| state.cipher.decrypt(enc))
             .map(|v| v.trim().to_string())
             .filter(|v| !v.is_empty());
         Self {

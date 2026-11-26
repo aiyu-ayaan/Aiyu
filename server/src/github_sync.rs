@@ -2,6 +2,7 @@
 //! overwrite, how README links are made absolute) and the writes of src/lib/githubProjectSync.js. A sync never
 //! touches a field the admin has pinned.
 
+use crate::db;
 use chrono::{DateTime, Datelike, SecondsFormat, Utc};
 use regex::{Captures, Regex};
 use serde_json::{Map, Value, json};
@@ -431,7 +432,8 @@ pub async fn token(state: &AppState) -> anyhow::Result<Option<String>> {
 
 /// The project row linked to exactly this repo, client-shaped; Null when there is none.
 pub async fn linked_project(state: &AppState, full_name: &str) -> anyhow::Result<Value> {
-    let raw: Option<String> = sqlx::query_scalar(r#"SELECT row_to_json(t)::text FROM "Project" t WHERE "repoFullName" = $1"#)
+    let sql = format!(r#"SELECT {} FROM "Project" WHERE "repoFullName" = $1"#, db::row_json("Project"));
+    let raw: Option<String> = sqlx::query_scalar(&sql)
         .bind(full_name)
         .fetch_optional(&state.db)
         .await?;

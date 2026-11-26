@@ -54,6 +54,9 @@ const routeMeta: Plugin = {
     // DEFAULT_AI_PAGE for the Rust AI Hub pages (one source of truth: src/lib/aiPageDefaults.js).
     const { DEFAULT_AI_PAGE } = await import('../src/lib/aiPageDefaults.js');
     await writeFile(new URL('./dist/ai-defaults.json', import.meta.url), JSON.stringify(DEFAULT_AI_PAGE));
+    // The content of a new, empty database (server/src/seed.rs).
+    const { SEED } = await import('../src/app/data/seedData.js');
+    await writeFile(new URL('./dist/seed.json', import.meta.url), JSON.stringify(SEED));
     // Theme presets for /api/themes* (src/lib/themePresets.js).
     const { themePresets, legacyThemePresets } = await import('../src/lib/themePresets.js');
     await writeFile(new URL('./dist/themes.json', import.meta.url), JSON.stringify({ presets: themePresets, legacy: legacyThemePresets }));

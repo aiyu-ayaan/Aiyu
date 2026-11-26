@@ -1,6 +1,7 @@
 //! `POST /api/contact/message`: the public contact form. The message is stored first, then forwarded to the
 //! notification channels and the n8n webhook; their failures never fail the visitor's request.
 
+use crate::db::{Stamp};
 use axum::{
     extract::{Request, State},
     http::StatusCode,
@@ -27,7 +28,7 @@ async fn save(state: &AppState, name: &str, email: &str, message: &str) -> anyho
         .bind(name)
         .bind(email)
         .bind(message)
-        .bind(chrono::Utc::now().naive_utc())
+        .bind(Stamp(chrono::Utc::now().naive_utc()))
         .execute(&state.db)
         .await?;
     Ok(())

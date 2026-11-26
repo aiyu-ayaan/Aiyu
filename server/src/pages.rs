@@ -3,7 +3,7 @@
 
 use regex::Regex;
 use serde_json::{Map, Value, json};
-use sqlx::PgPool;
+use crate::db::{Db, Stamp, row_json};
 use std::sync::LazyLock;
 
 use crate::AppState;
@@ -18,20 +18,18 @@ const PUBLIC_CONFIG_KEYS: &[&str] = &[
 
 /// `sanitizeConfigForPublic`, minus the resume file body: the uploaded PDF (base64, ~335 KB) is served by
 /// /api/resume and never needs to reach the browser.
-pub async fn public_config(db: &PgPool, base_url: &str) -> Value {
-    let keys: Vec<String> = PUBLIC_CONFIG_KEYS.iter().map(|k| k.to_string()).collect();
-    let row: Option<(Option<Value>,)> = sqlx::query_as(
-        r#"SELECT (SELECT jsonb_object_agg(k, d.data->k) FROM unnest($1::text[]) k WHERE d.data ? k)
-                  || jsonb_build_object('favicon', d.data->'favicon')
-           FROM "Config" d LIMIT 1"#,
-    )
-    .bind(&keys)
-    .fetch_optional(db)
-    .await
-    .unwrap_or(None);
-    let Some(Value::Object(mut c)) = row.and_then(|r| r.0) else {
-        return json!({ "siteTitle": "Portfolio", "logoText": "< aiyu />", "profession": "full stack", "hasCustomFavicon": false });
+pub async fn public_config(db: &Db, base_url: &str) -> Value {
+    let row: Option<String> = sqlx::query_scalar(r#"SELECT data FROM "Config" LIMIT 1"#).fetch_optional(db).await.unwrap_or(None);
+    let mut data = match row.and_then(|r| serde_json::from_str(&r).ok()) {
+        Some(Value::Object(data)) => data,
+        _ => Map::new(),
     };
+    let mut c: Map<String, Value> = PUBLIC_CONFIG_KEYS.iter().filter_map(|k| data.remove(*k).map(|v| (k.to_string(), v))).collect();
+    // No public key stored: the same defaults as no row.
+    if c.is_empty() {
+        return json!({ "siteTitle": "Portfolio", "logoText": "< aiyu />", "profession": "full stack", "hasCustomFavicon": false });
+    }
+    c.insert("favicon".into(), data.remove("favicon").unwrap_or(Value::Null));
     let fav = c.remove("favicon").unwrap_or(Value::Null);
     let has_favicon = ["value", "filename", "mimeType"]
         .iter()
@@ -61,26 +59,14 @@ pub async fn public_config(db: &PgPool, base_url: &str) -> Value {
 /// `getLayoutData` for the v2 chrome: header, socials, public config, about name, package version.
 pub async fn shell_data(state: &AppState, config: &Value) -> Value {
     let db = &state.db;
-    let header: Option<(Option<Value>,)> =
-        sqlx::query_as(r#"SELECT (data::jsonb || jsonb_build_object('_id', id))::json FROM "Header" LIMIT 1"#)
-            .fetch_optional(db)
-            .await
-            .unwrap_or(None);
-    let socials: Vec<(Value,)> = sqlx::query_as(
-        r#"SELECT (to_jsonb(s) - 'id' || jsonb_build_object('_id', s.id))::json FROM "Social" s"#,
-    )
-    .fetch_all(db)
-    .await
-    .unwrap_or_default();
-    let about_name: Option<(Option<String>,)> = sqlx::query_as(r#"SELECT data->>'name' FROM "About" LIMIT 1"#)
-        .fetch_optional(db)
-        .await
-        .unwrap_or(None);
+    let header = singleton(db, "Header", false).await;
+    let socials = client_rows(db, "Social", "").await.unwrap_or_default();
+    let about_name = singleton(db, "About", false).await.get("name").and_then(Value::as_str).map(str::to_string);
     json!({
-        "header": header.and_then(|h| h.0),
-        "socials": socials.into_iter().map(|s| s.0).collect::<Vec<_>>(),
+        "header": header,
+        "socials": socials,
         "config": config,
-        "aboutName": about_name.and_then(|a| a.0),
+        "aboutName": about_name,
         "packageVersion": state.package_version,
     })
 }
@@ -96,13 +82,13 @@ fn normalize_timestamps(row: &mut Map<String, Value>) {
 
 /// `getSingleton(prisma, key)` for a json-blob model: `{ ...data, _id }` (+ timestamps when the model has them).
 /// `table` is always a constant from this crate.
-pub async fn singleton(db: &PgPool, table: &str, timestamps: bool) -> Value {
+pub async fn singleton(db: &Db, table: &str, timestamps: bool) -> Value {
     try_singleton(db, table, timestamps).await.unwrap_or(Value::Null)
 }
 
 /// `singleton`, with database errors reported (the API answers 500 on those, pages render without the data).
-pub async fn try_singleton(db: &PgPool, table: &str, timestamps: bool) -> anyhow::Result<Value> {
-    let sql = format!(r#"SELECT row_to_json(t)::text FROM "{table}" t LIMIT 1"#);
+pub async fn try_singleton(db: &Db, table: &str, timestamps: bool) -> anyhow::Result<Value> {
+    let sql = format!(r#"SELECT {} FROM "{table}" LIMIT 1"#, row_json(table));
     let Some(raw) = sqlx::query_scalar::<_, String>(&sql).fetch_optional(db).await? else { return Ok(Value::Null) };
     let Value::Object(mut row) = serde_json::from_str::<Value>(&raw)? else { return Ok(Value::Null) };
     normalize_timestamps(&mut row);
@@ -121,8 +107,8 @@ pub async fn try_singleton(db: &PgPool, table: &str, timestamps: bool) -> anyhow
 
 /// `toClientList(key, rows)` for a relational model: `id` becomes `_id` (first), other columns as-is.
 /// `table` and `rest` (WHERE/ORDER BY) are always constants from this crate.
-pub async fn client_rows(db: &PgPool, table: &str, rest: &str) -> anyhow::Result<Vec<Value>> {
-    let sql = format!(r#"SELECT row_to_json(t)::text FROM "{table}" t {rest}"#);
+pub async fn client_rows(db: &Db, table: &str, rest: &str) -> anyhow::Result<Vec<Value>> {
+    let sql = format!(r#"SELECT {} FROM "{table}" {rest}"#, row_json(table));
     let rows: Vec<String> = sqlx::query_scalar(&sql).fetch_all(db).await?;
     rows.iter().map(|raw| Ok(to_client_row(serde_json::from_str(raw)?))).collect()
 }
@@ -137,15 +123,22 @@ pub fn to_client_row(v: Value) -> Value {
 }
 
 /// `getDeploymentsData` (sortDeployments): displayOrder ascending (unset last), then most recently updated.
-pub async fn deployments(db: &PgPool) -> anyhow::Result<Vec<Value>> {
+pub async fn deployments(db: &Db) -> anyhow::Result<Vec<Value>> {
     client_rows(db, "Deployment", r#"ORDER BY "displayOrder" ASC NULLS LAST, "updatedAt" DESC, "createdAt" DESC"#).await
+}
+
+/// The last four digits in a row (the greedy `.*(\d{4})`), else 0.
+fn last_year(text: &str) -> u32 {
+    let found = text.as_bytes().windows(4).rev().find(|w| w.iter().all(u8::is_ascii_digit));
+    found.map_or(0, |w| w.iter().fold(0, |n, d| n * 10 + u32::from(d - b'0')))
 }
 
 /// `getProjectsData` (sortProjects): displayOrder ascending (unset last), then the last 4-digit year, newest first.
 /// `list`: the index only checks that a readme exists, so it gets a one-character marker instead of ~260 KB of text.
-pub async fn projects(db: &PgPool, list: bool) -> anyhow::Result<Vec<Value>> {
-    let order = r#"ORDER BY "displayOrder" ASC NULLS LAST, COALESCE((regexp_match(year, '.*(\d{4})'))[1]::int, 0) DESC, "createdAt" DESC"#;
-    let mut rows = client_rows(db, "Project", order).await?;
+pub async fn projects(db: &Db, list: bool) -> anyhow::Result<Vec<Value>> {
+    let mut rows = client_rows(db, "Project", r#"ORDER BY "displayOrder" ASC NULLS LAST, "createdAt" DESC"#).await?;
+    // A stable sort keeps the newest first among equals.
+    rows.sort_by_key(|r| (r["displayOrder"].as_i64().unwrap_or(i64::MAX), std::cmp::Reverse(last_year(r["year"].as_str().unwrap_or("")))));
     if list {
         for r in &mut rows {
             if let Some(v) = r.get_mut("readme") {
@@ -210,12 +203,12 @@ pub fn entity_slug(row: &Value, prefix: &str) -> String {
 /// `resolveProjectByIdentifier` / `resolveDeploymentByIdentifier` + the canonical-slug redirect of the detail pages:
 /// slug, then id, then a slugless row whose generated slug matches. Next also wrote the generated slug back on
 /// read; that backfill is left to the admin save path.
-pub async fn entity_by_identifier(db: &PgPool, table: &str, prefix: &str, base: &str, ident: &str) -> anyhow::Result<Lookup> {
+pub async fn entity_by_identifier(db: &Db, table: &str, prefix: &str, base: &str, ident: &str) -> anyhow::Result<Lookup> {
     let norm = ident.trim();
     if norm.is_empty() {
         return Ok(Lookup::NotFound);
     }
-    let one = |cond: &str| format!(r#"SELECT row_to_json(t)::text FROM "{table}" t WHERE {cond} LIMIT 1"#);
+    let one = |cond: &str| format!(r#"SELECT {} FROM "{table}" WHERE {cond} LIMIT 1"#, row_json(table));
     let mut found: Option<String> = sqlx::query_scalar(&one("slug = $1")).bind(norm).fetch_optional(db).await?;
     if found.is_none() {
         found = sqlx::query_scalar(&one("id = $1")).bind(norm).fetch_optional(db).await?;
@@ -238,28 +231,31 @@ pub async fn entity_by_identifier(db: &PgPool, table: &str, prefix: &str, base: 
 }
 
 /// `getLegalLinksForDeployment`: the first legal app linked to the deployment, with its published documents.
-pub async fn legal_links_for_deployment(db: &PgPool, deployment_id: &str) -> Value {
-    let row: Option<(String, String, Option<String>, Value)> = sqlx::query_as(
-        r#"SELECT a.name, a.slug, a."packageName",
-                  COALESCE((SELECT json_agg(json_build_object('title', d.title, 'href', '/' || a.slug || '/' || d.slug)
-                                            ORDER BY d."displayOrder" ASC, d."createdAt" DESC)
-                            FROM "LegalDocument" d WHERE d."appId" = a.id AND d.published), '[]'::json)
-           FROM "LegalApp" a WHERE a."deploymentId" = $1 ORDER BY a."createdAt" ASC LIMIT 1"#,
+pub async fn legal_links_for_deployment(db: &Db, deployment_id: &str) -> Value {
+    let app: Option<(String, String, String, Option<String>)> = sqlx::query_as(
+        r#"SELECT id, name, slug, "packageName" FROM "LegalApp" WHERE "deploymentId" = $1 ORDER BY "createdAt" ASC LIMIT 1"#,
     )
     .bind(deployment_id)
     .fetch_optional(db)
     .await
     .unwrap_or(None);
-    match row {
-        Some((name, slug, package, links)) if links.as_array().is_some_and(|l| !l.is_empty()) => {
-            json!({ "name": name, "packageName": package.unwrap_or_default(), "href": format!("/{slug}"), "links": links })
-        }
-        _ => Value::Null,
+    let Some((id, name, slug, package)) = app else { return Value::Null };
+    let documents: Vec<(String, String)> = sqlx::query_as(
+        r#"SELECT title, slug FROM "LegalDocument" WHERE "appId" = $1 AND published ORDER BY "displayOrder" ASC, "createdAt" DESC"#,
+    )
+    .bind(id)
+    .fetch_all(db)
+    .await
+    .unwrap_or_default();
+    if documents.is_empty() {
+        return Value::Null;
     }
+    let links: Vec<Value> = documents.into_iter().map(|(title, doc)| json!({ "title": title, "href": format!("/{slug}/{doc}") })).collect();
+    json!({ "name": name, "packageName": package.unwrap_or_default(), "href": format!("/{slug}"), "links": links })
 }
 
 /// `getProductPathForDeployment`: `/<legal app slug>` when a legal app is linked to the deployment.
-pub async fn product_path(db: &PgPool, deployment_id: &str) -> Option<String> {
+pub async fn product_path(db: &Db, deployment_id: &str) -> Option<String> {
     sqlx::query_scalar::<_, String>(r#"SELECT '/' || slug FROM "LegalApp" WHERE "deploymentId" = $1 ORDER BY "createdAt" ASC LIMIT 1"#)
         .bind(deployment_id)
         .fetch_optional(db)
@@ -269,8 +265,9 @@ pub async fn product_path(db: &PgPool, deployment_id: &str) -> Option<String> {
 }
 
 /// `getAppLinksForProject`: every app built from the project, pointing at its product page when it has one.
-pub async fn app_links_for_project(db: &PgPool, project_id: &str) -> anyhow::Result<Vec<Value>> {
-    let rows = sqlx::query_scalar::<_, String>(r#"SELECT row_to_json(t)::text FROM "Deployment" t WHERE "projectId" = $1 ORDER BY "displayOrder" ASC"#)
+pub async fn app_links_for_project(db: &Db, project_id: &str) -> anyhow::Result<Vec<Value>> {
+    let sql = format!(r#"SELECT {} FROM "Deployment" WHERE "projectId" = $1 ORDER BY "displayOrder" ASC"#, row_json("Deployment"));
+    let rows = sqlx::query_scalar::<_, String>(&sql)
         .bind(project_id)
         .fetch_all(db)
         .await?;
@@ -291,9 +288,10 @@ pub async fn app_links_for_project(db: &PgPool, project_id: &str) -> anyhow::Res
 }
 
 /// `getProjectLinkForDeployment`: `{ name, href }` of the project an app is built from.
-pub async fn project_link_for_deployment(db: &PgPool, project_id: Option<&str>) -> Value {
+pub async fn project_link_for_deployment(db: &Db, project_id: Option<&str>) -> Value {
     let Some(pid) = project_id.filter(|p| !p.is_empty()) else { return Value::Null };
-    let raw: Option<String> = sqlx::query_scalar(r#"SELECT row_to_json(t)::text FROM "Project" t WHERE id = $1"#).bind(pid).fetch_optional(db).await.unwrap_or(None);
+    let sql = format!(r#"SELECT {} FROM "Project" WHERE id = $1"#, row_json("Project"));
+    let raw: Option<String> = sqlx::query_scalar(&sql).bind(pid).fetch_optional(db).await.unwrap_or(None);
     match raw.and_then(|r| serde_json::from_str::<Value>(&r).ok()).map(to_client_row) {
         Some(p) => json!({ "name": p["name"], "href": format!("/projects/{}", entity_slug(&p, "project")) }),
         None => Value::Null,
@@ -302,7 +300,7 @@ pub async fn project_link_for_deployment(db: &PgPool, project_id: Option<&str>) 
 
 /// The three newest published blogs for the home page (`toBlogPreview`: readTime from the full text, content cut to
 /// 320 chars). Inline `data:` covers go through /_img/blog/{id} like everywhere else.
-pub async fn recent_blogs(db: &PgPool) -> anyhow::Result<Vec<Value>> {
+pub async fn recent_blogs(db: &Db) -> anyhow::Result<Vec<Value>> {
     let rows = client_rows(db, "Blog", r#"WHERE published ORDER BY "createdAt" DESC LIMIT 3"#).await?;
     Ok(rows
         .into_iter()
@@ -324,19 +322,13 @@ pub async fn recent_blogs(db: &PgPool) -> anyhow::Result<Vec<Value>> {
 }
 
 /// `getSocialMeta()` (src/lib/socialMeta.js): `{ defaultImage, pages }`, possibly empty.
-pub async fn social_meta(db: &PgPool) -> Value {
-    sqlx::query_scalar::<_, Option<Value>>(r#"SELECT (data->'social')::json FROM "SeoConfig" LIMIT 1"#)
-        .fetch_optional(db)
-        .await
-        .ok()
-        .flatten()
-        .flatten()
-        .unwrap_or(Value::Null)
+pub async fn social_meta(db: &Db) -> Value {
+    singleton(db, "SeoConfig", false).await.get("social").cloned().unwrap_or(Value::Null)
 }
 
 /// Blog index rows: `getPublishedBlogs` (newest first, content cut to 500 chars, `readTime` from the full text).
-pub async fn blog_list(db: &PgPool) -> anyhow::Result<Vec<Value>> {
-    let rows: Vec<(String, Option<String>, String, Option<String>, Option<chrono::NaiveDateTime>, Option<Vec<String>>, Option<String>, Option<String>, String)> =
+pub async fn blog_list(db: &Db) -> anyhow::Result<Vec<Value>> {
+    let rows: Vec<(String, Option<String>, String, Option<String>, Option<Stamp>, Option<String>, Option<String>, Option<String>, String)> =
         sqlx::query_as(
             // Inline `data:` covers are served from /_img/blog/{id}: fetch only the prefix, not megabytes of base64.
             r#"SELECT id, slug, title, date, "createdAt", tags,
@@ -350,8 +342,8 @@ pub async fn blog_list(db: &PgPool) -> anyhow::Result<Vec<Value>> {
         .map(|(id, slug, title, date, created_at, tags, image, image_alt, content)| {
             json!({
                 "_id": id, "slug": slug, "title": title, "date": date,
-                "createdAt": created_at.map(crate::export::js_date),
-                "tags": tags.unwrap_or_default(), "image": image.map(|i| inline_image_url(&id, i)), "imageAlt": image_alt,
+                "createdAt": created_at.map(|t| crate::export::js_date(t.0)),
+                "tags": tags.and_then(|t| serde_json::from_str::<Value>(&t).ok()).unwrap_or_else(|| json!([])), "image": image.map(|i| inline_image_url(&id, i)), "imageAlt": image_alt,
                 "readTime": read_time(&content),
                 "content": content.chars().take(500).collect::<String>(),
             })
@@ -368,18 +360,20 @@ pub enum BlogLookup {
 
 /// `getBlogById` + the canonical-slug redirect. Exact slug, case-insensitive slug, id, then the legacy prefix
 /// matches, all in SQL (Node loaded every blog row for the last step).
-pub async fn blog_by_identifier(db: &PgPool, ident: &str) -> anyhow::Result<BlogLookup> {
+pub async fn blog_by_identifier(db: &Db, ident: &str) -> anyhow::Result<BlogLookup> {
     let ident = ident.trim();
     if ident.is_empty() {
         return Ok(BlogLookup::NotFound);
     }
-    let row: Option<(String,)> = sqlx::query_as(
-        r#"SELECT row_to_json(t)::text FROM "Blog" t
+    let sql = format!(
+        r#"SELECT {} FROM "Blog"
            WHERE published AND (slug = $1 OR lower(slug) = lower($1) OR id = $1
-                 OR (slug <> '' AND (starts_with($1, slug) OR starts_with(slug, $1))))
+                 OR (slug <> '' AND (substr($1, 1, length(slug)) = slug OR substr(slug, 1, length($1)) = $1)))
            ORDER BY (slug = $1) DESC, (lower(slug) = lower($1)) DESC, (id = $1) DESC, length(slug) DESC
            LIMIT 1"#,
-    )
+        row_json("Blog")
+    );
+    let row: Option<(String,)> = sqlx::query_as(&sql)
     .bind(ident)
     .fetch_optional(db)
     .await?;
@@ -411,7 +405,7 @@ fn inline_image_url(id: &str, image: String) -> String {
 }
 
 /// Decode a blog's `data:` cover for `/_img/blog/{id}`: (content type, bytes).
-pub async fn blog_inline_image(db: &PgPool, id: &str) -> Option<(String, Vec<u8>)> {
+pub async fn blog_inline_image(db: &Db, id: &str) -> Option<(String, Vec<u8>)> {
     use base64::Engine;
     // Result<Option<row>>, and the column itself is nullable.
     let image: String = sqlx::query_scalar::<_, Option<String>>(r#"SELECT image FROM "Blog" WHERE id = $1 AND published"#)
@@ -430,9 +424,9 @@ pub async fn blog_inline_image(db: &PgPool, id: &str) -> Option<(String, Vec<u8>
 }
 
 /// `getEntityViewCount('blog', id)`.
-pub async fn blog_view_count(db: &PgPool, id: &str) -> i64 {
+pub async fn blog_view_count(db: &Db, id: &str) -> i64 {
     sqlx::query_scalar(
-        r#"SELECT COALESCE(SUM(views), 0)::bigint FROM "AnalyticsDaily"
+        r#"SELECT COALESCE(SUM(views), 0) FROM "AnalyticsDaily"
            WHERE type = 'entity_view' AND "entityType" = 'blog' AND "entityId" = $1"#,
     )
     .bind(id)
@@ -443,8 +437,7 @@ pub async fn blog_view_count(db: &PgPool, id: &str) -> i64 {
 
 /// `getAdsData`: placements with decrypted slot ids, or null when AdSense is off.
 pub async fn ads_config(state: &AppState) -> Value {
-    let row: Option<(Option<Value>,)> = sqlx::query_as(r#"SELECT data FROM "Ads" LIMIT 1"#).fetch_optional(&state.db).await.unwrap_or(None);
-    let Some(ads) = row.and_then(|r| r.0) else { return Value::Null };
+    let ads = singleton(&state.db, "Ads", false).await;
     if ads.get("adsenseEnabled") != Some(&Value::Bool(true)) {
         return Value::Null;
     }
