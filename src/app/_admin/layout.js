@@ -1,6 +1,8 @@
 import "../styles/globals.css";
+import "../styles/admin.css";
 import AdminShell from "@/app/components/admin/shell/AdminShell";
 import { AdminFeedbackProvider } from "@/app/components/admin/feedback/AdminFeedbackProvider";
+import V2Backdrop from "@/app/components/landing/v2/V2Backdrop";
 
 export const metadata = {
     title: "Admin | Aiyu Portfolio",
@@ -14,12 +16,9 @@ export const dynamic = 'force-dynamic';
 
 export default function AdminLayout({ children }) {
     return (
-        <div className="antialiased min-h-screen relative text-slate-200 selection:bg-cyan-500/30">
-            {/* Deep Space Background for Admin */}
-            <div className="fixed inset-0 z-[-1] bg-[#0f172a]">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(56,189,248,0.15),transparent_60%)]" />
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_0%_0%,rgba(139,92,246,0.15),transparent_60%)]" />
-                <div className="absolute inset-0 bg-[repeating-linear-gradient(rgba(255,255,255,0.05)_0px,transparent_1px,transparent_100px),repeating-linear-gradient(90deg,rgba(255,255,255,0.05)_0px,transparent_1px,transparent_100px)]" />
+        <div className="adm-root antialiased min-h-screen relative font-sans text-sm text-[var(--text-primary)] selection:bg-[color-mix(in_srgb,var(--accent-cyan)_30%,transparent)]">
+            <div className="fixed inset-0 z-[-1]">
+                <V2Backdrop />
             </div>
             <AdminFeedbackProvider>
                 <AdminShell>{children}</AdminShell>

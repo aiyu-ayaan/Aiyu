@@ -3,12 +3,12 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FaAnglesLeft, FaArrowUpRightFromSquare, FaRightFromBracket, FaXmark, FaGear } from "react-icons/fa6";
-import { NAV_GROUPS, ACCENT, STAGE_META, SETTINGS_ITEM, findActiveItem } from "./navConfig";
+import { NAV_GROUPS, STAGE_META, SETTINGS_ITEM, findActiveItem } from "./navConfig";
 
 /**
  * Site brand mark. Steps through favicon sources — a custom favicon served at
  * /api/favicon, then the static /favicon.ico — and if both fail, renders a
- * gradient monogram so the brand is never a broken image.
+ * "~" glyph so the brand is never a broken image.
  */
 const FAVICON_SOURCES = ["/api/favicon", "/favicon.ico"];
 
@@ -20,23 +20,30 @@ function BrandMark() {
         setMounted(true);
     }, []);
 
-    const base = "relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl shadow-[0_0_20px_rgba(34,211,238,0.25)]";
-    
+    // No favicon: the "~/aiyu" wordmark beside it is the brand; the collapsed rail shows "~".
     if (!mounted || stage >= FAVICON_SOURCES.length) {
-        return (
-            <span className={`${base} bg-gradient-to-br from-cyan-400 to-violet-500 text-slate-950 font-black text-lg`}>
-                A
-            </span>
-        );
+        return <span aria-hidden="true" className="flex h-8 w-8 shrink-0 items-center justify-center font-mono text-base font-bold text-[var(--accent-purple)]">~</span>;
     }
     return (
-        <span className={`${base} bg-slate-900 ring-1 ring-white/10`}>
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg">
             <img
                 src={FAVICON_SOURCES[stage]}
                 alt="Site"
                 className="h-full w-full object-contain"
                 onError={() => setStage((s) => s + 1)}
             />
+        </span>
+    );
+}
+
+/** Mono nav text; the current entry is bracketed `[ blogs ]`, as in the public header. */
+function NavLabel({ active, children }) {
+    const bracket = (char) => active && <span aria-hidden="true" className="text-[var(--text-muted)]">{char}</span>;
+    return (
+        <span className="flex min-w-0 gap-1 lowercase">
+            {bracket("[")}
+            <span className="truncate">{children}</span>
+            {bracket("]")}
         </span>
     );
 }
@@ -54,39 +61,40 @@ export default function AdminSidebar({ collapsed, onToggleCollapse, mobileOpen, 
     const active = findActiveItem(pathname);
     const settingsActive = pathname === SETTINGS_ITEM.path;
 
+    const row = `adm-nav-link ${collapsed ? "justify-center" : ""}`;
+
     return (
         <>
             {/* Mobile backdrop */}
             <div
                 onClick={onCloseMobile}
-                className={`fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden transition-opacity ${mobileOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+                className={`fixed inset-0 z-40 bg-[var(--overlay-bg)] backdrop-blur-sm md:hidden transition-opacity ${mobileOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`}
             />
 
             <aside
                 className={[
                     "fixed inset-y-0 left-0 z-50 flex flex-col",
-                    "bg-slate-950/80 backdrop-blur-2xl border-r border-white/5",
-                    "transition-[width,transform] duration-300 ease-out",
+                    "bg-[var(--bg-secondary)] border-r border-[var(--hairline)]",
+                    "transition-[width,transform,visibility] duration-200 ease-out",
                     collapsed ? "md:w-[76px]" : "md:w-[264px]",
                     "w-[280px]",
-                    mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
+                    // max-md:invisible keeps the closed drawer's links out of the tab order.
+                    mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0 max-md:invisible",
                 ].join(" ")}
             >
                 {/* Brand */}
-                <div className="flex items-center gap-3 h-16 px-4 border-b border-white/5 shrink-0">
-                    <Link href="/admin" className="flex items-center gap-3 min-w-0" onClick={onCloseMobile}>
+                <div className="flex items-center gap-3 h-16 px-4 border-b border-[var(--hairline)] shrink-0">
+                    <Link href="/admin" aria-label="Admin dashboard" className="flex items-center gap-2 min-w-0" onClick={onCloseMobile}>
                         <BrandMark />
                         {!collapsed && (
-                            <span className="min-w-0">
-                                <span className="block text-sm font-bold text-white leading-tight truncate">Aiyu CMS</span>
-                                <span className="block text-[10px] font-mono uppercase tracking-widest text-cyan-400/70">Command Center</span>
-                            </span>
+                            <span className="truncate font-mono text-sm font-bold text-[var(--text-bright)]">~/aiyu</span>
                         )}
                     </Link>
                     {/* Mobile close */}
                     <button
+                        type="button"
                         onClick={onCloseMobile}
-                        className="ml-auto md:hidden p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5"
+                        className="adm-icon-btn ml-auto md:!hidden"
                         aria-label="Close menu"
                     >
                         <FaXmark />
@@ -94,18 +102,17 @@ export default function AdminSidebar({ collapsed, onToggleCollapse, mobileOpen, 
                 </div>
 
                 {/* Nav */}
-                <nav className="flex-1 overflow-y-auto overflow-x-hidden py-4 px-3 space-y-6">
+                <nav aria-label="Admin navigation" className="flex-1 overflow-y-auto overflow-x-hidden py-4 px-3 space-y-5">
                     {NAV_GROUPS.map((group) => (
                         <div key={group.id}>
                             {!collapsed && (
-                                <p className="px-3 mb-2 text-[10px] font-mono uppercase tracking-widest text-slate-500">
+                                <p className="px-3 mb-1 font-mono text-xs lowercase text-[var(--adm-hint)]">
                                     {group.label}
                                 </p>
                             )}
-                            <ul className="space-y-1">
+                            <ul className="space-y-0.5">
                                 {group.items.map((item) => {
                                     const Icon = item.icon;
-                                    const accent = ACCENT[item.accent] || ACCENT.slate;
                                     const isActive = active?.path === item.path;
                                     const stage = STAGE_META[stages[item.path]];
                                     return (
@@ -114,35 +121,19 @@ export default function AdminSidebar({ collapsed, onToggleCollapse, mobileOpen, 
                                                 href={item.path}
                                                 onClick={onCloseMobile}
                                                 title={collapsed ? item.label : undefined}
-                                                className={[
-                                                    "group relative flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors",
-                                                    collapsed ? "justify-center" : "",
-                                                    isActive
-                                                        ? "bg-white/[0.07] text-white"
-                                                        : "text-slate-400 hover:text-white hover:bg-white/[0.04]",
-                                                ].join(" ")}
+                                                aria-label={collapsed ? item.label : undefined}
+                                                aria-current={isActive ? "page" : undefined}
+                                                className={`${row} ${isActive && collapsed ? "bg-[var(--bg-hover)]" : ""}`}
                                             >
-                                                {/* Active accent bar */}
-                                                <span
-                                                    className={[
-                                                        "absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 rounded-r-full transition-all",
-                                                        isActive ? accent.dot : "bg-transparent",
-                                                        isActive ? "opacity-100" : "opacity-0",
-                                                    ].join(" ")}
-                                                />
-                                                <span className="relative shrink-0">
-                                                    <Icon
-                                                        className={`text-[15px] transition-colors ${isActive ? accent.text : "text-slate-500 " + accent.ring}`}
-                                                    />
+                                                <span className="adm-nav-icon relative shrink-0">
+                                                    <Icon className="text-[14px]" />
                                                     {collapsed && stage && (
-                                                        <span className={`absolute -top-1 -right-1 h-2 w-2 rounded-full ${stage.dot} ring-2 ring-slate-950`} />
+                                                        <span className={`absolute -top-1 -right-1 h-2 w-2 rounded-full ${stage.dot} ring-2 ring-[var(--bg-secondary)]`} />
                                                     )}
                                                 </span>
-                                                {!collapsed && (
-                                                    <span className="text-sm font-medium truncate">{item.label}</span>
-                                                )}
+                                                {!collapsed && <NavLabel active={isActive}>{item.label}</NavLabel>}
                                                 {!collapsed && stage && (
-                                                    <span className={`ml-auto shrink-0 rounded-md px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider ${stage.badge}`}>
+                                                    <span className={`ml-auto shrink-0 rounded-full px-2 py-0.5 text-[11px] lowercase ${stage.badge}`}>
                                                         {stage.label}
                                                     </span>
                                                 )}
@@ -156,47 +147,50 @@ export default function AdminSidebar({ collapsed, onToggleCollapse, mobileOpen, 
                 </nav>
 
                 {/* Footer actions */}
-                <div className="shrink-0 border-t border-white/5 p-3 space-y-1">
+                <div className="shrink-0 border-t border-[var(--hairline)] p-3 space-y-0.5">
                     <Link
                         href={SETTINGS_ITEM.path}
                         onClick={onCloseMobile}
                         title={collapsed ? "Settings" : undefined}
-                        className={[
-                            "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors",
-                            collapsed ? "justify-center" : "",
-                            settingsActive ? "bg-white/[0.07] text-white" : "text-slate-400 hover:text-white hover:bg-white/[0.04]",
-                        ].join(" ")}
+                        aria-label={collapsed ? "Settings" : undefined}
+                        aria-current={settingsActive ? "page" : undefined}
+                        className={`${row} ${settingsActive && collapsed ? "bg-[var(--bg-hover)]" : ""}`}
                     >
-                        <FaGear className={`shrink-0 text-[14px] ${settingsActive ? "text-cyan-400" : ""}`} />
-                        {!collapsed && <span className="font-medium">Settings</span>}
+                        <FaGear className="shrink-0 text-[14px]" />
+                        {!collapsed && <NavLabel active={settingsActive}>Settings</NavLabel>}
                     </Link>
                     <a
                         href="/"
                         target="_blank"
                         rel="noopener noreferrer"
                         title={collapsed ? "View site" : undefined}
-                        className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-slate-400 hover:text-white hover:bg-white/[0.04] transition-colors ${collapsed ? "justify-center" : ""}`}
+                        aria-label={collapsed ? "View site" : undefined}
+                        className={row}
                     >
                         <FaArrowUpRightFromSquare className="shrink-0 text-[14px]" />
-                        {!collapsed && <span className="font-medium">View site</span>}
+                        {!collapsed && <span className="lowercase">View site</span>}
                     </a>
                     <button
+                        type="button"
                         onClick={onLogout}
                         title={collapsed ? "Log out" : undefined}
-                        className={`w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors ${collapsed ? "justify-center" : ""}`}
+                        aria-label={collapsed ? "Log out" : undefined}
+                        className={`${row} !text-[var(--adm-error-ink)]`}
                     >
                         <FaRightFromBracket className="shrink-0 text-[14px]" />
-                        {!collapsed && <span className="font-medium">Log out</span>}
+                        {!collapsed && <span className="lowercase">Log out</span>}
                     </button>
 
                     {/* Collapse toggle (desktop only) */}
                     <button
+                        type="button"
                         onClick={onToggleCollapse}
-                        className="hidden md:flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-slate-500 hover:text-white hover:bg-white/[0.04] transition-colors"
+                        className={`${row} max-md:!hidden`}
                         title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+                        aria-label={collapsed ? "Expand sidebar" : undefined}
                     >
                         <FaAnglesLeft className={`shrink-0 text-[14px] transition-transform ${collapsed ? "rotate-180" : ""}`} />
-                        {!collapsed && <span className="font-medium">Collapse</span>}
+                        {!collapsed && <span className="lowercase">Collapse</span>}
                     </button>
                 </div>
             </aside>

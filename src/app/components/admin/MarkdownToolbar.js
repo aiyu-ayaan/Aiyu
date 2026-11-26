@@ -1,10 +1,9 @@
 "use client";
 import React, { useState, useRef, useCallback } from 'react';
 import {
-    Bold, Italic, Strikethrough, Heading1, Heading2, Heading3,
-    Link, ImagePlus, Code, FileCode, Quote, List, ListOrdered,
-    Table, Minus, Upload, X, Loader2, ChevronDown, Eye, Edit2, FileText, Image as ImageIcon
-} from 'lucide-react';
+    FaBold, FaItalic, FaStrikethrough, FaLink, FaImage, FaCode, FaFileCode, FaQuoteLeft, FaListUl, FaListOl,
+    FaTable, FaMinus, FaUpload, FaXmark, FaSpinner, FaEye, FaPen,
+} from 'react-icons/fa6';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import dynamic from 'next/dynamic';
@@ -55,36 +54,36 @@ const TOOLBAR_GROUPS = [
     {
         label: 'Headings',
         items: [
-            { icon: Heading1, label: 'Heading 1', action: 'h1' },
-            { icon: Heading2, label: 'Heading 2', action: 'h2' },
-            { icon: Heading3, label: 'Heading 3', action: 'h3' },
+            { text: 'H1', label: 'Heading 1', action: 'h1' },
+            { text: 'H2', label: 'Heading 2', action: 'h2' },
+            { text: 'H3', label: 'Heading 3', action: 'h3' },
         ]
     },
     {
         label: 'Format',
         items: [
-            { icon: Bold, label: 'Bold', action: 'bold', shortcut: 'Ctrl+B' },
-            { icon: Italic, label: 'Italic', action: 'italic', shortcut: 'Ctrl+I' },
-            { icon: Strikethrough, label: 'Strikethrough', action: 'strike' },
+            { icon: FaBold, label: 'Bold', action: 'bold', shortcut: 'Ctrl+B' },
+            { icon: FaItalic, label: 'Italic', action: 'italic', shortcut: 'Ctrl+I' },
+            { icon: FaStrikethrough, label: 'Strikethrough', action: 'strike' },
         ]
     },
     {
         label: 'Insert',
         items: [
-            { icon: Link, label: 'Link', action: 'link' },
-            { icon: ImagePlus, label: 'Image', action: 'image' },
-            { icon: Code, label: 'Inline Code', action: 'code' },
-            { icon: FileCode, label: 'Code Block', action: 'codeblock' },
+            { icon: FaLink, label: 'Link', action: 'link' },
+            { icon: FaImage, label: 'Image', action: 'image' },
+            { icon: FaCode, label: 'Inline Code', action: 'code' },
+            { icon: FaFileCode, label: 'Code Block', action: 'codeblock' },
         ]
     },
     {
         label: 'Blocks',
         items: [
-            { icon: Quote, label: 'Blockquote', action: 'quote' },
-            { icon: List, label: 'Bullet List', action: 'ul' },
-            { icon: ListOrdered, label: 'Numbered List', action: 'ol' },
-            { icon: Table, label: 'Table', action: 'table' },
-            { icon: Minus, label: 'Horizontal Rule', action: 'hr' },
+            { icon: FaQuoteLeft, label: 'Blockquote', action: 'quote' },
+            { icon: FaListUl, label: 'Bullet List', action: 'ul' },
+            { icon: FaListOl, label: 'Numbered List', action: 'ol' },
+            { icon: FaTable, label: 'Table', action: 'table' },
+            { icon: FaMinus, label: 'Horizontal Rule', action: 'hr' },
         ]
     }
 ];
@@ -302,49 +301,41 @@ export default function MarkdownToolbar({ textareaRef, value, onChange, showNoti
     }, [applyAction]);
 
     return (
-        <div className="flex flex-col flex-1 min-h-0 bg-slate-950/50 rounded-xl overflow-hidden border border-white/10">
+        <div className="flex flex-col flex-1 min-h-0 bg-[var(--bg-primary)] rounded-[14px] overflow-hidden border border-[var(--hairline-strong)]">
             {/* Top Bar with Tabs and Formatting Tools */}
-            <div className="flex flex-col border-b border-white/10 bg-slate-900/80">
+            <div className="flex flex-col border-b border-[var(--hairline)] bg-[var(--bg-secondary)]">
                 {/* Mode Tabs */}
-                <div className="flex items-center px-4 pt-2 gap-1">
+                <div className="flex items-center px-3 gap-1">
                     <button
                         type="button"
                         onClick={() => setActiveTab('write')}
-                        className={`px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-t-lg transition-colors ${activeTab === 'write'
-                            ? 'bg-slate-800 text-cyan-400 border-t border-x border-white/10'
-                            : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
-                            }`}
+                        aria-pressed={activeTab === 'write'}
+                        className="adm-tab"
                     >
-                        <div className="flex items-center gap-2">
-                            <Edit2 size={12} />
-                            Write
-                        </div>
+                        <FaPen size={12} />
+                        Write
                     </button>
                     <button
                         type="button"
                         onClick={() => setActiveTab('preview')}
-                        className={`px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-t-lg transition-colors ${activeTab === 'preview'
-                            ? 'bg-slate-800 text-cyan-400 border-t border-x border-white/10'
-                            : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
-                            }`}
+                        aria-pressed={activeTab === 'preview'}
+                        className="adm-tab"
                     >
-                        <div className="flex items-center gap-2">
-                            <Eye size={12} />
-                            Preview
-                        </div>
+                        <FaEye size={12} />
+                        Preview
                     </button>
                 </div>
 
                 {/* Toolbar (only visible in write mode) */}
                 {activeTab === 'write' && (
                     <div
-                        className="flex flex-wrap items-center gap-0.5 p-2 border-t border-white/10"
+                        className="flex flex-wrap items-center gap-0.5 p-2 border-t border-[var(--hairline)]"
                         onKeyDown={handleKeyDown}
                     >
                         {TOOLBAR_GROUPS.map((group, gi) => (
                             <React.Fragment key={gi}>
                                 {gi > 0 && (
-                                    <div className="w-px h-6 bg-white/10 mx-1.5" />
+                                    <div className="w-px h-6 bg-[var(--hairline-strong)] mx-1.5" />
                                 )}
                                 {group.items.map((item) => {
                                     const Icon = item.icon;
@@ -354,9 +345,12 @@ export default function MarkdownToolbar({ textareaRef, value, onChange, showNoti
                                             type="button"
                                             onClick={() => applyAction(item.action)}
                                             title={item.label + (item.shortcut ? ` (${item.shortcut})` : '')}
-                                            className="p-1.5 rounded-lg text-slate-400 hover:text-cyan-400 hover:bg-cyan-500/10 transition-all duration-150 group/btn"
+                                            aria-label={item.label}
+                                            className="adm-icon-btn"
                                         >
-                                            <Icon className="w-4 h-4 group-hover/btn:scale-110 transition-transform" />
+                                            {Icon
+                                                ? <Icon className="w-3.5 h-3.5" />
+                                                : <span aria-hidden="true" className="font-mono text-xs font-bold">{item.text}</span>}
                                         </button>
                                     );
                                 })}
@@ -375,7 +369,7 @@ export default function MarkdownToolbar({ textareaRef, value, onChange, showNoti
                     </div>
                 ) : (
                     // Preview Mode
-                    <div className="absolute inset-0 overflow-y-auto p-4 md:p-8 prose prose-invert max-w-none prose-headings:font-bold prose-headings:tracking-tight prose-a:text-cyan-400 prose-img:rounded-xl prose-pre:bg-black/50 prose-pre:border prose-pre:border-white/10">
+                    <div className="absolute inset-0 overflow-y-auto p-4 md:p-8 prose adm-prose max-w-none prose-headings:font-bold prose-headings:tracking-tight prose-img:rounded-xl prose-pre:border prose-pre:border-[var(--hairline)]">
                         <ReactMarkdown
                             remarkPlugins={[remarkGfm]}
                             components={{
@@ -408,63 +402,66 @@ export default function MarkdownToolbar({ textareaRef, value, onChange, showNoti
             {/* Enhanced Image Insert Popup */}
             {
                 showImagePopup && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-                        <div className="bg-slate-900 border border-white/10 rounded-2xl p-6 w-full max-w-lg shadow-2xl">
+                    <div className="adm-overlay">
+                        <div role="dialog" aria-modal="true" aria-label="Insert image" className="adm-dialog !max-w-lg p-5">
                             <div className="flex justify-between items-center mb-6">
-                                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-300">Insert Image</h3>
+                                <h3 className="text-base font-semibold text-[var(--text-bright)]">Insert image</h3>
                                 <button
                                     type="button"
                                     onClick={closeImagePopup}
-                                    className="p-1 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+                                    className="adm-icon-btn"
+                                    aria-label="Close"
                                 >
-                                    <X className="w-4 h-4" />
+                                    <FaXmark className="w-4 h-4" />
                                 </button>
                             </div>
 
                             {/* Mode Switcher */}
-                            <div className="flex bg-slate-950/50 rounded-lg p-1 border border-white/10 mb-6 w-fit">
+                            <div className="adm-tabs mb-4">
                                 <button
                                     type="button"
                                     onClick={() => setImageMode('url')}
-                                    className={`px-3 py-1 text-[10px] uppercase font-bold rounded transition-colors ${imageMode === 'url' ? 'bg-cyan-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'
-                                        }`}
+                                    aria-pressed={imageMode === 'url'}
+                                    className="adm-tab"
                                 >
                                     External URL
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => setImageMode('upload')}
-                                    className={`px-3 py-1 text-[10px] uppercase font-bold rounded transition-colors ${imageMode === 'upload' ? 'bg-cyan-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'
-                                        }`}
+                                    aria-pressed={imageMode === 'upload'}
+                                    className="adm-tab"
                                 >
-                                    Local Upload
+                                    Upload a file
                                 </button>
                             </div>
 
                             <div className="space-y-4">
                                 {/* Common Alt Text */}
                                 <div>
-                                    <label className="block text-xs text-slate-400 mb-1 font-mono uppercase">Alt Text Description</label>
+                                    <label htmlFor="md-image-alt" className="adm-label mb-1">Alt text</label>
                                     <input
+                                        id="md-image-alt"
                                         type="text"
                                         value={imageAlt}
                                         onChange={(e) => setImageAlt(e.target.value)}
                                         placeholder="Describe the image..."
-                                        className="w-full p-3 bg-slate-950/50 rounded-xl border border-white/10 focus:outline-none focus:border-cyan-500/50 text-sm text-slate-200"
+                                        className="adm-input"
                                     />
                                 </div>
 
                                 {imageMode === 'url' ? (
                                     <div>
-                                        <label className="block text-xs text-slate-400 mb-1 font-mono uppercase">Image Source URL</label>
+                                        <label htmlFor="md-image-url" className="adm-label mb-1">Image URL</label>
                                         <div className="relative group/input">
-                                            <ImageIcon className="absolute left-3 top-3 text-slate-500 group-focus-within/input:text-cyan-400 transition-colors" size={16} />
+                                            <FaImage className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--adm-hint)] group-focus-within/input:text-[var(--accent-cyan)] transition-colors" size={14} />
                                             <input
+                                                id="md-image-url"
                                                 type="text"
                                                 value={imageUrl}
                                                 onChange={(e) => setImageUrl(e.target.value)}
                                                 placeholder="https://example.com/image.jpg"
-                                                className="w-full p-3 pl-10 bg-slate-950/50 rounded-xl border border-white/10 focus:outline-none focus:border-cyan-500/50 text-sm text-slate-200"
+                                                className="adm-input !pl-10"
                                             />
                                         </div>
                                     </div>
@@ -472,13 +469,21 @@ export default function MarkdownToolbar({ textareaRef, value, onChange, showNoti
                                     <div>
                                         {!imageUploadFile && !imageUrl ? (
                                             <div
-                                                className={`border-2 border-dashed rounded-xl p-4 md:p-8 text-center transition-all cursor-pointer group/drop ${dragActive ? 'border-cyan-500 bg-cyan-500/10' : 'border-white/10 hover:border-cyan-500/30 hover:bg-white/[0.02]'
+                                                className={`border-2 border-dashed rounded-[10px] p-4 md:p-8 text-center transition-colors cursor-pointer ${dragActive ? 'border-[var(--accent-cyan)] bg-[var(--bg-hover)]' : 'border-[var(--hairline-strong)] hover:bg-[var(--bg-hover)]'
                                                     }`}
                                                 onDragEnter={handleDrag}
                                                 onDragLeave={handleDrag}
                                                 onDragOver={handleDrag}
                                                 onDrop={handleDrop}
                                                 onClick={() => fileInputRef.current?.click()}
+                                                role="button"
+                                                tabIndex={0}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter' || e.key === ' ') {
+                                                        e.preventDefault();
+                                                        fileInputRef.current?.click();
+                                                    }
+                                                }}
                                             >
                                                 <input
                                                     ref={fileInputRef}
@@ -490,28 +495,26 @@ export default function MarkdownToolbar({ textareaRef, value, onChange, showNoti
                                                     }}
                                                 />
                                                 <div className="flex flex-col items-center gap-3">
-                                                    <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center group-hover/drop:scale-110 transition-transform group-hover/drop:bg-cyan-500/10 group-hover/drop:text-cyan-400 text-slate-500">
-                                                        <Upload className="w-5 h-5" />
-                                                    </div>
+                                                    <FaUpload className="w-5 h-5 text-[var(--adm-hint)]" />
                                                     <div>
-                                                        <p className="text-slate-300 font-bold text-sm">Click to upload or drag & drop</p>
-                                                        <p className="text-slate-500 text-xs mt-1">SVG, PNG, JPG or GIF</p>
+                                                        <p className="text-[var(--text-primary)] font-semibold text-sm">Click to upload or drag and drop</p>
+                                                        <p className="adm-help mt-1">SVG, PNG, JPG or GIF</p>
                                                     </div>
                                                 </div>
                                             </div>
                                         ) : (
-                                            <div className="w-full flex gap-4 p-4 bg-slate-950/50 rounded-xl border border-white/10 items-center">
-                                                <div className="w-16 h-16 bg-white/5 rounded-lg overflow-hidden flex items-center justify-center shrink-0 border border-white/5">
+                                            <div className="w-full flex gap-4 p-4 rounded-[10px] border border-[var(--hairline)] items-center">
+                                                <div className="w-16 h-16 bg-[var(--bg-hover)] rounded-lg overflow-hidden flex items-center justify-center shrink-0 border border-[var(--hairline)]">
                                                     {imageUploadPreview && <img src={imageUploadPreview} className="w-full h-full object-cover" loading="lazy" decoding="async" />}
                                                 </div>
                                                 <div className="flex-1 min-w-0">
-                                                    <div className="flex justify-between items-start mb-2">
-                                                        <div>
-                                                            <p className="text-sm font-bold text-slate-200 truncate">{imageUploadFile ? imageUploadFile.name : 'Uploaded File'}</p>
-                                                            {imageUploadFile && <p className="text-xs font-mono text-slate-500">{(imageUploadFile.size / 1024).toFixed(1)} KB</p>}
+                                                    <div className="flex justify-between items-start gap-2 mb-2">
+                                                        <div className="min-w-0">
+                                                            <p className="text-sm font-semibold text-[var(--text-bright)] truncate">{imageUploadFile ? imageUploadFile.name : 'Uploaded File'}</p>
+                                                            {imageUploadFile && <p className="font-mono adm-help">{(imageUploadFile.size / 1024).toFixed(1)} KB</p>}
                                                         </div>
-                                                        <button type="button" onClick={() => { setImageUploadFile(null); setImageUploadPreview(null); setImageUrl(''); }} className="p-1 hover:bg-white/10 rounded text-slate-500 hover:text-white transition-colors">
-                                                            <X className="w-4 h-4" />
+                                                        <button type="button" onClick={() => { setImageUploadFile(null); setImageUploadPreview(null); setImageUrl(''); }} className="adm-icon-btn" aria-label="Remove file">
+                                                            <FaXmark className="w-4 h-4" />
                                                         </button>
                                                     </div>
                                                     {/* If we have a file but no URL yet, show upload button. If URL exists, we are ready to insert */}
@@ -520,10 +523,10 @@ export default function MarkdownToolbar({ textareaRef, value, onChange, showNoti
                                                             type="button"
                                                             onClick={handleUpload}
                                                             disabled={imageUploading}
-                                                            className="w-full py-1.5 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 border border-cyan-500/30 rounded-lg text-xs font-bold uppercase tracking-wide flex items-center justify-center gap-2"
+                                                            className="adm-btn w-full"
                                                         >
-                                                            {imageUploading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
-                                                            {imageUploading ? 'Uploading...' : 'Confirm Upload'}
+                                                            {imageUploading ? <FaSpinner className="w-3 h-3 animate-spin" /> : <FaUpload className="w-3 h-3" />}
+                                                            {imageUploading ? 'Uploading...' : 'Upload image'}
                                                         </button>
                                                     )}
                                                 </div>
@@ -534,8 +537,8 @@ export default function MarkdownToolbar({ textareaRef, value, onChange, showNoti
 
                                 {/* Preview of URL */}
                                 {imageUrl && (
-                                    <div className="rounded-xl border border-white/10 overflow-hidden bg-black/40 p-1">
-                                        <div className="text-[10px] uppercase tracking-wider text-slate-500 p-2 border-b border-white/5 mb-1">Preview</div>
+                                    <div className="rounded-[10px] border border-[var(--hairline)] overflow-hidden p-1">
+                                        <div className="adm-help p-2 border-b border-[var(--hairline)] mb-1">Preview</div>
                                         <img src={imageUrl} alt={imageAlt || 'preview'} className="max-h-48 w-full object-contain rounded-lg" />
                                     </div>
                                 )}
@@ -545,7 +548,7 @@ export default function MarkdownToolbar({ textareaRef, value, onChange, showNoti
                                 <button
                                     type="button"
                                     onClick={closeImagePopup}
-                                    className="flex-1 px-4 py-3 rounded-xl border border-white/10 hover:bg-white/5 text-slate-400 text-sm font-bold transition-colors"
+                                    className="adm-btn adm-btn-quiet flex-1"
                                 >
                                     Cancel
                                 </button>
@@ -553,9 +556,9 @@ export default function MarkdownToolbar({ textareaRef, value, onChange, showNoti
                                     type="button"
                                     onClick={insertImage}
                                     disabled={!imageUrl}
-                                    className="flex-1 px-4 py-3 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-sm font-bold transition-colors disabled:opacity-50 shadow-[0_0_20px_rgba(8,145,178,0.3)] hover:shadow-[0_0_30px_rgba(8,145,178,0.5)]"
+                                    className="adm-btn adm-btn-primary flex-1"
                                 >
-                                    Insert Image
+                                    Insert image
                                 </button>
                             </div>
                         </div>
@@ -566,52 +569,55 @@ export default function MarkdownToolbar({ textareaRef, value, onChange, showNoti
             {/* Table Insert Popup */}
             {
                 showTablePopup && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-                        <div className="bg-slate-900 border border-white/10 rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+                    <div className="adm-overlay">
+                        <div role="dialog" aria-modal="true" aria-label="Insert table" className="adm-dialog !max-w-sm p-5">
                             <div className="flex justify-between items-center mb-4">
-                                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-300">Insert Table</h3>
+                                <h3 className="text-base font-semibold text-[var(--text-bright)]">Insert table</h3>
                                 <button
                                     type="button"
                                     onClick={() => setShowTablePopup(false)}
-                                    className="p-1 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+                                    className="adm-icon-btn"
+                                    aria-label="Close"
                                 >
-                                    <X className="w-4 h-4" />
+                                    <FaXmark className="w-4 h-4" />
                                 </button>
                             </div>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
                                 <div>
-                                    <label className="block text-xs text-slate-400 mb-1">Columns</label>
+                                    <label htmlFor="md-table-cols" className="adm-label mb-1">Columns</label>
                                     <input
+                                        id="md-table-cols"
                                         type="number"
                                         min="1"
                                         max="10"
                                         value={tableCols}
                                         onChange={(e) => setTableCols(parseInt(e.target.value) || 1)}
-                                        className="w-full p-2.5 bg-slate-950/50 rounded-lg border border-white/10 focus:outline-none focus:border-cyan-500/50 text-sm text-slate-200"
+                                        className="adm-input"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-xs text-slate-400 mb-1">Data Rows</label>
+                                    <label htmlFor="md-table-rows" className="adm-label mb-1">Data rows</label>
                                     <input
+                                        id="md-table-rows"
                                         type="number"
                                         min="1"
                                         max="20"
                                         value={tableRows}
                                         onChange={(e) => setTableRows(parseInt(e.target.value) || 1)}
-                                        className="w-full p-2.5 bg-slate-950/50 rounded-lg border border-white/10 focus:outline-none focus:border-cyan-500/50 text-sm text-slate-200"
+                                        className="adm-input"
                                     />
                                 </div>
                             </div>
 
                             {/* Table preview grid */}
-                            <div className="mb-4 p-3 bg-slate-950/50 rounded-lg border border-white/10 overflow-x-auto">
-                                <p className="text-[10px] uppercase tracking-wider text-slate-500 mb-2">Preview</p>
-                                <table className="w-full text-xs text-slate-400">
+                            <div className="mb-4 p-3 rounded-[10px] border border-[var(--hairline)] overflow-x-auto">
+                                <p className="adm-help mb-2">Preview</p>
+                                <table className="w-full font-mono text-xs text-[var(--text-secondary)]">
                                     <thead>
                                         <tr>
                                             {Array.from({ length: Math.min(tableCols, 6) }, (_, i) => (
-                                                <th key={i} className="border border-white/10 px-2 py-1 text-cyan-400 font-medium">H{i + 1}</th>
+                                                <th key={i} className="border border-[var(--hairline-strong)] px-2 py-1 text-[var(--text-bright)] font-medium">H{i + 1}</th>
                                             ))}
                                         </tr>
                                     </thead>
@@ -619,14 +625,14 @@ export default function MarkdownToolbar({ textareaRef, value, onChange, showNoti
                                         {Array.from({ length: Math.min(tableRows, 4) }, (_, r) => (
                                             <tr key={r}>
                                                 {Array.from({ length: Math.min(tableCols, 6) }, (_, c) => (
-                                                    <td key={c} className="border border-white/10 px-2 py-1">Cell</td>
+                                                    <td key={c} className="border border-[var(--hairline-strong)] px-2 py-1">Cell</td>
                                                 ))}
                                             </tr>
                                         ))}
                                     </tbody>
                                 </table>
                                 {(tableRows > 4 || tableCols > 6) && (
-                                    <p className="text-[10px] text-slate-500 mt-1">Showing preview of up to 6×4</p>
+                                    <p className="adm-help mt-1">Showing preview of up to 6×4</p>
                                 )}
                             </div>
 
@@ -634,16 +640,16 @@ export default function MarkdownToolbar({ textareaRef, value, onChange, showNoti
                                 <button
                                     type="button"
                                     onClick={() => setShowTablePopup(false)}
-                                    className="flex-1 px-4 py-2 rounded-lg border border-white/10 hover:bg-white/5 text-slate-400 text-sm font-medium transition-colors"
+                                    className="adm-btn adm-btn-quiet flex-1"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="button"
                                     onClick={insertTable}
-                                    className="flex-1 px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-sm font-bold transition-colors shadow-[0_0_15px_rgba(8,145,178,0.3)]"
+                                    className="adm-btn adm-btn-primary flex-1"
                                 >
-                                    Insert Table
+                                    Insert table
                                 </button>
                             </div>
                         </div>

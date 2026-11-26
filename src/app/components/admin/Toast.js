@@ -1,23 +1,16 @@
 "use client";
-import { CheckCircle, XCircle } from 'lucide-react';
+import { FaCircleCheck, FaCircleXmark } from 'react-icons/fa6';
 
 export default function Toast({ notification, onClose }) {
     if (!notification) return null;
 
     return (
         <div
-            className={`fixed bottom-8 right-8 p-4 rounded-xl border shadow-2xl backdrop-blur-xl z-50 flex items-center gap-3 animate-in slide-in-from-bottom-5 fade-in duration-300 ${
-                notification.success
-                    ? 'bg-green-500/10 border-green-500/20 text-green-400'
-                    : 'bg-red-500/10 border-red-500/20 text-red-400'
-            }`}
+            role="status"
+            className={`adm-toast ${notification.success ? '' : 'adm-toast-error'} fixed bottom-4 right-4 sm:bottom-8 sm:right-8 z-50 animate-in slide-in-from-bottom-5 fade-in duration-200`}
         >
-            {notification.success ? (
-                <CheckCircle className="w-5 h-5" />
-            ) : (
-                <XCircle className="w-5 h-5" />
-            )}
-            <span className="font-mono text-sm font-bold">{notification.message}</span>
+            {notification.success ? <FaCircleCheck /> : <FaCircleXmark />}
+            <span>{notification.message}</span>
         </div>
     );
 }

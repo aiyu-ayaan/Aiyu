@@ -1,7 +1,7 @@
 "use client";
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { AlertTriangle, CheckCircle, Info, XCircle } from "lucide-react";
+import { FaCircleCheck, FaCircleInfo, FaCircleXmark, FaTriangleExclamation } from "react-icons/fa6";
 
 /**
  * Global admin feedback layer: promise-based confirm/prompt dialogs and a
@@ -104,20 +104,16 @@ function ToastStack({ toasts, onClose }) {
     const mounted = useMounted();
     if (!mounted) return null;
     return createPortal(
-        <div className="fixed bottom-8 right-8 z-[100] flex flex-col gap-3">
+        <div className="fixed bottom-4 right-4 sm:bottom-8 sm:right-8 z-[100] flex flex-col items-end gap-3">
             {toasts.map((t) => (
                 <div
                     key={t.id}
                     role="status"
                     onClick={() => onClose(t.id)}
-                    className={`cursor-pointer p-4 rounded-xl border shadow-2xl backdrop-blur-xl flex items-center gap-3 animate-in slide-in-from-bottom-5 fade-in duration-300 ${
-                        t.success
-                            ? "bg-green-500/10 border-green-500/20 text-green-400"
-                            : "bg-red-500/10 border-red-500/20 text-red-400"
-                    }`}
+                    className={`adm-toast ${t.success ? "" : "adm-toast-error"} cursor-pointer animate-in slide-in-from-bottom-5 fade-in duration-200`}
                 >
-                    {t.success ? <CheckCircle className="w-5 h-5 shrink-0" /> : <XCircle className="w-5 h-5 shrink-0" />}
-                    <span className="font-mono text-sm font-bold whitespace-pre-line">{t.message}</span>
+                    {t.success ? <FaCircleCheck /> : <FaCircleXmark />}
+                    <span>{t.message}</span>
                 </div>
             ))}
         </div>,
@@ -142,13 +138,7 @@ function FeedbackDialog({ dialog, onClose }) {
     const [checked, setChecked] = useState(false);
     const inputRef = useRef(null);
     const mounted = useMounted();
-
-    const accent = danger
-        ? "bg-red-500/10 border-red-500/20 text-red-400"
-        : "bg-cyan-500/10 border-cyan-500/20 text-cyan-400";
-    const confirmBtn = danger
-        ? "bg-red-500/90 hover:bg-red-500 text-white"
-        : "bg-cyan-500/90 hover:bg-cyan-500 text-white";
+    const titleId = useId();
 
     const resolveConfirm = (confirmed) => (checkbox ? { confirmed, checked } : confirmed);
     const submit = () => onClose(mode === "prompt" ? input : resolveConfirm(true));
@@ -158,27 +148,28 @@ function FeedbackDialog({ dialog, onClose }) {
 
     return createPortal(
         <div
-            className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+            className="adm-overlay !z-[110] animate-in fade-in duration-200"
             onMouseDown={(e) => { if (e.target === e.currentTarget) cancel(); }}
         >
             <div
                 role="dialog"
                 aria-modal="true"
-                className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0f172a] shadow-2xl animate-in zoom-in-95 fade-in duration-200"
+                aria-labelledby={titleId}
+                className="adm-dialog animate-in zoom-in-95 fade-in duration-200"
                 onKeyDown={(e) => {
                     if (e.key === "Escape") cancel();
                     if (e.key === "Enter" && mode !== "prompt") submit();
                 }}
             >
-                <div className="p-6">
+                <div className="p-5">
                     <div className="flex items-start gap-3">
-                        <div className={`shrink-0 rounded-xl border p-2 ${accent}`}>
-                            {danger ? <AlertTriangle className="w-5 h-5" /> : <Info className="w-5 h-5" />}
-                        </div>
+                        {danger
+                            ? <FaTriangleExclamation className="mt-1 shrink-0 text-[var(--adm-error-ink)]" />
+                            : <FaCircleInfo className="mt-1 shrink-0 text-[var(--accent-cyan)]" />}
                         <div className="flex-1 min-w-0">
-                            <h3 className="text-base font-bold text-slate-100">{title}</h3>
+                            <h3 id={titleId} className="text-base font-semibold text-[var(--text-bright)]">{title}</h3>
                             {message && (
-                                <p className="mt-1 text-sm text-slate-400 whitespace-pre-line">{message}</p>
+                                <p className="mt-1 text-sm text-[var(--text-secondary)] whitespace-pre-line">{message}</p>
                             )}
                         </div>
                     </div>
@@ -189,38 +180,35 @@ function FeedbackDialog({ dialog, onClose }) {
                             autoFocus
                             value={input}
                             placeholder={placeholder}
+                            aria-labelledby={titleId}
                             onChange={(e) => setInput(e.target.value)}
                             onKeyDown={(e) => { if (e.key === "Enter") submit(); }}
-                            className="mt-4 w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-slate-100 outline-none focus:border-cyan-500/50"
+                            className="adm-input mt-4"
                         />
                     )}
 
                     {mode === "confirm" && checkbox && (
-                        <label className="mt-5 flex items-center gap-2.5 cursor-pointer select-none text-sm text-slate-400 hover:text-slate-300">
+                        <label className="mt-4 flex min-h-11 items-center gap-2.5 cursor-pointer select-none text-sm text-[var(--text-secondary)]">
                             <input
                                 type="checkbox"
                                 checked={checked}
                                 onChange={(e) => setChecked(e.target.checked)}
-                                className="h-4 w-4 rounded border-white/20 bg-black/30 accent-cyan-500 cursor-pointer"
+                                className="adm-check"
                             />
                             {checkbox.label || "Don't show this again"}
                         </label>
                     )}
                 </div>
 
-                <div className="flex justify-end gap-3 border-t border-white/10 px-6 py-4">
-                    <button
-                        type="button"
-                        onClick={cancel}
-                        className="rounded-lg border border-white/10 px-4 py-2 text-sm font-semibold text-slate-300 hover:bg-white/5 transition-colors"
-                    >
+                <div className="flex justify-end gap-2 border-t border-[var(--hairline)] px-5 py-3">
+                    <button type="button" onClick={cancel} className="adm-btn adm-btn-quiet">
                         {cancelText}
                     </button>
                     <button
                         type="button"
                         autoFocus={mode !== "prompt"}
                         onClick={submit}
-                        className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${confirmBtn}`}
+                        className={`adm-btn ${danger ? "adm-btn-danger" : "adm-btn-primary"}`}
                     >
                         {confirmText}
                     </button>

@@ -2,27 +2,24 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import {
-    FaArrowRight, FaArrowTrendUp, FaArrowTrendDown, FaPlus,
-    FaEye, FaUsers, FaEnvelope, FaArrowUpRightFromSquare,
-    FaClockRotateLeft, FaDesktop, FaGlobe, FaLink,
-    FaServer, FaMicrochip, FaMemory, FaHardDrive, FaDatabase,
-    FaCircleCheck, FaCircleXmark,
+    FaArrowTrendUp, FaArrowTrendDown, FaPlus, FaCircleCheck, FaCircleXmark,
 } from "react-icons/fa6";
 import { ACCENT } from "@/app/components/admin/shell/navConfig";
+import { PageHeader, Panel, Stat, Badge, EmptyState, Loading } from "@/app/components/admin/ui";
 
 /* ── Quick actions (create shortcuts) ─────────────────────────────── */
 const QUICK_ACTIONS = [
-    { label: "New Blog", href: "/admin/blogs/new", accent: "teal" },
-    { label: "New Project", href: "/admin/projects/new", accent: "blue" },
-    { label: "New App", href: "/admin/apps/new", accent: "cyan" },
-    { label: "New Deployment", href: "/admin/deployments/new", accent: "emerald" },
+    { label: "New blog", href: "/admin/blogs/new" },
+    { label: "New project", href: "/admin/projects/new" },
+    { label: "New app", href: "/admin/apps/new" },
+    { label: "New deployment", href: "/admin/apps/new" },
 ];
 
 const KPI_META = [
-    { key: "views", label: "Page Views", icon: FaEye, accent: "cyan" },
-    { key: "uniques", label: "Unique Visitors", icon: FaUsers, accent: "violet" },
-    { key: "contacts", label: "Contacts", icon: FaEnvelope, accent: "green" },
-    { key: "outboundClicks", label: "Outbound Clicks", icon: FaArrowUpRightFromSquare, accent: "amber" },
+    { key: "views", label: "Page views" },
+    { key: "uniques", label: "Unique visitors" },
+    { key: "contacts", label: "Contacts" },
+    { key: "outboundClicks", label: "Outbound clicks" },
 ];
 
 const AUDIT_ACCENT = { auth: "sky", content: "teal", system: "amber", security: "rose" };
@@ -61,63 +58,40 @@ function fmtUptime(seconds) {
     return [d ? `${d}d` : "", h ? `${h}h` : "", `${m}m`].filter(Boolean).join(" ");
 }
 function meterColor(pct) {
-    if (pct >= 90) return "bg-red-500";
-    if (pct >= 70) return "bg-amber-500";
-    return "bg-emerald-500";
+    if (pct >= 90) return "bg-[var(--status-error)]";
+    if (pct >= 70) return "bg-[var(--status-warning)]";
+    return "bg-[var(--status-success)]";
 }
 
 /* ── Building blocks ──────────────────────────────────────────────── */
-function Card({ title, icon: Icon, action, children, className = "" }) {
-    return (
-        <section className={`rounded-2xl bg-slate-900/50 backdrop-blur-md border border-white/5 ${className}`}>
-            {(title || action) && (
-                <header className="flex items-center justify-between px-5 py-4 border-b border-white/5">
-                    <h2 className="flex items-center gap-2.5 text-sm font-semibold text-white">
-                        {Icon && <Icon className="text-slate-500 text-[13px]" />}
-                        {title}
-                    </h2>
-                    {action}
-                </header>
-            )}
-            {children}
-        </section>
-    );
-}
-
-function StatCard({ meta, value, prev, series }) {
-    const accent = ACCENT[meta.accent] || ACCENT.slate;
-    const Icon = meta.icon;
+function KpiStat({ meta, value, prev, series }) {
     const d = delta(value, prev);
     const max = series && series.length ? Math.max(...series, 1) : 1;
     return (
-        <div className="relative p-5 rounded-2xl bg-slate-900/50 backdrop-blur-md border border-white/5 overflow-hidden">
-            <div className="flex items-start justify-between">
-                <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${accent.bgSoft} ${accent.text}`}>
-                    <Icon className="text-[15px]" />
-                </div>
-                {d != null && (
-                    <span className={`inline-flex items-center gap-1 text-xs font-mono px-2 py-1 rounded-lg ${d >= 0 ? "text-emerald-400 bg-emerald-500/10" : "text-red-400 bg-red-500/10"}`}>
-                        {d >= 0 ? <FaArrowTrendUp /> : <FaArrowTrendDown />}{Math.abs(d)}%
-                    </span>
-                )}
-            </div>
-            <p className="mt-4 text-3xl font-bold text-white tracking-tight tabular-nums">{formatNum(value)}</p>
-            <p className="text-sm text-slate-400">{meta.label}</p>
+        <Stat
+            label={meta.label}
+            value={formatNum(value)}
+            hint={d != null && (
+                <Badge tone={d >= 0 ? "ok" : "error"}>
+                    {d >= 0 ? <FaArrowTrendUp aria-label="Up" /> : <FaArrowTrendDown aria-label="Down" />}{Math.abs(d)}%
+                </Badge>
+            )}
+        >
             {series && series.length > 0 && (
-                <div className="mt-4 flex items-end gap-0.5 h-8">
+                <div aria-hidden="true" className="mt-3 flex items-end gap-0.5 h-8">
                     {series.map((v, i) => (
-                        <span key={i} className={`flex-1 rounded-sm ${accent.dot} opacity-40`} style={{ height: `${Math.max(6, (v / max) * 100)}%` }} />
+                        <span key={i} className="flex-1 rounded-sm bg-[var(--accent-cyan)] opacity-40" style={{ height: `${Math.max(6, (v / max) * 100)}%` }} />
                     ))}
                 </div>
             )}
-        </div>
+        </Stat>
     );
 }
 
 /** Filled SVG area chart for the traffic series (views) with a uniques line. */
 function TrafficChart({ series }) {
     if (!series || series.length < 2) {
-        return <p className="px-5 py-10 text-center text-sm text-slate-500">Not enough data yet.</p>;
+        return <EmptyState title="Not enough data yet." />;
     }
     const W = 100, H = 42;
     const n = series.length;
@@ -129,42 +103,35 @@ function TrafficChart({ series }) {
     const area = `M0,${H} L${viewsPts.join(" L")} L${W},${H} Z`;
     const total = series.reduce((a, s) => a + s.views, 0);
     return (
-        <div className="p-5">
-            <div className="flex items-baseline gap-3 mb-3">
-                <span className="text-2xl font-bold text-white tabular-nums">{formatNum(total)}</span>
-                <span className="text-xs text-slate-500">views · last {n} days</span>
-                <span className="ml-auto flex items-center gap-3 text-[11px] font-mono">
-                    <span className="flex items-center gap-1.5 text-cyan-400"><span className="h-2 w-2 rounded-full bg-cyan-400" />Views</span>
-                    <span className="flex items-center gap-1.5 text-violet-400"><span className="h-2 w-2 rounded-full bg-violet-400" />Uniques</span>
+        <div className="adm-panel-body">
+            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 mb-3">
+                <span className="adm-num text-2xl font-semibold text-[var(--text-bright)]">{formatNum(total)}</span>
+                <span className="adm-help">views, last {n} days</span>
+                <span className="ml-auto flex items-center gap-3 font-mono text-xs text-[var(--text-secondary)]">
+                    <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-[var(--accent-cyan)]" />Views</span>
+                    <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-[var(--accent-purple)]" />Uniques</span>
                 </span>
             </div>
-            <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="w-full h-40">
-                <defs>
-                    <linearGradient id="trafficFill" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="rgb(34,211,238)" stopOpacity="0.35" />
-                        <stop offset="100%" stopColor="rgb(34,211,238)" stopOpacity="0" />
-                    </linearGradient>
-                </defs>
-                <path d={area} fill="url(#trafficFill)" />
-                <polyline points={uniqPts.join(" ")} fill="none" stroke="rgb(167,139,250)" strokeWidth="1" vectorEffect="non-scaling-stroke" opacity="0.8" />
-                <polyline points={viewsPts.join(" ")} fill="none" stroke="rgb(34,211,238)" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
+            <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="w-full h-40" role="img" aria-label={`Traffic: ${total} views over the last ${n} days`}>
+                <path d={area} style={{ fill: "var(--accent-cyan)", fillOpacity: 0.12 }} />
+                <polyline points={uniqPts.join(" ")} fill="none" style={{ stroke: "var(--accent-purple)" }} strokeWidth="1" vectorEffect="non-scaling-stroke" />
+                <polyline points={viewsPts.join(" ")} fill="none" style={{ stroke: "var(--accent-cyan)" }} strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
             </svg>
         </div>
     );
 }
 
 /** Ranked list with proportional bars (top pages, devices, countries…). */
-function BarList({ rows, accent = "cyan", empty = "No data yet." }) {
-    const a = ACCENT[accent] || ACCENT.cyan;
-    if (!rows || rows.length === 0) return <p className="px-5 py-8 text-center text-sm text-slate-500">{empty}</p>;
+function BarList({ rows, empty = "No data yet." }) {
+    if (!rows || rows.length === 0) return <EmptyState title={empty} />;
     const max = Math.max(...rows.map((r) => r.value), 1);
     return (
-        <ul className="p-2">
+        <ul className="adm-list">
             {rows.map((r, i) => (
-                <li key={i} className="relative flex items-center gap-3 px-3 py-2 rounded-lg overflow-hidden">
-                    <span className={`absolute inset-y-1 left-0 rounded-md ${a.bgSoft}`} style={{ width: `${(r.value / max) * 100}%` }} />
-                    <span className="relative z-10 min-w-0 flex-1 text-sm text-slate-200 truncate">{r.label}</span>
-                    <span className="relative z-10 text-sm font-mono text-slate-400 tabular-nums">{formatNum(r.value)}</span>
+                <li key={i} className="adm-row relative">
+                    <span aria-hidden="true" className="absolute inset-y-1.5 left-0 rounded-r-md bg-[color-mix(in_srgb,var(--accent-cyan)_12%,transparent)]" style={{ width: `${(r.value / max) * 100}%` }} />
+                    <span className="relative min-w-0 flex-1 truncate">{r.label}</span>
+                    <span className="adm-num relative text-[var(--text-secondary)]">{formatNum(r.value)}</span>
                 </li>
             ))}
         </ul>
@@ -172,22 +139,24 @@ function BarList({ rows, accent = "cyan", empty = "No data yet." }) {
 }
 
 /** Compact horizontal usage meter for the Server Health widget. */
-function HealthMeter({ icon: Icon, label, percent, sub, accent }) {
+function HealthMeter({ label, percent, sub }) {
     const pct = Math.max(0, Math.min(100, Math.round(percent || 0)));
     return (
-        <div className="px-4 py-3">
+        <div className="px-4 sm:px-5 py-3">
             <div className="flex items-center justify-between mb-1.5">
-                <span className="flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-slate-400">
-                    <Icon className={accent} /> {label}
-                </span>
-                <span className="text-sm font-bold tabular-nums text-white">{pct}%</span>
+                <span className="text-sm text-[var(--text-secondary)]">{label}</span>
+                <span className="adm-num font-semibold text-[var(--text-bright)]">{pct}%</span>
             </div>
-            <div className="h-1.5 rounded-full bg-slate-800 overflow-hidden">
-                <div className={`h-full rounded-full transition-all duration-500 ${meterColor(pct)}`} style={{ width: `${pct}%` }} />
+            <div className="h-1.5 rounded-full bg-[var(--bg-hover)] overflow-hidden">
+                <div className={`h-full rounded-full transition-all duration-200 ${meterColor(pct)}`} style={{ width: `${pct}%` }} />
             </div>
-            {sub && <div className="mt-1 text-[11px] font-mono text-slate-600">{sub}</div>}
+            {sub && <div className="adm-help mt-1 font-mono">{sub}</div>}
         </div>
     );
+}
+
+function DetailsLink({ href, children = "Details" }) {
+    return <Link href={href} className="adm-link inline-flex min-h-11 sm:min-h-8 items-center text-sm">{children}</Link>;
 }
 
 /* ── Dashboard ────────────────────────────────────────────────────── */
@@ -257,160 +226,132 @@ export default function AdminDashboard() {
         .slice(0, 6);
 
     return (
-        <div className="p-5 md:p-8 max-w-7xl mx-auto">
-            {/* Header */}
-            <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
-                <div>
-                    <p className="text-sm font-mono uppercase tracking-widest text-cyan-400/80 mb-1">
-                        {new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}
-                    </p>
-                    <h1 className="text-3xl md:text-4xl font-bold text-white tracking-tight">{greeting}, Admin</h1>
-                    <p className="text-slate-400 mt-1">Your site at a glance — last 30 days.</p>
-                </div>
-                <Link href="/admin/analytics" className="flex items-center gap-2 px-4 py-2 rounded-xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.06] text-sm text-slate-300 hover:text-white transition-colors">
-                    Full analytics <FaArrowRight className="text-[11px]" />
-                </Link>
-            </header>
+        <div className="adm-page">
+            <PageHeader
+                command="status"
+                title={`${greeting}, Admin`}
+                description={`${new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}. Your site over the last 30 days.`}
+                actions={<Link href="/admin/analytics" className="adm-btn">Full analytics</Link>}
+            />
 
             {/* KPI row */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                {status === "loading" && Array.from({ length: 4 }).map((_, i) => (
-                    <div key={i} className="h-[168px] rounded-2xl bg-slate-900/40 border border-white/5 animate-pulse" />
-                ))}
-                {status === "error" && (
-                    <div className="col-span-2 lg:col-span-4 p-6 rounded-2xl border border-white/5 bg-slate-900/40 text-center text-slate-400 text-sm">
-                        Analytics are unavailable right now. <Link href="/admin/analytics" className="text-cyan-400 hover:underline">Open Analytics →</Link>
-                    </div>
-                )}
-                {status === "ready" && KPI_META.map((meta) => (
-                    <StatCard
-                        key={meta.key}
-                        meta={meta}
-                        value={data.kpis?.[meta.key] ?? 0}
-                        prev={data.prevKpis?.[meta.key]}
-                        series={meta.key === "views" ? viewsSeries : meta.key === "uniques" ? uniquesSeries : null}
-                    />
-                ))}
-            </div>
+            {status === "error" ? (
+                <div role="alert" className="adm-notice adm-notice-warn">
+                    Analytics are unavailable right now. <Link href="/admin/analytics" className="underline underline-offset-4">Open Analytics</Link>
+                </div>
+            ) : (
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    {status === "loading" && Array.from({ length: 4 }).map((_, i) => (
+                        <div key={i} aria-hidden="true" className="adm-skeleton h-32" />
+                    ))}
+                    {status === "ready" && KPI_META.map((meta) => (
+                        <KpiStat
+                            key={meta.key}
+                            meta={meta}
+                            value={data.kpis?.[meta.key] ?? 0}
+                            prev={data.prevKpis?.[meta.key]}
+                            series={meta.key === "views" ? viewsSeries : meta.key === "uniques" ? uniquesSeries : null}
+                        />
+                    ))}
+                </div>
+            )}
 
             {/* Quick actions strip */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-                {QUICK_ACTIONS.map((act) => {
-                    const accent = ACCENT[act.accent] || ACCENT.slate;
-                    return (
-                        <Link key={act.href} href={act.href} className={`group flex items-center gap-3 p-4 rounded-xl border border-white/10 bg-slate-900/40 hover:bg-slate-900/70 transition-all ${accent.border}`}>
-                            <span className={`flex h-8 w-8 items-center justify-center rounded-lg ${accent.bgSoft} ${accent.text}`}>
-                                <FaPlus className="text-[12px]" />
-                            </span>
-                            <span className="text-sm font-semibold text-white truncate">{act.label}</span>
-                            <FaArrowRight className="ml-auto text-slate-600 group-hover:text-white text-xs transition-colors" />
-                        </Link>
-                    );
-                })}
+            <div className="adm-actions">
+                {QUICK_ACTIONS.map((act) => (
+                    <Link key={act.href} href={act.href} className="adm-btn">
+                        <FaPlus aria-hidden="true" className="text-[12px] text-[var(--accent-cyan)]" />
+                        {act.label}
+                    </Link>
+                ))}
             </div>
 
             {/* Traffic (full width hero chart) */}
-            <div className="mb-6">
-                <Card title="Traffic" icon={FaEye} action={<Link href="/admin/analytics" className="text-xs font-mono text-slate-500 hover:text-cyan-400">Details →</Link>}>
-                    {status === "loading" ? <div className="h-52 animate-pulse" /> : <TrafficChart series={data?.series?.slice(-30) || []} />}
-                </Card>
-            </div>
+            <Panel title="Traffic" actions={<DetailsLink href="/admin/analytics" />} flush>
+                {status === "loading" ? <Loading label="Loading traffic" rows={4} /> : <TrafficChart series={data?.series?.slice(-30) || []} />}
+            </Panel>
 
             {/* Masonry of widgets — column-fill:balance packs by height so there
                 are no empty gaps between uneven cards. */}
-            <div className="columns-1 md:columns-2 xl:columns-3 gap-6 [column-fill:_balance]">
-                <div className="mb-6 break-inside-avoid">
-                    <Card title="Server Health" icon={FaServer} action={
-                        <div className="flex items-center gap-3">
-                            {health && <span className="flex items-center gap-1.5 text-[11px] font-mono text-emerald-400"><span className="relative flex h-2 w-2"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" /><span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" /></span>Live</span>}
-                            <Link href="/admin/health" className="text-xs font-mono text-slate-500 hover:text-cyan-400">Details →</Link>
-                        </div>
-                    }>
-                        {health == null ? (
-                            <div className="p-5 space-y-4">{Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-8 rounded-lg bg-white/[0.03] animate-pulse" />)}</div>
-                        ) : (() => {
-                            const m = health.metrics;
-                            const up = health.uptime.filter((t) => t.latest?.status === "up").length;
-                            const down = health.uptime.filter((t) => t.latest?.status === "down").length;
-                            const dbUp = m.database?.status === "up";
-                            return (
-                                <div className="divide-y divide-white/5">
-                                    <HealthMeter icon={FaMicrochip} label="CPU" percent={m.cpu.percent} accent="text-cyan-400"
-                                        sub={`${m.cpu.cores} cores · load ${m.cpu.loadAvg.join(" / ")}`} />
-                                    <HealthMeter icon={FaMemory} label="Memory" percent={m.memory.usedPercent} accent="text-violet-400"
-                                        sub={`${fmtBytes(m.memory.used)} / ${fmtBytes(m.memory.total)}`} />
-                                    <HealthMeter icon={FaHardDrive} label="Disk" percent={m.disk?.usedPercent ?? 0} accent="text-amber-400"
-                                        sub={m.disk ? `${fmtBytes(m.disk.free)} free` : "unavailable"} />
-                                    <div className="grid grid-cols-3 divide-x divide-white/5">
-                                        <div className="px-4 py-3">
-                                            <div className="flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-widest text-slate-500 mb-1"><FaDatabase className={dbUp ? "text-emerald-400" : "text-red-400"} /> DB</div>
-                                            <div className={`text-sm font-bold tabular-nums ${dbUp ? "text-emerald-400" : "text-red-400"}`}>{dbUp ? `${m.database.latencyMs}ms` : "down"}</div>
-                                        </div>
-                                        <div className="px-4 py-3">
-                                            <div className="flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-widest text-slate-500 mb-1"><FaServer className="text-slate-400" /> Uptime</div>
-                                            <div className="text-sm font-bold tabular-nums text-white">{fmtUptime(m.process.uptimeSeconds)}</div>
-                                        </div>
-                                        <div className="px-4 py-3">
-                                            <div className="flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-widest text-slate-500 mb-1">Endpoints</div>
-                                            <div className="flex items-center gap-2 text-sm font-bold tabular-nums">
-                                                <span className="flex items-center gap-1 text-emerald-400"><FaCircleCheck className="text-[11px]" />{up}</span>
-                                                <span className="flex items-center gap-1 text-red-400"><FaCircleXmark className="text-[11px]" />{down}</span>
-                                            </div>
-                                        </div>
+            <div className="columns-1 md:columns-2 xl:columns-3 gap-6 [column-fill:_balance] [&>*]:mb-6 [&>*]:break-inside-avoid">
+                <Panel title="Server health" flush actions={
+                    <>
+                        {health && <Badge tone="ok">Live</Badge>}
+                        <DetailsLink href="/admin/health" />
+                    </>
+                }>
+                    {health == null ? (
+                        <Loading label="Loading server health" />
+                    ) : (() => {
+                        const m = health.metrics;
+                        const up = health.uptime.filter((t) => t.latest?.status === "up").length;
+                        const down = health.uptime.filter((t) => t.latest?.status === "down").length;
+                        const dbUp = m.database?.status === "up";
+                        return (
+                            <div className="adm-list">
+                                <HealthMeter label="CPU" percent={m.cpu.percent}
+                                    sub={`${m.cpu.cores} cores · load ${m.cpu.loadAvg.join(" / ")}`} />
+                                <HealthMeter label="Memory" percent={m.memory.usedPercent}
+                                    sub={`${fmtBytes(m.memory.used)} / ${fmtBytes(m.memory.total)}`} />
+                                <HealthMeter label="Disk" percent={m.disk?.usedPercent ?? 0}
+                                    sub={m.disk ? `${fmtBytes(m.disk.free)} free` : "unavailable"} />
+                                <dl className="grid grid-cols-3 divide-x divide-[var(--hairline)]">
+                                    <div className="px-4 py-3">
+                                        <dt className="adm-help">Database</dt>
+                                        <dd className={`adm-num font-semibold ${dbUp ? "text-[var(--adm-ok-ink)]" : "text-[var(--adm-error-ink)]"}`}>{dbUp ? `${m.database.latencyMs}ms` : "down"}</dd>
                                     </div>
-                                </div>
-                            );
-                        })()}
-                    </Card>
-                </div>
+                                    <div className="px-4 py-3">
+                                        <dt className="adm-help">Uptime</dt>
+                                        <dd className="adm-num font-semibold text-[var(--text-bright)]">{fmtUptime(m.process.uptimeSeconds)}</dd>
+                                    </div>
+                                    <div className="px-4 py-3">
+                                        <dt className="adm-help">Endpoints</dt>
+                                        <dd className="adm-num flex items-center gap-2 font-semibold">
+                                            <span className="flex items-center gap-1 text-[var(--adm-ok-ink)]"><FaCircleCheck aria-label="Up" className="text-[11px]" />{up}</span>
+                                            <span className="flex items-center gap-1 text-[var(--adm-error-ink)]"><FaCircleXmark aria-label="Down" className="text-[11px]" />{down}</span>
+                                        </dd>
+                                    </div>
+                                </dl>
+                            </div>
+                        );
+                    })()}
+                </Panel>
 
-                <div className="mb-6 break-inside-avoid">
-                    <Card title="Recent Activity" icon={FaClockRotateLeft} action={<Link href="/admin/security" className="text-xs font-mono text-slate-500 hover:text-cyan-400">Audit log →</Link>}>
-                        {logs == null ? (
-                            <div className="p-5 space-y-3">{Array.from({ length: 5 }).map((_, i) => <div key={i} className="h-8 rounded-lg bg-white/[0.03] animate-pulse" />)}</div>
-                        ) : logs.length === 0 ? (
-                            <p className="px-5 py-8 text-center text-sm text-slate-500">No activity logged yet.</p>
-                        ) : (
-                            <ul className="p-2">
-                                {logs.map((log) => {
-                                    const accent = ACCENT[AUDIT_ACCENT[log.category] || "slate"] || ACCENT.slate;
-                                    return (
-                                        <li key={log._id} className="flex items-start gap-3 px-3 py-2.5 rounded-lg hover:bg-white/[0.03]">
-                                            <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${accent.dot}`} />
-                                            <span className="min-w-0 flex-1">
-                                                <span className="block text-sm text-slate-200 truncate">{log.action?.replace(/_/g, " ").toLowerCase()}</span>
-                                                {log.details && <span className="block text-xs text-slate-500 truncate">{log.details}</span>}
-                                            </span>
-                                            <span className="shrink-0 text-[11px] font-mono text-slate-600 whitespace-nowrap">{timeAgo(log.createdAt)}</span>
-                                        </li>
-                                    );
-                                })}
-                            </ul>
-                        )}
-                    </Card>
-                </div>
+                <Panel title="Recent activity" actions={<DetailsLink href="/admin/security">Audit log</DetailsLink>} flush>
+                    {logs == null ? (
+                        <Loading label="Loading activity" rows={5} />
+                    ) : logs.length === 0 ? (
+                        <EmptyState title="No activity logged yet." />
+                    ) : (
+                        <ul className="adm-list">
+                            {logs.map((log) => {
+                                const accent = ACCENT[AUDIT_ACCENT[log.category] || "slate"] || ACCENT.slate;
+                                return (
+                                    <li key={log._id} className="adm-row !items-start">
+                                        <span aria-hidden="true" className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${accent.dot}`} />
+                                        <span className="min-w-0 flex-1">
+                                            <span className="block truncate">{log.action?.replace(/_/g, " ").toLowerCase()}</span>
+                                            {log.details && <span className="adm-help block truncate">{log.details}</span>}
+                                        </span>
+                                        <span className="adm-help shrink-0 font-mono whitespace-nowrap">{timeAgo(log.createdAt)}</span>
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    )}
+                </Panel>
 
-                <div className="mb-6 break-inside-avoid">
-                    <Card title="Top Pages" icon={FaLink}><BarList rows={topPages} accent="cyan" empty="No page views recorded yet." /></Card>
-                </div>
+                <Panel title="Top pages" flush><BarList rows={topPages} empty="No page views recorded yet." /></Panel>
 
                 {topContent.length > 0 && (
-                    <div className="mb-6 break-inside-avoid">
-                        <Card title="Top Content" icon={FaEye}><BarList rows={topContent} accent="fuchsia" /></Card>
-                    </div>
+                    <Panel title="Top content" flush><BarList rows={topContent} /></Panel>
                 )}
 
-                <div className="mb-6 break-inside-avoid">
-                    <Card title="Devices" icon={FaDesktop}><BarList rows={devices} accent="violet" /></Card>
-                </div>
+                <Panel title="Devices" flush><BarList rows={devices} /></Panel>
 
-                <div className="mb-6 break-inside-avoid">
-                    <Card title="Top Countries" icon={FaGlobe}><BarList rows={countries} accent="emerald" /></Card>
-                </div>
+                <Panel title="Top countries" flush><BarList rows={countries} /></Panel>
 
-                <div className="mb-6 break-inside-avoid">
-                    <Card title="Referrers" icon={FaLink}><BarList rows={referrers} accent="amber" /></Card>
-                </div>
+                <Panel title="Referrers" flush><BarList rows={referrers} /></Panel>
             </div>
         </div>
     );
