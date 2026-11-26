@@ -50,15 +50,9 @@ export const PREPAINT_BOOT_GATE = `
               (function() {
                 try {
                   var path = location.pathname || '';
-                  // Blogs (any version prefix), the admin panel and the /desktop
-                  // environment are meant to load instantly — never boot-gate
-                  // them, not even first visit. /desktop is an app shell, so the
-                  // splash only delayed the desktop by the full boot sequence
-                  // while its greeting timer competed with the shell's mount.
-                  var skipRoute =
-                    /^\\/(?:v1\\/|v2\\/)?blogs(?:\\/|$)/.test(path) ||
-                    /^\\/admin(?:\\/|$)/.test(path) ||
-                    /^\\/desktop(?:\\/|$)/.test(path);
+                  // The boot screen and its loading bar belong to the home page
+                  // only: every other route loads straight into its content.
+                  var skipRoute = path !== '/';
                   // Skip boot screen during e2e tests. Playwright/WebDriver
                   // automation sets navigator.webdriver = true in both headed
                   // and headless modes (the UA does NOT contain 'Playwright').
