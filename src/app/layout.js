@@ -93,7 +93,8 @@ export const viewport = {
   themeColor: '#111827',
 }
 
-import GoogleAnalytics from "./components/GoogleAnalytics";
+// Neutral file name: ad blockers refuse a dev-server module called GoogleAnalytics.js, which blanks the whole app.
+import GoogleAnalytics from "./components/SiteMeasure";
 import { isAdminViewer } from "@/lib/adminPresence";
 import ClientEnhancements from "./components/shared/ClientEnhancements";
 import DynamicLiveCommitStream from "./components/shared/DynamicLiveCommitStream";

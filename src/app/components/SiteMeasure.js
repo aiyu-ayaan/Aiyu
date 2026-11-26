@@ -2,7 +2,7 @@
 import { Suspense, useEffect, useRef } from 'react';
 import Script from 'next/script';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { gtag, pageview } from '@/lib/gtag';
+import { gtag, pageview } from '@/lib/measureQueue';
 
 // GA measurement IDs are only letters, digits and dashes (e.g. G-XXXXXXX);
 // the ID can come from admin config, so validate before use.

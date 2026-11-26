@@ -1,7 +1,7 @@
 import V2Header from "./V2Header";
 import V2Footer from "./V2Footer";
 import V2Backdrop from "./V2Backdrop";
-import AnalyticsBeacon from "../../shared/AnalyticsBeacon";
+import AnalyticsBeacon from "../../shared/ViewBeacon";
 
 /**
  * Points the header's resume nav link at the configured resume (uploaded file

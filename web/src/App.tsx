@@ -7,7 +7,8 @@ import BootLoader from '@/app/components/shared/BootLoader';
 import ClientEnhancements from '@/app/components/shared/ClientEnhancements';
 import WebMCPTools from '@/app/components/agent/WebMCPTools';
 import DynamicLiveCommitStream from '@/app/components/shared/DynamicLiveCommitStream';
-import GoogleAnalytics from '@/app/components/GoogleAnalytics';
+// Neutral file name: ad blockers refuse a dev-server module called GoogleAnalytics.js, which blanks the whole app.
+import GoogleAnalytics from '@/app/components/SiteMeasure';
 import Script from 'next/script';
 import { BlogsIndex, SiteLayout } from './routes/site';
 import { adminRoutes } from './routes/admin';

@@ -15,19 +15,9 @@
 import { prisma } from '@/lib/prisma';
 import { getSingleton, upsertSingleton } from '@/lib/serialize';
 import cache from '@/lib/cache';
+import { SOCIAL_PAGES } from '@/lib/socialPages';
 
-// Public pages an admin can override social metadata for. `key` is the logical
-// (version-agnostic) path each page passes to applySocialOverrides.
-export const SOCIAL_PAGES = [
-    { key: '/', label: 'Home', hint: 'Landing / hero page' },
-    { key: '/about-me', label: 'About', hint: 'Bio & skills' },
-    { key: '/projects', label: 'Projects', hint: 'Portfolio archive' },
-    { key: '/apps', label: 'Apps', hint: 'Hosted apps & services' },
-    { key: '/gallery', label: 'Gallery', hint: 'Photos & certificates' },
-    { key: '/github', label: 'GitHub', hint: 'Repo stats' },
-    { key: '/contact-us', label: 'Contact', hint: 'Get in touch' },
-    { key: '/ai', label: 'AI Hub', hint: 'The /ai showcase' },
-];
+export { SOCIAL_PAGES };
 
 const PAGE_KEYS = SOCIAL_PAGES.map((p) => p.key);
 

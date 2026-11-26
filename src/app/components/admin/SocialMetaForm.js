@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { SOCIAL_PAGES } from "@/lib/socialMeta";
+import { SOCIAL_PAGES } from "@/lib/socialPages";
 import { useAdminFeedback } from "@/app/components/admin/feedback/AdminFeedbackProvider";
 import { Panel, Badge, EmptyState, Loading, Field } from "@/app/components/admin/ui";
 import {
