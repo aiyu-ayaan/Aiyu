@@ -25,6 +25,18 @@ const STORAGE_SECTIONS = [
     { key: 'themes', label: 'Themes', modelKey: 'theme', mode: 'many' },
     { key: 'github', label: 'GitHub', modelKey: 'github', mode: 'one' },
     { key: 'contactMessages', label: 'Contact Messages', modelKey: 'contactMessage', mode: 'many' },
+    // A model missing from this list has its pictures deleted by the cleanup.
+    { key: 'legalApps', label: 'Legal Apps', modelKey: 'legalApp', mode: 'many' },
+    { key: 'legalDocuments', label: 'Legal Pages', modelKey: 'legalDocument', mode: 'many' },
+    { key: 'aiPage', label: 'AI Hub Layout', modelKey: 'aiPage', mode: 'one' },
+    { key: 'aiSkillCategories', label: 'AI Skill Groups', modelKey: 'aiSkillCategory', mode: 'many' },
+    { key: 'aiSkills', label: 'AI Skills', modelKey: 'aiSkill', mode: 'many' },
+    { key: 'aiRecommendations', label: 'AI Stack', modelKey: 'aiRecommendation', mode: 'many' },
+    { key: 'aiCredits', label: 'AI Credits', modelKey: 'aiCredit', mode: 'many' },
+    { key: 'aiPrompts', label: 'AI Prompts', modelKey: 'aiPrompt', mode: 'many' },
+    { key: 'seoConfig', label: 'SEO', modelKey: 'seoConfig', mode: 'one' },
+    { key: 'ads', label: 'Ads', modelKey: 'ads', mode: 'one' },
+    { key: 'resumeStudio', label: 'Resume Studio', modelKey: 'resumeStudio', mode: 'one' },
 ];
 
 function normalizeFilename(filename) {

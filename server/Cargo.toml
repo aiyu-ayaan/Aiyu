@@ -34,6 +34,11 @@ pulldown-cmark = { version = "0.13", default-features = false, features = ["html
 ammonia = "4"
 url = "2"
 chrono-tz = { version = "0.10", features = ["case-insensitive"] }
+image = { version = "0.25", default-features = false, features = ["jpeg", "png", "gif", "webp"] }
+fast_image_resize = "5"
+img-parts = "0.3"
+libwebp-sys = "0.9"
+libloading = "0.8"
 
 [dev-dependencies]
 tower = { version = "0.5", features = ["util"] }
@@ -44,4 +49,5 @@ opt-level = 3
 lto = true
 codegen-units = 1
 strip = true
-panic = "abort"
+# A panic while handling one request (a decoder on a bad file) must not take the server down.
+panic = "unwind"

@@ -27,6 +27,15 @@ Milestone 8 (API routes) IN PROGRESS.
   the real service: the OAuth callback (needs a GitHub app). Behavior differences, both deliberate: anonymous callers
   of `GET /api/github/config?mode=repos` no longer see private repos (fixed in Next too); the scheduled sync now skips
   unchanged repos (Next compares JSON text, which jsonb reorders, so it rewrites every linked project each run).
+- Done: uploads, file serving, icons, storage audit, cleanup, WebP migration, gallery thumbnails.
+  `scripts/perf/upload-parity.mjs` 19/22: for a large PNG with transparency sharp's resize shifts colours by up to 8
+  levels and Rust keeps the source colours. Rust also keeps a source colour profile (sharp converts to sRGB; both show
+  the same) and writes no default EXIF/sRGB tags. Destructive operations tested on a scratch database copy only.
+  HEIC decoding tested with an AVIF file (same libheif calls), not with a phone HEVC photo; the Docker image now
+  installs `libheif1` (image not rebuilt yet). Fixed in both servers: the cleanup ignored references in legal pages,
+  the AI Hub, SEO, ads and the resume studio, so it deleted their pictures. Rust also never overwrites an existing
+  `.webp` during migration and renames whole file names only. `panic = "unwind"` so a decoder panic cannot stop the
+  server.
 - Cutover also needs what Next's proxy and static serving still do for unported paths: `public/` files and uploads,
   `/v1` and `/v2` redirects, removed-page redirects, the `/admin` sign-in redirect, markdown negotiation on `/`.
 - Checked 2026-11-26: write parity 249/249, auth parity all equal, read parity batch1 42/42, batch2 32/32, blogs 22/22,
@@ -275,12 +284,12 @@ Each page: Rust data + head + Vite route + e2e passing through Rust, then the Ne
 - [x] `/api/admin/health/targets` (Rust)
 - [ ] `/api/admin/health/uptime`
 - [ ] `/api/admin/health/uptime/check`
-- [ ] `/api/admin/icons`
-- [ ] `/api/admin/images/upload`
+- [x] `/api/admin/icons` (Rust)
+- [x] `/api/admin/images/upload` (Rust)
 - [ ] `/api/admin/import`
 - [x] `/api/admin/mcp/config` (Rust)
 - [x] `/api/admin/mcp/token` (Rust)
-- [ ] `/api/admin/migrate-gallery`
+- [x] `/api/admin/migrate-gallery` (Rust)
 - [x] `/api/admin/notifications` (Rust)
 - [x] `/api/admin/notifications/test` (Rust)
 - [ ] `/api/admin/purge-cache`
@@ -296,9 +305,9 @@ Each page: Rust data + head + Vite route + e2e passing through Rust, then the Ne
 - [ ] `/api/admin/seo/fix`
 - [ ] `/api/admin/seo/index`
 - [x] `/api/admin/social` (Rust)
-- [ ] `/api/admin/storage`
-- [ ] `/api/admin/storage/migrate`
-- [ ] `/api/admin/storage/unreferenced`
+- [x] `/api/admin/storage` (Rust)
+- [x] `/api/admin/storage/migrate` (Rust)
+- [x] `/api/admin/storage/unreferenced` (Rust)
 - [ ] `/api/admin/system-prompt`
 - [x] `/api/ai/credits` (Rust)
 - [x] `/api/ai/credits/[id]` (Rust)
@@ -357,8 +366,8 @@ Each page: Rust data + head + Vite route + e2e passing through Rust, then the Ne
 - [x] `/api/themes` (Rust)
 - [x] `/api/themes/active` (Rust)
 - [x] `/api/themes/[id]` (Rust)
-- [ ] `/api/upload`
-- [ ] `/api/uploads/[filename]`
+- [x] `/api/upload` (Rust)
+- [x] `/api/uploads/[filename]` (Rust)
 - [x] `/api/version` (Rust)
 - [x] `/.well-known/agent-skills/index.json` (Rust)
 - [x] `/.well-known/agent-skills/[skill]/SKILL.md` (Rust)

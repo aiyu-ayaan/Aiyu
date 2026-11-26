@@ -27,17 +27,22 @@ pub mod geoip;
 pub mod github;
 pub mod github_admin;
 pub mod github_sync;
+pub mod heif;
+pub mod images;
 pub mod pages;
 pub mod proxy;
 pub mod seo;
 pub mod session;
 pub mod site_api;
 pub mod site_files;
+pub mod storage;
+pub mod uploads;
 pub mod web;
 pub mod write;
 
 use axum::{
     Router,
+    extract::DefaultBodyLimit,
     http::{HeaderValue, StatusCode, header},
     routing::{any, delete, get, patch, post, put},
 };
@@ -167,6 +172,11 @@ fn limited_api(state: &AppState) -> Router<AppState> {
         .route("/api/admin/health/targets", post(settings::create_target).delete(settings::delete_target))
         .route("/api/admin/security/sessions/{id}/revoke", post(admin_security::revoke))
         .route("/api/admin/analytics", delete(admin_analytics::reset))
+        .route("/api/upload", post(uploads::upload).layer(DefaultBodyLimit::max(uploads::BODY_LIMIT)))
+        .route("/api/admin/images/upload", post(uploads::upload_image).layer(DefaultBodyLimit::max(uploads::BODY_LIMIT)))
+        .route("/api/admin/storage/unreferenced", delete(storage::remove))
+        .route("/api/admin/storage/migrate", post(storage::migrate))
+        .route("/api/admin/migrate-gallery", post(storage::gallery_thumbnails))
         .route_layer(axum::middleware::from_fn_with_state(state.clone(), limit::api))
 }
 
@@ -245,6 +255,10 @@ pub fn router(state: AppState) -> Router {
         .route("/api/admin/security/audit", get(admin_security::audit_log))
         .route("/api/admin/security/sessions", get(admin_security::sessions))
         .route("/api/admin/analytics", get(admin_analytics::analytics))
+        .route("/api/admin/storage", get(storage::usage))
+        .route("/api/admin/storage/migrate", get(storage::preview))
+        .route("/api/admin/icons", get(uploads::icons))
+        .route("/api/uploads/{filename}", get(uploads::serve))
         // API routes ported from Next; other methods on these paths still go to Next.
         .route("/api/about", get(api::about))
         .route("/api/home", get(api::home))

@@ -135,8 +135,9 @@ FROM node:24-bookworm-slim AS runner
 WORKDIR /app
 
 # OpenSSL is required by the Prisma engines at runtime (migrate deploy + client).
+# libheif1 decodes HEIC/HEIF uploads; aiyu-server loads it at run time.
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends openssl \
+    && apt-get install -y --no-install-recommends openssl libheif1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Runtime environment

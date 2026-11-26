@@ -2,7 +2,7 @@ import { createServer, defineConfig, transformWithOxc, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { fileURLToPath } from 'node:url';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { globSync } from 'node:fs';
 
 const src = fileURLToPath(new URL('../src', import.meta.url));
@@ -58,6 +58,10 @@ const routeMeta: Plugin = {
     const { themePresets, legacyThemePresets } = await import('../src/lib/themePresets.js');
     await writeFile(new URL('./dist/themes.json', import.meta.url), JSON.stringify({ presets: themePresets, legacy: legacyThemePresets }));
     await writeFile(new URL('./dist/discovery.json', import.meta.url), JSON.stringify(await discoveryDocs()));
+    // The admin icon picker's {title, slug} list (/api/admin/icons).
+    const catalog = JSON.parse(await readFile(new URL('../node_modules/simple-icons/data/simple-icons.json', import.meta.url), 'utf8'));
+    const icons = (Array.isArray(catalog) ? catalog : catalog.icons).filter((i) => i.title && i.slug);
+    await writeFile(new URL('./dist/icons.json', import.meta.url), JSON.stringify(icons.map(({ title, slug }) => ({ title, slug }))));
   },
 };
 
