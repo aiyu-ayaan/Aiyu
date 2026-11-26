@@ -189,8 +189,9 @@ Each page: Rust data + head + Vite route + e2e passing through Rust, then the Ne
 - [x] `/` no longer embeds the base64 resume PDF: 54 KB through Rust, no base64 in the page (checked 2026-11-27)
 - [x] `/ai` trimmed (2026-11-27): the hub gets each long section's preview plus `totalCount`, and its JSON-LD ItemList
   names the shown skills only. 1,416,778 to 36,453 bytes (brotli 198,684 to 12,249). `/ai/skills` keeps the catalog.
-- [ ] Vite entry chunk grew 488 -> 569 KB during the page ports (admin route table ~23 KB); find the rest with a
-  sourcemap build and move it into route chunks
+- [x] Vite entry chunk (2026-11-27): 545 to 429 KB (136 KB gzip). The terminal's `disco` loads the theme presets and
+  confetti on demand, and the footer's one brand icon is inline (importing `react-icons/si` pulled every brand icon in
+  use into the entry). What remains there: react-dom, framer-motion (about 270 KB before minifying) and react-icons/fa.
 - [ ] `/blogs` read time: cache per post (keyed on `updatedAt`) if the ~70 ms matters
 - [x] `/admin`
 - [x] `/admin/about`

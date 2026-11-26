@@ -3,8 +3,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useTheme } from '../../context/ThemeContext';
-import confetti from 'canvas-confetti';
-import { themePresets } from '../../../lib/themePresets';
 import { applyThemeColors } from '../../../utils/themeUtils';
 
 const SUGGESTIONS = ['about-me', 'blogs', 'projects', 'gallery', 'github', 'resume', 'contact-me', 'apps', 'admin'];
@@ -412,41 +410,44 @@ export default function TerminalPath({ socialData, config, onOutputChange }) {
         } else if (command === 'disco') {
             setOutput({ type: 'success', message: '🕺 DISCO TIME! 🕺' });
 
-            const presetValues = Object.values(themePresets);
-            const duration = 800; // Time per theme
-            const cycles = 5; // How many themes to cycle through
-            const totalDuration = presetValues.length * duration;
+            // Loaded on demand: the presets and the confetti are most of 60 KB that no other command needs.
+            Promise.all([import('../../../lib/themePresets'), import('canvas-confetti')]).then(([{ themePresets }, { default: confetti }]) => {
+                const presetValues = Object.values(themePresets);
+                const duration = 800; // Time per theme
+                const cycles = 5; // How many themes to cycle through
+                const totalDuration = presetValues.length * duration;
 
-            // Prevent rapid commands while discoing? Ideally yes, but let's keep it simple.
+                // Prevent rapid commands while discoing? Ideally yes, but let's keep it simple.
 
-            let currentIndex = 0;
-            const interval = setInterval(() => {
-                const randomTheme = presetValues[Math.floor(Math.random() * presetValues.length)];
-                // Use the current variant (light/dark) of the random theme
-                const variantData = randomTheme.variants[theme] || randomTheme.variants['dark'];
-                applyThemeColors(theme, variantData);
-            }, 200); // Fast flashing
+                let currentIndex = 0;
+                const interval = setInterval(() => {
+                    const randomTheme = presetValues[Math.floor(Math.random() * presetValues.length)];
+                    // Use the current variant (light/dark) of the random theme
+                    const variantData = randomTheme.variants[theme] || randomTheme.variants['dark'];
+                    applyThemeColors(theme, variantData);
+                }, 200); // Fast flashing
 
-            setTimeout(() => {
-                clearInterval(interval);
-                // Revert to current active theme data which is managed by ThemeContext
-                if (activeThemeData && activeThemeData.variants && activeThemeData.variants[theme]) {
-                    applyThemeColors(theme, activeThemeData.variants[theme]);
-                } else {
-                    // Fallback to simpler switch if data isn't handy, though activeThemeData should be there
-                    switchVariant(theme);
-                }
+                setTimeout(() => {
+                    clearInterval(interval);
+                    // Revert to current active theme data which is managed by ThemeContext
+                    if (activeThemeData && activeThemeData.variants && activeThemeData.variants[theme]) {
+                        applyThemeColors(theme, activeThemeData.variants[theme]);
+                    } else {
+                        // Fallback to simpler switch if data isn't handy, though activeThemeData should be there
+                        switchVariant(theme);
+                    }
 
-                // Confetti explosion
-                confetti({
-                    particleCount: 200,
-                    spread: 100,
-                    origin: { y: 0.6 },
-                    colors: ['#FFD700', '#C0C0C0'] // Gold and Silver primarily
-                });
+                    // Confetti explosion
+                    confetti({
+                        particleCount: 200,
+                        spread: 100,
+                        origin: { y: 0.6 },
+                        colors: ['#FFD700', '#C0C0C0'] // Gold and Silver primarily
+                    });
 
-                setOutput(null);
-            }, 3000); // Run disco for 3 seconds
+                    setOutput(null);
+                }, 3000); // Run disco for 3 seconds
+            }).catch(() => setOutput(null));
         }
     };
 
