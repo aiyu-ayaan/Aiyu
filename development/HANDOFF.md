@@ -58,30 +58,17 @@ once: `E2E_PORT=8080 pnpm exec playwright test e2e/admin-pages.spec.js` (about 1
 
 ## Job 2: Rust migration (port everything to Rust, no Node sidecar: user's decision)
 
-### In progress, uncommitted: cron jobs
+### State (updated 2026-11-27)
 
-`server/src/{cron_jobs,cron_template,admin_crons}.rs` plus edits in `drive.rs`, `export.rs`, `lib.rs`, `main.rs`,
-`tests/proxy.rs`, `scripts/docker-entrypoint.sh`, `src/utils/cronRunner.js`. A build and test run was in progress at
-handoff: its result is unknown. To do:
+Cron jobs, MCP, the AI Core, the health analyzer, the SEO tools and the indexing pings are ported and committed.
+`/api/debug-groq` was removed. Every `/api` route is Rust except `/api/internal/hooks`.
 
-1. `pnpm server:build && pnpm server:test`.
-2. The Rust scheduler runs only with `CRON_RUNNER=rust`; Next's `initCronRunner` returns early with the same
-   variable (the Docker entrypoint sets it). Never run both schedulers on one database.
-3. Write `scripts/perf/writes/crons.mjs` for the CRUD, env, logs and preview routes; compare "run now" for local
-   webhook jobs against a local listener (as `outbound-parity.mjs` does). Test the scheduler on `aiyu_scratch`.
-4. Tick the routes in TODO.md, update `server/README.md` (route table, `CRON_RUNNER`), commit.
+### Still to do
 
-### Not started
-
-- `/api/mcp` (`src/lib/mcp/*`, 1,200 lines): JSON-RPC sessions; compare initialize, tools/list, tools/call.
-- AI: `/api/admin/ai/{config,generate,models,text,validate-provider}`, `/api/admin/health/analyze`,
-  `/api/debug-groq` (decide whether it should exist at all). Check against a local stand-in; mark unverified.
-- SEO: `/api/admin/seo/{audit,crawl,fix,index}`.
-- `/api/internal/hooks` duties: autoIndexing pings (Google service account) must move to Rust before Next goes.
-- Cutover needs: serving `public/` and uploads, `/v1` and `/v2` redirects, removed-page redirects, the `/admin`
-  sign-in redirect, markdown negotiation on `/`, rate limits for all `/api`, security headers.
-- Then SQLite (36 models plus a Postgres copy tool with row counts and hashes), remove Next/Prisma/Node from the
-  image, benchmark on a 1 GB VM.
+- SQLite (36 models plus a Postgres copy tool with row counts and hashes).
+- Cutover. Rust must take over what Next still does: serving `public/` files, `/v1` and removed-page redirects, the
+  `/admin` sign-in redirect, markdown negotiation on `/`, rate limits for all `/api`, security headers. Then remove
+  Next, Prisma and Node from the image and benchmark on a 1 GB VM.
 
 ### How to port a route
 

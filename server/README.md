@@ -31,7 +31,8 @@ bodies such as backups never sit in memory.
 | Static | `/_app/*` and `/_next/static/*` with a one-year immutable cache |
 
 Responses are compressed (brotli, gzip; zips, PDFs, fonts and video are skipped). The route list is `src/lib.rs`.
-Other methods on these paths, and all other `/api/admin/*` routes, are still Next's.
+Every `/api` route is served by Rust except `/api/internal/hooks`, which only Rust calls. Next still serves that, files
+under `public/`, and the old-address redirects of `src/proxy.js`.
 
 ### Who may write
 
