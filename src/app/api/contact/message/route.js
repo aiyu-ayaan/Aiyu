@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSingleton, toClientList, fromClient } from '@/lib/serialize';
 import { sendNotification } from '@/utils/notificationService';
+import { getSession } from '@/lib/auth';
 
 export async function POST(request) {
     try {
@@ -94,7 +95,10 @@ export async function POST(request) {
     }
 }
 
+const unauthorized = () => NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
 export async function GET(request) {
+    if (!(await getSession())) return unauthorized();
     try {
         const { searchParams } = new URL(request.url);
         const requestedLimit = Number.parseInt(searchParams.get('limit') || '100', 10);
@@ -112,6 +116,7 @@ export async function GET(request) {
 }
 
 export async function DELETE(request) {
+    if (!(await getSession())) return unauthorized();
     try {
         const { searchParams } = new URL(request.url);
         const id = searchParams.get('id');

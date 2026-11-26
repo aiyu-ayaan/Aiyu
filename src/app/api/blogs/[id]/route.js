@@ -7,6 +7,7 @@ import { createUniqueBlogSlug, resolveBlogByIdentifier } from '@/lib/blogSlugs';
 import { revalidatePath } from 'next/cache';
 import { getSiteUrl } from '@/lib/siteUrl';
 import { autoPing } from '@/lib/autoIndexing';
+import { getSession } from '@/lib/auth';
 
 function normalizeCanonicalUrl(value) {
     const raw = typeof value === 'string' ? value.trim() : '';
@@ -92,7 +93,10 @@ export async function GET(request, { params }) {
     }
 }
 
+const unauthorized = () => NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+
 export async function PUT(request, { params }) {
+    if (!(await getSession())) return unauthorized();
     const { id } = await params;
     try {
         const rawBody = await request.json();
@@ -149,6 +153,7 @@ export async function PUT(request, { params }) {
 }
 
 export async function DELETE(request, { params }) {
+    if (!(await getSession())) return unauthorized();
     const { id } = await params;
     try {
         let blog;
