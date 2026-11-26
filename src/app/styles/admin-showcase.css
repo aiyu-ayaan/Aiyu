@@ -169,4 +169,99 @@
     background: var(--accent-cyan);
     transition: width 0.2s ease;
   }
+
+  /* ---------- Gallery cards ---------- */
+  .adm-sc-photo {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    border: 1px solid var(--hairline);
+    border-radius: 10px;
+    background: var(--surface-glass);
+    overflow: hidden;
+    transition: border-color 0.15s ease, opacity 0.15s ease;
+  }
+
+  .adm-sc-photo:hover {
+    border-color: var(--hairline-strong);
+  }
+
+  .adm-sc-photo[data-selected="true"],
+  .adm-sc-photo[data-drag-over="true"] {
+    border-color: var(--accent-cyan);
+  }
+
+  .adm-sc-photo[data-dragging="true"] {
+    opacity: 0.45;
+  }
+
+  .adm-sc-photo-media {
+    position: relative;
+    aspect-ratio: 16 / 10;
+    background: var(--bg-secondary);
+    overflow: hidden;
+  }
+
+  .adm-sc-photo-foot {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    border-top: 1px solid var(--hairline);
+  }
+
+  /* ---------- Accent swatch ---------- */
+  .adm-sc-swatch {
+    width: 1.75rem;
+    height: 1.75rem;
+    border: 2px solid transparent;
+    border-radius: 9999px;
+    cursor: pointer;
+    transition: border-color 0.15s ease;
+  }
+
+  .adm-sc-swatch[aria-pressed="true"] {
+    border-color: var(--text-bright);
+  }
+
+  @media (max-width: 639px) {
+    .adm-sc-swatch {
+      width: 2.5rem;
+      height: 2.5rem;
+    }
+  }
+
+  /* ---------- Resume studio workspace ---------- */
+  .adm-sc-studio {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    min-width: 0;
+  }
+
+  .adm-sc-studio-pane {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 28rem;
+    border: 1px solid var(--hairline);
+    border-radius: 14px;
+    background: var(--surface-glass);
+    overflow: hidden;
+  }
+
+  @media (min-width: 1024px) {
+    .adm-sc-studio {
+      display: grid;
+      grid-template-columns: 18.5rem minmax(0, 1fr) minmax(0, 1fr);
+      height: calc(100dvh - 13.5rem);
+      min-height: 36rem;
+    }
+
+    .adm-sc-studio-pane {
+      height: 100%;
+      min-height: 0;
+    }
+  }
 }

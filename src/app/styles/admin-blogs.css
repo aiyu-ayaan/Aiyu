@@ -1,0 +1,231 @@
+/*
+ * Layout and component rules for Group 3 (Blogs and legal) admin screens.
+ * Uses theme CSS variables only (design-system/MASTER.md) so light, dark, and custom themes work automatically.
+ */
+@layer components {
+  .adm-split {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: 1.5rem;
+  }
+
+  .adm-split > *,
+  .adm-stack > * {
+    min-width: 0;
+  }
+
+  .adm-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  @media (min-width: 1280px) {
+    .adm-split {
+      grid-template-columns: minmax(0, 1fr) 22rem;
+    }
+
+    .adm-side {
+      position: sticky;
+      top: 5rem;
+      max-height: calc(100dvh - 6rem);
+      overflow-y: auto;
+    }
+
+    .adm-side > * {
+      flex-shrink: 0;
+    }
+  }
+
+  .adm-panel.adm-danger {
+    border-color: color-mix(in srgb, var(--status-error) 40%, transparent);
+  }
+
+  .adm-danger .adm-panel-title {
+    color: var(--adm-error-ink);
+  }
+
+  .adm-facts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+    gap: 0.75rem 1rem;
+    font-size: 0.8125rem;
+  }
+
+  .adm-facts dt {
+    color: var(--adm-hint);
+  }
+
+  .adm-facts dd {
+    min-width: 0;
+    color: var(--text-primary);
+    overflow-wrap: anywhere;
+  }
+
+  /* Toolbar above tables and lists */
+  .adm-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--hairline);
+  }
+
+  @media (min-width: 640px) {
+    .adm-toolbar {
+      padding-inline: 1.25rem;
+    }
+  }
+
+  .adm-search-wrap {
+    position: relative;
+    flex: 1 1 14rem;
+    max-width: 24rem;
+    min-width: 0;
+  }
+
+  .adm-search-icon {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--adm-hint);
+    pointer-events: none;
+  }
+
+  .adm-search-input {
+    padding-left: 2.25rem;
+  }
+
+  /* Thumbnail / icon tile in list rows */
+  .adm-thumb {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.25rem;
+    flex-shrink: 0;
+    overflow: hidden;
+    border: 1px solid var(--hairline);
+    border-radius: 8px;
+    background: var(--bg-secondary);
+    color: var(--adm-hint);
+    font-family: var(--adm-mono);
+    font-size: 0.75rem;
+  }
+
+  .adm-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* Sortable table column button */
+  .adm-sort-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+  }
+
+  .adm-sort-btn:hover {
+    color: var(--text-bright);
+  }
+
+  .adm-sort-btn[data-active="true"] {
+    color: var(--adm-accent-ink);
+  }
+
+  /* Switch row inside settings / publishing panels */
+  .adm-switch-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.75rem 0;
+  }
+
+  .adm-switch-row + .adm-switch-row {
+    border-top: 1px solid var(--hairline);
+  }
+
+  /* Markdown and code editor textarea */
+  .adm-editor-textarea {
+    display: block;
+    width: 100%;
+    height: 100%;
+    min-height: 32rem;
+    padding: 1rem 1.25rem;
+    border: 0;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: var(--adm-mono);
+    font-size: 0.875rem;
+    line-height: 1.65;
+    resize: vertical;
+  }
+
+  .adm-editor-textarea::placeholder {
+    color: var(--adm-hint);
+  }
+
+  .adm-editor-textarea:focus {
+    outline: none;
+  }
+
+  /* Cover and social image preview box */
+  .adm-cover-preview {
+    overflow: hidden;
+    border: 1px solid var(--hairline);
+    border-radius: 10px;
+    background: var(--bg-secondary);
+  }
+
+  .adm-cover-preview img {
+    display: block;
+    width: 100%;
+    height: 9rem;
+    object-fit: cover;
+  }
+
+  /* Legal document live preview surface */
+  .adm-legal-preview {
+    min-height: 28rem;
+    padding: 1.25rem;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+  }
+
+  @media (min-width: 640px) {
+    .adm-legal-preview {
+      padding: 2rem;
+    }
+  }
+
+  /* Subtle footer inside flush panels */
+  .adm-panel-foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-top: 1px solid var(--hairline);
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+  }
+
+  @media (min-width: 640px) {
+    .adm-panel-foot {
+      padding-inline: 1.25rem;
+    }
+  }
+}

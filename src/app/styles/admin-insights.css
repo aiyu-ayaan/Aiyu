@@ -23,12 +23,64 @@
     outline-offset: 2px;
   }
 
+  /* Selectable row/card for checkboxes and filter tiles. */
+  .adm-pick {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+    min-height: 2.75rem;
+    padding: 0.625rem 0.875rem;
+    border: 1px solid var(--hairline);
+    border-radius: 10px;
+    background: var(--surface-tile);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+  }
+
+  .adm-pick:hover {
+    background: var(--bg-hover);
+    border-color: var(--hairline-strong);
+  }
+
+  .adm-pick:has(input:checked),
+  .adm-pick[data-selected="true"] {
+    border-color: var(--accent-cyan);
+    background: color-mix(in srgb, var(--accent-cyan) 10%, transparent);
+  }
+
+  .adm-pick[data-muted="true"] {
+    border-color: color-mix(in srgb, var(--status-error) 38%, transparent);
+    background: color-mix(in srgb, var(--status-error) 8%, transparent);
+  }
+
+  /* Destructive action panel. */
+  .adm-panel.adm-danger {
+    border-color: color-mix(in srgb, var(--status-error) 40%, transparent);
+  }
+
+  .adm-danger .adm-panel-title {
+    color: var(--adm-error-ink);
+  }
+
+  /* Wide framed modal dialog (e.g. media picker). */
+  .adm-dialog.adm-dialog-lg {
+    max-width: 56rem;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
   /* Editor side column: sticks under the 64px top bar once there is room for two columns. */
   @media (min-width: 1280px) {
     .adm-side {
       position: sticky;
       top: 5rem;
       align-self: start;
+      max-height: calc(100dvh - 6rem);
+      overflow-y: auto;
     }
   }
 
