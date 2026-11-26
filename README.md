@@ -12,7 +12,7 @@
 
 ![home](public/screenshots/desktop-dark-home.png)
 
-A fast, self-contained developer portfolio and CMS built with **Rust (Axum)**, **Vite**, **React 19**, **Tailwind CSS 4**, and **SQLite** — engineered to run comfortably on a **1 GB VPS** with an integrated Admin Panel, Gemini AI Core, LaTeX Resume Studio, Cron Scheduler, and MCP Server.
+A fast, self-contained developer portfolio and CMS built with **Rust (Axum)**, **Vite**, **React 19**, **Tailwind CSS 4**, and **SQLite** — engineered for **sub-10 ms responses and minimal memory overhead** with an integrated Admin Panel, Gemini AI Core, LaTeX Resume Studio, Cron Scheduler, and MCP Server.
 
 > [!TIP]
 > **Full guides:** [Documentation Wiki](https://github.com/aiyu-ayaan/Aiyu/wiki) · [Quick Start](https://github.com/aiyu-ayaan/Aiyu/wiki/Quick-Start) · [Full Benchmarks](development/benchmark.md)
@@ -35,7 +35,7 @@ flowchart LR
 
 ## ⚡ Performance
 
-Engineered to run comfortably on a **1 GB VPS** with zero external database. Measured on fresh `--no-cache` production Docker builds with an identical 80 MB backup ([full benchmark report](development/benchmark.md)):
+Engineered with a **native Rust + embedded SQLite runtime** for predictable low latency and near-flat memory under heavy load. Measured on fresh `--no-cache` production Docker builds with an identical 80 MB dataset ([full benchmark report](development/benchmark.md)):
 
 ![Aiyu Performance Overview](docs/images/benchmark-overview.svg)
 
