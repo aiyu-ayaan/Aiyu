@@ -179,4 +179,11 @@ add(analytics, 'DELETE', '/api/admin/analytics', 'reset', { setup: traffic, expe
 anon(['analyticsEvent'], 'GET', '/api/admin/analytics');
 anon(['analyticsEvent'], 'DELETE', '/api/admin/analytics');
 
+// ── crawler files that read these settings ──
+// Next caches these settings in memory: a write through its own API first would be needed, so only defaults and
+// ads.txt (never cached) are compared on fixtures.
+add(['seoConfig'], 'GET', '/robots.txt', 'defaults or stored', { expect: 200 });
+add(['ads'], 'GET', '/ads.txt', 'stored text', { setup: async (p) => { const r = await p.ads.findFirst(); await p.ads.update({ where: { id: r.id }, data: { data: { ...r.data, adsTxt: 'google.com, pub-1, DIRECT\n' }, updatedAt: r.updatedAt } }); }, expect: 200 });
+add(['ads'], 'GET', '/ads.txt', 'no row', { setup: (p) => p.ads.deleteMany(), expect: 200 });
+
 export default cases;

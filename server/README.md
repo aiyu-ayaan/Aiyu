@@ -18,6 +18,7 @@ bodies such as backups never sit in memory.
 | AI Hub writes | skill categories, skills, recommendations, credits, prompts, `/api/ai/seed` |
 | Contact messages | `GET` and `DELETE /api/contact/message` (the public `POST` is still Next) |
 | Admin settings | `/api/admin/{ads,social,notifications}`, `seo/config`, `blogs/token`, `mcp/{config,token}`, `crons/timezone`, `health/targets`, `analytics`, `security/*` |
+| Crawler and agent files | `robots.txt`, `sitemap.xml`, `ads.txt`, `auth.md`, `/docs/api`, `/docs/mcp` |
 | Backup | `GET /api/admin/export`: rows and files stream into the zip, about 10 MB of memory whatever the data size |
 | Static | `/_app/*` and `/_next/static/*` with a one-year immutable cache |
 
@@ -50,6 +51,7 @@ SEO tools read through them) and queues search-engine pings. The call carries an
 | `auth.rs`, `session.rs`, `crypto.rs`, `limit.rs`, `analytics.rs` | sign-in, session cookie, encrypted fields, rate limits, tracking |
 | `write.rs`, `admin_site.rs`, `admin_content.rs`, `admin_blogs.rs`, `admin_legal.rs`, `admin_ai.rs` | writes |
 | `admin_settings.rs`, `admin_security.rs`, `admin_analytics.rs`, `seo.rs`, `geoip.rs`, `cron.rs` | admin settings, sessions and audit, analytics, SEO settings, IP places, cron schedules |
+| `site_files.rs` | robots.txt, sitemap.xml, ads.txt and the markdown documents |
 | `db.rs`, `export.rs` | database pool and ids, backup zip |
 
 `crypto.rs` and `session.rs` read values written by the Node code (encrypted DB fields, the `session` cookie).

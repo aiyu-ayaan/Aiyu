@@ -25,6 +25,7 @@ pub mod proxy;
 pub mod seo;
 pub mod session;
 pub mod site_api;
+pub mod site_files;
 pub mod web;
 pub mod write;
 
@@ -200,9 +201,20 @@ pub fn router(state: AppState) -> Router {
         .layer(axum::middleware::from_fn(web::skip_next_rsc))
         .layer(axum::middleware::from_fn(compat::public_page));
 
+    // Agent documents: the proxy sends other hosts to the canonical one first.
+    let documents = Router::new()
+        .route("/auth.md", get(site_files::auth_md))
+        .route("/docs/api", get(site_files::api_docs))
+        .route("/docs/mcp", get(site_files::mcp_docs))
+        .layer(axum::middleware::from_fn(compat::canonical_host));
+
     Router::new()
         .route("/healthz", get(|| async { "ok" }))
         .merge(web_pages)
+        .merge(documents)
+        .route("/robots.txt", get(site_files::robots))
+        .route("/sitemap.xml", get(site_files::sitemap))
+        .route("/ads.txt", get(site_files::ads_txt))
         .route("/_img/blog/{id}", get(web::blog_image))
         // Catch-alls: answer only for legal apps in the database, everything else goes on to Next.
         .route("/{legal_app}", get(web::legal_app))

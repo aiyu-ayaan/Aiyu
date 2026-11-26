@@ -102,6 +102,14 @@ fn is_local(h: &str) -> bool {
     matches!(h, "localhost" | "127.0.0.1" | "0.0.0.0" | "::1") || h.ends_with(".local") || h.starts_with("10.") || h.starts_with("192.168.") || private_172
 }
 
+/// Layer that only redirects to the canonical host.
+pub async fn canonical_host(req: Request, next: Next) -> Response {
+    match canonical_redirect(&req) {
+        Some(redirect) => redirect,
+        None => next.run(req).await,
+    }
+}
+
 /// Layer on the Vite page routes.
 pub async fn public_page(req: Request, next: Next) -> Response {
     if let Some(r) = canonical_redirect(&req) {

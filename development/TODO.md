@@ -15,9 +15,12 @@ Milestone 8 (API routes) IN PROGRESS.
 - Done: the plain `/api/admin/*` settings, security and analytics routes (`scripts/perf/writes/admin.mjs` 90/90;
   `scripts/perf/api/admin.txt` differs only in the order of analytics rows with equal counts).
 - Decided 2026-11-26 (user): port every integration to Rust, no Node sidecar.
+- Done: sitemap.xml, robots.txt, ads.txt, auth.md, /docs/api, /docs/mcp (byte-equal to Next apart from request-time
+  `lastmod` values).
 - NEXT: integrations (Drive, import, uploads/sharp/HEIC, crons, MCP, AI generation, GitHub OAuth, sync and webhook, SEO
-  crawl and fix, contact form notifications, notification test, resume compile, storage), then sitemap.xml,
-  robots.txt, ads.txt, auth.md, /docs/*, and the streamed restore.
+  crawl and fix, contact form notifications, notification test, resume compile, storage) and the streamed restore.
+- Cutover also needs what Next's proxy and static serving still do for unported paths: `public/` files and uploads,
+  `/v1` and `/v2` redirects, removed-page redirects, the `/admin` sign-in redirect, markdown negotiation on `/`.
 - Checked 2026-11-26: write parity 249/249, auth parity all equal, read parity batch1 42/42, batch2 32/32, blogs 22/22,
   batch3 56/58 (the two request-time dates on search hits). In Chrome, signed in, through Rust: social link create,
   disable and delete; footer save; blog draft create, edit and delete; contact list; About save. Not checked in Chrome:
