@@ -85,10 +85,10 @@ pub async fn shell_data(state: &AppState, config: &Value) -> Value {
     })
 }
 
-/// Timestamp columns in the tables read here all end in `At` (createdAt, updatedAt, syncedAt, readmeFetchedAt).
+/// Timestamp columns end in `At` (createdAt, updatedAt, syncedAt, ...), except a cron's `lastRun` and `nextRun`.
 fn normalize_timestamps(row: &mut Map<String, Value>) {
     for (k, v) in row.iter_mut() {
-        if k.ends_with("At") {
+        if k.ends_with("At") || k == "lastRun" || k == "nextRun" {
             crate::export::normalize_timestamp_value(v);
         }
     }

@@ -41,6 +41,7 @@ dependencies = [
  "cbc",
  "chrono",
  "chrono-tz",
+ "crc32fast",
  "dotenvy",
  "fast_image_resize",
  "futures-util",

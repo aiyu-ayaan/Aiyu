@@ -39,6 +39,10 @@ Milestone 8 (API routes) IN PROGRESS.
 - Done: health metrics and uptime, cache purge, Resume Studio, AI call log, system prompt (`writes/misc.mjs`
   16/17: the one difference is a refused connection measured as 0 ms). Metrics have no managed heap to report: data
   sizes stand in. The LaTeX compile call to texlive.net is not verified against the real service.
+- Done: streamed restore (`scripts/perf/restore-check.mjs` on a scratch database: 28/28 checks, 84 MB and 688 files in
+  1.2 s, peak 144 MB; damaged and invalid backups change nothing) and Google Drive (`scripts/perf/drive-check.mjs`
+  against a local stand-in). NOT verified against real Google: OAuth consent, upload, download. One deliberate change:
+  a restore keeps secrets the backup never held (stored tokens, API keys, cron environment); Next erased them.
 - Cutover also needs what Next's proxy and static serving still do for unported paths: `public/` files and uploads,
   `/v1` and `/v2` redirects, removed-page redirects, the `/admin` sign-in redirect, markdown negotiation on `/`.
 - Checked 2026-11-26: write parity 249/249, auth parity all equal, read parity batch1 42/42, batch2 32/32, blogs 22/22,
@@ -149,7 +153,7 @@ Run the bench with `--backups 3` at most per few minutes: login is rate limited 
 - [x] Cron `gdrive_backup` writes the zip to a temp file and adds images by path (no zip buffer)
 - [x] Cron `gdrive_backup` downloads the zip from Rust over loopback (`AIYU_SERVER_URL`, key = HMAC(JWT_SECRET, "internal:export"), loopback peers only); falls back to the Node zip when Rust is absent (`pnpm dev`)
 - [x] Manual Drive backup fetches the export over loopback in Docker instead of through the public origin/CDN
-- [ ] Restore (`gdrive/restore`, `admin/import`) still buffers the whole zip: stream it
+- [x] Restore (`gdrive/restore`, `admin/import`) streams: upload to a temp file, one collection in memory at a time
 - [ ] Verify a real Drive upload with OAuth credentials (not possible locally)
 
 ## Milestone 5a: Rust in the Docker image
@@ -272,16 +276,16 @@ Each page: Rust data + head + Vite route + e2e passing through Rust, then the Ne
 - [ ] `/api/admin/crons/preview`
 - [x] `/api/admin/crons/timezone` (Rust)
 - [x] `/api/admin/export` (Rust)
-- [ ] `/api/admin/gdrive/auth`
-- [ ] `/api/admin/gdrive/backup`
-- [ ] `/api/admin/gdrive/callback`
-- [ ] `/api/admin/gdrive/config`
-- [ ] `/api/admin/gdrive/cron`
-- [ ] `/api/admin/gdrive/delete`
-- [ ] `/api/admin/gdrive/disconnect`
-- [ ] `/api/admin/gdrive/list`
-- [ ] `/api/admin/gdrive/restore`
-- [ ] `/api/admin/gdrive/status`
+- [x] `/api/admin/gdrive/auth` (Rust)
+- [x] `/api/admin/gdrive/backup` (Rust)
+- [x] `/api/admin/gdrive/callback` (Rust)
+- [x] `/api/admin/gdrive/config` (Rust)
+- [x] `/api/admin/gdrive/cron` (Rust)
+- [x] `/api/admin/gdrive/delete` (Rust)
+- [x] `/api/admin/gdrive/disconnect` (Rust)
+- [x] `/api/admin/gdrive/list` (Rust)
+- [x] `/api/admin/gdrive/restore` (Rust)
+- [x] `/api/admin/gdrive/status` (Rust)
 - [ ] `/api/admin/health/analyze`
 - [x] `/api/admin/health/metrics` (Rust)
 - [x] `/api/admin/health/targets` (Rust)
@@ -289,7 +293,7 @@ Each page: Rust data + head + Vite route + e2e passing through Rust, then the Ne
 - [x] `/api/admin/health/uptime/check` (Rust)
 - [x] `/api/admin/icons` (Rust)
 - [x] `/api/admin/images/upload` (Rust)
-- [ ] `/api/admin/import`
+- [x] `/api/admin/import` (Rust)
 - [x] `/api/admin/mcp/config` (Rust)
 - [x] `/api/admin/mcp/token` (Rust)
 - [x] `/api/admin/migrate-gallery` (Rust)

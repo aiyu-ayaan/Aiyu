@@ -40,6 +40,7 @@ img-parts = "0.3"
 libwebp-sys = "0.9"
 libloading = "0.8"
 libc = "0.2"
+crc32fast = "1"
 
 [dev-dependencies]
 tower = { version = "0.5", features = ["util"] }

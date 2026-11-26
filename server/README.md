@@ -24,6 +24,7 @@ bodies such as backups never sit in memory.
 | Uploads and storage | `/api/upload`, `/api/uploads/{file}`, `/api/admin/{images/upload,icons,storage,storage/migrate,storage/unreferenced,migrate-gallery}`. HEIC needs the system `libheif1` (loaded at run time) |
 | Health, resume, misc | `/api/admin/{health/metrics,health/uptime,health/uptime/check,purge-cache,resume,resume/compile,resume/publish,ai/logs,system-prompt}` |
 | Backup | `GET /api/admin/export`: rows and files stream into the zip, about 10 MB of memory whatever the data size |
+| Restore, Google Drive | `/api/admin/import`, `/api/admin/gdrive/*`: everything goes through temporary files (`BACKUP_TMP_DIR`) |
 | Static | `/_app/*` and `/_next/static/*` with a one-year immutable cache |
 
 Responses are compressed (brotli, gzip; zips, PDFs, fonts and video are skipped). The route list is `src/lib.rs`.
@@ -60,6 +61,7 @@ SEO tools read through them) and queues search-engine pings. The call carries an
 | `github_admin.rs`, `github_sync.rs`, `oauth.rs` | GitHub settings, webhook, repo sync, sign-in |
 | `uploads.rs`, `images.rs`, `heif.rs`, `storage.rs` | uploads, WebP conversion and thumbnails, HEIC through libheif, cleanup and migration of files |
 | `health.rs`, `misc.rs` | server metrics, uptime checks, cache purge, Resume Studio, AI log, system prompt |
+| `restore.rs`, `drive.rs` | restore of backups, Google Drive |
 | `db.rs`, `export.rs` | database pool and ids, backup zip |
 
 `crypto.rs` and `session.rs` read values written by the Node code (encrypted DB fields, the `session` cookie).
@@ -80,6 +82,8 @@ pnpm server:test
 | `DATABASE_URL` | required | same Postgres as Next (Prisma's `?schema=` is ignored); pool of 3 |
 | `UPLOADS_DIR` | `public/uploads` | files added to backups |
 | `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `GITHUB_ALLOWED_ID`, `GITHUB_OAUTH_CALLBACK_URL` | unset | GitHub sign-in, same as Next |
+| `BACKUP_TMP_DIR` | `.next/cache/backups` | scratch folder for backups and restores (must be on disk) |
+| `GOOGLE_API_BASE_URL` | unset | tests only: a local stand-in for Google |
 | `GITHUB_TOKEN` | unset | used when no token is stored in the admin settings |
 | `ADMIN_USERNAME`, `ADMIN_PASSWORD` | empty (login always fails) | password login; `$` is read by dotenv rules, which differ from Next's in `.env` files |
 | `GITHUB_AUTH_ENABLED` | `false` | `true` turns password login off |
@@ -109,6 +113,9 @@ node --env-file=.env scripts/perf/write-parity.mjs scripts/perf/writes/{site,con
 node --env-file=.env scripts/perf/outbound-parity.mjs
 # Uploads: the same files to both servers, stored pictures compared
 node --env-file=.env scripts/perf/upload-parity.mjs
+# Restore round trip and the Drive routes, on a scratch database (see the scripts' headers)
+node --env-file=.env scripts/perf/restore-check.mjs ...
+node --env-file=.env scripts/perf/drive-check.mjs ...
 # Browser tests through Rust (headless)
 E2E_PORT=8080 pnpm exec playwright test e2e/admin-pages.spec.js e2e/site-pages.spec.js e2e/blogs.spec.js
 ```

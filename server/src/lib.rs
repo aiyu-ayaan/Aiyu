@@ -23,6 +23,7 @@ pub mod contact;
 pub mod cron;
 pub mod db;
 pub mod crypto;
+pub mod drive;
 pub mod export;
 pub mod geoip;
 pub mod github;
@@ -33,6 +34,7 @@ pub mod heif;
 pub mod images;
 pub mod pages;
 pub mod proxy;
+pub mod restore;
 pub mod seo;
 pub mod session;
 pub mod site_api;
@@ -182,9 +184,17 @@ fn limited_api(state: &AppState) -> Router<AppState> {
         .route("/api/admin/migrate-gallery", post(storage::gallery_thumbnails))
         .route("/api/admin/health/uptime/check", post(health::check_now))
         .route("/api/admin/purge-cache", post(misc::purge_cache))
+        .route("/api/admin/gdrive/config", post(drive::save_config))
+        .route("/api/admin/gdrive/cron", post(drive::save_schedule))
+        .route("/api/admin/gdrive/backup", post(drive::run_backup))
+        .route("/api/admin/gdrive/restore", post(drive::restore_backup))
+        .route("/api/admin/gdrive/delete", post(drive::remove))
+        .route("/api/admin/gdrive/disconnect", post(drive::disconnect))
         .route("/api/admin/resume", put(misc::save_resume))
         .route("/api/admin/resume/compile", post(misc::compile))
         .route("/api/admin/resume/publish", post(misc::publish))
+        // A backup can be hundreds of megabytes; the handler streams it to disk and enforces its own limit.
+        .route("/api/admin/import", post(restore::import).layer(DefaultBodyLimit::disable()))
         .route_layer(axum::middleware::from_fn_with_state(state.clone(), limit::api))
 }
 
@@ -266,6 +276,12 @@ pub fn router(state: AppState) -> Router {
         .route("/api/admin/storage", get(storage::usage))
         .route("/api/admin/storage/migrate", get(storage::preview))
         .route("/api/admin/icons", get(uploads::icons))
+        .route("/api/admin/gdrive/status", get(drive::status))
+        .route("/api/admin/gdrive/config", get(drive::config))
+        .route("/api/admin/gdrive/cron", get(drive::schedules))
+        .route("/api/admin/gdrive/auth", get(drive::auth))
+        .route("/api/admin/gdrive/callback", get(drive::callback))
+        .route("/api/admin/gdrive/list", get(drive::list_backups))
         .route("/api/admin/health/metrics", get(health::metrics))
         .route("/api/admin/health/uptime", get(health::uptime))
         .route("/api/admin/resume", get(misc::resume))

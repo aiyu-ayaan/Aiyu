@@ -33,4 +33,18 @@ add(uptime, 'GET', '/api/admin/health/uptime', 'summary', { setup: local, expect
 add(uptime, 'POST', '/api/admin/health/uptime/check', 'check now', { setup: local, mask: ['latencyMs'], expect: 200 });
 add(uptime, 'POST', '/api/admin/health/uptime/check', 'anonymous', { auth: 'anon', setup: local, expect: 401 });
 
+// ── Google Drive settings (no call to Google) ──
+add(['config'], 'GET', '/api/admin/gdrive/status', 'read', { expect: 200 });
+add(['config'], 'GET', '/api/admin/gdrive/config', 'read', { expect: 200 });
+add(['config'], 'POST', '/api/admin/gdrive/config', 'save keys', { body: { clientId: 'id', clientSecret: 'secret', retentionMonths: '3', autoDeleteEnabled: 'yes' }, expect: 200 });
+add(['config'], 'POST', '/api/admin/gdrive/config', 'clear keys', { body: { clientId: '', clientSecret: null, retentionMonths: 0 }, expect: 200 });
+add(['config'], 'POST', '/api/admin/gdrive/disconnect', 'disconnect', { expect: 200 });
+add(['cron'], 'GET', '/api/admin/gdrive/cron', 'read', { expect: 200 });
+add(['cron', 'config'], 'POST', '/api/admin/gdrive/cron', 'enable backup', { body: { enabled: true, schedule: '15 3 1 1 *' }, expect: 200 });
+add(['cron'], 'POST', '/api/admin/gdrive/cron', 'create purge', { setup: (p) => p.cron.deleteMany({ where: { action: 'gdrive_purge' } }), body: { action: 'gdrive_purge' }, expect: 200 });
+add(['config'], 'GET', '/api/admin/gdrive/auth', 'not configured', { setup: async (p) => { const r = await p.config.findFirst(); await p.config.update({ where: { id: r.id }, data: { data: { ...r.data, gdriveConfig: {} }, updatedAt: r.updatedAt } }); }, expect: 400 });
+add(['config'], 'POST', '/api/admin/gdrive/delete', 'no id', { body: {}, expect: 400 });
+add(['config'], 'POST', '/api/admin/gdrive/restore', 'no id', { body: {}, expect: 400 });
+for (const path of ['status', 'config', 'list', 'cron']) add(['config'], 'GET', `/api/admin/gdrive/${path}`, 'anonymous', { auth: 'anon', expect: 401 });
+
 export default cases;

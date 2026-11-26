@@ -56,7 +56,7 @@ fn allowed(candidate: &Value, configured: &str) -> bool {
 }
 
 /// `getPublicOrigin`: the origin the browser used. A bare internal name (a proxy upstream) falls back to the site.
-fn public_origin(headers: &HeaderMap, site: &str) -> String {
+pub(crate) fn public_origin(headers: &HeaderMap, site: &str) -> String {
     let first = |name: &str| header_str(headers, name).split(',').next().unwrap_or("").trim().to_string();
     let proto = Some(first("x-forwarded-proto")).filter(|p| !p.is_empty()).unwrap_or_else(|| "http".into());
     let host = Some(first("x-forwarded-host")).filter(|h| !h.is_empty()).unwrap_or_else(|| first("host"));

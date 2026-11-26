@@ -309,7 +309,7 @@ async fn upload_files(dir: &Path) -> anyhow::Result<Vec<PathBuf>> {
     Ok(files)
 }
 
-fn url_pairs(q: &str) -> Vec<(String, String)> {
+pub fn url_pairs(q: &str) -> Vec<(String, String)> {
     q.split('&')
         .filter(|p| !p.is_empty())
         .map(|p| {
