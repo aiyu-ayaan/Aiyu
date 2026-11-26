@@ -18,7 +18,7 @@ Milestone 8 (API routes) IN PROGRESS.
 - Done: sitemap.xml, robots.txt, ads.txt, auth.md, /docs/api, /docs/mcp (byte-equal to Next apart from request-time
   `lastmod` values).
 - NEXT, in this order: `/api/admin/ai/{config,models,validate-provider,text,generate}`, `/api/admin/health/analyze`,
-  `/api/admin/seo/{audit,crawl,fix,index}`, `/api/debug-groq` (ask the user whether it should exist), the search-engine
+  `/api/admin/seo/{audit,crawl,fix,index}`, the search-engine
   pings of `/api/internal/hooks`, then 5b/9 (SQLite) and 10 (cutover).
 - Done 2026-11-27: MCP (`writes/mcp.mjs` 83/83: every tool, resource and prompt; JSON carried as text differs only in
   key order). Admin redesign finished. `pnpm dev` runs Vite, aiyu-server and `next dev` together; unused files removed.
@@ -343,7 +343,7 @@ Each page: Rust data + head + Vite route + e2e passing through Rust, then the Ne
 - [x] `/api/blogs/[id]` (Rust)
 - [x] `/api/config` (Rust)
 - [x] `/api/contact/message` (Rust)
-- [ ] `/api/debug-groq`
+- [x] `/api/debug-groq` (removed 2026-11-27: no sign-in check, returned part of the Groq key; still on `master`)
 - [x] `/api/deployments` (Rust)
 - [x] `/api/deployments/[id]` (Rust)
 - [x] `/api/deployments/[id]/links` (Rust)
