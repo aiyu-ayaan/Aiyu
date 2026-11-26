@@ -1,3 +1,4 @@
+pub mod admin_ai;
 pub mod admin_blogs;
 pub mod admin_content;
 pub mod admin_legal;
@@ -88,6 +89,7 @@ impl AppState {
 /// Every ported `/api` route that Next's proxy rate limits belongs here (all POST, PUT, PATCH and DELETE, plus a
 /// few listed paths): the limit is applied once, to all of them.
 fn limited_api(state: &AppState) -> Router<AppState> {
+    use admin_ai as ai_hub;
     use admin_blogs as posts;
     use admin_content as content;
     use admin_legal as legal_admin;
@@ -122,6 +124,17 @@ fn limited_api(state: &AppState) -> Router<AppState> {
         .route("/api/legal/apps/{id}", put(legal_admin::put_app).delete(legal_admin::remove_app))
         .route("/api/legal/apps/{id}/documents", post(legal_admin::post_document))
         .route("/api/legal/documents/{id}", put(legal_admin::put_document).delete(legal_admin::remove_document))
+        .route("/api/ai/skills/categories", post(ai_hub::create_category))
+        .route("/api/ai/skills/categories/{id}", put(ai_hub::update_category).delete(ai_hub::delete_category))
+        .route("/api/ai/skills/items", post(ai_hub::create_skill))
+        .route("/api/ai/skills/items/{id}", put(ai_hub::update_skill).delete(ai_hub::delete_skill))
+        .route("/api/ai/recommendations", post(ai_hub::create_recommendation))
+        .route("/api/ai/recommendations/{id}", put(ai_hub::update_recommendation).delete(ai_hub::delete_recommendation))
+        .route("/api/ai/credits", post(ai_hub::create_credit))
+        .route("/api/ai/credits/{id}", put(ai_hub::update_credit).delete(ai_hub::delete_credit))
+        .route("/api/ai/prompts", post(ai_hub::create_prompt))
+        .route("/api/ai/prompts/{id}", put(ai_hub::update_prompt).delete(ai_hub::delete_prompt))
+        .route("/api/ai/seed", post(ai_hub::post_seed))
         .route_layer(axum::middleware::from_fn_with_state(state.clone(), limit::api))
 }
 

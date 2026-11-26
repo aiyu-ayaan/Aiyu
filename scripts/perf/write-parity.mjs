@@ -92,8 +92,9 @@ function changes(models, before, after) {
         }
         for (const id of before[model].keys()) if (!after[model].has(id)) out.push({ model, removed: id });
     }
-    // Postgres returns rows in no fixed order.
-    const key = (c) => `${c.model} ${c.changed ?? c.removed ?? c.added.id}`;
+    // Postgres returns rows in no fixed order, and new ids differ between runs: sort new rows by their content.
+    const content = ({ id: _id, categoryId: _category, createdAt: _created, updatedAt: _updated, ...rest }) => JSON.stringify(rest);
+    const key = (c) => `${c.model} ${c.changed ?? c.removed ?? content(c.added)}`;
     return out.sort((a, b) => key(a).localeCompare(key(b)));
 }
 
