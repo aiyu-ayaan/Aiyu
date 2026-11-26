@@ -8,7 +8,6 @@
 [![Docker](https://img.shields.io/badge/Docker-213MB-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-F7DF1E)](https://opensource.org/licenses/MIT)
 [![Wiki](https://img.shields.io/badge/Docs-Wiki-181717?logo=github&logoColor=white)](https://github.com/aiyu-ayaan/Aiyu/wiki)
-[![wakatime](https://wakatime.com/badge/github/aiyu-ayaan/Aiyu.svg)](https://wakatime.com/badge/github/aiyu-ayaan/Aiyu)
 
 ![home](public/screenshots/desktop-dark-home.png)
 
