@@ -2,7 +2,16 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Clock, RefreshCw, Search, Terminal, XCircle } from 'lucide-react';
+import {
+    FaArrowLeft,
+    FaChevronDown,
+    FaChevronLeft,
+    FaChevronRight,
+    FaMagnifyingGlass,
+    FaRotate,
+} from 'react-icons/fa6';
+import { Badge, EmptyState, Loading, PageHeader, Panel } from '@/app/components/admin/ui';
+import '@/app/styles/admin-system.css';
 
 const PAGE_SIZE = 10;
 
@@ -15,6 +24,12 @@ function formatDuration(value) {
     if (value < 1000) return `${value}ms`;
     return `${(value / 1000).toFixed(2)}s`;
 }
+
+const STATUS_FILTERS = [
+    { key: 'all', label: 'All' },
+    { key: 'success', label: 'Success' },
+    { key: 'failure', label: 'Failure' },
+];
 
 export default function CronLogsPage() {
     const [logs, setLogs] = useState([]);
@@ -33,7 +48,7 @@ export default function CronLogsPage() {
     const queryString = useMemo(() => {
         const params = new URLSearchParams({
             page: String(page),
-            limit: String(PAGE_SIZE)
+            limit: String(PAGE_SIZE),
         });
         if (cronId) params.set('cronId', cronId);
         if (statusFilter !== 'all') params.set('status', statusFilter);
@@ -54,7 +69,7 @@ export default function CronLogsPage() {
             } else {
                 setMessage({ type: 'error', text: data.error || 'Failed to load cron logs.' });
             }
-        } catch (error) {
+        } catch {
             setMessage({ type: 'error', text: 'Could not reach cron logs API.' });
         } finally {
             setLoading(false);
@@ -73,19 +88,19 @@ export default function CronLogsPage() {
 
     const applySearch = (event) => {
         event.preventDefault();
-        setPagination(prev => ({ ...prev, page: 1 }));
+        setPagination((prev) => ({ ...prev, page: 1 }));
         setSearch(searchInput);
     };
 
     const changeStatus = (value) => {
-        setPagination(prev => ({ ...prev, page: 1 }));
+        setPagination((prev) => ({ ...prev, page: 1 }));
         setStatusFilter(value);
     };
 
     const changePage = (nextPage) => {
-        setPagination(prev => ({
+        setPagination((prev) => ({
             ...prev,
-            page: Math.min(Math.max(nextPage, 1), prev.totalPages || 1)
+            page: Math.min(Math.max(nextPage, 1), prev.totalPages || 1),
         }));
     };
 
@@ -93,193 +108,201 @@ export default function CronLogsPage() {
     const showingEnd = Math.min(pagination.page * pagination.limit, pagination.total);
 
     return (
-        <div className="min-h-screen bg-slate-950 text-slate-200 p-6 md:p-10 font-sans relative overflow-hidden">
-            <div className="absolute inset-0 bg-[linear-gradient(rgba(34,211,238,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(34,211,238,0.03)_1px,transparent_1px)] bg-[size:64px_64px] pointer-events-none" />
-            <div className="relative z-10 max-w-7xl mx-auto space-y-6">
-                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                    <div className="space-y-2">
-                        <Link href="/admin/config/crons" className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-cyan-400 transition">
-                            <ArrowLeft size={14} />
-                            Cron Schedules
+        <div className="adm-page">
+            <PageHeader
+                command="tail -f"
+                title="Cron execution logs"
+                description="History of scheduled and manually triggered task runs."
+                actions={
+                    <>
+                        <Link href="/admin/config/crons" className="adm-btn">
+                            <FaArrowLeft aria-hidden="true" /> Back to scheduler
                         </Link>
-                        <div className="flex items-center gap-3">
-                            <div className="rounded-2xl border border-cyan-500/20 bg-cyan-500/10 p-3 text-cyan-400">
-                                <Terminal size={22} />
-                            </div>
-                        <div>
-                            <h1 className="text-2xl md:text-3xl font-black tracking-tight text-white">Cron Execution Logs</h1>
-                            <p className="text-sm text-slate-400">Paginated history of scheduled and manually triggered task runs.</p>
-                        </div>
-                        </div>
-                    </div>
+                        <button
+                            type="button"
+                            onClick={() => fetchLogs()}
+                            disabled={refreshing}
+                            className="adm-btn"
+                        >
+                            <FaRotate aria-hidden="true" className={refreshing ? 'animate-spin' : ''} />
+                            Refresh
+                        </button>
+                    </>
+                }
+            />
 
-                    <button
-                        type="button"
-                        onClick={() => fetchLogs()}
-                        disabled={refreshing}
-                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-slate-200 transition hover:border-cyan-500/30 hover:text-cyan-300 disabled:opacity-50"
-                    >
-                        <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
-                        Refresh
-                    </button>
+            {message && (
+                <div
+                    role="alert"
+                    className={`adm-notice ${
+                        message.type === 'error'
+                            ? 'adm-notice-error'
+                            : message.type === 'success'
+                            ? 'adm-notice-ok'
+                            : 'adm-notice-info'
+                    }`}
+                >
+                    {message.text}
                 </div>
+            )}
 
-                {message && (
-                    <div className={`rounded-2xl border px-4 py-3 text-sm font-semibold ${message.type === 'error' ? 'border-red-500/20 bg-red-500/10 text-red-300' : 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300'}`}>
-                        {message.text}
-                    </div>
-                )}
-
-                <div className="rounded-3xl border border-white/10 bg-slate-900/50 p-4 md:p-5 backdrop-blur-md space-y-4">
-                    <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                        <form onSubmit={applySearch} className="relative flex-1 max-w-xl">
-                            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+            <Panel
+                title="Execution history"
+                actions={<Badge>{pagination.total} runs</Badge>}
+                flush
+            >
+                <div className="flex flex-col gap-3 border-b border-[var(--hairline)] p-4 sm:px-5 lg:flex-row lg:items-center lg:justify-between">
+                    <form onSubmit={applySearch} className="flex flex-1 max-w-xl items-center gap-2">
+                        <label htmlFor="cron-logs-search" className="sr-only">
+                            Search task, URL, or log text
+                        </label>
+                        <div className="relative flex-1">
+                            <FaMagnifyingGlass
+                                aria-hidden="true"
+                                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--adm-hint)]"
+                            />
                             <input
+                                id="cron-logs-search"
                                 value={searchInput}
                                 onChange={(event) => setSearchInput(event.target.value)}
                                 placeholder="Search task, URL, or log text"
-                                className="w-full rounded-xl border border-white/10 bg-slate-950 px-9 py-2.5 text-sm text-slate-200 outline-none transition placeholder:text-slate-600 focus:border-cyan-500/50"
+                                className="adm-input pl-9"
                             />
-                        </form>
-
-                        <div className="flex rounded-xl border border-white/10 bg-slate-950 p-1">
-                            {['all', 'success', 'failure'].map(status => (
-                                <button
-                                    key={status}
-                                    type="button"
-                                    onClick={() => changeStatus(status)}
-                                    className={`rounded-lg px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition ${statusFilter === status ? 'bg-cyan-500/10 text-cyan-300 border border-cyan-500/20' : 'text-slate-500 hover:text-slate-300 border border-transparent'}`}
-                                >
-                                    {status}
-                                </button>
-                            ))}
                         </div>
-                    </div>
+                        <button type="submit" className="adm-btn">
+                            Search
+                        </button>
+                    </form>
 
-                    <div className="overflow-hidden rounded-2xl border border-white/10">
-                        <div className="overflow-x-auto">
-                            <table className="w-full min-w-[900px] text-left text-sm">
-                                <thead className="bg-slate-950/80 text-[10px] uppercase tracking-widest text-slate-500">
-                                    <tr>
-                                        <th className="px-4 py-3">Run</th>
-                                        <th className="px-4 py-3">Task</th>
-                                        <th className="px-4 py-3">Status</th>
-                                        <th className="px-4 py-3">Method</th>
-                                        <th className="px-4 py-3">Target URL</th>
-                                        <th className="px-4 py-3">Duration</th>
-                                        <th className="px-4 py-3 text-right">Log</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-white/5 bg-slate-900/30">
-                                    {loading ? (
-                                        <tr>
-                                            <td colSpan={7} className="px-4 py-12 text-center text-slate-500">Loading execution history...</td>
-                                        </tr>
-                                    ) : logs.length === 0 ? (
-                                        <tr>
-                                            <td colSpan={7} className="px-4 py-12 text-center text-slate-500">No cron logs found.</td>
-                                        </tr>
-                                    ) : (
-                                        logs.map(log => (
-                                            <React.Fragment key={log._id}>
-                                                <tr className="hover:bg-white/[0.03] transition">
-                                                    <td className="px-4 py-3 font-mono text-xs text-slate-300">
-                                                        <div className="flex items-center gap-2">
-                                                            <Clock size={13} className="text-slate-500" />
-                                                            {formatDate(log.ranAt)}
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-4 py-3">
-                                                        <div className="font-bold text-white">{log.cronName}</div>
-                                                        <div className="font-mono text-[10px] uppercase tracking-wider text-slate-500">{log.action}</div>
-                                                    </td>
-                                                    <td className="px-4 py-3">
-                                                        <span className={`inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-[10px] font-bold uppercase tracking-wider ${log.status === 'success' ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20' : 'bg-red-500/10 text-red-300 border border-red-500/20'}`}>
-                                                            {log.status === 'success' ? <CheckCircle2 size={12} /> : <XCircle size={12} />}
-                                                            {log.status}
-                                                        </span>
-                                                    </td>
-                                                    <td className="px-4 py-3 font-mono text-xs font-bold text-pink-300">{log.method || '-'}</td>
-                                                    <td className="px-4 py-3">
-                                                        <span className="block max-w-[280px] truncate font-mono text-xs text-cyan-300" title={log.url || ''}>
-                                                            {log.url || '-'}
-                                                        </span>
-                                                    </td>
-                                                    <td className="px-4 py-3 font-mono text-xs text-slate-400">{formatDuration(log.durationMs)}</td>
-                                                    <td className="px-4 py-3 text-right">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setExpandedLogId(expandedLogId === log._id ? null : log._id)}
-                                                            className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-1.5 text-xs font-bold text-slate-300 transition hover:border-cyan-500/30 hover:text-cyan-300"
-                                                        >
-                                                            Full Log
-                                                            <ChevronDown size={13} className={`transition ${expandedLogId === log._id ? 'rotate-180' : ''}`} />
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                                {expandedLogId === log._id && (
-                                                    <tr>
-                                                        <td colSpan={7} className="bg-slate-950/70 px-4 py-4">
-                                                            <div className="rounded-2xl border border-white/10 bg-slate-950 overflow-hidden">
-                                                                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/5 px-4 py-3">
-                                                                    <div className="flex min-w-0 items-center gap-3">
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() => setExpandedLogId(null)}
-                                                                            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-cyan-500/20 bg-cyan-500/10 px-3 py-1.5 text-xs font-bold text-cyan-300 transition hover:border-cyan-500/40 hover:bg-cyan-500/15"
-                                                                        >
-                                                                            Collapse
-                                                                            <ChevronDown size={13} className="rotate-180" />
-                                                                        </button>
-                                                                        <div className="text-[10px] font-bold uppercase tracking-widest text-cyan-400">Full Execution Log</div>
-                                                                    </div>
-                                                                    <div className="font-mono text-[10px] text-slate-500">{formatDate(log.ranAt)}</div>
-                                                                </div>
-                                                                <pre className="max-h-[520px] overflow-auto whitespace-pre-wrap p-4 font-mono text-xs leading-relaxed text-cyan-300 custom-scrollbar">
-                                                                    {log.log || 'No log output recorded.'}
-                                                                </pre>
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                )}
-                                            </React.Fragment>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between text-sm text-slate-500">
-                        <span>
-                            Showing <span className="font-mono text-slate-300">{showingStart}</span> to <span className="font-mono text-slate-300">{showingEnd}</span> of <span className="font-mono text-slate-300">{pagination.total}</span> logs
-                        </span>
-                        <div className="flex items-center gap-2">
+                    <div role="group" aria-label="Filter by status" className="flex flex-wrap gap-1">
+                        {STATUS_FILTERS.map((s) => (
                             <button
+                                key={s.key}
                                 type="button"
-                                onClick={() => changePage(page - 1)}
-                                disabled={page <= 1 || loading}
-                                className="inline-flex items-center gap-1 rounded-lg border border-white/10 px-3 py-2 text-xs font-bold text-slate-300 transition hover:border-white/20 disabled:opacity-40"
+                                aria-pressed={statusFilter === s.key}
+                                onClick={() => changeStatus(s.key)}
+                                className="adm-tab"
                             >
-                                <ChevronLeft size={14} />
-                                Prev
+                                {s.label}
                             </button>
-                            <span className="rounded-lg border border-white/10 bg-slate-950 px-3 py-2 font-mono text-xs text-slate-300">
-                                {pagination.page} / {pagination.totalPages}
-                            </span>
-                            <button
-                                type="button"
-                                onClick={() => changePage(page + 1)}
-                                disabled={page >= pagination.totalPages || loading}
-                                className="inline-flex items-center gap-1 rounded-lg border border-white/10 px-3 py-2 text-xs font-bold text-slate-300 transition hover:border-white/20 disabled:opacity-40"
-                            >
-                                Next
-                                <ChevronRight size={14} />
-                            </button>
-                        </div>
+                        ))}
                     </div>
                 </div>
-            </div>
+
+                {loading ? (
+                    <Loading label="Loading execution history" rows={6} />
+                ) : logs.length === 0 ? (
+                    <EmptyState
+                        title="No cron logs found"
+                        description="Adjust the status filter or search query, or trigger a task in the scheduler."
+                    />
+                ) : (
+                    <div className="adm-table-wrap">
+                        <table className="adm-table min-w-[52rem]">
+                            <thead>
+                                <tr>
+                                    <th>Run</th>
+                                    <th>Task</th>
+                                    <th>Status</th>
+                                    <th>Method</th>
+                                    <th>Target URL</th>
+                                    <th>Duration</th>
+                                    <th className="text-right">Output</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {logs.map((log) => {
+                                    const expanded = expandedLogId === log._id;
+                                    return (
+                                        <React.Fragment key={log._id}>
+                                            <tr>
+                                                <td className="adm-num whitespace-nowrap">{formatDate(log.ranAt)}</td>
+                                                <td>
+                                                    <div className="font-semibold text-[var(--text-bright)]">{log.cronName}</div>
+                                                    {log.action && <div className="adm-help font-mono">{log.action}</div>}
+                                                </td>
+                                                <td>
+                                                    <Badge tone={log.status === 'success' ? 'ok' : 'error'}>
+                                                        {log.status === 'success' ? 'Success' : 'Failure'}
+                                                    </Badge>
+                                                </td>
+                                                <td className="font-mono">{log.method || '—'}</td>
+                                                <td>
+                                                    <span
+                                                        className="block max-w-[18rem] truncate font-mono text-xs"
+                                                        title={log.url || ''}
+                                                    >
+                                                        {log.url || '—'}
+                                                    </span>
+                                                </td>
+                                                <td className="adm-num">{formatDuration(log.durationMs)}</td>
+                                                <td className="text-right">
+                                                    <button
+                                                        type="button"
+                                                        aria-expanded={expanded}
+                                                        onClick={() => setExpandedLogId(expanded ? null : log._id)}
+                                                        className="adm-btn"
+                                                    >
+                                                        {expanded ? 'Hide log' : 'View log'}
+                                                        <FaChevronDown
+                                                            aria-hidden="true"
+                                                            className={`transition-transform ${expanded ? 'rotate-180' : ''}`}
+                                                        />
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            {expanded && (
+                                                <tr>
+                                                    <td colSpan={7} className="bg-[var(--bg-secondary)] p-4 sm:px-5">
+                                                        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                                                            <span className="font-semibold text-[var(--text-bright)]">
+                                                                Execution output
+                                                            </span>
+                                                            <span className="adm-help font-mono">{formatDate(log.ranAt)}</span>
+                                                        </div>
+                                                        <pre className="adm-code max-h-[32rem] whitespace-pre-wrap">
+                                                            {log.log || 'No log output recorded.'}
+                                                        </pre>
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </React.Fragment>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+
+                <div className="flex flex-col gap-3 border-t border-[var(--hairline)] p-4 sm:px-5 md:flex-row md:items-center md:justify-between">
+                    <p className="adm-help">
+                        Showing <span className="adm-num text-[var(--text-primary)]">{showingStart}</span> to{' '}
+                        <span className="adm-num text-[var(--text-primary)]">{showingEnd}</span> of{' '}
+                        <span className="adm-num text-[var(--text-primary)]">{pagination.total}</span> logs
+                    </p>
+                    <div className="flex items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={() => changePage(page - 1)}
+                            disabled={page <= 1 || loading}
+                            className="adm-btn"
+                        >
+                            <FaChevronLeft aria-hidden="true" /> Previous
+                        </button>
+                        <span className="adm-num px-2 text-sm text-[var(--text-secondary)]">
+                            {pagination.page} / {pagination.totalPages}
+                        </span>
+                        <button
+                            type="button"
+                            onClick={() => changePage(page + 1)}
+                            disabled={page >= pagination.totalPages || loading}
+                            className="adm-btn"
+                        >
+                            Next <FaChevronRight aria-hidden="true" />
+                        </button>
+                    </div>
+                </div>
+            </Panel>
         </div>
     );
 }

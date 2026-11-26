@@ -1,44 +1,36 @@
 "use client";
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
-    FaDownload,
-    FaUpload,
-    FaDatabase,
-    FaExclamationTriangle,
-    FaCheckCircle,
-    FaServer,
-    FaTrash,
-    FaChartLine,
-    FaTimes,
-    FaGoogle,
-    FaCloudUploadAlt,
-    FaSync,
-    FaKey,
-    FaCopy,
-    FaFolder,
-    FaUserCheck,
-    FaExternalLinkAlt,
+    FaArrowsRotate,
+    FaCheck,
     FaChevronDown,
     FaChevronUp,
+    FaCloudArrowUp,
+    FaCopy,
+    FaDownload,
     FaEye,
     FaEyeSlash,
-    FaCheck,
-    FaHistory,
-    FaCog,
-    FaSignOutAlt,
-    FaClock,
-} from 'react-icons/fa';
+    FaFileArrowUp,
+    FaGear,
+    FaGoogle,
+    FaRightFromBracket,
+    FaSpinner,
+    FaTrashCan,
+    FaUpRightFromSquare,
+    FaUserCheck,
+    FaXmark,
+} from 'react-icons/fa6';
 import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
+import { Badge, EmptyState, Field, Loading, PageHeader, Panel } from '@/app/components/admin/ui';
+import '@/app/styles/admin-system.css';
 
 // Backup collections grouped for the selection popup. Keys match the export
 // route's COLLECTION_PRODUCERS / import route's `key` fields. `__images` is a
 // pseudo-item mapping to the includeImages toggle (gallery asset files).
 const EXPORT_SECTIONS = [
     {
-        title: 'Site Content',
-        accent: 'amber',
+        title: 'Site content',
         items: [
             { key: 'about', label: 'About' },
             { key: 'blogs', label: 'Blogs' },
@@ -46,21 +38,20 @@ const EXPORT_SECTIONS = [
             { key: 'gallery', label: 'Gallery' },
             { key: 'header', label: 'Header' },
             { key: 'home', label: 'Home' },
-            { key: 'aiPage', label: 'AI Page' },
-            { key: 'resumeStudio', label: 'Resume Studio' },
+            { key: 'aiPage', label: 'AI page' },
+            { key: 'resumeStudio', label: 'Resume studio' },
             { key: 'projects', label: 'Projects' },
             { key: 'deployments', label: 'Deployments' },
-            { key: 'legalApps', label: 'Legal Apps' },
-            { key: 'legalDocuments', label: 'Legal Pages' },
+            { key: 'legalApps', label: 'Legal apps' },
+            { key: 'legalDocuments', label: 'Legal pages' },
             { key: 'socials', label: 'Socials' },
             { key: 'themes', label: 'Themes' },
         ],
     },
     {
-        title: 'AI Hub',
-        accent: 'cyan',
+        title: 'AI hub',
         items: [
-            { key: 'aiSkillCategories', label: 'Skill Categories' },
+            { key: 'aiSkillCategories', label: 'Skill categories' },
             { key: 'aiSkills', label: 'Skills' },
             { key: 'aiRecommendations', label: 'Recommendations' },
             { key: 'aiCredits', label: 'Credits' },
@@ -68,55 +59,38 @@ const EXPORT_SECTIONS = [
         ],
     },
     {
-        title: 'AI Usage History',
-        accent: 'emerald',
-        items: [
-            { key: 'aiLogs', label: 'Usage Logs (prompts, responses, tokens)' },
-        ],
+        title: 'AI usage history',
+        items: [{ key: 'aiLogs', label: 'Usage logs (prompts, responses, tokens)' }],
     },
     {
         title: 'Analytics',
-        accent: 'purple',
         items: [
             { key: 'analyticsEvents', label: 'Events' },
-            { key: 'analyticsDaily', label: 'Daily Rollups' },
+            { key: 'analyticsDaily', label: 'Daily rollups' },
         ],
     },
     {
         title: 'System',
-        accent: 'cyan',
         items: [
-            { key: 'crons', label: 'Cron Jobs' },
+            { key: 'crons', label: 'Cron jobs' },
             { key: 'ads', label: 'Ads' },
-            { key: 'notificationConfig', label: 'Notification Config' },
+            { key: 'notificationConfig', label: 'Notification config' },
         ],
     },
     {
         title: 'Sensitive',
-        accent: 'red',
         items: [
             { key: 'github', label: 'GitHub' },
-            { key: 'contactMessages', label: 'Contact Messages' },
+            { key: 'contactMessages', label: 'Contact messages' },
         ],
     },
     {
         title: 'Assets',
-        accent: 'amber',
-        items: [
-            { key: '__images', label: 'Gallery Image Files' },
-        ],
+        items: [{ key: '__images', label: 'Gallery image files' }],
     },
 ];
 
 const ALL_EXPORT_KEYS = EXPORT_SECTIONS.flatMap((s) => s.items.map((i) => i.key));
-
-const ACCENT_TEXT = {
-    amber: 'text-amber-400',
-    cyan: 'text-cyan-400',
-    emerald: 'text-emerald-400',
-    purple: 'text-purple-400',
-    red: 'text-red-400',
-};
 
 function formatBytes(bytes) {
     if (!bytes || isNaN(bytes)) return '0 B';
@@ -130,7 +104,11 @@ function formatDate(dateString) {
     if (!dateString) return 'N/A';
     try {
         const d = new Date(dateString);
-        return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        return (
+            d.toLocaleDateString() +
+            ' ' +
+            d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        );
     } catch {
         return dateString;
     }
@@ -142,7 +120,6 @@ export default function DatabaseManager() {
     const [message, setMessage] = useState(null);
     const [importFile, setImportFile] = useState(null);
     const [showExportModal, setShowExportModal] = useState(false);
-    // Every collection selected by default (a full backup).
     const [selection, setSelection] = useState(() =>
         Object.fromEntries(ALL_EXPORT_KEYS.map((k) => [k, true]))
     );
@@ -151,7 +128,12 @@ export default function DatabaseManager() {
     const [gdriveStatus, setGdriveStatus] = useState(null);
     const [gdriveFiles, setGdriveFiles] = useState([]);
     const [showGDriveModal, setShowGDriveModal] = useState(false);
-    const [gdriveConfigForm, setGdriveConfigForm] = useState({ clientId: '', clientSecret: '', retentionMonths: 1, autoDeleteEnabled: false });
+    const [gdriveConfigForm, setGdriveConfigForm] = useState({
+        clientId: '',
+        clientSecret: '',
+        retentionMonths: 1,
+        autoDeleteEnabled: false,
+    });
     const [gdriveLoading, setGdriveLoading] = useState(false);
     const [showDriveHistory, setShowDriveHistory] = useState(false);
     const [expandedGuideStep, setExpandedGuideStep] = useState(null);
@@ -249,11 +231,11 @@ export default function DatabaseManager() {
         if (typeof window !== 'undefined') {
             const params = new URLSearchParams(window.location.search);
             if (params.get('gdrive') === 'connected') {
-                setMessage({ type: 'success', text: 'GOOGLE_DRIVE_CONNECTED_SUCCESSFULLY' });
+                setMessage({ type: 'success', text: 'Google Drive connected.' });
                 window.history.replaceState({}, '', window.location.pathname);
             } else if (params.get('gdrive_error')) {
                 const err = params.get('gdrive_error');
-                setMessage({ type: 'error', text: `GOOGLE_DRIVE_ERROR: ${err}` });
+                setMessage({ type: 'error', text: `Google Drive error: ${err}` });
                 window.history.replaceState({}, '', window.location.pathname);
             }
         }
@@ -279,8 +261,12 @@ export default function DatabaseManager() {
             setMessage({
                 type: 'success',
                 text: isPurge
-                    ? (nextState ? 'AUTO_DELETE_PURGE_CRON_ENABLED' : 'AUTO_DELETE_PURGE_CRON_DISABLED')
-                    : (nextState ? 'AUTOMATED_DAILY_BACKUP_ENABLED' : 'AUTOMATED_DAILY_BACKUP_DISABLED'),
+                    ? nextState
+                        ? 'Auto-delete purge cron enabled.'
+                        : 'Auto-delete purge cron disabled.'
+                    : nextState
+                    ? 'Automated daily backup enabled.'
+                    : 'Automated daily backup disabled.',
             });
         } catch (err) {
             setMessage({ type: 'error', text: err.message });
@@ -288,8 +274,7 @@ export default function DatabaseManager() {
         }
     };
 
-    const toggleKey = (key) =>
-        setSelection((prev) => ({ ...prev, [key]: !prev[key] }));
+    const toggleKey = (key) => setSelection((prev) => ({ ...prev, [key]: !prev[key] }));
 
     const toggleSection = (items, value) =>
         setSelection((prev) => {
@@ -314,7 +299,7 @@ export default function DatabaseManager() {
             if (!res.ok || !data.success) {
                 throw new Error(data.error || 'Failed to save Google Drive configuration');
             }
-            setMessage({ type: 'success', text: 'GOOGLE_DRIVE_CONFIG_SAVED' });
+            setMessage({ type: 'success', text: 'Google Drive configuration saved.' });
             setShowGDriveModal(false);
             fetchGDriveStatus();
         } catch (err) {
@@ -329,12 +314,15 @@ export default function DatabaseManager() {
     };
 
     const handleDisconnectGDrive = async () => {
-        if (!(await confirm({
-            title: 'Disconnect Google Drive?',
-            message: 'Are you sure you want to disconnect Google Drive? Automatic & cloud backups will be disabled until reconnected.',
-            confirmText: 'Disconnect',
-            danger: true,
-        }))) {
+        if (
+            !(await confirm({
+                title: 'Disconnect Google Drive?',
+                message:
+                    'Are you sure you want to disconnect Google Drive? Automatic and cloud backups will be disabled until reconnected.',
+                confirmText: 'Disconnect',
+                danger: true,
+            }))
+        ) {
             return;
         }
 
@@ -345,7 +333,7 @@ export default function DatabaseManager() {
             if (!res.ok || !data.success) {
                 throw new Error(data.error || 'Failed to disconnect Google Drive');
             }
-            setMessage({ type: 'success', text: 'GOOGLE_DRIVE_DISCONNECTED' });
+            setMessage({ type: 'success', text: 'Google Drive disconnected.' });
             setGdriveFiles([]);
             fetchGDriveStatus();
         } catch (err) {
@@ -356,16 +344,17 @@ export default function DatabaseManager() {
     };
 
     const handleGDriveBackup = async (dbKeysOverride) => {
-        const dbKeys = dbKeysOverride || ALL_EXPORT_KEYS.filter((k) => k !== '__images' && selection[k]);
+        const dbKeys =
+            dbKeysOverride || ALL_EXPORT_KEYS.filter((k) => k !== '__images' && selection[k]);
         if (dbKeys.length === 0 && !selection.__images) {
-            setMessage({ type: 'error', text: 'NOTHING_SELECTED' });
+            setMessage({ type: 'error', text: 'Select at least one collection or asset.' });
             return;
         }
 
         try {
             setShowExportModal(false);
             setIsLoading(true);
-            setMessage({ type: 'info', text: 'UPLOADING_BACKUP_TO_GOOGLE_DRIVE...' });
+            setMessage({ type: 'info', text: 'Uploading backup to Google Drive…' });
 
             const queryParams = new URLSearchParams();
             if (dbKeys.length > 0) queryParams.append('collections', dbKeys.join(','));
@@ -377,10 +366,10 @@ export default function DatabaseManager() {
 
             const data = await res.json();
             if (!res.ok || !data.success) {
-                throw new Error(data.error || 'GOOGLE_DRIVE_BACKUP_FAILED');
+                throw new Error(data.error || 'Google Drive backup failed.');
             }
 
-            setMessage({ type: 'success', text: 'BACKUP_SAVED_TO_GOOGLE_DRIVE_SUCCESSFULLY' });
+            setMessage({ type: 'success', text: 'Backup saved to Google Drive.' });
             fetchGDriveFiles();
         } catch (err) {
             setMessage({ type: 'error', text: err.message });
@@ -390,18 +379,20 @@ export default function DatabaseManager() {
     };
 
     const handleGDriveRestore = async (fileId, filename) => {
-        if (!(await confirm({
-            title: 'Restore Backup from Google Drive?',
-            message: `WARNING: Overwrite ALL system data using backup file "${filename}"? This action cannot be undone.`,
-            confirmText: 'Execute Restore',
-            danger: true,
-        }))) {
+        if (
+            !(await confirm({
+                title: 'Restore backup from Google Drive?',
+                message: `Warning: Overwrite all system data using backup file "${filename}"? This action cannot be undone.`,
+                confirmText: 'Restore backup',
+                danger: true,
+            }))
+        ) {
             return;
         }
 
         try {
             setIsLoading(true);
-            setMessage({ type: 'info', text: 'DOWNLOADING_AND_RESTORING_FROM_GOOGLE_DRIVE...' });
+            setMessage({ type: 'info', text: 'Downloading and restoring from Google Drive…' });
 
             const res = await fetch('/api/admin/gdrive/restore', {
                 method: 'POST',
@@ -411,10 +402,13 @@ export default function DatabaseManager() {
 
             const data = await res.json();
             if (!res.ok) {
-                throw new Error(data.error || 'RESTORE_FROM_GOOGLE_DRIVE_FAILED');
+                throw new Error(data.error || 'Restore from Google Drive failed.');
             }
 
-            setMessage({ type: 'success', text: 'SYSTEM_RESTORED_FROM_GOOGLE_DRIVE. REBOOTING_INTERFACE...' });
+            setMessage({
+                type: 'success',
+                text: 'System restored from Google Drive. Reloading…',
+            });
             setTimeout(() => window.location.reload(), 2000);
         } catch (err) {
             setMessage({ type: 'error', text: err.message });
@@ -424,18 +418,20 @@ export default function DatabaseManager() {
     };
 
     const handleGDriveDelete = async (fileId, filename) => {
-        if (!(await confirm({
-            title: 'Delete Google Drive Backup?',
-            message: `Are you sure you want to permanently delete "${filename}" from Google Drive?`,
-            confirmText: 'Delete File',
-            danger: true,
-        }))) {
+        if (
+            !(await confirm({
+                title: 'Delete Google Drive backup?',
+                message: `Are you sure you want to permanently delete "${filename}" from Google Drive?`,
+                confirmText: 'Delete file',
+                danger: true,
+            }))
+        ) {
             return;
         }
 
         try {
             setIsLoading(true);
-            setMessage({ type: 'info', text: 'DELETING_FILE_FROM_GOOGLE_DRIVE...' });
+            setMessage({ type: 'info', text: 'Deleting file from Google Drive…' });
 
             const res = await fetch('/api/admin/gdrive/delete', {
                 method: 'POST',
@@ -445,10 +441,10 @@ export default function DatabaseManager() {
 
             const data = await res.json();
             if (!res.ok || !data.success) {
-                throw new Error(data.error || 'DELETE_GOOGLE_DRIVE_FILE_FAILED');
+                throw new Error(data.error || 'Failed to delete Google Drive file.');
             }
 
-            setMessage({ type: 'success', text: 'FILE_DELETED_FROM_GOOGLE_DRIVE' });
+            setMessage({ type: 'success', text: 'Backup deleted from Google Drive.' });
             fetchGDriveFiles();
         } catch (err) {
             setMessage({ type: 'error', text: err.message });
@@ -460,14 +456,14 @@ export default function DatabaseManager() {
     const handleExport = async () => {
         const dbKeys = ALL_EXPORT_KEYS.filter((k) => k !== '__images' && selection[k]);
         if (dbKeys.length === 0 && !selection.__images) {
-            setMessage({ type: 'error', text: 'NOTHING_SELECTED' });
+            setMessage({ type: 'error', text: 'Select at least one collection or asset.' });
             return;
         }
 
         try {
             setShowExportModal(false);
             setIsLoading(true);
-            setMessage({ type: 'info', text: 'GENERATING_ZIP_ARCHIVE...' });
+            setMessage({ type: 'info', text: 'Generating zip archive…' });
 
             const queryParams = new URLSearchParams();
             queryParams.append('collections', dbKeys.join(','));
@@ -476,21 +472,21 @@ export default function DatabaseManager() {
             const response = await fetch(`/api/admin/export?${queryParams.toString()}`);
 
             if (!response.ok) {
-                let errorMsg = 'EXPORT_FAILED';
+                let errorMsg = 'Export failed.';
                 try {
                     const error = await response.json();
                     errorMsg = error.error || errorMsg;
-                } catch { /* response might not be JSON */ }
+                } catch {
+                    /* response might not be JSON */
+                }
                 throw new Error(errorMsg);
             }
 
-            // Download ZIP blob
             const blob = await response.blob();
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
 
-            // Format: backup_YYYY-MM-DD_HH-mm-ss.zip
             const now = new Date();
             const dateStr = now.toISOString().split('T')[0];
             const timeStr = now.toTimeString().split(' ')[0].replace(/:/g, '-');
@@ -501,7 +497,7 @@ export default function DatabaseManager() {
             window.URL.revokeObjectURL(url);
             document.body.removeChild(a);
 
-            setMessage({ type: 'success', text: 'ZIP_ARCHIVE_CREATED_SUCCESSFULLY' });
+            setMessage({ type: 'success', text: 'Backup zip archive downloaded.' });
         } catch (error) {
             setMessage({ type: 'error', text: error.message });
         } finally {
@@ -512,22 +508,25 @@ export default function DatabaseManager() {
     const handleImport = async (e) => {
         e.preventDefault();
         if (!importFile) {
-            setMessage({ type: 'error', text: 'NO_FILE_DETECTED' });
+            setMessage({ type: 'error', text: 'Choose a backup file first.' });
             return;
         }
 
-        if (!(await confirm({
-            title: 'Overwrite all system data?',
-            message: 'WARNING: This action will overwrite ALL system data with the imported backup. This cannot be undone.',
-            confirmText: 'Overwrite',
-            danger: true,
-        }))) {
+        if (
+            !(await confirm({
+                title: 'Overwrite all system data?',
+                message:
+                    'Warning: This action will overwrite all system data with the imported backup. This cannot be undone.',
+                confirmText: 'Overwrite',
+                danger: true,
+            }))
+        ) {
             return;
         }
 
         try {
             setIsLoading(true);
-            setMessage({ type: 'info', text: 'OVERWRITING_SYSTEM_DATA...' });
+            setMessage({ type: 'info', text: 'Restoring system data…' });
 
             const response = await fetch('/api/admin/import', {
                 method: 'POST',
@@ -547,17 +546,14 @@ export default function DatabaseManager() {
 
             if (!response.ok) {
                 if (response.status === 413) {
-                    throw new Error('BACKUP_FILE_TOO_LARGE_FOR_SERVER_LIMIT');
+                    throw new Error('Backup file exceeds server upload size limit.');
                 }
-                throw new Error(result?.error || 'IMPORT_FAILED');
+                throw new Error(result?.error || 'Restore failed.');
             }
 
-            setMessage({ type: 'success', text: 'SYSTEM_RESTORED. REBOOTING_INTERFACE...' });
-
-            // Reset form and reload page
+            setMessage({ type: 'success', text: 'System restored. Reloading…' });
             setImportFile(null);
             setTimeout(() => window.location.reload(), 2000);
-
         } catch (error) {
             setMessage({ type: 'error', text: error.message });
         } finally {
@@ -566,27 +562,30 @@ export default function DatabaseManager() {
     };
 
     const handleResetAnalytics = async () => {
-        if (!(await confirm({
-            title: 'Delete all analytics data?',
-            message: 'WARNING: This will permanently delete ALL analytics data. This action cannot be undone.',
-            confirmText: 'Delete everything',
-            danger: true,
-        }))) {
+        if (
+            !(await confirm({
+                title: 'Delete all analytics data?',
+                message:
+                    'Warning: This will permanently delete all analytics data. This action cannot be undone.',
+                confirmText: 'Delete everything',
+                danger: true,
+            }))
+        ) {
             return;
         }
 
         try {
             setIsLoading(true);
-            setMessage({ type: 'info', text: 'PURGING_ANALYTICS_DATA...' });
+            setMessage({ type: 'info', text: 'Purging analytics data…' });
 
             const response = await fetch('/api/admin/analytics', { method: 'DELETE' });
             const result = await response.json();
 
             if (!response.ok || !result?.success) {
-                throw new Error(result?.error || 'ANALYTICS_RESET_FAILED');
+                throw new Error(result?.error || 'Analytics reset failed.');
             }
 
-            setMessage({ type: 'success', text: 'ANALYTICS_DATA_PURGED_SUCCESSFULLY' });
+            setMessage({ type: 'success', text: 'Analytics data deleted.' });
         } catch (error) {
             setMessage({ type: 'error', text: error.message });
         } finally {
@@ -595,18 +594,20 @@ export default function DatabaseManager() {
     };
 
     const handlePurgeCache = async () => {
-        if (!(await confirm({
-            title: 'Purge all caches?',
-            message: 'WARNING: This will purge all in-memory caches.',
-            confirmText: 'Purge',
-            danger: true,
-        }))) {
+        if (
+            !(await confirm({
+                title: 'Purge all caches?',
+                message: 'Warning: This will purge all in-memory caches.',
+                confirmText: 'Purge',
+                danger: true,
+            }))
+        ) {
             return;
         }
 
         try {
             setIsLoading(true);
-            setMessage({ type: 'info', text: 'PURGING_CACHE_SYSTEM...' });
+            setMessage({ type: 'info', text: 'Purging caches…' });
 
             const response = await fetch('/api/admin/purge-cache', {
                 method: 'POST',
@@ -615,10 +616,10 @@ export default function DatabaseManager() {
             const result = await response.json();
 
             if (!response.ok) {
-                throw new Error(result?.error || 'PURGE_FAILED');
+                throw new Error(result?.error || 'Cache purge failed.');
             }
 
-            setMessage({ type: 'success', text: 'CACHE_PURGED_SUCCESSFULLY' });
+            setMessage({ type: 'success', text: 'Caches purged.' });
         } catch (error) {
             setMessage({ type: 'error', text: error.message });
         } finally {
@@ -627,773 +628,665 @@ export default function DatabaseManager() {
     };
 
     return (
-        <div className="p-4 md:p-8 max-w-7xl mx-auto min-h-screen">
-            <div className="mb-8">
-                <Link href="/admin" className="text-cyan-400 hover:text-cyan-300 flex items-center gap-2 transition-colors mb-4 text-sm font-mono opacity-60 hover:opacity-100">
-                    ← BACK_TO_COMMAND_CENTER
-                </Link>
-                <div className="flex items-center gap-4">
-                    <div className="p-3 bg-amber-500/10 rounded-xl border border-amber-500/20 text-amber-500">
-                        <FaDatabase className="w-8 h-8" />
-                    </div>
-                    <div>
-                        <h1 className="text-3xl md:text-4xl font-bold text-white mb-1 tracking-tight">Data Integrity</h1>
-                        <p className="text-slate-400">Manage system backups, cloud sync, exports, and restoration protocols.</p>
-                    </div>
-                </div>
-            </div>
+        <div className="adm-page">
+            <PageHeader
+                command="pg_dump"
+                title="Database and backups"
+                description="Export and restore site collections, sync archives with Google Drive, and clear caches."
+            />
 
             {message && (
-                <motion.div
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className={`p-4 rounded-xl mb-8 flex items-center gap-3 border backdrop-blur-md ${message.type === 'error' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
-                        message.type === 'success' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-                            'bg-cyan-500/10 text-cyan-400 border-cyan-500/20'
-                        }`}
+                <div
+                    role="alert"
+                    className={`adm-notice ${
+                        message.type === 'error'
+                            ? 'adm-notice-error'
+                            : message.type === 'success'
+                            ? 'adm-notice-ok'
+                            : 'adm-notice-info'
+                    }`}
                 >
-                    {message.type === 'error' && <FaExclamationTriangle />}
-                    {message.type === 'success' && <FaCheckCircle />}
-                    <span className="font-mono text-sm tracking-wide">{message.text}</span>
-                </motion.div>
+                    {message.text}
+                </div>
             )}
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {/* Export Section */}
-                <motion.div
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="bg-slate-900/50 backdrop-blur-xl p-6 md:p-8 rounded-2xl border border-white/10 relative overflow-hidden group flex flex-col justify-between"
-                >
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
-
-                    <div className="relative z-10">
-                        <div className="flex items-center gap-3 mb-6">
-                            <FaDownload className="text-amber-500/70" size={20} />
-                            <h2 className="text-sm font-mono text-amber-500/70 uppercase tracking-widest">System Backup</h2>
-                        </div>
-
-                        <p className="text-slate-400 mb-8 text-sm leading-relaxed">
-                            Generate a ZIP archive of the system state. Choose exactly which collections — including AI usage history — and gallery assets to include.
-                        </p>
-                    </div>
-
-                    <div className="relative z-10">
-                        <button
-                            onClick={() => setShowExportModal(true)}
-                            disabled={isLoading}
-                            className="w-full bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 hover:border-amber-500/40 text-amber-400 font-bold py-4 px-4 rounded-xl transition-all flex items-center justify-center gap-3 uppercase tracking-wider text-sm disabled:opacity-50 disabled:cursor-not-allowed group/btn font-mono"
+            <div className="adm-split">
+                <div className="adm-stack">
+                    {/* Export and Google Drive */}
+                    <div className="grid gap-6 lg:grid-cols-2">
+                        <Panel
+                            title="System backup"
+                            actions={<Badge>{ALL_EXPORT_KEYS.length} collections</Badge>}
                         >
-                            {isLoading ? (
-                                <span className="animate-pulse">PROCESSING...</span>
-                            ) : (
-                                <>
-                                    <FaServer className="group-hover/btn:scale-110 transition-transform" />
-                                    CONFIGURE_DUMP
-                                </>
-                            )}
-                        </button>
+                            <div className="space-y-4">
+                                <p className="adm-help">
+                                    Generate a zip archive of your database and gallery uploads. Choose
+                                    which collections to include before downloading or sending to Google
+                                    Drive.
+                                </p>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowExportModal(true)}
+                                    disabled={isLoading}
+                                    className="adm-btn adm-btn-primary"
+                                >
+                                    {isLoading ? (
+                                        <FaSpinner aria-hidden="true" className="animate-spin" />
+                                    ) : (
+                                        <FaDownload aria-hidden="true" />
+                                    )}
+                                    {isLoading ? 'Processing' : 'Configure backup'}
+                                </button>
+                            </div>
+                        </Panel>
+
+                        <Panel
+                            title="Google Drive sync"
+                            actions={
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                    <Badge
+                                        tone={
+                                            gdriveStatus?.autoDeleteEnabled ? 'info' : undefined
+                                        }
+                                    >
+                                        {gdriveStatus?.autoDeleteEnabled
+                                            ? `Auto-purge: > ${
+                                                  gdriveStatus?.retentionMonths || 1
+                                              }m`
+                                            : 'Auto-purge: Off'}
+                                    </Badge>
+                                    <Badge
+                                        tone={
+                                            gdriveStatus?.isConnected
+                                                ? 'ok'
+                                                : gdriveStatus?.isConfigured
+                                                ? 'warn'
+                                                : undefined
+                                        }
+                                    >
+                                        {gdriveStatus?.isConnected
+                                            ? 'Connected'
+                                            : gdriveStatus?.isConfigured
+                                            ? 'Disconnected'
+                                            : 'Not configured'}
+                                    </Badge>
+                                </div>
+                            }
+                        >
+                            <div className="space-y-4">
+                                {gdriveStatus?.isConnected && gdriveStatus?.user ? (
+                                    <div className="flex items-center gap-3 rounded-[10px] border border-[var(--hairline)] bg-[var(--bg-primary)] p-3">
+                                        {gdriveStatus.user.picture ? (
+                                            <img
+                                                src={gdriveStatus.user.picture}
+                                                alt=""
+                                                className="h-9 w-9 shrink-0 rounded-full border border-[var(--hairline)] object-cover"
+                                            />
+                                        ) : (
+                                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[var(--hairline)] bg-[var(--bg-secondary)]">
+                                                <FaUserCheck aria-hidden="true" />
+                                            </div>
+                                        )}
+                                        <div className="min-w-0 flex-1">
+                                            <p className="truncate font-semibold text-sm text-[var(--text-bright)]">
+                                                {gdriveStatus.user.name || 'Google account'}
+                                            </p>
+                                            <p className="adm-help truncate font-mono">
+                                                {gdriveStatus.user.email}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <p className="adm-help">
+                                        Store automated and on-demand database snapshots in your Google
+                                        Drive folder.
+                                    </p>
+                                )}
+
+                                <div className="flex flex-wrap gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => handleGDriveBackup()}
+                                        disabled={isLoading || !gdriveStatus?.isConnected}
+                                        className="adm-btn adm-btn-primary"
+                                    >
+                                        <FaCloudArrowUp aria-hidden="true" /> Back up to Drive
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setShowDriveHistory(!showDriveHistory);
+                                            if (!showDriveHistory && gdriveStatus?.isConnected) {
+                                                fetchGDriveFiles();
+                                            }
+                                        }}
+                                        disabled={!gdriveStatus?.isConnected}
+                                        className="adm-btn"
+                                    >
+                                        {showDriveHistory ? 'Hide history' : 'Cloud history'}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            fetchGDriveConfig();
+                                            setShowGDriveModal(true);
+                                        }}
+                                        className="adm-btn"
+                                    >
+                                        <FaGear aria-hidden="true" /> API settings
+                                    </button>
+                                    {gdriveStatus?.isConnected ? (
+                                        <button
+                                            type="button"
+                                            onClick={handleDisconnectGDrive}
+                                            disabled={isLoading}
+                                            className="adm-btn adm-btn-danger"
+                                        >
+                                            <FaRightFromBracket aria-hidden="true" /> Disconnect
+                                        </button>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            onClick={handleConnectGDrive}
+                                            disabled={isLoading || !gdriveStatus?.isConfigured}
+                                            className="adm-btn"
+                                        >
+                                            <FaGoogle aria-hidden="true" /> Connect Google Drive
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </Panel>
                     </div>
-                </motion.div>
 
-                {/* Import Section */}
-                <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="bg-slate-900/50 backdrop-blur-xl p-6 md:p-8 rounded-2xl border border-white/10 relative overflow-hidden group flex flex-col justify-between"
-                >
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
+                    {/* Automated Drive Schedule */}
+                    <Panel
+                        title="Automated Google Drive schedule"
+                        actions={
+                            <Link href="/admin/config/crons" className="adm-link text-sm">
+                                Open task scheduler
+                            </Link>
+                        }
+                        flush
+                    >
+                        <ul className="adm-list">
+                            <li className="adm-row flex-wrap justify-between gap-4">
+                                <div className="min-w-0 flex-1">
+                                    <p className="flex flex-wrap items-center gap-2">
+                                        <span className="font-semibold text-[var(--text-bright)]">
+                                            Daily backup job
+                                        </span>
+                                        <code className="adm-code">{gdriveCron.backupSchedule}</code>
+                                        <Badge tone={gdriveCron.backupEnabled ? 'ok' : undefined}>
+                                            {gdriveCron.backupEnabled ? 'Enabled' : 'Off'}
+                                        </Badge>
+                                    </p>
+                                    <p className="adm-help">
+                                        Runs daily at midnight.
+                                        {gdriveCron.backupEnabled && gdriveCron.backupNextRun
+                                            ? ` Next run: ${formatDate(gdriveCron.backupNextRun)}`
+                                            : ''}
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    role="switch"
+                                    aria-checked={gdriveCron.backupEnabled}
+                                    aria-label="Enable daily Google Drive backup"
+                                    disabled={gdriveCron.loading || !gdriveStatus?.isConnected}
+                                    onClick={() => handleToggleGDriveCron('gdrive_backup')}
+                                    className="adm-switch"
+                                />
+                            </li>
+                            <li className="adm-row flex-wrap justify-between gap-4">
+                                <div className="min-w-0 flex-1">
+                                    <p className="flex flex-wrap items-center gap-2">
+                                        <span className="font-semibold text-[var(--text-bright)]">
+                                            Old backup purge job
+                                        </span>
+                                        <code className="adm-code">{gdriveCron.purgeSchedule}</code>
+                                        <Badge tone={gdriveCron.purgeEnabled ? 'ok' : undefined}>
+                                            {gdriveCron.purgeEnabled ? 'Enabled' : 'Off'}
+                                        </Badge>
+                                    </p>
+                                    <p className="adm-help">
+                                        Deletes archives older than {gdriveStatus?.retentionMonths || 1}{' '}
+                                        month{(gdriveStatus?.retentionMonths || 1) > 1 ? 's' : ''}.
+                                        {gdriveCron.purgeEnabled && gdriveCron.purgeNextRun
+                                            ? ` Next run: ${formatDate(gdriveCron.purgeNextRun)}`
+                                            : ''}
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    role="switch"
+                                    aria-checked={gdriveCron.purgeEnabled}
+                                    aria-label="Enable Google Drive old backup purge"
+                                    disabled={gdriveCron.loading || !gdriveStatus?.isConnected}
+                                    onClick={() => handleToggleGDriveCron('gdrive_purge')}
+                                    className="adm-switch"
+                                />
+                            </li>
+                        </ul>
+                    </Panel>
 
-                    <div className="relative z-10">
-                        <div className="flex items-center gap-3 mb-6">
-                            <FaUpload className="text-cyan-500/70" size={20} />
-                            <h2 className="text-sm font-mono text-cyan-500/70 uppercase tracking-widest">System Restore</h2>
-                        </div>
+                    {/* Google Drive History Table */}
+                    {showDriveHistory && (
+                        <Panel
+                            title="Google Drive backup history"
+                            actions={
+                                <>
+                                    <Badge>
+                                        {gdriveFiles.length}{' '}
+                                        {gdriveFiles.length === 1 ? 'file' : 'files'}
+                                    </Badge>
+                                    <button
+                                        type="button"
+                                        onClick={fetchGDriveFiles}
+                                        disabled={gdriveLoading}
+                                        className="adm-btn"
+                                    >
+                                        <FaArrowsRotate
+                                            aria-hidden="true"
+                                            className={gdriveLoading ? 'animate-spin' : ''}
+                                        />
+                                        Refresh
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowDriveHistory(false)}
+                                        aria-label="Close backup history"
+                                        className="adm-icon-btn"
+                                    >
+                                        <FaXmark aria-hidden="true" />
+                                    </button>
+                                </>
+                            }
+                            flush
+                        >
+                            {gdriveLoading && gdriveFiles.length === 0 ? (
+                                <Loading label="Fetching Google Drive backups" rows={4} />
+                            ) : gdriveFiles.length === 0 ? (
+                                <EmptyState
+                                    title="No cloud backups found"
+                                    description="Create a backup to Google Drive to see archives listed here."
+                                />
+                            ) : (
+                                <div className="adm-table-wrap">
+                                    <table className="adm-table min-w-[36rem]">
+                                        <thead>
+                                            <tr>
+                                                <th>Filename</th>
+                                                <th>Size</th>
+                                                <th>Created</th>
+                                                <th className="text-right">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {gdriveFiles.map((file) => (
+                                                <tr key={file.id}>
+                                                    <td
+                                                        className="max-w-xs truncate font-mono text-xs text-[var(--text-bright)]"
+                                                        title={file.name}
+                                                    >
+                                                        {file.name}
+                                                    </td>
+                                                    <td className="adm-num whitespace-nowrap">
+                                                        {formatBytes(file.size)}
+                                                    </td>
+                                                    <td className="adm-num whitespace-nowrap text-xs text-[var(--text-secondary)]">
+                                                        {formatDate(file.createdTime)}
+                                                    </td>
+                                                    <td className="text-right whitespace-nowrap">
+                                                        <div className="inline-flex items-center gap-2">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    handleGDriveRestore(
+                                                                        file.id,
+                                                                        file.name
+                                                                    )
+                                                                }
+                                                                disabled={isLoading}
+                                                                className="adm-btn"
+                                                            >
+                                                                Restore
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    handleGDriveDelete(
+                                                                        file.id,
+                                                                        file.name
+                                                                    )
+                                                                }
+                                                                disabled={isLoading}
+                                                                className="adm-btn adm-btn-danger"
+                                                            >
+                                                                <FaTrashCan aria-hidden="true" /> Delete
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </Panel>
+                    )}
 
-                        <div className="bg-red-500/5 border border-red-500/10 p-4 rounded-lg mb-6 flex gap-3 items-start">
-                            <FaExclamationTriangle className="text-red-500 mt-0.5 shrink-0" size={14} />
-                            <p className="text-red-400/80 text-xs leading-relaxed font-mono">
-                                CRITICAL WARNING: Import sequence will perform a hard reset. All existing data will be overwritten permanently.
-                            </p>
-                        </div>
+                    {/* Collection overview */}
+                    <Panel title="Backup collections" flush>
+                        <ul className="adm-list">
+                            {EXPORT_SECTIONS.map((sec) => (
+                                <li
+                                    key={sec.title}
+                                    className="adm-row flex-wrap justify-between gap-3"
+                                >
+                                    <span className="font-semibold text-[var(--text-bright)]">
+                                        {sec.title}
+                                    </span>
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {sec.items.map((item) => (
+                                            <Badge key={item.key}>{item.label}</Badge>
+                                        ))}
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    </Panel>
+                </div>
 
+                {/* Destructive panels in side column */}
+                <aside className="adm-stack adm-side">
+                    <Panel title="System restore" className="adm-danger">
                         <form onSubmit={handleImport} className="space-y-4">
-                            <label className="block w-full cursor-pointer group/file">
+                            <p className="adm-help">
+                                Importing a backup archive overwrites existing collections permanently.
+                            </p>
+                            <label className="adm-choice">
+                                <FaFileArrowUp aria-hidden="true" className="shrink-0" />
+                                <span className="truncate font-mono text-xs">
+                                    {importFile ? importFile.name : 'Choose backup file (.zip or .json)'}
+                                </span>
                                 <input
                                     type="file"
                                     accept=".zip,.json"
                                     onChange={(e) => setImportFile(e.target.files[0])}
-                                    className="hidden"
+                                    className="sr-only"
                                 />
-                                <div className={`w-full p-4 rounded-xl border border-dashed transition-all flex items-center justify-center gap-3 text-sm font-mono ${importFile
-                                    ? 'bg-cyan-500/10 border-cyan-500/50 text-cyan-400'
-                                    : 'bg-slate-900/30 border-white/10 group-hover/file:border-cyan-500/30 text-slate-500 group-hover/file:text-cyan-400'
-                                    }`}>
-                                    {importFile ? (
-                                        <>
-                                            <FaCheckCircle />
-                                            {importFile.name}
-                                        </>
-                                    ) : (
-                                        'SELECT_BACKUP_FILE (.ZIP or .JSON)'
-                                    )}
-                                </div>
                             </label>
-
                             <button
                                 type="submit"
                                 disabled={isLoading || !importFile}
-                                className="w-full bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-4 px-4 rounded-xl transition-all flex items-center justify-center gap-3 uppercase tracking-wider text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(34,211,238,0.2)] hover:shadow-[0_0_30px_rgba(34,211,238,0.4)] font-mono"
+                                className="adm-btn adm-btn-danger w-full"
                             >
-                                {isLoading ? 'OVERWRITING...' : 'EXECUTE_RESTORE'}
+                                {isLoading ? 'Restoring' : 'Restore from file'}
                             </button>
                         </form>
-                    </div>
-                </motion.div>
+                    </Panel>
 
-                {/* Google Drive Cloud Integration Card */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 md:p-8 relative overflow-hidden group backdrop-blur-xl flex flex-col justify-between"
-                >
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
-
-                    <div className="relative z-10">
-                        <div className="flex items-center justify-between gap-3 mb-6">
-                            <div className="flex items-center gap-3">
-                                <FaGoogle className="text-cyan-400" size={20} />
-                                <h2 className="text-sm font-mono text-cyan-400 uppercase tracking-widest">Google Drive</h2>
-                            </div>
-                            <div className="flex items-center gap-2 flex-wrap justify-end">
-                                {gdriveStatus?.autoDeleteEnabled ? (
-                                    <span className="px-2.5 py-1 rounded-full text-[10px] font-mono uppercase font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 flex items-center gap-1.5 shrink-0">
-                                        <FaTrash size={10} />
-                                        Auto-Purge: &gt; {gdriveStatus?.retentionMonths || 1} Month{(gdriveStatus?.retentionMonths || 1) > 1 ? 's' : ''} Old
-                                    </span>
-                                ) : (
-                                    <span className="px-2.5 py-1 rounded-full text-[10px] font-mono uppercase font-bold bg-slate-800 text-slate-400 border border-slate-700 flex items-center gap-1.5 shrink-0">
-                                        <FaTrash size={10} />
-                                        Auto-Purge: OFF
-                                    </span>
-                                )}
-                                {gdriveStatus?.isConnected ? (
-                                    <span className="px-2.5 py-1 rounded-full text-[10px] font-mono uppercase font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 shrink-0">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                                        CONNECTED
-                                    </span>
-                                ) : gdriveStatus?.isConfigured ? (
-                                    <span className="px-2.5 py-1 rounded-full text-[10px] font-mono uppercase font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30 flex items-center gap-1.5 shrink-0">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-                                        DISCONNECTED
-                                    </span>
-                                ) : (
-                                    <span className="px-2.5 py-1 rounded-full text-[10px] font-mono uppercase font-bold bg-slate-800 text-slate-400 border border-slate-700 flex items-center gap-1.5 shrink-0">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-slate-500" />
-                                        NOT_CONFIGURED
-                                    </span>
-                                )}
-                            </div>
-                        </div>
-
-                        {gdriveStatus?.isConnected && gdriveStatus?.user ? (
-                            <div className="bg-slate-950/60 border border-white/5 rounded-xl p-3.5 mb-4 flex items-center gap-3">
-                                {gdriveStatus.user.picture ? (
-                                    /* eslint-disable-next-html-element-for-img */
-                                    <img
-                                        src={gdriveStatus.user.picture}
-                                        alt="Google User"
-                                        className="w-9 h-9 rounded-full border border-cyan-500/30 object-cover shrink-0"
-                                    />
-                                ) : (
-                                    <div className="w-9 h-9 rounded-full bg-cyan-500/20 border border-cyan-500/40 text-cyan-400 flex items-center justify-center font-bold text-sm shrink-0">
-                                        <FaUserCheck />
-                                    </div>
-                                )}
-                                <div className="min-w-0 overflow-hidden">
-                                    <p className="text-white text-xs font-bold truncate">
-                                        {gdriveStatus.user.name || 'Google Account'}
-                                    </p>
-                                    <p className="text-slate-400 text-[11px] font-mono truncate">
-                                        {gdriveStatus.user.email}
-                                    </p>
-                                </div>
-                            </div>
-                        ) : (
-                            <p className="text-slate-400 mb-4 text-sm leading-relaxed">
-                                Store automated and on-demand database snapshots securely in your Google Drive cloud storage.
-                            </p>
-                        )}
-
-                        {/* Dedicated Automated Backup & Purge Schedule (Cron) box */}
-                        <div className="bg-slate-950/60 border border-white/5 rounded-xl p-4 mb-4 space-y-4">
-                            <div className="flex items-center justify-between gap-2 flex-wrap pb-1 border-b border-white/5">
-                                <div className="flex items-center gap-2">
-                                    <FaClock className="text-cyan-400" size={14} />
-                                    <span className="text-xs font-mono font-bold text-slate-200 uppercase tracking-wider">
-                                        Automated Daily Schedule
-                                    </span>
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowGDriveModal(true)}
-                                        title="Configure Google Drive API & Retention Settings"
-                                        className="p-1 rounded-md text-slate-400 hover:text-cyan-400 hover:bg-slate-800 transition-colors"
-                                    >
-                                        <FaCog size={13} />
-                                    </button>
-                                </div>
-                                <Link
-                                    href="/admin/config/crons"
-                                    className="text-[11px] font-mono text-cyan-400 hover:text-cyan-300 flex items-center gap-1 hover:underline"
-                                >
-                                    [ ⏰ MANAGE IN CRON DASHBOARD ]
-                                </Link>
-                            </div>
-
-                            {/* Cron Job 1: Automated Daily Backup */}
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                <div>
-                                    <div className="text-xs font-mono text-slate-300 font-bold flex items-center gap-1.5">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
-                                        Auto-Backup Cron ({gdriveCron.backupSchedule})
-                                    </div>
-                                    <div className="text-[11px] font-mono text-slate-400 mt-0.5">
-                                        Runs daily at midnight
-                                    </div>
-                                    {gdriveCron.backupEnabled && gdriveCron.backupNextRun && (
-                                        <div className="text-[10px] font-mono text-emerald-400 mt-1 flex items-center gap-1.5">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                                            Next: {formatDate(gdriveCron.backupNextRun)}
-                                        </div>
-                                    )}
-                                </div>
-
-                                <button
-                                    type="button"
-                                    onClick={() => handleToggleGDriveCron('gdrive_backup')}
-                                    disabled={gdriveCron.loading || !gdriveStatus?.isConnected}
-                                    title={!gdriveStatus?.isConnected ? 'Connect Google Drive to enable automated backups' : ''}
-                                    className={`px-3 py-1.5 rounded-lg font-mono text-[11px] font-bold transition-all flex items-center justify-center gap-2 shrink-0 border ${
-                                        gdriveCron.backupEnabled
-                                            ? 'bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/30 text-emerald-400'
-                                            : 'bg-slate-800/80 hover:bg-slate-800 border-white/10 text-slate-400 hover:text-slate-200'
-                                    } disabled:opacity-40 disabled:cursor-not-allowed`}
-                                >
-                                    {gdriveCron.loading ? (
-                                        <FaSync className="animate-spin text-cyan-400" size={12} />
-                                    ) : gdriveCron.backupEnabled ? (
-                                        <>
-                                            <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                                            BACKUP_CRON: ENABLED
-                                        </>
-                                    ) : (
-                                        <>
-                                            <span className="w-2 h-2 rounded-full bg-slate-500" />
-                                            BACKUP_CRON: OFF
-                                        </>
-                                    )}
-                                </button>
-                            </div>
-
-                            {/* Cron Job 2: Auto-Delete Purge */}
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-white/5">
-                                <div>
-                                    <div className="text-xs font-mono text-slate-300 font-bold flex items-center gap-1.5">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-                                        Auto-Delete Purge Cron ({gdriveCron.purgeSchedule})
-                                    </div>
-                                    <div className="text-[11px] font-mono text-slate-400 mt-0.5">
-                                        Threshold: &gt; {gdriveStatus?.retentionMonths || 1} Month{(gdriveStatus?.retentionMonths || 1) > 1 ? 's' : ''} Old
-                                    </div>
-                                    {gdriveCron.purgeEnabled && gdriveCron.purgeNextRun && (
-                                        <div className="text-[10px] font-mono text-amber-400 mt-1 flex items-center gap-1.5">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                                            Next: {formatDate(gdriveCron.purgeNextRun)}
-                                        </div>
-                                    )}
-                                </div>
-
-                                <button
-                                    type="button"
-                                    onClick={() => handleToggleGDriveCron('gdrive_purge')}
-                                    disabled={gdriveCron.loading || !gdriveStatus?.isConnected}
-                                    title={!gdriveStatus?.isConnected ? 'Connect Google Drive to enable auto-delete purge' : ''}
-                                    className={`px-3 py-1.5 rounded-lg font-mono text-[11px] font-bold transition-all flex items-center justify-center gap-2 shrink-0 border ${
-                                        gdriveCron.purgeEnabled
-                                            ? 'bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/30 text-amber-400'
-                                            : 'bg-slate-800/80 hover:bg-slate-800 border-white/10 text-slate-400 hover:text-slate-200'
-                                    } disabled:opacity-40 disabled:cursor-not-allowed`}
-                                >
-                                    {gdriveCron.loading ? (
-                                        <FaSync className="animate-spin text-amber-400" size={12} />
-                                    ) : gdriveCron.purgeEnabled ? (
-                                        <>
-                                            <span className="w-2 h-2 rounded-full bg-amber-400" />
-                                            PURGE_CRON: ENABLED
-                                        </>
-                                    ) : (
-                                        <>
-                                            <span className="w-2 h-2 rounded-full bg-slate-500" />
-                                            PURGE_CRON: OFF
-                                        </>
-                                    )}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="relative z-10 space-y-2 pt-2">
-                        <button
-                            onClick={() => handleGDriveBackup()}
-                            disabled={isLoading || !gdriveStatus?.isConnected}
-                            className="w-full bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 hover:border-cyan-500/60 text-cyan-400 font-mono font-bold py-2.5 px-3 rounded-xl transition-all flex items-center justify-center gap-2 uppercase tracking-wider text-xs disabled:opacity-40 disabled:cursor-not-allowed"
-                        >
-                            <FaCloudUploadAlt size={14} />
-                            BACKUP_TO_DRIVE
-                        </button>
-
-                        <div className="grid grid-cols-2 gap-2">
-                            <button
-                                onClick={() => {
-                                    setShowDriveHistory(!showDriveHistory);
-                                    if (!showDriveHistory && gdriveStatus?.isConnected) {
-                                        fetchGDriveFiles();
-                                    }
-                                }}
-                                disabled={!gdriveStatus?.isConnected}
-                                className="w-full bg-slate-800/80 hover:bg-slate-800 border border-white/10 text-slate-300 hover:text-white font-mono font-bold py-2 px-2 rounded-xl transition-all flex items-center justify-center gap-1.5 uppercase tracking-wider text-[11px] disabled:opacity-40 disabled:cursor-not-allowed"
-                            >
-                                <FaHistory size={12} />
-                                CLOUD_HISTORY
-                            </button>
-
-                            <button
-                                onClick={() => {
-                                    fetchGDriveConfig();
-                                    setShowGDriveModal(true);
-                                }}
-                                className="w-full bg-slate-800/80 hover:bg-slate-800 border border-white/10 text-slate-300 hover:text-white font-mono font-bold py-2 px-2 rounded-xl transition-all flex items-center justify-center gap-1.5 uppercase tracking-wider text-[11px]"
-                            >
-                                <FaCog size={12} />
-                                API_SETTINGS
-                            </button>
-                        </div>
-
-                        {gdriveStatus?.isConnected ? (
-                            <button
-                                onClick={handleDisconnectGDrive}
-                                disabled={isLoading}
-                                className="w-full bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 hover:text-red-300 font-mono font-bold py-2 px-3 rounded-xl transition-all flex items-center justify-center gap-2 uppercase tracking-wider text-[11px] disabled:opacity-40"
-                            >
-                                <FaSignOutAlt size={12} />
-                                DISCONNECT / SWITCH ACCOUNT
-                            </button>
-                        ) : (
-                            <button
-                                onClick={handleConnectGDrive}
-                                disabled={isLoading || !gdriveStatus?.isConfigured}
-                                className="w-full bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 hover:text-emerald-300 font-mono font-bold py-2 px-3 rounded-xl transition-all flex items-center justify-center gap-2 uppercase tracking-wider text-[11px] disabled:opacity-40 disabled:cursor-not-allowed"
-                            >
-                                <FaGoogle size={12} />
-                                CONNECT_GOOGLE_DRIVE
-                            </button>
-                        )}
-                    </div>
-                </motion.div>
-
-                {/* Purge Cache Section */}
-                <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="bg-slate-900/50 backdrop-blur-xl p-6 md:p-8 rounded-2xl border border-white/10 relative overflow-hidden group flex flex-col justify-between"
-                >
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-red-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
-
-                    <div className="relative z-10">
-                        <div className="flex items-center gap-3 mb-6">
-                            <FaTrash className="text-red-500/70" size={20} />
-                            <h2 className="text-sm font-mono text-red-500/70 uppercase tracking-widest">Cache Purge</h2>
-                        </div>
-
-                        <div className="bg-red-500/5 border border-red-500/10 p-4 rounded-lg mb-6 flex gap-3 items-start">
-                            <FaExclamationTriangle className="text-red-500 mt-0.5 shrink-0" size={14} />
-                            <p className="text-red-400/80 text-xs leading-relaxed font-mono">
-                                CRITICAL WARNING: Purge sequence will clear all in-memory cache entries. Website will refresh data on next request.
-                            </p>
-                        </div>
-
-                        <p className="text-slate-400 mb-8 text-sm leading-relaxed">
-                            Flush all cached data from in-memory storage. Use this when caches are stale or causing issues. Admin panel data will always be fresh regardless of cache state.
+                    <Panel title="Cache purge" className="adm-danger">
+                        <p className="adm-help mb-4">
+                            Flush all in-memory cache entries so public pages reload fresh data on the
+                            next request.
                         </p>
-                    </div>
-
-                    <div className="relative z-10">
                         <button
+                            type="button"
                             onClick={handlePurgeCache}
                             disabled={isLoading}
-                            className="w-full bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 hover:border-red-500/40 text-red-400 font-bold py-4 px-4 rounded-xl transition-all flex items-center justify-center gap-3 uppercase tracking-wider text-sm disabled:opacity-50 disabled:cursor-not-allowed group/btn font-mono"
+                            className="adm-btn adm-btn-danger w-full"
                         >
-                            {isLoading ? (
-                                <span className="animate-pulse">FLUSHING...</span>
-                            ) : (
-                                <>
-                                    <FaTrash className="group-hover/btn:scale-110 transition-transform" />
-                                    PURGE_ALL_CACHES
-                                </>
-                            )}
+                            <FaTrashCan aria-hidden="true" />
+                            {isLoading ? 'Purging' : 'Purge all caches'}
                         </button>
-                    </div>
-                </motion.div>
+                    </Panel>
 
-                {/* Reset Analytics Section */}
-                <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="bg-slate-900/50 backdrop-blur-xl p-6 md:p-8 rounded-2xl border border-white/10 relative overflow-hidden group flex flex-col justify-between"
-                >
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
-
-                    <div className="relative z-10">
-                        <div className="flex items-center gap-3 mb-6">
-                            <FaChartLine className="text-purple-500/70" size={20} />
-                            <h2 className="text-sm font-mono text-purple-500/70 uppercase tracking-widest">Analytics Reset</h2>
-                        </div>
-
-                        <div className="bg-red-500/5 border border-red-500/10 p-4 rounded-lg mb-6 flex gap-3 items-start">
-                            <FaExclamationTriangle className="text-red-500 mt-0.5 shrink-0" size={14} />
-                            <p className="text-red-400/80 text-xs leading-relaxed font-mono">
-                                CRITICAL WARNING: This permanently deletes all recorded analytics events and rollups. Backups include analytics data.
-                            </p>
-                        </div>
-
-                        <p className="text-slate-400 mb-8 text-sm leading-relaxed">
-                            Purge all first-party analytics (page views, content views, clicks, conversions). Other site data is untouched.
+                    <Panel title="Reset analytics" className="adm-danger">
+                        <p className="adm-help mb-4">
+                            Permanently delete all recorded analytics events and daily rollups. Other
+                            site content is untouched.
                         </p>
-                    </div>
-
-                    <div className="relative z-10">
                         <button
+                            type="button"
                             onClick={handleResetAnalytics}
                             disabled={isLoading}
-                            className="w-full bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/20 hover:border-purple-500/40 text-purple-400 font-bold py-4 px-4 rounded-xl transition-all flex items-center justify-center gap-3 uppercase tracking-wider text-sm disabled:opacity-50 disabled:cursor-not-allowed group/btn font-mono"
+                            className="adm-btn adm-btn-danger w-full"
                         >
-                            {isLoading ? (
-                                <span className="animate-pulse">PURGING...</span>
-                            ) : (
-                                <>
-                                    <FaTrash className="group-hover/btn:scale-110 transition-transform" />
-                                    RESET_ANALYTICS
-                                </>
-                            )}
+                            <FaTrashCan aria-hidden="true" />
+                            {isLoading ? 'Purging' : 'Delete analytics data'}
                         </button>
-                    </div>
-                </motion.div>
+                    </Panel>
+                </aside>
             </div>
 
-            {/* Google Drive History Drawer */}
-            <AnimatePresence>
-                {showDriveHistory && (
-                    <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="mt-8 bg-slate-900/60 border border-slate-800 rounded-2xl p-6 backdrop-blur-xl overflow-hidden"
+            {/* Google Drive API Settings Modal */}
+            {showGDriveModal && (
+                <div
+                    className="adm-overlay"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="gdrive-modal-title"
+                    onClick={() => setShowGDriveModal(false)}
+                >
+                    <div
+                        className="adm-dialog adm-dialog-framed max-w-3xl"
+                        onClick={(e) => e.stopPropagation()}
                     >
-                        <div className="flex items-center justify-between gap-4 mb-6">
-                            <div className="flex items-center gap-3">
-                                <FaFolder className="text-cyan-400" size={20} />
-                                <h3 className="text-lg font-bold text-white tracking-tight">Google Drive Backups History</h3>
-                                <span className="text-xs font-mono bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 px-2.5 py-0.5 rounded-full">
-                                    {gdriveFiles.length} {gdriveFiles.length === 1 ? 'FILE' : 'FILES'}
-                                </span>
+                        <div className="adm-dialog-head">
+                            <div>
+                                <h3 id="gdrive-modal-title" className="adm-panel-title">
+                                    Google Drive API settings and setup guide
+                                </h3>
+                                <p className="adm-help">
+                                    Configure OAuth 2.0 credentials for cloud backups.
+                                </p>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={fetchGDriveFiles}
-                                    disabled={gdriveLoading}
-                                    className="p-2 text-slate-400 hover:text-cyan-400 bg-white/5 hover:bg-white/10 rounded-lg transition-colors text-xs flex items-center gap-1.5 font-mono"
-                                    title="Refresh file list"
-                                >
-                                    <FaSync className={gdriveLoading ? 'animate-spin' : ''} />
-                                    REFRESH
-                                </button>
-                                <button
-                                    onClick={() => setShowDriveHistory(false)}
-                                    className="p-2 text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
-                                    aria-label="Close history drawer"
-                                >
-                                    <FaTimes />
-                                </button>
-                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setShowGDriveModal(false)}
+                                aria-label="Close modal"
+                                className="adm-icon-btn"
+                            >
+                                <FaXmark aria-hidden="true" />
+                            </button>
                         </div>
 
-                        {gdriveLoading && gdriveFiles.length === 0 ? (
-                            <div className="py-12 text-center text-slate-400 font-mono text-sm">
-                                <FaSync className="animate-spin text-cyan-400 mx-auto mb-3" size={24} />
-                                FETCHING_GOOGLE_DRIVE_BACKUPS...
-                            </div>
-                        ) : gdriveFiles.length === 0 ? (
-                            <div className="py-12 text-center text-slate-500 font-mono text-sm border border-dashed border-white/10 rounded-xl">
-                                NO_CLOUD_BACKUPS_FOUND_ON_GOOGLE_DRIVE
-                            </div>
-                        ) : (
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-left text-sm border-collapse">
-                                    <thead>
-                                        <tr className="border-b border-white/10 text-slate-400 font-mono text-xs uppercase tracking-wider">
-                                            <th className="pb-3 px-3">Filename</th>
-                                            <th className="pb-3 px-3">Size</th>
-                                            <th className="pb-3 px-3">Created At</th>
-                                            <th className="pb-3 px-3 text-right">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-white/5">
-                                        {gdriveFiles.map((file) => (
-                                            <tr key={file.id} className="hover:bg-white/[0.02] transition-colors">
-                                                <td className="py-3 px-3 font-mono text-xs text-cyan-300 font-medium max-w-xs truncate" title={file.name}>
-                                                    {file.name}
-                                                </td>
-                                                <td className="py-3 px-3 font-mono text-xs text-slate-400 whitespace-nowrap">
-                                                    {formatBytes(file.size)}
-                                                </td>
-                                                <td className="py-3 px-3 font-mono text-xs text-slate-400 whitespace-nowrap">
-                                                    {formatDate(file.createdTime)}
-                                                </td>
-                                                <td className="py-3 px-3 text-right whitespace-nowrap">
-                                                    <div className="flex items-center justify-end gap-2">
-                                                        <button
-                                                            onClick={() => handleGDriveRestore(file.id, file.name)}
-                                                            disabled={isLoading}
-                                                            className="px-3 py-1.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 text-xs font-mono font-bold transition-all flex items-center gap-1.5 disabled:opacity-40 uppercase"
-                                                        >
-                                                            <FaUpload size={10} />
-                                                            RESTORE
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleGDriveDelete(file.id, file.name)}
-                                                            disabled={isLoading}
-                                                            className="px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 text-xs font-mono font-bold transition-all flex items-center gap-1.5 disabled:opacity-40 uppercase"
-                                                        >
-                                                            <FaTrash size={10} />
-                                                            DELETE
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        )}
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                        <div className="adm-dialog-body space-y-6">
+                            <form onSubmit={handleSaveGDriveConfig} className="space-y-4">
+                                <Field label="Google Client ID">
+                                    <input
+                                        type="text"
+                                        value={gdriveConfigForm.clientId}
+                                        onChange={(e) =>
+                                            setGdriveConfigForm((prev) => ({
+                                                ...prev,
+                                                clientId: e.target.value,
+                                            }))
+                                        }
+                                        placeholder="123456789-xxxx.apps.googleusercontent.com"
+                                        className="adm-input font-mono"
+                                    />
+                                </Field>
 
-            {/* Dynamic API Settings & Documentation Modal */}
-            <AnimatePresence>
-                {showGDriveModal && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
-                        onClick={() => setShowGDriveModal(false)}
-                    >
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.96, y: 12 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.96, y: 12 }}
-                            transition={{ type: 'spring', stiffness: 300, damping: 26 }}
-                            className="w-full max-w-3xl max-h-[90vh] flex flex-col bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden"
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            {/* Header */}
-                            <div className="flex items-center justify-between gap-4 p-6 border-b border-white/10 shrink-0">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2.5 bg-cyan-500/10 border border-cyan-500/20 rounded-xl text-cyan-400">
-                                        <FaGoogle size={20} />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-xl font-bold text-white tracking-tight">Google Drive API Settings & Setup Guide</h3>
-                                        <p className="text-slate-400 text-xs font-mono">
-                                            Configure OAuth 2.0 Credentials for Cloud Backups
-                                        </p>
+                                <div className="adm-field">
+                                    <label htmlFor="gdrive-client-secret" className="adm-label">
+                                        Google Client Secret
+                                    </label>
+                                    <div className="flex gap-2">
+                                        <input
+                                            id="gdrive-client-secret"
+                                            type={showClientSecret ? 'text' : 'password'}
+                                            value={gdriveConfigForm.clientSecret}
+                                            onChange={(e) =>
+                                                setGdriveConfigForm((prev) => ({
+                                                    ...prev,
+                                                    clientSecret: e.target.value,
+                                                }))
+                                            }
+                                            placeholder={
+                                                gdriveStatus?.isConfigured
+                                                    ? '•••••••••••••••• (Leave blank to keep existing)'
+                                                    : 'GOCSPX-xxxx...'
+                                            }
+                                            className="adm-input flex-1 font-mono"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowClientSecret(!showClientSecret)}
+                                            aria-label={
+                                                showClientSecret
+                                                    ? 'Hide client secret'
+                                                    : 'Show client secret'
+                                            }
+                                            className="adm-btn"
+                                        >
+                                            {showClientSecret ? (
+                                                <FaEyeSlash aria-hidden="true" />
+                                            ) : (
+                                                <FaEye aria-hidden="true" />
+                                            )}
+                                        </button>
                                     </div>
                                 </div>
-                                <button
-                                    onClick={() => setShowGDriveModal(false)}
-                                    className="p-2 text-slate-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
-                                    aria-label="Close modal"
-                                >
-                                    <FaTimes />
-                                </button>
-                            </div>
 
-                            {/* Modal Body */}
-                            <div className="overflow-y-auto p-6 space-y-6">
-                                {/* Credentials Form */}
-                                <form onSubmit={handleSaveGDriveConfig} className="space-y-4 bg-slate-950/60 p-5 rounded-xl border border-white/5">
-                                    <h4 className="text-sm font-mono text-cyan-400 uppercase tracking-wider font-bold flex items-center gap-2">
-                                        <FaKey /> OAuth 2.0 Credentials
-                                    </h4>
-
+                                <div className="flex items-center justify-between gap-4 border-t border-[var(--hairline)] pt-4">
                                     <div>
-                                        <label className="block text-xs font-mono text-slate-400 uppercase mb-1.5">
-                                            Google Client ID
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={gdriveConfigForm.clientId}
-                                            onChange={(e) => setGdriveConfigForm((prev) => ({ ...prev, clientId: e.target.value }))}
-                                            placeholder="123456789-xxxx.apps.googleusercontent.com"
-                                            className="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-2.5 text-white font-mono text-sm focus:outline-none focus:border-cyan-500 transition-colors"
-                                        />
+                                        <p className="font-semibold text-sm text-[var(--text-bright)]">
+                                            Auto-delete old backups
+                                        </p>
+                                        <p className="adm-help">
+                                            Purges cloud backups older than the retention limit.
+                                        </p>
                                     </div>
+                                    <button
+                                        type="button"
+                                        role="switch"
+                                        aria-checked={gdriveConfigForm.autoDeleteEnabled}
+                                        aria-label="Auto-delete old backups"
+                                        onClick={() =>
+                                            setGdriveConfigForm((prev) => ({
+                                                ...prev,
+                                                autoDeleteEnabled: !prev.autoDeleteEnabled,
+                                            }))
+                                        }
+                                        className="adm-switch"
+                                    />
+                                </div>
 
-                                    <div>
-                                        <label className="block text-xs font-mono text-slate-400 uppercase mb-1.5">
-                                            Google Client Secret
-                                        </label>
-                                        <div className="relative">
-                                            <input
-                                                type={showClientSecret ? 'text' : 'password'}
-                                                value={gdriveConfigForm.clientSecret}
-                                                onChange={(e) => setGdriveConfigForm((prev) => ({ ...prev, clientSecret: e.target.value }))}
-                                                placeholder={gdriveStatus?.isConfigured ? '•••••••••••••••• (Leave blank to keep existing)' : 'GOCSPX-xxxx...'}
-                                                className="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-2.5 text-white font-mono text-sm focus:outline-none focus:border-cyan-500 transition-colors pr-10"
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowClientSecret(!showClientSecret)}
-                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
-                                            >
-                                                {showClientSecret ? <FaEyeSlash size={14} /> : <FaEye size={14} />}
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-3 pt-1 border-t border-white/5">
-                                        <div className="flex items-center justify-between">
-                                            <div>
-                                                <label className="block text-xs font-mono text-slate-300 uppercase">
-                                                    Auto-Delete Old Backups
-                                                </label>
-                                                <p className="text-[11px] text-slate-500 font-mono">
-                                                    Disabled by default. Purges cloud backups older than retention limit.
-                                                </p>
-                                            </div>
-                                            <button
-                                                type="button"
-                                                onClick={() => setGdriveConfigForm((prev) => ({ ...prev, autoDeleteEnabled: !prev.autoDeleteEnabled }))}
-                                                className={`px-3 py-1.5 rounded-lg font-mono text-xs uppercase font-bold transition-all ${
-                                                    gdriveConfigForm.autoDeleteEnabled
-                                                        ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
-                                                        : 'bg-slate-800 text-slate-400 border border-slate-700'
-                                                }`}
-                                            >
-                                                {gdriveConfigForm.autoDeleteEnabled ? 'ENABLED' : 'DISABLED (OFF)'}
-                                            </button>
-                                        </div>
-
-                                        {gdriveConfigForm.autoDeleteEnabled && (
-                                            <div>
-                                                <label className="block text-xs font-mono text-slate-400 uppercase mb-1.5">
-                                                    Purge Retention Threshold
-                                                </label>
-                                                <select
-                                                    value={gdriveConfigForm.retentionMonths || 1}
-                                                    onChange={(e) => setGdriveConfigForm((prev) => ({ ...prev, retentionMonths: parseInt(e.target.value, 10) }))}
-                                                    className="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-2.5 text-white font-mono text-sm focus:outline-none focus:border-cyan-500 transition-colors"
-                                                >
-                                                    <option value={1}>1 Month (Default)</option>
-                                                    <option value={2}>2 Months</option>
-                                                    <option value={3}>3 Months</option>
-                                                    <option value={4}>4 Months</option>
-                                                    <option value={5}>5 Months</option>
-                                                    <option value={6}>6 Months</option>
-                                                    <option value={7}>7 Months</option>
-                                                    <option value={8}>8 Months</option>
-                                                    <option value={9}>9 Months</option>
-                                                    <option value={10}>10 Months</option>
-                                                    <option value={11}>11 Months</option>
-                                                    <option value={12}>12 Months</option>
-                                                </select>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Dynamic Redirect URL Box */}
-                                    <div className="pt-2">
-                                        <label className="block text-xs font-mono text-slate-400 uppercase mb-1.5">
-                                            Authorized Redirect URI (Required for Google Console)
-                                        </label>
-                                        <div className="flex items-center gap-2 bg-slate-900 border border-cyan-500/30 rounded-xl p-2.5">
-                                            <span className="font-mono text-xs text-cyan-300 truncate flex-1 select-all">
-                                                {typeof window !== 'undefined' ? `${window.location.origin}/api/admin/gdrive/callback` : '/api/admin/gdrive/callback'}
-                                            </span>
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    const callbackUrl = `${window.location.origin}/api/admin/gdrive/callback`;
-                                                    navigator.clipboard.writeText(callbackUrl);
-                                                    setCopiedCallback(true);
-                                                    setTimeout(() => setCopiedCallback(false), 2000);
-                                                }}
-                                                className="px-3 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 text-xs font-mono font-bold transition-all flex items-center gap-1.5 shrink-0"
-                                            >
-                                                {copiedCallback ? (
-                                                    <>
-                                                        <FaCheck className="text-emerald-400" />
-                                                        COPIED!
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <FaCopy />
-                                                        COPY_URL
-                                                    </>
-                                                )}
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center justify-between pt-2">
-                                        <button
-                                            type="submit"
-                                            disabled={isLoading}
-                                            className="bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-2.5 px-5 rounded-xl transition-all flex items-center gap-2 font-mono text-xs uppercase tracking-wider shadow-[0_0_15px_rgba(34,211,238,0.3)] disabled:opacity-50"
+                                {gdriveConfigForm.autoDeleteEnabled && (
+                                    <Field label="Purge retention threshold">
+                                        <select
+                                            value={gdriveConfigForm.retentionMonths || 1}
+                                            onChange={(e) =>
+                                                setGdriveConfigForm((prev) => ({
+                                                    ...prev,
+                                                    retentionMonths: parseInt(e.target.value, 10),
+                                                }))
+                                            }
+                                            className="adm-input"
                                         >
-                                            <FaCheck />
-                                            SAVE_CREDENTIALS
+                                            {Array.from({ length: 12 }, (_, idx) => {
+                                                const m = idx + 1;
+                                                return (
+                                                    <option key={m} value={m}>
+                                                        {m} {m === 1 ? 'month (default)' : 'months'}
+                                                    </option>
+                                                );
+                                            })}
+                                        </select>
+                                    </Field>
+                                )}
+
+                                <div className="space-y-1.5 border-t border-[var(--hairline)] pt-4">
+                                    <p className="adm-label">
+                                        Authorized redirect URI (for Google Cloud Console)
+                                    </p>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <code className="adm-code flex-1 truncate">
+                                            {typeof window !== 'undefined'
+                                                ? `${window.location.origin}/api/admin/gdrive/callback`
+                                                : '/api/admin/gdrive/callback'}
+                                        </code>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const callbackUrl = `${window.location.origin}/api/admin/gdrive/callback`;
+                                                navigator.clipboard.writeText(callbackUrl);
+                                                setCopiedCallback(true);
+                                                setTimeout(() => setCopiedCallback(false), 2000);
+                                            }}
+                                            className="adm-btn"
+                                        >
+                                            {copiedCallback ? (
+                                                <>
+                                                    <FaCheck aria-hidden="true" /> Copied
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <FaCopy aria-hidden="true" /> Copy URL
+                                                </>
+                                            )}
                                         </button>
-
-                                        {gdriveStatus?.isConfigured && !gdriveStatus?.isConnected && (
-                                            <button
-                                                type="button"
-                                                onClick={handleConnectGDrive}
-                                                className="bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-400 font-bold py-2.5 px-5 rounded-xl transition-all flex items-center gap-2 font-mono text-xs uppercase tracking-wider"
-                                            >
-                                                <FaExternalLinkAlt />
-                                                AUTHORIZE_GOOGLE_ACCOUNT
-                                            </button>
-                                        )}
                                     </div>
-                                </form>
+                                </div>
 
-                                {/* Step-by-Step Setup Guide Accordion */}
-                                <div className="space-y-3">
-                                    <h4 className="text-sm font-mono text-slate-300 uppercase tracking-wider font-bold flex items-center gap-2">
-                                        <FaFolder className="text-amber-400" /> Interactive Setup Guide (Step-by-Step)
-                                    </h4>
+                                <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
+                                    <button
+                                        type="submit"
+                                        disabled={isLoading}
+                                        className="adm-btn adm-btn-primary"
+                                    >
+                                        <FaCheck aria-hidden="true" /> Save credentials
+                                    </button>
 
+                                    {gdriveStatus?.isConfigured && !gdriveStatus?.isConnected && (
+                                        <button
+                                            type="button"
+                                            onClick={handleConnectGDrive}
+                                            className="adm-btn"
+                                        >
+                                            <FaUpRightFromSquare aria-hidden="true" /> Authorize
+                                            Google account
+                                        </button>
+                                    )}
+                                </div>
+                            </form>
+
+                            {/* Setup Guide */}
+                            <div className="space-y-3 border-t border-[var(--hairline)] pt-4">
+                                <h4 className="adm-panel-title">Step-by-step setup guide</h4>
+                                <ul className="adm-list rounded-[10px] border border-[var(--hairline)]">
                                     {[
                                         {
                                             step: 1,
-                                            title: 'Step 1: Create a Google Cloud Project',
+                                            title: 'Step 1: Create a Google Cloud project',
                                             content: (
-                                                <div className="space-y-2 text-xs text-slate-300 leading-relaxed">
-                                                    <p>1. Go to the <a href="https://console.cloud.google.com/" target="_blank" rel="noreferrer" className="text-cyan-400 underline inline-flex items-center gap-1">Google Cloud Console <FaExternalLinkAlt size={10} /></a>.</p>
-                                                    <p>2. Click on the project dropdown at the top navigation bar and select <strong>New Project</strong>.</p>
-                                                    <p>3. Give your project a name (e.g., <code>Aiyu-Cloud-Backup</code>) and click <strong>Create</strong>.</p>
+                                                <div className="space-y-1.5 text-sm text-[var(--text-secondary)]">
+                                                    <p>
+                                                        1. Open the{' '}
+                                                        <a
+                                                            href="https://console.cloud.google.com/"
+                                                            target="_blank"
+                                                            rel="noreferrer"
+                                                            className="adm-link underline"
+                                                        >
+                                                            Google Cloud Console
+                                                        </a>
+                                                        .
+                                                    </p>
+                                                    <p>
+                                                        2. Select the project menu in the top bar and
+                                                        choose <strong>New Project</strong>.
+                                                    </p>
+                                                    <p>
+                                                        3. Name the project (e.g.{' '}
+                                                        <code className="adm-code">
+                                                            Aiyu-Cloud-Backup
+                                                        </code>
+                                                        ) and click <strong>Create</strong>.
+                                                    </p>
                                                 </div>
                                             ),
                                         },
@@ -1401,222 +1294,267 @@ export default function DatabaseManager() {
                                             step: 2,
                                             title: 'Step 2: Enable the Google Drive API',
                                             content: (
-                                                <div className="space-y-2 text-xs text-slate-300 leading-relaxed">
-                                                    <p>1. In the Google Cloud sidebar, navigate to <strong>APIs & Services &gt; Library</strong>.</p>
-                                                    <p>2. Search for <strong>Google Drive API</strong> in the search bar.</p>
-                                                    <p>3. Select Google Drive API and click <strong>Enable</strong>.</p>
+                                                <div className="space-y-1.5 text-sm text-[var(--text-secondary)]">
+                                                    <p>
+                                                        1. Navigate to{' '}
+                                                        <strong>APIs &amp; Services &gt; Library</strong>.
+                                                    </p>
+                                                    <p>
+                                                        2. Search for <strong>Google Drive API</strong>{' '}
+                                                        and click <strong>Enable</strong>.
+                                                    </p>
                                                 </div>
                                             ),
                                         },
                                         {
                                             step: 3,
-                                            title: 'Step 3: Configure the OAuth Consent Screen',
+                                            title: 'Step 3: Configure the OAuth consent screen',
                                             content: (
-                                                <div className="space-y-2 text-xs text-slate-300 leading-relaxed">
-                                                    <p>1. Navigate to <strong>APIs & Services &gt; OAuth consent screen</strong>.</p>
-                                                    <p>2. Choose <strong>External</strong> User Type and click <strong>Create</strong>.</p>
-                                                    <p>3. Fill in App Name (e.g. <code>Aiyu Backup System</code>) and User Support Email.</p>
-                                                    <p>4. Under Scopes, add <code>https://www.googleapis.com/auth/drive.file</code> (Per-file access permission).</p>
+                                                <div className="space-y-1.5 text-sm text-[var(--text-secondary)]">
+                                                    <p>
+                                                        1. Open{' '}
+                                                        <strong>
+                                                            APIs &amp; Services &gt; OAuth consent screen
+                                                        </strong>
+                                                        .
+                                                    </p>
+                                                    <p>
+                                                        2. Choose <strong>External</strong> user type and
+                                                        fill in the app name and support email.
+                                                    </p>
+                                                    <p>
+                                                        3. Add scope{' '}
+                                                        <code className="adm-code">
+                                                            https://www.googleapis.com/auth/drive.file
+                                                        </code>
+                                                        .
+                                                    </p>
                                                 </div>
                                             ),
                                         },
                                         {
                                             step: 4,
-                                            title: 'Step 4: Create OAuth 2.0 Web Client Credentials',
+                                            title: 'Step 4: Create OAuth 2.0 Web Client credentials',
                                             content: (
-                                                <div className="space-y-2 text-xs text-slate-300 leading-relaxed">
-                                                    <p>1. Go to <strong>APIs & Services &gt; Credentials</strong>.</p>
-                                                    <p>2. Click <strong>Create Credentials</strong> at the top and choose <strong>OAuth client ID</strong>.</p>
-                                                    <p>3. Select Application type: <strong>Web application</strong>.</p>
-                                                    <p>4. Under <strong>Authorized redirect URIs</strong>, click <strong>ADD URI</strong> and paste the exact Redirect URL shown above:</p>
-                                                    <code className="block p-2 bg-slate-950 rounded text-cyan-300 font-mono text-[11px] select-all">
-                                                        {typeof window !== 'undefined' ? `${window.location.origin}/api/admin/gdrive/callback` : '/api/admin/gdrive/callback'}
-                                                    </code>
-                                                    <p>5. Click <strong>Create</strong> to generate your Client ID and Client Secret.</p>
+                                                <div className="space-y-1.5 text-sm text-[var(--text-secondary)]">
+                                                    <p>
+                                                        1. Go to{' '}
+                                                        <strong>
+                                                            APIs &amp; Services &gt; Credentials
+                                                        </strong>{' '}
+                                                        and click{' '}
+                                                        <strong>
+                                                            Create Credentials &gt; OAuth client ID
+                                                        </strong>
+                                                        .
+                                                    </p>
+                                                    <p>
+                                                        2. Choose <strong>Web application</strong> and
+                                                        paste the redirect URI above under{' '}
+                                                        <strong>Authorized redirect URIs</strong>.
+                                                    </p>
                                                 </div>
                                             ),
                                         },
                                         {
                                             step: 5,
-                                            title: 'Step 5: Add Test User & Save Credentials',
+                                            title: 'Step 5: Add test user and authorize',
                                             content: (
-                                                <div className="space-y-2 text-xs text-slate-300 leading-relaxed">
-                                                    <p>1. Go back to <strong>OAuth consent screen &gt; Test users</strong>.</p>
-                                                    <p>2. Click <strong>Add Users</strong> and enter the Google Account email you wish to authorize.</p>
-                                                    <p>3. Copy the Client ID and Client Secret from Google Cloud Console into the inputs in this modal above, then click <strong>SAVE_CREDENTIALS</strong>.</p>
-                                                    <p>4. Click <strong>AUTHORIZE_GOOGLE_ACCOUNT</strong> to complete the OAuth handshake!</p>
+                                                <div className="space-y-1.5 text-sm text-[var(--text-secondary)]">
+                                                    <p>
+                                                        1. Add your Google account under{' '}
+                                                        <strong>
+                                                            OAuth consent screen &gt; Test users
+                                                        </strong>
+                                                        .
+                                                    </p>
+                                                    <p>
+                                                        2. Paste the Client ID and Client Secret above,
+                                                        click <strong>Save credentials</strong>, then{' '}
+                                                        <strong>Authorize Google account</strong>.
+                                                    </p>
                                                 </div>
                                             ),
                                         },
-                                    ].map((guide) => (
-                                        <div key={guide.step} className="border border-white/10 rounded-xl overflow-hidden bg-slate-950/40">
-                                            <button
-                                                type="button"
-                                                onClick={() => setExpandedGuideStep(expandedGuideStep === guide.step ? null : guide.step)}
-                                                className="w-full p-3.5 flex items-center justify-between text-left font-mono text-xs font-bold text-slate-200 hover:text-white hover:bg-white/5 transition-colors"
-                                            >
-                                                <span>{guide.title}</span>
-                                                {expandedGuideStep === guide.step ? <FaChevronUp className="text-cyan-400" /> : <FaChevronDown className="text-slate-400" />}
-                                            </button>
-                                            {expandedGuideStep === guide.step && (
-                                                <div className="p-4 pt-2 border-t border-white/5 bg-slate-950/80">
-                                                    {guide.content}
-                                                </div>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
+                                    ].map((guide) => {
+                                        const open = expandedGuideStep === guide.step;
+                                        return (
+                                            <li key={guide.step}>
+                                                <button
+                                                    type="button"
+                                                    aria-expanded={open}
+                                                    onClick={() =>
+                                                        setExpandedGuideStep(
+                                                            open ? null : guide.step
+                                                        )
+                                                    }
+                                                    className="adm-row justify-between font-semibold text-[var(--text-bright)]"
+                                                >
+                                                    <span>{guide.title}</span>
+                                                    {open ? (
+                                                        <FaChevronUp aria-hidden="true" />
+                                                    ) : (
+                                                        <FaChevronDown aria-hidden="true" />
+                                                    )}
+                                                </button>
+                                                {open && (
+                                                    <div className="border-t border-[var(--hairline)] bg-[var(--bg-primary)] p-4">
+                                                        {guide.content}
+                                                    </div>
+                                                )}
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
                             </div>
+                        </div>
 
-                            {/* Footer */}
-                            <div className="flex items-center justify-end p-5 border-t border-white/10 shrink-0">
-                                <button
-                                    onClick={() => setShowGDriveModal(false)}
-                                    className="px-5 py-2.5 rounded-xl text-xs font-mono uppercase tracking-wider text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
-                                >
-                                    Close
-                                </button>
-                            </div>
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                        <div className="adm-dialog-foot">
+                            <button
+                                type="button"
+                                onClick={() => setShowGDriveModal(false)}
+                                className="adm-btn"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
-            {/* Export selection popup */}
-            <AnimatePresence>
-                {showExportModal && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
-                        onClick={() => setShowExportModal(false)}
+            {/* Export Selection Modal */}
+            {showExportModal && (
+                <div
+                    className="adm-overlay"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="export-modal-title"
+                    onClick={() => setShowExportModal(false)}
+                >
+                    <div
+                        className="adm-dialog adm-dialog-framed max-w-2xl"
+                        onClick={(e) => e.stopPropagation()}
                     >
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.96, y: 12 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.96, y: 12 }}
-                            transition={{ type: 'spring', stiffness: 300, damping: 26 }}
-                            className="w-full max-w-2xl max-h-[85vh] flex flex-col bg-slate-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden"
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            {/* Header */}
-                            <div className="flex items-center justify-between gap-4 p-5 border-b border-white/10 shrink-0">
-                                <div className="flex items-center gap-3">
-                                    <FaDownload className="text-amber-500/80" size={18} />
-                                    <div>
-                                        <h3 className="text-white font-bold tracking-tight">Configure Backup</h3>
-                                        <p className="text-slate-400 text-xs font-mono">
-                                            {selectedCount} / {ALL_EXPORT_KEYS.length} SELECTED
-                                        </p>
-                                    </div>
-                                </div>
-                                <button
-                                    onClick={() => setShowExportModal(false)}
-                                    className="p-2 text-slate-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
-                                    aria-label="Close"
-                                >
-                                    <FaTimes />
-                                </button>
+                        <div className="adm-dialog-head">
+                            <div>
+                                <h3 id="export-modal-title" className="adm-panel-title">
+                                    Configure backup
+                                </h3>
+                                <p className="adm-help">
+                                    {selectedCount} of {ALL_EXPORT_KEYS.length} selected
+                                </p>
                             </div>
+                            <button
+                                type="button"
+                                onClick={() => setShowExportModal(false)}
+                                aria-label="Close"
+                                className="adm-icon-btn"
+                            >
+                                <FaXmark aria-hidden="true" />
+                            </button>
+                        </div>
 
-                            {/* Bulk actions */}
-                            <div className="flex items-center gap-2 px-5 py-3 border-b border-white/5 shrink-0">
+                        <div className="adm-dialog-body space-y-5">
+                            <div className="flex flex-wrap gap-2">
                                 <button
+                                    type="button"
                                     onClick={() => setAll(true)}
-                                    className="text-xs font-mono uppercase tracking-wider px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 transition-colors"
+                                    className="adm-btn"
                                 >
                                     Select all
                                 </button>
                                 <button
+                                    type="button"
                                     onClick={() => setAll(false)}
-                                    className="text-xs font-mono uppercase tracking-wider px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 transition-colors"
+                                    className="adm-btn"
                                 >
                                     Deselect all
                                 </button>
                             </div>
 
-                            {/* Sections */}
-                            <div className="overflow-y-auto p-5 space-y-5">
-                                {EXPORT_SECTIONS.map((section) => {
-                                    const total = section.items.length;
-                                    const checked = section.items.filter((i) => selection[i.key]).length;
-                                    const allOn = checked === total;
-                                    return (
-                                        <div key={section.title}>
-                                            <div className="flex items-center justify-between mb-2">
-                                                <h4 className={`text-xs font-mono uppercase tracking-widest ${ACCENT_TEXT[section.accent]}`}>
-                                                    {section.title}
-                                                </h4>
-                                                <button
-                                                    onClick={() => toggleSection(section.items, !allOn)}
-                                                    className="text-[10px] font-mono uppercase tracking-wider text-slate-500 hover:text-slate-300 transition-colors"
-                                                >
-                                                    {allOn ? 'Clear' : 'All'}
-                                                </button>
-                                            </div>
-                                            <div className="grid sm:grid-cols-2 gap-2">
-                                                {section.items.map((item) => {
-                                                    const on = !!selection[item.key];
-                                                    return (
-                                                        <label
-                                                            key={item.key}
-                                                            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border cursor-pointer transition-all text-sm ${on
-                                                                ? 'bg-white/5 border-white/15 text-white'
-                                                                : 'bg-transparent border-white/5 text-slate-500 hover:border-white/10'
-                                                                }`}
-                                                        >
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={on}
-                                                                onChange={() => toggleKey(item.key)}
-                                                                className="accent-amber-500 w-4 h-4 shrink-0"
-                                                            />
-                                                            <span className="leading-tight">{item.label}</span>
-                                                        </label>
-                                                    );
-                                                })}
-                                            </div>
+                            {EXPORT_SECTIONS.map((section) => {
+                                const total = section.items.length;
+                                const checked = section.items.filter((i) => selection[i.key]).length;
+                                const allOn = checked === total;
+                                return (
+                                    <div key={section.title} className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <h4 className="font-semibold text-sm text-[var(--text-bright)]">
+                                                {section.title}
+                                            </h4>
+                                            <button
+                                                type="button"
+                                                onClick={() => toggleSection(section.items, !allOn)}
+                                                className="adm-btn adm-btn-quiet"
+                                            >
+                                                {allOn ? 'Clear' : 'Select all'}
+                                            </button>
                                         </div>
-                                    );
-                                })}
-                            </div>
+                                        <div className="grid gap-2 sm:grid-cols-2">
+                                            {section.items.map((item) => {
+                                                const on = !!selection[item.key];
+                                                return (
+                                                    <label key={item.key} className="adm-choice">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={on}
+                                                            onChange={() => toggleKey(item.key)}
+                                                            className="adm-check"
+                                                        />
+                                                        <span>{item.label}</span>
+                                                    </label>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
 
-                            {/* Footer */}
-                            <div className="flex items-center justify-between gap-3 p-5 border-t border-white/10 shrink-0">
-                                <div>
-                                    <button
-                                        onClick={() => handleGDriveBackup(ALL_EXPORT_KEYS.filter((k) => k !== '__images' && selection[k]))}
-                                        disabled={selectedCount === 0 || isLoading || !gdriveStatus?.isConnected}
-                                        className="bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 font-bold py-2.5 px-4 rounded-xl transition-all flex items-center gap-2 uppercase tracking-wider text-xs disabled:opacity-40 disabled:cursor-not-allowed font-mono"
-                                        title={!gdriveStatus?.isConnected ? 'Google Drive must be connected first' : ''}
-                                    >
-                                        <FaCloudUploadAlt />
-                                        ☁️ BACKUP_TO_GOOGLE_DRIVE
-                                    </button>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <button
-                                        onClick={() => setShowExportModal(false)}
-                                        className="px-4 py-2.5 rounded-xl text-sm font-mono uppercase tracking-wider text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        onClick={handleExport}
-                                        disabled={selectedCount === 0 || isLoading}
-                                        className="bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 hover:border-amber-500/40 text-amber-400 font-bold py-2.5 px-5 rounded-xl transition-all flex items-center gap-3 uppercase tracking-wider text-sm disabled:opacity-40 disabled:cursor-not-allowed font-mono"
-                                    >
-                                        <FaServer />
-                                        Initiate dump
-                                    </button>
-                                </div>
+                        <div className="adm-dialog-foot justify-between">
+                            <button
+                                type="button"
+                                onClick={() =>
+                                    handleGDriveBackup(
+                                        ALL_EXPORT_KEYS.filter(
+                                            (k) => k !== '__images' && selection[k]
+                                        )
+                                    )
+                                }
+                                disabled={
+                                    selectedCount === 0 || isLoading || !gdriveStatus?.isConnected
+                                }
+                                title={
+                                    !gdriveStatus?.isConnected
+                                        ? 'Google Drive must be connected first'
+                                        : ''
+                                }
+                                className="adm-btn"
+                            >
+                                <FaCloudArrowUp aria-hidden="true" /> Back up to Google Drive
+                            </button>
+
+                            <div className="flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowExportModal(false)}
+                                    className="adm-btn"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleExport}
+                                    disabled={selectedCount === 0 || isLoading}
+                                    className="adm-btn adm-btn-primary"
+                                >
+                                    <FaDownload aria-hidden="true" /> Download zip
+                                </button>
                             </div>
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
-
