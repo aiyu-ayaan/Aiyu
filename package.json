@@ -73,7 +73,7 @@
     "rehype-raw": "^7.0.0",
     "rehype-sanitize": "^6.0.0",
     "remark-gfm": "^4.0.1",
-    "simple-icons": "^16.25.0",
+    "simple-icons": "^16.38.1",
     "three": "^0.185.1",
     "yet-another-react-lightbox": "^3.32.0"
   },
