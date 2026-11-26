@@ -18,7 +18,7 @@ Postgres: `pnpm db:up`. Next (upstream) listens on :3100, Rust on :8080.
 
 ```bash
 pnpm build && pnpm start -p 3100 &
-pnpm server:build && NEXT_UPSTREAM=http://127.0.0.1:3100 RUST_LISTEN=0.0.0.0:8080 TRUSTED_PROXIES=127.0.0.1 pnpm server:start &
+pnpm server:build && NEXT_UPSTREAM=http://127.0.0.1:3100 RUST_LISTEN=0.0.0.0:8080 TRUSTED_PROXIES=127.0.0.1 server/target/release/aiyu-server &
 ```
 
 The running Next process was built before today's changes to Next code (`api/github/config`, `storageAudit.js`,

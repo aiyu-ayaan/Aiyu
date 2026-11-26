@@ -44,7 +44,8 @@ export default defineConfig({
   webServer: {
     command: 'pnpm dev',
     url: baseURL,
-    timeout: 120_000,
+    // The first start compiles the Rust server.
+    timeout: 600_000,
     reuseExistingServer: !process.env.CI,
     stdout: 'pipe',
     env: { NEXT_DISABLE_PROGRESS_BAR: '1' },

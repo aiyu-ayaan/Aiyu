@@ -155,9 +155,10 @@ curl http://localhost/api/seed
 
 ## 💻 Local Development (Rust/Vite app + Next.js upstream)
 
-The full site and admin UI are served by the Rust server on port `8080`. Next.js
-runs as its upstream on port `3000`; starting only `pnpm dev` does not serve the
-complete app. PostgreSQL (and optional pgAdmin) runs in Docker:
+The app is moving from Next.js to Rust (axum) and Vite; progress is tracked in
+`development/TODO.md`. You need Node 24, pnpm, a stable Rust toolchain (`cargo`)
+and Docker for PostgreSQL (and optional pgAdmin). HEIC uploads also need the
+system `libheif` library.
 
 ```bash
 cp .env.example .env              # set DATABASE_URL to localhost
@@ -165,27 +166,31 @@ pnpm install                      # postinstall runs `prisma generate`
 pnpm db:up                        # start Postgres + pgAdmin
 pnpm exec prisma migrate deploy   # apply the schema
 pnpm db:seed                      # optional sample data
+pnpm dev                          # the whole site on http://localhost:3000
 ```
 
-Run the app in two terminals:
+`pnpm dev` starts all three processes and stops them together:
+
+| Process | Port | Reloads on save |
+|---------|------|-----------------|
+| Vite (public and admin pages) | `3000`, the one you open | yes |
+| `aiyu-server`, debug build (Rust) | `8080` | no, restart `pnpm dev` |
+| `next dev` (API routes not ported yet) | `3001` | yes |
+
+Change the ports with `PORT`, `RUST_PORT` and `NEXT_PORT`. The first start
+compiles the Rust server and builds `web/dist` if it is missing. The admin panel
+is at `http://localhost:3000/admin/login`, pgAdmin at `http://localhost:5050`.
+Other scripts: `pnpm db:studio` (Prisma Studio) and `pnpm db:down` (stop the
+database).
+
+To run the production build locally:
 
 ```bash
-# Terminal 1: Next.js API/upstream
-pnpm dev                          # http://localhost:3000
-```
-
-```bash
-# Terminal 2: build the Vite UI and Rust server, then serve the full app
-pnpm web:build
+pnpm build                        # Next.js and web/dist
+pnpm start -p 3100 &              # Next.js as the upstream
 pnpm server:build
-NEXT_UPSTREAM=http://127.0.0.1:3000 RUST_LISTEN=0.0.0.0:8080 pnpm server:start
+NEXT_UPSTREAM=http://127.0.0.1:3100 server/target/release/aiyu-server   # http://localhost:8080
 ```
-
-Open the site at `http://localhost:8080` and the admin panel at
-`http://localhost:8080/admin/login`. Re-run `pnpm web:build` and restart the
-Rust server after changing the Vite UI. Useful scripts: `pnpm db:studio`
-(Prisma Studio), `pnpm db:down` (stop the dev database), and `pnpm web:dev`
-(Vite asset development server). pgAdmin is available at `http://localhost:5050`.
 
 ---
 
@@ -194,7 +199,7 @@ Rust server after changing the Vite UI. Useful scripts: `pnpm db:studio`
 Unit & component tests (Vitest + Testing Library):
 
 ```bash
-npm test          # run once
+pnpm test         # run once
 pnpm test:watch
 ```
 
@@ -205,7 +210,7 @@ pnpm test:ui          # headless
 pnpm test:ui:headed   # watch the browser
 ```
 
-Run everything: `pnpm test:all`.
+Run everything: `pnpm test:all`. Rust server tests: `pnpm server:test`.
 
 The admin e2e reads `ADMIN_USERNAME` / `ADMIN_PASSWORD` from `.env` (same as the
 screenshot script); the valid-login test is skipped if `ADMIN_PASSWORD` is unset.

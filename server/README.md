@@ -70,9 +70,10 @@ SEO tools read through them) and queues search-engine pings. The call carries an
 ## Run
 
 ```bash
+pnpm dev                          # Vite, a debug aiyu-server and next dev together (see the root README)
 pnpm server:build                 # cargo build --release
 pnpm build && pnpm start -p 3100  # Next, as the upstream
-NEXT_UPSTREAM=http://127.0.0.1:3100 RUST_LISTEN=0.0.0.0:8080 pnpm server:start
+NEXT_UPSTREAM=http://127.0.0.1:3100 RUST_LISTEN=0.0.0.0:8080 server/target/release/aiyu-server
 pnpm server:test
 ```
 

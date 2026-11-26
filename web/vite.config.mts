@@ -108,6 +108,23 @@ async function discoveryDocs() {
   }
 }
 
+// `pnpm dev`: Vite serves the app with hot reload, aiyu-server everything else (scripts/dev.mjs).
+const RUST = process.env.AIYU_SERVER_URL || 'http://127.0.0.1:8080';
+// Paths that stay the server's even when a browser asks for HTML.
+const SERVER_PATHS = /^\/(api|docs|\.well-known|_img|_next)(\/|\?|$)|^\/[^?]*\.[a-z0-9]+(\?|$)/i;
+
+// The first render needs the data the server puts in the page: take it from the server's own copy of that page.
+const devData: Plugin = {
+  name: 'aiyu:dev-data',
+  apply: 'serve',
+  async transformIndexHtml(html, { originalUrl = '/' }) {
+    const page = await (await fetch(RUST + originalUrl, { headers: { accept: 'text/html' } })).text();
+    const data = page.match(/<script id="__DATA__" type="application\/json">([\s\S]*?)<\/script>/)?.[1] ?? '{}';
+    const title = page.match(/<title>[\s\S]*?<\/title>/)?.[0] ?? '';
+    return html.replace('<!--app-head-->', () => title).replace('<!--app-data-->', () => data);
+  },
+};
+
 // Every `next/*` import must hit a shim above: real Next modules would work through the proxy today and break at cutover.
 const noNext: Plugin = {
   name: 'aiyu:no-next',
@@ -118,11 +135,12 @@ const noNext: Plugin = {
   },
 };
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   root: fileURLToPath(new URL('.', import.meta.url)),
   // Hashed assets live under /_app/ so the Rust server can cache them forever without touching Next's paths.
-  base: '/_app/',
-  plugins: [jsxInJs, react(), tailwindcss(), prepaint, routeMeta, noNext],
+  // In dev the app owns the root, so Vite's own paths never collide with the proxy.
+  base: command === 'build' ? '/_app/' : '/',
+  plugins: [jsxInJs, react(), tailwindcss(), prepaint, routeMeta, devData, noNext],
   // Some dependencies read Node's `global` (webpack polyfilled it for Next).
   define: { global: 'globalThis' },
   resolve: {
@@ -138,6 +156,8 @@ export default defineConfig({
   // Tailwind runs as a Vite plugin; skip the Next-style postcss.config.mjs at the repo root.
   css: { postcss: { plugins: [] } },
   oxc: { jsx: { runtime: 'automatic', importSource: 'react' } },
+  // The dev server's dependency scan does not run the plugins above: tell it about JSX in .js too.
+  optimizeDeps: { rolldownOptions: { moduleTypes: { '.js': 'jsx' } } },
   build: {
     outDir: 'dist',
     emptyOutDir: true,
@@ -151,8 +171,20 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5173,
-    // Dev: unported pages and the API come from the running Next/Rust server.
-    proxy: { '^/(?!_app/|@|src/|node_modules/|games).*': { target: 'http://127.0.0.1:3000', changeOrigin: false } },
+    port: Number(process.env.PORT) || 3000,
+    strictPort: true,
+    proxy: {
+      '/': {
+        target: RUST,
+        changeOrigin: false,
+        xfwd: true,
+        bypass(req) {
+          const url = req.url ?? '/';
+          if (/^\/(@|src\/|node_modules\/)/.test(url)) return url;
+          const navigation = req.headers.accept?.includes('text/html') && !req.headers['x-aiyu-data'];
+          return navigation && !SERVER_PATHS.test(url) ? '/index.html' : undefined;
+        },
+      },
+    },
   },
-});
+}));

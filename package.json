@@ -3,7 +3,7 @@
   "version": "6.0.4",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "node scripts/dev.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:ui": "playwright test",
@@ -41,9 +41,7 @@
     "hf:check": "cd hyperframes/story && pnpm dlx hyperframes@0.8.78 check && cd ../boot && pnpm dlx hyperframes@0.8.78 check",
     "server:build": "cargo build --release --manifest-path server/Cargo.toml",
     "server:test": "cargo test --manifest-path server/Cargo.toml",
-    "server:start": "server/target/release/aiyu-server",
     "web:build": "vite build --config web/vite.config.mts",
-    "web:dev": "vite --config web/vite.config.mts",
     "web:typecheck": "tsc -p web/tsconfig.json"
   },
   "dependencies": {

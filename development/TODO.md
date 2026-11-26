@@ -67,11 +67,11 @@ Then 5b/9 (SQLite), then 10 (cutover: remove Next).
 Admin pages call `/api/*`, so they keep working while APIs move one by one.
 e2e: `e2e/site-pages.spec.js` (public), `e2e/admin-pages.spec.js` (every admin route, one login; needs ADMIN_PASSWORD).
 
-Start everything locally (Postgres must be up: `pnpm db:up`):
+Development: `pnpm db:up`, then `pnpm dev` (http://localhost:3000). For parity checks run the release servers:
 ```bash
 pnpm build                                   # Next (webpack) + Vite; if Next stops with SecurityFatalError, run again
 pnpm start -p 3100 &                         # Next = upstream for unported pages
-pnpm server:build && NEXT_UPSTREAM=http://127.0.0.1:3100 RUST_LISTEN=0.0.0.0:8080 pnpm server:start &
+pnpm server:build && NEXT_UPSTREAM=http://127.0.0.1:3100 TRUSTED_PROXIES=127.0.0.1 server/target/release/aiyu-server &
 ```
 Restart aiyu-server after every `pnpm web:build`: it loads `web/dist/index.html` once at startup.
 Run the bench with `--backups 3` at most per few minutes: login is rate limited (429) and the backup part is skipped.
@@ -143,7 +143,7 @@ Run the bench with `--backups 3` at most per few minutes: login is rate limited 
 - [x] Config from the same `.env`; `/healthz`; release profile (lto, strip, panic=abort): 3.75 MB binary
 - [x] Parity: `encryption.js` decrypt/encrypt and session JWT verify, tested against Node-made fixtures (`server/tests/parity.rs`)
 - [x] Playwright 12 passed through Rust (`E2E_PORT=8080`); Rust RSS 5-8 MB incl. 3 streamed backups
-- [x] CI job `cargo test --locked`; `pnpm server:build|test|start`; graceful shutdown on SIGTERM and SIGINT
+- [x] CI job `cargo test --locked`; `pnpm server:build|test`; graceful shutdown on SIGTERM and SIGINT
 - [x] Tune for 1 GB: 2 worker threads by default (`RUST_WORKERS`), brotli quality 4
 - [ ] Allocator check (mimalloc vs glibc) once more routes run in Rust
 
