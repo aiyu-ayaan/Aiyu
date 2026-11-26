@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import { FaSpinner, FaWandMagicSparkles } from 'react-icons/fa6';
-import Toast from './Toast';
 import { postJson } from './aiSections/api';
 import SkillsManager from './aiSections/SkillsManager';
 import CardListManager from './aiSections/CardListManager';
@@ -42,15 +41,14 @@ const PROMPT_FIELDS = [
 ];
 
 export default function AiPageForm() {
-    const { confirm } = useAdminFeedback();
+    const { confirm, toast } = useAdminFeedback();
     const [tab, setTab] = useState('content');
     const [contentTab, setContentTab] = useState('skills');
-    const [notification, setNotification] = useState(null);
     const [seeding, setSeeding] = useState(false);
 
     const notify = (success, message) => {
-        setNotification({ success, message });
-        setTimeout(() => setNotification(null), 2600);
+        if (success) toast.success(message);
+        else toast.error(message);
     };
 
     const seedDefaults = async () => {
@@ -72,9 +70,9 @@ export default function AiPageForm() {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="adm-sc-root space-y-6">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--hairline)]">
-                <div className="adm-tabs border-b-0" role="tablist" aria-label="AI hub workspace">
+                <div className="adm-tabs adm-sc-tabs border-b-0" role="tablist" aria-label="AI hub workspace">
                     <button
                         type="button"
                         role="tab"
@@ -109,7 +107,7 @@ export default function AiPageForm() {
 
             {tab === 'content' ? (
                 <div className="space-y-6">
-                    <div className="adm-tabs" role="tablist" aria-label="Content sections">
+                    <div className="adm-tabs adm-sc-tabs" role="tablist" aria-label="Content sections">
                         {CONTENT_TABS.map((t) => (
                             <button
                                 key={t.id}
@@ -162,8 +160,6 @@ export default function AiPageForm() {
             ) : (
                 <LayoutManager notify={notify} />
             )}
-
-            <Toast notification={notification} />
         </div>
     );
 }

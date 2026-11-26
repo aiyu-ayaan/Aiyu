@@ -15,9 +15,9 @@ import {
     FaWandMagicSparkles,
     FaXmark,
 } from 'react-icons/fa6';
-import Toast from './Toast';
 import DatePickerInput from './DatePickerInput';
 import { Badge, EmptyState, Field, Loading, Panel } from './ui';
+import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
 import '@/app/styles/admin-showcase.css';
 
 const SECTIONS = [
@@ -102,6 +102,7 @@ function SortableRecord({ id, title, badge, onRemove, removeLabel = 'Delete item
 
 const AboutForm = () => {
     const router = useRouter();
+    const { toast } = useAdminFeedback();
     const [formData, setFormData] = useState({
         name: '',
         roles: '',
@@ -114,7 +115,6 @@ const AboutForm = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
-    const [notification, setNotification] = useState(null);
     const [aiEnabled, setAiEnabled] = useState(false);
     const [aiGenerating, setAiGenerating] = useState(null); // ID or 'summary' or 'skills'
 
@@ -295,8 +295,8 @@ const AboutForm = () => {
     };
 
     const showNotification = (success, message) => {
-        setNotification({ success, message });
-        setTimeout(() => setNotification(null), 3000);
+        if (success) toast.success(message);
+        else toast.error(message);
     };
 
     const handleDragEnd = (event, listKey) => {
@@ -449,7 +449,7 @@ const AboutForm = () => {
     }
 
     return (
-        <form onSubmit={handleSubmit} className="adm-sc-split">
+        <form onSubmit={handleSubmit} className="adm-sc-root adm-sc-split">
             {activeIconIndex !== null && (
                 <div className="adm-overlay" role="dialog" aria-modal="true" aria-labelledby="icon-picker-title">
                     <div className="adm-dialog !max-w-2xl">
@@ -1048,7 +1048,6 @@ const AboutForm = () => {
                 </Panel>
             </aside>
 
-            <Toast notification={notification} />
         </form>
     );
 };

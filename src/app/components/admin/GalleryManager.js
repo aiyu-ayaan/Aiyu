@@ -2,10 +2,13 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import {
+    FaArrowDown,
+    FaArrowUp,
     FaArrowsRotate,
     FaCheck,
     FaFloppyDisk,
     FaPen,
+    FaGripVertical,
     FaSpinner,
     FaThumbtack,
     FaTrash,
@@ -14,14 +17,13 @@ import {
     FaXmark,
 } from 'react-icons/fa6';
 import Image from 'next/image';
-import Toast from './Toast';
 import { heicPreviewUrl, isHeicFile } from '@/utils/heicPreview';
 import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
 import { Badge, EmptyState, Field, Loading, Panel, Stat } from './ui';
 import '@/app/styles/admin-showcase.css';
 
 export default function GalleryManager() {
-    const { confirm } = useAdminFeedback();
+    const { confirm, toast } = useAdminFeedback();
     const [images, setImages] = useState([]);
     const [loading, setLoading] = useState(true);
     const [uploading, setUploading] = useState(false);
@@ -29,7 +31,6 @@ export default function GalleryManager() {
     const [migrationProgress, setMigrationProgress] = useState(null);
     const [files, setFiles] = useState([]); // Array of { file, preview, description, id }
     const [dragActive, setDragActive] = useState(false);
-    const [notification, setNotification] = useState(null);
     const [uploadProgress, setUploadProgress] = useState(null);
 
     // Filter & Edit Dialog State
@@ -53,8 +54,8 @@ export default function GalleryManager() {
     const [isSavingOrder, setIsSavingOrder] = useState(false);
 
     const showNotification = (success, message) => {
-        setNotification({ success, message });
-        setTimeout(() => setNotification(null), 3000);
+        if (success) toast.success(message);
+        else toast.error(message);
     };
 
     useEffect(() => {
@@ -437,7 +438,7 @@ export default function GalleryManager() {
         setDraggedItemIdx(index);
         if (e.dataTransfer) {
             e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('text/html', e.target);
+            e.dataTransfer.setData('text/plain', String(index));
         }
     };
 
@@ -450,36 +451,47 @@ export default function GalleryManager() {
         e.preventDefault();
     };
 
+    const persistImageOrder = async (orderedImages) => {
+        setImages(orderedImages);
+        setIsSavingOrder(true);
+        try {
+            const updates = orderedImages.map((img, i) => ({ id: img._id, order: i }));
+            const res = await fetch('/api/gallery', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ items: updates })
+            });
+            const data = await res.json();
+            if (data.success) {
+                showNotification(true, 'Photo order saved');
+            } else {
+                showNotification(false, data.error || 'Failed to save order');
+                fetchImages();
+            }
+        } catch (error) {
+            console.error('Order save error:', error);
+            showNotification(false, 'Failed to save order');
+            fetchImages();
+        } finally {
+            setIsSavingOrder(false);
+        }
+    };
+
+    const moveImage = async (index, direction) => {
+        const targetIndex = index + direction;
+        if (targetIndex < 0 || targetIndex >= images.length || isSavingOrder) return;
+        const orderedImages = [...images];
+        const [movedImage] = orderedImages.splice(index, 1);
+        orderedImages.splice(targetIndex, 0, movedImage);
+        await persistImageOrder(orderedImages);
+    };
+
     const handleDragEndItem = async () => {
         if (draggedItemIdx !== null && dragOverItemIdx !== null && draggedItemIdx !== dragOverItemIdx) {
             const newImages = [...images];
-            const draggedItem = newImages[draggedItemIdx];
-            newImages.splice(draggedItemIdx, 1);
-            newImages.splice(dragOverItemIdx, 0, draggedItem);
-            setImages(newImages);
-
-            setIsSavingOrder(true);
-            try {
-                const updates = newImages.map((img, i) => ({ id: img._id, order: i }));
-                const res = await fetch('/api/gallery', {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ items: updates })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    showNotification(true, 'Photo order saved');
-                } else {
-                    showNotification(false, data.error || 'Failed to save order');
-                    fetchImages();
-                }
-            } catch (error) {
-                console.error('Order save error:', error);
-                showNotification(false, 'Failed to save order');
-                fetchImages();
-            } finally {
-                setIsSavingOrder(false);
-            }
+            const [draggedImage] = newImages.splice(draggedItemIdx, 1);
+            newImages.splice(dragOverItemIdx, 0, draggedImage);
+            await persistImageOrder(newImages);
         }
         setDraggedItemIdx(null);
         setDragOverItemIdx(null);
@@ -550,9 +562,10 @@ export default function GalleryManager() {
                 return true;
             });
     }, [images, searchQuery, filterMode]);
+    const canReorder = filterMode === 'all' && !searchQuery.trim();
 
     return (
-        <div className="space-y-6">
+        <div className="adm-sc-root space-y-6">
             {editingImage && (
                 <div className="adm-overlay" role="dialog" aria-modal="true" aria-labelledby="gallery-edit-title">
                     <form onSubmit={saveEditDialog} className="adm-dialog">
@@ -729,7 +742,15 @@ export default function GalleryManager() {
                                             <span className="truncate">Uploading {uploadProgress.filename}</span>
                                             <span>{uploadProgress.current} / {uploadProgress.total}</span>
                                         </div>
-                                        <div className="adm-sc-progress">
+                                        <div
+                                            className="adm-sc-progress"
+                                            role="progressbar"
+                                            aria-label="Photo upload progress"
+                                            aria-valuemin={0}
+                                            aria-valuemax={100}
+                                            aria-valuenow={Math.round((uploadProgress.current / uploadProgress.total) * 100)}
+                                            aria-valuetext={`Uploading photo ${uploadProgress.current} of ${uploadProgress.total}: ${uploadProgress.filename}`}
+                                        >
                                             <div style={{ width: `${(uploadProgress.current / uploadProgress.total) * 100}%` }} />
                                         </div>
                                     </div>
@@ -781,7 +802,15 @@ export default function GalleryManager() {
                                     <span className="text-[var(--text-secondary)]">{migrationProgress.percentage}%</span>
                                 </div>
                                 {migrationProgress.percentage !== undefined && (
-                                    <div className="adm-sc-progress">
+                                    <div
+                                        className="adm-sc-progress"
+                                        role="progressbar"
+                                        aria-label="Thumbnail generation progress"
+                                        aria-valuemin={0}
+                                        aria-valuemax={100}
+                                        aria-valuenow={migrationProgress.percentage}
+                                        aria-valuetext={`${migrationProgress.percentage}% complete`}
+                                    >
                                         <div style={{ width: `${migrationProgress.percentage}%` }} />
                                     </div>
                                 )}
@@ -822,7 +851,7 @@ export default function GalleryManager() {
             >
                 <div className="space-y-4">
                     <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div className="adm-tabs border-b-0" role="tablist" aria-label="Filter photos">
+                        <div className="adm-tabs adm-sc-tabs border-b-0" role="tablist" aria-label="Filter photos">
                             {[
                                 { id: 'all', label: `All (${images.length})` },
                                 { id: 'pinned', label: `Pinned (${pinnedCount})` },
@@ -873,8 +902,6 @@ export default function GalleryManager() {
                                 return (
                                     <article
                                         key={image._id}
-                                        draggable
-                                        onDragStart={(e) => handleDragStartItem(e, idx)}
                                         onDragEnter={(e) => handleDragEnterItem(e, idx)}
                                         onDragEnd={handleDragEndItem}
                                         onDragOver={handleDragOverItem}
@@ -883,9 +910,12 @@ export default function GalleryManager() {
                                         data-drag-over={isDragOver}
                                         className="adm-sc-photo"
                                     >
-                                        <div
+                                        <button
+                                            type="button"
                                             onClick={() => toggleSelection(image._id)}
-                                            className="adm-sc-photo-media cursor-pointer"
+                                            aria-pressed={isSelected}
+                                            aria-label={`${isSelected ? 'Deselect' : 'Select'} ${image.description || 'photo'}`}
+                                            className="adm-sc-photo-media cursor-pointer border-0 p-0 text-left"
                                         >
                                             <Image
                                                 src={image.thumbnail || image.src}
@@ -895,11 +925,11 @@ export default function GalleryManager() {
                                                 unoptimized
                                                 className="object-cover"
                                             />
-                                            <div className="absolute left-2 top-2 flex flex-wrap gap-1">
+                                            <span className="absolute left-2 top-2 flex flex-wrap gap-1">
                                                 {image.isPinned && <Badge tone="info">Pinned</Badge>}
                                                 {!image.thumbnail && <Badge tone="warn">Raw</Badge>}
-                                            </div>
-                                        </div>
+                                            </span>
+                                        </button>
 
                                         <div className="adm-sc-photo-foot">
                                             <p
@@ -908,11 +938,46 @@ export default function GalleryManager() {
                                             >
                                                 {image.description || 'No description'}
                                             </p>
-                                            <div className="flex items-center justify-between gap-1 pt-1">
+                                            <div className="flex flex-wrap items-center justify-between gap-1 pt-1">
                                                 <span className="adm-num adm-help">
                                                     {image.createdAt ? new Date(image.createdAt).toLocaleDateString() : ''}
                                                 </span>
-                                                <div className="flex items-center gap-0.5">
+                                                <div className="flex flex-wrap justify-end gap-0.5">
+                                                    <button
+                                                        type="button"
+                                                        draggable={canReorder}
+                                                        onDragStart={(e) => handleDragStartItem(e, idx)}
+                                                        disabled={!canReorder || isSavingOrder}
+                                                        className="adm-icon-btn adm-sc-drag"
+                                                        title={canReorder ? 'Drag to reorder' : 'Clear search and filters to reorder'}
+                                                        aria-label={
+                                                            canReorder
+                                                                ? `Drag ${image.description || 'photo'} to reorder`
+                                                                : 'Clear search and filters to reorder'
+                                                        }
+                                                    >
+                                                        <FaGripVertical aria-hidden="true" />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => moveImage(idx, -1)}
+                                                        disabled={!canReorder || idx === 0 || isSavingOrder}
+                                                        className="adm-icon-btn"
+                                                        title="Move photo up"
+                                                        aria-label={`Move ${image.description || 'photo'} up`}
+                                                    >
+                                                        <FaArrowUp aria-hidden="true" />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => moveImage(idx, 1)}
+                                                        disabled={!canReorder || idx === images.length - 1 || isSavingOrder}
+                                                        className="adm-icon-btn"
+                                                        title="Move photo down"
+                                                        aria-label={`Move ${image.description || 'photo'} down`}
+                                                    >
+                                                        <FaArrowDown aria-hidden="true" />
+                                                    </button>
                                                     <button
                                                         type="button"
                                                         onClick={() => toggleSelection(image._id)}
@@ -968,7 +1033,6 @@ export default function GalleryManager() {
                 </div>
             </Panel>
 
-            <Toast notification={notification} />
         </div>
     );
 }

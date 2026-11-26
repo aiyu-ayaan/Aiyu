@@ -12,8 +12,8 @@ import {
     FaWandMagicSparkles,
 } from 'react-icons/fa6';
 import { getIconNames, getIcon } from '@/lib/iconLibrary';
-import Toast from './Toast';
 import { Badge, EmptyState, Field, Loading, Panel } from './ui';
+import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
 import '@/app/styles/admin-showcase.css';
 
 const SECTIONS = [
@@ -27,6 +27,7 @@ const SECTIONS = [
 
 const HomeForm = () => {
     const router = useRouter();
+    const { toast } = useAdminFeedback();
     const [formData, setFormData] = useState({
         name: '',
         homeRoles: '',
@@ -45,7 +46,6 @@ const HomeForm = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
-    const [notification, setNotification] = useState(null);
     const [aiEnabled, setAiEnabled] = useState(false);
     const [aiGenerating, setAiGenerating] = useState(false);
     const [aiAction, setAiAction] = useState(null); // 'roles' or 'code'
@@ -201,8 +201,8 @@ const HomeForm = () => {
     };
 
     const showNotification = (success, message) => {
-        setNotification({ success, message });
-        setTimeout(() => setNotification(null), 3000);
+        if (success) toast.success(message);
+        else toast.error(message);
     };
 
     const handleSubmit = async (e) => {
@@ -278,7 +278,7 @@ const HomeForm = () => {
     }
 
     return (
-        <form onSubmit={handleSubmit} className="adm-sc-split">
+        <form onSubmit={handleSubmit} className="adm-sc-root adm-sc-split">
             <div className="adm-sc-col">
                 {error && <div role="alert" className="adm-notice adm-notice-error">{error}</div>}
 
@@ -762,7 +762,6 @@ const HomeForm = () => {
                 </Panel>
             </aside>
 
-            <Toast notification={notification} />
         </form>
     );
 };

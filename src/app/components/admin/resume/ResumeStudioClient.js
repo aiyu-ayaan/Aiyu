@@ -378,14 +378,14 @@ export default function ResumeStudioClient() {
 
     if (loading) {
         return (
-            <div className="adm-page">
+            <div className="adm-page adm-sc-root">
                 <Panel><Loading label="Loading resume studio" rows={6} /></Panel>
             </div>
         );
     }
 
     return (
-        <div className="adm-page">
+        <div className="adm-page adm-sc-root">
             <PageHeader
                 command="edit"
                 title="Resume studio"
