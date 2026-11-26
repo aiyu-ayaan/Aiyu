@@ -520,10 +520,12 @@ fn breadcrumb_list(items: &[(String, String)]) -> Value {
 pub async fn ai_hub(State(state): State<AppState>, req: Request) -> Response {
     let web = web_or_next!(state, req);
     let req = req.into_parts().0;
-    let (config, stats) = match crate::ai::page_data(&state.db, &web.ai_defaults).await {
+    let (mut config, stats) = match crate::ai::page_data(&state.db, &web.ai_defaults).await {
         Ok(d) => d,
         Err(err) => return server_error(err),
     };
+    // Whole catalogs belong to the sub-pages: sending them here made this page 1.4 MB.
+    let shown = crate::ai::preview(&mut config);
     let site = Site::load(&state).await;
     let social = pages::social_meta(&state.db).await;
     let shell = pages::shell_data(&state, &site.config).await;
@@ -534,7 +536,7 @@ pub async fn ai_hub(State(state): State<AppState>, req: Request) -> Response {
     let mut head = section_head(&site, &social, "/ai", &title, AI_HUB_DESCRIPTION, "/ai");
     head.keywords = AI_HUB_KEYWORDS.into();
     head.og.insert(4, ("og:site_name", site.base_name.clone()));
-    // generateAiHubSchema: the WebPage, then an ItemList of every skill.
+    // generateAiHubSchema: the WebPage, then an ItemList of the skills the page shows.
     let mut schemas = vec![json!({
         "@context": "https://schema.org", "@type": "WebPage", "@id": url, "url": url, "name": title, "description": AI_HUB_DESCRIPTION,
         "isPartOf": { "@type": "WebSite", "url": base },
@@ -543,6 +545,7 @@ pub async fn ai_hub(State(state): State<AppState>, req: Request) -> Response {
     if let Some(skills) = crate::ai::renderable_section(&config, "skills") {
         let items: Vec<&Value> = skills["data"]["categories"].as_array().into_iter().flatten()
             .flat_map(|c| c["items"].as_array().into_iter().flatten())
+            .take(shown)
             .filter(|i| i["name"].as_str().is_some_and(|n| !n.is_empty()))
             .collect();
         if !items.is_empty() {

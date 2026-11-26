@@ -186,9 +186,9 @@ Each page: Rust data + head + Vite route + e2e passing through Rust, then the Ne
 - [x] v2 chrome shared (`V2Chrome.js`, `applyResumeLink`); Rust `shell_data` (header, socials, public config without the resume body, about name, version)
 - [x] `/blogs`, `/blogs/[id]` (Rust + Vite, 2026-11-24): e2e `e2e/blogs.spec.js` passes on Next and Rust, Next pages deleted, `Vary: x-aiyu-data`; numbers in PERFORMANCE.md
 - [x] TCP_NODELAY on accepted sockets (~40 ms per kept-alive response); Next RSC prefetches of Vite pages get an empty reply
-- [ ] `/` embeds the base64 resume PDF (Next): strip it in the `/` port
-- [ ] `/ai` ships every skill twice (page data + a 695 KB JSON-LD ItemList): 1.4 MB. Trim the hub to the preview
-  items (AiHub derives counts from the data, so pass totalCount) and decide whether the ItemList belongs on /ai/skills only
+- [x] `/` no longer embeds the base64 resume PDF: 54 KB through Rust, no base64 in the page (checked 2026-11-27)
+- [x] `/ai` trimmed (2026-11-27): the hub gets each long section's preview plus `totalCount`, and its JSON-LD ItemList
+  names the shown skills only. 1,416,778 to 36,453 bytes (brotli 198,684 to 12,249). `/ai/skills` keeps the catalog.
 - [ ] Vite entry chunk grew 488 -> 569 KB during the page ports (admin route table ~23 KB); find the rest with a
   sourcemap build and move it into route chunks
 - [ ] `/blogs` read time: cache per post (keyed on `updatedAt`) if the ~70 ms matters

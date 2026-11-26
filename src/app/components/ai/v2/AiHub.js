@@ -47,7 +47,8 @@ export default function AiHub({ config, stats, basePath = '/ai' }) {
                 // their own crawlable sub-page.
                 const sub = getSubPageByType(section.type);
                 if (sub) {
-                    const count = countSectionItems(section);
+                    // The Rust server sends only the preview of a long section, with its real size.
+                    const count = section.totalCount ?? countSectionItems(section);
                     if (count > threshold) {
                         extra.limit = threshold;
                         extra.totalCount = count;

@@ -12,6 +12,55 @@ pub const SUBPAGES: &[(&str, &str, &str)] = &[
     ("prompts", "prompt-library", "Prompt Library"),
 ];
 
+/// `resolveSubPageThreshold`: how many entries of a section the hub shows.
+fn threshold(config: &Value) -> usize {
+    let number = match config.get("subPageThreshold") {
+        None => f64::NAN,
+        Some(Value::Null) => 0.0,
+        Some(Value::Bool(b)) => f64::from(u8::from(*b)),
+        Some(Value::Number(n)) => n.as_f64().unwrap_or(f64::NAN),
+        Some(Value::String(s)) if s.trim().is_empty() => 0.0,
+        Some(Value::String(s)) => s.trim().parse().unwrap_or(f64::NAN),
+        _ => f64::NAN,
+    };
+    if number.is_finite() { number.round().clamp(1.0, 500.0) as usize } else { 12 }
+}
+
+/// Cuts each long section of the hub to what it shows, plus one entry so the view knows there is more, and records
+/// the real number in `totalCount`. Returns how many entries are shown.
+pub fn preview(config: &mut Value) -> usize {
+    let shown = threshold(config);
+    let Some(sections) = config.get_mut("sections").and_then(Value::as_array_mut) else { return shown };
+    for section in sections {
+        let key = match section["type"].as_str() {
+            Some("skills") => "categories",
+            Some("recommendations") => "cards",
+            Some("credits") => "rows",
+            Some("prompts") => "items",
+            _ => continue,
+        };
+        let Some(list) = section["data"][key].as_array() else { continue };
+        let nested = key == "categories";
+        let total: usize = if nested { list.iter().map(|c| c["items"].as_array().map_or(0, Vec::len)).sum() } else { list.len() };
+        if total <= shown {
+            continue;
+        }
+        if let Some(list) = section["data"][key].as_array_mut() {
+            if nested {
+                let mut left = shown + 1;
+                for items in list.iter_mut().filter_map(|c| c.get_mut("items").and_then(Value::as_array_mut)) {
+                    items.truncate(left);
+                    left -= items.len();
+                }
+            } else {
+                list.truncate(shown + 1);
+            }
+        }
+        section["totalCount"] = total.into();
+    }
+    shown
+}
+
 /// `findRenderableSection`: the first enabled section of `kind`.
 pub fn renderable_section<'a>(config: &'a Value, kind: &str) -> Option<&'a Value> {
     config["sections"].as_array()?.iter().find(|s| s["type"] == kind && s["enabled"] != Value::Bool(false))
@@ -105,4 +154,31 @@ async fn stats(db: &PgPool) -> Value {
         "topModel": model.as_ref().map(|m| m.0.clone()), "topModelCalls": model.map(|m| m.1).unwrap_or(0),
         "topProvider": provider.map(|p| p.0),
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_hub_keeps_one_entry_more_than_it_shows() {
+        let mut config = json!({ "subPageThreshold": 2, "sections": [
+            { "type": "skills", "data": { "categories": [{ "items": [1] }, { "items": [2, 3, 4] }, { "items": [5] }] } },
+            { "type": "credits", "data": { "rows": [1, 2] } },
+            { "type": "prompts", "data": { "items": [1, 2, 3, 4] } },
+            { "type": "stats", "data": {} },
+        ] });
+        assert_eq!(preview(&mut config), 2);
+        assert_eq!(config["sections"][0]["data"]["categories"], json!([{ "items": [1] }, { "items": [2, 3] }, { "items": [] }]));
+        assert_eq!(config["sections"][0]["totalCount"], 5);
+        assert_eq!(config["sections"][1], json!({ "type": "credits", "data": { "rows": [1, 2] } }));
+        assert_eq!((config["sections"][2]["data"]["items"].clone(), config["sections"][2]["totalCount"].clone()), (json!([1, 2, 3]), json!(4)));
+    }
+
+    #[test]
+    fn the_threshold_reads_like_javascript() {
+        for (value, want) in [(json!({}), 12), (json!({ "subPageThreshold": null }), 1), (json!({ "subPageThreshold": "30" }), 30), (json!({ "subPageThreshold": 9000 }), 500), (json!({ "subPageThreshold": "x" }), 12)] {
+            assert_eq!(threshold(&value), want, "{value}");
+        }
+    }
 }
