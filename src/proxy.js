@@ -103,7 +103,8 @@ function evaluateRateLimit(identifier, maxRequests, windowMs) {
 
 function applyApiRateLimit(request) {
     const path = request.nextUrl.pathname;
-    if (!path.startsWith('/api') || path === '/api/health' || request.method === 'OPTIONS') {
+    // /api/internal is the Rust server calling over loopback, keyed; every admin write makes one such call.
+    if (!path.startsWith('/api') || path === '/api/health' || path.startsWith('/api/internal/') || request.method === 'OPTIONS') {
         return null;
     }
 
