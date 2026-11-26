@@ -1,0 +1,177 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 480" width="880" height="480" role="img" aria-label="Aiyu Performance Overview: Rust + SQLite vs Next.js + PostgreSQL on a 1 GB VPS">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0d1117"/>
+      <stop offset="100%" stop-color="#111827"/>
+    </linearGradient>
+    <linearGradient id="nextArea" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#94a3b8" stop-opacity="0.24"/>
+      <stop offset="100%" stop-color="#94a3b8" stop-opacity="0.02"/>
+    </linearGradient>
+    <linearGradient id="rustArea" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f97316" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#f97316" stop-opacity="0.03"/>
+    </linearGradient>
+    <style>
+      .title { font: 700 18px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; fill: #f8fafc; }
+      .sub { font: 400 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; fill: #94a3b8; }
+      .kpiVal { font: 800 22px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; fill: #f8fafc; }
+      .kpiLabel { font: 500 11.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; fill: #94a3b8; }
+      .kpiDelta { font: 700 11px ui-monospace, SFMono-Regular, Menlo, monospace; fill: #4ade80; }
+      .chartTitle { font: 700 14px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; fill: #e2e8f0; }
+      .axis { font: 400 11px ui-monospace, SFMono-Regular, Menlo, monospace; fill: #64748b; }
+      .limit { font: 700 11px ui-monospace, SFMono-Regular, Menlo, monospace; fill: #f87171; }
+      .ptOld { font: 600 11px ui-monospace, SFMono-Regular, Menlo, monospace; fill: #cbd5e1; }
+      .ptNew { font: 700 11px ui-monospace, SFMono-Regular, Menlo, monospace; fill: #fdba74; }
+      .legend { font: 600 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; fill: #cbd5e1; }
+    </style>
+  </defs>
+
+  <!-- Outer Card -->
+  <rect width="880" height="480" rx="14" fill="url(#bg)" stroke="#1e293b" stroke-width="1.5"/>
+
+  <!-- Header -->
+  <text x="28" y="34" class="title">Built for a 1 GB VPS — Rust + SQLite Production Benchmark</text>
+  <text x="28" y="53" class="sub">Fresh production Docker images · identical 80 MB backup dataset · sequential 5x full export stress test</text>
+
+  <!-- 4 KPI Cards (y=70..142) -->
+  <!-- Card 1 -->
+  <rect x="28" y="70" width="194" height="72" rx="10" fill="#161b22" stroke="#1e293b"/>
+  <text x="44" y="92" class="kpiLabel">Idle Memory</text>
+  <text x="44" y="122" class="kpiVal">21 MB</text>
+  <rect x="148" y="104" width="60" height="20" rx="10" fill="#14532d" stroke="#22c55e" stroke-opacity="0.4"/>
+  <text x="178" y="118" class="kpiDelta" text-anchor="middle">-93%</text>
+
+  <!-- Card 2 -->
+  <rect x="238" y="70" width="194" height="72" rx="10" fill="#161b22" stroke="#1e293b"/>
+  <text x="254" y="92" class="kpiLabel">Home Latency (p50)</text>
+  <text x="254" y="122" class="kpiVal">6.1 ms</text>
+  <rect x="352" y="104" width="66" height="20" rx="10" fill="#14532d" stroke="#22c55e" stroke-opacity="0.4"/>
+  <text x="385" y="118" class="kpiDelta" text-anchor="middle">6.8x</text>
+
+  <!-- Card 3 -->
+  <rect x="448" y="70" width="194" height="72" rx="10" fill="#161b22" stroke="#1e293b"/>
+  <text x="464" y="92" class="kpiLabel">Docker Stack Image</text>
+  <text x="464" y="122" class="kpiVal">213 MB</text>
+  <rect x="568" y="104" width="60" height="20" rx="10" fill="#14532d" stroke="#22c55e" stroke-opacity="0.4"/>
+  <text x="598" y="118" class="kpiDelta" text-anchor="middle">-74%</text>
+
+  <!-- Card 4 -->
+  <rect x="658" y="70" width="194" height="72" rx="10" fill="#161b22" stroke="#1e293b"/>
+  <text x="674" y="92" class="kpiLabel">80 MB Backup Export</text>
+  <text x="674" y="122" class="kpiVal">0.81 s</text>
+  <rect x="772" y="104" width="66" height="20" rx="10" fill="#14532d" stroke="#22c55e" stroke-opacity="0.4"/>
+  <text x="805" y="118" class="kpiDelta" text-anchor="middle">3.4x</text>
+
+  <!-- Line Chart Panel -->
+  <rect x="28" y="160" width="824" height="296" rx="10" fill="#161b22" stroke="#1e293b"/>
+  <text x="48" y="186" class="chartTitle">Total Stack Memory Under Load (MB)</text>
+
+  <!-- Legend -->
+  <line x1="450" y1="181" x2="472" y2="181" stroke="#94a3b8" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="461" cy="181" r="3.5" fill="#94a3b8"/>
+  <text x="480" y="185" class="legend">Before (Next.js + Postgres)</text>
+
+  <line x1="668" y1="181" x2="690" y2="181" stroke="#f97316" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="679" cy="181" r="3.5" fill="#f97316"/>
+  <text x="698" y="185" class="legend">Now (Rust + SQLite)</text>
+
+  <!-- Plot coordinates:
+       y: 0 MB = 418, 1100 MB = 204  (height = 214 px -> 0.194545 px/MB)
+       y(val) = 418 - val * 0.194545
+       x: 8 points from x=96 to x=810 (step = 102)
+          0: Idle (96)
+          1: Warmup (198)
+          2: Backup 1 (300)
+          3: Backup 2 (402)
+          4: Backup 3 (504)
+          5: Backup 4 (606)
+          6: Backup 5 (708)
+          7: +5s Settle (810)
+  -->
+
+  <!-- Horizontal Gridlines -->
+  <g stroke="#1e293b" stroke-width="1">
+    <line x1="88" y1="418" x2="824" y2="418"/>
+    <line x1="88" y1="369" x2="824" y2="369"/>
+    <line x1="88" y1="321" x2="824" y2="321"/>
+    <line x1="88" y1="272" x2="824" y2="272"/>
+    <line x1="88" y1="223" x2="824" y2="223"/>
+  </g>
+  <g class="axis" text-anchor="end">
+    <text x="80" y="422">0</text>
+    <text x="80" y="373">250</text>
+    <text x="80" y="325">500</text>
+    <text x="80" y="276">750</text>
+    <text x="80" y="227">1000</text>
+  </g>
+
+  <!-- 1 GB VPS Limit Line (1024 MB -> y = 218.8) -->
+  <line x1="88" y1="219" x2="824" y2="219" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="6,5"/>
+  <text x="820" y="212" class="limit" text-anchor="end">1 GB VPS RAM Limit (1024 MB)</text>
+
+  <!-- Before (Next.js + ~109 MB Postgres stack):
+       Idle: 390 -> y=342.1
+       Warmup: 636 -> y=294.3
+       B1: 688 -> y=284.2
+       B2: 704 -> y=281.0
+       B3: 713 -> y=279.3
+       B4: 716 -> y=278.7
+       B5: 721 -> y=277.7
+       Settle: 722 -> y=277.5
+  -->
+  <polygon points="96,418 96,342 198,294 300,284 402,281 504,279 606,279 708,278 810,278 810,418" fill="url(#nextArea)"/>
+  <polyline points="96,342 198,294 300,284 402,281 504,279 606,279 708,278 810,278" fill="none" stroke="#94a3b8" stroke-width="2.75" stroke-linejoin="round"/>
+  <g fill="#cbd5e1">
+    <circle cx="96" cy="342" r="4"/>
+    <circle cx="198" cy="294" r="4"/>
+    <circle cx="300" cy="284" r="4"/>
+    <circle cx="402" cy="281" r="4"/>
+    <circle cx="504" cy="279" r="4"/>
+    <circle cx="606" cy="279" r="4"/>
+    <circle cx="708" cy="278" r="4"/>
+    <circle cx="810" cy="278" r="4"/>
+  </g>
+  <text x="96" y="332" class="ptOld" text-anchor="middle">390 MB</text>
+  <text x="198" y="284" class="ptOld" text-anchor="middle">636 MB</text>
+  <text x="504" y="269" class="ptOld" text-anchor="middle">713 MB</text>
+  <text x="806" y="268" class="ptOld" text-anchor="end">722 MB</text>
+
+  <!-- Now (Rust + SQLite self-contained):
+       Idle: 21 -> y=413.9
+       Warmup: 46 -> y=409.1
+       B1: 43 -> y=409.6
+       B2: 43 -> y=409.6
+       B3: 47 -> y=408.9
+       B4: 47 -> y=408.9
+       B5: 51 -> y=408.1
+       Settle: 51 -> y=408.1
+  -->
+  <polygon points="96,418 96,414 198,409 300,410 402,410 504,409 606,409 708,408 810,408 810,418" fill="url(#rustArea)"/>
+  <polyline points="96,414 198,409 300,410 402,410 504,409 606,409 708,408 810,408" fill="none" stroke="#f97316" stroke-width="3" stroke-linejoin="round"/>
+  <g fill="#fb923c">
+    <circle cx="96" cy="414" r="4"/>
+    <circle cx="198" cy="409" r="4"/>
+    <circle cx="300" cy="410" r="4"/>
+    <circle cx="402" cy="410" r="4"/>
+    <circle cx="504" cy="409" r="4"/>
+    <circle cx="606" cy="409" r="4"/>
+    <circle cx="708" cy="408" r="4"/>
+    <circle cx="810" cy="408" r="4"/>
+  </g>
+  <text x="96" y="403" class="ptNew" text-anchor="middle">21 MB</text>
+  <text x="198" y="399" class="ptNew" text-anchor="middle">46 MB</text>
+  <text x="806" y="398" class="ptNew" text-anchor="end">51 MB</text>
+
+  <!-- X Axis Labels -->
+  <g class="axis" text-anchor="middle">
+    <text x="96" y="438">Idle</text>
+    <text x="198" y="438">Warmup</text>
+    <text x="300" y="438">Backup 1</text>
+    <text x="402" y="438">Backup 2</text>
+    <text x="504" y="438">Backup 3</text>
+    <text x="606" y="438">Backup 4</text>
+    <text x="708" y="438">Backup 5</text>
+    <text x="810" y="438">+5s Settle</text>
+  </g>
+</svg>

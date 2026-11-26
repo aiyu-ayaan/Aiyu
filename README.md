@@ -1,13 +1,14 @@
 # 🌟 Aiyu — Developer Portfolio & CMS
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Rust](https://img.shields.io/badge/Rust-Axum-000000?logo=rust)](https://www.rust-lang.org/)
-[![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)](https://vite.dev/)
-[![React](https://img.shields.io/badge/React-19-blue?logo=react)](https://reactjs.org/)
-[![SQLite](https://img.shields.io/badge/SQLite-WAL%20%2B%20FTS5-003B57?logo=sqlite&logoColor=white)](https://www.sqlite.org/)
-[![Docker](https://img.shields.io/badge/Docker-213MB-2496ED?logo=docker)](https://www.docker.com/)
-[![Documentation](https://img.shields.io/badge/Wiki-Documentation-blue?logo=github)](https://github.com/aiyu-ayaan/Aiyu/wiki)
-[![wakatime](https://wakatime.com/badge/github/aiyu-ayaan/Aiyu.svg)](https://wakatime.com/badge/github/aiyu-ayaan/Aiyu)
+[![Rust](https://img.shields.io/badge/Rust-Axum%200.8-DEA584?style=for-the-badge&logo=rust&logoColor=black)](https://www.rust-lang.org/)
+[![Vite](https://img.shields.io/badge/Vite-8-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vite.dev/)
+[![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
+[![SQLite](https://img.shields.io/badge/SQLite-WAL%20%2B%20FTS5-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://www.sqlite.org/)
+[![Docker](https://img.shields.io/badge/Docker-213MB-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-F7DF1E?style=for-the-badge)](https://opensource.org/licenses/MIT)
+[![Wiki](https://img.shields.io/badge/Docs-Wiki-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/aiyu-ayaan/Aiyu/wiki)
+[![wakatime](https://wakatime.com/badge/github/aiyu-ayaan/Aiyu.svg?style=for-the-badge)](https://wakatime.com/badge/github/aiyu-ayaan/Aiyu)
 
 ![home](public/screenshots/desktop-dark-home.png)
 
@@ -32,29 +33,13 @@ flowchart LR
 
 ---
 
-## ⚡ Performance (`v6.1.0` Next.js + Postgres → `master` Rust + SQLite)
+## ⚡ Performance
 
-Measured on fresh `--no-cache` production Docker images with an identical 80 MB real backup (`scripts/perf/bench.mjs --backups 5`). See [development/benchmark.md](development/benchmark.md) for the full report.
+Engineered to run comfortably on a **1 GB VPS** with zero external database. Measured on fresh `--no-cache` production Docker builds with an identical 80 MB backup ([full benchmark report](development/benchmark.md)):
 
-```mermaid
-xychart-beta
-    title "Memory Footprint (MB) — Lower is Better"
-    x-axis ["Idle", "After Warmup", "After 5x Backups", "Backup Restore"]
-    y-axis "RAM (MB)" 0 --> 950
-    bar "v6.1.0 (Next.js + Postgres)" [282, 528, 722, 908]
-    bar "master (Rust + SQLite)" [21, 46, 51, 98]
-```
+![Aiyu Performance Overview](docs/images/benchmark-overview.svg)
 
-```mermaid
-xychart-beta
-    title "Public Route p50 Latency (ms) — Lower is Better"
-    x-axis ["/", "/about-me", "/blogs", "/projects", "/gallery", "/ai"]
-    y-axis "p50 (ms)" 0 --> 220
-    bar "v6.1.0 (Next.js)" [41.7, 23.8, 205.9, 37.8, 39.5, 57.8]
-    bar "master (Rust)" [6.1, 2.0, 45.9, 3.8, 2.9, 17.3]
-```
-
-| Metric | `v6.1.0` (Next.js + Postgres) | `master` (Rust + SQLite) | Improvement |
+| Metric | Before (Next.js + Postgres) | Now (Rust + SQLite) | Improvement |
 |---|---:|---:|---:|
 | Docker App Image | 546 MB (+ ~275 MB Postgres) | **213 MB** (self-contained) | **-61%** (-74% stack) |
 | Idle / After 5x Backups RSS | 282 MB / 613 MB (+ 109 MB pg) | **21 MB / 51 MB** | **-93% / -92%** |
