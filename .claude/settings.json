@@ -1,8 +1,4 @@
 {
-  "enabledPlugins": {
-    "brag@brag": true,
-    "ponytail@ponytail": true
-  },
   "permissions": {
     "allow": [
       "mcp__codegraph__*"
@@ -19,5 +15,10 @@
         ]
       }
     ]
+  },
+  "enabledPlugins": {
+    "brag@brag": true,
+    "ponytail@ponytail": true,
+    "seo-audit-kit@anthropic-plugin-directory": true
   }
 }
