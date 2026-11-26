@@ -3,13 +3,12 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { FaEye, FaEyeSlash, FaFloppyDisk, FaLink, FaPenToSquare, FaPlus, FaSpinner, FaTrashCan } from 'react-icons/fa6';
 import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
-import Toast from '@/app/components/admin/Toast';
 import { Badge, EmptyState, Field, Loading, PageHeader, Panel, Stat } from '@/app/components/admin/ui';
 import { getIconByName } from '@/lib/icons';
 import '@/app/styles/admin-structure.css';
 
 export default function AdminFooter() {
-    const { confirm } = useAdminFeedback();
+    const { confirm, toast } = useAdminFeedback();
     const [socials, setSocials] = useState([]);
     const [loading, setLoading] = useState(true);
     const [config, setConfig] = useState({
@@ -18,12 +17,7 @@ export default function AdminFooter() {
         showWorkStatus: true,
     });
     const [saving, setSaving] = useState(false);
-    const [notification, setNotification] = useState(null);
-
-    const showNotification = (success, message) => {
-        setNotification({ success, message });
-        setTimeout(() => setNotification(null), 3000);
-    };
+    const showNotification = (success, message) => toast(message, { success });
 
     useEffect(() => {
         fetchSocials();
@@ -129,7 +123,7 @@ export default function AdminFooter() {
     const hiddenCount = socials.length - visibleCount;
 
     return (
-        <div className="adm-page">
+        <div className="adm-page adm-structure">
             <PageHeader
                 command="ls"
                 title="Footer and social links"
@@ -323,8 +317,6 @@ export default function AdminFooter() {
                     </aside>
                 </div>
             )}
-
-            <Toast notification={notification} />
         </div>
     );
 }

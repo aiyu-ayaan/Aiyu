@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { FaFloppyDisk, FaMoon, FaPlus, FaSun } from 'react-icons/fa6';
 import ThemePreviewCard from '@/app/components/admin/ThemePreviewCard';
 import ThemeEditor from '@/app/components/admin/ThemeEditor';
-import Toast from '@/app/components/admin/Toast';
 import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
 import { Badge, EmptyState, Field, Loading, PageHeader, Panel, Stat } from '@/app/components/admin/ui';
 import '@/app/styles/admin-structure.css';
@@ -21,7 +20,7 @@ const ROUTE_TARGETS = [
 ];
 
 export default function AdminThemesPage() {
-    const { confirm } = useAdminFeedback();
+    const { confirm, toast } = useAdminFeedback();
     const [themes, setThemes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeTheme, setActiveTheme] = useState(null);
@@ -31,12 +30,7 @@ export default function AdminThemesPage() {
     const [error, setError] = useState(null);
     const [perPageEnabled, setPerPageEnabled] = useState(false);
     const [perPageConfig, setPerPageConfig] = useState({});
-    const [toast, setToast] = useState(null);
-
-    const showToast = (message, success = true) => {
-        setToast({ message, success });
-        setTimeout(() => setToast(null), 3000);
-    };
+    const showToast = (message, success = true) => toast(message, { success });
 
     useEffect(() => {
         fetchThemes();
@@ -204,7 +198,7 @@ export default function AdminThemesPage() {
     const overrideCount = Object.values(perPageConfig).filter(Boolean).length;
 
     return (
-        <div className="adm-page">
+        <div className="adm-page adm-structure">
             <PageHeader
                 command="theme"
                 title="Themes"
@@ -430,8 +424,6 @@ export default function AdminThemesPage() {
                     }}
                 />
             )}
-
-            <Toast notification={toast} onClose={() => setToast(null)} />
         </div>
     );
 }

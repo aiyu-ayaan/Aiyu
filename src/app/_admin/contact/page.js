@@ -14,17 +14,15 @@ import {
     FaSpinner,
     FaTrashCan,
 } from 'react-icons/fa6';
-import Toast from '@/app/components/admin/Toast';
 import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
 import { Badge, EmptyState, Field, Loading, PageHeader, Panel, Stat } from '@/app/components/admin/ui';
 import '@/app/styles/admin-structure.css';
 
 export default function ContactAdminPage() {
-    const { confirm } = useAdminFeedback();
+    const { confirm, toast } = useAdminFeedback();
     const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [notification, setNotification] = useState(null);
 
     const [config, setConfig] = useState({
         contactLocation: '',
@@ -47,10 +45,7 @@ export default function ContactAdminPage() {
     const [notifyOnContact, setNotifyOnContact] = useState(false);
     const [activeChannels, setActiveChannels] = useState([]);
 
-    const showNotification = (success, message) => {
-        setNotification({ success, message });
-        setTimeout(() => setNotification(null), 3000);
-    };
+    const showNotification = (success, message) => toast(message, { success });
 
     const fetchNotificationStatus = async () => {
         try {
@@ -200,7 +195,7 @@ export default function ContactAdminPage() {
     const pushReady = Boolean(notificationConfigured && notifyOnContact);
 
     return (
-        <div className="adm-page">
+        <div className="adm-page adm-structure">
             <PageHeader
                 command="mail"
                 title="Contact and messages"
@@ -247,7 +242,7 @@ export default function ContactAdminPage() {
                                         onChange={(e) => setSearchQuery(e.target.value)}
                                         placeholder="Filter messages…"
                                         aria-label="Filter messages"
-                                        className="adm-input !min-h-9 sm:w-56"
+                                        className="adm-input !min-h-11 sm:w-56"
                                     />
                                 )}
                                 <Badge tone={messages.length > 0 ? 'info' : undefined}>
@@ -275,9 +270,8 @@ export default function ContactAdminPage() {
                         ) : (
                             <div className="adm-inbox">
                                 <ul
-                                    role="listbox"
                                     aria-label="Contact messages"
-                                    className="adm-list adm-inbox-list max-h-[32rem] overflow-y-auto"
+                                    className="adm-list adm-inbox-list max-h-72 overflow-y-auto lg:max-h-[32rem]"
                                 >
                                     {filteredMessages.map((msg) => {
                                         const isSelected = activeMessage?._id === msg._id;
@@ -285,8 +279,7 @@ export default function ContactAdminPage() {
                                             <li key={msg._id}>
                                                 <button
                                                     type="button"
-                                                    role="option"
-                                                    aria-selected={isSelected}
+                                                    aria-pressed={isSelected}
                                                     onClick={() => setSelectedId(msg._id)}
                                                     className="adm-inbox-item"
                                                 >
@@ -311,11 +304,14 @@ export default function ContactAdminPage() {
                                 </ul>
 
                                 {activeMessage && (
-                                    <div className="flex flex-col justify-between p-4 sm:p-6">
+                                    <article
+                                        aria-labelledby="selected-message-title"
+                                        className="adm-inbox-detail flex flex-col justify-between p-4 sm:p-6"
+                                    >
                                         <div>
                                             <div className="flex flex-wrap items-start justify-between gap-4 border-b border-[var(--hairline)] pb-4">
                                                 <div className="min-w-0">
-                                                    <h3 className="text-lg font-semibold text-[var(--text-bright)]">
+                                                    <h3 id="selected-message-title" className="text-lg font-semibold text-[var(--text-bright)]">
                                                         {activeMessage.name}
                                                     </h3>
                                                     <p className="mt-0.5 flex flex-wrap items-center gap-2 font-mono text-xs text-[var(--text-secondary)]">
@@ -346,11 +342,11 @@ export default function ContactAdminPage() {
                                                 </div>
                                             </div>
 
-                                            <div className="mt-4 rounded-[10px] border border-[var(--hairline)] bg-[var(--bg-secondary)] p-4 text-sm leading-relaxed text-[var(--text-primary)] whitespace-pre-wrap">
+                                            <div className="adm-inbox-message mt-4 rounded-[10px] border border-[var(--hairline)] bg-[var(--bg-secondary)] p-4 text-sm leading-relaxed text-[var(--text-primary)] whitespace-pre-wrap">
                                                 {activeMessage.message}
                                             </div>
                                         </div>
-                                    </div>
+                                    </article>
                                 )}
                             </div>
                         )}
@@ -565,8 +561,6 @@ export default function ContactAdminPage() {
                     </form>
                 </>
             )}
-
-            <Toast notification={notification} />
         </div>
     );
 }

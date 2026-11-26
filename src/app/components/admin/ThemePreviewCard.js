@@ -31,6 +31,8 @@ export default function ThemePreviewCard({
         >
             {/* Intentional theme colour preview window */}
             <div
+                role="img"
+                aria-label={`${theme.name} ${variant} palette preview`}
                 className="relative h-32 border-b border-[var(--hairline)] p-3.5"
                 style={{ backgroundColor: colors?.backgrounds?.primary }}
             >
@@ -95,12 +97,13 @@ export default function ThemePreviewCard({
                 <div>
                     <p className="adm-help mb-1.5">Palette swatches</p>
                     <div className="flex flex-wrap items-center gap-1.5">
-                        {swatches.map((swatch, i) => (
+                        {swatches.map((swatch) => (
                             <span
-                                key={i}
+                                key={swatch.label}
+                                role="img"
+                                aria-label={`${swatch.label}: ${swatch.value}`}
                                 className="h-6 w-6 rounded-full border border-[var(--hairline-strong)]"
                                 style={{ backgroundColor: swatch.value }}
-                                title={`${swatch.label}: ${swatch.value}`}
                             />
                         ))}
                     </div>

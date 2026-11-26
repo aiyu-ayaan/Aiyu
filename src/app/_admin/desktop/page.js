@@ -8,7 +8,7 @@ import {
     FaRotateLeft,
     FaSpinner,
 } from 'react-icons/fa6';
-import Toast from '@/app/components/admin/Toast';
+import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
 import { APP_VERSION } from '@/lib/version';
 import { Badge, Field, Loading, PageHeader, Panel } from '@/app/components/admin/ui';
 import '@/app/styles/admin-structure.css';
@@ -40,17 +40,13 @@ const DEFAULT_BLOOM_GRADIENT =
     'radial-gradient(140% 120% at 28% 18%, #58a6ff 0%, #2f7be0 28%, #1e4fb0 52%, #122a7a 74%, #0a1550 100%)';
 
 export default function AdminDesktopPage() {
+    const { toast } = useAdminFeedback();
     const [wallpaper, setWallpaper] = useState('');
     const [deviceName, setDeviceName] = useState('AiyuOS');
     const [osVersion, setOsVersion] = useState(APP_VERSION);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [toast, setToast] = useState(null);
-
-    const showToast = (message, success = true) => {
-        setToast({ message, success });
-        setTimeout(() => setToast(null), 3000);
-    };
+    const showToast = (message, success = true) => toast(message, { success });
 
     useEffect(() => {
         fetchConfig();
@@ -102,7 +98,7 @@ export default function AdminDesktopPage() {
     };
 
     return (
-        <div className="adm-page">
+        <div className="adm-page adm-structure">
             <PageHeader
                 command="startx"
                 title="Desktop environment"
@@ -143,7 +139,8 @@ export default function AdminDesktopPage() {
                                     help="Provide an image URL or /uploads/ asset path. Leave empty to use the default bloom gradient."
                                 >
                                     <input
-                                        type="url"
+                                        type="text"
+                                        inputMode="url"
                                         value={wallpaper}
                                         onChange={(e) => setWallpaper(e.target.value)}
                                         placeholder="https://images.unsplash.com/… or leave blank"
@@ -151,9 +148,9 @@ export default function AdminDesktopPage() {
                                     />
                                 </Field>
 
-                                <div>
-                                    <p className="adm-label mb-2">Preset wallpapers</p>
-                                    <div className="adm-wallpaper-grid">
+                                <fieldset className="min-w-0">
+                                    <legend className="adm-label mb-2">Preset wallpapers</legend>
+                                    <div role="group" aria-label="Preset wallpapers" className="adm-wallpaper-grid">
                                         {PRESET_WALLPAPERS.map((preset) => {
                                             const isSelected = wallpaper === preset.url;
                                             return (
@@ -173,7 +170,7 @@ export default function AdminDesktopPage() {
                                             );
                                         })}
                                     </div>
-                                </div>
+                                </fieldset>
                             </div>
                         </Panel>
 
@@ -270,8 +267,6 @@ export default function AdminDesktopPage() {
                     </aside>
                 </form>
             )}
-
-            <Toast notification={toast} onClose={() => setToast(null)} />
         </div>
     );
 }

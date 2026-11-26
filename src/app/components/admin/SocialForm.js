@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { FaFloppyDisk, FaLink, FaSpinner } from 'react-icons/fa6';
-import Toast from './Toast';
+import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
 import { Badge, Field, Panel } from './ui';
 import { getIconByName } from '@/lib/icons';
 import '@/app/styles/admin-structure.css';
@@ -18,6 +18,7 @@ const KNOWN_ICONS = [
 
 const SocialForm = ({ initialData, isEdit = false }) => {
     const router = useRouter();
+    const { toast } = useAdminFeedback();
     const [formData, setFormData] = useState({
         name: '',
         url: '',
@@ -26,7 +27,6 @@ const SocialForm = ({ initialData, isEdit = false }) => {
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const [notification, setNotification] = useState(null);
 
     useEffect(() => {
         if (initialData) {
@@ -39,10 +39,7 @@ const SocialForm = ({ initialData, isEdit = false }) => {
         setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
-    const showNotification = (success, message) => {
-        setNotification({ success, message });
-        setTimeout(() => setNotification(null), 3000);
-    };
+    const showNotification = (success, message) => toast(message, { success });
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -83,7 +80,7 @@ const SocialForm = ({ initialData, isEdit = false }) => {
     const PreviewIcon = getIconByName(formData.iconName) || FaLink;
 
     return (
-        <form onSubmit={handleSubmit} className="adm-split">
+        <form onSubmit={handleSubmit} className="adm-split adm-structure-form">
             <div className="adm-stack">
                 {error && (
                     <div role="alert" className="adm-notice adm-notice-error">
@@ -212,7 +209,6 @@ const SocialForm = ({ initialData, isEdit = false }) => {
                 </Panel>
             </aside>
 
-            <Toast notification={notification} />
         </form>
     );
 };

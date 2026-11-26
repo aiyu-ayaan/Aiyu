@@ -2,15 +2,15 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { FaFloppyDisk, FaPlus, FaSpinner, FaTrashCan } from 'react-icons/fa6';
-import Toast from './Toast';
+import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
 import { Badge, EmptyState, Field, Loading, Panel } from './ui';
 import '@/app/styles/admin-structure.css';
 
 export default function TerminalForm() {
     const router = useRouter();
+    const { toast } = useAdminFeedback();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [toast, setToast] = useState(null);
     const [formData, setFormData] = useState({
         username: 'guest',
         promptSymbol: '➜',
@@ -90,10 +90,7 @@ export default function TerminalForm() {
         }
     };
 
-    const showToast = (success, message) => {
-        setToast({ success, message });
-        setTimeout(() => setToast(null), 3000);
-    };
+    const showToast = (success, message) => toast(message, { success });
 
     if (loading) {
         return (
@@ -281,13 +278,6 @@ export default function TerminalForm() {
                     </pre>
                 </Panel>
             </aside>
-
-            {toast && (
-                <Toast
-                    notification={toast}
-                    onClose={() => setToast(null)}
-                />
-            )}
         </form>
     );
 }

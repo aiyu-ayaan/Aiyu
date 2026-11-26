@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     FaFloppyDisk,
     FaMoon,
@@ -8,7 +8,7 @@ import {
     FaWandMagicSparkles,
     FaXmark,
 } from 'react-icons/fa6';
-import Toast from './Toast';
+import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
 import { Field, Panel } from './ui';
 import '@/app/styles/admin-structure.css';
 
@@ -127,18 +127,27 @@ function ColorInput({ label, value, onChange, category, colorKey, activeTab }) {
 }
 
 export default function ThemeEditor({ theme, onSave, onCancel }) {
+    const { toast } = useAdminFeedback();
+    const dialogRef = useRef(null);
+    const nameInputRef = useRef(null);
     const [name, setName] = useState(theme?.name || '');
     const [description, setDescription] = useState(theme?.description || '');
     const [activeTab, setActiveTab] = useState('light');
     const [lightVariant, setLightVariant] = useState(theme?.variants?.light || defaultVariant);
     const [darkVariant, setDarkVariant] = useState(theme?.variants?.dark || defaultVariant);
-    const [notification, setNotification] = useState(null);
     const [aiEnabled, setAiEnabled] = useState(false);
     const [aiGenerating, setAiGenerating] = useState(false);
     const [aiPrompt, setAiPrompt] = useState('');
+    const [saving, setSaving] = useState(false);
 
     useEffect(() => {
         checkAiConfig();
+    }, []);
+
+    useEffect(() => {
+        const previouslyFocused = document.activeElement;
+        nameInputRef.current?.focus();
+        return () => previouslyFocused?.focus?.();
     }, []);
 
     const checkAiConfig = async () => {
@@ -203,10 +212,7 @@ export default function ThemeEditor({ theme, onSave, onCancel }) {
         }
     };
 
-    const showNotification = (success, message) => {
-        setNotification({ success, message });
-        setTimeout(() => setNotification(null), 3000);
-    };
+    const showNotification = (success, message) => toast(message, { success });
 
     const currentVariant = activeTab === 'light' ? lightVariant : darkVariant;
     const setCurrentVariant = activeTab === 'light' ? setLightVariant : setDarkVariant;
@@ -221,20 +227,50 @@ export default function ThemeEditor({ theme, onSave, onCancel }) {
         }));
     };
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         if (!name.trim()) {
             showNotification(false, 'Please enter a theme name');
+            nameInputRef.current?.focus();
             return;
         }
 
-        onSave({
-            name: name.trim(),
-            description: description.trim(),
-            variants: {
-                light: lightVariant,
-                dark: darkVariant,
-            },
-        });
+        setSaving(true);
+        try {
+            await onSave({
+                name: name.trim(),
+                description: description.trim(),
+                variants: {
+                    light: lightVariant,
+                    dark: darkVariant,
+                },
+            });
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleDialogKeyDown = (event) => {
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            onCancel();
+            return;
+        }
+        if (event.key !== 'Tab') return;
+
+        const focusable = dialogRef.current?.querySelectorAll(
+            'a[href], button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])'
+        );
+        if (!focusable?.length) return;
+
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+            event.preventDefault();
+            last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault();
+            first.focus();
+        }
     };
 
     return (
@@ -243,8 +279,15 @@ export default function ThemeEditor({ theme, onSave, onCancel }) {
             aria-modal="true"
             aria-labelledby="theme-editor-title"
             className="adm-overlay"
+            onMouseDown={(event) => {
+                if (event.target === event.currentTarget) onCancel();
+            }}
         >
-            <div className="adm-dialog adm-dialog-framed adm-dialog-wide">
+            <div
+                ref={dialogRef}
+                className="adm-dialog adm-dialog-framed adm-dialog-wide"
+                onKeyDown={handleDialogKeyDown}
+            >
                 <header className="adm-dialog-head">
                     <div>
                         <h2 id="theme-editor-title" className="text-lg font-semibold text-[var(--text-bright)]">
@@ -268,6 +311,7 @@ export default function ThemeEditor({ theme, onSave, onCancel }) {
                     <div className="grid gap-4 md:grid-cols-2">
                         <Field label="Theme name">
                             <input
+                                ref={nameInputRef}
                                 type="text"
                                 placeholder="Solarized Ocean"
                                 value={name}
@@ -318,11 +362,10 @@ export default function ThemeEditor({ theme, onSave, onCancel }) {
                     )}
 
                     <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[var(--hairline)] pb-3">
-                        <div role="tablist" aria-label="Theme variant" className="adm-tabs !border-b-0">
+                        <div role="group" aria-label="Theme variant" className="adm-tabs !border-b-0">
                             <button
                                 type="button"
-                                role="tab"
-                                aria-selected={activeTab === 'light'}
+                                aria-pressed={activeTab === 'light'}
                                 onClick={() => setActiveTab('light')}
                                 className="adm-tab"
                             >
@@ -330,8 +373,7 @@ export default function ThemeEditor({ theme, onSave, onCancel }) {
                             </button>
                             <button
                                 type="button"
-                                role="tab"
-                                aria-selected={activeTab === 'dark'}
+                                aria-pressed={activeTab === 'dark'}
                                 onClick={() => setActiveTab('dark')}
                                 className="adm-tab"
                             >
@@ -382,14 +424,17 @@ export default function ThemeEditor({ theme, onSave, onCancel }) {
                     <button type="button" onClick={onCancel} className="adm-btn">
                         Cancel
                     </button>
-                    <button type="button" onClick={handleSubmit} className="adm-btn adm-btn-primary">
-                        <FaFloppyDisk aria-hidden="true" />
-                        {theme ? 'Save changes' : 'Create theme'}
+                    <button
+                        type="button"
+                        onClick={handleSubmit}
+                        disabled={saving}
+                        className="adm-btn adm-btn-primary"
+                    >
+                        {saving ? <FaSpinner className="animate-spin" aria-hidden="true" /> : <FaFloppyDisk aria-hidden="true" />}
+                        {saving ? 'Saving' : theme ? 'Save changes' : 'Create theme'}
                     </button>
                 </footer>
             </div>
-
-            <Toast notification={notification} />
         </div>
     );
 }

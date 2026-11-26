@@ -6,7 +6,7 @@ import '@/app/styles/admin-structure.css';
 
 export default function EditHeaderPage() {
     return (
-        <div className="adm-page">
+        <div className="adm-page adm-structure">
             <PageHeader
                 command="edit"
                 title="Header navigation"

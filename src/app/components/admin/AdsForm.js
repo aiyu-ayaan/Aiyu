@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { FaCircleCheck, FaCircleExclamation, FaFloppyDisk, FaSpinner } from 'react-icons/fa6';
-import Toast from './Toast';
+import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
 import { Badge, Field, Loading, Panel } from './ui';
 import '@/app/styles/admin-structure.css';
 
@@ -23,6 +23,7 @@ const AD_TYPES = [
 
 const AdsForm = () => {
     const router = useRouter();
+    const { toast } = useAdminFeedback();
     const [formData, setFormData] = useState({
         adsenseEnabled: false,
         clientId: '',
@@ -39,7 +40,6 @@ const AdsForm = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
-    const [notification, setNotification] = useState(null);
 
     useEffect(() => {
         fetchData();
@@ -94,10 +94,7 @@ const AdsForm = () => {
         }));
     };
 
-    const showNotification = (success, message) => {
-        setNotification({ success, message });
-        setTimeout(() => setNotification(null), 3000);
-    };
+    const showNotification = (success, message) => toast(message, { success });
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -240,15 +237,14 @@ const AdsForm = () => {
                 </Panel>
 
                 <Panel title="Placement slots">
-                    <div role="tablist" aria-label="Ad placements" className="adm-tabs mb-5">
+                    <div role="group" aria-label="Ad placements" className="adm-tabs mb-5">
                         {PLACEMENT_KEYS.map((key) => {
                             const slot = formData.placements[key];
                             return (
                                 <button
                                     key={key}
                                     type="button"
-                                    role="tab"
-                                    aria-selected={activeSlot === key}
+                                    aria-pressed={activeSlot === key}
                                     onClick={() => setActiveSlot(key)}
                                     className="adm-tab"
                                 >
@@ -304,7 +300,7 @@ const AdsForm = () => {
                                     </h3>
                                     <p className="adm-help">Configure format and slot identifier for this placement.</p>
                                 </div>
-                                <label className="adm-choice !min-h-9 !px-3 !py-1.5">
+                                <label className="adm-choice !min-h-11 !px-3 !py-1.5">
                                     <input
                                         type="checkbox"
                                         id={`enabled-${activeSlot}`}
@@ -454,8 +450,6 @@ const AdsForm = () => {
                     </ul>
                 </Panel>
             </aside>
-
-            <Toast notification={notification} />
         </form>
     );
 };

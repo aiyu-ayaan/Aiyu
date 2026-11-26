@@ -7,7 +7,7 @@ import '@/app/styles/admin-structure.css';
 
 export default function AdsPage() {
     return (
-        <div className="adm-page">
+        <div className="adm-page adm-structure">
             <PageHeader
                 command="ads"
                 title="AdSense configuration"

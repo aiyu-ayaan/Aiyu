@@ -6,7 +6,7 @@ import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, us
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { FaFloppyDisk, FaGripVertical, FaPlus, FaSpinner, FaTrashCan } from 'react-icons/fa6';
-import Toast from './Toast';
+import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
 import { Badge, EmptyState, Field, Loading, Panel } from './ui';
 import '@/app/styles/admin-structure.css';
 
@@ -71,7 +71,7 @@ function SortableNavRow({
             </Field>
 
             <div className="flex flex-wrap items-center gap-2 lg:pb-0.5">
-                <label className="adm-choice !min-h-10 !px-3 !py-1.5 text-xs">
+                <label className="adm-choice !min-h-11 !px-3 !py-1.5 text-xs">
                     <input
                         type="checkbox"
                         checked={link.visible !== false}
@@ -80,7 +80,7 @@ function SortableNavRow({
                     />
                     <span>Visible</span>
                 </label>
-                <label className="adm-choice !min-h-10 !px-3 !py-1.5 text-xs">
+                <label className="adm-choice !min-h-11 !px-3 !py-1.5 text-xs">
                     <input
                         type="checkbox"
                         checked={link.beta === true}
@@ -89,7 +89,7 @@ function SortableNavRow({
                     />
                     <span>Beta</span>
                 </label>
-                <label className="adm-choice !min-h-10 !px-3 !py-1.5 text-xs">
+                <label className="adm-choice !min-h-11 !px-3 !py-1.5 text-xs">
                     <input
                         type="checkbox"
                         checked={link.target === '_blank'}
@@ -116,6 +116,7 @@ function SortableNavRow({
 
 const HeaderForm = () => {
     const router = useRouter();
+    const { toast } = useAdminFeedback();
     const [formData, setFormData] = useState({
         navLinks: [],
         contactLink: { name: '', href: '' },
@@ -123,7 +124,6 @@ const HeaderForm = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
-    const [notification, setNotification] = useState(null);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -195,10 +195,7 @@ const HeaderForm = () => {
         });
     };
 
-    const showNotification = (success, message) => {
-        setNotification({ success, message });
-        setTimeout(() => setNotification(null), 3000);
-    };
+    const showNotification = (success, message) => toast(message, { success });
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -409,7 +406,6 @@ const HeaderForm = () => {
                 </Panel>
             </aside>
 
-            <Toast notification={notification} />
         </form>
     );
 };
