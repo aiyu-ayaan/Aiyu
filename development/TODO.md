@@ -9,8 +9,13 @@ Branch: `migrate/rust-vite`. Baseline and method: `development/docs/PERFORMANCE.
 Current plan (started 2026-11-27), one or more commits per stage, never pushed:
 1. DONE: Rust serves `public/`, `/uploads/*` and every old-address redirect (`server/src/site_static.rs`).
 2. DONE: no Next server any more (proxy, hooks, routes and their tests deleted); local tag `pg-baseline`.
-3. NEXT: SQLite schema, embedded migrations, Postgres copy tool, then the queries module by module; seed in Rust.
-4. Docker, healthcheck, compose, CI, docs without a Node runtime or Prisma.
+3. DONE: SQLite (`server/src/db.rs`, `server/migrations/`), seed in Rust (`server/src/seed.rs`).
+4. DONE: `aiyu-server import-postgres` (`development/docs/SQLITE_CUTOVER.md`). Checked on a copy of the local database
+   against the `pg-baseline` build: 20452 rows hash-equal; reads 738/762 (the rest: new session and audit ids, tie
+   order, request times, ports, and blog search, which returned nothing from this Postgres because its search trigger
+   is missing); writes 522/523 (one port in a URL); backups 19918 rows and 687 files equal, also after restoring the
+   Postgres build's backup into an empty SQLite site.
+5. NEXT: Docker, compose, CI, docs without a Node runtime or Prisma.
 
 Older notes:
 

@@ -15,7 +15,8 @@ fn main() -> anyhow::Result<()> {
             match std::env::args().nth(1).as_deref() {
                 None => run().await,
                 Some("healthcheck") => healthcheck().await,
-                Some(other) => anyhow::bail!("unknown command {other}: use none (serve) or healthcheck"),
+                Some("import-postgres") => import_postgres().await,
+                Some(other) => anyhow::bail!("unknown command {other}: use none (serve), healthcheck or import-postgres"),
             }
         })
 }
@@ -28,6 +29,25 @@ async fn healthcheck() -> anyhow::Result<()> {
     let client = reqwest::Client::builder().no_proxy().timeout(std::time::Duration::from_secs(5)).build()?;
     client.get(format!("http://127.0.0.1:{port}/api/health")).send().await?.error_for_status()?;
     Ok(())
+}
+
+/// Copies the Postgres database at `DATABASE_URL` into a new file at `DATABASE_PATH`.
+async fn import_postgres() -> anyhow::Result<()> {
+    let _ = dotenvy::dotenv();
+    #[cfg(feature = "pg-import")]
+    {
+        let source = std::env::var("DATABASE_URL").context("set DATABASE_URL to the Postgres database to copy")?;
+        let target = std::path::PathBuf::from(std::env::var("DATABASE_PATH").ok().filter(|v| !v.is_empty()).unwrap_or_else(|| "data/aiyu.db".into()));
+        let copied = aiyu_server::import_pg::run(&source, &target).await?;
+        for table in &copied {
+            println!("{:<20} {:>8} rows  {}", table.table, table.rows, table.hash);
+        }
+        let rows: usize = copied.iter().map(|t| t.rows).sum();
+        println!("Copied and verified {} tables, {rows} rows, into {}", copied.len(), target.display());
+        Ok(())
+    }
+    #[cfg(not(feature = "pg-import"))]
+    anyhow::bail!("this build has no Postgres support")
 }
 
 async fn run() -> anyhow::Result<()> {
@@ -75,8 +95,8 @@ async fn open_database(config: &Config) -> anyhow::Result<()> {
         let postgres = std::env::var("DATABASE_URL").is_ok_and(|u| u.starts_with("postgres"));
         anyhow::ensure!(
             !postgres || std::env::var("START_EMPTY").as_deref() == Ok("true"),
-            "no database at {}, but DATABASE_URL names a Postgres database. Set START_EMPTY=true \
-             to start a new, empty site.",
+            "no database at {}, but DATABASE_URL names a Postgres database. Copy it once with `aiyu-server import-postgres` \
+             (see development/docs/SQLITE_CUTOVER.md), or set START_EMPTY=true to start a new, empty site.",
             path.display()
         );
         if let Some(parent) = path.parent().filter(|p| !p.as_os_str().is_empty()) {

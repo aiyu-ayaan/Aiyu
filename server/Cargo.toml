@@ -43,6 +43,11 @@ libloading = "0.8"
 libc = "0.2"
 crc32fast = "1"
 
+[features]
+default = ["pg-import"]
+# `aiyu-server import-postgres`. Remove once every install has moved to SQLite: it only costs binary size.
+pg-import = ["sqlx/postgres"]
+
 [dev-dependencies]
 tower = { version = "0.5", features = ["util"] }
 http-body-util = "0.1"

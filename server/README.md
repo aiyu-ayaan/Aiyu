@@ -53,6 +53,7 @@ Search-engine pings run after the reply (`indexing.rs`) and never fail a write.
 | `web.rs`, `pages.rs`, `legal.rs`, `ai.rs` | pages and their data |
 | `api.rs`, `site_api.rs`, `github.rs` | read APIs |
 | `auth.rs`, `session.rs`, `crypto.rs`, `limit.rs`, `analytics.rs` | sign-in, session cookie, encrypted fields, rate limits, tracking |
+| `db.rs`, `migrations/`, `seed.rs`, `import_pg.rs` | SQLite, the schema, the defaults of a new site, the Postgres copy |
 | `write.rs`, `admin_site.rs`, `admin_content.rs`, `admin_blogs.rs`, `admin_legal.rs`, `admin_ai.rs` | writes |
 | `admin_settings.rs`, `admin_security.rs`, `admin_analytics.rs`, `seo.rs`, `geoip.rs`, `cron.rs`, `admin_crons.rs`, `cron_jobs.rs`, `cron_template.rs` | admin settings, sessions and audit, analytics, SEO settings, IP places, cron schedules, task runner and template previews |
 | `site_files.rs` | robots.txt, sitemap.xml, ads.txt and the markdown documents |
@@ -64,9 +65,9 @@ Search-engine pings run after the reply (`indexing.rs`) and never fail a write.
 | `mcp.rs` | the MCP endpoint: tools, resources, prompts |
 | `ai_core.rs`, `ai_modes.rs` | AI settings, provider calls, writing modes, captions, health analyzer |
 | `seo_admin.rs`, `indexing.rs` | SEO audit, crawl and fixer; Google Indexing API and automatic pings |
-| `db.rs`, `export.rs` | database pool and ids, backup zip |
+| `export.rs` | backup zip |
 
-`crypto.rs` and `session.rs` read values written by the Node code (encrypted DB fields, the `session` cookie).
+`crypto.rs` and `session.rs` read values written by the former Node code (encrypted DB fields, the `session` cookie).
 `tests/parity.rs` checks that against fixtures produced by Node.
 
 ## Run
@@ -81,7 +82,10 @@ pnpm server:test
 | Env | Default | |
 |---|---|---|
 | `JWT_SECRET` | required | signs the session cookie and encrypts stored secrets |
-| `DATABASE_URL` | required | Postgres (a `?schema=` parameter is ignored); pool of 3 |
+| `DATABASE_PATH` | `data/aiyu.db` | the SQLite database (WAL mode); created and migrated at startup |
+| `RUN_SEED` | `auto` | `auto` fills an empty database with the defaults, `force` replaces projects, apps, about, home, header and socials (destructive), `false` never seeds |
+| `DATABASE_URL` | unset | only for `import-postgres`; while it names Postgres, the server will not create a missing database |
+| `START_EMPTY` | unset | `true` creates a new database anyway |
 | `UPLOADS_DIR` | `public/uploads` | served at `/uploads/*`; files added to backups |
 | `PUBLIC_DIR` | `public` | static files served at the site root |
 | `WEB_DIR` | `web/dist` | the Vite build |
@@ -105,5 +109,7 @@ Reads `.env` from the working directory.
 
 ## Checks
 
-Until the switch to SQLite, `scripts/perf/api-parity.mjs` can compare this server with an older build on the same
-database (see the script's header). Browser tests, headless: `pnpm exec playwright test`.
+`pnpm server:test`, `pnpm test`, and the browser tests (headless): `pnpm exec playwright test`.
+
+Commands besides serving: `aiyu-server healthcheck` (exit 0 when the server answers) and
+`aiyu-server import-postgres` (`development/docs/SQLITE_CUTOVER.md`).

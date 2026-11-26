@@ -38,6 +38,8 @@ pub mod github_sync;
 pub mod health;
 pub mod heif;
 pub mod images;
+#[cfg(feature = "pg-import")]
+pub mod import_pg;
 pub mod indexing;
 pub mod pages;
 pub mod restore;
