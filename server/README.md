@@ -19,7 +19,7 @@ bodies such as backups never sit in memory.
 | AI Hub writes | skill categories, skills, recommendations, credits, prompts, `/api/ai/seed` |
 | Contact form | `/api/contact/message`: the public `POST` (with notifications and the n8n webhook), the admin `GET` and `DELETE` |
 | Notifications, previews | `/api/admin/notifications/test`, `/api/og-preview` (public hosts only, unlike Next) |
-| Admin settings | `/api/admin/{ads,social,notifications}`, `seo/config`, `blogs/token`, `mcp/{config,token}`, `crons/timezone`, `health/targets`, `analytics`, `security/*` |
+| Admin settings | `/api/admin/{ads,social,notifications}`, `seo/config`, `blogs/token`, `mcp/{config,token}`, `crons`, `crons/{id}`, `crons/{id}/run`, `crons/{env,logs,preview,timezone}`, `health/targets`, `analytics`, `security/*` |
 | Crawler and agent files | `robots.txt`, `sitemap.xml`, `ads.txt`, `auth.md`, `/docs/api`, `/docs/mcp` |
 | Uploads and storage | `/api/upload`, `/api/uploads/{file}`, `/api/admin/{images/upload,icons,storage,storage/migrate,storage/unreferenced,migrate-gallery}`. HEIC needs the system `libheif1` (loaded at run time) |
 | Health, resume, misc | `/api/admin/{health/metrics,health/uptime,health/uptime/check,purge-cache,resume,resume/compile,resume/publish,ai/logs,system-prompt}` |
@@ -55,7 +55,7 @@ SEO tools read through them) and queues search-engine pings. The call carries an
 | `api.rs`, `site_api.rs`, `github.rs` | read APIs |
 | `auth.rs`, `session.rs`, `crypto.rs`, `limit.rs`, `analytics.rs` | sign-in, session cookie, encrypted fields, rate limits, tracking |
 | `write.rs`, `admin_site.rs`, `admin_content.rs`, `admin_blogs.rs`, `admin_legal.rs`, `admin_ai.rs` | writes |
-| `admin_settings.rs`, `admin_security.rs`, `admin_analytics.rs`, `seo.rs`, `geoip.rs`, `cron.rs` | admin settings, sessions and audit, analytics, SEO settings, IP places, cron schedules |
+| `admin_settings.rs`, `admin_security.rs`, `admin_analytics.rs`, `seo.rs`, `geoip.rs`, `cron.rs`, `admin_crons.rs`, `cron_jobs.rs`, `cron_template.rs` | admin settings, sessions and audit, analytics, SEO settings, IP places, cron schedules, task runner and template previews |
 | `site_files.rs` | robots.txt, sitemap.xml, ads.txt and the markdown documents |
 | `contact.rs`, `notify.rs`, `og.rs`, `net.rs` | contact form, notification channels, link previews, fetching of user-supplied URLs |
 | `github_admin.rs`, `github_sync.rs`, `oauth.rs` | GitHub settings, webhook, repo sync, sign-in |
@@ -94,6 +94,7 @@ pnpm server:test
 | `RUST_LISTEN` | `0.0.0.0:8080` | |
 | `NEXT_UPSTREAM` | `http://127.0.0.1:3000` | Next server for unported routes |
 | `NEXT_DIR` | `.next` | where `static/` is read from |
+| `CRON_RUNNER` | unset | `rust` runs the scheduled tasks in `aiyu-server` and turns Next's scheduler off (set in `scripts/docker-entrypoint.sh`) |
 | `TRUSTED_PROXIES` | empty | IPs/CIDRs (e.g. nginx, `127.0.0.1,172.16.0.0/12`) allowed to set `x-real-ip`, `x-forwarded-for`, `cf-connecting-ip`. From any other peer those headers are replaced by the socket address. |
 
 Reads `.env` from the working directory.
@@ -108,7 +109,7 @@ node --env-file=.env scripts/perf/api-parity.mjs scripts/perf/api/batch1.txt
 # Sign-in and analytics
 node --env-file=.env scripts/perf/auth-parity.mjs
 # Writes: same response and same row changes
-node --env-file=.env scripts/perf/write-parity.mjs scripts/perf/writes/{site,content,blogs,legal,ai,admin,github,misc}.mjs
+node --env-file=.env scripts/perf/write-parity.mjs scripts/perf/writes/{site,content,blogs,legal,ai,admin,github,misc,crons}.mjs
 # Outgoing requests: contact form, notification channels, n8n webhook
 node --env-file=.env scripts/perf/outbound-parity.mjs
 # Uploads: the same files to both servers, stored pictures compared
