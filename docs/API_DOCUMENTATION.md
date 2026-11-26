@@ -8,6 +8,21 @@
 
 ---
 
+## Sign-in requirements changed
+
+Since the fix on `migrate/rust-vite` (not yet in a release), these routes need an admin session and answer `401`
+without one. Before, anyone could call them.
+
+| Route | Access |
+|---|---|
+| `PUT /api/blogs/{id}`, `DELETE /api/blogs/{id}` | admin session (a bearer token is not accepted) |
+| `GET /api/contact/message`, `DELETE /api/contact/message` | admin session |
+
+`POST /api/blogs` still accepts an admin session or a bearer token, and `POST /api/contact/message` (the contact form)
+stays public.
+
+---
+
 ## Quick Links
 
 - **[Complete API Documentation](https://github.com/aiyu-ayaan/Aiyu/wiki/API-Documentation)** - Full API reference

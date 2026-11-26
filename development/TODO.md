@@ -9,27 +9,29 @@ Branch: `migrate/rust-vite`. Baseline and method: `development/docs/PERFORMANCE.
 Branch `migrate/rust-vite`. EVERY page is now served by Rust + Vite: all public pages, legal, `/desktop`, `/games`,
 and all `/admin` pages (`src/app/_admin/**/page.js`, routed by `web/src/routes/admin.tsx` through `import.meta.glob`;
 Next ignores `_` folders). Next only serves `/api/*`, `/.well-known/*`, `/docs/*`, sitemap.xml/robots.txt, uploads.
-Milestone 8 (API routes) IN PROGRESS. Done 2026-11-26: public GETs, auth + analytics/track, and every content
-write outside `/api/admin/*` (site documents, socials, themes, projects, deployments, gallery, blogs, legal, AI Hub,
-admin side of contact messages). NEXT: the plain `/api/admin/*` CRUD (ads, social, notifications config, security
-sessions and audit, blogs token, mcp config and token, seo config, analytics, health targets, cron timezone) ->
-integrations (Drive, import, uploads/sharp/HEIC, crons, MCP, AI generation, GitHub sync and webhook, SEO crawl and
-fix, contact form notifications, notification test, resume compile, storage): port or keep a small Node sidecar,
-user's call.
-Writes: `server/src/write.rs` (body, typed insert/update, singleton merge, bearer token) and `admin_*.rs`; after a
-write call `write::notify` so Next (`/api/internal/hooks`) clears its caches and pings search engines. Check with
-`node --env-file=.env scripts/perf/write-parity.mjs scripts/perf/writes/<group>.mjs` (local database only, Rust with
-`TRUSTED_PROXIES=127.0.0.1`): each case runs on Next and Rust from the same state; response and row changes must match.
-Reads: `node --env-file=.env scripts/perf/api-parity.mjs --cookie-jar <jar> scripts/perf/api/<group>.txt`
-(Next on :3100 vs Rust on :8080, signed out and in) must be all-equal before commit.
-Auth and analytics: `node --env-file=.env scripts/perf/auth-parity.mjs` (local database only; needs Rust with
-`TRUSTED_PROXIES=127.0.0.1`). Every ported `/api` route that src/proxy.js rate limits (any POST/PUT/PATCH/DELETE,
-and a few listed paths) needs `.route_layer(api_limit())` in `server/src/lib.rs`; new rows need `db::new_id()` and
-explicit UTC timestamps (Prisma filled both).
+Milestone 8 (API routes) IN PROGRESS.
+- Done 2026-11-26: public GETs, auth + analytics/track, and every content write outside `/api/admin/*` (site
+  documents, socials, themes, projects, deployments, gallery, blogs, legal, AI Hub, admin side of contact messages).
+- NEXT: the plain `/api/admin/*` CRUD (ads, social, notifications config, security sessions and audit, blogs token,
+  mcp config and token, seo config, analytics, health targets, cron timezone).
+- Then integrations (Drive, import, uploads/sharp/HEIC, crons, MCP, AI generation, GitHub sync and webhook, SEO crawl
+  and fix, contact form notifications, notification test, resume compile, storage): port or keep a small Node sidecar,
+  user's call.
+- Checked 2026-11-26: write parity 249/249, auth parity all equal, read parity batch1 42/42, batch2 32/32, blogs 22/22,
+  batch3 56/58 (the two request-time dates on search hits). In Chrome, signed in, through Rust: social link create,
+  disable and delete; footer save; blog draft create, edit and delete; contact list; About save. Not checked in Chrome:
+  projects, apps, gallery, themes, legal and AI Hub forms.
+- Open: `github.txt` read parity needs a rerun (GitHub rate limited the machine and each server served its own stale
+  copy). One vitest test failed once and passed in four reruns; which one was not captured. The admin browser tests take
+  about 12 minutes; cause not checked.
+
+Checks before each commit (commands in `server/README.md`): reads `scripts/perf/api-parity.mjs` with
+`scripts/perf/api/<group>.txt`; sign-in `scripts/perf/auth-parity.mjs`; writes `scripts/perf/write-parity.mjs` with
+`scripts/perf/writes/<group>.mjs`. The last two write to the database: local only.
 Build exports for Rust (web/vite.config.mts `routeMeta`): ai-defaults.json, themes.json, discovery.json (the
 /.well-known docs, rendered with a placeholder origin that Rust swaps for SITE_URL at startup).
-Fixed 2026-11-26, still open on `master`: PUT/DELETE /api/blogs/{id} and GET/DELETE /api/contact/message had no
-sign-in check.
+Fixed on this branch 2026-11-26, still open on `master`: PUT/DELETE /api/blogs/{id} and GET/DELETE
+/api/contact/message had no sign-in check.
 Known pre-existing issues (kept for parity, ask the user): GET /api/blogs/{id} returns unpublished drafts to anyone.
 Analytics treats only `localhost` as its own host (Next's `request.url` never carries the public host), so views
 referred by the site itself are counted as `external`; fix: compare with SITE_URL's host (server/src/analytics.rs).
@@ -55,6 +57,16 @@ Run the bench with `--backups 3` at most per few minutes: login is rate limited 
 3. Vite: route in `web/src/App.tsx` (lazy chunk if heavy), path in `web/src/appRoutes.ts` AND `server/src/lib.rs`.
    Data via `usePageData()` (`web/src/pageData.ts`): inline `#__DATA__` first, then `x-aiyu-data: 1` JSON fetches.
 4. e2e spec (Next first, then Rust) -> delete the Next page -> commit.
+
+### Recipe for porting one API route
+1. Read the Next handler and the helpers it calls; note every status, body, header and side effect. Check that it
+   checks the session: a missing check is a bug to fix in both, not to copy.
+2. Write the handler in `server/src/admin_*.rs` using `write.rs`: check the caller before reading the body, keep
+   Prisma's type rules (`write::prepare`), fill ids and timestamps, then `write::notify` with the same cache keys and pings.
+3. Register it in `limited_api()` (`server/src/lib.rs`) and add it to the anonymous-refusal test in
+   `server/tests/proxy.rs`.
+4. Add cases to `scripts/perf/writes/<group>.mjs` (success, anonymous, missing, invalid) until all are equal.
+5. Tick the route below -> commit one group at a time.
 
 ### Watch out
 - Rust-owned pages get Next's page behavior from `server/src/compat.rs` (security headers, CDN cache policy,
