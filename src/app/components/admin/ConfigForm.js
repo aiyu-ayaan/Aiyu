@@ -1,8 +1,17 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Sparkles, Loader2 } from 'lucide-react';
+import Link from 'next/link';
+import { FaDownload, FaFileArrowUp, FaFloppyDisk, FaSpinner, FaWandMagicSparkles } from 'react-icons/fa6';
 import Toast from './Toast';
+import { Field, Loading, Panel } from './ui';
+import '@/app/styles/admin-system.css';
+
+const PAGE_HEADERS = [
+    { section: 'projects' },
+    { section: 'blogs', multiline: true },
+    { section: 'gallery' },
+];
 
 const ConfigForm = () => {
     const router = useRouter();
@@ -74,11 +83,11 @@ const ConfigForm = () => {
                 setFormData(prev => ({ ...prev, [key]: data.data }));
                 showNotification(true, `${section.charAt(0).toUpperCase() + section.slice(1)} subtitle generated!`);
             } else {
-                showNotification(false, data.error || 'AI synthesis failed');
+                showNotification(false, data.error || 'Could not generate a subtitle. Try again.');
             }
         } catch (error) {
             console.error('AI Error:', error);
-            showNotification(false, 'AI uplink interrupted');
+            showNotification(false, 'Could not reach the AI service. Try again.');
         } finally {
             setAiGenerating(null);
         }
@@ -179,7 +188,7 @@ const ConfigForm = () => {
             });
 
             if (response.ok) {
-                showNotification(true, 'System Configuration Updated Successfully');
+                showNotification(true, 'Changes saved');
                 router.refresh();
                 fetchData(); // Refresh data
             } else {
@@ -195,378 +204,143 @@ const ConfigForm = () => {
         }
     };
 
-    if (loading) return <div className="text-cyan-400 font-mono animate-pulse">LOADING_SYSTEM_CONFIG...</div>;
+    if (loading) return <section className="adm-panel"><Loading label="Loading settings" rows={6} /></section>;
+
+    const resumeType = formData.resume.type;
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-12 max-w-4xl mx-auto">
-            {error && (
-                <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-lg flex items-center gap-3">
-                    <span className="text-xl">⚠️</span>
-                    {error}
+        <form onSubmit={handleSubmit} className="adm-split">
+            <div className="adm-stack">
+                {error && <div role="alert" className="adm-notice adm-notice-error">{error}</div>}
+
+                <div className="grid gap-6 lg:grid-cols-2">
+                    <Panel title="Branding">
+                        <Field label="Logo text" help="Shown at the top left of the site header.">
+                            <input type="text" name="logoText" value={formData.logoText} onChange={handleChange} placeholder="< aiyu />" className="adm-input font-mono" />
+                        </Field>
+                    </Panel>
+                    <Panel title="Analytics">
+                        <Field label="Google Analytics measurement ID" help="Starts with G-.">
+                            <input type="text" name="googleAnalyticsId" value={formData.googleAnalyticsId} onChange={handleChange} placeholder="G-XXXXXXXXXX" className="adm-input font-mono" />
+                        </Field>
+                    </Panel>
                 </div>
-            )}
 
-            {/* Branding Section */}
-            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 md:p-8 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
-
-                <h2 className="text-sm font-mono text-cyan-500/70 uppercase tracking-widest mb-8 flex items-center gap-4">
-                    Identity Matrix
-                    <div className="h-px bg-cyan-500/10 flex-grow" />
-                </h2>
-
-                <div className="space-y-6 relative z-10">
-                    <div>
-                        <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Logo Identifier</label>
-                        <input
-                            type="text"
-                            name="logoText"
-                            value={formData.logoText}
-                            onChange={handleChange}
-                            placeholder="< aiyu />"
-                            className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-cyan-400 font-mono focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-700"
-                        />
-                        <p className="text-xs text-slate-500 mt-2 font-mono">
-                            {'// Displayed in the top-left of the navigation header.'}
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-
-
-            {/* Desktop (Aiyu OS) Section */}
-            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 md:p-8 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
-
-                <h2 className="text-sm font-mono text-blue-400/70 uppercase tracking-widest mb-8 flex items-center gap-4">
-                    Desktop / Aiyu OS
-                    <div className="h-px bg-blue-500/10 flex-grow" />
-                </h2>
-
-                <div className="space-y-6 relative z-10">
-                    <div>
-                        <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Wallpaper URL</label>
-                        <div className="flex flex-col gap-4 md:flex-row md:items-start">
-                            <div className="flex-1">
-                                <input
-                                    type="text"
-                                    name="desktopWallpaper"
-                                    value={formData.desktopWallpaper}
-                                    onChange={handleChange}
-                                    placeholder="https://… or /uploads/wallpaper.webp"
-                                    className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-blue-300 font-mono focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 outline-none transition-all placeholder:text-slate-700"
-                                />
-                                <p className="text-xs text-slate-500 mt-2 font-mono">
-                                    {'// Background for the /desktop experience. Leave blank for the default Windows-style bloom.'}
-                                </p>
-                            </div>
-                            <div
-                                className="h-24 w-40 shrink-0 rounded-lg border border-white/10 bg-cover bg-center"
-                                style={
-                                    formData.desktopWallpaper
-                                        ? { backgroundImage: `url(${formData.desktopWallpaper})` }
-                                        : { background: 'radial-gradient(140% 120% at 28% 18%, #58a6ff 0%, #2f7be0 28%, #1e4fb0 52%, #122a7a 74%, #0a1550 100%)' }
-                                }
-                            />
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Page Headers Section */}
-            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 md:p-8 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
-
-                <h2 className="text-sm font-mono text-orange-500/70 uppercase tracking-widest mb-8 flex items-center gap-4">
-                    Route Headers
-                    <div className="h-px bg-orange-500/10 flex-grow" />
-                </h2>
-
-                <div className="space-y-6 relative z-10">
-                    {/* Projects Header */}
-                    <div className="p-6 rounded-xl bg-white/[0.02] border border-white/10 hover:border-orange-500/20 transition-colors">
-                        <h3 className="text-xs font-bold text-orange-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                            <span className="w-1 h-4 bg-orange-500 rounded-full" /> /projects
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Title</label>
-                                <input
-                                    type="text"
-                                    name="projectsTitle"
-                                    value={formData.projectsTitle}
-                                    onChange={handleChange}
-                                    className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 outline-none transition-all placeholder:text-slate-600/50"
-                                />
-                            </div>
-                            <div>
-                                <div className="flex justify-between items-center mb-2">
-                                    <label className="block text-slate-400 text-xs font-mono uppercase tracking-wider">Subtitle</label>
-                                    {aiEnabled && (
-                                        <button
-                                            type="button"
-                                            onClick={() => handleAiAction('projects')}
-                                            disabled={aiGenerating === 'projects' || !formData.projectsTitle}
-                                            className="flex items-center gap-1 px-2 py-0.5 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 rounded border border-orange-500/20 transition-all text-[9px] font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed group/ai"
-                                        >
-                                            {aiGenerating === 'projects' ? (
-                                                <Loader2 className="w-2.5 h-2.5 animate-spin" />
-                                            ) : (
-                                                <Sparkles className="w-2.5 h-2.5 group-hover/ai:rotate-12 transition-transform" />
+                <Panel title="Page headers" flush>
+                    <ul className="adm-list">
+                        {PAGE_HEADERS.map(({ section, multiline }) => {
+                            const Subtitle = multiline ? 'textarea' : 'input';
+                            return (
+                                <li key={section} className="grid gap-4 p-4 sm:px-5 md:grid-cols-[7rem_minmax(0,1fr)_minmax(0,1.5fr)]">
+                                    <h3 className="font-mono text-sm text-[var(--text-bright)] md:pt-8">/{section}</h3>
+                                    <Field label="Title">
+                                        <input type="text" name={`${section}Title`} value={formData[`${section}Title`]} onChange={handleChange} className="adm-input" />
+                                    </Field>
+                                    <div className="adm-field">
+                                        <div className="flex min-h-5 items-center justify-between gap-2">
+                                            <label htmlFor={`${section}Subtitle`} className="adm-label">Subtitle</label>
+                                            {aiEnabled && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleAiAction(section)}
+                                                    disabled={aiGenerating === section || !formData[`${section}Title`]}
+                                                    className="adm-btn adm-btn-quiet -my-2"
+                                                    aria-label={`Suggest ${section} subtitle with AI`}
+                                                >
+                                                    {aiGenerating === section ? <FaSpinner className="animate-spin" aria-hidden="true" /> : <FaWandMagicSparkles aria-hidden="true" />}
+                                                    Suggest
+                                                </button>
                                             )}
-                                            AI Suggest
-                                        </button>
-                                    )}
-                                </div>
-                                <input
-                                    type="text"
-                                    name="projectsSubtitle"
-                                    value={formData.projectsSubtitle}
-                                    onChange={handleChange}
-                                    className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 outline-none transition-all placeholder:text-slate-600/50"
-                                />
-                            </div>
-                        </div>
-                    </div>
+                                        </div>
+                                        <Subtitle
+                                            id={`${section}Subtitle`}
+                                            name={`${section}Subtitle`}
+                                            value={formData[`${section}Subtitle`]}
+                                            onChange={handleChange}
+                                            {...(multiline ? { rows: 2 } : { type: 'text' })}
+                                            className={`adm-input ${multiline ? '!min-h-10' : ''}`}
+                                        />
+                                    </div>
+                                </li>
+                            );
+                        })}
+                    </ul>
+                </Panel>
 
-                    {/* Blogs Header */}
-                    <div className="p-6 rounded-xl bg-white/[0.02] border border-white/10 hover:border-orange-500/20 transition-colors">
-                        <h3 className="text-xs font-bold text-orange-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                            <span className="w-1 h-4 bg-orange-500 rounded-full" /> /blogs
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Title</label>
-                                <input
-                                    type="text"
-                                    name="blogsTitle"
-                                    value={formData.blogsTitle}
-                                    onChange={handleChange}
-                                    className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 outline-none transition-all placeholder:text-slate-600/50"
-                                />
-                            </div>
-                            <div>
-                                <div className="flex justify-between items-center mb-2">
-                                    <label className="block text-slate-400 text-xs font-mono uppercase tracking-wider">Subtitle</label>
-                                    {aiEnabled && (
-                                        <button
-                                            type="button"
-                                            onClick={() => handleAiAction('blogs')}
-                                            disabled={aiGenerating === 'blogs' || !formData.blogsTitle}
-                                            className="flex items-center gap-1 px-2 py-0.5 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 rounded border border-orange-500/20 transition-all text-[9px] font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed group/ai"
-                                        >
-                                            {aiGenerating === 'blogs' ? (
-                                                <Loader2 className="w-2.5 h-2.5 animate-spin" />
-                                            ) : (
-                                                <Sparkles className="w-2.5 h-2.5 group-hover/ai:rotate-12 transition-transform" />
-                                            )}
-                                            AI Suggest
-                                        </button>
-                                    )}
-                                </div>
-                                <textarea
-                                    name="blogsSubtitle"
-                                    value={formData.blogsSubtitle}
-                                    onChange={handleChange}
-                                    rows="1"
-                                    className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 outline-none transition-all placeholder:text-slate-600/50 resize-none"
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Gallery Header */}
-                    <div className="p-6 rounded-xl bg-white/[0.02] border border-white/10 hover:border-orange-500/20 transition-colors">
-                        <h3 className="text-xs font-bold text-orange-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                            <span className="w-1 h-4 bg-orange-500 rounded-full" /> /gallery
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Title</label>
-                                <input
-                                    type="text"
-                                    name="galleryTitle"
-                                    value={formData.galleryTitle}
-                                    onChange={handleChange}
-                                    className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 outline-none transition-all placeholder:text-slate-600/50"
-                                />
-                            </div>
-                            <div>
-                                <div className="flex justify-between items-center mb-2">
-                                    <label className="block text-slate-400 text-xs font-mono uppercase tracking-wider">Subtitle</label>
-                                    {aiEnabled && (
-                                        <button
-                                            type="button"
-                                            onClick={() => handleAiAction('gallery')}
-                                            disabled={aiGenerating === 'gallery' || !formData.galleryTitle}
-                                            className="flex items-center gap-1 px-2 py-0.5 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 rounded border border-orange-500/20 transition-all text-[9px] font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed group/ai"
-                                        >
-                                            {aiGenerating === 'gallery' ? (
-                                                <Loader2 className="w-2.5 h-2.5 animate-spin" />
-                                            ) : (
-                                                <Sparkles className="w-2.5 h-2.5 group-hover/ai:rotate-12 transition-transform" />
-                                            )}
-                                            AI Suggest
-                                        </button>
-                                    )}
-                                </div>
-                                <input
-                                    type="text"
-                                    name="gallerySubtitle"
-                                    value={formData.gallerySubtitle}
-                                    onChange={handleChange}
-                                    className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 outline-none transition-all placeholder:text-slate-600/50"
-                                />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Integrations Section */}
-            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 md:p-8 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
-
-                <h2 className="text-sm font-mono text-yellow-500/70 uppercase tracking-widest mb-8 flex items-center gap-4">
-                    External Integrations
-                    <div className="h-px bg-yellow-500/10 flex-grow" />
-                </h2>
-
-                <div className="space-y-6 relative z-10">
-                    <div>
-                        <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Google Analytics Measurement ID</label>
-                        <input
-                            type="text"
-                            name="googleAnalyticsId"
-                            value={formData.googleAnalyticsId}
-                            onChange={handleChange}
-                            placeholder="G-XXXXXXXXXX"
-                            className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-yellow-500/50 focus:ring-1 focus:ring-yellow-500/50 outline-none transition-all placeholder:text-slate-600"
-                        />
-                        <p className="text-xs text-slate-500 mt-2 font-mono">
-                            {'// Starts with G-'}
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            {/* Resume Section */}
-            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 md:p-8 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
-
-                <h2 className="text-sm font-mono text-blue-500/70 uppercase tracking-widest mb-8 flex items-center gap-4">
-                    Resume / CV
-                    <div className="h-px bg-blue-500/10 flex-grow" />
-                </h2>
-
-                <div className="flex flex-col md:flex-row gap-4 mb-8">
-                    <label className={`flex items-center gap-3 cursor-pointer p-4 rounded-xl border transition-all w-full
-                        ${formData.resume.type === 'url' ? 'bg-blue-500/10 border-blue-500/40 text-blue-300' : 'bg-slate-950/50 border-white/10 text-slate-400'}
-                    `}>
-                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center
-                             ${formData.resume.type === 'url' ? 'border-blue-400' : 'border-slate-600'}
-                        `}>
-                            {formData.resume.type === 'url' && <div className="w-2 h-2 rounded-full bg-blue-400" />}
-                        </div>
-                        <input
-                            type="radio"
-                            name="resumeType"
-                            checked={formData.resume.type === 'url'}
-                            onChange={() => handleResumeTypeChange('url')}
-                            className="hidden"
-                        />
-                        <span className="font-mono text-xs uppercase tracking-wider font-bold">External URL Link</span>
-                    </label>
-
-                    <label className={`flex items-center gap-3 cursor-pointer p-4 rounded-xl border transition-all w-full
-                        ${formData.resume.type === 'file' ? 'bg-blue-500/10 border-blue-500/40 text-blue-300' : 'bg-slate-950/50 border-white/10 text-slate-400'}
-                    `}>
-                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center
-                             ${formData.resume.type === 'file' ? 'border-blue-400' : 'border-slate-600'}
-                        `}>
-                            {formData.resume.type === 'file' && <div className="w-2 h-2 rounded-full bg-blue-400" />}
-                        </div>
-                        <input
-                            type="radio"
-                            name="resumeType"
-                            checked={formData.resume.type === 'file'}
-                            onChange={() => handleResumeTypeChange('file')}
-                            className="hidden"
-                        />
-                        <span className="font-mono text-xs uppercase tracking-wider font-bold">Direct File Upload</span>
-                    </label>
-                </div>
-
-                {formData.resume.type === 'url' ? (
-                    <div>
-                        <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Resume URL Asset</label>
-                        <input
-                            type="url"
-                            value={formData.resume.value}
-                            onChange={(e) => handleResumeValueChange(e.target.value)}
-                            placeholder="https://example.com/my-resume.pdf"
-                            className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 outline-none transition-all placeholder:text-slate-700 font-mono"
+                <Panel title="Desktop (Aiyu OS)">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+                        <Field className="flex-1" label="Wallpaper URL" help="Background of /desktop. Leave blank for the default bloom.">
+                            <input type="text" name="desktopWallpaper" value={formData.desktopWallpaper} onChange={handleChange} placeholder="https://… or /uploads/wallpaper.webp" className="adm-input font-mono" />
+                        </Field>
+                        <div
+                            role="img"
+                            aria-label="Wallpaper preview"
+                            className="aspect-video w-full shrink-0 rounded-[10px] border border-[var(--hairline-strong)] bg-cover bg-center sm:w-56"
+                            style={
+                                formData.desktopWallpaper
+                                    ? { backgroundImage: `url(${formData.desktopWallpaper})` }
+                                    : { background: 'radial-gradient(140% 120% at 28% 18%, #58a6ff 0%, #2f7be0 28%, #1e4fb0 52%, #122a7a 74%, #0a1550 100%)' }
+                            }
                         />
                     </div>
-                ) : (
-                    <div>
-                        <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Upload PDF Asset</label>
-                        <div className="flex items-center gap-4">
-                            <label className="cursor-pointer bg-slate-950/50 border border-white/10 hover:border-blue-500/50 text-slate-300 px-4 py-3 rounded-lg transition-all flex items-center gap-3 w-full">
-                                <span className="bg-blue-500/10 text-blue-400 px-2 py-1 rounded text-xs font-bold uppercase">Choose File</span>
-                                <span className="text-sm truncate opacity-60 hover:opacity-100 transition-opacity">
-                                    {formData.resume.filename || "Select PDF document..."}
-                                </span>
-                                <input
-                                    type="file"
-                                    accept=".pdf,.doc,.docx"
-                                    onChange={handleFileUpload}
-                                    className="hidden"
-                                />
-                            </label>
-                            {formData.resume.value && formData.resume.type === 'file' && formData.resume.value.startsWith('data:') && (
-                                <a href={formData.resume.value} download={formData.resume.filename || 'resume.pdf'} className="flex items-center gap-2 px-4 py-2 bg-[#0a0a0a] border border-white/10 rounded-lg text-xs text-blue-400 hover:text-blue-300 hover:border-blue-500/30 transition-all uppercase tracking-wider font-bold whitespace-nowrap">
-                                    Download Existing
-                                </a>
-                            )}
-                        </div>
-                        {formData.resume.filename && (
-                            <div className="mt-3 text-xs text-blue-400 flex items-center gap-1 font-mono">
-                                <span>[SECURE] Asset ready for upload:</span>
-                                <span>{formData.resume.filename}</span>
+                </Panel>
+
+                <Panel title="Resume">
+                    <div className="space-y-4">
+                        <fieldset>
+                            <legend className="adm-label mb-1.5">Source</legend>
+                            <div className="grid gap-3 sm:grid-cols-2">
+                                {[['url', 'Link to a file'], ['file', 'Upload a file']].map(([type, label]) => (
+                                    <label key={type} className="adm-choice">
+                                        <input type="radio" name="resumeType" checked={resumeType === type} onChange={() => handleResumeTypeChange(type)} className="adm-check" />
+                                        {label}
+                                    </label>
+                                ))}
+                            </div>
+                        </fieldset>
+
+                        {resumeType === 'url' ? (
+                            <Field label="Resume URL">
+                                <input type="url" value={formData.resume.value} onChange={(e) => handleResumeValueChange(e.target.value)} placeholder="https://example.com/my-resume.pdf" className="adm-input font-mono" />
+                            </Field>
+                        ) : (
+                            <div className="flex flex-wrap items-center gap-3">
+                                <label className="adm-choice flex-1 basis-64">
+                                    <FaFileArrowUp aria-hidden="true" className="shrink-0" />
+                                    <span className="truncate">{formData.resume.filename || 'Choose a PDF or Word file (max 5MB)'}</span>
+                                    <input type="file" accept=".pdf,.doc,.docx" onChange={handleFileUpload} className="sr-only" />
+                                </label>
+                                {formData.resume.value && formData.resume.type === 'file' && formData.resume.value.startsWith('data:') && (
+                                    <a href={formData.resume.value} download={formData.resume.filename || 'resume.pdf'} className="adm-btn">
+                                        <FaDownload aria-hidden="true" /> Download current
+                                    </a>
+                                )}
                             </div>
                         )}
                     </div>
-                )}
+                </Panel>
             </div>
 
-            {/* Sticky Action Footer */}
-            <div className="sticky bottom-8 flex justify-end gap-4 pt-6 border-t border-white/5 bg-slate-900/90 backdrop-blur-lg p-4 rounded-xl border border-white/5 shadow-2xl z-50 mt-12">
-                <button
-                    type="button"
-                    onClick={() => router.back()}
-                    className="px-6 py-2 rounded bg-white/5 hover:bg-white/10 text-slate-400 transition-colors text-sm font-medium"
-                >
-                    CANCEL
-                </button>
-                <button
-                    type="submit"
-                    disabled={saving}
-                    className="px-8 py-2 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-bold transition-all shadow-[0_0_20px_rgba(8,145,178,0.3)] hover:shadow-[0_0_30px_rgba(8,145,178,0.5)] disabled:opacity-50 disabled:cursor-not-allowed text-sm tracking-wide flex items-center gap-2"
-                >
-                    {saving ? (
-                        <>
-                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            UPDATING_SYSTEM...
-                        </>
-                    ) : (
-                        'CONFIRM_UPDATE'
-                    )}
-                </button>
-            </div>
+            <aside className="adm-stack adm-side">
+                <Panel title="Publish">
+                    <p className="adm-help mb-4">Changes apply to the public site once saved.</p>
+                    <div className="flex flex-wrap gap-2">
+                        <button type="submit" disabled={saving} className="adm-btn adm-btn-primary flex-1">
+                            {saving ? <FaSpinner className="animate-spin" aria-hidden="true" /> : <FaFloppyDisk aria-hidden="true" />}
+                            {saving ? 'Saving' : 'Save changes'}
+                        </button>
+                        <button type="button" onClick={() => router.back()} className="adm-btn">Cancel</button>
+                    </div>
+                </Panel>
+                <Panel title="Related" flush>
+                    <ul className="adm-list">
+                        <li><Link href="/admin/social" className="adm-row adm-link">Social and metadata (SEO)</Link></li>
+                        <li><Link href="/admin/resources" className="adm-row adm-link">Upload storage</Link></li>
+                        <li><Link href="/admin/settings" className="adm-row adm-link">Section stages</Link></li>
+                    </ul>
+                </Panel>
+            </aside>
 
-            {/* Toast Notification */}
             <Toast notification={notification} />
         </form>
     );

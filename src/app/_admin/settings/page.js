@@ -1,14 +1,18 @@
 "use client";
 import React, { useEffect, useMemo, useState } from "react";
-import { FaGear, FaCheck, FaRotateLeft } from "react-icons/fa6";
-import { NAV_GROUPS, ACCENT, STAGE_META } from "@/app/components/admin/shell/navConfig";
+import { FaCheck, FaRotateLeft } from "react-icons/fa6";
+import { NAV_GROUPS } from "@/app/components/admin/shell/navConfig";
+import { Badge, Loading, PageHeader, Panel } from "@/app/components/admin/ui";
+import "@/app/styles/admin-system.css";
 
 /** Ordered stage choices for the segmented control. `null` == Stable. */
 const STAGE_CHOICES = [
-    { value: null, label: "Stable", active: "bg-white/10 text-white" },
-    { value: "beta", label: "Beta", active: "bg-sky-500/20 text-sky-300 ring-1 ring-sky-400/40" },
-    { value: "alpha", label: "Alpha", active: "bg-amber-500/20 text-amber-300 ring-1 ring-amber-400/40" },
+    { value: null, label: "Stable" },
+    { value: "beta", label: "Beta", tone: "info" },
+    { value: "alpha", label: "Alpha", tone: "warn" },
 ];
+
+const GROUPS = NAV_GROUPS.filter((g) => g.id !== "overview");
 
 const norm = (m) => JSON.stringify(Object.entries(m || {}).sort());
 
@@ -75,116 +79,93 @@ export default function AdminSettingsPage() {
     };
 
     return (
-        <div className="p-5 md:p-8 max-w-4xl mx-auto pb-8">
-            {/* Header */}
-            <header className="mb-8">
-                <div className="flex items-center gap-3 mb-2">
-                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-400">
-                        <FaGear />
-                    </span>
-                    <h1 className="text-3xl md:text-4xl font-bold text-white tracking-tight">Settings</h1>
-                </div>
-                <p className="text-slate-400">
-                    Pin a maturity stage to any section. A <span className="text-sky-300 font-medium">Beta</span> or{" "}
-                    <span className="text-amber-300 font-medium">Alpha</span> badge then appears next to it in the sidebar.
-                </p>
-                {status === "ready" && (
-                    <div className="mt-4 flex flex-wrap gap-2 text-xs font-mono">
-                        <span className="px-2.5 py-1 rounded-lg bg-sky-500/10 text-sky-300">{counts.beta} beta</span>
-                        <span className="px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-300">{counts.alpha} alpha</span>
-                    </div>
-                )}
-            </header>
+        <div className="adm-page">
+            <PageHeader
+                command="chmod"
+                title="Settings"
+                description="Mark a section as Beta or Alpha. The badge then appears next to it in the sidebar."
+            />
 
-            {status === "loading" && (
-                <div className="space-y-3">{Array.from({ length: 6 }).map((_, i) => <div key={i} className="h-14 rounded-xl bg-slate-900/40 border border-white/5 animate-pulse" />)}</div>
-            )}
+            {status === "loading" && <section className="adm-panel"><Loading label="Loading settings" rows={6} /></section>}
 
             {status === "error" && (
-                <div className="p-6 rounded-2xl border border-red-500/20 bg-red-500/5 text-red-300 text-sm">
-                    Could not load or save settings. Please try again.
-                </div>
+                <div role="alert" className="adm-notice adm-notice-error">Could not load or save settings. Reload the page and try again.</div>
             )}
 
             {status === "ready" && (
-                <div className="space-y-8">
-                    {NAV_GROUPS.filter((g) => g.id !== "overview").map((group) => (
-                        <section key={group.id}>
-                            <h2 className="text-xs font-mono uppercase tracking-widest text-slate-500 mb-3">{group.label}</h2>
-                            <div className="rounded-2xl bg-slate-900/50 border border-white/5 divide-y divide-white/5 overflow-hidden">
-                                {group.items.map((item) => {
-                                    const accent = ACCENT[item.accent] || ACCENT.slate;
-                                    const Icon = item.icon;
-                                    const current = stages[item.path] || null;
-                                    const stageMeta = STAGE_META[current];
-                                    return (
-                                        <div key={item.path} className="flex items-center gap-3 px-4 py-3">
-                                            <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${accent.bgSoft} ${accent.text}`}>
-                                                <Icon className="text-[14px]" />
-                                            </span>
-                                            <span className="min-w-0 flex-1">
-                                                <span className="flex items-center gap-2">
-                                                    <span className="text-sm font-semibold text-white truncate">{item.label}</span>
-                                                    {stageMeta && (
-                                                        <span className={`rounded-md px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider ${stageMeta.badge}`}>{stageMeta.label}</span>
-                                                    )}
-                                                </span>
-                                                <span className="block text-xs text-slate-500 truncate">{item.description}</span>
-                                            </span>
-                                            {/* Segmented control */}
-                                            <div className="flex shrink-0 rounded-lg bg-black/30 p-0.5">
-                                                {STAGE_CHOICES.map((c) => {
-                                                    const isOn = current === c.value;
-                                                    return (
+                <div className="adm-split">
+                    <div className="grid items-start gap-6 2xl:grid-cols-2">
+                        {GROUPS.map((group) => (
+                            <Panel key={group.id} id={`stage-${group.id}`} title={group.label} className="scroll-mt-20" flush>
+                                <ul className="adm-list">
+                                    {group.items.map((item) => {
+                                        const Icon = item.icon;
+                                        const current = stages[item.path] || null;
+                                        const stage = STAGE_CHOICES.find((c) => c.value === current);
+                                        return (
+                                            <li key={item.path} className="adm-row flex-wrap">
+                                                <Icon aria-hidden="true" className="adm-nav-icon shrink-0" />
+                                                <div className="min-w-0 flex-1 basis-48">
+                                                    <p className="flex flex-wrap items-center gap-2">
+                                                        <span className="font-semibold text-[var(--text-bright)]">{item.label}</span>
+                                                        {current && <Badge tone={stage?.tone}>{stage?.label}</Badge>}
+                                                    </p>
+                                                    <p className="adm-help">{item.description}</p>
+                                                </div>
+                                                <div role="group" aria-label={`Stage for ${item.label}`} className="flex shrink-0 gap-1">
+                                                    {STAGE_CHOICES.map((c) => (
                                                         <button
                                                             key={c.label}
+                                                            type="button"
+                                                            aria-pressed={current === c.value}
                                                             onClick={() => setStage(item.path, c.value)}
-                                                            className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${isOn ? c.active : "text-slate-400 hover:text-white"}`}
+                                                            className="adm-tab"
                                                         >
                                                             {c.label}
                                                         </button>
-                                                    );
-                                                })}
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </section>
-                    ))}
-                </div>
-            )}
-
-            {/* Sticky save bar — lives in the layout flow (sticky, not fixed), so
-                it floats while scrolling but settles below the last row at the
-                bottom and never hides content. */}
-            {status === "ready" && dirty && (
-                <div className="sticky bottom-4 z-20 mt-6">
-                    <div className="flex items-center gap-3 px-5 py-3 rounded-2xl border border-white/10 bg-slate-900/90 backdrop-blur-xl shadow-2xl">
-                        <span className="text-sm text-slate-300">You have unsaved changes.</span>
-                        <div className="ml-auto flex items-center gap-2">
-                            <button
-                                onClick={() => { setStages(initial); setSavedAt(0); }}
-                                className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
-                            >
-                                <FaRotateLeft className="text-[11px]" /> Reset
-                            </button>
-                            <button
-                                onClick={save}
-                                disabled={saving}
-                                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30 ring-1 ring-cyan-400/30 transition-colors disabled:opacity-50"
-                            >
-                                {saving ? "Saving…" : "Save changes"}
-                            </button>
-                        </div>
+                                                    ))}
+                                                </div>
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                            </Panel>
+                        ))}
                     </div>
-                </div>
-            )}
 
-            {/* Saved confirmation */}
-            {savedAt > 0 && !dirty && (
-                <div className="fixed bottom-6 right-6 z-30 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-400/30 text-sm shadow-lg">
-                    <FaCheck className="text-[12px]" /> Settings saved
+                    <aside className="adm-stack adm-side order-first xl:order-none">
+                        <Panel title="Changes">
+                            <p role="status" className="adm-help mb-4">
+                                {dirty ? "You have unsaved changes." : savedAt > 0 ? "Settings saved." : "No unsaved changes."}
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                                <button type="button" onClick={save} disabled={saving || !dirty} className="adm-btn adm-btn-primary flex-1">
+                                    <FaCheck aria-hidden="true" /> {saving ? "Saving" : "Save changes"}
+                                </button>
+                                <button type="button" onClick={() => { setStages(initial); setSavedAt(0); }} disabled={!dirty} className="adm-btn">
+                                    <FaRotateLeft aria-hidden="true" /> Reset
+                                </button>
+                            </div>
+                            <div className="mt-4 flex flex-wrap gap-2">
+                                <Badge tone="info">{counts.beta} beta</Badge>
+                                <Badge tone="warn">{counts.alpha} alpha</Badge>
+                            </div>
+                        </Panel>
+                        <Panel title="Sections" className="hidden xl:block" flush>
+                            <nav aria-label="Section groups">
+                                <ul className="adm-list">
+                                    {GROUPS.map((group) => (
+                                        <li key={group.id}>
+                                            <a href={`#stage-${group.id}`} className="adm-row justify-between">
+                                                <span>{group.label}</span>
+                                                <span className="adm-num adm-help">{group.items.length}</span>
+                                            </a>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </nav>
+                        </Panel>
+                    </aside>
                 </div>
             )}
         </div>
