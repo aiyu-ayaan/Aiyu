@@ -31,7 +31,7 @@ const THEME: Table = Table {
     created_at: true,
     updated_at: true,
 };
-const PROJECT: Table = Table {
+pub(crate) const PROJECT: Table = Table {
     name: "Project",
     columns: &[
         ("name", Text), ("slug", Text), ("techStack", List), ("year", Text), ("status", Text), ("projectType", Text),

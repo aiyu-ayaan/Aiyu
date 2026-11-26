@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSingleton, upsertSingleton } from '@/lib/serialize';
 import { withAuth } from '@/middleware/auth';
+import { getSession } from '@/lib/auth';
 import { encrypt, decrypt } from '@/lib/encryption';
 import cache from '@/lib/cache';
 
@@ -54,8 +55,9 @@ async function getConfig(request) {
                     ? includePrivateParam === 'true'
                     : config.includePrivate;
 
-                // Attempt to fetch all repos (including private) if enabled
-                if (shouldIncludePrivate && token) {
+                // This GET is public (the site reads the account name), so private
+                // repos are listed for the signed-in admin only.
+                if (shouldIncludePrivate && token && await getSession()) {
                     try {
                         const identityRes = await fetch('https://api.github.com/user', { headers });
                         if (identityRes.ok) {

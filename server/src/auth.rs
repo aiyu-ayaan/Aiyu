@@ -133,7 +133,7 @@ fn credentials_match(username: &str, password: &str, expected_user: &str, expect
     user_ok && password_ok
 }
 
-fn uuid_v4() -> String {
+pub(crate) fn uuid_v4() -> String {
     let mut b: [u8; 16] = rand::random();
     b[6] = (b[6] & 0x0f) | 0x40;
     b[8] = (b[8] & 0x3f) | 0x80;
@@ -142,7 +142,7 @@ fn uuid_v4() -> String {
 }
 
 /// `createSession`: the `Session` row, then the signed cookie pointing at it.
-async fn create_session(state: &AppState, parts: &Parts, user: Value) -> anyhow::Result<String> {
+pub(crate) async fn create_session(state: &AppState, parts: &Parts, user: Value) -> anyhow::Result<String> {
     let now = Utc::now();
     let expires = now + SESSION_TTL;
     let jti = uuid_v4();

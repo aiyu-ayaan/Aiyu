@@ -96,10 +96,10 @@ static BREAKER: LazyLock<Mutex<Breaker>> = LazyLock::new(|| Mutex::new(Breaker {
 
 /// An upstream failure: `retryable` ones (timeouts, network errors, an open breaker) count against the breaker.
 #[derive(Debug)]
-struct UpstreamError {
+pub(crate) struct UpstreamError {
     status: Option<u16>,
     body: String,
-    message: String,
+    pub(crate) message: String,
 }
 
 impl std::fmt::Display for UpstreamError {
@@ -110,8 +110,10 @@ impl std::fmt::Display for UpstreamError {
 
 /// `runWithCircuitBreaker('github-upstream', () => fetchWithTimeout(...))`. HTTP error statuses come back as
 /// responses (they never trip the breaker); timeouts and network errors do.
-async fn guarded(req: reqwest::RequestBuilder) -> Result<reqwest::Response, UpstreamError> {
+/// One breaker for every GitHub caller: one upstream, one budget. `timeout` None is the stats timeout.
+pub(crate) async fn guarded(req: reqwest::RequestBuilder, timeout: Option<Duration>) -> Result<reqwest::Response, UpstreamError> {
     let s = &*SETTINGS;
+    let timeout = timeout.unwrap_or(s.timeout);
     {
         let mut b = BREAKER.lock().unwrap_or_else(|e| e.into_inner());
         let now = Instant::now();
@@ -122,7 +124,7 @@ async fn guarded(req: reqwest::RequestBuilder) -> Result<reqwest::Response, Upst
         b.state = if b.open_until.is_some() { "half-open" } else { "closed" };
     }
     let started = Instant::now();
-    let result = req.timeout(s.timeout).send().await;
+    let result = req.timeout(timeout).send().await;
     let mut b = BREAKER.lock().unwrap_or_else(|e| e.into_inner());
     match result {
         Ok(res) => {
@@ -137,7 +139,7 @@ async fn guarded(req: reqwest::RequestBuilder) -> Result<reqwest::Response, Upst
                 b.open_until = Some(started + s.breaker_reset);
                 b.state = "open";
             }
-            let message = if err.is_timeout() { format!("Upstream request timed out after {}ms", s.timeout.as_millis()) } else { err.to_string() };
+            let message = if err.is_timeout() { format!("Upstream request timed out after {}ms", timeout.as_millis()) } else { err.to_string() };
             Err(UpstreamError { status: None, body: String::new(), message })
         }
     }
@@ -170,11 +172,11 @@ impl Gh<'_> {
     /// `fetchGitHub`: on a 401 with a token, retry once without it.
     async fn get(&self, url: &str, label: &str) -> Result<reqwest::Response, UpstreamError> {
         let started = Instant::now();
-        let mut res = guarded(self.request(reqwest::Method::GET, url, true)).await?;
+        let mut res = guarded(self.request(reqwest::Method::GET, url, true), None).await?;
         self.trace.lock().unwrap_or_else(|e| e.into_inner()).push((label.to_string(), started.elapsed().as_millis()));
         if res.status() == 401 && self.token.is_some() {
             tracing::warn!("GITHUB_TOKEN is invalid. Retrying without token...");
-            res = guarded(self.request(reqwest::Method::GET, url, false)).await?;
+            res = guarded(self.request(reqwest::Method::GET, url, false), None).await?;
         }
         Ok(res)
     }
@@ -258,7 +260,7 @@ async fn fetch_calendar(gh: &Gh<'_>, username: &str) -> Option<(Vec<Value>, Valu
         .request(reqwest::Method::POST, "https://api.github.com/graphql", true)
         .header("Content-Type", "application/json")
         .body(json!({ "query": CONTRIBUTIONS_QUERY, "variables": { "userName": username } }).to_string());
-    let res = match guarded(req).await {
+    let res = match guarded(req, None).await {
         Ok(r) => r,
         Err(e) => {
             tracing::warn!(error = %e, "GraphQL fetch failed, falling back to events API");

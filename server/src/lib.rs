@@ -14,6 +14,7 @@ pub mod legal;
 pub mod limit;
 pub mod net;
 pub mod notify;
+pub mod oauth;
 pub mod og;
 pub mod compat;
 pub mod config;
@@ -24,6 +25,8 @@ pub mod crypto;
 pub mod export;
 pub mod geoip;
 pub mod github;
+pub mod github_admin;
+pub mod github_sync;
 pub mod pages;
 pub mod proxy;
 pub mod seo;
@@ -110,6 +113,11 @@ fn limited_api(state: &AppState) -> Router<AppState> {
         .route("/api/global-search", get(site_api::global_search))
         .route("/api/auth/login", post(auth::login))
         .route("/api/auth/logout", post(auth::logout))
+        .route("/api/auth/github", get(oauth::start))
+        .route("/api/auth/github/callback", get(oauth::callback))
+        .route("/api/github/config", put(github_admin::put_config))
+        .route("/api/github/sync", post(github_admin::run_sync))
+        .route("/api/github/webhook", post(github_admin::webhook))
         .route("/api/analytics/track", post(analytics::track))
         .route("/api/about", put(site::put_about))
         .route("/api/home", put(site::put_home))
@@ -277,6 +285,8 @@ pub fn router(state: AppState) -> Router {
         // Next's side of the writes: reached over loopback only, never for outside callers.
         .route("/api/internal/{*rest}", any(|| async { StatusCode::NOT_FOUND }))
         .route("/api/github/stats", get(github::stats))
+        .route("/api/github/config", get(github_admin::config))
+        .route("/api/github/sync", get(github_admin::preview))
         .route("/.well-known/api-catalog", get(site_api::api_catalog))
         .route("/.well-known/openapi.json", get(site_api::openapi))
         .route("/.well-known/oauth-authorization-server", get(site_api::oauth_metadata))

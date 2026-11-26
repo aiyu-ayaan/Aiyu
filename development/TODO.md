@@ -22,6 +22,11 @@ Milestone 8 (API routes) IN PROGRESS.
 - Done: contact form `POST`, notification service and test, link previews (`scripts/perf/outbound-parity.mjs` 18/18).
   Telegram delivery is checked by unit test only (its address is fixed). Rust refuses private addresses in
   `/api/og-preview`; Next (and `master`) fetch any address an anonymous caller names.
+- Done: GitHub OAuth, settings, repo sync, webhook (`writes/github.mjs` 27/27; one live preview and two live syncs
+  equal; mapping and README rules checked against `server/tests/fixtures/github-projects.json`). Not verified against
+  the real service: the OAuth callback (needs a GitHub app). Behavior differences, both deliberate: anonymous callers
+  of `GET /api/github/config?mode=repos` no longer see private repos (fixed in Next too); the scheduled sync now skips
+  unchanged repos (Next compares JSON text, which jsonb reorders, so it rewrites every linked project each run).
 - Cutover also needs what Next's proxy and static serving still do for unported paths: `public/` files and uploads,
   `/v1` and `/v2` redirects, removed-page redirects, the `/admin` sign-in redirect, markdown negotiation on `/`.
 - Checked 2026-11-26: write parity 249/249, auth parity all equal, read parity batch1 42/42, batch2 32/32, blogs 22/22,
@@ -310,8 +315,8 @@ Each page: Rust data + head + Vite route + e2e passing through Rust, then the Ne
 - [x] `/api/ai/skills/items` (Rust)
 - [x] `/api/ai/skills/items/[id]` (Rust)
 - [x] `/api/analytics/track` (Rust)
-- [ ] `/api/auth/github` (Next; writes the same Session row and cookie)
-- [ ] `/api/auth/github/callback`
+- [x] `/api/auth/github` (Rust)
+- [x] `/api/auth/github/callback` (Rust)
 - [x] `/api/auth/login` (Rust)
 - [x] `/api/auth/logout` (Rust)
 - [x] `/api/blogs` (Rust)
@@ -327,11 +332,11 @@ Each page: Rust data + head + Vite route + e2e passing through Rust, then the Ne
 - [x] `/api/desktop/widgets` (Rust)
 - [x] `/api/favicon` (Rust)
 - [x] `/api/gallery` (Rust)
-- [ ] `/api/github/config`
+- [x] `/api/github/config` (Rust)
 - [x] `/api/github/stats` (Rust; reqwest now has rustls. Without a token the event fallback series follows the
   server's local date in Node and UTC in Rust: equal only under TZ=UTC, as in Docker. Not re-checked under TZ=UTC)
-- [ ] `/api/github/sync`
-- [ ] `/api/github/webhook`
+- [x] `/api/github/sync` (Rust)
+- [x] `/api/github/webhook` (Rust)
 - [x] `/api/global-search` (Rust)
 - [x] `/api/header` (Rust)
 - [x] `/api/health` (Rust)

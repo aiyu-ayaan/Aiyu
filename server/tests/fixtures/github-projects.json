@@ -1,0 +1,934 @@
+{
+ "now": "2026-06-15T12:00:00.000Z",
+ "repos": [
+  {
+   "repo": {
+    "name": "text-to-speech",
+    "full_name": "me/text-to-speech",
+    "description": "Says it",
+    "language": "Rust",
+    "html_url": "https://github.com/me/text-to-speech",
+    "homepage": "https://example.org",
+    "topics": [
+     "cli",
+     "hacktoberfest",
+     "rust",
+     "text-to-speech",
+     "api",
+     "a-b",
+     " UI ",
+     "x1",
+     "x2",
+     "x3",
+     "x4",
+     "x5",
+     "x6"
+    ],
+    "stargazers_count": 5,
+    "forks_count": 2,
+    "subscribers_count": 3,
+    "watchers_count": 9,
+    "open_issues_count": 1,
+    "license": {
+     "spdx_id": "MIT",
+     "name": "MIT License"
+    },
+    "default_branch": "dev",
+    "created_at": "2021-03-01T00:00:00Z",
+    "pushed_at": "2026-06-01T00:00:00Z",
+    "archived": false,
+    "fork": false,
+    "private": false
+   },
+   "project": {
+    "name": "text-to-speech",
+    "description": "Says it",
+    "techStack": [
+     "Rust",
+     "CLI",
+     "Text To Speech",
+     "API",
+     "A B",
+     "UI",
+     "X1",
+     "X2"
+    ],
+    "year": "2021 - 2026",
+    "status": "Working",
+    "projectType": "CLI",
+    "codeLink": "https://github.com/me/text-to-speech"
+   },
+   "data": {
+    "fullName": "me/text-to-speech",
+    "htmlUrl": "https://github.com/me/text-to-speech",
+    "homepage": "https://example.org",
+    "stars": 5,
+    "forks": 2,
+    "watchers": 3,
+    "openIssues": 1,
+    "language": "Rust",
+    "topics": [
+     "cli",
+     "hacktoberfest",
+     "rust",
+     "text-to-speech",
+     "api",
+     "a-b",
+     " UI ",
+     "x1",
+     "x2",
+     "x3",
+     "x4",
+     "x5"
+    ],
+    "license": "MIT",
+    "defaultBranch": "dev",
+    "isArchived": false,
+    "isFork": false,
+    "isPrivate": false,
+    "pushedAt": "2026-06-01T00:00:00Z",
+    "createdAt": "2021-03-01T00:00:00Z"
+   }
+  },
+  {
+   "repo": {},
+   "project": {
+    "name": "",
+    "description": "",
+    "techStack": [],
+    "year": "2026",
+    "status": "Deferred",
+    "projectType": "Open Source",
+    "codeLink": ""
+   },
+   "data": {
+    "fullName": "",
+    "htmlUrl": "",
+    "homepage": "",
+    "stars": 0,
+    "forks": 0,
+    "watchers": 0,
+    "openIssues": 0,
+    "language": "",
+    "topics": [],
+    "license": "",
+    "defaultBranch": "main",
+    "isArchived": false,
+    "isFork": false,
+    "isPrivate": false,
+    "pushedAt": null,
+    "createdAt": null
+   }
+  },
+  {
+   "repo": {
+    "name": "a",
+    "fork": true,
+    "created_at": "2025-01-01T00:00:00Z",
+    "pushed_at": "2025-12-01T00:00:00Z",
+    "license": {
+     "spdx_id": "NOASSERTION",
+     "name": "Other"
+    }
+   },
+   "project": {
+    "name": "a",
+    "description": "",
+    "techStack": [],
+    "year": "2025",
+    "status": "Done",
+    "projectType": "Fork",
+    "codeLink": ""
+   },
+   "data": {
+    "fullName": "",
+    "htmlUrl": "",
+    "homepage": "",
+    "stars": 0,
+    "forks": 0,
+    "watchers": 0,
+    "openIssues": 0,
+    "language": "",
+    "topics": [],
+    "license": "Other",
+    "defaultBranch": "main",
+    "isArchived": false,
+    "isFork": true,
+    "isPrivate": false,
+    "pushedAt": "2025-12-01T00:00:00Z",
+    "createdAt": "2025-01-01T00:00:00Z"
+   }
+  },
+  {
+   "repo": {
+    "name": "b",
+    "topics": [
+     "SDK"
+    ],
+    "created_at": "2020-01-01T00:00:00Z",
+    "pushed_at": "2020-06-01T00:00:00Z",
+    "watchers_count": 4
+   },
+   "project": {
+    "name": "b",
+    "description": "",
+    "techStack": [
+     "SDK"
+    ],
+    "year": "2020",
+    "status": "Deferred",
+    "projectType": "Library",
+    "codeLink": ""
+   },
+   "data": {
+    "fullName": "",
+    "htmlUrl": "",
+    "homepage": "",
+    "stars": 0,
+    "forks": 0,
+    "watchers": 4,
+    "openIssues": 0,
+    "language": "",
+    "topics": [
+     "SDK"
+    ],
+    "license": "",
+    "defaultBranch": "main",
+    "isArchived": false,
+    "isFork": false,
+    "isPrivate": false,
+    "pushedAt": "2020-06-01T00:00:00Z",
+    "createdAt": "2020-01-01T00:00:00Z"
+   }
+  },
+  {
+   "repo": {
+    "name": "c",
+    "topics": [
+     "android"
+    ],
+    "updated_at": "2026-01-01T00:00:00Z",
+    "created_at": "2019-01-01T00:00:00Z",
+    "archived": true
+   },
+   "project": {
+    "name": "c",
+    "description": "",
+    "techStack": [
+     "Android"
+    ],
+    "year": "2019 - 2026",
+    "status": "Done",
+    "projectType": "Mobile",
+    "codeLink": ""
+   },
+   "data": {
+    "fullName": "",
+    "htmlUrl": "",
+    "homepage": "",
+    "stars": 0,
+    "forks": 0,
+    "watchers": 0,
+    "openIssues": 0,
+    "language": "",
+    "topics": [
+     "android"
+    ],
+    "license": "",
+    "defaultBranch": "main",
+    "isArchived": true,
+    "isFork": false,
+    "isPrivate": false,
+    "pushedAt": null,
+    "createdAt": "2019-01-01T00:00:00Z"
+   }
+  },
+  {
+   "repo": {
+    "name": "d",
+    "homepage": "x",
+    "created_at": "1969-01-01T00:00:00Z",
+    "pushed_at": "nonsense",
+    "private": true
+   },
+   "project": {
+    "name": "d",
+    "description": "",
+    "techStack": [],
+    "year": "2026",
+    "status": "Deferred",
+    "projectType": "Web",
+    "codeLink": ""
+   },
+   "data": {
+    "fullName": "",
+    "htmlUrl": "",
+    "homepage": "x",
+    "stars": 0,
+    "forks": 0,
+    "watchers": 0,
+    "openIssues": 0,
+    "language": "",
+    "topics": [],
+    "license": "",
+    "defaultBranch": "main",
+    "isArchived": false,
+    "isFork": false,
+    "isPrivate": true,
+    "pushedAt": "nonsense",
+    "createdAt": "1969-01-01T00:00:00Z"
+   }
+  },
+  {
+   "repo": {
+    "name": "e",
+    "topics": [
+     "ios",
+     "library"
+    ],
+    "language": "Swift",
+    "created_at": "2024-01-01T00:00:00Z",
+    "pushed_at": "2025-08-01T00:00:00Z",
+    "license": {
+     "name": "Custom"
+    }
+   },
+   "project": {
+    "name": "e",
+    "description": "",
+    "techStack": [
+     "Swift",
+     "IOS",
+     "Library"
+    ],
+    "year": "2024 - 2025",
+    "status": "Done",
+    "projectType": "Library",
+    "codeLink": ""
+   },
+   "data": {
+    "fullName": "",
+    "htmlUrl": "",
+    "homepage": "",
+    "stars": 0,
+    "forks": 0,
+    "watchers": 0,
+    "openIssues": 0,
+    "language": "Swift",
+    "topics": [
+     "ios",
+     "library"
+    ],
+    "license": "Custom",
+    "defaultBranch": "main",
+    "isArchived": false,
+    "isFork": false,
+    "isPrivate": false,
+    "pushedAt": "2025-08-01T00:00:00Z",
+    "createdAt": "2024-01-01T00:00:00Z"
+   }
+  }
+ ],
+ "merges": [
+  {
+   "existing": null,
+   "incoming": {
+    "name": "text-to-speech",
+    "description": "Says it",
+    "techStack": [
+     "Rust",
+     "CLI",
+     "Text To Speech",
+     "API",
+     "A B",
+     "UI",
+     "X1",
+     "X2"
+    ],
+    "year": "2021 - 2026",
+    "status": "Working",
+    "projectType": "CLI",
+    "codeLink": "https://github.com/me/text-to-speech"
+   },
+   "patch": {
+    "name": "text-to-speech",
+    "description": "Says it",
+    "techStack": [
+     "Rust",
+     "CLI",
+     "Text To Speech",
+     "API",
+     "A B",
+     "UI",
+     "X1",
+     "X2"
+    ],
+    "year": "2021 - 2026",
+    "status": "Working",
+    "projectType": "CLI",
+    "codeLink": "https://github.com/me/text-to-speech"
+   },
+   "diff": {
+    "changes": [
+     {
+      "field": "name",
+      "from": null,
+      "to": "text-to-speech"
+     },
+     {
+      "field": "description",
+      "from": null,
+      "to": "Says it"
+     },
+     {
+      "field": "techStack",
+      "from": null,
+      "to": [
+       "Rust",
+       "CLI",
+       "Text To Speech",
+       "API",
+       "A B",
+       "UI",
+       "X1",
+       "X2"
+      ]
+     },
+     {
+      "field": "year",
+      "from": null,
+      "to": "2021 - 2026"
+     },
+     {
+      "field": "status",
+      "from": null,
+      "to": "Working"
+     },
+     {
+      "field": "projectType",
+      "from": null,
+      "to": "CLI"
+     },
+     {
+      "field": "codeLink",
+      "from": null,
+      "to": "https://github.com/me/text-to-speech"
+     }
+    ],
+    "pinned": []
+   }
+  },
+  {
+   "existing": null,
+   "incoming": {
+    "name": "only",
+    "description": "",
+    "techStack": [],
+    "year": "2026",
+    "status": "Deferred",
+    "projectType": "Open Source",
+    "codeLink": ""
+   },
+   "patch": {
+    "name": "only",
+    "year": "2026",
+    "status": "Deferred",
+    "projectType": "Open Source"
+   },
+   "diff": {
+    "changes": [
+     {
+      "field": "name",
+      "from": null,
+      "to": "only"
+     },
+     {
+      "field": "year",
+      "from": null,
+      "to": "2026"
+     },
+     {
+      "field": "status",
+      "from": null,
+      "to": "Deferred"
+     },
+     {
+      "field": "projectType",
+      "from": null,
+      "to": "Open Source"
+     }
+    ],
+    "pinned": []
+   }
+  },
+  {
+   "existing": {
+    "name": "text-to-speech",
+    "description": "Says it",
+    "techStack": [
+     "Rust",
+     "CLI",
+     "Text To Speech",
+     "API",
+     "A B",
+     "UI",
+     "X1",
+     "X2"
+    ],
+    "year": "2021 - 2026",
+    "status": "Working",
+    "projectType": "CLI",
+    "codeLink": "https://github.com/me/text-to-speech",
+    "pinnedFields": []
+   },
+   "incoming": {
+    "name": "text-to-speech",
+    "description": "Says it",
+    "techStack": [
+     "Rust",
+     "CLI",
+     "Text To Speech",
+     "API",
+     "A B",
+     "UI",
+     "X1",
+     "X2"
+    ],
+    "year": "2021 - 2026",
+    "status": "Working",
+    "projectType": "CLI",
+    "codeLink": "https://github.com/me/text-to-speech"
+   },
+   "patch": {
+    "name": "text-to-speech",
+    "description": "Says it",
+    "techStack": [
+     "Rust",
+     "CLI",
+     "Text To Speech",
+     "API",
+     "A B",
+     "UI",
+     "X1",
+     "X2"
+    ],
+    "year": "2021 - 2026",
+    "status": "Working",
+    "projectType": "CLI",
+    "codeLink": "https://github.com/me/text-to-speech"
+   },
+   "diff": {
+    "changes": [],
+    "pinned": []
+   }
+  },
+  {
+   "existing": {
+    "name": "text-to-speech",
+    "description": "Says it",
+    "techStack": [
+     "Rust",
+     "CLI",
+     "Text To Speech",
+     "API",
+     "A B",
+     "UI",
+     "X1",
+     "X2"
+    ],
+    "year": "2021 - 2026",
+    "status": "Working",
+    "projectType": "CLI",
+    "codeLink": "https://github.com/me/text-to-speech",
+    "pinnedFields": []
+   },
+   "incoming": {
+    "name": "only",
+    "description": "",
+    "techStack": [],
+    "year": "2026",
+    "status": "Deferred",
+    "projectType": "Open Source",
+    "codeLink": ""
+   },
+   "patch": {
+    "name": "only",
+    "year": "2026",
+    "status": "Deferred",
+    "projectType": "Open Source"
+   },
+   "diff": {
+    "changes": [
+     {
+      "field": "name",
+      "from": "text-to-speech",
+      "to": "only"
+     },
+     {
+      "field": "year",
+      "from": "2021 - 2026",
+      "to": "2026"
+     },
+     {
+      "field": "status",
+      "from": "Working",
+      "to": "Deferred"
+     },
+     {
+      "field": "projectType",
+      "from": "CLI",
+      "to": "Open Source"
+     }
+    ],
+    "pinned": []
+   }
+  },
+  {
+   "existing": {
+    "name": "Mine",
+    "description": "Mine",
+    "techStack": [
+     "Go"
+    ],
+    "year": "2021 - 2026",
+    "status": "Working",
+    "projectType": "CLI",
+    "codeLink": "https://github.com/me/text-to-speech",
+    "pinnedFields": [
+     "name"
+    ]
+   },
+   "incoming": {
+    "name": "text-to-speech",
+    "description": "Says it",
+    "techStack": [
+     "Rust",
+     "CLI",
+     "Text To Speech",
+     "API",
+     "A B",
+     "UI",
+     "X1",
+     "X2"
+    ],
+    "year": "2021 - 2026",
+    "status": "Working",
+    "projectType": "CLI",
+    "codeLink": "https://github.com/me/text-to-speech"
+   },
+   "patch": {
+    "description": "Says it",
+    "techStack": [
+     "Rust",
+     "CLI",
+     "Text To Speech",
+     "API",
+     "A B",
+     "UI",
+     "X1",
+     "X2"
+    ],
+    "year": "2021 - 2026",
+    "status": "Working",
+    "projectType": "CLI",
+    "codeLink": "https://github.com/me/text-to-speech"
+   },
+   "diff": {
+    "changes": [
+     {
+      "field": "description",
+      "from": "Mine",
+      "to": "Says it"
+     },
+     {
+      "field": "techStack",
+      "from": [
+       "Go"
+      ],
+      "to": [
+       "Rust",
+       "CLI",
+       "Text To Speech",
+       "API",
+       "A B",
+       "UI",
+       "X1",
+       "X2"
+      ]
+     }
+    ],
+    "pinned": [
+     "name"
+    ]
+   }
+  },
+  {
+   "existing": {
+    "name": "Mine",
+    "description": "Mine",
+    "techStack": [
+     "Go"
+    ],
+    "year": "2021 - 2026",
+    "status": "Working",
+    "projectType": "CLI",
+    "codeLink": "https://github.com/me/text-to-speech",
+    "pinnedFields": [
+     "name"
+    ]
+   },
+   "incoming": {
+    "name": "only",
+    "description": "",
+    "techStack": [],
+    "year": "2026",
+    "status": "Deferred",
+    "projectType": "Open Source",
+    "codeLink": ""
+   },
+   "patch": {
+    "year": "2026",
+    "status": "Deferred",
+    "projectType": "Open Source"
+   },
+   "diff": {
+    "changes": [
+     {
+      "field": "year",
+      "from": "2021 - 2026",
+      "to": "2026"
+     },
+     {
+      "field": "status",
+      "from": "Working",
+      "to": "Deferred"
+     },
+     {
+      "field": "projectType",
+      "from": "CLI",
+      "to": "Open Source"
+     }
+    ],
+    "pinned": [
+     "name"
+    ]
+   }
+  },
+  {
+   "existing": {
+    "name": "x",
+    "description": "y",
+    "techStack": [],
+    "year": "1",
+    "status": "Done",
+    "projectType": "Web",
+    "codeLink": null,
+    "pinnedFields": [
+     "techStack",
+     "image"
+    ]
+   },
+   "incoming": {
+    "name": "text-to-speech",
+    "description": "Says it",
+    "techStack": [
+     "Rust",
+     "CLI",
+     "Text To Speech",
+     "API",
+     "A B",
+     "UI",
+     "X1",
+     "X2"
+    ],
+    "year": "2021 - 2026",
+    "status": "Working",
+    "projectType": "CLI",
+    "codeLink": "https://github.com/me/text-to-speech"
+   },
+   "patch": {
+    "name": "text-to-speech",
+    "description": "Says it",
+    "year": "2021 - 2026",
+    "status": "Working",
+    "projectType": "CLI",
+    "codeLink": "https://github.com/me/text-to-speech"
+   },
+   "diff": {
+    "changes": [
+     {
+      "field": "name",
+      "from": "x",
+      "to": "text-to-speech"
+     },
+     {
+      "field": "description",
+      "from": "y",
+      "to": "Says it"
+     },
+     {
+      "field": "year",
+      "from": "1",
+      "to": "2021 - 2026"
+     },
+     {
+      "field": "status",
+      "from": "Done",
+      "to": "Working"
+     },
+     {
+      "field": "projectType",
+      "from": "Web",
+      "to": "CLI"
+     },
+     {
+      "field": "codeLink",
+      "from": null,
+      "to": "https://github.com/me/text-to-speech"
+     }
+    ],
+    "pinned": [
+     "techStack",
+     "image"
+    ]
+   }
+  },
+  {
+   "existing": {
+    "name": "x",
+    "description": "y",
+    "techStack": [],
+    "year": "1",
+    "status": "Done",
+    "projectType": "Web",
+    "codeLink": null,
+    "pinnedFields": [
+     "techStack",
+     "image"
+    ]
+   },
+   "incoming": {
+    "name": "only",
+    "description": "",
+    "techStack": [],
+    "year": "2026",
+    "status": "Deferred",
+    "projectType": "Open Source",
+    "codeLink": ""
+   },
+   "patch": {
+    "name": "only",
+    "year": "2026",
+    "status": "Deferred",
+    "projectType": "Open Source"
+   },
+   "diff": {
+    "changes": [
+     {
+      "field": "name",
+      "from": "x",
+      "to": "only"
+     },
+     {
+      "field": "year",
+      "from": "1",
+      "to": "2026"
+     },
+     {
+      "field": "status",
+      "from": "Done",
+      "to": "Deferred"
+     },
+     {
+      "field": "projectType",
+      "from": "Web",
+      "to": "Open Source"
+     }
+    ],
+    "pinned": [
+     "techStack",
+     "image"
+    ]
+   }
+  }
+ ],
+ "readmes": [
+  {
+   "markdown": "",
+   "absolute": "",
+   "image": null
+  },
+  {
+   "markdown": "![shot](./docs/shot.png)",
+   "absolute": "![shot](https://raw.githubusercontent.com/me/repo/dev/docs/shot.png)",
+   "image": "https://raw.githubusercontent.com/me/repo/dev/docs/shot.png"
+  },
+  {
+   "markdown": "[Contributing](CONTRIBUTING.md) and [site](https://x.org) and [top](#top) and [mail](mailto:a@b.c)",
+   "absolute": "[Contributing](https://github.com/me/repo/blob/dev/CONTRIBUTING.md) and [site](https://x.org) and [top](#top) and [mail](mailto:a@b.c)",
+   "image": null
+  },
+  {
+   "markdown": "![badge](https://img.shields.io/x.png)\n![ok](/assets/ok.jpg \"t\")",
+   "absolute": "![badge](https://img.shields.io/x.png)\n![ok](https://raw.githubusercontent.com/me/repo/dev/assets/ok.jpg \"t\")",
+   "image": "https://raw.githubusercontent.com/me/repo/dev/assets/ok.jpg"
+  },
+  {
+   "markdown": "[logo]: assets/logo.png\n[doc]: ./docs/a.md\n[web]: //cdn.org/a.png",
+   "absolute": "[logo]: https://raw.githubusercontent.com/me/repo/dev/assets/logo.png\n[doc]: https://github.com/me/repo/blob/dev/docs/a.md\n[web]: //cdn.org/a.png",
+   "image": null
+  },
+  {
+   "markdown": "<img src=\"media/a.webp\" alt=\"demo\"> <a href='docs/b.md'>b</a> <img src=\"https://example.org/build.png\" alt=\"build status\">",
+   "absolute": "<img src=\"https://raw.githubusercontent.com/me/repo/dev/media/a.webp\" alt=\"demo\"> <a href='https://github.com/me/repo/blob/dev/docs/b.md'>b</a> <img src=\"https://example.org/build.png\" alt=\"build status\">",
+   "image": "https://raw.githubusercontent.com/me/repo/dev/media/a.webp"
+  },
+  {
+   "markdown": "![license](https://example.org/a.png) ![x](https://example.org/actions/workflows/a.png) ![y](https://example.org/badges/a.png) ![z](https://example.org/pic.svg) ![w](https://example.org/pic.gif?raw=1)",
+   "absolute": "![license](https://example.org/a.png) ![x](https://example.org/actions/workflows/a.png) ![y](https://example.org/badges/a.png) ![z](https://example.org/pic.svg) ![w](https://example.org/pic.gif?raw=1)",
+   "image": "https://example.org/pic.gif?raw=1"
+  },
+  {
+   "markdown": "![buildings](https://example.org/buildings.png)",
+   "absolute": "![buildings](https://example.org/buildings.png)",
+   "image": "https://example.org/buildings.png"
+  },
+  {
+   "markdown": "![a](#x) ![b](data:image/png;base64,AA==)\n\n   [ref]:    spaced/file.zip",
+   "absolute": "![a](#x) ![b](data:image/png;base64,AA==)\n\n   [ref]:    https://github.com/me/repo/blob/dev/spaced/file.zip",
+   "image": null
+  },
+  {
+   "markdown": "![é](images/é.png) text",
+   "absolute": "![é](https://raw.githubusercontent.com/me/repo/dev/images/é.png) text",
+   "image": "https://raw.githubusercontent.com/me/repo/dev/images/é.png"
+  }
+ ],
+ "truncations": [
+  {
+   "text": "short",
+   "max": 10,
+   "out": "short"
+  },
+  {
+   "text": "line one\nline two\nline three",
+   "max": 12,
+   "out": "line one\n\n*(README truncated.)*"
+  },
+  {
+   "text": "a\nbcdefghijklmnop",
+   "max": 10,
+   "out": "a\nbcdefghi\n\n*(README truncated.)*"
+  },
+  {
+   "text": "éééé😀😀😀\nzz",
+   "max": 8,
+   "out": "éééé😀😀\n\n*(README truncated.)*"
+  },
+  {
+   "text": "exact",
+   "max": 5,
+   "out": "exact"
+  }
+ ]
+}

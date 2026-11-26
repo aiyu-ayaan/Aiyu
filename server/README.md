@@ -11,7 +11,8 @@ bodies such as backups never sit in memory.
 |---|---|
 | Pages | every public and admin page (Vite build in `WEB_DIR`) |
 | Public reads | the `GET` content routes under `/api`, `/api/global-search`, `/api/github/stats`, `/.well-known/*` |
-| Sign-in | `POST /api/auth/login`, `POST /api/auth/logout` (GitHub OAuth is still Next) |
+| Sign-in | `POST /api/auth/login`, `POST /api/auth/logout`, GitHub OAuth (`/api/auth/github`, `/callback`) |
+| GitHub | `/api/github/{config,sync,webhook}` (and `stats`) |
 | Analytics | `POST /api/analytics/track` |
 | Site writes | `/api/about`, `/api/home`, `/api/header`, `/api/config`, `/api/themes/active`, `/api/ai/layout` |
 | Content writes | socials, themes, projects, deployments (and their reorder), gallery, blogs, legal apps and pages |
@@ -54,6 +55,7 @@ SEO tools read through them) and queues search-engine pings. The call carries an
 | `admin_settings.rs`, `admin_security.rs`, `admin_analytics.rs`, `seo.rs`, `geoip.rs`, `cron.rs` | admin settings, sessions and audit, analytics, SEO settings, IP places, cron schedules |
 | `site_files.rs` | robots.txt, sitemap.xml, ads.txt and the markdown documents |
 | `contact.rs`, `notify.rs`, `og.rs`, `net.rs` | contact form, notification channels, link previews, fetching of user-supplied URLs |
+| `github_admin.rs`, `github_sync.rs`, `oauth.rs` | GitHub settings, webhook, repo sync, sign-in |
 | `db.rs`, `export.rs` | database pool and ids, backup zip |
 
 `crypto.rs` and `session.rs` read values written by the Node code (encrypted DB fields, the `session` cookie).
@@ -73,6 +75,8 @@ pnpm server:test
 | `JWT_SECRET` | required | same value as the Next app |
 | `DATABASE_URL` | required | same Postgres as Next (Prisma's `?schema=` is ignored); pool of 3 |
 | `UPLOADS_DIR` | `public/uploads` | files added to backups |
+| `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `GITHUB_ALLOWED_ID`, `GITHUB_OAUTH_CALLBACK_URL` | unset | GitHub sign-in, same as Next |
+| `GITHUB_TOKEN` | unset | used when no token is stored in the admin settings |
 | `ADMIN_USERNAME`, `ADMIN_PASSWORD` | empty (login always fails) | password login; `$` is read by dotenv rules, which differ from Next's in `.env` files |
 | `GITHUB_AUTH_ENABLED` | `false` | `true` turns password login off |
 | `NODE_ENV` | unset | the session cookie is `Secure` unless this is `development` |
@@ -96,7 +100,7 @@ node --env-file=.env scripts/perf/api-parity.mjs scripts/perf/api/batch1.txt
 # Sign-in and analytics
 node --env-file=.env scripts/perf/auth-parity.mjs
 # Writes: same response and same row changes
-node --env-file=.env scripts/perf/write-parity.mjs scripts/perf/writes/{site,content,blogs,legal,ai,admin}.mjs
+node --env-file=.env scripts/perf/write-parity.mjs scripts/perf/writes/{site,content,blogs,legal,ai,admin,github}.mjs
 # Outgoing requests: contact form, notification channels, n8n webhook
 node --env-file=.env scripts/perf/outbound-parity.mjs
 # Browser tests through Rust (headless)
