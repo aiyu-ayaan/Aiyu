@@ -9,7 +9,7 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
 [![SQLite](https://img.shields.io/badge/SQLite-WAL%20%2B%20FTS5-003B57?logo=sqlite&logoColor=white)](https://www.sqlite.org/)
 [![Docker](https://img.shields.io/badge/Docker-213MB-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-F7DF1E)](https://opensource.org/licenses/MIT)
+[![License: Source-Available](https://img.shields.io/badge/License-Source--Available-ef4444)](LICENSE)
 [![Wiki](https://img.shields.io/badge/Docs-Wiki-181717?logo=github&logoColor=white)](https://github.com/aiyu-ayaan/Aiyu/wiki)
 
 [![home](public/screenshots/desktop-dark-home.png)](http://aiyu.co.in)
@@ -185,4 +185,4 @@ node --env-file=.env scripts/perf/bench.mjs --url http://localhost:8080 --pid <s
 - **Security:** Non-root container, `read_only` rootfs, `noexec /tmp`, `cap_drop: ALL`, rate limiting, CSP headers
 - **Wiki:** [Quick Start](https://github.com/aiyu-ayaan/Aiyu/wiki/Quick-Start) · [Admin Manual](https://github.com/aiyu-ayaan/Aiyu/wiki/Admin-Panel-Manual) · [Deployment](https://github.com/aiyu-ayaan/Aiyu/wiki/Deployment-Guide) · [Security](https://github.com/aiyu-ayaan/Aiyu/wiki/Security-Guide) · [API Docs](https://github.com/aiyu-ayaan/Aiyu/wiki/API-Documentation)
 
-**Licensed under [MIT](LICENSE)** • Maintained by [Aiyu Ayaan](https://github.com/aiyu-ayaan).
+**Source-Available (View & Learn Only) — All Rights Reserved ([LICENSE](LICENSE))** • Built by [Aiyu Ayaan](https://github.com/aiyu-ayaan).
