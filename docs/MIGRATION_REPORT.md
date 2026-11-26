@@ -126,7 +126,7 @@ raw-SQL portion of the init migration
 - `src/lib/prisma.js` — HMR-safe Prisma singleton.
 - `src/lib/serialize.js` — the central serializer (registry, `toClient`,
   `fromClient`, singleton get/upsert, secret handling).
-- `npm run db:up` / `db:down` — Postgres + pgAdmin via `docker-compose-dev.yml`.
+- `npm run db:up` / `db:down` — Postgres + pgAdmin via `docker-compose.dev.local.yml`.
 - `npm run db:migrate` / `db:migrate:deploy` / `db:generate` / `db:studio`.
 - `npm run db:seed` — `scripts/seed.mjs` (or `GET /api/seed`) repopulates sample
   data on a fresh database.
@@ -134,8 +134,8 @@ raw-SQL portion of the init migration
   idempotent one-time Mongo→Postgres importer (upsert by `_id`; preserves ids,
   timestamps, slugs, and `cronId` references; Cron before CronLog).
 - **Docker:**
-  - `docker-compose-dev.yml` (new) — Postgres + pgAdmin for host development.
-  - `docker-compose-local.yml` — full local stack (Postgres + app build + nginx).
+  - `docker-compose.dev.local.yml` (new) — Postgres + pgAdmin for host development.
+  - `docker-compose.local.yml` — full local stack (Postgres + app build + nginx).
   - `docker-compose.yml` — production (Postgres + app image + nginx).
   - `docker-compose.replication.yml` — Postgres primary + 2 read replicas
     (streaming replication, Bitnami images) replacing the old 3-node Mongo

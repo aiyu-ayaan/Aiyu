@@ -4,7 +4,7 @@
 >
 > **Please visit**: **[Deployment Guide Wiki](https://github.com/aiyu-ayaan/Aiyu/wiki/Deployment-Guide)**
 >
-> The wiki version includes comprehensive deployment instructions for Docker, Vercel, and PM2 with step-by-step guides.
+> The wiki version includes comprehensive deployment instructions for Docker and Vercel with step-by-step guides.
 
 ---
 
@@ -26,11 +26,6 @@ Perfect for DigitalOcean, AWS EC2, Linode, Vultr, Hetzner
 Quick deployment with auto-scaling
 
 **See**: [Deployment Guide - Vercel](https://github.com/aiyu-ayaan/Aiyu/wiki/Deployment-Guide#%EF%B8%8F-option-2-vercel-deployment)
-
-### 3. PM2 (Traditional Node.js)
-For traditional VPS hosting
-
-**See**: [Deployment Guide - PM2](https://github.com/aiyu-ayaan/Aiyu/wiki/Deployment-Guide#-option-3-pm2-traditional-hosting)
 
 ---
 

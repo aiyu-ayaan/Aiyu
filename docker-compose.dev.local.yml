@@ -4,7 +4,7 @@
 # Prisma CLI directly on your host machine (pnpm dev), pointing
 # DATABASE_URL at localhost:${POSTGRES_PORT}.
 #
-#   docker compose -f docker-compose-dev.yml up -d      # or: pnpm db:up
+#   docker compose -f docker-compose.dev.local.yml up -d      # or: pnpm db:up
 #   pnpm exec prisma migrate deploy                            # apply schema
 #   pnpm db:seed                                      # populate sample data
 #   pnpm dev

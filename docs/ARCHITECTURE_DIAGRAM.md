@@ -126,7 +126,7 @@ User/Browser
 
 ---
 
-## Local Development (docker-compose-local.yml)
+## Local Development (docker-compose.local.yml)
 
 ```
 Developer's Machine
@@ -135,7 +135,7 @@ Developer's Machine
       ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │         Next.js Application (Local Build)                       │
-│  - Built from local source (docker-compose-local.yml)           │
+│  - Built from local source (docker-compose.local.yml)           │
 │  - Dockerfile in project root                                   │
 │  - Environment: production                                      │
 │  - Health check: ENABLED (40s start period)                     │
@@ -269,7 +269,7 @@ Ready for Traffic:
    Browser → NGINX (port 3000) → App (port 3000) → MongoDB (port 27017)
 ```
 
-### Local Development (docker-compose-local.yml)
+### Local Development (docker-compose.local.yml)
 
 ```
 Startup Sequence:
@@ -312,7 +312,7 @@ Production (docker-compose.yml):
 ├─ nextjs_cache      → /app/.next/cache (Next.js build cache)
 └─ nginx_cache       → /var/cache/nginx (NGINX response cache)
 
-Local (docker-compose-local.yml):
+Local (docker-compose.local.yml):
 ├─ mongodb_data      → /data/db (MongoDB data)
 ├─ mongodb_config    → /data/configdb (MongoDB config)
 ├─ uploads_data      → /app/public/uploads (user uploads)
