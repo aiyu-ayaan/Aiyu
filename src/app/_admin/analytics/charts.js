@@ -1,324 +1,203 @@
 "use client";
 /**
- * Dependency-free SVG chart primitives for the analytics dashboard. Styled to
- * match the admin terminal aesthetic (cyan accents on slate/glass). All charts
- * scale via `viewBox` so they stay responsive without a sizing library.
+ * Dependency-free chart primitives for the analytics dashboard.
+ * Uses theme CSS variables exclusively so light, dark, and custom admin themes work seamlessly.
  */
-import React from 'react';
-import { WORLD_VIEWBOX, WORLD_PATHS, WORLD_NAMES } from './worldGeo';
+import React from "react";
+import { EmptyState } from "@/app/components/admin/ui";
+import LineChart from "./LineChart";
+import { WORLD_VIEWBOX, WORLD_PATHS, WORLD_NAMES } from "./worldGeo";
 
-const CYAN = '#22d3ee';
+export { LineChart };
 
 /** ISO-2 country code -> flag emoji (no data dependency). */
-function flag(code = '') {
+function flag(code = "") {
     const cc = String(code).trim().toUpperCase();
-    if (!/^[A-Z]{2}$/.test(cc)) return '🏳️';
+    if (!/^[A-Z]{2}$/.test(cc)) return "🏳️";
     return String.fromCodePoint(...[...cc].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65));
 }
 
-function niceMax(value) {
-    if (value <= 5) return 5;
-    const pow = Math.pow(10, Math.floor(Math.log10(value)));
-    const n = value / pow;
-    const step = n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10;
-    return step * pow;
-}
-
-/** Dual-series area + line chart (views + uniques) over time. */
-export function LineChart({ data = [], height = 220 }) {
+/** Horizontal ranked bar list. items: [{ label, value, title?, description?, image?, icon? }]. */
+export function BarList({ items = [], accent = "var(--accent-cyan)", emptyLabel = "No data recorded yet.", share = false }) {
     const [hoveredIdx, setHoveredIdx] = React.useState(null);
-    const W = 760;
-    const H = height;
-    const pad = { top: 16, right: 16, bottom: 28, left: 36 };
-    const innerW = W - pad.left - pad.right;
-    const innerH = H - pad.top - pad.bottom;
-
-    const max = niceMax(Math.max(1, ...data.map((d) => d.views)));
-    const n = data.length;
-    const x = (i) => pad.left + (n <= 1 ? innerW / 2 : (i / (n - 1)) * innerW);
-    const y = (v) => pad.top + innerH - (v / max) * innerH;
-
-    const line = (key) => data.map((d, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)},${y(d[key]).toFixed(1)}`).join(' ');
-    const area = `${line('views')} L${x(n - 1).toFixed(1)},${(pad.top + innerH).toFixed(1)} L${x(0).toFixed(1)},${(pad.top + innerH).toFixed(1)} Z`;
-
-    const gridLines = [0, 0.25, 0.5, 0.75, 1].map((t) => ({
-        v: Math.round(max * (1 - t)),
-        yy: pad.top + t * innerH,
-    }));
-
-    // Show ~6 x-axis labels max.
-    const labelEvery = Math.max(1, Math.ceil(n / 6));
-
-    if (!n) {
-        return <div className="text-slate-500 text-sm font-mono py-12 text-center">NO_DATA</div>;
+    if (!items.length) {
+        return <EmptyState className="flex-1 justify-center !items-center text-center" title={emptyLabel} />;
     }
-
-    const sliceWidth = innerW / Math.max(1, n - 1);
-    const hoveredData = hoveredIdx !== null ? data[hoveredIdx] : null;
-    let tx = 0, ty = 0;
-    const tooltipW = 140;
-    const tooltipH = 75;
-    if (hoveredIdx !== null && hoveredData) {
-        tx = x(hoveredIdx) - tooltipW / 2;
-        if (tx < pad.left) tx = pad.left;
-        if (tx + tooltipW > W - pad.right) tx = W - pad.right - tooltipW;
-        ty = y(hoveredData.views) - tooltipH - 12;
-        if (ty < pad.top + 8) {
-            ty = pad.top + 8;
-        }
-    }
+    const max = Math.max(1, ...items.map((i) => i.value));
+    const total = items.reduce((sum, i) => sum + (i.value || 0), 0) || 1;
 
     return (
-        <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto select-none" role="img" aria-label="Traffic over time">
-            <defs>
-                <linearGradient id="aiyuArea" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={CYAN} stopOpacity="0.30" />
-                    <stop offset="100%" stopColor={CYAN} stopOpacity="0" />
-                </linearGradient>
-            </defs>
-
-            {gridLines.map((g, i) => (
-                <g key={i}>
-                    <line x1={pad.left} y1={g.yy} x2={W - pad.right} y2={g.yy} stroke="rgba(148,163,184,0.12)" strokeWidth="1" />
-                    <text x={pad.left - 8} y={g.yy + 3} textAnchor="end" className="fill-slate-500" style={{ fontSize: 10, fontFamily: 'monospace' }}>{g.v}</text>
-                </g>
-            ))}
-
-            <path d={area} fill="url(#aiyuArea)" />
-            <path d={line('views')} fill="none" stroke={CYAN} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
-            <path d={line('uniques')} fill="none" stroke="#a78bfa" strokeWidth="1.5" strokeDasharray="4 3" strokeLinejoin="round" strokeLinecap="round" />
-
-            {data.map((d, i) => (i % labelEvery === 0 || i === n - 1) ? (
-                <text key={i} x={x(i)} y={H - 8} textAnchor="middle" className="fill-slate-500" style={{ fontSize: 9, fontFamily: 'monospace' }}>
-                    {d.day.slice(5)}
-                </text>
-            ) : null)}
-
-            {/* Hover guideline and circles */}
-            {hoveredIdx !== null && hoveredData && (
-                <>
-                    <line
-                        x1={x(hoveredIdx)}
-                        y1={pad.top}
-                        x2={x(hoveredIdx)}
-                        y2={pad.top + innerH}
-                        stroke="rgba(34, 211, 238, 0.35)"
-                        strokeWidth="1.5"
-                        strokeDasharray="3 3"
-                        pointerEvents="none"
-                    />
-                    <circle
-                        cx={x(hoveredIdx)}
-                        cy={y(hoveredData.views)}
-                        r="5.5"
-                        fill="#0f172a"
-                        stroke={CYAN}
-                        strokeWidth="2.5"
-                        pointerEvents="none"
-                    />
-                    <circle
-                        cx={x(hoveredIdx)}
-                        cy={y(hoveredData.uniques)}
-                        r="5.5"
-                        fill="#0f172a"
-                        stroke="#a78bfa"
-                        strokeWidth="2.5"
-                        pointerEvents="none"
-                    />
-                </>
-            )}
-
-            {/* Hover interaction rects overlay */}
-            {data.map((d, i) => {
-                const xStart = n <= 1 ? pad.left : x(i) - sliceWidth / 2;
+        <ul className="adm-list flex flex-1 flex-col">
+            {items.map((it, idx) => {
+                const primaryText = it.title || it.label;
+                const secondaryText = it.title && it.label && it.title !== it.label ? it.label : it.sub || null;
+                const hasPreview = Boolean(it.image || it.description || (it.title && it.title !== it.label));
                 return (
-                    <rect
-                        key={i}
-                        x={xStart}
-                        y={pad.top}
-                        width={sliceWidth}
-                        height={innerH}
-                        fill="transparent"
-                        onMouseEnter={() => setHoveredIdx(i)}
-                        onMouseMove={() => setHoveredIdx(i)}
+                    <li
+                        key={`${it.label}-${idx}`}
+                        className="adm-row relative max-h-20 flex-1"
+                        onMouseEnter={() => setHoveredIdx(idx)}
                         onMouseLeave={() => setHoveredIdx(null)}
-                        style={{ cursor: 'pointer' }}
-                    />
+                    >
+                        <span
+                            aria-hidden="true"
+                            className="absolute inset-y-1.5 left-0 rounded-r-md"
+                            style={{
+                                width: `${Math.max(3, (it.value / max) * 100)}%`,
+                                background: `color-mix(in srgb, ${accent} 14%, transparent)`,
+                            }}
+                        />
+                        {it.image ? (
+                            <span className="relative h-7 w-7 shrink-0 overflow-hidden rounded-md border border-[var(--hairline)] bg-[var(--bg-secondary)]">
+                                <img src={it.image} alt="" className="h-full w-full object-cover" loading="lazy" />
+                            </span>
+                        ) : it.icon ? (
+                            <span aria-hidden="true" className="relative flex w-6 shrink-0 justify-center text-[var(--text-secondary)]">
+                                {it.icon}
+                            </span>
+                        ) : null}
+                        <span className="relative min-w-0 flex-1">
+                            <span className="block truncate text-[var(--text-primary)]" title={String(primaryText)}>
+                                {primaryText}
+                            </span>
+                            {secondaryText && (
+                                <span className="adm-help block truncate font-mono">{secondaryText}</span>
+                            )}
+                        </span>
+                        <span className="adm-num relative shrink-0 font-semibold text-[var(--text-bright)]">
+                            {(it.value ?? 0).toLocaleString()}
+                        </span>
+                        {share && (
+                            <span className="adm-num relative w-11 shrink-0 text-right text-xs text-[var(--text-secondary)]">
+                                {Math.round(((it.value || 0) / total) * 100)}%
+                            </span>
+                        )}
+
+                        {hoveredIdx === idx && hasPreview && (
+                            <div className="adm-dialog pointer-events-none absolute bottom-full left-1/2 z-30 mb-2 flex !w-72 -translate-x-1/2 gap-3 p-3">
+                                {it.image && (
+                                    <div className="h-14 w-14 shrink-0 overflow-hidden rounded-md border border-[var(--hairline)] bg-[var(--bg-primary)]">
+                                        <img
+                                            src={it.image}
+                                            alt={it.title || "Preview"}
+                                            className="h-full w-full object-cover"
+                                        />
+                                    </div>
+                                )}
+                                <div className="min-w-0 flex-1">
+                                    <p className="truncate text-xs font-semibold text-[var(--text-bright)]">
+                                        {it.title || it.label}
+                                    </p>
+                                    {secondaryText && (
+                                        <p className="adm-help truncate font-mono">{secondaryText}</p>
+                                    )}
+                                    {it.description && (
+                                        <p className="adm-help mt-1 line-clamp-2">{it.description}</p>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </li>
                 );
             })}
-
-            {/* Tooltip Card */}
-            {hoveredIdx !== null && hoveredData && (
-                <g transform={`translate(${tx}, ${ty})`} pointerEvents="none">
-                    <rect
-                        width={tooltipW}
-                        height={tooltipH}
-                        rx="8"
-                        fill="#0f172a"
-                        fillOpacity="0.95"
-                        stroke="rgba(255, 255, 255, 0.15)"
-                        strokeWidth="1.5"
-                        style={{ filter: 'drop-shadow(0 10px 15px rgba(0, 0, 0, 0.5))' }}
-                    />
-                    <text
-                        x="12"
-                        y="20"
-                        fill="#94a3b8"
-                        style={{ fontSize: 10, fontFamily: 'monospace', fontWeight: 600 }}
-                    >
-                        {hoveredData.day}
-                    </text>
-                    <circle cx="16" cy="38" r="3" fill={CYAN} />
-                    <text
-                        x="26"
-                        y="41"
-                        fill="#cbd5e1"
-                        style={{ fontSize: 10, fontFamily: 'monospace' }}
-                    >
-                        Views:
-                    </text>
-                    <text
-                        x={tooltipW - 12}
-                        y="41"
-                        fill={CYAN}
-                        textAnchor="end"
-                        style={{ fontSize: 11, fontFamily: 'monospace', fontWeight: 'bold' }}
-                    >
-                        {hoveredData.views.toLocaleString()}
-                    </text>
-                    <circle cx="16" cy="56" r="3" fill="#a78bfa" />
-                    <text
-                        x="26"
-                        y="59"
-                        fill="#cbd5e1"
-                        style={{ fontSize: 10, fontFamily: 'monospace' }}
-                    >
-                        Visitors:
-                    </text>
-                    <text
-                        x={tooltipW - 12}
-                        y="59"
-                        fill="#a78bfa"
-                        textAnchor="end"
-                        style={{ fontSize: 11, fontFamily: 'monospace', fontWeight: 'bold' }}
-                    >
-                        {hoveredData.uniques.toLocaleString()}
-                    </text>
-                </g>
-            )}
-        </svg>
+        </ul>
     );
 }
 
-/** Horizontal ranked bar list. items: [{ label, value, sub? }]. */
-export function BarList({ items = [], accent = CYAN, emptyLabel = 'NO_DATA' }) {
-    const [hoveredIdx, setHoveredIdx] = React.useState(null);
-    const max = Math.max(1, ...items.map((i) => i.value));
-    if (!items.length) {
-        return <div className="text-slate-600 text-xs font-mono py-6 text-center">{emptyLabel}</div>;
-    }
-    return (
-        <div className="space-y-2.5">
-            {items.map((it, idx) => (
-                <div
-                    key={`${it.label}-${idx}`}
-                    className="relative"
-                    onMouseEnter={() => setHoveredIdx(idx)}
-                    onMouseLeave={() => setHoveredIdx(null)}
-                >
-                    <div className="relative h-7 rounded-md overflow-hidden bg-white/[0.03] border border-white/5 hover:border-white/10 transition-colors">
-                        <div
-                            className="absolute inset-y-0 left-0 rounded-md transition-all"
-                            style={{ width: `${Math.max(4, (it.value / max) * 100)}%`, background: `${accent}1f`, borderRight: `2px solid ${accent}` }}
-                        />
-                        <div className="relative z-10 flex items-center justify-between h-full px-3">
-                            <span className="text-xs text-slate-200 font-mono truncate pr-2" title={it.label}>{it.label}</span>
-                            <span className="text-xs text-slate-400 font-mono tabular-nums shrink-0">{it.value.toLocaleString()}</span>
-                        </div>
-                    </div>
-
-                    {/* Preview Hover Popover */}
-                    {hoveredIdx === idx && (it.image || it.title || it.description) && (
-                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 z-50 w-72 p-3 bg-slate-950/95 border border-white/10 rounded-xl shadow-2xl backdrop-blur-md flex gap-3 pointer-events-none transition-all">
-                            {it.image && (
-                                <div className="w-16 h-16 shrink-0 rounded-md overflow-hidden bg-slate-800 border border-white/5 relative">
-                                    <img
-                                        src={it.image}
-                                        alt={it.title || 'Preview'}
-                                        className="w-full h-full object-cover"
-                                    />
-                                </div>
-                            )}
-                            <div className="min-w-0 flex-1">
-                                <h4 className="text-xs font-bold text-white truncate">{it.title || it.label}</h4>
-                                <p className="text-[10px] text-slate-400 mt-1 line-clamp-3 leading-relaxed">
-                                    {it.description || 'No description available.'}
-                                </p>
-                            </div>
-                            {/* A small arrow pointer at the bottom of the popover */}
-                            <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-950/95" />
-                        </div>
-                    )}
-                </div>
-            ))}
-        </div>
-    );
-}
-
-/** Donut chart. segments: [{ label, value, color }]. */
-export function DonutSplit({ segments = [], size = 160 }) {
-    const total = segments.reduce((s, x) => s + x.value, 0);
+/** Donut chart with side breakdown list. segments: [{ label, value, color }]. */
+export function DonutSplit({ segments = [], size = 156 }) {
+    const total = segments.reduce((s, x) => s + (x.value || 0), 0);
     const r = size / 2;
-    const stroke = 22;
+    const stroke = 20;
     const radius = r - stroke / 2;
     const circ = 2 * Math.PI * radius;
-    let offset = 0;
 
     if (!total) {
-        return <div className="text-slate-600 text-xs font-mono py-6 text-center">NO_DATA</div>;
+        return <EmptyState className="flex-1 justify-center !items-center text-center" title="No device data recorded yet." />;
     }
 
+    const arcs = segments.reduce((acc, seg) => {
+        const frac = seg.value / total;
+        const startOffset = acc.length ? acc[acc.length - 1].nextOffset : 0;
+        acc.push({
+            ...seg,
+            frac,
+            dash: `${frac * circ} ${circ}`,
+            dashOffset: -startOffset * circ,
+            nextOffset: startOffset + frac,
+        });
+        return acc;
+    }, []);
+
     return (
-        <div className="flex items-center gap-5">
-            <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="shrink-0">
+        <div className="flex flex-1 flex-col sm:flex-row items-center gap-6">
+            <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="shrink-0" role="img" aria-label="Device share">
                 <g transform={`rotate(-90 ${r} ${r})`}>
-                    <circle cx={r} cy={r} r={radius} fill="none" stroke="rgba(148,163,184,0.10)" strokeWidth={stroke} />
-                    {segments.map((seg, i) => {
-                        const frac = seg.value / total;
-                        const dash = `${frac * circ} ${circ}`;
-                        const el = (
-                            <circle key={i} cx={r} cy={r} r={radius} fill="none" stroke={seg.color}
-                                strokeWidth={stroke} strokeDasharray={dash} strokeDashoffset={-offset * circ} />
-                        );
-                        offset += frac;
-                        return el;
-                    })}
+                    <circle cx={r} cy={r} r={radius} fill="none" style={{ stroke: "var(--bg-hover)" }} strokeWidth={stroke} />
+                    {arcs.map((seg, i) => (
+                        <circle
+                            key={i}
+                            cx={r}
+                            cy={r}
+                            r={radius}
+                            fill="none"
+                            style={{ stroke: seg.color }}
+                            strokeWidth={stroke}
+                            strokeDasharray={seg.dash}
+                            strokeDashoffset={seg.dashOffset}
+                        />
+                    ))}
                 </g>
-                <text x={r} y={r - 2} textAnchor="middle" className="fill-white" style={{ fontSize: 22, fontWeight: 700 }}>{total.toLocaleString()}</text>
-                <text x={r} y={r + 16} textAnchor="middle" className="fill-slate-500" style={{ fontSize: 10, fontFamily: 'monospace' }}>TOTAL</text>
+                <text
+                    x={r}
+                    y={r - 2}
+                    textAnchor="middle"
+                    style={{ fill: "var(--text-bright)", fontSize: 20, fontWeight: 700, fontFamily: "var(--adm-mono)" }}
+                >
+                    {total.toLocaleString()}
+                </text>
+                <text
+                    x={r}
+                    y={r + 16}
+                    textAnchor="middle"
+                    style={{ fill: "var(--text-secondary)", fontSize: 11 }}
+                >
+                    Total views
+                </text>
             </svg>
-            <div className="space-y-1.5">
-                {segments.map((seg, i) => (
-                    <div key={i} className="flex items-center gap-2 text-xs font-mono">
-                        <span className="w-2.5 h-2.5 rounded-sm" style={{ background: seg.color }} />
-                        <span className="text-slate-300 capitalize">{seg.label}</span>
-                        <span className="text-slate-500 tabular-nums">{Math.round((seg.value / total) * 100)}%</span>
-                    </div>
-                ))}
-            </div>
+            <ul className="w-full flex-1 space-y-2.5">
+                {segments.map((seg, i) => {
+                    const pct = Math.round((seg.value / total) * 100);
+                    return (
+                        <li key={i} className="space-y-1">
+                            <div className="flex items-center justify-between gap-2 text-sm">
+                                <span className="flex items-center gap-2">
+                                    <span aria-hidden="true" className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: seg.color }} />
+                                    <span className="capitalize text-[var(--text-primary)]">{seg.label}</span>
+                                </span>
+                                <span className="adm-num flex items-center gap-2">
+                                    <span className="font-semibold text-[var(--text-bright)]">{seg.value.toLocaleString()}</span>
+                                    <span className="w-10 text-right text-xs text-[var(--text-secondary)]">{pct}%</span>
+                                </span>
+                            </div>
+                            <div className="adm-meter">
+                                <span style={{ width: `${pct}%`, "--adm-meter-tone": seg.color }} />
+                            </div>
+                        </li>
+                    );
+                })}
+            </ul>
         </div>
     );
 }
 
 /**
  * Equirectangular world choropleth. `data`: [{ code (ISO-2), views }].
- * Countries are shaded by traffic volume on a perceptual (sqrt) cyan ramp;
- * hovering a country reveals a flag + name + views + share tooltip. Pure SVG,
- * no mapping library — geometry comes from the committed `worldGeo` module.
+ * Countries are shaded by traffic volume on a perceptual (sqrt) ramp using theme tokens.
  */
 export function WorldMap({ data = [], height = 360 }) {
     const wrapRef = React.useRef(null);
-    const [hover, setHover] = React.useState(null); // { code }
+    const [hover, setHover] = React.useState(null);
     const [pos, setPos] = React.useState({ x: 0, y: 0, w: 0 });
 
     const { values, total, max } = React.useMemo(() => {
@@ -338,9 +217,9 @@ export function WorldMap({ data = [], height = 360 }) {
 
     const fillFor = (cc) => {
         const n = values.get(cc) || 0;
-        if (!n || !max) return 'rgba(148,163,184,0.06)';
-        const t = Math.sqrt(n / max); // perceptual scaling
-        return `rgba(34,211,238,${(0.15 + t * 0.8).toFixed(3)})`;
+        if (!n || !max) return "var(--bg-hover)";
+        const pct = Math.round(22 + Math.sqrt(n / max) * 73);
+        return `color-mix(in srgb, var(--accent-cyan) ${pct}%, var(--bg-secondary))`;
     };
 
     const onMove = (e) => {
@@ -349,60 +228,67 @@ export function WorldMap({ data = [], height = 360 }) {
     };
 
     const codes = Object.keys(WORLD_PATHS);
-    const hoveredViews = hover ? (values.get(hover.code) || 0) : 0;
+    const hoveredViews = hover ? values.get(hover.code) || 0 : 0;
 
     return (
         <div ref={wrapRef} className="relative w-full" onMouseMove={onMove}>
             <svg
                 viewBox={WORLD_VIEWBOX}
-                className="w-full h-auto select-none"
-                style={{ maxHeight: height }}
+                className="h-auto w-full select-none rounded-lg border border-[var(--hairline)]"
+                style={{ maxHeight: height, background: "var(--bg-secondary)" }}
                 role="img"
                 aria-label="Visitors by country"
                 onMouseLeave={() => setHover(null)}
             >
-                <rect x="0" y="0" width="1000" height="500" fill="rgba(15,23,42,0.4)" rx="6" />
                 {codes.map((cc) => (
                     <path
                         key={cc}
                         d={WORLD_PATHS[cc]}
-                        fill={fillFor(cc)}
-                        stroke={hover?.code === cc ? CYAN : 'rgba(148,163,184,0.18)'}
-                        strokeWidth={hover?.code === cc ? 0.9 : 0.4}
+                        style={{
+                            fill: fillFor(cc),
+                            stroke: hover?.code === cc ? "var(--accent-cyan)" : "var(--hairline-strong)",
+                            cursor: values.get(cc) ? "pointer" : "default",
+                            transition: "fill 120ms ease",
+                        }}
+                        strokeWidth={hover?.code === cc ? 1 : 0.45}
                         vectorEffect="non-scaling-stroke"
                         onMouseEnter={() => setHover({ code: cc })}
-                        style={{ cursor: values.get(cc) ? 'pointer' : 'default', transition: 'fill 120ms' }}
                     />
                 ))}
             </svg>
 
-            {/* Legend */}
-            <div className="absolute left-3 bottom-3 flex items-center gap-2 text-[10px] font-mono text-slate-400 bg-slate-950/60 px-2 py-1 rounded-md border border-white/5 backdrop-blur-sm">
+            <div className="absolute bottom-3 left-3 flex items-center gap-2 rounded-md border border-[var(--hairline)] bg-[var(--bg-secondary)] px-2.5 py-1 text-xs text-[var(--text-secondary)]">
                 <span>Low</span>
-                <span className="h-2 w-20 rounded-sm" style={{ background: 'linear-gradient(90deg, rgba(34,211,238,0.15), rgba(34,211,238,0.95))' }} />
+                <span
+                    aria-hidden="true"
+                    className="h-2 w-16 rounded-sm"
+                    style={{
+                        background:
+                            "linear-gradient(90deg, color-mix(in srgb, var(--accent-cyan) 20%, var(--bg-secondary)), var(--accent-cyan))",
+                    }}
+                />
                 <span>High</span>
             </div>
 
-            {/* Tooltip */}
             {hover && (
                 <div
-                    className="pointer-events-none absolute z-50 px-3 py-2 rounded-lg bg-slate-950/95 border border-white/10 shadow-2xl backdrop-blur-md text-xs"
+                    className="adm-dialog pointer-events-none absolute z-30 !w-auto min-w-[10rem] px-3 py-2 text-xs"
                     style={{
-                        left: Math.min(pos.x + 14, Math.max(pos.w - 150, 0)),
+                        left: Math.min(pos.x + 14, Math.max(pos.w - 170, 0)),
                         top: Math.max(pos.y - 10, 0),
                     }}
                 >
-                    <div className="flex items-center gap-2 font-semibold text-white">
+                    <div className="flex items-center gap-2 font-semibold text-[var(--text-bright)]">
                         <span className="text-base leading-none">{flag(hover.code)}</span>
-                        <span className="truncate max-w-[160px]">{WORLD_NAMES[hover.code] || hover.code}</span>
+                        <span className="max-w-[160px] truncate">{WORLD_NAMES[hover.code] || hover.code}</span>
                     </div>
-                    <div className="mt-1 font-mono text-slate-300 tabular-nums">
-                        {hoveredViews.toLocaleString()} view{hoveredViews === 1 ? '' : 's'}
+                    <div className="adm-num mt-1 text-[var(--text-primary)]">
+                        {hoveredViews.toLocaleString()} view{hoveredViews === 1 ? "" : "s"}
                         {total > 0 && hoveredViews > 0 && (
-                            <span className="text-slate-500"> · {((hoveredViews / total) * 100).toFixed(1)}%</span>
+                            <span className="text-[var(--text-secondary)]"> · {((hoveredViews / total) * 100).toFixed(1)}%</span>
                         )}
                     </div>
-                    {hoveredViews === 0 && <div className="text-[10px] text-slate-600 mt-0.5">No recorded visits</div>}
+                    {hoveredViews === 0 && <div className="adm-help mt-0.5">No recorded visits</div>}
                 </div>
             )}
         </div>

@@ -1,51 +1,62 @@
 "use client";
-import React, { useCallback, useEffect, useState } from 'react';
-import Link from 'next/link';
-import { motion } from 'framer-motion';
+import React, { useCallback, useEffect, useState } from "react";
 import {
-    FaChartLine, FaEye, FaUsers, FaPaperPlane, FaUpRightFromSquare,
-    FaArrowPointer, FaRobot, FaArrowsRotate, FaTriangleExclamation,
-    FaArrowTrendUp, FaArrowTrendDown, FaEarthAmericas, FaCalendarDay,
-    FaGaugeHigh, FaUserShield,
-} from 'react-icons/fa6';
-import { LineChart, BarList, DonutSplit, WorldMap } from './charts';
-import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
+    FaArrowsRotate, FaTriangleExclamation, FaArrowTrendUp, FaArrowTrendDown,
+    FaTrash,
+} from "react-icons/fa6";
+import { LineChart, BarList, DonutSplit, WorldMap } from "./charts";
+import { useAdminFeedback } from "@/app/components/admin/feedback/AdminFeedbackProvider";
+import { PageHeader, Panel, Stat, Badge, Loading } from "@/app/components/admin/ui";
+import "../../styles/admin-insights.css";
 
 const RANGES = [
-    { key: '7d', label: '7D' },
-    { key: '30d', label: '30D' },
-    { key: '90d', label: '90D' },
+    { key: "7d", label: "7 days" },
+    { key: "30d", label: "30 days" },
+    { key: "90d", label: "90 days" },
 ];
 
-const DEVICE_COLORS = { desktop: '#22d3ee', mobile: '#a78bfa', tablet: '#34d399', bot: '#64748b' };
-const REFERRER_LABELS = { direct: 'Direct', internal: 'Internal', search: 'Search', social: 'Social', external: 'External' };
-const ENTITY_META = {
-    blog: { label: 'Top Blogs', base: '/blogs/' },
-    project: { label: 'Top Projects', base: '/projects/' },
-    app: { label: 'Top Apps', base: '/apps/' },
-    gallery: { label: 'Top Gallery', base: '/gallery/' },
+const DEVICE_COLORS = {
+    desktop: "var(--accent-cyan)",
+    mobile: "var(--accent-purple)",
+    tablet: "var(--status-success)",
+    bot: "var(--text-tertiary)",
 };
 
-const RANGE_DAYS = { '7d': 7, '30d': 30, '90d': 90 };
+const REFERRER_LABELS = {
+    direct: "Direct",
+    internal: "Internal",
+    search: "Search",
+    social: "Social",
+    external: "External",
+};
+
+const ENTITY_META = {
+    blog: { label: "Top blogs", base: "/blogs/" },
+    project: { label: "Top projects", base: "/projects/" },
+    app: { label: "Top apps", base: "/apps/" },
+    gallery: { label: "Top gallery items", base: "/gallery/" },
+};
+
+const RANGE_DAYS = { "7d": 7, "30d": 30, "90d": 90 };
 
 /** Percentage change of `cur` vs `prev`. Returns null when there's no baseline. */
 function pctDelta(cur = 0, prev = 0) {
-    if (!prev) return cur > 0 ? null : 0; // null = "new" (no prior data to compare)
+    if (!prev) return cur > 0 ? null : 0;
     return ((cur - prev) / prev) * 100;
 }
 
 /** Turn a 2-letter ISO country code into its flag emoji. */
-function flagEmoji(code = '') {
+function flagEmoji(code = "") {
     const cc = String(code).trim().toUpperCase();
-    if (cc.length !== 2 || !/^[A-Z]{2}$/.test(cc)) return '🏳️';
+    if (cc.length !== 2 || !/^[A-Z]{2}$/.test(cc)) return "🏳️";
     return String.fromCodePoint(...[...cc].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65));
 }
 
 let COUNTRY_NAMES;
-function countryName(code = '') {
+function countryName(code = "") {
     const cc = String(code).trim().toUpperCase();
     try {
-        COUNTRY_NAMES ||= new Intl.DisplayNames(['en'], { type: 'region' });
+        COUNTRY_NAMES ||= new Intl.DisplayNames(["en"], { type: "region" });
         return COUNTRY_NAMES.of(cc) || cc;
     } catch {
         return cc;
@@ -54,51 +65,38 @@ function countryName(code = '') {
 
 function DeltaBadge({ delta }) {
     if (delta === null || delta === undefined) {
-        return <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-300/80 border border-cyan-500/20">NEW</span>;
+        return <Badge tone="info">New</Badge>;
     }
     if (Math.abs(delta) < 0.05) {
-        return <span className="text-[10px] font-mono text-slate-500">—</span>;
+        return <span className="adm-help adm-num">0%</span>;
     }
     const up = delta > 0;
     return (
-        <span className={`text-[10px] font-mono inline-flex items-center gap-1 px-1.5 py-0.5 rounded border ${up ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
-            {up ? <FaArrowTrendUp /> : <FaArrowTrendDown />}{Math.abs(delta).toFixed(delta > -100 && delta < 1000 ? 1 : 0)}%
-        </span>
+        <Badge tone={up ? "ok" : "error"}>
+            {up ? <FaArrowTrendUp aria-label="Up" /> : <FaArrowTrendDown aria-label="Down" />}
+            {Math.abs(delta).toFixed(delta > -100 && delta < 1000 ? 1 : 0)}%
+        </Badge>
     );
 }
 
-function KpiCard({ icon, label, value, accent, sub, delta }) {
+function KpiStatCard({ label, value, delta, sub, periodDays }) {
     return (
-        <div className="bg-slate-900/50 backdrop-blur-xl p-5 rounded-2xl border border-white/10 relative overflow-hidden">
-            <div className="flex items-center justify-between mb-3">
-                <span className={`text-xs font-mono uppercase tracking-widest ${accent}`}>{label}</span>
-                <span className={accent}>{icon}</span>
-            </div>
-            <div className="text-3xl font-bold text-white tabular-nums">{(value ?? 0).toLocaleString()}</div>
-            <div className="flex items-center gap-2 mt-1 min-h-[16px]">
-                {delta !== false && <DeltaBadge delta={delta} />}
-                {sub && <span className="text-xs text-slate-500 font-mono">{sub}</span>}
-            </div>
-        </div>
-    );
-}
-
-function InsightCard({ icon, label, value, sub, accent = 'text-cyan-400' }) {
-    return (
-        <div className="bg-slate-900/50 backdrop-blur-xl p-4 rounded-2xl border border-white/10 flex items-center gap-4">
-            <div className={`p-3 rounded-xl bg-white/[0.03] border border-white/5 text-xl ${accent}`}>{icon}</div>
-            <div className="min-w-0">
-                <div className="text-[11px] font-mono uppercase tracking-widest text-slate-500">{label}</div>
-                <div className="text-lg font-bold text-white truncate">{value}</div>
-                {sub && <div className="text-[11px] text-slate-500 font-mono truncate">{sub}</div>}
-            </div>
-        </div>
+        <Stat
+            label={label}
+            value={(value ?? 0).toLocaleString()}
+            hint={
+                <span className="flex min-h-6 flex-wrap items-center gap-2">
+                    {delta !== false && <DeltaBadge delta={delta} />}
+                    <span>{sub || `vs. prior ${periodDays}d`}</span>
+                </span>
+            }
+        />
     );
 }
 
 export default function AnalyticsDashboard() {
     const { confirm } = useAdminFeedback();
-    const [range, setRange] = useState('30d');
+    const [range, setRange] = useState("30d");
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -107,9 +105,9 @@ export default function AnalyticsDashboard() {
         setLoading(true);
         setError(null);
         try {
-            const res = await fetch(`/api/admin/analytics?range=${r}`, { cache: 'no-store' });
+            const res = await fetch(`/api/admin/analytics?range=${r}`, { cache: "no-store" });
             const json = await res.json();
-            if (!res.ok || !json.success) throw new Error(json.error || 'FETCH_FAILED');
+            if (!res.ok || !json.success) throw new Error(json.error || "Could not load analytics data.");
             setData(json);
         } catch (e) {
             setError(e.message);
@@ -118,19 +116,24 @@ export default function AnalyticsDashboard() {
         }
     }, []);
 
-    useEffect(() => { load(range); }, [range, load]);
+    useEffect(() => {
+        load(range);
+    }, [range, load]);
 
     const handleReset = async () => {
-        if (!(await confirm({
-            title: 'Delete all analytics data?',
-            message: 'WARNING: This will permanently delete ALL analytics data. This action cannot be undone.',
-            confirmText: 'Delete everything',
-            danger: true,
-        }))) return;
+        if (
+            !(await confirm({
+                title: "Delete all analytics data?",
+                message: "This permanently deletes all recorded events and daily rollups. This action cannot be undone.",
+                confirmText: "Delete everything",
+                danger: true,
+            }))
+        )
+            return;
         try {
-            const res = await fetch('/api/admin/analytics', { method: 'DELETE' });
+            const res = await fetch("/api/admin/analytics", { method: "DELETE" });
             const json = await res.json();
-            if (!res.ok || !json.success) throw new Error(json.error || 'RESET_FAILED');
+            if (!res.ok || !json.success) throw new Error(json.error || "Could not reset analytics data.");
             load(range);
         } catch (e) {
             setError(e.message);
@@ -140,15 +143,20 @@ export default function AnalyticsDashboard() {
     const kpis = data?.kpis || {};
     const prev = data?.prevKpis || {};
     const series = data?.series || [];
-    const devices = (data?.devices || []).map((d) => ({ label: d.type, value: d.views, color: DEVICE_COLORS[d.type] || '#64748b' }));
+    const devices = (data?.devices || []).map((d) => ({
+        label: d.type,
+        value: d.views,
+        color: DEVICE_COLORS[d.type] || "var(--text-tertiary)",
+    }));
     const geoCountries = data?.countries || [];
     const countries = geoCountries.slice(0, 8).map((c) => ({
-        label: `${flagEmoji(c.code)}  ${countryName(c.code)}`,
+        label: `${flagEmoji(c.code)} ${countryName(c.code)}`,
+        sub: c.code,
         value: c.views,
     }));
     const countriesReached = geoCountries.length;
 
-    // ── Derived overview insights ──
+    // Derived overview insights
     const busiest = series.reduce((best, d) => (d.views > (best?.views ?? -1) ? d : best), null);
     const activeDays = series.filter((d) => d.views > 0).length || 1;
     const avgPerDay = Math.round((kpis.views || 0) / activeDays);
@@ -170,188 +178,208 @@ export default function AnalyticsDashboard() {
         description: p.description,
     }));
     const topEntities = data?.topEntities || {};
+    const periodDays = RANGE_DAYS[range];
+
+    const highlightRows = [
+        {
+            label: "Busiest day",
+            value: busiest && busiest.views > 0 ? busiest.day : "—",
+            hint: busiest && busiest.views > 0 ? `${busiest.views.toLocaleString()} views` : "No traffic recorded yet",
+        },
+        {
+            label: "Average views per active day",
+            value: avgPerDay.toLocaleString(),
+            hint: `${activeDays} active day${activeDays === 1 ? "" : "s"} in range`,
+        },
+        {
+            label: "Human traffic share",
+            value: `${humanShare}%`,
+            hint: `${(kpis.botViews || 0).toLocaleString()} bot hits filtered`,
+        },
+        {
+            label: "Top referrer & region",
+            value: topReferrer ? REFERRER_LABELS[topReferrer.type] || topReferrer.type : "—",
+            hint: topCountry
+                ? `${flagEmoji(topCountry.code)} ${countryName(topCountry.code)} leads (${topCountry.views.toLocaleString()})`
+                : topReferrer
+                  ? `${topReferrer.views.toLocaleString()} views`
+                  : "No referrer data",
+        },
+        {
+            label: "Outbound click-through rate",
+            value: kpis.views ? `${((kpis.outboundClicks / kpis.views) * 100).toFixed(1)}%` : "—",
+            hint: `${(kpis.outboundClicks ?? 0).toLocaleString()} outbound clicks`,
+        },
+        {
+            label: "Contact conversion rate",
+            value: kpis.views ? `${((kpis.contacts / kpis.views) * 100).toFixed(2)}%` : "—",
+            hint: `${(kpis.contacts ?? 0).toLocaleString()} contact submissions`,
+        },
+        {
+            label: "Views per unique visitor",
+            value: kpis.uniques ? (kpis.views / kpis.uniques).toFixed(1) : "—",
+            hint: `${(kpis.entityViews ?? 0).toLocaleString()} content detail views`,
+        },
+    ];
 
     return (
-        <div className="p-4 md:p-8 max-w-7xl mx-auto min-h-screen">
-            <div className="mb-8">
-                <Link href="/admin" className="text-cyan-400 hover:text-cyan-300 flex items-center gap-2 transition-colors mb-4 text-sm font-mono opacity-60 hover:opacity-100">
-                    ← BACK_TO_COMMAND_CENTER
-                </Link>
-                <div className="flex flex-wrap items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                        <div className="p-3 bg-cyan-500/10 rounded-xl border border-cyan-500/20 text-cyan-400">
-                            <FaChartLine className="w-8 h-8" />
-                        </div>
-                        <div>
-                            <h1 className="text-3xl md:text-4xl font-bold text-white mb-1 tracking-tight">Analytics</h1>
-                            <p className="text-slate-400">First-party traffic, content & engagement insights.</p>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <div className="flex bg-slate-900/60 border border-white/10 rounded-lg p-1">
+        <div className="adm-page">
+            <PageHeader
+                command={`analytics --range=${range}`}
+                title="Analytics"
+                description="First-party traffic, content engagement, referrers, and visitor geography."
+                actions={
+                    <>
+                        <div role="group" aria-label="Time range" className="flex flex-wrap items-center gap-1.5">
                             {RANGES.map((r) => (
                                 <button
                                     key={r.key}
+                                    type="button"
+                                    aria-pressed={range === r.key}
                                     onClick={() => setRange(r.key)}
-                                    className={`px-3 py-1.5 rounded-md text-xs font-mono transition-all ${range === r.key ? 'bg-cyan-500/20 text-cyan-300' : 'text-slate-400 hover:text-slate-200'}`}
+                                    className={`adm-btn ${range === r.key ? "adm-btn-primary" : ""}`}
                                 >
                                     {r.label}
                                 </button>
                             ))}
                         </div>
                         <button
+                            type="button"
                             onClick={() => load(range)}
-                            className="p-2.5 rounded-lg bg-slate-900/60 border border-white/10 text-slate-400 hover:text-cyan-300 transition-colors"
-                            title="Refresh"
+                            disabled={loading}
+                            className="adm-btn"
+                            aria-label="Refresh analytics"
                         >
-                            <FaArrowsRotate className={loading ? 'animate-spin' : ''} />
+                            <FaArrowsRotate aria-hidden="true" className={loading ? "animate-spin" : ""} />
+                            Refresh
                         </button>
-                    </div>
-                </div>
-            </div>
+                    </>
+                }
+            />
 
             {error && (
-                <div className="p-4 rounded-xl mb-6 flex items-center gap-3 border bg-red-500/10 text-red-400 border-red-500/20">
-                    <FaTriangleExclamation />
-                    <span className="font-mono text-sm tracking-wide">{error}</span>
+                <div role="alert" className="adm-notice adm-notice-error flex items-center gap-2.5">
+                    <FaTriangleExclamation aria-hidden="true" className="shrink-0" />
+                    <span>{error}</span>
                 </div>
             )}
 
-            {/* KPI row — values with trend vs. previous equal-length period */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-4">
-                <KpiCard icon={<FaEye />} label="Views" value={kpis.views} accent="text-cyan-400" delta={pctDelta(kpis.views, prev.views)} />
-                <KpiCard icon={<FaUsers />} label="Visitors" value={kpis.uniques} accent="text-violet-400" delta={pctDelta(kpis.uniques, prev.uniques)} />
-                <KpiCard icon={<FaArrowPointer />} label="Content" value={kpis.entityViews} accent="text-teal-400" delta={pctDelta(kpis.entityViews, prev.entityViews)} />
-                <KpiCard icon={<FaPaperPlane />} label="Contacts" value={kpis.contacts} accent="text-emerald-400" delta={pctDelta(kpis.contacts, prev.contacts)} />
-                <KpiCard icon={<FaUpRightFromSquare />} label="Clicks" value={kpis.outboundClicks} accent="text-amber-400" delta={pctDelta(kpis.outboundClicks, prev.outboundClicks)} />
-                <KpiCard icon={<FaRobot />} label="Bots" value={kpis.botViews} accent="text-slate-400" delta={false} sub="excluded" />
+            {/* KPI row */}
+            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
+                <KpiStatCard label="Page views" value={kpis.views} delta={pctDelta(kpis.views, prev.views)} periodDays={periodDays} />
+                <KpiStatCard label="Unique visitors" value={kpis.uniques} delta={pctDelta(kpis.uniques, prev.uniques)} periodDays={periodDays} />
+                <KpiStatCard label="Content views" value={kpis.entityViews} delta={pctDelta(kpis.entityViews, prev.entityViews)} periodDays={periodDays} />
+                <KpiStatCard label="Contacts" value={kpis.contacts} delta={pctDelta(kpis.contacts, prev.contacts)} periodDays={periodDays} />
+                <KpiStatCard label="Outbound clicks" value={kpis.outboundClicks} delta={pctDelta(kpis.outboundClicks, prev.outboundClicks)} periodDays={periodDays} />
+                <KpiStatCard label="Filtered bots" value={kpis.botViews} delta={false} sub="Excluded from views" periodDays={periodDays} />
             </div>
 
-            <p className="text-[11px] text-slate-600 font-mono mb-6">▲▼ vs. previous {RANGE_DAYS[range]} days</p>
+            {/* 12-column dashboard grid */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                {/* Row 1: Traffic chart + Period highlights */}
+                <Panel
+                    flush
+                    title="Traffic over time"
+                    actions={<Badge>Last {periodDays} days</Badge>}
+                    className="flex flex-col md:col-span-12 xl:col-span-8"
+                >
+                    {loading && !data ? (
+                        <Loading label="Loading traffic chart" rows={6} />
+                    ) : (
+                        <LineChart
+                            data={series}
+                            summary={
+                                <p className="flex flex-wrap items-baseline gap-2">
+                                    <span className="adm-num text-2xl font-semibold text-[var(--text-bright)]">
+                                        {(kpis.views ?? 0).toLocaleString()}
+                                    </span>
+                                    <span className="adm-help">
+                                        views and {(kpis.uniques ?? 0).toLocaleString()} visitors over {periodDays} days
+                                    </span>
+                                </p>
+                            }
+                        />
+                    )}
+                </Panel>
 
-            {/* Overview insights */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                <InsightCard
-                    icon={<FaCalendarDay />}
-                    label="Busiest Day"
-                    value={busiest && busiest.views > 0 ? busiest.day.slice(5) : '—'}
-                    sub={busiest && busiest.views > 0 ? `${busiest.views.toLocaleString()} views` : 'No traffic yet'}
-                    accent="text-cyan-400"
-                />
-                <InsightCard
-                    icon={<FaGaugeHigh />}
-                    label="Avg Views / Active Day"
-                    value={avgPerDay.toLocaleString()}
-                    sub={`${activeDays} active day${activeDays === 1 ? '' : 's'}`}
-                    accent="text-violet-400"
-                />
-                <InsightCard
-                    icon={<FaUserShield />}
-                    label="Human Traffic"
-                    value={`${humanShare}%`}
-                    sub={`${(kpis.botViews || 0).toLocaleString()} bot views filtered`}
-                    accent="text-emerald-400"
-                />
-                <InsightCard
-                    icon={<FaEarthAmericas />}
-                    label="Top Source"
-                    value={topReferrer ? (REFERRER_LABELS[topReferrer.type] || topReferrer.type) : '—'}
-                    sub={topCountry ? `${flagEmoji(topCountry.code)} ${countryName(topCountry.code)} leads` : (topReferrer ? `${topReferrer.views.toLocaleString()} views` : 'No data')}
-                    accent="text-amber-400"
-                />
-            </div>
+                <Panel
+                    flush
+                    title="Period highlights & engagement"
+                    className="flex flex-col md:col-span-12 xl:col-span-4"
+                >
+                    <ul className="adm-list flex flex-1 flex-col">
+                        {highlightRows.map((item) => (
+                            <li key={item.label} className="adm-row flex-1 justify-between">
+                                <span className="min-w-0">
+                                    <span className="block text-[var(--text-primary)]">{item.label}</span>
+                                    <span className="adm-help block">{item.hint}</span>
+                                </span>
+                                <span className="adm-num shrink-0 text-base font-semibold text-[var(--text-bright)]">
+                                    {item.value}
+                                </span>
+                            </li>
+                        ))}
+                    </ul>
+                </Panel>
 
-            {/* Traffic chart */}
-            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="bg-slate-900/50 backdrop-blur-xl p-4 md:p-6 rounded-2xl border border-white/10 mb-8">
-                <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-sm font-mono text-cyan-400 uppercase tracking-widest">Traffic</h2>
-                    <div className="flex items-center gap-4 text-xs font-mono">
-                        <span className="flex items-center gap-1.5 text-slate-300"><span className="w-3 h-0.5 bg-cyan-400 inline-block" /> Views</span>
-                        <span className="flex items-center gap-1.5 text-slate-300"><span className="w-3 h-0.5 inline-block" style={{ background: '#a78bfa' }} /> Visitors</span>
-                    </div>
-                </div>
-                <LineChart data={data?.series || []} />
-            </motion.div>
+                {/* Row 2: Top pages + Referrers */}
+                <Panel flush title="Top pages" className="flex flex-col md:col-span-6">
+                    {loading && !data ? (
+                        <Loading label="Loading top pages" rows={5} />
+                    ) : (
+                        <BarList items={topPages} share emptyLabel="No page views recorded yet." />
+                    )}
+                </Panel>
 
-            {/* Breakdowns */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                <div className="bg-slate-900/50 backdrop-blur-xl p-6 rounded-2xl border border-white/10">
-                    <h2 className="text-sm font-mono text-cyan-400 uppercase tracking-widest mb-4">Top Pages</h2>
-                    <BarList items={topPages} />
-                </div>
-                <div className="bg-slate-900/50 backdrop-blur-xl p-6 rounded-2xl border border-white/10">
-                    <h2 className="text-sm font-mono text-cyan-400 uppercase tracking-widest mb-4">Referrers</h2>
-                    <BarList items={referrers} accent="#a78bfa" />
-                </div>
-            </div>
+                <Panel flush title="Referrers" className="flex flex-col md:col-span-6">
+                    {loading && !data ? (
+                        <Loading label="Loading referrers" rows={5} />
+                    ) : (
+                        <BarList items={referrers} accent="var(--accent-purple)" share emptyLabel="No referrers recorded yet." />
+                    )}
+                </Panel>
 
-            {/* Visitor world map */}
-            <motion.div
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-slate-900/50 backdrop-blur-xl p-4 md:p-6 rounded-2xl border border-white/10 mb-8"
-            >
-                <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-                    <h2 className="text-sm font-mono text-cyan-400 uppercase tracking-widest flex items-center gap-2">
-                        <FaEarthAmericas className="text-teal-400" /> Visitor Map
-                    </h2>
-                    <span className="text-xs text-slate-500 font-mono">
-                        {countriesReached} countr{countriesReached === 1 ? 'y' : 'ies'} reached
-                        {topCountry ? ` · ${flagEmoji(topCountry.code)} ${countryName(topCountry.code)} leads` : ''}
-                    </span>
-                </div>
-                <WorldMap data={geoCountries} />
-                {countriesReached === 0 && (
-                    <p className="text-[11px] text-slate-600 font-mono mt-3 text-center">
-                        NO_GEO_DATA — country is resolved from edge headers (Cloudflare/Vercel) or an IP fallback; local traffic shows as private.
-                    </p>
-                )}
-            </motion.div>
+                {/* Row 3: Visitor world map + Top countries */}
+                <Panel
+                    title="Visitor geography"
+                    actions={
+                        <Badge tone={countriesReached > 0 ? "info" : undefined}>
+                            {countriesReached} {countriesReached === 1 ? "country" : "countries"} reached
+                        </Badge>
+                    }
+                    className="flex flex-col md:col-span-12 xl:col-span-8"
+                >
+                    <WorldMap data={geoCountries} />
+                    {countriesReached === 0 && (
+                        <p className="adm-help mt-3">
+                            Country is resolved from edge headers (Cloudflare or Vercel) or an IP fallback; local traffic appears as private.
+                        </p>
+                    )}
+                </Panel>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                <div className="bg-slate-900/50 backdrop-blur-xl p-6 rounded-2xl border border-white/10">
-                    <h2 className="text-sm font-mono text-cyan-400 uppercase tracking-widest mb-4">Devices</h2>
-                    <DonutSplit segments={devices} />
-                </div>
-                <div className="bg-slate-900/50 backdrop-blur-xl p-6 rounded-2xl border border-white/10">
-                    <h2 className="text-sm font-mono text-cyan-400 uppercase tracking-widest mb-4 flex items-center gap-2"><FaEarthAmericas className="text-teal-400" /> Top Countries</h2>
-                    <BarList items={countries} accent="#34d399" emptyLabel="NO_GEO_DATA" />
-                </div>
-            </div>
+                <Panel
+                    flush
+                    title="Top countries"
+                    actions={topCountry ? <Badge>{flagEmoji(topCountry.code)} {countryName(topCountry.code)}</Badge> : null}
+                    className="flex flex-col md:col-span-6 xl:col-span-4"
+                >
+                    {loading && !data ? (
+                        <Loading label="Loading countries" rows={6} />
+                    ) : (
+                        <BarList items={countries} accent="var(--status-success)" share emptyLabel="No location data recorded yet." />
+                    )}
+                </Panel>
 
-            <div className="grid grid-cols-1 gap-6 mb-8">
-                <div className="bg-slate-900/50 backdrop-blur-xl p-6 rounded-2xl border border-white/10">
-                    <h2 className="text-sm font-mono text-cyan-400 uppercase tracking-widest mb-4">Engagement</h2>
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
-                        <div className="p-4 rounded-xl bg-white/[0.03] border border-white/5">
-                            <div className="text-slate-500 font-mono text-xs uppercase mb-1">Click-through</div>
-                            <div className="text-2xl font-bold text-white tabular-nums">
-                                {kpis.views ? `${((kpis.outboundClicks / kpis.views) * 100).toFixed(1)}%` : '—'}
-                            </div>
-                        </div>
-                        <div className="p-4 rounded-xl bg-white/[0.03] border border-white/5">
-                            <div className="text-slate-500 font-mono text-xs uppercase mb-1">Contact rate</div>
-                            <div className="text-2xl font-bold text-white tabular-nums">
-                                {kpis.views ? `${((kpis.contacts / kpis.views) * 100).toFixed(2)}%` : '—'}
-                            </div>
-                        </div>
-                        <div className="p-4 rounded-xl bg-white/[0.03] border border-white/5">
-                            <div className="text-slate-500 font-mono text-xs uppercase mb-1">Views / visitor</div>
-                            <div className="text-2xl font-bold text-white tabular-nums">
-                                {kpis.uniques ? (kpis.views / kpis.uniques).toFixed(1) : '—'}
-                            </div>
-                        </div>
-                        <div className="p-4 rounded-xl bg-white/[0.03] border border-white/5">
-                            <div className="text-slate-500 font-mono text-xs uppercase mb-1">Content views</div>
-                            <div className="text-2xl font-bold text-white tabular-nums">{(kpis.entityViews ?? 0).toLocaleString()}</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                {/* Row 4: Devices + Top blogs + Top projects */}
+                <Panel title="Devices" className="flex flex-col md:col-span-6 xl:col-span-4">
+                    {loading && !data ? (
+                        <Loading label="Loading devices" rows={4} />
+                    ) : (
+                        <DonutSplit segments={devices} />
+                    )}
+                </Panel>
 
-            {/* Top content per entity type */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                {Object.keys(ENTITY_META).map((type) => {
+                {["blog", "project"].map((type) => {
                     const items = (topEntities[type] || []).map((e) => ({
                         label: e.slug,
                         value: e.views,
@@ -360,31 +388,48 @@ export default function AnalyticsDashboard() {
                         description: e.description,
                     }));
                     return (
-                        <div key={type} className="bg-slate-900/50 backdrop-blur-xl p-6 rounded-2xl border border-white/10">
-                            <h2 className="text-sm font-mono text-cyan-400 uppercase tracking-widest mb-4">{ENTITY_META[type].label}</h2>
-                            <BarList items={items} accent="#34d399" emptyLabel="NO_VIEWS_YET" />
-                        </div>
+                        <Panel key={type} flush title={ENTITY_META[type].label} className="flex flex-col md:col-span-6 xl:col-span-4">
+                            {loading && !data ? (
+                                <Loading label={`Loading ${ENTITY_META[type].label}`} rows={4} />
+                            ) : (
+                                <BarList items={items} emptyLabel="No views recorded yet." />
+                            )}
+                        </Panel>
                     );
                 })}
-            </div>
 
-            {/* Danger zone */}
-            <div className="bg-slate-900/50 backdrop-blur-xl p-6 rounded-2xl border border-red-500/15">
-                <div className="flex flex-wrap items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                        <FaTriangleExclamation className="text-red-500/70" />
-                        <div>
-                            <h2 className="text-sm font-mono text-red-400/80 uppercase tracking-widest">Reset Analytics</h2>
-                            <p className="text-slate-500 text-xs mt-1">Permanently delete all recorded events and rollups. This cannot be undone.</p>
-                        </div>
+                {/* Row 5: Top apps + Top gallery items */}
+                {["app", "gallery"].map((type) => {
+                    const items = (topEntities[type] || []).map((e) => ({
+                        label: e.slug,
+                        value: e.views,
+                        title: e.title,
+                        image: e.image,
+                        description: e.description,
+                    }));
+                    return (
+                        <Panel key={type} flush title={ENTITY_META[type].label} className="flex flex-col md:col-span-6">
+                            {loading && !data ? (
+                                <Loading label={`Loading ${ENTITY_META[type].label}`} rows={4} />
+                            ) : (
+                                <BarList items={items} emptyLabel="No views recorded yet." />
+                            )}
+                        </Panel>
+                    );
+                })}
+
+                {/* Row 6: Danger zone */}
+                <Panel title="Reset analytics" className="adm-danger md:col-span-12">
+                    <div className="flex flex-wrap items-center justify-between gap-4">
+                        <p className="text-sm text-[var(--text-secondary)]">
+                            Permanently delete all recorded analytics events and daily rollups. This action cannot be undone.
+                        </p>
+                        <button type="button" onClick={handleReset} className="adm-btn adm-btn-danger">
+                            <FaTrash aria-hidden="true" />
+                            Delete all analytics
+                        </button>
                     </div>
-                    <button
-                        onClick={handleReset}
-                        className="bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 hover:border-red-500/40 text-red-400 font-bold py-3 px-5 rounded-xl transition-all uppercase tracking-wider text-xs"
-                    >
-                        Purge_Data
-                    </button>
-                </div>
+                </Panel>
             </div>
         </div>
     );

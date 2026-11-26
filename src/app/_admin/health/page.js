@@ -1,73 +1,34 @@
 "use client";
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
-import Link from 'next/link';
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useAdminFeedback } from "@/app/components/admin/feedback/AdminFeedbackProvider";
 import {
-    FaServer, FaMicrochip, FaMemory, FaHardDrive, FaGauge, FaDatabase,
-    FaArrowsRotate, FaSpinner, FaCircleCheck, FaCircleXmark, FaPlus, FaTrash,
-    FaRobot, FaTriangleExclamation, FaPlay, FaUpRightFromSquare, FaPause,
-} from 'react-icons/fa6';
+    FaServer, FaGauge, FaArrowsRotate, FaSpinner, FaCircleCheck, FaCircleXmark,
+    FaPlus, FaTrash, FaRobot, FaTriangleExclamation, FaPlay, FaUpRightFromSquare, FaPause,
+} from "react-icons/fa6";
+import { PageHeader, Panel, Stat, Badge, EmptyState, Loading, Field } from "@/app/components/admin/ui";
+import { fmtBytes, fmtUptime, MeterBar } from "./shared";
+import "../../styles/admin-insights.css";
 
 const TABS = [
-    { key: 'resources', label: 'Resources', icon: <FaGauge /> },
-    { key: 'uptime', label: 'Uptime', icon: <FaServer /> },
-    { key: 'analyzer', label: 'AI Analyzer', icon: <FaRobot /> },
+    { key: "resources", label: "Resources", icon: <FaGauge aria-hidden="true" /> },
+    { key: "uptime", label: "Uptime", icon: <FaServer aria-hidden="true" /> },
+    { key: "analyzer", label: "AI analyzer", icon: <FaRobot aria-hidden="true" /> },
 ];
 
-function Panel({ children, className = '' }) {
-    return <div className={`bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 ${className}`}>{children}</div>;
-}
-
-function fmtBytes(bytes) {
-    if (bytes == null || Number.isNaN(bytes)) return '—';
-    const GB = 1024 ** 3, MB = 1024 ** 2, KB = 1024;
-    if (bytes >= GB) return `${(bytes / GB).toFixed(1)} GB`;
-    if (bytes >= MB) return `${(bytes / MB).toFixed(0)} MB`;
-    if (bytes >= KB) return `${(bytes / KB).toFixed(0)} KB`;
-    return `${bytes} B`;
-}
-
-function fmtUptime(seconds) {
-    if (!seconds) return '—';
-    const d = Math.floor(seconds / 86400);
-    const h = Math.floor((seconds % 86400) / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    return [d ? `${d}d` : '', h ? `${h}h` : '', `${m}m`].filter(Boolean).join(' ');
-}
-
-function meterColor(pct) {
-    if (pct >= 90) return 'bg-red-500';
-    if (pct >= 70) return 'bg-amber-500';
-    return 'bg-emerald-500';
-}
-
-function Meter({ icon, label, percent, sub, accent }) {
-    const pct = Math.max(0, Math.min(100, percent || 0));
+function ResourceMeterPanel({ label, percent, sub, className = "md:col-span-4" }) {
+    const pct = Math.max(0, Math.min(100, Math.round(percent || 0)));
+    const tone = pct >= 90 ? "error" : pct >= 70 ? "warn" : "ok";
     return (
-        <Panel className="p-5">
-            <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2 text-slate-300">
-                    <span className={accent}>{icon}</span>
-                    <span className="text-sm font-mono uppercase tracking-widest text-slate-400">{label}</span>
-                </div>
-                <span className="text-2xl font-bold tabular-nums text-white">{pct}%</span>
+        <Panel
+            title={label}
+            actions={<Badge tone={tone}>{pct}%</Badge>}
+            className={className}
+        >
+            <div className="space-y-3">
+                <p className="adm-stat-value !mt-0">{pct}%</p>
+                <MeterBar label={label} percent={pct} />
+                {sub && <p className="adm-help font-mono">{sub}</p>}
             </div>
-            <div className="h-2 rounded-full bg-slate-800 overflow-hidden">
-                <div className={`h-full rounded-full transition-all duration-500 ${meterColor(pct)}`} style={{ width: `${pct}%` }} />
-            </div>
-            {sub && <div className="mt-2 text-xs font-mono text-slate-500">{sub}</div>}
-        </Panel>
-    );
-}
-
-function Stat({ icon, label, value, accent }) {
-    return (
-        <Panel className="p-5">
-            <div className="flex items-center gap-2 text-slate-400 mb-2">
-                <span className={accent}>{icon}</span>
-                <span className="text-xs font-mono uppercase tracking-widest">{label}</span>
-            </div>
-            <div className="text-xl font-bold text-white tabular-nums">{value}</div>
         </Panel>
     );
 }
@@ -76,18 +37,18 @@ function Stat({ icon, label, value, accent }) {
 
 function ResourcesTab() {
     const [metrics, setMetrics] = useState(null);
-    const [error, setError] = useState('');
+    const [error, setError] = useState("");
     const [loading, setLoading] = useState(true);
     const [auto, setAuto] = useState(true);
     const timer = useRef(null);
 
     const load = useCallback(async () => {
         try {
-            const res = await fetch('/api/admin/health/metrics', { cache: 'no-store' });
+            const res = await fetch("/api/admin/health/metrics", { cache: "no-store" });
             const data = await res.json();
-            if (!data.success) throw new Error(data.error || 'Failed to load metrics');
+            if (!data.success) throw new Error(data.error || "Failed to load metrics");
             setMetrics(data.metrics);
-            setError('');
+            setError("");
         } catch (e) {
             setError(e.message);
         } finally {
@@ -106,44 +67,136 @@ function ResourcesTab() {
         return () => clearInterval(timer.current);
     }, [auto, load]);
 
-    if (loading) return <div className="py-12 text-center text-slate-500"><FaSpinner className="animate-spin inline mr-2" /> Sampling metrics…</div>;
-    if (error) return <div className="px-4 py-3 rounded-xl border border-red-500/20 bg-red-500/10 text-red-300 text-sm flex items-center gap-2"><FaTriangleExclamation /> {error}</div>;
+    if (loading && !metrics) {
+        return (
+            <Panel flush title="Sampling server metrics">
+                <Loading label="Sampling server metrics" rows={6} />
+            </Panel>
+        );
+    }
+
+    if (error && !metrics) {
+        return (
+            <div role="alert" className="adm-notice adm-notice-error flex items-center gap-2.5">
+                <FaTriangleExclamation aria-hidden="true" className="shrink-0" />
+                <span>{error}</span>
+            </div>
+        );
+    }
+
     if (!metrics) return null;
 
     const m = metrics;
+    const dbUp = m.database?.status === "up";
+
     return (
-        <div>
-            <div className="flex items-center justify-end gap-3 mb-4">
-                <button onClick={() => setAuto((a) => !a)} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900/50 border border-white/10 text-slate-300 hover:text-white text-xs font-mono">
-                    {auto ? <FaPause /> : <FaPlay />} {auto ? 'Live (5s)' : 'Paused'}
-                </button>
-                <button onClick={load} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900/50 border border-white/10 text-slate-300 hover:text-white text-xs font-mono">
-                    <FaArrowsRotate /> Refresh
-                </button>
+        <div className="space-y-6">
+            {error && (
+                <div role="alert" className="adm-notice adm-notice-error flex items-center gap-2.5">
+                    <FaTriangleExclamation aria-hidden="true" className="shrink-0" />
+                    <span>{error}</span>
+                </div>
+            )}
+
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                    <Badge tone={auto ? "ok" : undefined}>{auto ? "Live (5s polling)" : "Polling paused"}</Badge>
+                    <span className="adm-help font-mono">
+                        Sampled at {new Date(m.timestamp).toLocaleTimeString()}
+                    </span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <button
+                        type="button"
+                        aria-pressed={auto}
+                        onClick={() => setAuto((a) => !a)}
+                        className="adm-btn"
+                    >
+                        {auto ? <FaPause aria-hidden="true" /> : <FaPlay aria-hidden="true" />}
+                        {auto ? "Pause live updates" : "Resume live updates"}
+                    </button>
+                    <button type="button" onClick={load} className="adm-btn">
+                        <FaArrowsRotate aria-hidden="true" />
+                        Refresh
+                    </button>
+                </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                <Meter icon={<FaMicrochip />} label="CPU" percent={m.cpu.percent} accent="text-cyan-400"
-                    sub={`${m.cpu.cores} cores · load ${m.cpu.loadAvg.join(' / ')}`} />
-                <Meter icon={<FaMemory />} label="Memory" percent={m.memory.usedPercent} accent="text-violet-400"
-                    sub={`${fmtBytes(m.memory.used)} / ${fmtBytes(m.memory.total)}`} />
-                <Meter icon={<FaHardDrive />} label="Disk" percent={m.disk?.usedPercent ?? 0} accent="text-amber-400"
-                    sub={m.disk ? `${fmtBytes(m.disk.used)} / ${fmtBytes(m.disk.total)} · ${fmtBytes(m.disk.free)} free` : 'unavailable'} />
-            </div>
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                <ResourceMeterPanel
+                    label="CPU utilization"
+                    percent={m.cpu.percent}
+                    sub={`${m.cpu.cores} cores · load average ${m.cpu.loadAvg.join(" / ")}`}
+                    className="md:col-span-4"
+                />
+                <ResourceMeterPanel
+                    label="Memory usage"
+                    percent={m.memory.usedPercent}
+                    sub={`${fmtBytes(m.memory.used)} used of ${fmtBytes(m.memory.total)}`}
+                    className="md:col-span-4"
+                />
+                <ResourceMeterPanel
+                    label="Disk capacity"
+                    percent={m.disk?.usedPercent ?? 0}
+                    sub={
+                        m.disk
+                            ? `${fmtBytes(m.disk.used)} / ${fmtBytes(m.disk.total)} · ${fmtBytes(m.disk.free)} free`
+                            : "Disk stats unavailable"
+                    }
+                    className="md:col-span-4"
+                />
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <Stat icon={<FaGauge />} label="Event-loop lag" accent="text-emerald-400"
-                    value={`${m.eventLoop.lagMeanMs} ms`} />
-                <Stat icon={<FaDatabase />} label="Database" accent={m.database.status === 'up' ? 'text-emerald-400' : 'text-red-400'}
-                    value={m.database.status === 'up' ? `up · ${m.database.latencyMs}ms` : 'down'} />
-                <Stat icon={<FaMemory />} label="Heap / RSS" accent="text-cyan-400"
-                    value={`${fmtBytes(m.process.heapUsed)} / ${fmtBytes(m.process.rss)}`} />
-                <Stat icon={<FaServer />} label="Process uptime" accent="text-slate-300"
-                    value={fmtUptime(m.process.uptimeSeconds)} />
-            </div>
+                <div className="adm-stats md:col-span-12">
+                    <Stat
+                        label="Event-loop lag"
+                        value={`${m.eventLoop.lagMeanMs} ms`}
+                        hint="Mean event-loop delay"
+                    />
+                    <Stat
+                        label="Database connection"
+                        value={dbUp ? `${m.database.latencyMs} ms` : "Down"}
+                        hint={<Badge tone={dbUp ? "ok" : "error"}>{dbUp ? "Connected" : "Unreachable"}</Badge>}
+                    />
+                    <Stat
+                        label="Node.js heap / RSS"
+                        value={`${fmtBytes(m.process.heapUsed)} / ${fmtBytes(m.process.rss)}`}
+                        hint="Active process memory"
+                    />
+                    <Stat
+                        label="Process uptime"
+                        value={fmtUptime(m.process.uptimeSeconds)}
+                        hint={`Host up ${fmtUptime(m.host.uptimeSeconds)}`}
+                    />
+                </div>
 
-            <div className="mt-4 text-xs font-mono text-slate-600">
-                Node {m.process.nodeVersion} · {m.host.platform} {m.host.release} · host up {fmtUptime(m.host.uptimeSeconds)} · sampled {new Date(m.timestamp).toLocaleTimeString()}
+                <Panel flush title="Runtime & host environment" className="md:col-span-12">
+                    <dl className="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-[var(--hairline)]">
+                        <div className="p-4">
+                            <dt className="adm-help">Node.js runtime</dt>
+                            <dd className="adm-num mt-1 font-semibold text-[var(--text-bright)]">
+                                {m.process.nodeVersion}
+                            </dd>
+                        </div>
+                        <div className="p-4">
+                            <dt className="adm-help">Operating system</dt>
+                            <dd className="adm-num mt-1 font-semibold text-[var(--text-bright)]">
+                                {m.host.platform} {m.host.release}
+                            </dd>
+                        </div>
+                        <div className="p-4">
+                            <dt className="adm-help">Host uptime</dt>
+                            <dd className="adm-num mt-1 font-semibold text-[var(--text-bright)]">
+                                {fmtUptime(m.host.uptimeSeconds)}
+                            </dd>
+                        </div>
+                        <div className="p-4">
+                            <dt className="adm-help">Last sample</dt>
+                            <dd className="adm-num mt-1 font-semibold text-[var(--text-bright)]">
+                                {new Date(m.timestamp).toLocaleTimeString()}
+                            </dd>
+                        </div>
+                    </dl>
+                </Panel>
             </div>
         </div>
     );
@@ -152,15 +205,19 @@ function ResourcesTab() {
 // ─────────────────────────── Uptime tab ───────────────────────────
 
 function HistoryStrip({ history }) {
-    if (!history?.length) return <span className="text-xs text-slate-600 font-mono">no history</span>;
+    if (!history?.length) return <span className="adm-help font-mono">No history</span>;
     return (
-        <div className="flex gap-0.5 items-end">
+        <div className="flex items-end gap-0.5" aria-label="Recent check history">
             {history.map((h, i) => (
                 <span
                     key={i}
                     title={`${h.status} · ${h.latencyMs}ms · ${new Date(h.checkedAt).toLocaleString()}`}
-                    className={`w-1.5 rounded-sm ${h.status === 'up' ? 'bg-emerald-500/70' : 'bg-red-500/70'}`}
-                    style={{ height: `${Math.max(6, Math.min(24, (h.latencyMs || 0) / 50))}px` }}
+                    className="w-1.5 rounded-sm"
+                    style={{
+                        height: `${Math.max(6, Math.min(24, (h.latencyMs || 0) / 50))}px`,
+                        background: h.status === "up" ? "var(--status-success)" : "var(--status-error)",
+                        opacity: 0.8,
+                    }}
                 />
             ))}
         </div>
@@ -173,22 +230,22 @@ function UptimeTab() {
     const [custom, setCustom] = useState([]);
     const [loading, setLoading] = useState(true);
     const [checking, setChecking] = useState(false);
-    const [error, setError] = useState('');
-    const [newLabel, setNewLabel] = useState('');
-    const [newUrl, setNewUrl] = useState('');
+    const [error, setError] = useState("");
+    const [newLabel, setNewLabel] = useState("");
+    const [newUrl, setNewUrl] = useState("");
     const [adding, setAdding] = useState(false);
 
     const load = useCallback(async () => {
         setLoading(true);
         try {
             const [u, c] = await Promise.all([
-                fetch('/api/admin/health/uptime', { cache: 'no-store' }).then((r) => r.json()),
-                fetch('/api/admin/health/targets', { cache: 'no-store' }).then((r) => r.json()),
+                fetch("/api/admin/health/uptime", { cache: "no-store" }).then((r) => r.json()),
+                fetch("/api/admin/health/targets", { cache: "no-store" }).then((r) => r.json()),
             ]);
             if (!u.success) throw new Error(u.error);
             setTargets(u.targets || []);
             setCustom(c.targets || []);
-            setError('');
+            setError("");
         } catch (e) {
             setError(e.message);
         } finally {
@@ -196,13 +253,15 @@ function UptimeTab() {
         }
     }, []);
 
-    useEffect(() => { load(); }, [load]);
+    useEffect(() => {
+        load();
+    }, [load]);
 
     const runCheck = async () => {
         setChecking(true);
-        setError('');
+        setError("");
         try {
-            const res = await fetch('/api/admin/health/uptime/check', { method: 'POST' });
+            const res = await fetch("/api/admin/health/uptime/check", { method: "POST" });
             const data = await res.json();
             if (!data.success) throw new Error(data.error);
             setTargets(data.targets || []);
@@ -216,17 +275,17 @@ function UptimeTab() {
     const addTarget = async (e) => {
         e.preventDefault();
         setAdding(true);
-        setError('');
+        setError("");
         try {
-            const res = await fetch('/api/admin/health/targets', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+            const res = await fetch("/api/admin/health/targets", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ label: newLabel, url: newUrl }),
             });
             const data = await res.json();
             if (!data.success) throw new Error(data.error);
-            setNewLabel('');
-            setNewUrl('');
+            setNewLabel("");
+            setNewUrl("");
             await load();
         } catch (e) {
             setError(e.message);
@@ -236,123 +295,210 @@ function UptimeTab() {
     };
 
     const removeTarget = async (id) => {
-        if (!(await confirm({
-            title: 'Remove endpoint?',
-            message: 'Remove this custom endpoint from monitoring?',
-            confirmText: 'Remove',
-            danger: true,
-        }))) return;
-        await fetch(`/api/admin/health/targets?id=${id}`, { method: 'DELETE' });
+        if (
+            !(await confirm({
+                title: "Remove endpoint?",
+                message: "Remove this custom endpoint from uptime monitoring?",
+                confirmText: "Remove",
+                danger: true,
+            }))
+        )
+            return;
+        await fetch(`/api/admin/health/targets?id=${id}`, { method: "DELETE" });
         await load();
     };
 
-    const upCount = targets.filter((t) => t.latest?.status === 'up').length;
-    const downCount = targets.filter((t) => t.latest?.status === 'down').length;
+    const upCount = targets.filter((t) => t.latest?.status === "up").length;
+    const downCount = targets.filter((t) => t.latest?.status === "down").length;
 
     return (
-        <div>
-            <div className="flex flex-wrap items-center gap-3 mb-6">
-                <Stat icon={<FaCircleCheck />} label="Up" value={upCount} accent="text-emerald-400" />
-                <Stat icon={<FaCircleXmark />} label="Down" value={downCount} accent="text-red-400" />
-                <Stat icon={<FaServer />} label="Monitored" value={targets.length} accent="text-cyan-400" />
-                <button onClick={runCheck} disabled={checking}
-                    className="ml-auto flex items-center gap-2 px-4 py-2.5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/20 text-sm font-mono uppercase tracking-wider disabled:opacity-50">
-                    {checking ? <FaSpinner className="animate-spin" /> : <FaPlay />} Run check now
-                </button>
+        <div className="space-y-6">
+            <div className="adm-stats">
+                <Stat label="Endpoints up" value={upCount} hint="Responding normally" />
+                <Stat label="Endpoints down" value={downCount} hint="Failing health check" />
+                <Stat label="Monitored targets" value={targets.length} hint={`${custom.length} custom endpoints`} />
             </div>
 
-            {error && <div className="mb-4 px-4 py-3 rounded-xl border border-red-500/20 bg-red-500/10 text-red-300 text-sm flex items-center gap-2"><FaTriangleExclamation /> {error}</div>}
+            {error && (
+                <div role="alert" className="adm-notice adm-notice-error flex items-center gap-2.5">
+                    <FaTriangleExclamation aria-hidden="true" className="shrink-0" />
+                    <span>{error}</span>
+                </div>
+            )}
 
-            <Panel className="p-2 sm:p-4 mb-6">
-                {loading && targets.length === 0 ? (
-                    <div className="py-12 text-center text-slate-500"><FaSpinner className="animate-spin inline mr-2" /> Loading…</div>
-                ) : targets.length === 0 ? (
-                    <div className="py-12 text-center text-slate-500">No endpoints yet. Add a deployment with a hosted URL, or a custom target below, then run a check.</div>
-                ) : (
-                    <div className="space-y-2">
-                        {targets.map((t) => {
-                            const up = t.latest?.status === 'up';
-                            const noData = !t.latest;
-                            return (
-                                <div key={t.url} className="rounded-xl border border-white/5 bg-slate-950/40 p-4 flex flex-col sm:flex-row sm:items-center gap-3">
-                                    <span className={`text-lg shrink-0 ${noData ? 'text-slate-500' : up ? 'text-emerald-400' : 'text-red-400'}`}>
-                                        {noData ? <FaServer /> : up ? <FaCircleCheck /> : <FaCircleXmark />}
-                                    </span>
-                                    <div className="min-w-0 flex-1">
-                                        <div className="flex items-center gap-2 flex-wrap">
-                                            <span className="text-slate-200 text-sm font-medium truncate">{t.label || t.url}</span>
-                                            <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-white/5 text-slate-400">{t.source}</span>
-                                            <a href={t.url} target="_blank" rel="noreferrer" className="text-slate-500 hover:text-cyan-300"><FaUpRightFromSquare size={11} /></a>
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+                <Panel
+                    flush
+                    title="Monitored endpoints"
+                    actions={
+                        <button
+                            type="button"
+                            onClick={runCheck}
+                            disabled={checking}
+                            className="adm-btn adm-btn-primary"
+                        >
+                            {checking ? <FaSpinner aria-hidden="true" className="animate-spin" /> : <FaPlay aria-hidden="true" />}
+                            {checking ? "Checking…" : "Run check now"}
+                        </button>
+                    }
+                    className="md:col-span-12 xl:col-span-8"
+                >
+                    {loading && targets.length === 0 ? (
+                        <Loading label="Loading endpoints" rows={4} />
+                    ) : targets.length === 0 ? (
+                        <EmptyState
+                            title="No monitored endpoints yet"
+                            description="Add a deployment with a hosted URL or register a custom health endpoint on the right, then run a check."
+                        />
+                    ) : (
+                        <ul className="adm-list">
+                            {targets.map((t) => {
+                                const up = t.latest?.status === "up";
+                                const noData = !t.latest;
+                                return (
+                                    <li
+                                        key={t.url}
+                                        className="adm-row flex-col sm:flex-row !items-start sm:!items-center justify-between gap-3"
+                                    >
+                                        <div className="flex items-start gap-3 min-w-0 flex-1">
+                                            <span className="mt-0.5 shrink-0">
+                                                {noData ? (
+                                                    <FaServer aria-label="Unchecked" className="text-[var(--text-secondary)]" />
+                                                ) : up ? (
+                                                    <FaCircleCheck aria-label="Up" className="text-[var(--adm-ok-ink)]" />
+                                                ) : (
+                                                    <FaCircleXmark aria-label="Down" className="text-[var(--adm-error-ink)]" />
+                                                )}
+                                            </span>
+                                            <div className="min-w-0 flex-1">
+                                                <div className="flex flex-wrap items-center gap-2">
+                                                    <span className="truncate font-medium text-[var(--text-bright)]">
+                                                        {t.label || t.url}
+                                                    </span>
+                                                    <Badge>{t.source}</Badge>
+                                                </div>
+                                                <p className="adm-help truncate font-mono mt-0.5">{t.url}</p>
+                                            </div>
                                         </div>
-                                        <div className="text-xs font-mono text-slate-500 truncate mt-0.5">{t.url}</div>
-                                    </div>
-                                    <div className="flex items-center gap-4 shrink-0">
-                                        <HistoryStrip history={t.history} />
-                                        <div className="text-right min-w-[70px]">
-                                            {noData ? <span className="text-xs text-slate-600 font-mono">no data</span> : (
-                                                <>
-                                                    <div className={`text-sm font-bold tabular-nums ${up ? 'text-emerald-400' : 'text-red-400'}`}>
-                                                        {up ? `${t.latest.latencyMs}ms` : (t.latest.error || 'down')}
-                                                    </div>
-                                                    <div className="text-[10px] font-mono text-slate-600">{up ? `HTTP ${t.latest.statusCode}` : ''}</div>
-                                                </>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                )}
-            </Panel>
 
-            <Panel className="p-5">
-                <h3 className="text-sm font-mono uppercase tracking-widest text-cyan-400 mb-4">Custom endpoints</h3>
-                <form onSubmit={addTarget} className="flex flex-col sm:flex-row gap-2 mb-4">
-                    <input value={newLabel} onChange={(e) => setNewLabel(e.target.value)} placeholder="Label (optional)"
-                        className="sm:w-48 px-3 py-2 rounded-lg bg-slate-950/60 border border-white/10 text-sm text-slate-200 placeholder-slate-600 focus:border-cyan-500/40 outline-none" />
-                    <input value={newUrl} onChange={(e) => setNewUrl(e.target.value)} placeholder="https://example.com/health" required
-                        className="flex-1 px-3 py-2 rounded-lg bg-slate-950/60 border border-white/10 text-sm text-slate-200 placeholder-slate-600 focus:border-cyan-500/40 outline-none" />
-                    <button type="submit" disabled={adding}
-                        className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/20 text-sm font-mono disabled:opacity-50">
-                        {adding ? <FaSpinner className="animate-spin" /> : <FaPlus />} Add
-                    </button>
-                </form>
-                {custom.length === 0 ? (
-                    <p className="text-xs text-slate-600 font-mono">No custom endpoints. Deployments with a hosted URL are monitored automatically.</p>
-                ) : (
-                    <div className="space-y-1.5">
-                        {custom.map((t) => (
-                            <div key={t._id} className="flex items-center gap-3 text-sm">
-                                <span className="text-slate-300">{t.label}</span>
-                                <span className="text-xs font-mono text-slate-600 truncate flex-1">{t.url}</span>
-                                <button onClick={() => removeTarget(t._id)} className="text-red-400/70 hover:text-red-400"><FaTrash size={12} /></button>
+                                        <div className="flex items-center gap-3 shrink-0 self-end sm:self-center">
+                                            <HistoryStrip history={t.history} />
+                                            <div className="min-w-[5.5rem] text-right">
+                                                {noData ? (
+                                                    <Badge>Unchecked</Badge>
+                                                ) : (
+                                                    <>
+                                                        <p
+                                                            className={`adm-num text-sm font-semibold ${
+                                                                up ? "text-[var(--adm-ok-ink)]" : "text-[var(--adm-error-ink)]"
+                                                            }`}
+                                                        >
+                                                            {up ? `${t.latest.latencyMs}ms` : t.latest.error || "Down"}
+                                                        </p>
+                                                        {up && (
+                                                            <p className="adm-help adm-num">HTTP {t.latest.statusCode}</p>
+                                                        )}
+                                                    </>
+                                                )}
+                                            </div>
+                                            <a
+                                                href={t.url}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="adm-icon-btn"
+                                                aria-label={`Open ${t.label || t.url}`}
+                                                title="Open endpoint"
+                                            >
+                                                <FaUpRightFromSquare aria-hidden="true" className="text-xs" />
+                                            </a>
+                                        </div>
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    )}
+                </Panel>
+
+                <Panel title="Custom endpoints" className="md:col-span-12 xl:col-span-4">
+                    <div className="space-y-4">
+                        <form onSubmit={addTarget} className="space-y-3">
+                            <Field label="Label (optional)" id="custom-endpoint-label">
+                                <input
+                                    value={newLabel}
+                                    onChange={(e) => setNewLabel(e.target.value)}
+                                    placeholder="e.g. API gateway"
+                                    className="adm-input"
+                                />
+                            </Field>
+                            <Field
+                                label="Endpoint URL"
+                                help="Deployments with a hosted URL are monitored automatically."
+                                id="custom-endpoint-url"
+                            >
+                                <input
+                                    value={newUrl}
+                                    onChange={(e) => setNewUrl(e.target.value)}
+                                    placeholder="https://example.com/health"
+                                    required
+                                    className="adm-input font-mono"
+                                />
+                            </Field>
+                            <button type="submit" disabled={adding} className="adm-btn adm-btn-primary w-full">
+                                {adding ? <FaSpinner aria-hidden="true" className="animate-spin" /> : <FaPlus aria-hidden="true" />}
+                                {adding ? "Adding…" : "Add endpoint"}
+                            </button>
+                        </form>
+
+                        {custom.length > 0 && (
+                            <div className="border-t border-[var(--hairline)] pt-3">
+                                <p className="adm-label mb-2">Registered custom endpoints</p>
+                                <ul className="adm-list -mx-4 sm:-mx-5">
+                                    {custom.map((t) => (
+                                        <li key={t._id} className="adm-row justify-between">
+                                            <div className="min-w-0 flex-1">
+                                                <p className="truncate font-medium text-[var(--text-bright)]">
+                                                    {t.label || t.url}
+                                                </p>
+                                                <p className="adm-help truncate font-mono">{t.url}</p>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => removeTarget(t._id)}
+                                                className="adm-icon-btn"
+                                                aria-label={`Remove ${t.label || t.url}`}
+                                                title="Remove endpoint"
+                                            >
+                                                <FaTrash aria-hidden="true" />
+                                            </button>
+                                        </li>
+                                    ))}
+                                </ul>
                             </div>
-                        ))}
+                        )}
                     </div>
-                )}
-            </Panel>
+                </Panel>
+            </div>
         </div>
     );
 }
 
-// ─────────────────────────── Analyzer tab ───────────────────────────
+// ─────────────────────────── AI analyzer tab ───────────────────────────
 
 function AnalyzerTab() {
-    const [logText, setLogText] = useState('');
-    const [summary, setSummary] = useState('');
+    const [logText, setLogText] = useState("");
+    const [summary, setSummary] = useState("");
     const [signals, setSignals] = useState(null);
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
+    const [error, setError] = useState("");
 
     const analyze = async () => {
         setLoading(true);
-        setError('');
-        setSummary('');
+        setError("");
+        setSummary("");
         try {
-            const res = await fetch('/api/admin/health/analyze', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+            const res = await fetch("/api/admin/health/analyze", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ logText }),
             });
             const data = await res.json();
@@ -367,75 +513,101 @@ function AnalyzerTab() {
     };
 
     return (
-        <div className="space-y-4">
-            <Panel className="p-5">
-                <p className="text-sm text-slate-400 mb-3">
-                    Feeds recent failed uptime checks and security events — plus any logs you paste below (docker output, stack traces) — to the AI Core for a troubleshooting summary.
-                </p>
-                <textarea
-                    value={logText}
-                    onChange={(e) => setLogText(e.target.value)}
-                    rows={8}
-                    placeholder="(Optional) paste recent runtime logs or a stack trace here…"
-                    className="w-full px-3 py-2 rounded-lg bg-slate-950/60 border border-white/10 text-sm font-mono text-slate-200 placeholder-slate-600 focus:border-cyan-500/40 outline-none resize-y"
-                />
-                <div className="flex items-center gap-3 mt-3">
-                    <button onClick={analyze} disabled={loading}
-                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-fuchsia-500/10 hover:bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/20 text-sm font-mono uppercase tracking-wider disabled:opacity-50">
-                        {loading ? <FaSpinner className="animate-spin" /> : <FaRobot />} Analyze
-                    </button>
-                    {signals && (
-                        <span className="text-xs font-mono text-slate-500">
-                            {signals.failedChecks} failed checks · {signals.securityEvents} security events
-                        </span>
-                    )}
+        <div className="space-y-6">
+            {error && (
+                <div role="alert" className="adm-notice adm-notice-error flex items-center gap-2.5">
+                    <FaTriangleExclamation aria-hidden="true" className="shrink-0" />
+                    <span>{error}</span>
                 </div>
-            </Panel>
-
-            {error && <div className="px-4 py-3 rounded-xl border border-red-500/20 bg-red-500/10 text-red-300 text-sm flex items-center gap-2"><FaTriangleExclamation /> {error}</div>}
-
-            {summary && (
-                <Panel className="p-5">
-                    <h3 className="text-sm font-mono uppercase tracking-widest text-fuchsia-400 mb-3 flex items-center gap-2"><FaRobot /> Analysis</h3>
-                    <pre className="whitespace-pre-wrap text-sm text-slate-300 font-sans leading-relaxed">{summary}</pre>
-                </Panel>
             )}
+
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+                <Panel title="Runtime logs & incident context" className="md:col-span-12 xl:col-span-6">
+                    <div className="space-y-4">
+                        <Field
+                            label="Runtime logs or stack trace (optional)"
+                            help="Recent failed uptime checks and security events are automatically included with your logs."
+                            id="health-analyzer-logs"
+                        >
+                            <textarea
+                                value={logText}
+                                onChange={(e) => setLogText(e.target.value)}
+                                rows={10}
+                                placeholder="Paste Docker container output, server logs, or stack traces here…"
+                                className="adm-input font-mono"
+                            />
+                        </Field>
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                            <button
+                                type="button"
+                                onClick={analyze}
+                                disabled={loading}
+                                className="adm-btn adm-btn-primary"
+                            >
+                                {loading ? <FaSpinner aria-hidden="true" className="animate-spin" /> : <FaRobot aria-hidden="true" />}
+                                {loading ? "Analyzing signals…" : "Analyze with AI"}
+                            </button>
+                            {signals && (
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <Badge tone={signals.failedChecks > 0 ? "warn" : "ok"}>
+                                        {signals.failedChecks} failed checks
+                                    </Badge>
+                                    <Badge tone={signals.securityEvents > 0 ? "info" : undefined}>
+                                        {signals.securityEvents} security events
+                                    </Badge>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </Panel>
+
+                <Panel title="Troubleshooting summary" className="md:col-span-12 xl:col-span-6">
+                    {loading ? (
+                        <Loading label="Generating troubleshooting analysis" rows={6} />
+                    ) : !summary ? (
+                        <EmptyState
+                            title="No analysis generated yet"
+                            description="Click Analyze with AI to inspect recent failed checks, security events, and any logs you pasted."
+                        />
+                    ) : (
+                        <pre className="adm-code whitespace-pre-wrap leading-relaxed">{summary}</pre>
+                    )}
+                </Panel>
+            </div>
         </div>
     );
 }
 
 export default function HealthDashboard() {
-    const [tab, setTab] = useState('resources');
+    const [tab, setTab] = useState("resources");
 
     return (
-        <div className="p-4 md:p-8 max-w-6xl mx-auto">
-            <div className="mb-8">
-                <Link href="/admin" className="text-cyan-400 hover:text-cyan-300 flex items-center gap-2 transition-colors mb-4 text-sm font-mono opacity-60 hover:opacity-100">
-                    ← BACK_TO_COMMAND_CENTER
-                </Link>
-                <h1 className="text-3xl md:text-4xl font-bold text-white mb-2 tracking-tight flex items-center gap-3">
-                    <FaServer className="text-emerald-400" /> Server Health
-                </h1>
-                <p className="text-slate-400">Live resource meters, endpoint uptime monitoring, and AI-assisted error triage.</p>
-            </div>
+        <div className="adm-page">
+            <PageHeader
+                command="top"
+                title="Server health"
+                description="Live CPU, memory, disk and event-loop telemetry, endpoint uptime checks, and AI-assisted log triage."
+            />
 
-            <div className="flex gap-2 mb-6 border-b border-white/10">
+            <div role="tablist" aria-label="Server health views" className="adm-tabs">
                 {TABS.map((t) => (
                     <button
                         key={t.key}
+                        type="button"
+                        role="tab"
+                        aria-selected={tab === t.key}
                         onClick={() => setTab(t.key)}
-                        className={`flex items-center gap-2 px-4 py-3 text-sm font-mono uppercase tracking-wider border-b-2 -mb-px transition-colors ${
-                            tab === t.key ? 'border-emerald-400 text-emerald-300' : 'border-transparent text-slate-500 hover:text-slate-300'
-                        }`}
+                        className="adm-tab"
                     >
-                        {t.icon} {t.label}
+                        {t.icon}
+                        {t.label}
                     </button>
                 ))}
             </div>
 
-            {tab === 'resources' && <ResourcesTab />}
-            {tab === 'uptime' && <UptimeTab />}
-            {tab === 'analyzer' && <AnalyzerTab />}
+            {tab === "resources" && <ResourcesTab />}
+            {tab === "uptime" && <UptimeTab />}
+            {tab === "analyzer" && <AnalyzerTab />}
         </div>
     );
 }
