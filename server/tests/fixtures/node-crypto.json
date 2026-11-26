@@ -1,0 +1,18 @@
+{
+  "secret": "fixture-secret-do-not-use",
+  "encrypted": [
+    {
+      "plain": "hello",
+      "cipher": "4470fe0a015cd0708feb4fa85cfe262b:bc984f23a7e6b11dd69fbfc767f6e374"
+    },
+    {
+      "plain": "ya29.a0-oauth-token-🙂",
+      "cipher": "aae7d9c9a7542524a914d90b7ab1291b:e8c3d96468c0703097e2364dfbfd77ab7ee0057b07aedefa456ec7202699129a"
+    },
+    {
+      "plain": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "cipher": "21857a7bc061ba3b04127001482195d5:9cea8b4c07bc9f03f98d8d1bdd7f05c496b5f4cb045f4e4b995a51d823eb606b3fda7da920928474990054c42cb4c8c0c7594d4a6664445412c0adda07f7d95a29b60f82327fc9f0fab2c6aee5598252d0c180c18a864e764232290a059ea5dc08407e6df7dd1b8242f9171084cc5730"
+    }
+  ],
+  "jwt": "eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyIjp7ImVtYWlsIjpudWxsLCJuYW1lIjoiQWRtaW4ifSwianRpIjoiMDAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDAwIiwiZXhwaXJlcyI6IjIwOTktMDEtMDFUMDA6MDA6MDAuMDAwWiIsImlhdCI6MTc5NTQ2MjU1NSwiZXhwIjoxNzk1NTQ4OTU1fQ.54J_4Pcd6zy5VjM-VfCwOSvIGy4sPhTiijVUDEOoHjU"
+}

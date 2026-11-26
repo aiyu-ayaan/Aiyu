@@ -1,4 +1,5 @@
-@import "tailwindcss";
+/* Scan only src: auto-detection walks the repo root, including tool dirs with live sockets that break webpack hashing. */
+@import "tailwindcss" source("../../");
 @plugin "@tailwindcss/typography";
 
 /* 3D Transform Utilities */
@@ -935,42 +936,43 @@ body.lightbox-open #scroll-to-top {
 }
 
 .react-datepicker {
-  @apply !bg-gray-800 !border-gray-700 !font-sans !text-gray-100;
+  background-color: var(--bg-secondary) !important;
+  border-color: var(--hairline-strong) !important;
+  font-family: var(--font-geist-sans), sans-serif !important;
+  color: var(--text-primary) !important;
 }
 
 .react-datepicker__header {
-  @apply !bg-gray-900 !border-gray-700 !text-gray-100;
+  background-color: var(--bg-tertiary) !important;
+  border-color: var(--hairline-strong) !important;
+  color: var(--text-primary) !important;
 }
 
 .react-datepicker__current-month,
 .react-datepicker-time__header,
-.react-datepicker-year-header {
-  @apply !text-gray-100;
-}
-
-/* .react-datepicker__day-name,
+.react-datepicker-year-header,
+.react-datepicker__day-name,
 .react-datepicker__day,
 .react-datepicker__time-name {
-  @apply !text-gray-300 hover: !bg-gray-700 hover: !text-white !rounded;
-} */
+  color: var(--text-primary) !important;
+}
 
-/* .react-datepicker__day--selected,
-.react-datepicker__day--keyboard-selected {
-  @apply !bg-blue-600 !text-white hover: !bg-blue-700;
+.react-datepicker__day:hover {
+  background-color: var(--bg-hover) !important;
 }
 
 .react-datepicker__day--disabled {
-  @apply !text-gray-600 hover: !bg-transparent !cursor-not-allowed;
-} */
+  color: var(--text-muted) !important;
+}
 
 .react-datepicker__navigation-icon::before {
-  @apply !border-gray-400;
+  border-color: var(--text-tertiary) !important;
 }
 
 .react-datepicker__year-read-view--down-arrow,
 .react-datepicker__month-read-view--down-arrow,
 .react-datepicker__month-year-read-view--down-arrow {
-  @apply !border-gray-400;
+  border-color: var(--text-tertiary) !important;
 }
 
 .custom-datepicker-wrapper .react-datepicker-wrapper {

@@ -1,13 +1,13 @@
-// Shared class fragments + helpers for the admin legal screens, matching the
-// look of the other admin forms (DeploymentForm et al.).
+// Shared class fragments + helpers for the admin legal screens.
+// Uses admin design system tokens and classes (src/app/styles/admin.css).
 
-export const panelClass = 'bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 md:p-8';
-export const headingClass = 'text-sm font-mono text-cyan-400 uppercase tracking-widest mb-6 flex items-center gap-4';
-export const labelClass = 'block text-xs font-mono uppercase tracking-wider text-slate-400 mb-2';
-export const inputClass = 'w-full bg-slate-950/50 border border-white/10 rounded-xl py-3 px-4 text-slate-200 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-600';
-export const hintClass = 'mt-2 text-xs text-slate-500';
-export const primaryButtonClass = 'inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 font-bold tracking-wide hover:bg-cyan-500/25 hover:border-cyan-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed';
-export const dangerButtonClass = 'inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm hover:bg-red-500/20 transition-colors';
+export const panelClass = 'adm-panel adm-panel-body';
+export const headingClass = 'adm-panel-title mb-4 flex items-center justify-between gap-3';
+export const labelClass = 'adm-label mb-1.5';
+export const inputClass = 'adm-input';
+export const hintClass = 'adm-help mt-1.5';
+export const primaryButtonClass = 'adm-btn adm-btn-primary';
+export const dangerButtonClass = 'adm-btn adm-btn-danger';
 
 /** Client-side mirror of the server slug rule, for live URL previews only. */
 export function slugify(value) {

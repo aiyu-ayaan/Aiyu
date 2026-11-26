@@ -32,15 +32,11 @@ const V2Header = ({ logoText = '< aiyu />', data, config, socialData }) => {
     }, []);
 
     // Reading surfaces stay quiet — no terminal row on the blog index/details.
-    // Blogs answer at /v2/blogs normally and at /blogs when v2 is the admin
-    // default (proxy rewrite keeps the classic URL), so match both.
-    const showTerminal = !pathname.startsWith('/v2/blogs') && !pathname.startsWith('/blogs');
+    const showTerminal = !pathname.startsWith('/blogs');
 
     const getV2Href = (href) => {
         if (!href || typeof href !== 'string') return href;
         if (!href.startsWith('/') || href.startsWith('//')) return href;
-        if (href === '/v2' || href.startsWith('/v2/')) return href;
-        if (href === '/v1' || href.startsWith('/v1/')) return href;
 
         const normalizedPath = href === '/' ? '' : href;
         return v2PublicPath(config, normalizedPath);
@@ -63,12 +59,7 @@ const V2Header = ({ logoText = '< aiyu />', data, config, socialData }) => {
             { href: getV2Href('/github'), label: 'github' },
         ];
 
-    const showClassic = data?.showClassic !== false;
-
     const navLinks = [...sourceLinks];
-    if (showClassic) {
-        navLinks.push({ href: '/v1', label: 'classic' });
-    }
 
     const contactLink = data?.contactLink || { name: 'contact --me', href: '/contact-us' };
     const contactLabel = contactLink.name || 'contact --me';

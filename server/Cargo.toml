@@ -1,0 +1,61 @@
+[package]
+name = "aiyu-server"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+aes = "0.8"
+anyhow = "1"
+async_zip = { version = "0.0.17", features = ["tokio", "deflate"] }
+axum = { version = "0.8", features = ["multipart"] }
+base64 = "0.22"
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+cbc = { version = "0.1", features = ["alloc", "std"] }
+dotenvy = "0.15"
+futures-util = { version = "0.3", features = ["io"] }
+hex = "0.4"
+ipnet = "2"
+jsonwebtoken = "9"
+rand = "0.8"
+reqwest = { version = "0.12", default-features = false, features = ["json", "stream", "rustls-tls"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["preserve_order"] }
+sha2 = "0.10"
+sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio", "sqlite", "json", "macros"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "net", "signal", "fs", "io-util"] }
+tokio-util = { version = "0.7", features = ["io", "compat"] }
+tower = { version = "0.5", features = ["util"] }
+tower-http = { version = "0.6", features = ["compression-br", "compression-gzip", "fs", "set-header"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+hmac = "0.12"
+regex = "1"
+pulldown-cmark = { version = "0.13", default-features = false, features = ["html"] }
+ammonia = "4"
+url = "2"
+chrono-tz = { version = "0.10", features = ["case-insensitive"] }
+image = { version = "0.25", default-features = false, features = ["jpeg", "png", "gif", "webp"] }
+fast_image_resize = "5"
+img-parts = "0.3"
+libwebp-sys = "0.9"
+libloading = "0.8"
+libc = "0.2"
+crc32fast = "1"
+
+[features]
+default = ["pg-import"]
+# `aiyu-server import-postgres`. Remove once every install has moved to SQLite: it only costs binary size.
+pg-import = ["sqlx/postgres"]
+
+[dev-dependencies]
+tower = { version = "0.5", features = ["util"] }
+http-body-util = "0.1"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
+# A panic while handling one request (a decoder on a bad file) must not take the server down.
+panic = "unwind"

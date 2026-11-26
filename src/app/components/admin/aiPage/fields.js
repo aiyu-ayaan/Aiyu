@@ -1,22 +1,19 @@
 "use client";
 
 import React from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { FaPlus, FaTrash } from 'react-icons/fa6';
 
-/** Shared field primitives for the AI Hub editor — dark admin styling. */
+/** Shared field primitives for the AI hub editor — theme CSS variables & adm-* classes only. */
 
 export function Field({ label, hint, children }) {
     return (
-        <label className="block">
-            <span className="mb-1.5 block font-mono text-[0.7rem] uppercase tracking-wider text-slate-400">{label}</span>
+        <label className="adm-field">
+            <span className="adm-label">{label}</span>
             {children}
-            {hint && <span className="mt-1 block text-xs text-slate-600">{hint}</span>}
+            {hint && <span className="adm-help">{hint}</span>}
         </label>
     );
 }
-
-const inputClass =
-    'w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-slate-100 outline-none transition-colors focus:border-cyan-400/50';
 
 export function TextInput({ value, onChange, placeholder }) {
     return (
@@ -25,7 +22,7 @@ export function TextInput({ value, onChange, placeholder }) {
             value={value ?? ''}
             placeholder={placeholder}
             onChange={(e) => onChange(e.target.value)}
-            className={inputClass}
+            className="adm-input"
         />
     );
 }
@@ -37,7 +34,7 @@ export function TextArea({ value, onChange, placeholder, rows = 4 }) {
             placeholder={placeholder}
             rows={rows}
             onChange={(e) => onChange(e.target.value)}
-            className={`${inputClass} resize-y font-mono leading-relaxed`}
+            className="adm-input font-mono"
         />
     );
 }
@@ -50,56 +47,49 @@ export function NumberInput({ value, onChange, min = 0, max = 100 }) {
             min={min}
             max={max}
             onChange={(e) => onChange(Math.max(min, Math.min(max, Number(e.target.value) || 0)))}
-            className={inputClass}
+            className="adm-input font-mono"
         />
     );
 }
 
 export function SwitchRow({ label, checked, onChange }) {
     return (
-        <button
-            type="button"
-            onClick={() => onChange(!checked)}
-            className="flex items-center gap-2.5 text-sm text-slate-300"
-        >
-            <span
-                className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
-                    checked ? 'bg-cyan-500/80' : 'bg-white/10'
-                }`}
-            >
-                <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        checked ? 'translate-x-4' : 'translate-x-0.5'
-                    }`}
-                />
-            </span>
-            <span className="font-mono text-[0.7rem] uppercase tracking-wider">{label}</span>
-        </button>
+        <div className="flex items-center gap-3">
+            <button
+                type="button"
+                role="switch"
+                aria-checked={!!checked}
+                aria-label={label}
+                onClick={() => onChange(!checked)}
+                className="adm-switch"
+            />
+            <span className="text-sm text-[var(--text-primary)]">{label}</span>
+        </div>
     );
 }
 
 const ACCENTS = [
-    { label: 'cyan', value: 'var(--accent-cyan)', swatch: '#2997ff' },
-    { label: 'purple', value: 'var(--accent-purple)', swatch: '#bf5af2' },
-    { label: 'orange', value: 'var(--accent-orange)', swatch: '#ff9f0a' },
-    { label: 'pink', value: 'var(--accent-pink)', swatch: '#ff375f' },
-    { label: 'teal', value: 'var(--accent-teal)', swatch: '#30b0c7' },
-    { label: 'green', value: 'var(--accent-green)', swatch: '#30d158' },
+    { label: 'Cyan', value: 'var(--accent-cyan)' },
+    { label: 'Purple', value: 'var(--accent-purple)' },
+    { label: 'Orange', value: 'var(--accent-orange)' },
+    { label: 'Pink', value: 'var(--accent-pink)' },
+    { label: 'Teal', value: 'var(--accent-teal)' },
+    { label: 'Green', value: 'var(--accent-green)' },
 ];
 
 export function AccentPicker({ value, onChange }) {
     return (
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Accent colour">
             {ACCENTS.map((a) => (
                 <button
                     key={a.value}
                     type="button"
                     title={a.label}
+                    aria-label={`${a.label} accent`}
+                    aria-pressed={value === a.value}
                     onClick={() => onChange(a.value)}
-                    className={`h-7 w-7 rounded-full border-2 transition-transform ${
-                        value === a.value ? 'scale-110 border-white' : 'border-transparent'
-                    }`}
-                    style={{ background: a.swatch }}
+                    className="adm-sc-swatch"
+                    style={{ background: a.value }}
                 />
             ))}
         </div>
@@ -107,7 +97,7 @@ export function AccentPicker({ value, onChange }) {
 }
 
 /** Editor for a `string[]` (tags). */
-export function StringListEditor({ items, onChange, placeholder = 'value' }) {
+export function StringListEditor({ items, onChange, placeholder = 'Value' }) {
     const list = Array.isArray(items) ? items : [];
     const update = (i, v) => onChange(list.map((x, idx) => (idx === i ? v : x)));
     const remove = (i) => onChange(list.filter((_, idx) => idx !== i));
@@ -121,20 +111,21 @@ export function StringListEditor({ items, onChange, placeholder = 'value' }) {
                     <RemoveButton onClick={() => remove(i)} />
                 </div>
             ))}
-            <AddButton label="Add" onClick={add} />
+            <AddButton label="Add item" onClick={add} />
         </div>
     );
 }
 
-export function RemoveButton({ onClick }) {
+export function RemoveButton({ onClick, label = 'Remove item' }) {
     return (
         <button
             type="button"
             onClick={onClick}
-            className="shrink-0 rounded-md border border-red-500/20 bg-red-500/10 p-2 text-red-400 transition-colors hover:bg-red-500/20"
-            title="Remove"
+            className="adm-icon-btn"
+            title={label}
+            aria-label={label}
         >
-            <Trash2 className="h-4 w-4" />
+            <FaTrash aria-hidden="true" />
         </button>
     );
 }
@@ -144,9 +135,9 @@ export function AddButton({ label, onClick }) {
         <button
             type="button"
             onClick={onClick}
-            className="flex items-center gap-1.5 rounded-lg border border-cyan-500/20 bg-cyan-500/10 px-3 py-1.5 font-mono text-xs uppercase tracking-wider text-cyan-400 transition-colors hover:bg-cyan-500/20"
+            className="adm-btn"
         >
-            <Plus className="h-3.5 w-3.5" /> {label}
+            <FaPlus aria-hidden="true" /> {label}
         </button>
     );
 }

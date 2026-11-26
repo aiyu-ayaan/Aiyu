@@ -1,44 +1,129 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import Toast from './Toast';
+import { FaFloppyDisk, FaGripVertical, FaPlus, FaSpinner, FaTrashCan } from 'react-icons/fa6';
+import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
+import { Badge, EmptyState, Field, Loading, Panel } from './ui';
+import '@/app/styles/admin-structure.css';
 
-// Helper for Sortable Items
-function SortableItem({ id, children, className }) {
+function SortableNavRow({
+    link,
+    index,
+    onChange,
+    onRemove,
+}) {
     const {
         attributes,
         listeners,
         setNodeRef,
         transform,
         transition,
-    } = useSortable({ id });
+    } = useSortable({ id: link._id });
 
     const style = {
         transform: CSS.Transform.toString(transform),
         transition,
     };
 
+    const rowLabel = link.name?.trim() || `Link ${index + 1}`;
+
     return (
-        <div ref={setNodeRef} style={style} className={className} {...attributes} {...listeners}>
-            {children}
-        </div>
+        <li
+            ref={setNodeRef}
+            style={style}
+            className="grid gap-4 p-4 sm:px-5 lg:grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)_auto_auto] lg:items-end"
+        >
+            <div className="flex items-center gap-2 lg:pb-1">
+                <button
+                    type="button"
+                    className="adm-icon-btn cursor-grab active:cursor-grabbing"
+                    aria-label={`Reorder ${rowLabel}`}
+                    {...attributes}
+                    {...listeners}
+                >
+                    <FaGripVertical aria-hidden="true" />
+                </button>
+                <span className="adm-num adm-help text-xs">#{index + 1}</span>
+            </div>
+
+            <Field label="Display label">
+                <input
+                    type="text"
+                    value={link.name}
+                    onChange={(e) => onChange(index, 'name', e.target.value)}
+                    className="adm-input"
+                    placeholder="Projects"
+                />
+            </Field>
+
+            <Field label="Target path or URL">
+                <input
+                    type="text"
+                    value={link.href}
+                    onChange={(e) => onChange(index, 'href', e.target.value)}
+                    className="adm-input font-mono"
+                    placeholder="/projects"
+                />
+            </Field>
+
+            <div className="flex flex-wrap items-center gap-2 lg:pb-0.5">
+                <label className="adm-choice !min-h-11 !px-3 !py-1.5 text-xs">
+                    <input
+                        type="checkbox"
+                        checked={link.visible !== false}
+                        onChange={(e) => onChange(index, 'visible', e.target.checked)}
+                        className="adm-check"
+                    />
+                    <span>Visible</span>
+                </label>
+                <label className="adm-choice !min-h-11 !px-3 !py-1.5 text-xs">
+                    <input
+                        type="checkbox"
+                        checked={link.beta === true}
+                        onChange={(e) => onChange(index, 'beta', e.target.checked)}
+                        className="adm-check"
+                    />
+                    <span>Beta</span>
+                </label>
+                <label className="adm-choice !min-h-11 !px-3 !py-1.5 text-xs">
+                    <input
+                        type="checkbox"
+                        checked={link.target === '_blank'}
+                        onChange={(e) => onChange(index, 'target', e.target.checked ? '_blank' : '')}
+                        className="adm-check"
+                    />
+                    <span>New tab</span>
+                </label>
+            </div>
+
+            <div className="flex justify-end lg:pb-0.5">
+                <button
+                    type="button"
+                    onClick={() => onRemove(index)}
+                    className="adm-icon-btn"
+                    aria-label={`Remove ${rowLabel}`}
+                >
+                    <FaTrashCan aria-hidden="true" />
+                </button>
+            </div>
+        </li>
     );
 }
 
 const HeaderForm = () => {
     const router = useRouter();
+    const { toast } = useAdminFeedback();
     const [formData, setFormData] = useState({
         navLinks: [],
         contactLink: { name: '', href: '' },
-        showClassic: true,
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
-    const [notification, setNotification] = useState(null);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -55,11 +140,10 @@ const HeaderForm = () => {
         fetchData();
     }, []);
 
-    // Helper to ensure all items have a unique ID for DnD
     const ensureIds = (items) => {
-        return items.map(item => ({
+        return items.map((item) => ({
             ...item,
-            _id: item._id || `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+            _id: item._id || `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         }));
     };
 
@@ -72,7 +156,6 @@ const HeaderForm = () => {
                     setFormData({
                         ...data,
                         navLinks: ensureIds(data.navLinks || []),
-                        showClassic: data.showClassic !== false,
                     });
                 }
             }
@@ -112,17 +195,13 @@ const HeaderForm = () => {
         });
     };
 
-    const showNotification = (success, message) => {
-        setNotification({ success, message });
-        setTimeout(() => setNotification(null), 3000);
-    };
+    const showNotification = (success, message) => toast(message, { success });
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setSaving(true);
         setError('');
 
-        // Prepare payload: strict navLink structure without temp _ids to avoid CastError
         const payload = {
             ...formData,
             navLinks: formData.navLinks.map(({ _id, ...rest }) => rest),
@@ -138,31 +217,36 @@ const HeaderForm = () => {
             });
 
             if (response.ok) {
-                showNotification(true, 'Navigation Matrix Updated Successfully');
-                fetchData(); // Refresh data
+                showNotification(true, 'Header navigation saved');
+                fetchData();
             } else {
                 const data = await response.json();
-                setError(data.error || 'Something went wrong');
+                setError(data.error || 'Could not update header navigation');
                 showNotification(false, data.error || 'Failed to update');
             }
-        } catch (err) {
-            setError('An error occurred');
+        } catch {
+            setError('An error occurred while saving header navigation');
             showNotification(false, 'An error occurred');
         } finally {
             setSaving(false);
         }
     };
 
-    if (loading) return (
-        <div className="flex items-center justify-center p-12">
-            <span className="font-mono text-cyan-400 animate-pulse">LOADING_DATA_STREAM...</span>
-        </div>
-    );
+    if (loading) {
+        return (
+            <section className="adm-panel">
+                <Loading label="Loading header configuration" rows={5} />
+            </section>
+        );
+    }
 
     const handleAddNavLink = () => {
         setFormData({
             ...formData,
-            navLinks: [{ _id: `temp-${Date.now()}`, name: '', href: '', visible: true, beta: false, target: '' }, ...formData.navLinks]
+            navLinks: [
+                { _id: `temp-${Date.now()}`, name: '', href: '', visible: true, beta: false, target: '' },
+                ...formData.navLinks,
+            ],
         });
     };
 
@@ -171,201 +255,157 @@ const HeaderForm = () => {
         setFormData({ ...formData, navLinks: newNavLinks });
     };
 
+    const visibleLinks = formData.navLinks.filter((l) => l.visible !== false);
+    const hiddenCount = formData.navLinks.length - visibleLinks.length;
+    const betaCount = formData.navLinks.filter((l) => l.beta === true).length;
+
     return (
-        <form onSubmit={handleSubmit} className="space-y-12">
-            {error && (
-                <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl font-mono text-sm">
-                    ERROR: {error}
-                </div>
-            )}
+        <form onSubmit={handleSubmit} className="adm-split">
+            <div className="adm-stack">
+                {error && (
+                    <div role="alert" className="adm-notice adm-notice-error">
+                        {error}
+                    </div>
+                )}
 
-            {/* Navigation Links Section */}
-            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 md:p-8 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
-
-                <div className="flex justify-between items-center mb-8 relative z-10">
-                    <h2 className="text-sm font-mono text-blue-500/70 uppercase tracking-widest flex items-center gap-4">
-                        Navigation Sequence
-                        <div className="h-px w-20 bg-blue-500/10" />
-                    </h2>
-                    <button
-                        type="button"
-                        onClick={handleAddNavLink}
-                        className="text-xs bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 px-4 py-2 rounded-lg border border-blue-500/20 hover:border-blue-500/50 transition-all font-mono uppercase tracking-wide flex items-center gap-2"
-                    >
-                        + Add Checkpoint
-                    </button>
-                </div>
-
-                <DndContext
-                    sensors={sensors}
-                    collisionDetection={closestCenter}
-                    onDragEnd={handleDragEnd}
+                <Panel
+                    title="Navigation links"
+                    actions={
+                        <button type="button" onClick={handleAddNavLink} className="adm-btn">
+                            <FaPlus aria-hidden="true" /> Add link
+                        </button>
+                    }
+                    flush
                 >
-                    <SortableContext
-                        items={formData.navLinks.map(link => link._id)}
-                        strategy={verticalListSortingStrategy}
-                    >
-                        <div className="space-y-4 relative z-10">
-                            {formData.navLinks.map((link, index) => (
-                                <SortableItem key={link._id} id={link._id} className="bg-slate-900/30 p-6 rounded-xl border border-white/10 relative group hover:border-blue-500/30 transition-colors">
-                                    <button
-                                        type="button"
-                                        onClick={() => handleRemoveNavLink(index)}
-                                        className="absolute top-3 right-3 text-white/20 hover:text-red-400 transition-colors z-20"
-                                        title="Remove link"
-                                    >
-                                        <div className="p-1">✕</div>
-                                    </button>
+                    {formData.navLinks.length === 0 ? (
+                        <EmptyState
+                            title="No navigation links yet"
+                            description="Add links to populate the main site navigation bar."
+                            action={
+                                <button type="button" onClick={handleAddNavLink} className="adm-btn adm-btn-primary">
+                                    <FaPlus aria-hidden="true" /> Add first link
+                                </button>
+                            }
+                        />
+                    ) : (
+                        <DndContext
+                            sensors={sensors}
+                            collisionDetection={closestCenter}
+                            onDragEnd={handleDragEnd}
+                        >
+                            <SortableContext
+                                items={formData.navLinks.map((link) => link._id)}
+                                strategy={verticalListSortingStrategy}
+                            >
+                                <ul className="adm-list">
+                                    {formData.navLinks.map((link, index) => (
+                                        <SortableNavRow
+                                            key={link._id}
+                                            link={link}
+                                            index={index}
+                                            onChange={handleNavLinkChange}
+                                            onRemove={handleRemoveNavLink}
+                                        />
+                                    ))}
+                                </ul>
+                            </SortableContext>
+                        </DndContext>
+                    )}
+                </Panel>
 
-                                    <div className="flex gap-4 items-center">
-                                        {/* Drag Handle Icon (Visual only, handled by SortableItem parent item) */}
-                                        <div className="text-slate-600 cursor-move">
-                                            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
-                                        </div>
-
-                                        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div>
-                                                <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Display Label</label>
-                                                <input
-                                                    type="text"
-                                                    value={link.name}
-                                                    onChange={(e) => handleNavLinkChange(index, 'name', e.target.value)}
-                                                    className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-2.5 text-slate-200 focus:border-blue-500/50 outline-none text-sm font-bold placeholder:text-slate-600"
-                                                    placeholder="Link Text"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Target Route</label>
-                                                <input
-                                                    type="text"
-                                                    value={link.href}
-                                                    onChange={(e) => handleNavLinkChange(index, 'href', e.target.value)}
-                                                    className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-2.5 text-blue-400 focus:border-blue-500/50 outline-none text-sm font-mono placeholder:text-blue-900/50"
-                                                    placeholder="/path"
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div className="flex flex-col items-center gap-3 border-l border-white/10 pl-4 ml-2">
-                                            <div className="flex flex-col items-center gap-1">
-                                                <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500">Visible</label>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={link.visible !== false}
-                                                    onChange={(e) => handleNavLinkChange(index, 'visible', e.target.checked)}
-                                                    className="w-5 h-5 rounded border-white/20 bg-slate-950/50 text-blue-500 focus:ring-blue-500 focus:ring-offset-0 focus:ring-offset-transparent transition-all cursor-pointer accent-blue-500"
-                                                />
-                                            </div>
-                                            <div className="flex flex-col items-center gap-1">
-                                                <label className="block text-[10px] font-mono uppercase tracking-wider text-amber-400">Beta</label>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={link.beta === true}
-                                                    onChange={(e) => handleNavLinkChange(index, 'beta', e.target.checked)}
-                                                    className="w-5 h-5 rounded border-white/20 bg-slate-950/50 text-amber-500 focus:ring-amber-500 focus:ring-offset-0 focus:ring-offset-transparent transition-all cursor-pointer accent-amber-500"
-                                                />
-                                            </div>
-                                            <div className="flex flex-col items-center gap-1">
-                                                <label className="block text-[10px] font-mono uppercase tracking-wider text-emerald-400">New Tab</label>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={link.target === '_blank'}
-                                                    onChange={(e) => handleNavLinkChange(index, 'target', e.target.checked ? '_blank' : '')}
-                                                    className="w-5 h-5 rounded border-white/20 bg-slate-950/50 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-0 focus:ring-offset-transparent transition-all cursor-pointer accent-emerald-500"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </SortableItem>
-                            ))}
-                        </div>
-                    </SortableContext>
-                </DndContext>
+                <Panel title="Primary contact action">
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <Field label="Action label" help="Text shown on the contact button in the header.">
+                            <input
+                                type="text"
+                                value={formData.contactLink?.name || ''}
+                                onChange={(e) => handleContactLinkChange('name', e.target.value)}
+                                className="adm-input"
+                                placeholder="Hire me"
+                            />
+                        </Field>
+                        <Field label="Target route or anchor" help="Internal route (/contact-us), hash (#contact), or external URL.">
+                            <input
+                                type="text"
+                                value={formData.contactLink?.href || ''}
+                                onChange={(e) => handleContactLinkChange('href', e.target.value)}
+                                className="adm-input font-mono"
+                                placeholder="/contact-us"
+                            />
+                        </Field>
+                    </div>
+                </Panel>
             </div>
 
-            {/* Contact Link Section */}
-            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 md:p-8 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
-
-                <div className="flex justify-between items-center mb-8 relative z-10">
-                    <h2 className="text-sm font-mono text-cyan-500/70 uppercase tracking-widest flex items-center gap-4">
-                        Contact Vector
-                        <div className="h-px w-20 bg-cyan-500/10" />
-                    </h2>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
-                    <div>
-                        <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Action Label</label>
-                        <input
-                            type="text"
-                            value={formData.contactLink?.name || ''}
-                            onChange={(e) => handleContactLinkChange('name', e.target.value)}
-                            className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-cyan-500/50 outline-none text-sm font-bold placeholder:text-slate-600"
-                            placeholder="e.g. Hire Me"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Target Action</label>
-                        <input
-                            type="text"
-                            value={formData.contactLink?.href || ''}
-                            onChange={(e) => handleContactLinkChange('href', e.target.value)}
-                            className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-cyan-400 focus:border-cyan-500/50 outline-none text-sm font-mono placeholder:text-cyan-900/50"
-                            placeholder="e.g. #contact"
-                        />
-                    </div>
-                </div>
-            </div>
-
-            {/* Display Settings Section */}
-            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 md:p-8 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-violet-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
-
-                <div className="flex justify-between items-center mb-8 relative z-10">
-                    <h2 className="text-sm font-mono text-violet-500/70 uppercase tracking-widest flex items-center gap-4">
-                        Display Settings
-                        <div className="h-px w-20 bg-violet-500/10" />
-                    </h2>
-                </div>
-
-                <div className="relative z-10 space-y-4">
-                    <div className="flex items-center justify-between p-4 bg-slate-950/30 rounded-xl border border-white/5 hover:border-violet-500/20 transition-all">
+            <aside className="adm-stack adm-side">
+                <Panel title="Publish">
+                    <dl className="adm-facts mb-4">
                         <div>
-                            <h3 className="text-sm font-bold text-slate-200">Show Classic Option</h3>
-                            <p className="text-xs text-slate-500 mt-1">Display the [classic] navigation link on the V2 header to allow opting back into the original design.</p>
+                            <dt>Visible links</dt>
+                            <dd>{visibleLinks.length}</dd>
                         </div>
-                        <input
-                            type="checkbox"
-                            checked={formData.showClassic !== false}
-                            onChange={(e) => setFormData({ ...formData, showClassic: e.target.checked })}
-                            className="w-5 h-5 rounded border-white/20 bg-slate-950/50 text-violet-500 focus:ring-violet-500 focus:ring-offset-0 focus:ring-offset-transparent transition-all cursor-pointer accent-violet-500"
-                        />
+                        <div>
+                            <dt>Hidden</dt>
+                            <dd>{hiddenCount}</dd>
+                        </div>
+                        <div>
+                            <dt>Beta badges</dt>
+                            <dd>{betaCount}</dd>
+                        </div>
+                    </dl>
+                    <p className="adm-help mb-4">Drag the handle on any row to reorder links in the public header.</p>
+                    <div className="flex flex-wrap gap-2">
+                        <button type="submit" disabled={saving} className="adm-btn adm-btn-primary flex-1">
+                            {saving ? <FaSpinner className="animate-spin" aria-hidden="true" /> : <FaFloppyDisk aria-hidden="true" />}
+                            {saving ? 'Saving' : 'Save changes'}
+                        </button>
+                        <button type="button" onClick={() => router.back()} className="adm-btn">
+                            Cancel
+                        </button>
                     </div>
-                </div>
-            </div>
+                </Panel>
 
-            {/* Sticky Action Footer */}
-            <div className="sticky bottom-8 flex justify-end gap-4 pt-6 border-t border-white/5 bg-slate-900/90 backdrop-blur-lg p-4 rounded-xl border border-white/5 shadow-2xl z-50">
-                <button
-                    type="button"
-                    onClick={() => router.back()}
-                    className="px-6 py-2 rounded bg-white/5 hover:bg-white/10 text-slate-400 transition-colors text-sm font-medium"
-                >
-                    CANCEL
-                </button>
-                <button
-                    type="submit"
-                    disabled={saving}
-                    className="px-8 py-2 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-bold transition-all shadow-[0_0_20px_rgba(8,145,178,0.3)] hover:shadow-[0_0_30px_rgba(8,145,178,0.5)] disabled:opacity-50 disabled:cursor-not-allowed text-sm tracking-wide"
-                >
-                    {saving ? 'UPDATING_SYSTEM...' : 'CONFIRM_UPDATE'}
-                </button>
-            </div>
+                <Panel title="Header preview">
+                    <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--bg-secondary)] p-3 font-mono text-xs">
+                        <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-semibold text-[var(--text-bright)]">&lt; aiyu /&gt;</span>
+                            <span className="text-[var(--adm-hint)]">|</span>
+                            {visibleLinks.length === 0 ? (
+                                <span className="text-[var(--adm-hint)]">No visible links</span>
+                            ) : (
+                                visibleLinks.map((link, idx) => (
+                                    <span key={link._id || idx} className="inline-flex items-center gap-1 text-[var(--text-secondary)]">
+                                        {idx === 0 ? `[ ${link.name || 'untitled'} ]` : (link.name || 'untitled')}
+                                        {link.beta && <Badge tone="warn">beta</Badge>}
+                                    </span>
+                                ))
+                            )}
+                        </div>
+                        {formData.contactLink?.name && (
+                            <div className="mt-3 flex items-center justify-between border-t border-[var(--hairline)] pt-2.5">
+                                <span className="text-[var(--adm-hint)]">CTA</span>
+                                <Badge tone="info">{formData.contactLink.name} → {formData.contactLink.href || '/'}</Badge>
+                            </div>
+                        )}
+                    </div>
+                </Panel>
 
-            {/* Toast Notification */}
-            <Toast notification={notification} />
+                <Panel title="Related" flush>
+                    <ul className="adm-list">
+                        <li>
+                            <Link href="/admin/config" className="adm-row adm-link">
+                                Site branding and logo text
+                            </Link>
+                        </li>
+                        <li>
+                            <Link href="/admin/footer" className="adm-row adm-link">
+                                Footer and social links
+                            </Link>
+                        </li>
+                    </ul>
+                </Panel>
+            </aside>
+
         </form>
     );
 };

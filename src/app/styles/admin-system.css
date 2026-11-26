@@ -1,0 +1,167 @@
+/* Layout extras for the admin system screens (config, security, database, AI, MCP, ...). Builds on admin.css. */
+@layer components {
+  .adm-split {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: 1.5rem;
+  }
+
+  .adm-split > *,
+  .adm-stack > * {
+    min-width: 0;
+  }
+
+  .adm-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  @media (min-width: 1280px) {
+    .adm-split {
+      grid-template-columns: minmax(0, 1fr) 21rem;
+    }
+
+    /* Below the 4rem sticky top bar; scrolls by itself when taller than the screen. */
+    .adm-side {
+      position: sticky;
+      top: 5rem;
+      max-height: calc(100dvh - 6rem);
+      overflow-y: auto;
+    }
+
+    .adm-side > * {
+      flex-shrink: 0;
+    }
+  }
+
+  /* Destructive actions get their own panel. */
+  .adm-panel.adm-danger {
+    border-color: color-mix(in srgb, var(--status-error) 40%, transparent);
+  }
+
+  .adm-danger .adm-panel-title {
+    color: var(--adm-error-ink);
+  }
+
+  /* Label wrapping a visually hidden file or radio input: shows the focus ring and the chosen state. */
+  .adm-choice {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+    min-height: 2.75rem;
+    padding: 0.5rem 0.875rem;
+    border: 1px solid var(--hairline-strong);
+    border-radius: 10px;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+  }
+
+  .adm-choice:hover {
+    background: var(--bg-hover);
+  }
+
+  .adm-choice:has(:checked) {
+    border-color: var(--accent-cyan);
+    background: color-mix(in srgb, var(--accent-cyan) 10%, transparent);
+  }
+
+  .adm-choice:focus-within {
+    outline: 2px solid var(--accent-cyan);
+    outline-offset: 2px;
+  }
+
+  /* Dialog with a fixed head and foot and a scrolling body: add to .adm-dialog. */
+  .adm-dialog.adm-dialog-framed {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .adm-dialog-head,
+  .adm-dialog-foot {
+    display: flex;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.875rem 1.25rem;
+    border-bottom: 1px solid var(--hairline);
+  }
+
+  .adm-dialog-foot {
+    justify-content: flex-end;
+    border-top: 1px solid var(--hairline);
+    border-bottom: 0;
+  }
+
+  .adm-dialog-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 1.25rem;
+  }
+
+  /* Definition pairs in rows and cards: small label over value. */
+  .adm-facts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+    gap: 0.75rem 1rem;
+    font-size: 0.8125rem;
+  }
+
+  .adm-facts dt {
+    color: var(--adm-hint);
+  }
+
+  .adm-facts dd {
+    min-width: 0;
+    color: var(--text-primary);
+    overflow-wrap: anywhere;
+  }
+
+  .adm-sc-progress {
+    position: relative;
+    width: 100%;
+    height: 0.5rem;
+    overflow: hidden;
+    border: 1px solid var(--hairline);
+    border-radius: 9999px;
+    background: var(--bg-primary);
+  }
+
+  .adm-sc-progress > span {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--accent-cyan);
+  }
+
+  .adm-sc-progress-indeterminate > span {
+    width: 36%;
+    animation: adm-system-progress 1.3s ease-in-out infinite;
+  }
+
+  @keyframes adm-system-progress {
+    from {
+      transform: translateX(-110%);
+    }
+
+    to {
+      transform: translateX(290%);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .adm-sc-progress-indeterminate > span {
+      animation: none;
+      width: 36%;
+      opacity: 0.65;
+    }
+  }
+}

@@ -1,0 +1,13 @@
+# Single-package repo; this file holds pnpm settings (moved from package.json `overrides` and npm's --legacy-peer-deps).
+overrides:
+  postcss: ^8.5.10
+
+# The React lint plugins still declare eslint <=9 peers; eslint 10 works with them.
+peerDependencyRules:
+  allowedVersions:
+    eslint: "10"
+
+# Packages whose install scripts must run (native binaries).
+allowBuilds:
+  esbuild: true
+  unrs-resolver: true

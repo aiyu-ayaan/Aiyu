@@ -8,15 +8,14 @@ import {
     SiJenkins, SiGithubactions, SiGitlab, SiBitbucket,
     SiLinux, SiArduino, SiRaspberrypi,
     SiVim, SiIntellijidea, SiAndroidstudio,
-    SiFigma, SiAdobe,
+    SiFigma,
     SiTypescript, SiAngular, SiVuedotjs, SiSvelte, SiTailwindcss,
     SiBootstrap, SiMui, SiGraphql,
     SiApollographql, SiPrisma,
     SiNestjs, SiExpress, SiFastapi, SiFlask, SiDjango,
     SiSpring, SiSpringboot, SiLaravel,
     SiElectron,
-    SiSupabase, SiAppwrite,
-    SiAwslambda, SiAmazonaws
+    SiSupabase, SiAppwrite
 } from 'react-icons/si';
 import { FaJava, FaDatabase, FaCode, FaLaptopCode, FaMobileAlt, FaServer, FaCloud, FaBrain, FaPaintBrush, FaRocket } from 'react-icons/fa';
 

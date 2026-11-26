@@ -25,7 +25,7 @@ const buildProjectsMarkdown = () => {
 };
 
 const buildAiOverviewMarkdown = () => {
-  return `# AI Hub & Intelligent Systems Overview\n\n> **"Building with intelligence."**\n> A living map of how I design, ship, and run AI-powered software — the stacks I trust, the credits I mine, and the prompts I reach for.\n\n## Core Technical Focus Areas\n- ⚡ **RAG Pipelines**: Retrieval-Augmented Generation with vector embeddings and grounded citation.\n- 🤖 **Multi-Agent Orchestration**: Coordinating autonomous specialized agents with task breakdown and verification.\n- 🎯 **Prompt Engineering**: System prompt architecture, few-shot prompting, and strict output schemas.\n- 🔌 **MCP Servers**: Model Context Protocol integration for connecting LLMs to custom tools and databases.\n- ⚙️ **Fine-Tuning & Quantization**: Adapting open models for localized, domain-specific inference.\n\n## Telemetry & Infrastructure\n- **API Proxy**: Next.js Server Actions with cached telemetry logging.\n- **Provider Gateways**: Groq Cloud, OpenRouter, Google AI Studio, and Ollama local daemon.\n- **Status**: Live Production & Continuous Beta Testing.\n\nClick **Open Page** to open the interactive AI Hub on the web (\`/v2/ai\`).\n`;
+  return `# AI Hub & Intelligent Systems Overview\n\n> **"Building with intelligence."**\n> A living map of how I design, ship, and run AI-powered software — the stacks I trust, the credits I mine, and the prompts I reach for.\n\n## Core Technical Focus Areas\n- ⚡ **RAG Pipelines**: Retrieval-Augmented Generation with vector embeddings and grounded citation.\n- 🤖 **Multi-Agent Orchestration**: Coordinating autonomous specialized agents with task breakdown and verification.\n- 🎯 **Prompt Engineering**: System prompt architecture, few-shot prompting, and strict output schemas.\n- 🔌 **MCP Servers**: Model Context Protocol integration for connecting LLMs to custom tools and databases.\n- ⚙️ **Fine-Tuning & Quantization**: Adapting open models for localized, domain-specific inference.\n\n## Telemetry & Infrastructure\n- **API Proxy**: Next.js Server Actions with cached telemetry logging.\n- **Provider Gateways**: Groq Cloud, OpenRouter, Google AI Studio, and Ollama local daemon.\n- **Status**: Live Production & Continuous Beta Testing.\n\nClick **Open Page** to open the interactive AI Hub on the web (\`/ai\`).\n`;
 };
 
 const buildAiSkillsMarkdown = () => {
@@ -86,7 +86,7 @@ export const FOLDERS_DATA = [
         slug: 'ai-overview',
         title: 'ai-overview',
         fileName: 'ai-overview.md',
-        route: '/v2/ai',
+        route: '/ai',
         category: 'ai',
         date: 'BETA Feature',
         readingTime: 2,
@@ -98,7 +98,7 @@ export const FOLDERS_DATA = [
         slug: 'ai-skills',
         title: 'ai-skills',
         fileName: 'ai-skills.md',
-        route: '/v2/ai/skills',
+        route: '/ai/skills',
         category: 'ai',
         date: 'Agent Skills',
         readingTime: 3,
@@ -110,7 +110,7 @@ export const FOLDERS_DATA = [
         slug: 'recommended-stack',
         title: 'recommended-stack',
         fileName: 'recommended-stack.md',
-        route: '/v2/ai/recommendations',
+        route: '/ai/recommendations',
         category: 'ai',
         date: 'Stack Guide',
         readingTime: 2,
@@ -122,7 +122,7 @@ export const FOLDERS_DATA = [
         slug: 'free-credits',
         title: 'free-credits',
         fileName: 'free-credits.md',
-        route: '/v2/ai/credits',
+        route: '/ai/credits',
         category: 'ai',
         date: 'Free Inference',
         readingTime: 2,
@@ -134,7 +134,7 @@ export const FOLDERS_DATA = [
         slug: 'prompt-library',
         title: 'prompt-library',
         fileName: 'prompt-library.md',
-        route: '/v2/ai/prompts',
+        route: '/ai/prompts',
         category: 'ai',
         date: 'Prompts',
         readingTime: 3,

@@ -1,5 +1,24 @@
 {
+  "permissions": {
+    "allow": [
+      "mcp__codegraph__*"
+    ]
+  },
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "codegraph prompt-hook"
+          }
+        ]
+      }
+    ]
+  },
   "enabledPlugins": {
-    "brag@brag": true
+    "brag@brag": true,
+    "ponytail@ponytail": true,
+    "seo-audit-kit@anthropic-plugin-directory": true
   }
 }

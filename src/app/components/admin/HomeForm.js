@@ -2,12 +2,32 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Sparkles, Loader2, Wand2, Plus, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
+import {
+    FaArrowDown,
+    FaArrowUp,
+    FaFloppyDisk,
+    FaPlus,
+    FaSpinner,
+    FaTrash,
+    FaWandMagicSparkles,
+} from 'react-icons/fa6';
 import { getIconNames, getIcon } from '@/lib/iconLibrary';
-import Toast from './Toast';
+import { Badge, EmptyState, Field, Loading, Panel } from './ui';
+import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
+import '@/app/styles/admin-showcase.css';
+
+const SECTIONS = [
+    { id: 'home-identity', label: 'Hero identity' },
+    { id: 'home-terminal', label: 'Terminal snippets' },
+    { id: 'home-resume', label: 'Resume badge' },
+    { id: 'home-status', label: 'Live status strip' },
+    { id: 'home-showcase', label: 'Focus areas' },
+    { id: 'home-interface', label: 'Hero interface style' },
+];
 
 const HomeForm = () => {
     const router = useRouter();
+    const { toast } = useAdminFeedback();
     const [formData, setFormData] = useState({
         name: '',
         homeRoles: '',
@@ -26,7 +46,6 @@ const HomeForm = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
-    const [notification, setNotification] = useState(null);
     const [aiEnabled, setAiEnabled] = useState(false);
     const [aiGenerating, setAiGenerating] = useState(false);
     const [aiAction, setAiAction] = useState(null); // 'roles' or 'code'
@@ -59,7 +78,7 @@ const HomeForm = () => {
                         ? dbPanels.map(p => ({
                             ...p,
                             tags: Array.isArray(p.tags) ? p.tags.join(', ') : (p.tags || '')
-                          }))
+                        }))
                         : [];
 
                     setFormData({
@@ -114,17 +133,17 @@ const HomeForm = () => {
             if (data.success) {
                 if (mode === 'code') {
                     setFormData(prev => ({ ...prev, codeSnippets: data.data }));
-                    showNotification(true, 'Terminal snippets synthesized!');
+                    showNotification(true, 'Terminal snippets generated');
                 } else {
                     setFormData(prev => ({ ...prev, homeRoles: data.data }));
-                    showNotification(true, 'Role designations refined!');
+                    showNotification(true, 'Roles refined');
                 }
             } else {
-                showNotification(false, data.error || 'AI synthesis failed');
+                showNotification(false, data.error || 'AI generation failed');
             }
         } catch (error) {
             console.error('AI Error:', error);
-            showNotification(false, 'AI uplink interrupted');
+            showNotification(false, 'Could not reach the AI service');
         } finally {
             setAiGenerating(false);
             setAiAction(null);
@@ -172,18 +191,18 @@ const HomeForm = () => {
             const panels = [...prev.showcasePanels];
             const targetIndex = index + direction;
             if (targetIndex < 0 || targetIndex >= panels.length) return prev;
-            
+
             const temp = panels[index];
             panels[index] = panels[targetIndex];
             panels[targetIndex] = temp;
-            
+
             return { ...prev, showcasePanels: panels };
         });
     };
 
     const showNotification = (success, message) => {
-        setNotification({ success, message });
-        setTimeout(() => setNotification(null), 3000);
+        if (success) toast.success(message);
+        else toast.error(message);
     };
 
     const handleSubmit = async (e) => {
@@ -239,14 +258,14 @@ const HomeForm = () => {
             });
 
             if (response.ok) {
-                showNotification(true, 'Landing Sequence Updated Successfully');
-                fetchData(); // Refresh data
+                showNotification(true, 'Home page saved');
+                fetchData();
             } else {
                 const data = await response.json();
                 setError(data.error || 'Something went wrong');
                 showNotification(false, data.error || 'Failed to update');
             }
-        } catch (err) {
+        } catch {
             setError('An error occurred');
             showNotification(false, 'An error occurred');
         } finally {
@@ -254,529 +273,495 @@ const HomeForm = () => {
         }
     };
 
-    if (loading) return <div className="text-white">Loading...</div>;
+    if (loading) {
+        return <Panel><Loading label="Loading home page settings" rows={6} /></Panel>;
+    }
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-8 max-w-4xl mx-auto">
-            {error && (
-                <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-lg flex items-center gap-3">
-                    <span className="text-xl">⚠️</span> {error}
-                </div>
-            )}
+        <form onSubmit={handleSubmit} className="adm-sc-root adm-sc-split">
+            <div className="adm-sc-col">
+                {error && <div role="alert" className="adm-notice adm-notice-error">{error}</div>}
 
-            {/* Core Data Section */}
-            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 md:p-8 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
+                <Panel id="home-identity" title="Hero identity" className="adm-sc-anchor">
+                    <div className="space-y-4">
+                        <div className="adm-sc-fields">
+                            <Field label="Display name" help="Shown in the hero heading.">
+                                <input
+                                    type="text"
+                                    name="name"
+                                    value={formData.name}
+                                    onChange={handleChange}
+                                    className="adm-input"
+                                    required
+                                />
+                            </Field>
 
-                <h2 className="text-sm font-mono text-cyan-400 uppercase tracking-widest mb-8 flex items-center gap-4">
-                    Core Identification
-                    <div className="h-px bg-cyan-500/20 flex-grow" />
-                </h2>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div>
-                        <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Display Name</label>
-                        <input
-                            type="text"
-                            name="name"
-                            value={formData.name}
-                            onChange={handleChange}
-                            className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-600 font-bold tracking-wide"
-                            required
-                        />
-                        <p className="text-xs text-slate-500 mt-2 font-mono">{'// Primary user identifier'}</p>
-                    </div>
-
-                    <div>
-                        <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">GitHub Uplink</label>
-                        <input
-                            type="url"
-                            name="githubLink"
-                            value={formData.githubLink}
-                            onChange={handleChange}
-                            className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-cyan-400 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-600 font-mono text-sm"
-                            required
-                        />
-                    </div>
-
-                    <div className="md:col-span-2">
-                        <div className="flex justify-between items-center mb-2">
-                            <label className="block text-slate-400 text-xs font-mono uppercase tracking-wider">Role Designations</label>
-                            {aiEnabled && (
-                                <button
-                                    type="button"
-                                    onClick={() => handleAiAction('roles')}
-                                    disabled={aiGenerating || !formData.homeRoles}
-                                    className="flex items-center gap-1.5 px-3 py-1 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 rounded-lg border border-cyan-500/20 transition-all text-[10px] font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed group/ai"
-                                >
-                                    {aiGenerating && aiAction === 'roles' ? (
-                                        <Loader2 className="w-3 h-3 animate-spin" />
-                                    ) : (
-                                        <Wand2 className="w-3 h-3 group-hover/ai:scale-110 transition-transform" />
-                                    )}
-                                    Refine Roles
-                                </button>
-                            )}
+                            <Field label="GitHub profile URL" help="Linked from the hero actions.">
+                                <input
+                                    type="url"
+                                    name="githubLink"
+                                    value={formData.githubLink}
+                                    onChange={handleChange}
+                                    className="adm-input font-mono"
+                                    required
+                                />
+                            </Field>
                         </div>
-                        <input
-                            type="text"
-                            name="homeRoles"
-                            value={formData.homeRoles}
-                            onChange={handleChange}
-                            className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-600"
-                            placeholder="e.g. Full Stack Developer, UI/UX Designer"
-                            required
-                        />
-                        <p className="text-xs text-slate-500 mt-2 font-mono">{'// Comma-separated list of active functions'}</p>
+
+                        <div className="adm-field">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                <label htmlFor="home-roles-input" className="adm-label">Roles</label>
+                                {aiEnabled && (
+                                    <button
+                                        type="button"
+                                        onClick={() => handleAiAction('roles')}
+                                        disabled={aiGenerating || !formData.homeRoles}
+                                        className="adm-btn adm-btn-quiet"
+                                    >
+                                        {aiGenerating && aiAction === 'roles' ? (
+                                            <FaSpinner className="animate-spin" aria-hidden="true" />
+                                        ) : (
+                                            <FaWandMagicSparkles aria-hidden="true" />
+                                        )}
+                                        Refine roles
+                                    </button>
+                                )}
+                            </div>
+                            <input
+                                id="home-roles-input"
+                                type="text"
+                                name="homeRoles"
+                                value={formData.homeRoles}
+                                onChange={handleChange}
+                                className="adm-input"
+                                placeholder="e.g. Full Stack Developer, UI/UX Designer"
+                                required
+                            />
+                            <p className="adm-help">Comma-separated list rotated in the hero banner.</p>
+                        </div>
                     </div>
-                </div>
-            </div>
+                </Panel>
 
-            {/* Code Snippets Section */}
-            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 md:p-8 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-green-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
-
-                <h2 className="text-sm font-mono text-green-400 uppercase tracking-widest mb-8 flex items-center gap-4">
-                    Terminal Output
-                    <div className="h-px bg-green-500/20 flex-grow" />
-                </h2>
-
-                <div>
-                    <div className="flex justify-between items-center mb-2">
-                        <label className="block text-slate-400 text-xs font-mono uppercase tracking-wider">Code Snippets</label>
-                        {aiEnabled && (
+                <Panel
+                    id="home-terminal"
+                    title="Terminal snippets"
+                    className="adm-sc-anchor"
+                    actions={
+                        aiEnabled ? (
                             <button
                                 type="button"
                                 onClick={() => handleAiAction('code')}
                                 disabled={aiGenerating || !formData.name}
-                                className="flex items-center gap-1.5 px-3 py-1 bg-green-500/10 hover:bg-green-500/20 text-green-400 rounded-lg border border-green-500/20 transition-all text-[10px] font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed group/ai"
+                                className="adm-btn"
                             >
                                 {aiGenerating && aiAction === 'code' ? (
-                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                    <FaSpinner className="animate-spin" aria-hidden="true" />
                                 ) : (
-                                    <Sparkles className="w-3 h-3 group-hover/ai:rotate-12 transition-transform" />
+                                    <FaWandMagicSparkles aria-hidden="true" />
                                 )}
-                                Generate Snippets
+                                Generate snippets
                             </button>
-                        )}
-                    </div>
-                    <textarea
-                        name="codeSnippets"
-                        value={formData.codeSnippets}
-                        onChange={handleChange}
-                        rows="6"
-                        className="w-full bg-slate-950/80 border border-white/10 rounded-lg p-4 text-green-400 focus:border-green-500/50 focus:ring-1 focus:ring-green-500/50 outline-none transition-all placeholder:text-slate-600 font-mono text-sm"
-                        placeholder="const future = await build();"
-                    />
-                    <p className="text-xs text-slate-500 mt-2 font-mono">{'// Displayed in hero terminal background. One line per entry.'}</p>
-                </div>
-            </div>
-
-            {/* Resume Configuration */}
-            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 md:p-8 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
-
-                <h2 className="text-sm font-mono text-orange-400 uppercase tracking-widest mb-8 flex items-center gap-4">
-                    Resume Module
-                    <div className="h-px bg-orange-500/20 flex-grow" />
-                </h2>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div>
-                        <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Status</label>
-                        <input
-                            type="text"
-                            name="resumeStatus"
-                            value={formData.resumeStatus || 'ONLINE'}
+                        ) : null
+                    }
+                >
+                    <Field
+                        label="Code lines"
+                        help="Displayed in the hero terminal background. Put one statement per line."
+                    >
+                        <textarea
+                            name="codeSnippets"
+                            value={formData.codeSnippets}
                             onChange={handleChange}
-                            className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-orange-400 font-bold text-center tracking-widest focus:border-orange-500/50 outline-none"
+                            rows={6}
+                            className="adm-input font-mono"
+                            placeholder="const future = await build();"
                         />
-                    </div>
-                    <div>
-                        <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Mode Identifier</label>
-                        <input
-                            type="text"
-                            name="resumeMode"
-                            value={formData.resumeMode || 'DEV_01'}
-                            onChange={handleChange}
-                            className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-300 font-mono text-center focus:border-orange-500/50 outline-none"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Hologram Icon</label>
-                        <select
-                            name="resumeIcon"
-                            value={formData.resumeIcon || 'FaBolt'}
-                            onChange={handleChange}
-                            className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-orange-500/50 outline-none appearance-none cursor-pointer"
-                        >
-                            <option value="FaBolt">⚡ Bolt</option>
-                            <option value="FaCode">💻 Code</option>
-                            <option value="FaTerminal">_ Terminal</option>
-                            <option value="FaRobot">🤖 Robot</option>
-                            <option value="FaRocket">🚀 Rocket</option>
-                            <option value="FaBrain">🧠 Brain</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
+                    </Field>
+                </Panel>
 
-            {/* Mission Control Section */}
-            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 md:p-8 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-pink-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
-
-                <h2 className="text-sm font-mono text-pink-400 uppercase tracking-widest mb-8 flex items-center gap-4">
-                    Mission Control
-                    <div className="h-px bg-pink-500/20 flex-grow" />
-                </h2>
-
-                <label className="flex items-center justify-between gap-4 p-4 rounded-xl bg-slate-950/40 border border-white/5 mb-6 cursor-pointer">
-                    <div>
-                        <p className="text-sm font-bold text-white">Show Live Status Section</p>
-                        <p className="text-xs text-slate-500 mt-1 font-mono">{'// Renders the Mission Control strip on the homepage'}</p>
-                    </div>
-                    <input
-                        type="checkbox"
-                        name="statusEnabled"
-                        checked={formData.statusEnabled}
-                        onChange={handleChange}
-                        className="h-5 w-5 accent-pink-500 cursor-pointer"
-                    />
-                </label>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Section Headline</label>
-                        <input
-                            type="text"
-                            name="statusHeadline"
-                            value={formData.statusHeadline}
-                            onChange={handleChange}
-                            placeholder="Mission Control"
-                            className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-pink-500/50 focus:ring-1 focus:ring-pink-500/50 outline-none transition-all placeholder:text-slate-600"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Availability</label>
-                        <input
-                            type="text"
-                            name="statusAvailability"
-                            value={formData.statusAvailability}
-                            onChange={handleChange}
-                            placeholder="Open to collaborations"
-                            className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-pink-500/50 focus:ring-1 focus:ring-pink-500/50 outline-none transition-all placeholder:text-slate-600"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Current Focus</label>
-                        <input
-                            type="text"
-                            name="statusFocus"
-                            value={formData.statusFocus}
-                            onChange={handleChange}
-                            placeholder="Building delightful web experiences"
-                            className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-pink-500/50 focus:ring-1 focus:ring-pink-500/50 outline-none transition-all placeholder:text-slate-600"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Now Learning</label>
-                        <input
-                            type="text"
-                            name="statusLearning"
-                            value={formData.statusLearning}
-                            onChange={handleChange}
-                            placeholder="Exploring new tools and patterns"
-                            className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-pink-500/50 focus:ring-1 focus:ring-pink-500/50 outline-none transition-all placeholder:text-slate-600"
-                        />
-                    </div>
-                </div>
-            </div>
-
-            {/* Showcase Section */}
-            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 md:p-8 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
-
-                <h2 className="text-sm font-mono text-cyan-400 uppercase tracking-widest mb-8 flex items-center gap-4">
-                    Showcase Focus Areas
-                    <div className="h-px bg-cyan-500/20 flex-grow" />
-                </h2>
-
-                <div className="grid grid-cols-1 gap-6 mb-8">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Section Eyebrow</label>
+                <Panel id="home-resume" title="Resume badge" className="adm-sc-anchor">
+                    <div className="adm-sc-fields">
+                        <Field label="Status label">
                             <input
                                 type="text"
-                                name="showcaseEyebrow"
-                                value={formData.showcaseEyebrow || ''}
+                                name="resumeStatus"
+                                value={formData.resumeStatus || 'ONLINE'}
                                 onChange={handleChange}
-                                placeholder="How I Work"
-                                className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-600 font-bold"
+                                className="adm-input font-mono"
                             />
-                        </div>
-                        <div>
-                            <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Section Headline</label>
+                        </Field>
+                        <Field label="Mode identifier">
                             <input
                                 type="text"
-                                name="showcaseHeadline"
-                                value={formData.showcaseHeadline || ''}
+                                name="resumeMode"
+                                value={formData.resumeMode || 'DEV_01'}
                                 onChange={handleChange}
-                                placeholder="Focus areas, side to side."
-                                className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-600 font-bold"
+                                className="adm-input font-mono"
+                            />
+                        </Field>
+                        <Field label="Icon">
+                            <select
+                                name="resumeIcon"
+                                value={formData.resumeIcon || 'FaBolt'}
+                                onChange={handleChange}
+                                className="adm-input"
+                            >
+                                <option value="FaBolt">Bolt</option>
+                                <option value="FaCode">Code</option>
+                                <option value="FaTerminal">Terminal</option>
+                                <option value="FaRobot">Robot</option>
+                                <option value="FaRocket">Rocket</option>
+                                <option value="FaBrain">Brain</option>
+                            </select>
+                        </Field>
+                    </div>
+                </Panel>
+
+                <Panel
+                    id="home-status"
+                    title="Live status strip"
+                    className="adm-sc-anchor"
+                    actions={
+                        <div className="flex items-center gap-2">
+                            <span className="adm-help">{formData.statusEnabled ? 'Visible' : 'Hidden'}</span>
+                            <button
+                                type="button"
+                                role="switch"
+                                aria-checked={!!formData.statusEnabled}
+                                aria-label="Show live status section on homepage"
+                                onClick={() => setFormData((prev) => ({ ...prev, statusEnabled: !prev.statusEnabled }))}
+                                className="adm-switch"
                             />
                         </div>
+                    }
+                >
+                    <div className="adm-sc-fields">
+                        <Field label="Section headline">
+                            <input
+                                type="text"
+                                name="statusHeadline"
+                                value={formData.statusHeadline}
+                                onChange={handleChange}
+                                placeholder="Mission Control"
+                                className="adm-input"
+                            />
+                        </Field>
+                        <Field label="Availability">
+                            <input
+                                type="text"
+                                name="statusAvailability"
+                                value={formData.statusAvailability}
+                                onChange={handleChange}
+                                placeholder="Open to collaborations"
+                                className="adm-input"
+                            />
+                        </Field>
+                        <Field label="Current focus">
+                            <input
+                                type="text"
+                                name="statusFocus"
+                                value={formData.statusFocus}
+                                onChange={handleChange}
+                                placeholder="Building delightful web experiences"
+                                className="adm-input"
+                            />
+                        </Field>
+                        <Field label="Now learning">
+                            <input
+                                type="text"
+                                name="statusLearning"
+                                value={formData.statusLearning}
+                                onChange={handleChange}
+                                placeholder="Exploring new tools and patterns"
+                                className="adm-input"
+                            />
+                        </Field>
                     </div>
-                    <div>
-                        <label className="block text-slate-400 mb-2 text-xs font-mono uppercase tracking-wider">Section Description</label>
-                        <input
-                            type="text"
-                            name="showcaseDescription"
-                            value={formData.showcaseDescription || ''}
-                            onChange={handleChange}
-                            placeholder="Keep scrolling — this rail moves sideways with you, then hands you back to the page."
-                            className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-slate-200 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-600 font-bold"
-                        />
-                    </div>
-                </div>
+                </Panel>
 
-                {/* Cards List */}
-                <div className="space-y-6">
-                    <div className="flex justify-between items-center">
-                        <h3 className="text-sm font-mono text-slate-400 uppercase tracking-wider">Focus Area Cards</h3>
+                <Panel
+                    id="home-showcase"
+                    title="Focus areas"
+                    className="adm-sc-anchor"
+                    actions={
                         <button
                             type="button"
                             onClick={handleAddPanel}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg transition-all text-xs font-bold uppercase tracking-wider cursor-pointer"
+                            className="adm-btn"
                         >
-                            <Plus className="w-3.5 h-3.5" />
-                            Add Card
+                            <FaPlus aria-hidden="true" /> Add card
                         </button>
-                    </div>
-
-                    {formData.showcasePanels.length === 0 ? (
-                        <div className="text-center py-8 border border-dashed border-white/10 rounded-xl text-slate-500 font-mono text-xs">
-                            {"// No focus area cards configured. Falls back to default panels."}
+                    }
+                >
+                    <div className="space-y-4">
+                        <div className="adm-sc-fields">
+                            <Field label="Section eyebrow">
+                                <input
+                                    type="text"
+                                    name="showcaseEyebrow"
+                                    value={formData.showcaseEyebrow || ''}
+                                    onChange={handleChange}
+                                    placeholder="How I Work"
+                                    className="adm-input"
+                                />
+                            </Field>
+                            <Field label="Section headline">
+                                <input
+                                    type="text"
+                                    name="showcaseHeadline"
+                                    value={formData.showcaseHeadline || ''}
+                                    onChange={handleChange}
+                                    placeholder="Focus areas, side to side."
+                                    className="adm-input"
+                                />
+                            </Field>
                         </div>
-                    ) : (
-                        <div className="space-y-4">
-                            {formData.showcasePanels.map((panel, index) => (
-                                <div key={index} className="p-5 bg-slate-950/40 border border-white/5 rounded-xl relative group/item">
-                                    <div className="absolute top-4 right-4 flex items-center gap-2">
-                                        <button
-                                            type="button"
-                                            onClick={() => handleMovePanel(index, -1)}
-                                            disabled={index === 0}
-                                            className="p-1.5 bg-white/5 hover:bg-white/10 text-slate-400 rounded transition-all disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-                                            title="Move Up"
-                                        >
-                                            <ArrowUp className="w-3.5 h-3.5" />
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => handleMovePanel(index, 1)}
-                                            disabled={index === formData.showcasePanels.length - 1}
-                                            className="p-1.5 bg-white/5 hover:bg-white/10 text-slate-400 rounded transition-all disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-                                            title="Move Down"
-                                        >
-                                            <ArrowDown className="w-3.5 h-3.5" />
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => handleRemovePanel(index)}
-                                            className="p-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded transition-all cursor-pointer"
-                                            title="Delete Card"
-                                        >
-                                            <Trash2 className="w-3.5 h-3.5" />
-                                        </button>
-                                    </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5 pr-24">
-                                        <div className="md:col-span-2">
-                                            <label className="block text-slate-500 mb-1 text-[10px] font-mono uppercase tracking-wider">Card Title</label>
-                                            <input
-                                                type="text"
-                                                value={panel.title}
-                                                onChange={(e) => handlePanelChange(index, 'title', e.target.value)}
-                                                placeholder="e.g. Product Engineering"
-                                                className="w-full bg-slate-950 border border-white/10 rounded-lg p-2.5 text-slate-200 focus:border-cyan-500/50 outline-none text-sm font-bold"
-                                                required
-                                            />
-                                        </div>
+                        <Field label="Section description">
+                            <input
+                                type="text"
+                                name="showcaseDescription"
+                                value={formData.showcaseDescription || ''}
+                                onChange={handleChange}
+                                placeholder="Keep scrolling — this rail moves sideways with you, then hands you back to the page."
+                                className="adm-input"
+                            />
+                        </Field>
 
-                                        <div>
-                                            <label className="block text-slate-500 mb-1 text-[10px] font-mono uppercase tracking-wider">Icon</label>
-                                            <div className="flex items-center gap-2">
-                                                {(() => {
-                                                    const IconComponent = getIcon(panel.icon);
-                                                    return (
-                                                        <span 
-                                                            className="inline-flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-lg border border-white/10 bg-slate-950/85"
-                                                            style={{ color: panel.accent || 'var(--accent-cyan)' }}
-                                                        >
-                                                            <IconComponent size={16} />
-                                                        </span>
-                                                    );
-                                                })()}
-                                                <select
-                                                    value={panel.icon || 'Code'}
-                                                    onChange={(e) => handlePanelChange(index, 'icon', e.target.value)}
-                                                    className="w-full bg-slate-950 border border-white/10 rounded-lg p-2 text-slate-300 focus:border-cyan-500/50 outline-none text-sm cursor-pointer"
+                        {formData.showcasePanels.length === 0 ? (
+                            <EmptyState
+                                title="No focus area cards configured"
+                                description="The homepage will fall back to the default panels until you add a card."
+                                action={
+                                    <button type="button" onClick={handleAddPanel} className="adm-btn">
+                                        <FaPlus aria-hidden="true" /> Add first card
+                                    </button>
+                                }
+                            />
+                        ) : (
+                            <div className="space-y-3">
+                                {formData.showcasePanels.map((panel, index) => {
+                                    const IconComponent = getIcon(panel.icon);
+                                    return (
+                                        <div key={index} className="adm-sc-item">
+                                            <div className="adm-sc-item-head">
+                                                <span
+                                                    className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[var(--hairline)] bg-[var(--bg-secondary)]"
+                                                    style={{ color: panel.accent || 'var(--accent-cyan)' }}
+                                                    aria-hidden="true"
                                                 >
-                                                    {getIconNames().map(name => (
-                                                        <option key={name} value={name}>{name}</option>
-                                                    ))}
-                                                </select>
+                                                    <IconComponent size={15} />
+                                                </span>
+                                                <span className="min-w-0 flex-1 truncate text-sm font-semibold text-[var(--text-bright)]">
+                                                    {panel.title || `Card ${index + 1}`}
+                                                </span>
+                                                <div className="adm-actions">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleMovePanel(index, -1)}
+                                                        disabled={index === 0}
+                                                        className="adm-icon-btn"
+                                                        title="Move up"
+                                                        aria-label={`Move card ${index + 1} up`}
+                                                    >
+                                                        <FaArrowUp aria-hidden="true" />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleMovePanel(index, 1)}
+                                                        disabled={index === formData.showcasePanels.length - 1}
+                                                        className="adm-icon-btn"
+                                                        title="Move down"
+                                                        aria-label={`Move card ${index + 1} down`}
+                                                    >
+                                                        <FaArrowDown aria-hidden="true" />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleRemovePanel(index)}
+                                                        className="adm-icon-btn"
+                                                        title="Delete card"
+                                                        aria-label={`Delete card ${index + 1}`}
+                                                    >
+                                                        <FaTrash aria-hidden="true" />
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <div className="adm-sc-item-body">
+                                                <div className="adm-sc-fields">
+                                                    <Field label="Card title">
+                                                        <input
+                                                            type="text"
+                                                            value={panel.title}
+                                                            onChange={(e) => handlePanelChange(index, 'title', e.target.value)}
+                                                            placeholder="e.g. Product Engineering"
+                                                            className="adm-input"
+                                                            required
+                                                        />
+                                                    </Field>
+
+                                                    <Field label="Icon">
+                                                        <select
+                                                            value={panel.icon || 'Code'}
+                                                            onChange={(e) => handlePanelChange(index, 'icon', e.target.value)}
+                                                            className="adm-input"
+                                                        >
+                                                            {getIconNames().map(name => (
+                                                                <option key={name} value={name}>{name}</option>
+                                                            ))}
+                                                        </select>
+                                                    </Field>
+
+                                                    <Field label="Accent colour">
+                                                        <select
+                                                            value={panel.accent || 'var(--accent-cyan)'}
+                                                            onChange={(e) => handlePanelChange(index, 'accent', e.target.value)}
+                                                            className="adm-input"
+                                                        >
+                                                            <option value="var(--accent-cyan)">Cyan</option>
+                                                            <option value="var(--accent-purple)">Purple</option>
+                                                            <option value="var(--accent-orange)">Orange</option>
+                                                            <option value="var(--accent-pink)">Pink</option>
+                                                            <option value="var(--accent-teal)">Teal</option>
+                                                            <option value="var(--accent-green)">Green</option>
+                                                        </select>
+                                                    </Field>
+                                                </div>
+
+                                                <Field label="Description">
+                                                    <textarea
+                                                        value={panel.description}
+                                                        onChange={(e) => handlePanelChange(index, 'description', e.target.value)}
+                                                        placeholder="Describe this focus area…"
+                                                        rows={2}
+                                                        className="adm-input"
+                                                        required
+                                                    />
+                                                </Field>
+
+                                                <Field label="Tags" help="Comma-separated list of technologies or topics.">
+                                                    <input
+                                                        type="text"
+                                                        value={panel.tags}
+                                                        onChange={(e) => handlePanelChange(index, 'tags', e.target.value)}
+                                                        placeholder="Next.js, React, Tailwind"
+                                                        className="adm-input"
+                                                    />
+                                                </Field>
                                             </div>
                                         </div>
-
-                                        <div className="md:col-span-3">
-                                            <label className="block text-slate-500 mb-1 text-[10px] font-mono uppercase tracking-wider">Card Description</label>
-                                            <textarea
-                                                value={panel.description}
-                                                onChange={(e) => handlePanelChange(index, 'description', e.target.value)}
-                                                placeholder="Describe this focus area..."
-                                                rows="2"
-                                                className="w-full bg-slate-950 border border-white/10 rounded-lg p-2.5 text-slate-300 focus:border-cyan-500/50 outline-none text-sm"
-                                                required
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-slate-500 mb-1 text-[10px] font-mono uppercase tracking-wider">Accent Color</label>
-                                            <select
-                                                value={panel.accent || 'var(--accent-cyan)'}
-                                                onChange={(e) => handlePanelChange(index, 'accent', e.target.value)}
-                                                className="w-full bg-slate-950 border border-white/10 rounded-lg p-2.5 text-slate-300 focus:border-cyan-500/50 outline-none text-sm cursor-pointer"
-                                            >
-                                                <option value="var(--accent-cyan)">Cyan</option>
-                                                <option value="var(--accent-purple)">Purple</option>
-                                                <option value="var(--accent-orange)">Orange</option>
-                                                <option value="var(--accent-pink)">Pink</option>
-                                                <option value="var(--accent-teal)">Teal</option>
-                                                <option value="var(--accent-green)">Green</option>
-                                            </select>
-                                        </div>
-
-                                        <div className="md:col-span-2">
-                                            <label className="block text-slate-500 mb-1 text-[10px] font-mono uppercase tracking-wider">Tags (comma-separated)</label>
-                                            <input
-                                                type="text"
-                                                value={panel.tags}
-                                                onChange={(e) => handlePanelChange(index, 'tags', e.target.value)}
-                                                placeholder="Next.js, React, Tailwind"
-                                                className="w-full bg-slate-950 border border-white/10 rounded-lg p-2.5 text-slate-300 focus:border-cyan-500/50 outline-none text-sm"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            {/* Visual Interface Selector */}
-            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 md:p-8 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
-
-                <h2 className="text-sm font-mono text-purple-400 uppercase tracking-widest mb-8 flex items-center gap-4">
-                    Interface Style
-                    <div className="h-px bg-purple-500/20 flex-grow" />
-                </h2>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <label className={`relative overflow-hidden p-6 rounded-xl border cursor-pointer transition-all duration-300 group/card ${formData.heroSectionType === 'futuristic' ? 'bg-purple-500/10 border-purple-500/50 shadow-[0_0_30px_rgba(168,85,247,0.15)]' : 'bg-slate-950/30 border-white/5 hover:border-white/20'}`}>
-                        <input
-                            type="radio"
-                            name="heroSectionType"
-                            value="futuristic"
-                            checked={formData.heroSectionType === 'futuristic'}
-                            onChange={handleChange}
-                            className="hidden"
-                        />
-                        <div className="relative z-10 flex flex-col h-full">
-                            <div className="mb-4 text-3xl">🔮</div>
-                            <div className="font-bold text-white mb-2 text-lg">Futuristic Card</div>
-                            <div className="text-xs text-slate-400 leading-relaxed">
-                                Advanced 3D styling with glitch effects, neon glows, and dynamic motion. Optimal for modern tech portfolios.
+                                    );
+                                })}
                             </div>
-                        </div>
-                        {formData.heroSectionType === 'futuristic' && (
-                            <div className="absolute top-3 right-3 w-2 h-2 rounded-full bg-purple-500 shadow-[0_0_10px_rgba(168,85,247,1)] animate-ping" />
                         )}
-                    </label>
-
-                    <label className={`relative overflow-hidden p-6 rounded-xl border cursor-pointer transition-all duration-300 group/card ${formData.heroSectionType === 'game' ? 'bg-orange-500/10 border-orange-500/50 shadow-[0_0_30px_rgba(249,115,22,0.15)]' : 'bg-slate-950/30 border-white/5 hover:border-white/20'}`}>
-                        <input
-                            type="radio"
-                            name="heroSectionType"
-                            value="game"
-                            checked={formData.heroSectionType === 'game'}
-                            onChange={handleChange}
-                            className="hidden"
-                        />
-                        <div className="relative z-10 flex flex-col h-full">
-                            <div className="mb-4 text-3xl">🕹️</div>
-                            <div className="font-bold text-white mb-2 text-lg">Retro Arcade</div>
-                            <div className="text-xs text-slate-400 leading-relaxed">
-                                Interactive gaming interface featuring playable Snake, Tic-Tac-Toe, and pixel art aesthetics.
-                            </div>
-                        </div>
-                        {formData.heroSectionType === 'game' && (
-                            <div className="absolute top-3 right-3 w-2 h-2 rounded-full bg-orange-500 shadow-[0_0_10px_rgba(249,115,22,1)] animate-ping" />
-                        )}
-                    </label>
-                </div>
-            </div>
-
-            {/* Active Theme & Skins Link Section */}
-            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-purple-500/20 p-4 md:p-8 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
-
-                <h2 className="text-sm font-mono text-purple-400 uppercase tracking-widest mb-6 flex items-center gap-4">
-                    Active Theme & Skins
-                    <div className="h-px bg-purple-500/20 flex-grow" />
-                </h2>
-
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-5 rounded-xl bg-slate-950/40 border border-white/5">
-                    <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-lg bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-xl select-none">
-                            🎨
-                        </div>
-                        <div>
-                            <p className="text-[10px] font-mono text-purple-400 uppercase tracking-wider">INTERFACE CORE SKIN</p>
-                            <p className="text-sm font-bold text-white font-mono mt-0.5">Activate & Edit Visual Skin Presets</p>
-                        </div>
                     </div>
-                    
-                    <Link href="/admin/themes" className="w-full sm:w-auto">
-                        <button type="button" className="w-full px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs tracking-wider transition-all font-mono cursor-pointer">
-                            LAUNCH_SKINS_CONTROL_CENTER →
+                </Panel>
+
+                <Panel id="home-interface" title="Hero interface style" className="adm-sc-anchor">
+                    <div className="adm-sc-fields">
+                        <label className="adm-sc-choice">
+                            <input
+                                type="radio"
+                                name="heroSectionType"
+                                value="futuristic"
+                                checked={formData.heroSectionType === 'futuristic'}
+                                onChange={handleChange}
+                                className="adm-check mt-1"
+                            />
+                            <div className="min-w-0">
+                                <p className="font-semibold text-[var(--text-bright)]">Futuristic card</p>
+                                <p className="adm-help mt-1">
+                                    3D card layout with terminal code preview and status accents.
+                                </p>
+                            </div>
+                        </label>
+
+                        <label className="adm-sc-choice">
+                            <input
+                                type="radio"
+                                name="heroSectionType"
+                                value="game"
+                                checked={formData.heroSectionType === 'game'}
+                                onChange={handleChange}
+                                className="adm-check mt-1"
+                            />
+                            <div className="min-w-0">
+                                <p className="font-semibold text-[var(--text-bright)]">Retro arcade</p>
+                                <p className="adm-help mt-1">
+                                    Interactive arcade widget with playable Snake and Tic-Tac-Toe.
+                                </p>
+                            </div>
+                        </label>
+                    </div>
+                </Panel>
+            </div>
+
+            <aside className="adm-sc-aside">
+                <Panel title="Publish" className="adm-sc-save">
+                    <p className="adm-help mb-4">Save updates to apply them on the public homepage.</p>
+                    <div className="flex flex-wrap gap-2">
+                        <button
+                            type="submit"
+                            disabled={saving}
+                            className="adm-btn adm-btn-primary flex-1"
+                        >
+                            {saving ? <FaSpinner className="animate-spin" aria-hidden="true" /> : <FaFloppyDisk aria-hidden="true" />}
+                            {saving ? 'Saving' : 'Save changes'}
                         </button>
-                    </Link>
-                </div>
-            </div>
+                        <button
+                            type="button"
+                            onClick={() => router.back()}
+                            className="adm-btn"
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </Panel>
 
-            {/* Action Buttons */}
-            <div className="sticky bottom-8 flex justify-end gap-4 pt-6 border-t border-white/5 bg-slate-900/90 backdrop-blur-lg p-4 rounded-xl border border-white/5 shadow-2xl z-50">
-                <button
-                    type="button"
-                    onClick={() => router.back()}
-                    className="px-6 py-2 rounded bg-white/5 hover:bg-white/10 text-slate-400 transition-colors text-sm font-medium"
-                >
-                    CANCEL
-                </button>
-                <button
-                    type="submit"
-                    disabled={saving}
-                    className="px-8 py-2 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-bold transition-all shadow-[0_0_20px_rgba(8,145,178,0.3)] hover:shadow-[0_0_30px_rgba(8,145,178,0.5)] disabled:opacity-50 disabled:cursor-not-allowed text-sm tracking-wide"
-                >
-                    {saving ? 'UPDATING_SYSTEM...' : 'CONFIRM_CHANGES'}
-                </button>
-            </div>
+                <Panel title="On this page" flush>
+                    <nav aria-label="Home sections">
+                        <ul className="adm-list">
+                            {SECTIONS.map((s) => (
+                                <li key={s.id}>
+                                    <a href={`#${s.id}`} className="adm-row justify-between">
+                                        <span>{s.label}</span>
+                                        {s.id === 'home-showcase' && (
+                                            <Badge>{formData.showcasePanels.length}</Badge>
+                                        )}
+                                        {s.id === 'home-status' && (
+                                            <Badge tone={formData.statusEnabled ? 'ok' : undefined}>
+                                                {formData.statusEnabled ? 'On' : 'Off'}
+                                            </Badge>
+                                        )}
+                                    </a>
+                                </li>
+                            ))}
+                        </ul>
+                    </nav>
+                </Panel>
 
-            {/* Toast Notification */}
-            <Toast notification={notification} />
+                <Panel title="Appearance & themes" flush>
+                    <ul className="adm-list">
+                        <li>
+                            <Link href="/admin/themes" className="adm-row adm-link">
+                                Theme and colour presets
+                            </Link>
+                        </li>
+                        <li>
+                            <Link href="/admin/header" className="adm-row adm-link">
+                                Navigation header
+                            </Link>
+                        </li>
+                        <li>
+                            <Link href="/admin/terminal" className="adm-row adm-link">
+                                Interactive terminal
+                            </Link>
+                        </li>
+                    </ul>
+                </Panel>
+            </aside>
+
         </form>
     );
 };

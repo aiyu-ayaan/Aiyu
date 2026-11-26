@@ -1,5 +1,4 @@
 import js from "@eslint/js";
-import nextPlugin from "@next/eslint-plugin-next";
 import reactPlugin from "eslint-plugin-react";
 import hooksPlugin from "eslint-plugin-react-hooks";
 import globals from "globals";
@@ -9,7 +8,6 @@ export default [
   {
     files: ["**/*.{js,jsx,ts,tsx,mjs,cjs}"],
     plugins: {
-      "@next/next": nextPlugin,
       "react": reactPlugin,
       "react-hooks": hooksPlugin,
     },
@@ -28,13 +26,10 @@ export default [
       },
     },
     rules: {
-      ...nextPlugin.configs.recommended.rules,
-      ...nextPlugin.configs["core-web-vitals"].rules,
       ...reactPlugin.configs.recommended.rules,
       ...hooksPlugin.configs.recommended.rules,
       "react/react-in-jsx-scope": "off",
       "react/prop-types": "off",
-      "@next/next/no-img-element": "off",
       "react/no-unescaped-entities": "off",
       "react-hooks/exhaustive-deps": "off",
       "react-hooks/purity": "off",
@@ -55,14 +50,16 @@ export default [
         // detection entirely and is faster; safe on eslint 9 too.
         version: "19.2",
       },
-      next: {
-        rootDir: "./",
-      },
     },
   },
   {
     ignores: [
+      "web/dist/**",
       ".next/**",
+      // TypeScript in web/ is checked by `pnpm web:typecheck` (tsc).
+      "web/**/*.ts",
+      "web/**/*.tsx",
+      "server/target/**",
       "node_modules/**",
       "dist/**",
       "public/**",

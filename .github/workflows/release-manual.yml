@@ -192,7 +192,6 @@ jobs:
           repository = os.environ.get("GITHUB_REPOSITORY", "aiyu-ayaan/Aiyu").strip()
 
           package_path = Path("package.json")
-          package_lock_path = Path("package-lock.json")
           manifest_path = Path(".release-please-manifest.json")
           changelog_path = Path("CHANGELOG.md")
 
@@ -206,12 +205,6 @@ jobs:
 
           package_data["version"] = next_version
           write_json(package_path, package_data)
-
-          lock_data = json.loads(package_lock_path.read_text(encoding="utf-8"))
-          lock_data["version"] = next_version
-          if isinstance(lock_data.get("packages"), dict) and isinstance(lock_data["packages"].get(""), dict):
-              lock_data["packages"][""]["version"] = next_version
-          write_json(package_lock_path, lock_data)
 
           manifest_data = json.loads(manifest_path.read_text(encoding="utf-8"))
           manifest_data["."] = next_version
@@ -293,7 +286,6 @@ jobs:
             - Target version: v${{ needs.determine-release.outputs.release_as }}
             - Updated files:
               - package.json
-              - package-lock.json
               - .release-please-manifest.json
               - CHANGELOG.md
 
@@ -318,7 +310,7 @@ jobs:
           echo "pull_request_number=${{ steps.cpr.outputs.pull-request-number }}"
           echo "pull_request_url=${{ steps.cpr.outputs.pull-request-url }}"
           echo "pull_request_operation=${{ steps.cpr.outputs.pull-request-operation }}"
-          echo "Release PR includes version updates in package.json, package-lock.json, CHANGELOG.md, and .release-please-manifest.json."
+          echo "Release PR includes version updates in package.json, CHANGELOG.md, and .release-please-manifest.json."
 
   detect-release-merge:
     name: Detect Merged Release Commit
@@ -365,7 +357,6 @@ jobs:
           release_files_match = (
               ".release-please-manifest.json" in changed_files
               and "package.json" in changed_files
-              and "package-lock.json" in changed_files
           )
 
           should_deploy = "true" if (release_merge_match or release_files_match) else "false"

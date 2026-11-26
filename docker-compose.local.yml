@@ -1,37 +1,31 @@
 services:
-  # PostgreSQL Database Service
+  # The old database, kept only to copy it into SQLite (development/docs/SQLITE_CUTOVER.md). It does not start
+  # unless asked for: docker compose --profile postgres up -d --wait postgres
   postgres:
+    profiles: [ "postgres" ]
     image: postgres:17-alpine
     container_name: aiyu-postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-aiyu}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-}
       POSTGRES_DB: ${POSTGRES_DB:-aiyu}
-    # Port mapping commented out for security - app reaches it via the internal
-    # network. Uncomment if you need host access (e.g. Prisma Studio / pgAdmin):
-    # ports:
-    #   - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - aiyu-network
-    # No CPU/memory caps: Postgres uses the full host.
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-aiyu} -d ${POSTGRES_DB:-aiyu}"]
-      interval: 30s
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-aiyu} -d ${POSTGRES_DB:-aiyu}" ]
+      interval: 5s
       timeout: 5s
-      retries: 5
-      start_period: 10s
+      retries: 20
 
-  # Next.js Application Service
+  # Application Service
   app:
     build:
       context: .
       dockerfile: Dockerfile
       args:
         # Only pass public variables as build args.
-        # DATABASE_URL uses a dummy value at build time (see Dockerfile) to keep
-        # credentials out of image layers; the real one is provided at runtime.
         - NEXT_PUBLIC_N8N_WEBHOOK_URL=${NEXT_PUBLIC_N8N_WEBHOOK_URL}
         - NEXT_PUBLIC_BASE_URL=${NEXT_PUBLIC_BASE_URL}
         - NEXT_PUBLIC_AUTHOR_NAME=${NEXT_PUBLIC_AUTHOR_NAME}
@@ -39,15 +33,10 @@ services:
     ports:
       - "${APP_PORT:-3000}:3000"
     environment:
-      # PostgreSQL connection. The in-container host MUST be the "postgres"
-      # service, never "localhost". We intentionally do NOT read $DATABASE_URL
-      # here: the .env used for host dev sets it to localhost, and Compose
-      # auto-loads .env, so honoring it would point the container at itself.
-      # The URL is built from the POSTGRES_* vars instead. To use an external
-      # managed database, set APP_DATABASE_URL.
-      DATABASE_URL: ${APP_DATABASE_URL:-postgresql://${POSTGRES_USER:-aiyu}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-aiyu}?schema=public}
-      # Run `prisma migrate deploy` from the container entrypoint before boot.
-      RUN_MIGRATIONS: "true"
+      # Only for the one-time copy from Postgres (development/docs/SQLITE_CUTOVER.md): empty unless
+      # POSTGRES_PASSWORD is still set. While it is, the server will not create a missing SQLite database.
+      DATABASE_URL: ${APP_DATABASE_URL:-${POSTGRES_PASSWORD:+postgresql://${POSTGRES_USER:-aiyu}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-aiyu}}}
+      # "auto" fills an empty database only; "force" replaces the base content (destructive).
       RUN_SEED: ${RUN_SEED:-auto}
       # N8N webhook URL
       NEXT_PUBLIC_N8N_WEBHOOK_URL: ${NEXT_PUBLIC_N8N_WEBHOOK_URL}
@@ -67,19 +56,20 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
 
-      # Node environment
       NODE_ENV: production
     volumes:
       # Persistent uploads directory (named volume for proper permissions)
       - uploads_data:/app/public/uploads
-      # Writable Next.js cache directory (volume for read-only filesystem)
-      - nextjs_cache:/app/.next/cache
+      # The SQLite database (with its -wal and -shm files). Back it up from the admin panel.
+      - sqlite_data:/app/data
+      # Scratch space for backups and restores (on disk; the root filesystem is read-only)
+      - backup_cache:/app/.cache
     tmpfs:
       # CRITICAL SECURITY: Mount /tmp with noexec to prevent crypto miners from executing
       - /tmp:noexec,nosuid,nodev,mode=1777,size=100M
       # Additional tmpfs mounts with noexec and nosuid for security
       - /var/tmp:noexec,nosuid,nodev,mode=1777,size=50M
-      # /run uses 755 (not 1777) - only owner (nextjs user) needs write access for PID files
+      # /run uses 755 (not 1777) - only owner (aiyu user) needs write access for PID files
       - /run:noexec,nosuid,nodev,mode=755,size=10M
     # CRITICAL SECURITY: Drop all capabilities and enable security restrictions
     cap_drop:
@@ -93,17 +83,12 @@ services:
     # No memory/CPU caps: the app may use the full host capacity. Docker
     # only OOM-kills a container when a limit is set.
     # Health check to detect abnormal behavior
-    # Uses curl (installed in Dockerfile) with fallback chain
     healthcheck:
-      test: [ "CMD", "sh", "/app/healthcheck.sh" ]
+      test: [ "CMD", "/app/aiyu-server", "healthcheck" ]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
-    depends_on:
-      postgres:
-        condition: service_healthy
-
     networks:
       - aiyu-network
 
@@ -133,9 +118,11 @@ services:
 volumes:
   postgres_data:
     driver: local
-  nextjs_cache:
+  backup_cache:
     driver: local
   uploads_data:
+    driver: local
+  sqlite_data:
     driver: local
   nginx_cache:
     driver: local

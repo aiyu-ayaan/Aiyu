@@ -73,7 +73,7 @@ const V2AboutHero = ({ name, roles = [], summary }) => {
                     <Link href="/contact-us" data-v2="door-left" className="pill-solid">
                         Let&apos;s Connect
                     </Link>
-                    <Link href="/v2" data-v2="door-right" className="pill-ghost">
+                    <Link href="/" data-v2="door-right" className="pill-ghost">
                         V2 Home
                     </Link>
                 </div>

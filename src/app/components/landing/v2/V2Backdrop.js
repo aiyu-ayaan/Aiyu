@@ -12,7 +12,7 @@ import { usePathname } from 'next/navigation';
  */
 const V2Backdrop = () => {
     const pathname = usePathname();
-    const isReadingRoute = pathname.startsWith('/v2/blogs') || pathname.startsWith('/blogs');
+    const isReadingRoute = pathname.startsWith('/blogs');
 
     if (isReadingRoute) {
         return (

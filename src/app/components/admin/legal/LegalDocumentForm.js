@@ -2,14 +2,19 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ExternalLink, Eye, Loader2, Pencil, Save } from 'lucide-react';
+import {
+    FaArrowUpRightFromSquare,
+    FaEye,
+    FaPen,
+    FaCheck,
+    FaSpinner,
+} from 'react-icons/fa6';
 import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
 import LegalContent from '@/app/components/legal/LegalContent';
 import { LEGAL_KINDS, legalKindLabel } from '@/lib/legalKinds';
-import {
-    panelClass, headingClass, labelClass, inputClass, hintClass, primaryButtonClass,
-    slugify, requestJson,
-} from './legalUi';
+import { Panel, Badge, Field } from '@/app/components/admin/ui';
+import { slugify, requestJson } from './legalUi';
+import '@/app/styles/admin-blogs.css';
 
 const FORMAT_OPTIONS = [
     { value: 'markdown', label: 'Markdown' },
@@ -87,34 +92,47 @@ export default function LegalDocumentForm({ app, initialData = null, defaultKind
     const publicPath = `/${app.slug}/${form.slug || slugify(form.title) || 'page'}`;
 
     return (
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-            <div className="xl:col-span-2 space-y-8 min-w-0">
-                <div className={panelClass}>
-                    <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-                        <div className="inline-flex rounded-xl border border-white/10 bg-slate-950/50 p-1" role="radiogroup" aria-label="Content format">
-                            {FORMAT_OPTIONS.map((opt) => (
+        <form onSubmit={handleSubmit} className="adm-split">
+            <div className="adm-stack">
+                <Panel
+                    title="Document content"
+                    actions={
+                        <div className="flex flex-wrap items-center gap-3">
+                            <div className="adm-tabs border-b-0" role="group" aria-label="Content format">
+                                {FORMAT_OPTIONS.map((opt) => (
+                                    <button
+                                        key={opt.value}
+                                        type="button"
+                                        aria-pressed={form.format === opt.value}
+                                        onClick={() => set('format', opt.value)}
+                                        className="adm-tab"
+                                    >
+                                        {opt.label}
+                                    </button>
+                                ))}
+                            </div>
+                            <div className="adm-tabs border-b-0" role="group" aria-label="Editor view mode">
                                 <button
-                                    key={opt.value}
                                     type="button"
-                                    role="radio"
-                                    aria-checked={form.format === opt.value}
-                                    onClick={() => set('format', opt.value)}
-                                    className={`px-4 py-1.5 rounded-lg text-xs font-mono uppercase tracking-wider transition-colors ${form.format === opt.value ? 'bg-cyan-500/20 text-cyan-300' : 'text-slate-400 hover:text-slate-200'}`}
+                                    aria-pressed={tab === 'write'}
+                                    onClick={() => setTab('write')}
+                                    className="adm-tab"
                                 >
-                                    {opt.label}
+                                    <FaPen aria-hidden="true" className="w-3 h-3" /> Write
                                 </button>
-                            ))}
+                                <button
+                                    type="button"
+                                    aria-pressed={tab === 'preview'}
+                                    onClick={() => setTab('preview')}
+                                    className="adm-tab"
+                                >
+                                    <FaEye aria-hidden="true" className="w-3 h-3" /> Preview
+                                </button>
+                            </div>
                         </div>
-                        <div className="inline-flex rounded-xl border border-white/10 bg-slate-950/50 p-1">
-                            <button type="button" onClick={() => setTab('write')} className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-mono uppercase tracking-wider ${tab === 'write' ? 'bg-white/10 text-white' : 'text-slate-400'}`}>
-                                <Pencil className="w-3 h-3" /> Write
-                            </button>
-                            <button type="button" onClick={() => setTab('preview')} className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-mono uppercase tracking-wider ${tab === 'preview' ? 'bg-white/10 text-white' : 'text-slate-400'}`}>
-                                <Eye className="w-3 h-3" /> Preview
-                            </button>
-                        </div>
-                    </div>
-
+                    }
+                    flush
+                >
                     {tab === 'write' ? (
                         <>
                             <textarea
@@ -123,102 +141,166 @@ export default function LegalDocumentForm({ app, initialData = null, defaultKind
                                 onChange={(e) => set('content', e.target.value)}
                                 rows={28}
                                 spellCheck
-                                className={`${inputClass} font-mono text-sm leading-relaxed resize-y min-h-[420px]`}
-                                placeholder={form.format === 'html'
-                                    ? '<h2>Information we collect</h2>\n<p>…</p>'
-                                    : '## Information we collect\n\n…'}
+                                className="adm-editor-textarea"
+                                placeholder={
+                                    form.format === 'html'
+                                        ? '<h2>Information we collect</h2>\n<p>…</p>'
+                                        : '## Information we collect\n\n…'
+                                }
                             />
-                            <p className={hintClass}>
-                                {form.format === 'html'
-                                    ? 'Paste HTML from a policy generator. Scripts, styles, iframes and event handlers are stripped when rendered.'
-                                    : 'Markdown with GitHub tables and lists. Inline HTML is allowed and sanitized.'}
-                                {' '}Use ## headings for sections; the page title is rendered above the content.
-                            </p>
+                            <div className="adm-panel-foot">
+                                <span>
+                                    {form.format === 'html'
+                                        ? 'Paste HTML from a policy generator. Scripts, styles, iframes, and event handlers are stripped when rendered.'
+                                        : 'Markdown with GitHub tables and lists. Inline HTML is allowed and sanitized.'}
+                                    {' '}Use ## headings for sections; the page title is rendered above the content.
+                                </span>
+                            </div>
                         </>
                     ) : (
-                        <div className="rounded-xl border border-white/10 bg-slate-950/60 p-4 md:p-8 min-h-[420px] [--text-bright:#f8fafc] [--text-primary:#e2e8f0] [--text-tertiary:#94a3b8] [--accent-cyan:#22d3ee] [--border-primary:rgba(255,255,255,0.1)] [--bg-tertiary:rgba(255,255,255,0.06)]">
-                            <h1 className="mb-6 text-3xl font-bold text-white">{form.title || 'Untitled'}</h1>
+                        <div className="adm-legal-preview prose adm-prose max-w-none">
+                            <h1 className="mb-6 text-2xl sm:text-3xl font-bold text-[var(--text-bright)]">
+                                {form.title || 'Untitled'}
+                            </h1>
                             <LegalContent content={form.content} format={form.format} />
                         </div>
                     )}
-                </div>
+                </Panel>
             </div>
 
-            <div className="space-y-8">
-                <div className={panelClass}>
-                    <h2 className={headingClass}>
-                        Page
-                        <div className="h-px bg-cyan-500/20 grow" />
-                    </h2>
-                    <div className="space-y-5">
-                        <div>
-                            <label className={labelClass} htmlFor="doc-kind">Type</label>
-                            <select id="doc-kind" className={inputClass} value={form.kind} onChange={(e) => handleKind(e.target.value)}>
-                                {LEGAL_KINDS.map((k) => <option key={k.value} value={k.value}>{k.label}</option>)}
+            <aside className="adm-stack adm-side">
+                <Panel
+                    title="Publish"
+                    actions={
+                        <Badge tone={form.published ? 'ok' : 'warn'}>
+                            {form.published ? 'Published' : 'Draft'}
+                        </Badge>
+                    }
+                >
+                    <div className="space-y-3">
+                        <button type="submit" disabled={saving} className="adm-btn adm-btn-primary w-full">
+                            {saving ? <FaSpinner aria-hidden="true" className="animate-spin" /> : <FaCheck aria-hidden="true" />}
+                            {saving ? 'Saving...' : isEdit ? 'Save page' : 'Create page'}
+                        </button>
+                        {isEdit && initialData.published && (
+                            <a
+                                href={`/${app.slug}/${initialData.slug}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="adm-btn w-full"
+                            >
+                                View live <FaArrowUpRightFromSquare aria-hidden="true" />
+                            </a>
+                        )}
+                    </div>
+                </Panel>
+
+                <Panel title="Page details">
+                    <div className="space-y-4">
+                        <Field id="doc-kind" label="Type">
+                            <select
+                                id="doc-kind"
+                                className="adm-input"
+                                value={form.kind}
+                                onChange={(e) => handleKind(e.target.value)}
+                            >
+                                {LEGAL_KINDS.map((k) => (
+                                    <option key={k.value} value={k.value}>{k.label}</option>
+                                ))}
                             </select>
-                        </div>
-                        <div>
-                            <label className={labelClass} htmlFor="doc-title">Title</label>
-                            <input id="doc-title" className={inputClass} value={form.title} onChange={(e) => handleTitle(e.target.value)} placeholder="Privacy Policy" required />
-                        </div>
-                        <div>
-                            <label className={labelClass} htmlFor="doc-slug">URL slug</label>
+                        </Field>
+
+                        <Field id="doc-title" label="Title">
+                            <input
+                                id="doc-title"
+                                className="adm-input"
+                                value={form.title}
+                                onChange={(e) => handleTitle(e.target.value)}
+                                placeholder="Privacy Policy"
+                                required
+                            />
+                        </Field>
+
+                        <Field id="doc-slug" label="URL slug" help={`Public route: ${publicPath}`}>
                             <input
                                 id="doc-slug"
-                                className={`${inputClass} font-mono`}
+                                className="adm-input font-mono"
                                 value={form.slug}
-                                onChange={(e) => { setTouched((t) => ({ ...t, slug: true })); set('slug', slugify(e.target.value)); }}
+                                onChange={(e) => {
+                                    setTouched((t) => ({ ...t, slug: true }));
+                                    set('slug', slugify(e.target.value));
+                                }}
                                 placeholder="privacy-policy"
                             />
-                            <p className={`${hintClass} font-mono break-all`}>{publicPath}</p>
-                        </div>
+                        </Field>
+
+                        <Field id="doc-effective" label="Effective date">
+                            <input
+                                id="doc-effective"
+                                type="date"
+                                className="adm-input font-mono"
+                                value={form.effectiveDate}
+                                onChange={(e) => set('effectiveDate', e.target.value)}
+                            />
+                        </Field>
+                    </div>
+                </Panel>
+
+                <Panel title="SEO & visibility">
+                    <div className="space-y-4">
+                        <Field
+                            id="doc-seo"
+                            label="Meta description"
+                            help={`${form.seoDescription.length}/160 characters recommended`}
+                        >
+                            <textarea
+                                id="doc-seo"
+                                rows={3}
+                                maxLength={300}
+                                className="adm-input"
+                                value={form.seoDescription}
+                                onChange={(e) => set('seoDescription', e.target.value)}
+                                placeholder="Auto-generated from the title and app name when empty."
+                            />
+                        </Field>
+
                         <div>
-                            <label className={labelClass} htmlFor="doc-effective">Effective date</label>
-                            <input id="doc-effective" type="date" className={inputClass} value={form.effectiveDate} onChange={(e) => set('effectiveDate', e.target.value)} />
+                            <Toggle
+                                id="doc-published-check"
+                                label="Published"
+                                hint="Drafts return 404 publicly."
+                                checked={form.published}
+                                onChange={(v) => set('published', v)}
+                            />
+                            <Toggle
+                                id="doc-noindex-check"
+                                label="Hide from search engines"
+                                hint="Adds noindex and leaves it out of the sitemap."
+                                checked={form.noIndex}
+                                onChange={(v) => set('noIndex', v)}
+                            />
                         </div>
                     </div>
-                </div>
-
-                <div className={panelClass}>
-                    <h2 className={headingClass}>
-                        SEO & visibility
-                        <div className="h-px bg-cyan-500/20 grow" />
-                    </h2>
-                    <div className="space-y-5">
-                        <div>
-                            <label className={labelClass} htmlFor="doc-seo">Meta description</label>
-                            <textarea id="doc-seo" rows={3} maxLength={300} className={`${inputClass} resize-none text-sm`} value={form.seoDescription} onChange={(e) => set('seoDescription', e.target.value)} placeholder="Auto-generated from the title and app name when empty." />
-                            <p className={hintClass}>{form.seoDescription.length}/160 recommended</p>
-                        </div>
-                        <Toggle label="Published" hint="Drafts return 404 publicly." checked={form.published} onChange={(v) => set('published', v)} />
-                        <Toggle label="Hide from search engines" hint="Adds noindex and leaves it out of the sitemap." checked={form.noIndex} onChange={(v) => set('noIndex', v)} />
-                    </div>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-3">
-                    <button type="submit" disabled={saving} className={primaryButtonClass}>
-                        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                        {isEdit ? 'Save page' : 'Create page'}
-                    </button>
-                    {isEdit && initialData.published && (
-                        <a href={`/${app.slug}/${initialData.slug}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-cyan-300">
-                            View live <ExternalLink className="w-3.5 h-3.5" />
-                        </a>
-                    )}
-                </div>
-            </div>
+                </Panel>
+            </aside>
         </form>
     );
 }
 
-function Toggle({ label, hint, checked, onChange }) {
+function Toggle({ id, label, hint, checked, onChange }) {
     return (
-        <label className="flex items-start justify-between gap-4 cursor-pointer">
-            <span>
-                <span className="block text-sm text-slate-200">{label}</span>
-                <span className="block text-xs text-slate-500">{hint}</span>
-            </span>
-            <input type="checkbox" className="mt-1 h-4 w-4 accent-cyan-500" checked={checked} onChange={(e) => onChange(e.target.checked)} />
-        </label>
+        <div className="adm-switch-row">
+            <label htmlFor={id} className="adm-label cursor-pointer">
+                {label}
+                <span className="block adm-help font-normal mt-0.5">{hint}</span>
+            </label>
+            <input
+                id={id}
+                type="checkbox"
+                className="adm-check mt-1"
+                checked={checked}
+                onChange={(e) => onChange(e.target.checked)}
+            />
+        </div>
     );
 }

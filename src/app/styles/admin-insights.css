@@ -1,0 +1,130 @@
+/* Extras for the dashboard, analytics, SEO, social, health and GitHub screens. Same rules as admin.css. */
+@layer components {
+  .adm-split {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: 1.5rem;
+  }
+
+  .adm-split > *,
+  .adm-stack > * {
+    min-width: 0;
+  }
+
+  .adm-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .adm-insight-chart {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  /* Usage bar: set --adm-meter-tone to recolour. */
+  .adm-meter {
+    height: 0.5rem;
+    overflow: hidden;
+    border-radius: 9999px;
+    background: var(--bg-hover);
+  }
+
+  .adm-meter > span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--adm-meter-tone, var(--accent-cyan));
+    transition: width 0.2s ease;
+  }
+
+  /* <label className="adm-btn adm-file">Upload<input type="file" className="sr-only" /></label> */
+  .adm-file:focus-within,
+  .adm-pick:focus-within {
+    outline: 2px solid var(--accent-cyan);
+    outline-offset: 2px;
+  }
+
+  /* Selectable row/card for checkboxes and filter tiles. */
+  .adm-pick {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+    min-height: 2.75rem;
+    padding: 0.625rem 0.875rem;
+    border: 1px solid var(--hairline);
+    border-radius: 10px;
+    background: var(--surface-tile);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+  }
+
+  .adm-pick:hover {
+    background: var(--bg-hover);
+    border-color: var(--hairline-strong);
+  }
+
+  .adm-pick:has(input:checked),
+  .adm-pick[data-selected="true"] {
+    border-color: var(--accent-cyan);
+    background: color-mix(in srgb, var(--accent-cyan) 10%, transparent);
+  }
+
+  .adm-pick[data-muted="true"] {
+    border-color: color-mix(in srgb, var(--status-error) 38%, transparent);
+    background: color-mix(in srgb, var(--status-error) 8%, transparent);
+  }
+
+  /* Destructive action panel. */
+  .adm-panel.adm-danger {
+    border-color: color-mix(in srgb, var(--status-error) 40%, transparent);
+  }
+
+  .adm-danger .adm-panel-title {
+    color: var(--adm-error-ink);
+  }
+
+  /* Wide framed modal dialog (e.g. media picker). */
+  .adm-dialog.adm-dialog-lg {
+    max-width: 56rem;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Editor side column: sticks under the 64px top bar once there is room for two columns. */
+  @media (min-width: 1280px) {
+    .adm-split {
+      grid-template-columns: minmax(0, 1fr) 21rem;
+    }
+
+    .adm-side {
+      position: sticky;
+      top: 5rem;
+      align-self: start;
+      max-height: calc(100dvh - 6rem);
+      overflow-y: auto;
+    }
+
+    .adm-side > * {
+      flex-shrink: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .adm-meter > span {
+      transition: none;
+    }
+
+    .adm-root .animate-spin {
+      animation: none;
+    }
+  }
+}

@@ -1,10 +1,19 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { Loader2, Plus, ChevronDown, ChevronRight, Trash2, Save } from 'lucide-react';
+import {
+    FaChevronDown,
+    FaChevronRight,
+    FaFloppyDisk,
+    FaPen,
+    FaPlus,
+    FaSpinner,
+    FaTrash,
+} from 'react-icons/fa6';
 import { Field, TextInput, TextArea, AccentPicker } from '../aiPage/fields';
 import { getJson, postJson, putJson, del } from './api';
 import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
+import { Badge, EmptyState, Loading, Panel } from '@/app/components/admin/ui';
 
 /**
  * Skills manager — nested categories → skills. Each category is a card with an
@@ -33,25 +42,25 @@ export default function SkillsManager({ notify }) {
         const res = await postJson('/api/ai/skills/categories', form);
         setCategories((prev) => [{ ...res.category, skills: [] }, ...prev]);
         setDraftCat(null);
-        notify?.(true, 'Category added.');
+        notify?.(true, 'Category added');
     };
 
     const saveCategory = async (id, form) => {
         const res = await putJson(`/api/ai/skills/categories/${id}`, form);
         patchCat(id, { label: res.category.label, accent: res.category.accent });
-        notify?.(true, 'Category saved.');
+        notify?.(true, 'Category saved');
     };
 
     const deleteCategory = async (id) => {
         await del(`/api/ai/skills/categories/${id}`);
         setCategories((prev) => prev.filter((c) => c._id !== id));
-        notify?.(true, 'Category deleted.');
+        notify?.(true, 'Category deleted');
     };
 
     const addSkill = async (categoryId, form) => {
         const res = await postJson('/api/ai/skills/items', { ...form, categoryId });
         setCategories((prev) => prev.map((c) => (c._id === categoryId ? { ...c, skills: [res.skill, ...(c.skills || [])] } : c)));
-        notify?.(true, 'Skill added.');
+        notify?.(true, 'Skill added');
     };
 
     const saveSkill = async (categoryId, skillId, form) => {
@@ -61,7 +70,7 @@ export default function SkillsManager({ notify }) {
                 c._id === categoryId ? { ...c, skills: c.skills.map((s) => (s._id === skillId ? res.skill : s)) } : c
             )
         );
-        notify?.(true, 'Skill saved.');
+        notify?.(true, 'Skill saved');
     };
 
     const deleteSkill = async (categoryId, skillId) => {
@@ -69,56 +78,69 @@ export default function SkillsManager({ notify }) {
         setCategories((prev) =>
             prev.map((c) => (c._id === categoryId ? { ...c, skills: c.skills.filter((s) => s._id !== skillId) } : c))
         );
-        notify?.(true, 'Skill deleted.');
+        notify?.(true, 'Skill deleted');
     };
 
     if (loading) {
-        return (
-            <div className="flex items-center gap-3 py-10 text-slate-400">
-                <Loader2 className="h-5 w-5 animate-spin" /> Loading skills…
-            </div>
-        );
+        return <Panel><Loading label="Loading skills" rows={4} /></Panel>;
     }
 
     return (
-        <div className="space-y-4">
-            {draftCat ? (
-                <CategoryHeaderForm
-                    isNew
-                    value={draftCat}
-                    onSave={createCategory}
-                    onCancel={() => setDraftCat(null)}
-                    notify={notify}
-                />
-            ) : (
-                <button
-                    type="button"
-                    onClick={() => setDraftCat({ label: '', accent: 'var(--accent-cyan)' })}
-                    className="flex items-center gap-1.5 rounded-lg border border-cyan-500/20 bg-cyan-500/10 px-3 py-2 font-mono text-xs uppercase tracking-wider text-cyan-400 transition-colors hover:bg-cyan-500/20"
-                >
-                    <Plus className="h-3.5 w-3.5" /> Add category
-                </button>
-            )}
+        <Panel
+            title={`Skill categories (${categories.length})`}
+            actions={
+                !draftCat ? (
+                    <button
+                        type="button"
+                        onClick={() => setDraftCat({ label: '', accent: 'var(--accent-cyan)' })}
+                        className="adm-btn adm-btn-primary"
+                    >
+                        <FaPlus aria-hidden="true" /> Add category
+                    </button>
+                ) : null
+            }
+        >
+            <div className="space-y-3">
+                {draftCat && (
+                    <CategoryHeaderForm
+                        isNew
+                        value={draftCat}
+                        onSave={createCategory}
+                        onCancel={() => setDraftCat(null)}
+                        notify={notify}
+                    />
+                )}
 
-            {categories.length === 0 && !draftCat && (
-                <p className="rounded-xl border border-dashed border-white/10 py-8 text-center font-mono text-xs text-slate-500">
-                    No categories yet — add one to start.
-                </p>
-            )}
+                {categories.length === 0 && !draftCat && (
+                    <EmptyState
+                        title="No skill categories yet"
+                        description="Create a category first, then add individual skills under it."
+                        action={
+                            <button
+                                type="button"
+                                onClick={() => setDraftCat({ label: '', accent: 'var(--accent-cyan)' })}
+                                className="adm-btn"
+                            >
+                                <FaPlus aria-hidden="true" /> Add first category
+                            </button>
+                        }
+                    />
+                )}
 
-            {categories.map((cat) => (
-                <CategoryCard
-                    key={cat._id}
-                    category={cat}
-                    onSave={(form) => saveCategory(cat._id, form)}
-                    onDelete={() => deleteCategory(cat._id)}
-                    onAddSkill={(form) => addSkill(cat._id, form)}
-                    onSaveSkill={(sid, form) => saveSkill(cat._id, sid, form)}
-                    onDeleteSkill={(sid) => deleteSkill(cat._id, sid)}
-                    notify={notify}
-                />
-            ))}
-        </div>
+                {categories.map((cat) => (
+                    <CategoryCard
+                        key={cat._id}
+                        category={cat}
+                        onSave={(form) => saveCategory(cat._id, form)}
+                        onDelete={() => deleteCategory(cat._id)}
+                        onAddSkill={(form) => addSkill(cat._id, form)}
+                        onSaveSkill={(sid, form) => saveSkill(cat._id, sid, form)}
+                        onDeleteSkill={(sid) => deleteSkill(cat._id, sid)}
+                        notify={notify}
+                    />
+                ))}
+            </div>
+        </Panel>
     );
 }
 
@@ -144,26 +166,42 @@ function CategoryCard({ category, onSave, onDelete, onAddSkill, onSaveSkill, onD
     };
 
     return (
-        <div className="rounded-2xl border border-white/10 bg-white/[0.02]">
-            <div className="flex items-center gap-3 p-4">
-                <button type="button" onClick={() => setOpen((v) => !v)} className="flex flex-1 items-center gap-3 text-left">
-                    {open ? <ChevronDown className="h-4 w-4 text-slate-500" /> : <ChevronRight className="h-4 w-4 text-slate-500" />}
-                    <span className="h-3 w-3 rounded-full" style={{ background: category.accent }} aria-hidden="true" />
-                    <span className="text-sm font-semibold text-white">{category.label || 'Untitled category'}</span>
-                    <span className="font-mono text-[0.65rem] text-slate-500">{skills.length} skills</span>
+        <div className="adm-sc-item">
+            <div className="adm-sc-item-head">
+                <button
+                    type="button"
+                    onClick={() => setOpen((v) => !v)}
+                    aria-expanded={open}
+                    className="flex min-w-0 flex-1 items-center gap-2.5 text-left"
+                >
+                    {open ? (
+                        <FaChevronDown className="shrink-0 text-xs text-[var(--text-secondary)]" aria-hidden="true" />
+                    ) : (
+                        <FaChevronRight className="shrink-0 text-xs text-[var(--text-secondary)]" aria-hidden="true" />
+                    )}
+                    <span
+                        className="h-3 w-3 shrink-0 rounded-full"
+                        style={{ background: category.accent || 'var(--accent-cyan)' }}
+                        aria-hidden="true"
+                    />
+                    <span className="truncate text-sm font-semibold text-[var(--text-bright)]">
+                        {category.label || 'Untitled category'}
+                    </span>
+                    <Badge>{skills.length} {skills.length === 1 ? 'skill' : 'skills'}</Badge>
                 </button>
                 <button
                     type="button"
                     onClick={remove}
-                    className="rounded-md p-2 text-slate-600 transition-colors hover:bg-red-500/10 hover:text-red-400"
+                    className="adm-icon-btn"
                     title="Delete category"
+                    aria-label={`Delete ${category.label || 'category'}`}
                 >
-                    <Trash2 className="h-4 w-4" />
+                    <FaTrash aria-hidden="true" />
                 </button>
             </div>
 
             {open && (
-                <div className="space-y-4 border-t border-white/5 p-5">
+                <div className="adm-sc-item-body">
                     {editHeader ? (
                         <CategoryHeaderForm
                             value={{ label: category.label, accent: category.accent }}
@@ -175,47 +213,56 @@ function CategoryCard({ category, onSave, onDelete, onAddSkill, onSaveSkill, onD
                             notify={notify}
                         />
                     ) : (
-                        <button
-                            type="button"
-                            onClick={() => setEditHeader(true)}
-                            className="font-mono text-[0.7rem] uppercase tracking-wider text-slate-400 underline-offset-2 hover:text-cyan-300 hover:underline"
-                        >
-                            Edit category label / accent
-                        </button>
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setEditHeader(true)}
+                                className="adm-btn"
+                            >
+                                <FaPen aria-hidden="true" /> Edit category label &amp; accent
+                            </button>
+                            {!draftSkill && (
+                                <button
+                                    type="button"
+                                    onClick={() => setDraftSkill({ name: '', description: '', url: '' })}
+                                    className="adm-btn"
+                                >
+                                    <FaPlus aria-hidden="true" /> Add skill
+                                </button>
+                            )}
+                        </div>
                     )}
 
-                    {draftSkill ? (
-                        <SkillForm
-                            isNew
-                            value={draftSkill}
-                            onSave={async (form) => {
-                                await onAddSkill(form);
-                                setDraftSkill(null);
-                            }}
-                            onCancel={() => setDraftSkill(null)}
-                            notify={notify}
-                        />
-                    ) : (
-                        <button
-                            type="button"
-                            onClick={() => setDraftSkill({ name: '', description: '', url: '' })}
-                            className="flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-1.5 font-mono text-xs uppercase tracking-wider text-slate-300 transition-colors hover:bg-white/5"
-                        >
-                            <Plus className="h-3.5 w-3.5" /> Add skill
-                        </button>
-                    )}
-
-                    <div className="space-y-2.5">
-                        {skills.map((s) => (
-                            <SkillRow
-                                key={s._id}
-                                skill={s}
-                                onSave={(form) => onSaveSkill(s._id, form)}
-                                onDelete={() => onDeleteSkill(s._id)}
+                    {draftSkill && (
+                        <div className="adm-sc-item p-3">
+                            <SkillForm
+                                isNew
+                                value={draftSkill}
+                                onSave={async (form) => {
+                                    await onAddSkill(form);
+                                    setDraftSkill(null);
+                                }}
+                                onCancel={() => setDraftSkill(null)}
                                 notify={notify}
                             />
-                        ))}
-                    </div>
+                        </div>
+                    )}
+
+                    {skills.length === 0 ? (
+                        <p className="adm-help">No skills in this category yet.</p>
+                    ) : (
+                        <div className="space-y-2">
+                            {skills.map((s) => (
+                                <SkillRow
+                                    key={s._id}
+                                    skill={s}
+                                    onSave={(form) => onSaveSkill(s._id, form)}
+                                    onDelete={() => onDeleteSkill(s._id)}
+                                    notify={notify}
+                                />
+                            ))}
+                        </div>
+                    )}
                 </div>
             )}
         </div>
@@ -236,15 +283,17 @@ function CategoryHeaderForm({ value, onSave, onCancel, isNew = false, notify }) 
         }
     };
     return (
-        <div className="grid grid-cols-1 gap-4 rounded-xl border border-white/10 bg-black/20 p-4 sm:grid-cols-2">
-            <Field label="Category label">
-                <TextInput value={form.label} placeholder="e.g. Motion & Animation" onChange={(label) => setForm((f) => ({ ...f, label }))} />
-            </Field>
-            <Field label="Accent">
-                <AccentPicker value={form.accent} onChange={(accent) => setForm((f) => ({ ...f, accent }))} />
-            </Field>
-            <div className="flex items-center gap-3 sm:col-span-2">
-                <SaveButton busy={busy} onClick={save} label={isNew ? 'Create category' : 'Save'} />
+        <div className="adm-sc-item p-4 space-y-4">
+            <div className="adm-sc-fields">
+                <Field label="Category label">
+                    <TextInput value={form.label} placeholder="e.g. Motion & Animation" onChange={(label) => setForm((f) => ({ ...f, label }))} />
+                </Field>
+                <Field label="Accent">
+                    <AccentPicker value={form.accent} onChange={(accent) => setForm((f) => ({ ...f, accent }))} />
+                </Field>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+                <SaveButton busy={busy} onClick={save} label={isNew ? 'Create category' : 'Save category'} />
                 <CancelButton onClick={onCancel} />
             </div>
         </div>
@@ -255,10 +304,20 @@ function SkillRow({ skill, onSave, onDelete, notify }) {
     const { confirm } = useAdminFeedback();
     const [open, setOpen] = useState(false);
     return (
-        <div className="rounded-lg border border-white/5 bg-black/20">
-            <div className="flex items-center gap-2 px-3 py-2.5">
-                <button type="button" onClick={() => setOpen((v) => !v)} className="flex-1 text-left text-sm text-slate-200">
-                    {skill.name || 'Untitled skill'}
+        <div className="adm-sc-item">
+            <div className="adm-sc-item-head">
+                <button
+                    type="button"
+                    onClick={() => setOpen((v) => !v)}
+                    aria-expanded={open}
+                    className="flex min-w-0 flex-1 items-center gap-2 text-left text-sm font-medium text-[var(--text-primary)]"
+                >
+                    {open ? (
+                        <FaChevronDown className="shrink-0 text-xs text-[var(--text-secondary)]" aria-hidden="true" />
+                    ) : (
+                        <FaChevronRight className="shrink-0 text-xs text-[var(--text-secondary)]" aria-hidden="true" />
+                    )}
+                    <span className="truncate">{skill.name || 'Untitled skill'}</span>
                 </button>
                 <button
                     type="button"
@@ -272,14 +331,15 @@ function SkillRow({ skill, onSave, onDelete, notify }) {
                             try { await onDelete(); } catch (e) { notify?.(false, e.message); }
                         }
                     }}
-                    className="rounded p-1.5 text-slate-600 hover:bg-red-500/10 hover:text-red-400"
+                    className="adm-icon-btn"
                     title="Delete skill"
+                    aria-label={`Delete ${skill.name || 'skill'}`}
                 >
-                    <Trash2 className="h-3.5 w-3.5" />
+                    <FaTrash aria-hidden="true" />
                 </button>
             </div>
             {open && (
-                <div className="border-t border-white/5 p-3">
+                <div className="adm-sc-item-body">
                     <SkillForm value={skill} onSave={async (form) => { await onSave(form); setOpen(false); }} notify={notify} />
                 </div>
             )}
@@ -303,17 +363,19 @@ function SkillForm({ value, onSave, onCancel, isNew = false, notify }) {
     };
     return (
         <div className="space-y-3">
-            <Field label="Name">
-                <TextInput value={form.name} placeholder="e.g. GSAP Core" onChange={(v) => set('name', v)} />
-            </Field>
+            <div className="adm-sc-fields">
+                <Field label="Name">
+                    <TextInput value={form.name} placeholder="e.g. GSAP Core" onChange={(v) => set('name', v)} />
+                </Field>
+                <Field label="URL (optional)" hint="When set, the skill name links out on the public page.">
+                    <TextInput value={form.url} placeholder="https://…" onChange={(v) => set('url', v)} />
+                </Field>
+            </div>
             <Field label="Description">
                 <TextArea value={form.description} rows={2} onChange={(v) => set('description', v)} />
             </Field>
-            <Field label="URL (optional)" hint="When set, the skill name links out on the public page.">
-                <TextInput value={form.url} placeholder="https://…" onChange={(v) => set('url', v)} />
-            </Field>
-            <div className="flex items-center gap-3">
-                <SaveButton busy={busy} onClick={save} label={isNew ? 'Add skill' : 'Save'} />
+            <div className="flex flex-wrap items-center gap-2">
+                <SaveButton busy={busy} onClick={save} label={isNew ? 'Add skill' : 'Save skill'} />
                 {isNew && <CancelButton onClick={onCancel} />}
             </div>
         </div>
@@ -326,9 +388,9 @@ function SaveButton({ busy, onClick, label }) {
             type="button"
             onClick={onClick}
             disabled={busy}
-            className="flex items-center gap-2 rounded-lg border border-cyan-500/30 bg-cyan-500/15 px-4 py-2 font-mono text-xs uppercase tracking-wider text-cyan-300 transition-colors hover:bg-cyan-500/25 disabled:opacity-50"
+            className="adm-btn adm-btn-primary"
         >
-            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            {busy ? <FaSpinner className="animate-spin" aria-hidden="true" /> : <FaFloppyDisk aria-hidden="true" />}
             {label}
         </button>
     );
@@ -339,7 +401,7 @@ function CancelButton({ onClick }) {
         <button
             type="button"
             onClick={onClick}
-            className="rounded-lg border border-white/10 px-4 py-2 font-mono text-xs uppercase tracking-wider text-slate-400 transition-colors hover:bg-white/5"
+            className="adm-btn"
         >
             Cancel
         </button>

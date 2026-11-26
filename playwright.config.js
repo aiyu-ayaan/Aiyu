@@ -2,8 +2,8 @@ import { defineConfig, devices } from '@playwright/test';
 import fs from 'fs';
 import path from 'path';
 
-// Load .env into the test-runner process (Next loads it for the dev server, but
-// the Playwright process needs ADMIN_USERNAME/ADMIN_PASSWORD for the admin e2e).
+// Load .env into the test-runner process (the server reads it itself, but the
+// Playwright process needs ADMIN_USERNAME/ADMIN_PASSWORD for the admin e2e).
 const envPath = path.resolve('.env');
 if (fs.existsSync(envPath)) {
   for (const line of fs.readFileSync(envPath, 'utf8').split('\n')) {
@@ -20,7 +20,8 @@ if (fs.existsSync(envPath)) {
   }
 }
 
-const PORT = 3000;
+// E2E_PORT points the suite at an already-running server (e.g. the axum build) instead of `dev`.
+const PORT = Number(process.env.E2E_PORT) || 3000;
 const baseURL = `http://localhost:${PORT}`;
 
 export default defineConfig({
@@ -41,11 +42,11 @@ export default defineConfig({
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
   ],
   webServer: {
-    command: 'npm run dev',
+    command: 'pnpm dev',
     url: baseURL,
-    timeout: 120_000,
+    // The first start compiles the Rust server.
+    timeout: 600_000,
     reuseExistingServer: !process.env.CI,
     stdout: 'pipe',
-    env: { NEXT_DISABLE_PROGRESS_BAR: '1' },
   },
 });

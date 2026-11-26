@@ -2,7 +2,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FaMagnifyingGlass, FaArrowRight } from "react-icons/fa6";
-import { NAV_GROUPS, NAV_ITEMS, ACCENT } from "./navConfig";
+import { NAV_GROUPS, NAV_ITEMS } from "./navConfig";
 
 /**
  * ⌘/Ctrl-K command palette. Fuzzily filters every nav destination by label,
@@ -69,48 +69,46 @@ export default function CommandPalette({ open, onClose }) {
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-start justify-center p-4 pt-[12vh]">
-            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-            <div className="relative w-full max-w-xl bg-slate-900/95 border border-white/10 rounded-2xl shadow-2xl shadow-black/50 overflow-hidden">
+        <div className="adm-overlay !items-start !pt-[12vh]" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+            <div role="dialog" aria-modal="true" aria-label="Jump to a section" className="adm-dialog !max-w-xl !overflow-hidden">
                 {/* Input */}
-                <div className="flex items-center gap-3 px-4 h-14 border-b border-white/5">
-                    <FaMagnifyingGlass className="text-slate-500 shrink-0" />
+                <div className="flex items-center gap-3 px-4 h-14 border-b border-[var(--hairline)] focus-within:border-[var(--accent-cyan)]">
+                    <FaMagnifyingGlass className="text-[var(--adm-hint)] shrink-0" />
                     <input
                         ref={inputRef}
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
                         onKeyDown={onKeyDown}
+                        aria-label="Search sections"
                         placeholder="Jump to a section…"
-                        className="flex-1 bg-transparent outline-none text-white placeholder:text-slate-500 text-[15px]"
+                        className="min-w-0 flex-1 h-full bg-transparent !outline-none font-mono text-base sm:text-sm text-[var(--text-bright)] placeholder:text-[var(--adm-hint)]"
                     />
-                    <kbd className="text-[10px] font-mono text-slate-500 border border-white/10 rounded px-1.5 py-0.5">ESC</kbd>
+                    <button type="button" onClick={onClose} className="adm-code cursor-pointer !text-[11px]">Esc</button>
                 </div>
 
                 {/* Results */}
                 <div className="max-h-[52vh] overflow-y-auto p-2">
                     {results.length === 0 && (
-                        <p className="text-center text-sm text-slate-500 py-8">No sections match “{query}”.</p>
+                        <p className="text-center text-sm text-[var(--adm-hint)] py-8">No sections match “{query}”.</p>
                     )}
                     {results.map((item, i) => {
                         const Icon = item.icon;
-                        const accent = ACCENT[item.accent] || ACCENT.slate;
                         const isActive = i === activeIndex;
                         return (
                             <button
                                 key={item.path}
+                                type="button"
                                 onClick={() => go(item)}
                                 onMouseMove={() => setActiveIndex(i)}
-                                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors ${isActive ? "bg-white/[0.07]" : "hover:bg-white/[0.04]"}`}
+                                className={`w-full min-h-11 flex items-center gap-3 px-3 py-2 rounded-lg text-left cursor-pointer transition-colors ${isActive ? "bg-[var(--bg-hover)]" : ""}`}
                             >
-                                <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${accent.bgSoft} ${accent.text}`}>
-                                    <Icon className="text-[14px]" />
-                                </span>
+                                <Icon className={`shrink-0 text-[14px] ${isActive ? "text-[var(--accent-cyan)]" : "text-[var(--adm-hint)]"}`} />
                                 <span className="min-w-0 flex-1">
-                                    <span className="block text-sm font-medium text-white truncate">{item.label}</span>
-                                    <span className="block text-xs text-slate-500 truncate">{item.description}</span>
+                                    <span className="block font-mono text-sm lowercase text-[var(--text-bright)] truncate">{item.label}</span>
+                                    <span className="block text-xs text-[var(--text-secondary)] truncate">{item.description}</span>
                                 </span>
-                                <span className="text-[10px] font-mono uppercase tracking-wider text-slate-600 shrink-0">{item.group}</span>
-                                {isActive && <FaArrowRight className="text-slate-400 text-xs shrink-0" />}
+                                <span className="font-mono text-xs lowercase text-[var(--adm-hint)] shrink-0">{item.group}</span>
+                                {isActive && <FaArrowRight aria-hidden="true" className="text-[var(--adm-hint)] text-xs shrink-0" />}
                             </button>
                         );
                     })}

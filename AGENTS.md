@@ -4,11 +4,11 @@ Operational guide for AI/dev agents working in this repository.
 
 ## 1. Project Snapshot
 
-- Stack: Next.js 16, React 19, Tailwind CSS 4, PostgreSQL (Prisma ORM), Framer Motion
-- Public routes: `src/app/(site)`
-- Admin routes: `src/app/admin`
-- API routes: `src/app/api`
-- Scripts: `scripts/`
+- Stack: Rust (Axum), Vite, React 19, Tailwind CSS 4, SQLite (`data/aiyu.db`), Framer Motion, GSAP
+- Frontend SPA: `web/` (Vite config, React Router entry, route modules in `web/src/routes/`)
+- Shared UI & libs: `src/` (`src/app/` components/contexts/hooks/styles, `src/lib/`, `src/utils/`)
+- Backend server: `server/` (Axum API, SPA & static file serving, embedded SQLite migrations in `server/migrations/`, cron runner, MCP endpoint)
+- Scripts: `scripts/` (dev runner, security checks, screenshots, recordings, perf & HyperFrames helpers)
 
 ## 2. Core Rules
 
@@ -35,15 +35,22 @@ This project has `.codegraph/` initialized.
 
 | Command | Use |
 |---------|-----|
-| `npm run dev` | Start local development server |
-| `npm run build` | Production build |
-| `npm run start` | Start production server |
-| `npm run lint` | Run ESLint |
-| `npm run screenshots:install` | Install Playwright Chromium |
-| `npm run screenshots:public` | Capture screenshots of non-admin public pages |
-| `npm run docker:up` | Start production containers |
-| `npm run docker:up:dev` | Start development containers |
-| `npm run docker:down` | Stop containers |
+| `pnpm dev` | Start Vite (`:3000`) and debug `aiyu-server` (`:8080`) together |
+| `pnpm build` | Build Vite bundle (`web/dist`) and release Rust server |
+| `pnpm start` | Run release `aiyu-server` binary |
+| `pnpm lint` | Run ESLint |
+| `pnpm web:typecheck` | Type-check the Vite/TypeScript frontend (`web/tsconfig.json`) |
+| `pnpm web:build` | Build Vite frontend bundle only |
+| `pnpm server:build` | Build release Rust server only |
+| `pnpm server:test` | Run Rust unit and integration tests |
+| `pnpm test` | Run Vitest unit/component tests |
+| `pnpm test:ui` | Run Playwright end-to-end tests |
+| `pnpm screenshots:install` | Install Playwright Chromium |
+| `pnpm screenshots:capture` | Capture screenshots of site pages |
+| `pnpm docker:up` | Start production containers (`docker-compose.yml`) |
+| `pnpm docker:up:dev` | Build and start local Docker stack (`docker-compose.local.yml`) |
+| `pnpm docker:down` | Stop containers |
+| `pnpm db:up` / `pnpm db:down` | Start/stop optional Postgres + pgAdmin (`docker-compose.dev.local.yml`, for `import-postgres` only) |
 
 ## 5. Editing Guidelines
 
@@ -57,7 +64,7 @@ This project has `.codegraph/` initialized.
 
 Before finishing a task:
 
-1. Run `npm run lint`.
+1. Run `pnpm lint`, `pnpm web:typecheck`, `pnpm test`, and `pnpm server:test`.
 2. Manually verify changed routes/pages.
 3. Confirm API responses still match existing clients.
 4. If UI changed, capture updated screenshots when relevant.
@@ -88,13 +95,3 @@ When opening a PR, include:
 - Any migration/setup steps
 - Screenshots for UI updates
 - Risks or known limitations
-
-<!-- BEGIN:nextjs-agent-rules -->
-
-# This is NOT the Next.js you know
-
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
-
-This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
-
-<!-- END:nextjs-agent-rules -->

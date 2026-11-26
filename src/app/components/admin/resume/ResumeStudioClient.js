@@ -1,23 +1,31 @@
 "use client";
 /**
  * Resume Studio — full-screen LaTeX IDE for /admin/resume.
- * Left: CodeMirror editor. Right: compiled PDF preview + error log.
- * Side panel hosts snapshots (and, in later tabs, portfolio items, templates,
- * AI tools, and the ideas board).
+ * Left: studio tools (items, design, AI, ideas, versions).
+ * Middle: Visual / Code editor. Right: compiled PDF preview + error log.
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
 import {
-    FaFloppyDisk, FaPlay, FaUpload, FaDownload,
-    FaSpinner, FaCircleExclamation, FaXmark, FaCodeBranch,
-    FaCode, FaShapes, FaChevronLeft,
+    FaCircleExclamation,
+    FaCode,
+    FaCodeBranch,
+    FaDownload,
+    FaFloppyDisk,
+    FaGear,
+    FaPlay,
+    FaShapes,
+    FaSpinner,
+    FaUpload,
+    FaXmark,
 } from 'react-icons/fa6';
 import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
 import { RESUME_ENGINES, MAX_SNAPSHOTS, applyThemePreset } from '@/lib/resumeStudio';
 import { parseResumeLatex, generateResumeLatex } from '@/lib/resumeVisual';
+import { Badge, Field, Loading, PageHeader, Panel } from '@/app/components/admin/ui';
 import LatexEditor from './LatexEditor';
 import StudioSidePanel from './StudioSidePanel';
 import VisualEditor from './VisualEditor';
+import '@/app/styles/admin-showcase.css';
 
 function timeLabel(iso) {
     if (!iso) return 'never';
@@ -28,7 +36,7 @@ export default function ResumeStudioClient() {
     const { toast, confirm, prompt } = useAdminFeedback();
     const editorRef = useRef(null);
 
-    const [studio, setStudio] = useState(null); // server document
+    const [studio, setStudio] = useState(null);
     const [loading, setLoading] = useState(true);
     const [dirty, setDirty] = useState(false);
     const [saving, setSaving] = useState(false);
@@ -40,14 +48,13 @@ export default function ResumeStudioClient() {
     const [showLog, setShowLog] = useState(false);
     const [engine, setEngine] = useState('pdflatex');
     const [mode, setMode] = useState('code'); // 'code' | 'visual'
-    const [model, setModel] = useState(null); // parsed model while in visual mode
+    const [model, setModel] = useState(null);
     const [autoSave, setAutoSave] = useState(false);
     const [autoCompile, setAutoCompile] = useState(false);
     const [settingsOpen, setSettingsOpen] = useState(false);
     const pdfUrlRef = useRef(null);
     const didInitialCompile = useRef(false);
 
-    /** Current LaTeX source regardless of editing mode. */
     const getLatex = useCallback(() => {
         if (mode === 'visual' && model) {
             return generateResumeLatex(model);
@@ -65,8 +72,6 @@ export default function ResumeStudioClient() {
                 if (!cancelled && json.success) {
                     setStudio(json.data);
                     setEngine(json.data.engine || 'pdflatex');
-                    // Visual mode is the default; fall back to code if the
-                    // document can't be parsed into a structured model.
                     try {
                         setModel(parseResumeLatex(json.data.latex || ''));
                         setMode('visual');
@@ -87,7 +92,6 @@ export default function ResumeStudioClient() {
         if (pdfUrlRef.current) URL.revokeObjectURL(pdfUrlRef.current);
     }, []);
 
-    // Restore auto-save / auto-compile preferences.
     useEffect(() => {
         try {
             setAutoSave(localStorage.getItem('resumeStudio.autoSave') === '1');
@@ -125,8 +129,6 @@ export default function ResumeStudioClient() {
         }
     }, [engine, toast, getLatex]);
 
-    // Returns the compiled PDF's base64 on success (so callers like publish can
-    // chain on a fresh compile), or null on failure.
     const compile = useCallback(async () => {
         const latex = getLatex();
         if (!latex) return null;
@@ -169,8 +171,6 @@ export default function ResumeStudioClient() {
         }
     }, [engine, toast, getLatex]);
 
-    // Compile once as soon as the document is loaded so a preview is ready
-    // without the user hitting Compile first.
     useEffect(() => {
         if (loading || !studio || didInitialCompile.current) return;
         didInitialCompile.current = true;
@@ -182,9 +182,6 @@ export default function ResumeStudioClient() {
         await compile();
     }, [save, compile]);
 
-    // Publish runs the full pipeline: save → compile → upload. A one-time
-    // explainer dialog describes the flow; "Don't show this again" persists a
-    // skip flag so future publishes go straight through.
     const publish = useCallback(async () => {
         let skip = false;
         try { skip = localStorage.getItem('resumeStudio.skipPublishDialog') === '1'; } catch { /* ignore */ }
@@ -208,7 +205,7 @@ export default function ResumeStudioClient() {
         setPublishing(true);
         try {
             const saved = await save();
-            if (!saved) return; // save() already reported the failure
+            if (!saved) return;
             const base64 = await compile();
             if (!base64) {
                 toast.error('Compile failed — nothing was published.');
@@ -276,8 +273,6 @@ export default function ResumeStudioClient() {
         setDirty(true);
     }, [mode, toast]);
 
-    // Load a saved version into the editor and mark it active. Warns before
-    // discarding unsaved edits so switching never silently loses work.
     const switchVersion = useCallback(async (version) => {
         if (version.id === studio?.activeVersionId && !dirty) return;
         if (dirty && !(await confirm({
@@ -291,7 +286,6 @@ export default function ResumeStudioClient() {
         toast.success(`Switched to "${version.label}"`);
     }, [confirm, save, studio, dirty, toast, loadLatexIntoActiveEditor]);
 
-    // Overwrite an existing version with the current document.
     const updateVersion = useCallback(async (version) => {
         const latex = getLatex();
         const snapshots = (studio?.snapshots || []).map((s) => (
@@ -339,8 +333,6 @@ export default function ResumeStudioClient() {
         }
     }, [mode, model, toast]);
 
-    // Insert LaTeX at the cursor (code mode) or as a new headerless block
-    // (visual mode), so AI / portfolio / ideas insertions work in both modes.
     const insertLatex = useCallback((block) => {
         if (mode === 'visual') {
             setModel((m) => (m
@@ -374,9 +366,6 @@ export default function ResumeStudioClient() {
         toast.success('Theme applied — compile to preview');
     }, [getLatex, toast, loadLatexIntoActiveEditor]);
 
-    // Auto-save (debounced) with optional auto-compile after a successful save.
-    // The timer resets on every edit (dirty stays true until the save lands),
-    // so rapid typing coalesces into one save.
     useEffect(() => {
         if (!autoSave || !dirty || saving || compiling) return undefined;
         const delay = autoCompile ? 2500 : 1500;
@@ -387,139 +376,127 @@ export default function ResumeStudioClient() {
         return () => clearTimeout(timer);
     }, [autoSave, autoCompile, dirty, saving, compiling, save, compile]);
 
-    // ── Render ──────────────────────────────────────────────────────────
     if (loading) {
         return (
-            <div className="flex h-[70vh] items-center justify-center text-slate-400">
-                <FaSpinner className="animate-spin mr-3" /> Loading Resume Studio…
+            <div className="adm-page adm-sc-root">
+                <Panel><Loading label="Loading resume studio" rows={6} /></Panel>
             </div>
         );
     }
 
-    const toolbarBtn = 'flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all border disabled:opacity-40 disabled:cursor-not-allowed';
-
     return (
-        <div className="flex flex-col h-[calc(100vh-4rem)] p-3 gap-3 overflow-hidden bg-slate-950">
-            {/* Redesigned Toolbar */}
-            <div className="flex items-center justify-between rounded-xl border border-white/10 bg-slate-900/60 backdrop-blur px-4 py-2.5 shrink-0 z-20">
-                {/* Left side: Back & Title */}
-                <div className="flex items-center gap-3">
-                    <Link href="/admin" className="flex items-center justify-center w-8 h-8 rounded-lg border border-white/10 bg-slate-800/40 text-slate-400 hover:text-white hover:bg-slate-800 transition-all text-xs" title="Back to Admin Panel">
-                        <FaChevronLeft className="text-[10px]" />
-                    </Link>
-                    <div>
-                        <div className="flex items-center gap-2">
-                            <h1 className="text-sm font-bold text-white leading-tight">
-                                Resume Studio
-                            </h1>
-                            <span className="text-[9px] font-semibold tracking-wider uppercase text-slate-400 bg-slate-850 border border-white/5 px-1.5 py-0.5 rounded leading-none">
-                                v{studio?.updatedAt ? timeLabel(studio.updatedAt) : 'never'}
-                            </span>
-                        </div>
-                        <p className="text-[10px] text-slate-500 font-mono mt-0.5">
-                            compiled {timeLabel(studio?.lastCompiledAt)} · published {timeLabel(studio?.lastPublishedAt)}
-                        </p>
-                    </div>
-                </div>
-
-                {/* Right side: Action Triggers & Configure Dropdown */}
-                <div className="flex items-center gap-2 relative">
-                    {/* Action Group */}
-                    <button onClick={() => save()} disabled={saving} className={`${toolbarBtn} bg-slate-500/10 border-slate-500/20 text-slate-300 hover:bg-slate-500/20 hover:border-slate-400/40`}>
-                        {saving ? <FaSpinner className="animate-spin" /> : <FaFloppyDisk />} Save
-                    </button>
-                    
-                    <button onClick={saveAndCompile} disabled={compiling || saving} className={`${toolbarBtn} bg-cyan-500/10 border-cyan-500/20 text-cyan-300 hover:bg-cyan-500/20 hover:border-cyan-400/40`}>
-                        {compiling ? <FaSpinner className="animate-spin" /> : <FaPlay />} Compile
-                    </button>
-                    
-                    <button onClick={publish} disabled={publishing || saving || compiling} className={`${toolbarBtn} bg-emerald-500/10 border-emerald-500/20 text-emerald-300 hover:bg-emerald-500/20 hover:border-emerald-400/40`} title="Save, compile, then publish to the live site">
-                        {publishing ? <FaSpinner className="animate-spin" /> : <FaUpload />} Publish
-                    </button>
-                    
-                    <button onClick={download} disabled={!pdfUrl} className={`${toolbarBtn} bg-purple-500/10 border-purple-500/20 text-purple-300 hover:bg-purple-500/20 hover:border-purple-400/40`} title="Download PDF">
-                        <FaDownload /> PDF
-                    </button>
-                    
-                    <button onClick={saveVersion} className={`${toolbarBtn} bg-amber-500/10 border-amber-500/20 text-amber-300 hover:bg-amber-500/20 hover:border-amber-400/40`} title="Save current document as a new version">
-                        <FaCodeBranch /> Save Version
-                    </button>
-
-                    {/* Configure Settings Popover */}
-                    <div className="relative">
+        <div className="adm-page adm-sc-root">
+            <PageHeader
+                command="edit"
+                title="Resume studio"
+                description={`Compiled ${timeLabel(studio?.lastCompiledAt)} · Published ${timeLabel(studio?.lastPublishedAt)}`}
+                actions={
+                    <>
                         <button
-                            onClick={() => setSettingsOpen(!settingsOpen)}
-                            className={`flex items-center justify-center w-8 h-8 rounded-lg border text-slate-400 hover:text-slate-200 transition-all ${
-                                settingsOpen ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-300' : 'border-white/10 bg-slate-800/40 hover:bg-slate-800'
-                            }`}
-                            title="Configure Studio Settings"
+                            type="button"
+                            onClick={() => save()}
+                            disabled={saving}
+                            className="adm-btn"
                         >
-                            <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
+                            {saving ? <FaSpinner className="animate-spin" aria-hidden="true" /> : <FaFloppyDisk aria-hidden="true" />}
+                            Save
+                        </button>
+                        <button
+                            type="button"
+                            onClick={saveAndCompile}
+                            disabled={compiling || saving}
+                            className="adm-btn"
+                        >
+                            {compiling ? <FaSpinner className="animate-spin" aria-hidden="true" /> : <FaPlay aria-hidden="true" />}
+                            Compile
+                        </button>
+                        <button
+                            type="button"
+                            onClick={publish}
+                            disabled={publishing || saving || compiling}
+                            className="adm-btn adm-btn-primary"
+                            title="Save, compile, then publish to the live site"
+                        >
+                            {publishing ? <FaSpinner className="animate-spin" aria-hidden="true" /> : <FaUpload aria-hidden="true" />}
+                            Publish
+                        </button>
+                        <button
+                            type="button"
+                            onClick={download}
+                            disabled={!pdfUrl}
+                            className="adm-btn"
+                            title="Download compiled PDF"
+                        >
+                            <FaDownload aria-hidden="true" /> Download PDF
+                        </button>
+                        <button
+                            type="button"
+                            onClick={saveVersion}
+                            className="adm-btn"
+                            title="Save current document as a new version"
+                        >
+                            <FaCodeBranch aria-hidden="true" /> Save version
                         </button>
 
-                        {settingsOpen && (
-                            <>
-                                {/* Click outside overlay */}
-                                <div className="fixed inset-0 z-30" onClick={() => setSettingsOpen(false)} />
-                                {/* Dropdown panel */}
-                                <div className="absolute right-0 top-full mt-2 w-56 rounded-xl border border-white/10 bg-slate-900/95 p-3.5 shadow-2xl z-40 space-y-3.5 backdrop-blur-xl">
-                                    <div>
-                                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                                            LaTeX Engine
-                                        </label>
-                                        <select
-                                            value={engine}
-                                            onChange={(e) => { setEngine(e.target.value); setDirty(true); }}
-                                            className="w-full bg-slate-950 border border-white/10 rounded-md px-2.5 py-1.5 text-xs text-slate-300 font-mono focus:border-cyan-500/50 focus:outline-none"
-                                        >
-                                            {RESUME_ENGINES.map((eng) => <option key={eng} value={eng}>{eng}</option>)}
-                                        </select>
+                        <div className="relative">
+                            <button
+                                type="button"
+                                onClick={() => setSettingsOpen(!settingsOpen)}
+                                aria-expanded={settingsOpen}
+                                aria-label="Studio settings"
+                                title="Studio settings"
+                                className="adm-icon-btn"
+                            >
+                                <FaGear aria-hidden="true" />
+                            </button>
+
+                            {settingsOpen && (
+                                <>
+                                    <div className="fixed inset-0 z-30" onClick={() => setSettingsOpen(false)} />
+                                    <div className="adm-dialog absolute right-0 top-full z-40 mt-2 w-64 p-4 space-y-4">
+                                        <Field label="LaTeX engine">
+                                            <select
+                                                value={engine}
+                                                onChange={(e) => { setEngine(e.target.value); setDirty(true); }}
+                                                className="adm-input font-mono"
+                                            >
+                                                {RESUME_ENGINES.map((eng) => <option key={eng} value={eng}>{eng}</option>)}
+                                            </select>
+                                        </Field>
+
+                                        <div className="space-y-3 border-t border-[var(--hairline)] pt-3">
+                                            <div className="flex items-center justify-between gap-2">
+                                                <span className="text-sm text-[var(--text-primary)]">Auto-save</span>
+                                                <button
+                                                    type="button"
+                                                    role="switch"
+                                                    aria-checked={autoSave}
+                                                    aria-label="Auto-save edits"
+                                                    onClick={() => setAutoSave((v) => !v)}
+                                                    className="adm-switch"
+                                                />
+                                            </div>
+                                            <div className="flex items-center justify-between gap-2">
+                                                <span className="text-sm text-[var(--text-primary)]">Auto-compile</span>
+                                                <button
+                                                    type="button"
+                                                    role="switch"
+                                                    aria-checked={autoCompile}
+                                                    aria-label="Auto-compile after save"
+                                                    onClick={() => setAutoCompile((v) => { const next = !v; if (next) setAutoSave(true); return next; })}
+                                                    className="adm-switch"
+                                                />
+                                            </div>
+                                        </div>
                                     </div>
+                                </>
+                            )}
+                        </div>
+                    </>
+                }
+            />
 
-                                    <hr className="border-white/5" />
-
-                                    <div className="space-y-2">
-                                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
-                                            Edits Automation
-                                        </label>
-                                        <button
-                                            onClick={() => setAutoSave((v) => !v)}
-                                            className={`w-full flex items-between items-center justify-between px-2.5 py-1.5 rounded-lg border text-xs transition-colors cursor-pointer ${
-                                                autoSave 
-                                                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' 
-                                                    : 'border-white/10 text-slate-500 hover:text-slate-300'
-                                            }`}
-                                        >
-                                            <span>Auto-Save</span>
-                                            <span className={`w-1.5 h-1.5 rounded-full ${autoSave ? 'bg-emerald-400 animate-pulse' : 'bg-slate-600'}`} />
-                                        </button>
-                                        
-                                        <button
-                                            onClick={() => setAutoCompile((v) => { const next = !v; if (next) setAutoSave(true); return next; })}
-                                            className={`w-full flex items-between items-center justify-between px-2.5 py-1.5 rounded-lg border text-xs transition-colors cursor-pointer ${
-                                                autoCompile 
-                                                    ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-300' 
-                                                    : 'border-white/10 text-slate-500 hover:text-slate-300'
-                                            }`}
-                                        >
-                                            <span>Auto-Compile</span>
-                                            <span className={`w-1.5 h-1.5 rounded-full ${autoCompile ? 'bg-cyan-400 animate-pulse' : 'bg-slate-600'}`} />
-                                        </button>
-                                    </div>
-                                </div>
-                            </>
-                        )}
-                    </div>
-                </div>
-            </div>
-
-            {/* Main split */}
-            <div className="flex flex-1 min-h-0 gap-3 overflow-hidden">
-                {/* Side panel (AI, Ideas, Portfolio, Design, History) — left of the
-                    editor so items sit next to the visual canvas you insert them into. */}
+            <div className="adm-sc-studio">
                 <StudioSidePanel
                     mode={mode}
                     onInsert={insertLatex}
@@ -553,45 +530,39 @@ export default function ResumeStudioClient() {
                     toast={toast}
                 />
 
-                {/* Editor Pane (holds both Visual and Code mode views) */}
-                <div className="flex-1 min-w-0 flex flex-col rounded-xl border border-white/10 overflow-hidden bg-slate-900/40">
-                    {/* Pane tabs header */}
-                    <div className="flex items-center justify-between border-b border-white/10 bg-slate-950/45 px-3 py-2 shrink-0">
-                        <div className="flex gap-1.5">
+                {/* Editor Pane */}
+                <section className="adm-sc-studio-pane" aria-label="Resume editor">
+                    <header className="adm-panel-head !py-0">
+                        <div className="adm-tabs border-b-0" role="tablist" aria-label="Editor mode">
                             <button
+                                type="button"
+                                role="tab"
+                                aria-selected={mode === 'visual'}
                                 onClick={() => switchMode('visual')}
-                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all border ${
-                                    mode === 'visual'
-                                        ? 'bg-purple-500/10 border-purple-500/30 text-purple-300 shadow-[0_0_12px_rgba(168,85,247,0.08)]'
-                                        : 'border-transparent text-slate-500 hover:text-slate-300'
-                                }`}
+                                className="adm-tab"
                                 title="Drag-and-drop visual editor"
                             >
-                                <FaShapes className="text-[10.5px]" /> Visual
+                                <FaShapes aria-hidden="true" /> Visual
                             </button>
                             <button
+                                type="button"
+                                role="tab"
+                                aria-selected={mode === 'code'}
                                 onClick={() => switchMode('code')}
-                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all border ${
-                                    mode === 'code'
-                                        ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.08)]'
-                                        : 'border-transparent text-slate-500 hover:text-slate-300'
-                                }`}
+                                className="adm-tab"
                                 title="LaTeX code editor"
                             >
-                                <FaCode className="text-[10.5px]" /> Code
+                                <FaCode aria-hidden="true" /> Code
                             </button>
                         </div>
-                        {dirty && (
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400 bg-amber-500/5 border border-amber-500/20 px-2 py-0.5 rounded-md animate-pulse">
-                                ● unsaved
-                            </span>
-                        )}
-                    </div>
+                        <div className="adm-actions">
+                            <Badge>{engine}</Badge>
+                            {dirty && <Badge tone="warn">Unsaved</Badge>}
+                        </div>
+                    </header>
 
-                    {/* Pane editor canvas */}
-                    <div className="flex-1 min-h-0 relative overflow-hidden">
-                        {/* Editor (CodeMirror stays mounted so its buffer survives mode switches) */}
-                        <div className={`w-full h-full bg-[#282c34] ${mode === 'visual' ? 'hidden' : ''}`}>
+                    <div className="relative flex-1 min-h-0 overflow-hidden">
+                        <div className={`h-full w-full ${mode === 'visual' ? 'hidden' : ''}`}>
                             <LatexEditor
                                 ref={editorRef}
                                 initialDoc={studio?.latex || ''}
@@ -600,7 +571,7 @@ export default function ResumeStudioClient() {
                             />
                         </div>
                         {mode === 'visual' && model && (
-                            <div className="w-full h-full overflow-auto bg-slate-950/40">
+                            <div className="h-full w-full overflow-y-auto">
                                 <VisualEditor
                                     model={model}
                                     onChange={(next) => { setModel(next); setDirty(true); }}
@@ -608,45 +579,73 @@ export default function ResumeStudioClient() {
                             </div>
                         )}
                     </div>
-                </div>
+                </section>
 
-                {/* Preview / errors */}
-                <div className="flex-1 min-w-0 flex flex-col gap-3 overflow-hidden">
-                    <div className="flex-1 min-h-0 rounded-xl border border-white/10 overflow-hidden bg-slate-900/60 relative">
+                {/* Preview & Compile Log Pane */}
+                <section className="adm-sc-studio-pane" aria-label="PDF preview">
+                    <header className="adm-panel-head">
+                        <h2 className="adm-panel-title">PDF preview</h2>
+                        <div className="adm-actions">
+                            {studio?.updatedAt && (
+                                <Badge>Saved {timeLabel(studio.updatedAt)}</Badge>
+                            )}
+                            {compileErrors.length > 0 && (
+                                <Badge tone="error">{compileErrors.length} {compileErrors.length === 1 ? 'error' : 'errors'}</Badge>
+                            )}
+                        </div>
+                    </header>
+
+                    <div className="relative flex-1 min-h-0 overflow-hidden bg-[var(--bg-secondary)]">
                         {pdfUrl ? (
-                            <iframe title="Resume preview" src={`${pdfUrl}#toolbar=0&navpanes=0&view=FitH`} className="w-full h-full border-0" />
+                            <iframe
+                                title="Resume preview"
+                                src={`${pdfUrl}#toolbar=0&navpanes=0&view=FitH`}
+                                className="h-full w-full border-0"
+                            />
                         ) : (
-                            <div className="h-full flex flex-col items-center justify-center text-slate-500 text-sm gap-2">
-                                <FaPlay className="text-2xl opacity-40" />
-                                <p>Hit <span className="text-cyan-400 font-mono">Compile</span> (or Ctrl+S) to preview your resume</p>
+                            <div className="flex h-full flex-col items-center justify-center gap-2 p-6 text-center text-sm text-[var(--text-secondary)]">
+                                <FaPlay className="text-xl text-[var(--adm-hint)]" aria-hidden="true" />
+                                <p>Click <strong className="text-[var(--text-bright)]">Compile</strong> (or press Ctrl+S) to preview your resume.</p>
                             </div>
                         )}
                     </div>
 
                     {showLog && (
-                        <div className="max-h-56 overflow-auto rounded-xl border border-red-500/30 bg-red-950/30 p-3 text-xs font-mono">
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="text-red-300 font-bold flex items-center gap-2">
-                                    <FaCircleExclamation /> {compileErrors.length} error{compileErrors.length === 1 ? '' : 's'}
+                        <div className="max-h-56 overflow-y-auto border-t border-[var(--hairline)] bg-[var(--bg-secondary)] p-3 font-mono text-xs">
+                            <div className="mb-2 flex items-center justify-between">
+                                <span className="flex items-center gap-2 font-semibold text-[var(--adm-error-ink)]">
+                                    <FaCircleExclamation aria-hidden="true" />
+                                    {compileErrors.length} {compileErrors.length === 1 ? 'error' : 'errors'}
                                 </span>
-                                <button onClick={() => setShowLog(false)} className="text-slate-400 hover:text-white"><FaXmark /></button>
-                            </div>
-                            {compileErrors.map((err, i) => (
                                 <button
-                                    key={i}
-                                    onClick={() => err.line && editorRef.current?.gotoLine(err.line)}
-                                    className="block w-full text-left text-red-200 hover:bg-red-500/10 rounded px-2 py-1"
+                                    type="button"
+                                    onClick={() => setShowLog(false)}
+                                    className="adm-icon-btn"
+                                    aria-label="Close compile log"
                                 >
-                                    {err.line ? <span className="text-amber-400">L{err.line}</span> : null} {err.message}
+                                    <FaXmark aria-hidden="true" />
                                 </button>
-                            ))}
-                            <details className="mt-2 text-slate-400">
-                                <summary className="cursor-pointer hover:text-slate-200">Full log</summary>
-                                <pre className="whitespace-pre-wrap mt-1 text-[10px] leading-tight">{compileLog}</pre>
+                            </div>
+                            <div className="space-y-1">
+                                {compileErrors.map((err, i) => (
+                                    <button
+                                        key={i}
+                                        type="button"
+                                        onClick={() => err.line && editorRef.current?.gotoLine(err.line)}
+                                        className="adm-row w-full rounded-md text-left text-xs text-[var(--adm-error-ink)]"
+                                    >
+                                        {err.line ? <Badge tone="warn">L{err.line}</Badge> : null}
+                                        <span>{err.message}</span>
+                                    </button>
+                                ))}
+                            </div>
+                            <details className="mt-2">
+                                <summary className="cursor-pointer text-[var(--text-secondary)]">Full compiler log</summary>
+                                <pre className="adm-code mt-1.5 whitespace-pre-wrap text-xs">{compileLog}</pre>
                             </details>
                         </div>
                     )}
-                </div>
+                </section>
             </div>
         </div>
     );

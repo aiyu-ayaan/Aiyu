@@ -1,19 +1,14 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
 import {
-    AlertTriangle,
-    ArrowLeft,
-    ArrowRight,
-    CheckCircle2,
-    Database,
-    HardDrive,
-    Image as ImageIcon,
-    RefreshCw,
-    Trash2,
-    Unlink,
-} from 'lucide-react';
+    FaArrowsRotate,
+    FaImage,
+    FaSpinner,
+    FaTrashCan,
+} from 'react-icons/fa6';
+import { Badge, EmptyState, Loading, Panel, Stat } from '@/app/components/admin/ui';
+import '@/app/styles/admin-system.css';
 
 function formatBytes(bytes = 0) {
     if (!Number.isFinite(bytes) || bytes <= 0) {
@@ -21,30 +16,9 @@ function formatBytes(bytes = 0) {
     }
 
     const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-    const unitIndex = Math.min(
-        Math.floor(Math.log(bytes) / Math.log(1024)),
-        units.length - 1
-    );
+    const unitIndex = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
     const value = bytes / 1024 ** unitIndex;
     return `${value.toFixed(value >= 100 || unitIndex === 0 ? 0 : 2)} ${units[unitIndex]}`;
-}
-
-function StatusBanner({ message }) {
-    if (!message) {
-        return null;
-    }
-
-    const styles = message.type === 'error'
-        ? 'bg-red-500/10 border-red-500/20 text-red-300'
-        : message.type === 'success'
-            ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300'
-            : 'bg-cyan-500/10 border-cyan-500/20 text-cyan-300';
-
-    return (
-        <div className={`mb-8 rounded-2xl border px-4 py-3 text-sm ${styles}`}>
-            {message.text}
-        </div>
-    );
 }
 
 function ConfirmDialog({ dialog, onClose, onConfirm, busy }) {
@@ -53,72 +27,81 @@ function ConfirmDialog({ dialog, onClose, onConfirm, busy }) {
     }
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
-            <div className="w-full max-w-lg rounded-3xl border border-white/10 bg-slate-900/95 p-6 shadow-2xl">
-                <div className="mb-4 flex items-start gap-3">
-                    <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-red-300">
-                        <AlertTriangle size={18} />
-                    </div>
+        <div
+            className="adm-overlay"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-unreferenced-title"
+            onKeyDown={(event) => {
+                if (event.key === 'Escape' && !busy) onClose();
+            }}
+        >
+            <div className="adm-dialog adm-dialog-framed max-w-lg">
+                <div className="adm-dialog-head">
                     <div>
-                        <h3 className="text-xl font-bold text-white">{dialog.title}</h3>
-                        <p className="mt-1 text-sm text-slate-400">{dialog.description}</p>
+                        <h3 id="delete-unreferenced-title" className="adm-panel-title">
+                            {dialog.title}
+                        </h3>
+                        <p className="adm-help mt-1">{dialog.description}</p>
                     </div>
                 </div>
 
-                <div className="mb-6 rounded-2xl border border-white/10 bg-slate-950/60 p-4">
-                    <div className="flex items-center justify-between text-sm text-slate-300">
-                        <span>Files selected</span>
-                        <span className="font-mono text-white">{dialog.fileCount}</span>
-                    </div>
-                    <div className="mt-2 flex items-center justify-between text-sm text-slate-300">
-                        <span>Estimated reclaim</span>
-                        <span className="font-mono text-cyan-300">{formatBytes(dialog.reclaimBytes)}</span>
+                <div className="adm-dialog-body space-y-4">
+                    <dl className="adm-facts">
+                        <div>
+                            <dt>Files selected</dt>
+                            <dd className="adm-num font-semibold text-[var(--text-bright)]">{dialog.fileCount}</dd>
+                        </div>
+                        <div>
+                            <dt>Estimated reclaim</dt>
+                            <dd className="adm-num font-semibold text-[var(--text-bright)]">
+                                {formatBytes(dialog.reclaimBytes)}
+                            </dd>
+                        </div>
+                    </dl>
+
+                    <div className="max-h-48 overflow-y-auto rounded-[10px] border border-[var(--hairline)] bg-[var(--bg-primary)] p-3">
+                        <ul className="space-y-2 font-mono text-xs">
+                            {dialog.filenames.slice(0, 12).map((filename) => (
+                                <li key={filename} className="flex items-center gap-3 truncate">
+                                    {filename.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                                        <img
+                                            src={`/uploads/${filename}`}
+                                            alt=""
+                                            className="h-6 w-6 shrink-0 rounded object-cover"
+                                        />
+                                    ) : (
+                                        <div className="h-6 w-6 shrink-0 rounded bg-[var(--bg-secondary)]" />
+                                    )}
+                                    <a
+                                        href={`/uploads/${filename}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="adm-link truncate"
+                                    >
+                                        {filename}
+                                    </a>
+                                </li>
+                            ))}
+                            {dialog.filenames.length > 12 && (
+                                <li className="adm-help pl-9">+{dialog.filenames.length - 12} more files</li>
+                            )}
+                        </ul>
                     </div>
                 </div>
 
-                <div className="mb-6 max-h-48 overflow-y-auto rounded-2xl border border-white/10 bg-slate-950/40 p-3">
-                    <div className="space-y-2 text-xs font-mono text-slate-300">
-                        {dialog.filenames.slice(0, 12).map((filename) => (
-                            <div key={filename} className="flex items-center gap-3 truncate">
-                                {filename.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-                                    <img src={`/uploads/${filename}`} alt="" className="h-6 w-6 rounded object-cover" />
-                                ) : (
-                                    <div className="h-6 w-6 rounded bg-white/5" />
-                                )}
-                                <a 
-                                    href={`/uploads/${filename}`} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer" 
-                                    className="hover:text-cyan-400 hover:underline"
-                                >
-                                    {filename}
-                                </a>
-                            </div>
-                        ))}
-                        {dialog.filenames.length > 12 && (
-                            <div className="text-slate-500 pl-9">
-                                + {dialog.filenames.length - 12} more files
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                <div className="flex justify-end gap-3">
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        disabled={busy}
-                        className="rounded-xl border border-white/10 px-4 py-2 text-sm text-slate-300 transition hover:border-white/20 hover:text-white disabled:opacity-50"
-                    >
+                <div className="adm-dialog-foot">
+                    <button type="button" onClick={onClose} disabled={busy} className="adm-btn">
                         Cancel
                     </button>
                     <button
                         type="button"
                         onClick={onConfirm}
                         disabled={busy}
-                        className="rounded-xl bg-red-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-400 disabled:opacity-50"
+                        className="adm-btn adm-btn-danger"
                     >
-                        {busy ? 'Deleting...' : dialog.confirmLabel}
+                        {busy && <FaSpinner aria-hidden="true" className="animate-spin" />}
+                        {busy ? 'Deleting' : dialog.confirmLabel}
                     </button>
                 </div>
             </div>
@@ -135,196 +118,129 @@ function MigrationPreviewDialog({ open, onClose, onConfirm, data, busy }) {
     const totalBytes = candidates.reduce((sum, c) => sum + (c.sizeBytes || 0), 0);
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
-            <div className="w-full max-w-2xl rounded-3xl border border-white/10 bg-slate-900/95 p-6 shadow-2xl flex flex-col max-h-[85vh]">
-                
-                {/* Header */}
-                <div className="mb-4 flex items-start gap-3 text-left">
-                    <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/10 p-3 text-cyan-355 shrink-0 flex items-center justify-center">
-                        <RefreshCw className="animate-spin w-6 h-6 text-cyan-400" />
-                    </div>
+        <div
+            className="adm-overlay"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="webp-migration-title"
+            onKeyDown={(event) => {
+                if (event.key === 'Escape' && !busy) onClose();
+            }}
+        >
+            <div className="adm-dialog adm-dialog-framed max-w-2xl">
+                <div className="adm-dialog-head">
                     <div>
-                        <h3 className="text-xl font-bold text-white">Pre-Migration Audit</h3>
-                        <p className="mt-1 text-sm text-slate-400">
-                            Review legacy images and affected database records before initiating the WebP optimization pipeline.
+                        <h3 id="webp-migration-title" className="adm-panel-title">
+                            Pre-migration audit
+                        </h3>
+                        <p className="adm-help mt-1">
+                            Review legacy images and affected database records before converting to WebP.
                         </p>
                     </div>
                 </div>
 
-                {/* Summary bar */}
-                <div className="mb-4 grid grid-cols-1 sm:grid-cols-3 gap-3 rounded-2xl border border-white/10 bg-slate-950/60 p-4 text-center">
-                    <div>
-                        <div className="text-[10px] uppercase tracking-widest text-slate-500 font-mono font-bold">Legacy Images</div>
-                        <div className="mt-1 font-mono text-lg font-bold text-cyan-300">{totalCandidates}</div>
-                    </div>
-                    <div>
-                        <div className="text-[10px] uppercase tracking-widest text-slate-500 font-mono font-bold">Current Footprint</div>
-                        <div className="mt-1 font-mono text-lg font-bold text-pink-300">{formatBytes(totalBytes)}</div>
-                    </div>
-                    <div>
-                        <div className="text-[10px] uppercase tracking-widest text-slate-500 font-mono font-bold">DB References</div>
-                        <div className="mt-1 font-mono text-lg font-bold text-emerald-300">{totalReferences}</div>
-                    </div>
-                </div>
-
-                {/* Content List */}
-                <div className="flex-1 overflow-y-auto min-h-0 rounded-2xl border border-white/10 bg-slate-950/40 p-4 space-y-4 custom-scrollbar mb-6 text-left">
-                    {candidates.length === 0 ? (
-                        <div className="text-center py-8 text-slate-500 text-sm">
-                            No legacy images require optimization. All assets are fully optimized to WebP!
+                <div className="adm-dialog-body space-y-4">
+                    <dl className="adm-facts rounded-[10px] border border-[var(--hairline)] bg-[var(--bg-primary)] p-3">
+                        <div>
+                            <dt>Legacy images</dt>
+                            <dd className="adm-num font-semibold text-[var(--text-bright)]">{totalCandidates}</dd>
                         </div>
-                    ) : (
-                        candidates.map((candidate) => (
-                            <div key={candidate.filename} className="border-b border-white/5 pb-3 last:border-0 last:pb-0 text-left">
-                                <div className="flex items-center gap-3">
-                                    {candidate.filename.match(/\.(jpg|jpeg|png|gif)$/i) ? (
-                                        <img src={`/uploads/${candidate.filename}`} alt="" className="h-8 w-8 rounded object-cover border border-white/10 shrink-0" />
-                                    ) : (
-                                        <div className="h-8 w-8 rounded bg-white/5 border border-white/10 flex items-center justify-center text-slate-500 font-mono text-[9px] shrink-0">
-                                            IMG
-                                        </div>
-                                    )}
-                                    <div className="truncate flex-1">
-                                        <div className="text-xs font-mono font-bold text-white truncate" title={candidate.filename}>
-                                            {candidate.filename}
-                                        </div>
-                                        <div className="text-[10px] text-slate-500 mt-0.5">
-                                            Size: {formatBytes(candidate.sizeBytes)} • {candidate.filename.includes('-thumb.') ? 'Thumbnail' : 'Original Image'}
-                                        </div>
-                                    </div>
-                                </div>
+                        <div>
+                            <dt>Current footprint</dt>
+                            <dd className="adm-num font-semibold text-[var(--text-bright)]">
+                                {formatBytes(totalBytes)}
+                            </dd>
+                        </div>
+                        <div>
+                            <dt>Database references</dt>
+                            <dd className="adm-num font-semibold text-[var(--text-bright)]">{totalReferences}</dd>
+                        </div>
+                    </dl>
 
-                                {/* References Sub-list */}
-                                <div className="mt-2 pl-11 space-y-1">
-                                    <div className="text-[10px] uppercase tracking-wider text-slate-600 font-semibold font-mono mb-1">
-                                        Affected References:
-                                    </div>
-                                    {candidate.references.length === 0 ? (
-                                        <div className="text-[11px] text-slate-500 italic pl-2">
-                                            Not referenced in content (Safe disk-only conversion)
-                                        </div>
-                                    ) : (
-                                        candidate.references.map((ref, idx) => (
-                                            <div key={idx} className="flex items-center gap-2 text-[11px] text-slate-300 font-mono mt-0.5">
-                                                <span className="text-cyan-400/80 bg-cyan-950/40 border border-cyan-800/30 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase">
-                                                    {ref.model}
-                                                </span>
-                                                <span className="truncate text-slate-400 hover:text-white" title={ref.label}>
-                                                    {ref.label}
-                                                </span>
+                    <div className="max-h-72 overflow-y-auto rounded-[10px] border border-[var(--hairline)] bg-[var(--bg-primary)]">
+                        {candidates.length === 0 ? (
+                            <EmptyState
+                                title="No legacy images require optimization"
+                                description="All assets in public/uploads are already optimized to WebP."
+                            />
+                        ) : (
+                            <ul className="adm-list">
+                                {candidates.map((candidate) => (
+                                    <li key={candidate.filename} className="p-3 space-y-2">
+                                        <div className="flex items-center gap-3">
+                                            {candidate.filename.match(/\.(jpg|jpeg|png|gif)$/i) ? (
+                                                <img
+                                                    src={`/uploads/${candidate.filename}`}
+                                                    alt=""
+                                                    className="h-8 w-8 shrink-0 rounded border border-[var(--hairline)] object-cover"
+                                                />
+                                            ) : (
+                                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded border border-[var(--hairline)] bg-[var(--bg-secondary)]">
+                                                    <FaImage aria-hidden="true" className="text-[var(--adm-hint)]" />
+                                                </div>
+                                            )}
+                                            <div className="min-w-0 flex-1">
+                                                <div
+                                                    className="truncate font-mono text-xs font-semibold text-[var(--text-bright)]"
+                                                    title={candidate.filename}
+                                                >
+                                                    {candidate.filename}
+                                                </div>
+                                                <div className="adm-help">
+                                                    {formatBytes(candidate.sizeBytes)} ·{' '}
+                                                    {candidate.filename.includes('-thumb.')
+                                                        ? 'Thumbnail'
+                                                        : 'Original image'}
+                                                </div>
                                             </div>
-                                        ))
-                                    )}
-                                </div>
-                            </div>
-                        ))
-                    )}
+                                        </div>
+
+                                        <div className="pl-11 space-y-1">
+                                            <p className="adm-help">Affected references:</p>
+                                            {candidate.references.length === 0 ? (
+                                                <p className="adm-help">
+                                                    Not referenced in content (safe disk-only conversion).
+                                                </p>
+                                            ) : (
+                                                <ul className="space-y-1">
+                                                    {candidate.references.map((ref, idx) => (
+                                                        <li
+                                                            key={idx}
+                                                            className="flex items-center gap-2 font-mono text-xs"
+                                                        >
+                                                            <Badge tone="info">{ref.model}</Badge>
+                                                            <span
+                                                                className="truncate text-[var(--text-secondary)]"
+                                                                title={ref.label}
+                                                            >
+                                                                {ref.label}
+                                                            </span>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            )}
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </div>
                 </div>
 
-                {/* Footer Buttons */}
-                <div className="flex justify-end gap-3 shrink-0">
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        disabled={busy}
-                        className="rounded-xl border border-white/10 px-4 py-2 text-sm text-slate-300 transition hover:border-white/20 hover:text-white disabled:opacity-50"
-                    >
+                <div className="adm-dialog-foot">
+                    <button type="button" onClick={onClose} disabled={busy} className="adm-btn">
                         Cancel
                     </button>
                     <button
                         type="button"
                         onClick={onConfirm}
                         disabled={busy || candidates.length === 0}
-                        className="rounded-xl bg-cyan-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-cyan-500 disabled:opacity-50"
+                        className="adm-btn adm-btn-primary"
                     >
-                        {busy ? 'Processing Migration...' : 'Commence WebP Migration'}
+                        {busy && <FaSpinner aria-hidden="true" className="animate-spin" />}
+                        {busy ? 'Converting to WebP' : 'Convert to WebP'}
                     </button>
                 </div>
-
-            </div>
-        </div>
-    );
-}
-
-function SummaryCards({ summary }) {
-    const cards = [
-        {
-            label: 'Total App Storage',
-            value: formatBytes(summary.totalAppBytes),
-            detail: 'Database + uploads',
-            accent: 'text-cyan-300',
-            icon: <HardDrive size={18} />,
-        },
-        {
-            label: 'Uploads On Disk',
-            value: formatBytes(summary.totalUploadBytes),
-            detail: `${summary.uploadFileCount} files`,
-            accent: 'text-pink-300',
-            icon: <ImageIcon size={18} />,
-        },
-        {
-            label: 'Database Content',
-            value: formatBytes(summary.totalDatabaseBytes),
-            detail: 'Approximate JSON footprint',
-            accent: 'text-amber-300',
-            icon: <Database size={18} />,
-        },
-        {
-            label: 'Unreferenced Uploads',
-            value: formatBytes(summary.totalUnreferencedUploadBytes),
-            detail: `${summary.unreferencedUploadCount} files can be reclaimed`,
-            accent: 'text-red-300',
-            icon: <Unlink size={18} />,
-        },
-    ];
-
-    return (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {cards.map((card) => (
-                <div key={card.label} className="rounded-3xl border border-white/10 bg-slate-900/50 p-5 backdrop-blur-xl">
-                    <div className={`mb-4 inline-flex rounded-2xl border border-white/10 bg-white/5 p-3 ${card.accent}`}>
-                        {card.icon}
-                    </div>
-                    <h3 className="text-sm font-mono uppercase tracking-widest text-slate-400">{card.label}</h3>
-                    <p className={`mt-2 text-2xl font-bold ${card.accent}`}>{card.value}</p>
-                    <p className="mt-1 text-sm text-slate-500">{card.detail}</p>
-                </div>
-            ))}
-        </div>
-    );
-}
-
-function SectionTable({ sections }) {
-    return (
-        <div className="overflow-hidden rounded-3xl border border-white/10 bg-slate-900/50 backdrop-blur-xl">
-            <div className="border-b border-white/10 px-6 py-4">
-                <h2 className="text-lg font-bold text-white">Content Breakdown</h2>
-                <p className="mt-1 text-sm text-slate-400">Estimated storage by content area and referenced upload usage.</p>
-            </div>
-
-            <div className="overflow-x-auto">
-                <table className="min-w-full text-left text-sm">
-                    <thead className="bg-slate-950/40 text-xs uppercase tracking-widest text-slate-500">
-                        <tr>
-                            <th className="px-6 py-4">Section</th>
-                            <th className="px-6 py-4">Documents</th>
-                            <th className="px-6 py-4">Data Size</th>
-                            <th className="px-6 py-4">Referenced Uploads</th>
-                            <th className="px-6 py-4">Referenced Upload Size</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {sections.map((section) => (
-                            <tr key={section.key} className="border-t border-white/5 text-slate-300">
-                                <td className="px-6 py-4 font-semibold text-white">{section.label}</td>
-                                <td className="px-6 py-4">{section.docCount}</td>
-                                <td className="px-6 py-4">{formatBytes(section.approximateBytes)}</td>
-                                <td className="px-6 py-4">{section.referencedUploadCount}</td>
-                                <td className="px-6 py-4">{formatBytes(section.referencedUploadBytes)}</td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
             </div>
         </div>
     );
@@ -343,10 +259,7 @@ export default function StorageManager() {
     const [showPreviewModal, setShowPreviewModal] = useState(false);
     const [fetchingPreview, setFetchingPreview] = useState(false);
 
-    const unreferencedUploads = useMemo(
-        () => audit?.unreferencedUploads || [],
-        [audit]
-    );
+    const unreferencedUploads = useMemo(() => audit?.unreferencedUploads || [], [audit]);
 
     async function loadAudit(showLoader = false) {
         if (showLoader) {
@@ -381,14 +294,15 @@ export default function StorageManager() {
         const reclaimBytes = files.reduce((total, file) => total + file.sizeBytes, 0);
 
         setDialog({
-            title: files.length === 1 ? 'Delete Unreferenced File?' : 'Delete All Unreferenced Files?',
-            description: files.length === 1
-                ? 'This file is not referenced by any current content. The file will be permanently removed from disk.'
-                : 'These files are not referenced by any current content. They will be permanently removed from disk.',
+            title: files.length === 1 ? 'Delete unreferenced file?' : 'Delete all unreferenced files?',
+            description:
+                files.length === 1
+                    ? 'This file is not referenced by any current content. It will be permanently removed from disk.'
+                    : 'These files are not referenced by any current content. They will be permanently removed from disk.',
             fileCount: files.length,
             reclaimBytes,
             filenames,
-            confirmLabel: files.length === 1 ? 'Delete File' : 'Delete All Files',
+            confirmLabel: files.length === 1 ? 'Delete file' : 'Delete all files',
         });
     }
 
@@ -422,7 +336,9 @@ export default function StorageManager() {
 
             setMessage({
                 type: 'success',
-                text: `Deleted ${deletedCount} file${deletedCount === 1 ? '' : 's'} and reclaimed ${reclaimed}.${skippedCount ? ` Skipped ${skippedCount}.` : ''}`,
+                text: `Deleted ${deletedCount} file${deletedCount === 1 ? '' : 's'} and reclaimed ${reclaimed}.${
+                    skippedCount ? ` Skipped ${skippedCount}.` : ''
+                }`,
             });
             setDialog(null);
             await loadAudit(false);
@@ -459,7 +375,7 @@ export default function StorageManager() {
 
         try {
             const response = await fetch('/api/admin/storage/migrate', {
-                method: 'POST'
+                method: 'POST',
             });
             const result = await response.json();
 
@@ -470,10 +386,11 @@ export default function StorageManager() {
             setMigrationResult(result);
             setMessage({
                 type: 'success',
-                text: `Successfully migrated ${result.migratedCount} legacy image${result.migratedCount === 1 ? '' : 's'} to WebP format, reclaiming ${formatBytes(result.reclaimedBytes)}.`
+                text: `Migrated ${result.migratedCount} legacy image${
+                    result.migratedCount === 1 ? '' : 's'
+                } to WebP, reclaiming ${formatBytes(result.reclaimedBytes)}.`,
             });
 
-            // Reload the audit data
             await loadAudit(false);
         } catch (error) {
             setMessage({ type: 'error', text: error.message });
@@ -484,9 +401,9 @@ export default function StorageManager() {
 
     if (loading) {
         return (
-            <div className="flex min-h-[40vh] items-center justify-center">
-                <div className="text-sm font-mono uppercase tracking-[0.24em] text-cyan-300">Loading Storage Audit...</div>
-            </div>
+            <section className="adm-panel">
+                <Loading label="Loading storage audit" rows={6} />
+            </section>
         );
     }
 
@@ -500,200 +417,303 @@ export default function StorageManager() {
         totalThumbnailBytes: 0,
     };
 
+    const sections = audit?.sections || [];
+
     return (
-        <div className="space-y-8">
-            <StatusBanner message={message} />
-
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-white">
-                        Storage Audit & Cleanup
-                    </h1>
-                    <p className="mt-2 max-w-2xl text-sm text-slate-400">
-                        Inspect how much space the app uses across content collections, and review or delete unused uploads in bulk.
-                    </p>
+        <div className="adm-stack">
+            {message && (
+                <div
+                    role="alert"
+                    className={`adm-notice ${
+                        message.type === 'error'
+                            ? 'adm-notice-error'
+                            : message.type === 'success'
+                            ? 'adm-notice-ok'
+                            : 'adm-notice-info'
+                    }`}
+                >
+                    {message.text}
                 </div>
+            )}
 
-                <div className="flex flex-wrap gap-3">
-                    <button
-                        type="button"
-                        onClick={() => loadAudit(false)}
-                        disabled={refreshing}
-                        className="inline-flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2 text-sm text-slate-300 transition hover:border-cyan-400/40 hover:text-white disabled:opacity-50"
-                    >
-                        <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
-                        Refresh Audit
-                    </button>
-                </div>
+            <div className="adm-stats">
+                <Stat label="Total app storage" value={formatBytes(summary.totalAppBytes)} hint="Database and uploads" />
+                <Stat
+                    label="Uploads on disk"
+                    value={formatBytes(summary.totalUploadBytes)}
+                    hint={`${summary.uploadFileCount || 0} files`}
+                />
+                <Stat
+                    label="Database content"
+                    value={formatBytes(summary.totalDatabaseBytes)}
+                    hint="Approximate JSON footprint"
+                />
+                <Stat
+                    label="Unreferenced uploads"
+                    value={formatBytes(summary.totalUnreferencedUploadBytes)}
+                    hint={`${summary.unreferencedUploadCount || 0} files can be reclaimed`}
+                />
             </div>
 
-            <SummaryCards summary={summary} />
-
-            <div className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
-                <SectionTable sections={audit?.sections || []} />
-
-                <div className="space-y-6">
-                    <div className="rounded-3xl border border-white/10 bg-slate-900/50 p-6 backdrop-blur-xl">
-                        <h2 className="text-lg font-bold text-white">Upload Health</h2>
-                        <div className="mt-4 space-y-4">
-                            <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
-                                <div className="text-xs uppercase tracking-widest text-slate-500">Referenced Uploads</div>
-                                <div className="mt-2 text-2xl font-bold text-emerald-300">{formatBytes(summary.totalReferencedUploadBytes)}</div>
-                                <div className="mt-1 text-sm text-slate-400">{summary.referencedUploadCount} files actively used by content</div>
-                            </div>
-                            <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
-                                <div className="text-xs uppercase tracking-widest text-slate-500">Thumbnail Storage</div>
-                                <div className="mt-2 text-2xl font-bold text-amber-300">{formatBytes(summary.totalThumbnailBytes)}</div>
-                                <div className="mt-1 text-sm text-slate-400">Generated thumbnails inside `public/uploads`</div>
-                            </div>
-                            <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
-                                <div className="text-xs uppercase tracking-widest text-slate-500">Cleanup Opportunity</div>
-                                <div className="mt-2 text-2xl font-bold text-red-300">{formatBytes(summary.totalUnreferencedUploadBytes)}</div>
-                                <div className="mt-1 text-sm text-slate-400">{summary.unreferencedUploadCount} files can be safely reviewed for deletion</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="rounded-3xl border border-white/10 bg-slate-900/50 p-6 backdrop-blur-xl">
-                        <div className="flex items-center gap-3">
-                            <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/10 p-2 text-cyan-400">
-                                <RefreshCw size={18} className={migrating ? 'animate-spin' : ''} />
-                            </div>
-                            <h2 className="text-lg font-bold text-white">WebP Migration Protocol</h2>
-                        </div>
-                        <p className="mt-3 text-sm text-slate-400 leading-relaxed">
-                            Safely convert legacy images (PNG, JPG, HEIC, HEIF, GIF) to optimized WebP format. Converts originals and thumbnails, updates all database references (including nested structures, configs, and markdown content), and cleans up old files.
-                        </p>
-                        
-                        <div className="mt-5">
+            <div className="adm-split">
+                <div className="adm-stack">
+                    <Panel
+                        title="Content breakdown"
+                        actions={
                             <button
                                 type="button"
-                                onClick={loadPreview}
-                                disabled={fetchingPreview || migrating}
-                                className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-cyan-500 disabled:opacity-50"
+                                onClick={() => loadAudit(false)}
+                                disabled={refreshing}
+                                className="adm-btn"
                             >
-                                {fetchingPreview ? 'Auditing Legacy Files...' : migrating ? 'Processing Migration...' : 'Initiate Migration Sequence'}
+                                <FaArrowsRotate aria-hidden="true" className={refreshing ? 'animate-spin' : ''} />
+                                Refresh audit
                             </button>
-                        </div>
+                        }
+                        flush
+                    >
+                        {sections.length === 0 ? (
+                            <EmptyState
+                                title="No storage sections available"
+                                description="Run a refresh to audit content tables."
+                            />
+                        ) : (
+                            <ul className="adm-list">
+                                {sections.map((section) => (
+                                    <li
+                                        key={section.key}
+                                        className="adm-row flex-col items-stretch gap-2 sm:flex-row sm:items-center"
+                                    >
+                                        <h3 className="min-w-0 flex-1 font-semibold text-[var(--text-bright)]">
+                                            {section.label}
+                                        </h3>
+                                        <dl className="adm-facts grid w-full gap-2 sm:w-auto sm:min-w-[26rem] sm:grid-cols-2">
+                                            <div>
+                                                <dt>Documents</dt>
+                                                <dd className="adm-num">{section.docCount}</dd>
+                                            </div>
+                                            <div>
+                                                <dt>Data size</dt>
+                                                <dd className="adm-num">
+                                                    {formatBytes(section.approximateBytes)}
+                                                </dd>
+                                            </div>
+                                            <div>
+                                                <dt>Referenced uploads</dt>
+                                                <dd className="adm-num">{section.referencedUploadCount}</dd>
+                                            </div>
+                                            <div>
+                                                <dt>Upload size</dt>
+                                                <dd className="adm-num">
+                                                    {formatBytes(section.referencedUploadBytes)}
+                                                </dd>
+                                            </div>
+                                        </dl>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </Panel>
+
+                    <Panel
+                        title="Unreferenced uploads"
+                        className="adm-danger"
+                        actions={
+                            unreferencedUploads.length > 0 ? (
+                                <button
+                                    type="button"
+                                    onClick={() => openDeleteDialog(unreferencedUploads)}
+                                    className="adm-btn adm-btn-danger"
+                                >
+                                    <FaTrashCan aria-hidden="true" /> Delete all ({unreferencedUploads.length})
+                                </button>
+                            ) : (
+                                <Badge tone="ok">Clean</Badge>
+                            )
+                        }
+                        flush
+                    >
+                        {unreferencedUploads.length === 0 ? (
+                            <EmptyState
+                                title="No unreferenced uploads found"
+                                description="Everything inside public/uploads is currently referenced by site content."
+                            />
+                        ) : (
+                            <ul className="adm-list">
+                                {unreferencedUploads.map((upload) => (
+                                    <li
+                                        key={upload.filename}
+                                        className="adm-row flex-wrap justify-between gap-3"
+                                    >
+                                        <div className="flex min-w-0 flex-1 items-start gap-3">
+                                            {upload.filename.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                                                <img
+                                                    src={`/uploads/${upload.filename}`}
+                                                    alt=""
+                                                    className="h-9 w-9 shrink-0 rounded border border-[var(--hairline)] object-cover"
+                                                />
+                                            ) : (
+                                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded border border-[var(--hairline)] bg-[var(--bg-secondary)]">
+                                                    <FaImage
+                                                        aria-hidden="true"
+                                                        className="text-[var(--adm-hint)]"
+                                                    />
+                                                </div>
+                                            )}
+                                            <div className="min-w-0 flex-1">
+                                                <a
+                                                    href={`/uploads/${upload.filename}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="adm-link break-all font-mono text-xs"
+                                                >
+                                                    {upload.filename}
+                                                </a>
+                                                <dl className="adm-facts mt-2">
+                                                    <div>
+                                                        <dt>Size</dt>
+                                                        <dd className="adm-num">{formatBytes(upload.sizeBytes)}</dd>
+                                                    </div>
+                                                    <div>
+                                                        <dt>Type</dt>
+                                                        <dd>
+                                                            <Badge>
+                                                                {upload.isThumbnail ? 'Thumbnail' : 'Original'}
+                                                            </Badge>
+                                                        </dd>
+                                                    </div>
+                                                    <div>
+                                                        <dt>Last modified</dt>
+                                                        <dd className="adm-num text-xs">
+                                                            {new Date(upload.lastModified).toLocaleString()}
+                                                        </dd>
+                                                    </div>
+                                                </dl>
+                                            </div>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => openDeleteDialog([upload])}
+                                            className="adm-btn adm-btn-danger"
+                                        >
+                                            <FaTrashCan aria-hidden="true" /> Delete
+                                        </button>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </Panel>
+                </div>
+
+                <aside className="adm-stack adm-side">
+                    <Panel title="Upload health">
+                        <dl className="space-y-4">
+                            <div>
+                                <dt className="adm-help">Referenced uploads</dt>
+                                <dd className="adm-num mt-0.5 text-lg font-semibold text-[var(--text-bright)]">
+                                    {formatBytes(summary.totalReferencedUploadBytes)}
+                                </dd>
+                                <dd className="adm-help">
+                                    {summary.referencedUploadCount || 0} files actively used by content
+                                </dd>
+                            </div>
+                            <div className="border-t border-[var(--hairline)] pt-3">
+                                <dt className="adm-help">Thumbnail storage</dt>
+                                <dd className="adm-num mt-0.5 text-lg font-semibold text-[var(--text-bright)]">
+                                    {formatBytes(summary.totalThumbnailBytes)}
+                                </dd>
+                                <dd className="adm-help">Generated thumbnails inside public/uploads</dd>
+                            </div>
+                            <div className="border-t border-[var(--hairline)] pt-3">
+                                <dt className="adm-help">Cleanup opportunity</dt>
+                                <dd className="adm-num mt-0.5 text-lg font-semibold text-[var(--text-bright)]">
+                                    {formatBytes(summary.totalUnreferencedUploadBytes)}
+                                </dd>
+                                <dd className="adm-help">
+                                    {summary.unreferencedUploadCount || 0} files can be safely reviewed for deletion
+                                </dd>
+                            </div>
+                        </dl>
+                    </Panel>
+
+                    <Panel title="WebP migration">
+                        <p className="adm-help mb-4">
+                            Convert legacy images (PNG, JPG, HEIC, GIF) to WebP, update all database references, and
+                            remove the old files.
+                        </p>
+                        <button
+                            type="button"
+                            onClick={loadPreview}
+                            disabled={fetchingPreview || migrating}
+                            className="adm-btn adm-btn-primary w-full"
+                        >
+                            {(fetchingPreview || migrating) && (
+                                <FaSpinner aria-hidden="true" className="animate-spin" />
+                            )}
+                            {fetchingPreview
+                                ? 'Auditing legacy files'
+                                : migrating
+                                ? 'Converting images'
+                                : 'Audit and convert to WebP'}
+                        </button>
+
+                        {migrating && (
+                            <div className="mt-4 space-y-2" role="status" aria-live="polite">
+                                <p className="adm-help">Converting images and updating references…</p>
+                                <div
+                                    className="adm-sc-progress adm-sc-progress-indeterminate"
+                                    role="progressbar"
+                                    aria-label="WebP image migration"
+                                    aria-valuetext="Conversion in progress"
+                                >
+                                    <span />
+                                </div>
+                            </div>
+                        )}
 
                         {migrationResult && (
-                            <div className="mt-6 space-y-4 border-t border-white/5 pt-4">
-                                <div className="flex items-center justify-between text-xs text-slate-400">
-                                    <span>Images Migrated:</span>
-                                    <span className="font-mono text-cyan-300 font-bold">{migrationResult.migratedCount}</span>
-                                </div>
-                                <div className="flex items-center justify-between text-xs text-slate-400">
-                                    <span>Space Reclaimed:</span>
-                                    <span className="font-mono text-emerald-300 font-bold">{formatBytes(migrationResult.reclaimedBytes)}</span>
-                                </div>
+                            <div className="mt-4 space-y-3 border-t border-[var(--hairline)] pt-4">
+                                <dl className="adm-facts">
+                                    <div>
+                                        <dt>Images migrated</dt>
+                                        <dd className="adm-num font-semibold text-[var(--text-bright)]">
+                                            {migrationResult.migratedCount}
+                                        </dd>
+                                    </div>
+                                    <div>
+                                        <dt>Space reclaimed</dt>
+                                        <dd className="adm-num font-semibold text-[var(--text-bright)]">
+                                            {formatBytes(migrationResult.reclaimedBytes)}
+                                        </dd>
+                                    </div>
+                                </dl>
 
                                 {migrationResult.details && migrationResult.details.length > 0 && (
-                                    <div className="max-h-40 overflow-y-auto rounded-xl border border-white/5 bg-slate-950/40 p-2.5 text-[11px] font-mono text-slate-300 space-y-1.5 custom-scrollbar">
-                                        {migrationResult.details.map((detail, idx) => (
-                                            <div key={idx} className="flex justify-between border-b border-white/5 pb-1 last:border-0 last:pb-0">
-                                                <div className="truncate max-w-[180px]" title={detail.original}>
-                                                    {detail.success ? '✓' : '✗'} {detail.original}
-                                                </div>
-                                                <div className="text-slate-500 shrink-0">
-                                                    {detail.success ? `${detail.referencesUpdated} refs` : detail.error}
-                                                </div>
-                                            </div>
-                                        ))}
+                                    <div className="max-h-40 overflow-y-auto rounded-[10px] border border-[var(--hairline)] bg-[var(--bg-primary)] p-2.5 font-mono text-xs">
+                                        <ul className="space-y-1.5">
+                                            {migrationResult.details.map((detail, idx) => (
+                                                <li
+                                                    key={idx}
+                                                    className="flex items-center justify-between gap-2 border-b border-[var(--hairline)] pb-1 last:border-0 last:pb-0"
+                                                >
+                                                    <span className="truncate" title={detail.original}>
+                                                        {detail.success ? '✓' : '✗'} {detail.original}
+                                                    </span>
+                                                    <span className="adm-help shrink-0">
+                                                        {detail.success
+                                                            ? `${detail.referencesUpdated} refs`
+                                                            : detail.error}
+                                                    </span>
+                                                </li>
+                                            ))}
+                                        </ul>
                                     </div>
                                 )}
                             </div>
                         )}
-                    </div>
-                </div>
+                    </Panel>
+                </aside>
             </div>
-
-            <div className="rounded-3xl border border-white/10 bg-slate-900/50 backdrop-blur-xl">
-                <div className="flex flex-col gap-4 border-b border-white/10 px-6 py-5 md:flex-row md:items-center md:justify-between">
-                    <div>
-                        <h2 className="text-lg font-bold text-white">
-                            Unreferenced Uploads
-                        </h2>
-                        <p className="mt-1 text-sm text-slate-400">
-                            These files are currently not referenced anywhere in the app data.
-                        </p>
-                    </div>
-
-                    {unreferencedUploads.length > 0 && (
-                        <button
-                            type="button"
-                            onClick={() => openDeleteDialog(unreferencedUploads)}
-                            className="inline-flex items-center gap-2 rounded-xl bg-red-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-400"
-                        >
-                            <Trash2 size={16} />
-                            Delete All Unreferenced
-                        </button>
-                    )}
-                </div>
-
-                {unreferencedUploads.length === 0 ? (
-                    <div className="px-6 py-12 text-center">
-                        <div className="mx-auto mb-4 inline-flex rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4 text-emerald-300">
-                            <CheckCircle2 size={22} />
-                        </div>
-                        <p className="text-lg font-semibold text-white">No unreferenced uploads found</p>
-                        <p className="mt-2 text-sm text-slate-400">Everything inside `public/uploads` is currently referenced by app content.</p>
-                    </div>
-                ) : (
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full text-left text-sm">
-                            <thead className="bg-slate-950/40 text-xs uppercase tracking-widest text-slate-500">
-                                <tr>
-                                    <th className="px-6 py-4">Filename</th>
-                                    <th className="px-6 py-4">Size</th>
-                                    <th className="px-6 py-4">Type</th>
-                                    <th className="px-6 py-4">Last Modified</th>
-                                    <th className="px-6 py-4">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {unreferencedUploads.map((upload) => (
-                                    <tr key={upload.filename} className="border-t border-white/5 text-slate-300">
-                                        <td className="px-6 py-4 font-mono text-xs text-white">
-                                            <div className="flex items-center gap-3">
-                                                {upload.filename.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-                                                    <img src={`/uploads/${upload.filename}`} alt="preview" className="h-8 w-8 rounded object-cover" />
-                                                ) : (
-                                                    <div className="flex h-8 w-8 items-center justify-center rounded bg-white/5">
-                                                        <ImageIcon size={14} className="text-slate-500" />
-                                                    </div>
-                                                )}
-                                                <a 
-                                                    href={`/uploads/${upload.filename}`} 
-                                                    target="_blank" 
-                                                    rel="noopener noreferrer"
-                                                    className="hover:text-cyan-400 hover:underline"
-                                                >
-                                                    {upload.filename}
-                                                </a>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">{formatBytes(upload.sizeBytes)}</td>
-                                        <td className="px-6 py-4">{upload.isThumbnail ? 'Thumbnail' : 'Original'}</td>
-                                        <td className="px-6 py-4">{new Date(upload.lastModified).toLocaleString()}</td>
-                                        <td className="px-6 py-4">
-                                            <button
-                                                type="button"
-                                                onClick={() => openDeleteDialog([upload])}
-                                                className="inline-flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs font-semibold text-red-300 transition hover:bg-red-500/20"
-                                            >
-                                                <Trash2 size={14} />
-                                                Delete
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
-            </div>
-
-
 
             <ConfirmDialog
                 dialog={dialog}

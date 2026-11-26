@@ -1,10 +1,24 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Toast from './Toast';
+import { FaFloppyDisk, FaLink, FaSpinner } from 'react-icons/fa6';
+import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
+import { Badge, Field, Panel } from './ui';
+import { getIconByName } from '@/lib/icons';
+import '@/app/styles/admin-structure.css';
+
+const KNOWN_ICONS = [
+    { key: 'FaGithub', label: 'GitHub' },
+    { key: 'FaLinkedin', label: 'LinkedIn' },
+    { key: 'FaInstagram', label: 'Instagram' },
+    { key: 'FaEnvelope', label: 'Email' },
+    { key: 'FaCoffee', label: 'Coffee' },
+    { key: 'SiBuymeacoffee', label: 'Buy Me a Coffee' },
+];
 
 const SocialForm = ({ initialData, isEdit = false }) => {
     const router = useRouter();
+    const { toast } = useAdminFeedback();
     const [formData, setFormData] = useState({
         name: '',
         url: '',
@@ -13,7 +27,6 @@ const SocialForm = ({ initialData, isEdit = false }) => {
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const [notification, setNotification] = useState(null);
 
     useEffect(() => {
         if (initialData) {
@@ -26,10 +39,7 @@ const SocialForm = ({ initialData, isEdit = false }) => {
         setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
-    const showNotification = (success, message) => {
-        setNotification({ success, message });
-        setTimeout(() => setNotification(null), 3000);
-    };
+    const showNotification = (success, message) => toast(message, { success });
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -49,7 +59,7 @@ const SocialForm = ({ initialData, isEdit = false }) => {
             });
 
             if (response.ok) {
-                showNotification(true, isEdit ? 'Social Link Updated Successfully' : 'Social Link Created Successfully');
+                showNotification(true, isEdit ? 'Social link updated' : 'Social link created');
                 setTimeout(() => {
                     router.push('/admin/footer');
                     router.refresh();
@@ -59,7 +69,7 @@ const SocialForm = ({ initialData, isEdit = false }) => {
                 setError(data.error || 'Something went wrong');
                 showNotification(false, data.error || 'Failed to save');
             }
-        } catch (err) {
+        } catch {
             setError('An error occurred');
             showNotification(false, 'An error occurred');
         } finally {
@@ -67,85 +77,138 @@ const SocialForm = ({ initialData, isEdit = false }) => {
         }
     };
 
+    const PreviewIcon = getIconByName(formData.iconName) || FaLink;
+
     return (
-        <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl mx-auto bg-slate-900/50 p-4 md:p-8 rounded-xl border border-white/10 backdrop-blur-xl">
-            {error && (
-                <div className="bg-red-500/10 border border-red-500/20 text-red-300 p-3 rounded font-mono text-sm">
-                    {error}
-                </div>
-            )}
+        <form onSubmit={handleSubmit} className="adm-split adm-structure-form">
+            <div className="adm-stack">
+                {error && (
+                    <div role="alert" className="adm-notice adm-notice-error">
+                        {error}
+                    </div>
+                )}
 
-            <div>
-                <label className="block text-xs font-mono uppercase tracking-wider mb-2 text-slate-400">Name</label>
-                <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    className="w-full p-3 rounded-lg bg-slate-950/50 border border-white/10 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none text-white transition-all placeholder:text-slate-600"
-                    required
-                />
+                <Panel title="Profile details">
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <Field label="Network name" help="Label shown in tooltips and assistive text.">
+                            <input
+                                type="text"
+                                name="name"
+                                value={formData.name}
+                                onChange={handleChange}
+                                className="adm-input"
+                                placeholder="GitHub"
+                                required
+                            />
+                        </Field>
+
+                        <Field label="Icon identifier" help="Must match an icon key exported in src/lib/icons.js.">
+                            <input
+                                type="text"
+                                name="iconName"
+                                value={formData.iconName}
+                                onChange={handleChange}
+                                className="adm-input font-mono"
+                                placeholder="FaGithub"
+                                required
+                            />
+                        </Field>
+                    </div>
+
+                    <div className="mt-4">
+                        <p className="adm-help mb-2">Available icon presets:</p>
+                        <div className="flex flex-wrap gap-1.5">
+                            {KNOWN_ICONS.map((item) => {
+                                const Icon = getIconByName(item.key) || FaLink;
+                                const selected = formData.iconName === item.key;
+                                return (
+                                    <button
+                                        key={item.key}
+                                        type="button"
+                                        aria-pressed={selected}
+                                        onClick={() => setFormData((prev) => ({
+                                            ...prev,
+                                            iconName: item.key,
+                                            name: prev.name || item.label,
+                                        }))}
+                                        className="adm-btn text-xs"
+                                    >
+                                        <Icon aria-hidden="true" />
+                                        <span className="font-mono">{item.key}</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    <Field label="Destination URL" help="Full https:// link or mailto: address." className="mt-4">
+                        <input
+                            type="url"
+                            name="url"
+                            value={formData.url}
+                            onChange={handleChange}
+                            className="adm-input font-mono"
+                            placeholder="https://github.com/username"
+                            required
+                        />
+                    </Field>
+                </Panel>
+
+                <Panel title="Visibility">
+                    <label className="adm-choice">
+                        <input
+                            type="checkbox"
+                            id="isHidden"
+                            name="isHidden"
+                            checked={formData.isHidden || false}
+                            onChange={(e) => setFormData((prev) => ({ ...prev, isHidden: e.target.checked }))}
+                            className="adm-check"
+                        />
+                        <div>
+                            <span className="font-medium text-[var(--text-bright)]">Hide this social link</span>
+                            <p className="adm-help">Keep the record saved without showing it in the public footer.</p>
+                        </div>
+                    </label>
+                </Panel>
             </div>
 
-            <div>
-                <label className="block text-xs font-mono uppercase tracking-wider mb-2 text-slate-400">URL</label>
-                <input
-                    type="url"
-                    name="url"
-                    value={formData.url}
-                    onChange={handleChange}
-                    className="w-full p-3 rounded-lg bg-slate-950/50 border border-white/10 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none text-white transition-all placeholder:text-slate-600"
-                    required
-                />
-            </div>
+            <aside className="adm-stack adm-side">
+                <Panel title="Publish">
+                    <div className="mb-4 flex items-center gap-3 rounded-[10px] border border-[var(--hairline)] bg-[var(--bg-secondary)] p-3">
+                        <PreviewIcon aria-hidden="true" className="text-lg text-[var(--accent-cyan)] shrink-0" />
+                        <div className="min-w-0 flex-1">
+                            <p className="truncate font-semibold text-[var(--text-bright)]">
+                                {formData.name || 'Untitled network'}
+                            </p>
+                            <p className="truncate font-mono text-xs text-[var(--text-secondary)]">
+                                {formData.url || 'https://…'}
+                            </p>
+                        </div>
+                        <Badge tone={formData.isHidden ? 'warn' : 'ok'}>
+                            {formData.isHidden ? 'Hidden' : 'Visible'}
+                        </Badge>
+                    </div>
 
-            <div>
-                <label className="block text-xs font-mono uppercase tracking-wider mb-2 text-slate-400">Icon Name (e.g., FaGithub)</label>
-                <input
-                    type="text"
-                    name="iconName"
-                    value={formData.iconName}
-                    onChange={handleChange}
-                    className="w-full p-3 rounded-lg bg-slate-950/50 border border-white/10 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none text-white transition-all placeholder:text-slate-600"
-                    required
-                />
-                <p className="text-[10px] text-slate-500 mt-1 font-mono">Must match an icon exported in src/lib/icons.js</p>
-            </div>
+                    <div className="flex flex-wrap gap-2">
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="adm-btn adm-btn-primary flex-1"
+                        >
+                            {loading ? <FaSpinner className="animate-spin" aria-hidden="true" /> : <FaFloppyDisk aria-hidden="true" />}
+                            {loading ? 'Saving' : isEdit ? 'Save changes' : 'Create social link'}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => router.back()}
+                            className="adm-btn"
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </Panel>
+            </aside>
 
-            <div className="flex items-center gap-3 p-3 bg-white/5 rounded-lg border border-white/5">
-                <input
-                    type="checkbox"
-                    id="isHidden"
-                    name="isHidden"
-                    checked={formData.isHidden || false}
-                    onChange={(e) => setFormData(prev => ({ ...prev, isHidden: e.target.checked }))}
-                    className="w-5 h-5 rounded border-white/10 bg-slate-950/50 text-cyan-600 focus:ring-cyan-500 focus:ring-offset-0 focus:ring-offset-transparent cursor-pointer accent-cyan-500"
-                />
-                <label htmlFor="isHidden" className="text-sm font-medium text-slate-300 cursor-pointer">
-                    Hide this social link
-                </label>
-            </div>
-
-            {/* Sticky Action Footer */}
-            <div className="sticky bottom-8 flex justify-end gap-4 pt-6 border-t border-white/5 bg-slate-900/90 backdrop-blur-lg p-4 rounded-xl border border-white/5 shadow-2xl z-50 mt-12">
-                <button
-                    type="button"
-                    onClick={() => router.back()}
-                    className="px-6 py-2 rounded bg-white/5 hover:bg-white/10 text-slate-400 transition-colors text-sm font-medium"
-                >
-                    CANCEL
-                </button>
-                <button
-                    type="submit"
-                    disabled={loading}
-                    className="px-8 py-2 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-bold transition-all shadow-[0_0_20px_rgba(8,145,178,0.3)] hover:shadow-[0_0_30px_rgba(8,145,178,0.5)] disabled:opacity-50 disabled:cursor-not-allowed text-sm tracking-wide uppercase"
-                >
-                    {loading ? 'UPDATING_SYSTEM...' : isEdit ? 'CONFIRM_UPDATE' : 'INITIALIZE_SOCIAL'}
-                </button>
-            </div>
-
-            {/* Toast Notification */}
-            <Toast notification={notification} />
         </form>
     );
 };

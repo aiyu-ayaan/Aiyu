@@ -1,13 +1,29 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Upload, X, Trash2, Image as ImageIcon, Loader2, RefreshCw, CheckSquare, Square, Check, Sparkles, Pin } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import {
+    FaArrowDown,
+    FaArrowUp,
+    FaArrowsRotate,
+    FaCheck,
+    FaFloppyDisk,
+    FaPen,
+    FaGripVertical,
+    FaSpinner,
+    FaThumbtack,
+    FaTrash,
+    FaUpload,
+    FaWandMagicSparkles,
+    FaXmark,
+} from 'react-icons/fa6';
 import Image from 'next/image';
-import Toast from './Toast';
+import { heicPreviewUrl, isHeicFile } from '@/utils/heicPreview';
 import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
+import { Badge, EmptyState, Field, Loading, Panel, Stat } from './ui';
+import '@/app/styles/admin-showcase.css';
 
 export default function GalleryManager() {
-    const { confirm } = useAdminFeedback();
+    const { confirm, toast } = useAdminFeedback();
     const [images, setImages] = useState([]);
     const [loading, setLoading] = useState(true);
     const [uploading, setUploading] = useState(false);
@@ -15,8 +31,14 @@ export default function GalleryManager() {
     const [migrationProgress, setMigrationProgress] = useState(null);
     const [files, setFiles] = useState([]); // Array of { file, preview, description, id }
     const [dragActive, setDragActive] = useState(false);
-    const [notification, setNotification] = useState(null);
     const [uploadProgress, setUploadProgress] = useState(null);
+
+    // Filter & Edit Dialog State
+    const [searchQuery, setSearchQuery] = useState('');
+    const [filterMode, setFilterMode] = useState('all'); // 'all' | 'pinned' | 'raw'
+    const [editingImage, setEditingImage] = useState(null);
+    const [editDescription, setEditDescription] = useState('');
+    const [savingEdit, setSavingEdit] = useState(false);
 
     // Multi-select state
     const [selectedImages, setSelectedImages] = useState(new Set());
@@ -24,7 +46,7 @@ export default function GalleryManager() {
     const [aiEnabled, setAiEnabled] = useState(false);
 
     // AI Generation State
-    const [generating, setGenerating] = useState(new Set()); // Set of file IDs currently generating
+    const [generating, setGenerating] = useState(new Set());
 
     // Drag and Drop ordering state
     const [draggedItemIdx, setDraggedItemIdx] = useState(null);
@@ -32,8 +54,8 @@ export default function GalleryManager() {
     const [isSavingOrder, setIsSavingOrder] = useState(false);
 
     const showNotification = (success, message) => {
-        setNotification({ success, message });
-        setTimeout(() => setNotification(null), 3000);
+        if (success) toast.success(message);
+        else toast.error(message);
     };
 
     useEffect(() => {
@@ -95,19 +117,29 @@ export default function GalleryManager() {
 
     const handleFiles = (newFiles) => {
         const fileObjects = newFiles.map(file => {
-            const isHeic = file.name.toLowerCase().endsWith('.heic') || file.type === 'image/heic';
+            const isHeic = isHeicFile(file);
             const preview = isHeic ? 'HEIC_PLACEHOLDER' : URL.createObjectURL(file);
 
             return {
                 id: Math.random().toString(36).substring(7),
                 file,
                 preview,
-                description: '', // Individual description
-                isHeic
+                description: '',
+                isHeic,
+                converting: isHeic,
             };
         });
 
         setFiles(prev => [...fileObjects, ...prev]);
+
+        for (const obj of fileObjects.filter((f) => f.isHeic)) {
+            heicPreviewUrl(obj.file)
+                .then((url) => setFiles(prev => prev.map(f => (f.id === obj.id ? { ...f, preview: url, converting: false } : f))))
+                .catch((error) => {
+                    console.warn(`HEIC preview failed for ${obj.file.name}:`, error);
+                    setFiles(prev => prev.map(f => (f.id === obj.id ? { ...f, converting: false } : f)));
+                });
+        }
     };
 
     const removeFile = (id) => {
@@ -140,14 +172,13 @@ export default function GalleryManager() {
 
             if (data.success) {
                 updateFileDescription(fileId, data.data);
-                showNotification(true, 'Caption generated successfully');
+                showNotification(true, 'Caption generated');
             } else {
                 showNotification(false, data.error || 'Failed to generate caption');
             }
-
         } catch (error) {
             console.error('AI Generation failed:', error);
-            showNotification(false, 'AI Generation failed');
+            showNotification(false, 'Caption generation failed');
         } finally {
             setGenerating(prev => {
                 const next = new Set(prev);
@@ -158,69 +189,60 @@ export default function GalleryManager() {
     };
 
     const uploadSingleFile = async (fileObj) => {
-        try {
-            // 1. Upload Image
-            const formData = new FormData();
-            formData.append('file', fileObj.file);
+        const formData = new FormData();
+        formData.append('file', fileObj.file);
 
-            const uploadRes = await fetch('/api/upload', {
-                method: 'POST',
-                body: formData,
-            });
+        const uploadRes = await fetch('/api/upload', {
+            method: 'POST',
+            body: formData,
+        });
 
-            const uploadData = await uploadRes.json();
+        const uploadData = await uploadRes.json();
 
-            if (!uploadData.success) {
-                throw new Error(uploadData.error || 'Upload failed');
-            }
-
-            // 2. Create Gallery Entry
-            let width = uploadData.width;
-            let height = uploadData.height;
-
-            if ((!width || !height) && fileObj.preview && fileObj.preview !== 'HEIC_PLACEHOLDER') {
-                try {
-                    const img = document.createElement('img');
-                    img.src = fileObj.preview;
-                    await new Promise((resolve) => {
-                        img.onload = resolve;
-                        img.onerror = () => resolve();
-                    });
-                    width = img.naturalWidth || 800;
-                    height = img.naturalHeight || 600;
-                } catch (e) {
-                    console.warn('Failed to get client-side image dimensions', e);
-                    width = 800;
-                    height = 600;
-                }
-            }
-
-            const galleryData = {
-                src: uploadData.url,
-                thumbnail: uploadData.thumbnailUrl,
-                description: fileObj.description || 'No description', // Use individual description or default
-                width: width || 800,
-                height: height || 600
-            };
-
-            const galleryRes = await fetch('/api/gallery', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(galleryData),
-            });
-
-            const galleryResult = await galleryRes.json();
-
-            if (galleryResult.success) {
-                return galleryResult.data;
-            } else {
-                throw new Error(galleryResult.error);
-            }
-
-        } catch (error) {
-            console.error(`Error uploading ${fileObj.file.name}:`, error);
-            throw error; // Re-throw to handle in the loop
+        if (!uploadData.success) {
+            throw new Error(uploadData.error || 'Upload failed');
         }
+
+        let width = uploadData.width;
+        let height = uploadData.height;
+
+        if ((!width || !height) && fileObj.preview && fileObj.preview !== 'HEIC_PLACEHOLDER') {
+            try {
+                const img = document.createElement('img');
+                img.src = fileObj.preview;
+                await new Promise((resolve) => {
+                    img.onload = resolve;
+                    img.onerror = () => resolve();
+                });
+                width = img.naturalWidth || 800;
+                height = img.naturalHeight || 600;
+            } catch (e) {
+                console.warn('Failed to get client-side image dimensions', e);
+                width = 800;
+                height = 600;
+            }
+        }
+
+        const galleryData = {
+            src: uploadData.url,
+            thumbnail: uploadData.thumbnailUrl,
+            description: fileObj.description || 'No description',
+            width: width || 800,
+            height: height || 600
+        };
+
+        const galleryRes = await fetch('/api/gallery', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(galleryData),
+        });
+
+        const galleryResult = await galleryRes.json();
+
+        if (galleryResult.success) {
+            return galleryResult.data;
+        }
+        throw new Error(galleryResult.error);
     };
 
     const handleSubmit = async (e) => {
@@ -230,6 +252,7 @@ export default function GalleryManager() {
         setUploading(true);
         let successCount = 0;
         let failCount = 0;
+        let lastError = '';
 
         try {
             for (let i = 0; i < files.length; i++) {
@@ -246,17 +269,17 @@ export default function GalleryManager() {
                     successCount++;
                 } catch (error) {
                     failCount++;
+                    lastError = `${fileObj.file.name}: ${error.message}`;
                 }
             }
 
             if (successCount > 0) {
-                showNotification(true, `Successfully uploaded ${successCount} images.${failCount > 0 ? ` Failed: ${failCount}` : ''}`);
-                clearFiles(); // Only clear on success (or partial success)
+                showNotification(true, `Uploaded ${successCount} photo${successCount === 1 ? '' : 's'}${failCount > 0 ? `. Failed: ${failCount} (${lastError})` : ''}`);
+                clearFiles();
             } else {
-                showNotification(false, 'All uploads failed. Please try again.');
+                showNotification(false, `All uploads failed. ${lastError}`);
             }
-
-        } catch (error) {
+        } catch {
             showNotification(false, 'Upload process encountered an error.');
         } finally {
             setUploading(false);
@@ -279,13 +302,12 @@ export default function GalleryManager() {
             const data = await res.json();
             if (data.success) {
                 setImages(images.filter(img => img._id !== id));
-                // Also remove from selection if present
                 if (selectedImages.has(id)) {
                     const newSelected = new Set(selectedImages);
                     newSelected.delete(id);
                     setSelectedImages(newSelected);
                 }
-                showNotification(true, 'Image deleted successfully');
+                showNotification(true, 'Image deleted');
             } else {
                 showNotification(false, data.error);
             }
@@ -296,7 +318,6 @@ export default function GalleryManager() {
     };
 
     // --- Bulk Selection & Deletion Logic ---
-
     const toggleSelection = (id) => {
         const newSelected = new Set(selectedImages);
         if (newSelected.has(id)) {
@@ -309,7 +330,7 @@ export default function GalleryManager() {
 
     const selectAll = () => {
         if (selectedImages.size === images.length) {
-            setSelectedImages(new Set()); // Deselect all
+            setSelectedImages(new Set());
         } else {
             const allIds = new Set(images.map(img => img._id));
             setSelectedImages(allIds);
@@ -331,7 +352,6 @@ export default function GalleryManager() {
         let deletedCount = 0;
         let failCount = 0;
 
-        // Iterate and delete one by one
         const idsToDelete = Array.from(selectedImages);
 
         for (const id of idsToDelete) {
@@ -343,28 +363,26 @@ export default function GalleryManager() {
 
                 if (data.success) {
                     deletedCount++;
-                    // Optimistically update UI as we go (optional, but good for feedback)
                     setImages(prev => prev.filter(img => img._id !== id));
                 } else {
                     failCount++;
                 }
-            } catch (error) {
+            } catch {
                 failCount++;
             }
         }
 
-        setSelectedImages(new Set()); // Clear selection
+        setSelectedImages(new Set());
         setDeleting(false);
 
         if (deletedCount > 0) {
-            showNotification(true, `Successfully deleted ${deletedCount} images.${failCount > 0 ? ` Failed: ${failCount}` : ''}`);
+            showNotification(true, `Deleted ${deletedCount} image${deletedCount === 1 ? '' : 's'}${failCount > 0 ? `. Failed: ${failCount}` : ''}`);
         } else {
             showNotification(false, 'Failed to delete images.');
         }
     };
 
-    // --- Pin and Order Logic ---
-
+    // --- Pin, Edit & Order Logic ---
     const togglePin = async (id, currentStatus) => {
         try {
             const res = await fetch(`/api/gallery`, {
@@ -375,7 +393,7 @@ export default function GalleryManager() {
             const data = await res.json();
             if (data.success) {
                 fetchImages();
-                showNotification(true, currentStatus ? 'Image unpinned' : 'Image pinned to top');
+                showNotification(true, currentStatus ? 'Photo unpinned' : 'Photo pinned to top');
             } else {
                 showNotification(false, data.error);
             }
@@ -385,12 +403,42 @@ export default function GalleryManager() {
         }
     };
 
+    const openEditDialog = (image) => {
+        setEditingImage(image);
+        setEditDescription(image.description === 'No description' ? '' : (image.description || ''));
+    };
+
+    const saveEditDialog = async (e) => {
+        e.preventDefault();
+        if (!editingImage) return;
+        setSavingEdit(true);
+        try {
+            const nextDesc = editDescription.trim() || 'No description';
+            const res = await fetch('/api/gallery', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: editingImage._id, update: { description: nextDesc } }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                setImages((prev) => prev.map((img) => (img._id === editingImage._id ? { ...img, description: nextDesc } : img)));
+                setEditingImage(null);
+                showNotification(true, 'Caption saved');
+            } else {
+                showNotification(false, data.error || 'Failed to update caption');
+            }
+        } catch {
+            showNotification(false, 'Failed to update caption');
+        } finally {
+            setSavingEdit(false);
+        }
+    };
+
     const handleDragStartItem = (e, index) => {
         setDraggedItemIdx(index);
-        // Required for Firefox
         if (e.dataTransfer) {
             e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('text/html', e.target);
+            e.dataTransfer.setData('text/plain', String(index));
         }
     };
 
@@ -400,45 +448,54 @@ export default function GalleryManager() {
     };
 
     const handleDragOverItem = (e) => {
-        e.preventDefault(); // Necessary to allow dropping
+        e.preventDefault();
+    };
+
+    const persistImageOrder = async (orderedImages) => {
+        setImages(orderedImages);
+        setIsSavingOrder(true);
+        try {
+            const updates = orderedImages.map((img, i) => ({ id: img._id, order: i }));
+            const res = await fetch('/api/gallery', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ items: updates })
+            });
+            const data = await res.json();
+            if (data.success) {
+                showNotification(true, 'Photo order saved');
+            } else {
+                showNotification(false, data.error || 'Failed to save order');
+                fetchImages();
+            }
+        } catch (error) {
+            console.error('Order save error:', error);
+            showNotification(false, 'Failed to save order');
+            fetchImages();
+        } finally {
+            setIsSavingOrder(false);
+        }
+    };
+
+    const moveImage = async (index, direction) => {
+        const targetIndex = index + direction;
+        if (targetIndex < 0 || targetIndex >= images.length || isSavingOrder) return;
+        const orderedImages = [...images];
+        const [movedImage] = orderedImages.splice(index, 1);
+        orderedImages.splice(targetIndex, 0, movedImage);
+        await persistImageOrder(orderedImages);
     };
 
     const handleDragEndItem = async () => {
         if (draggedItemIdx !== null && dragOverItemIdx !== null && draggedItemIdx !== dragOverItemIdx) {
             const newImages = [...images];
-            const draggedItem = newImages[draggedItemIdx];
-            newImages.splice(draggedItemIdx, 1);
-            newImages.splice(dragOverItemIdx, 0, draggedItem);
-            setImages(newImages); // Optimistic UI update
-
-            setIsSavingOrder(true);
-            try {
-                // We map all images on the page to assign a new sequential order index
-                const updates = newImages.map((img, i) => ({ id: img._id, order: i }));
-                const res = await fetch('/api/gallery', {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ items: updates })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    showNotification(true, 'New arrangement saved successfully');
-                } else {
-                    showNotification(false, data.error || 'Failed to save order');
-                    fetchImages(); // Revert to old order on failure
-                }
-            } catch (error) {
-                console.error('Order save error:', error);
-                showNotification(false, 'Failed to save order');
-                fetchImages();
-            } finally {
-                setIsSavingOrder(false);
-            }
+            const [draggedImage] = newImages.splice(draggedItemIdx, 1);
+            newImages.splice(dragOverItemIdx, 0, draggedImage);
+            await persistImageOrder(newImages);
         }
         setDraggedItemIdx(null);
         setDragOverItemIdx(null);
     };
-
 
     const handleMigration = async () => {
         if (!(await confirm({
@@ -448,7 +505,7 @@ export default function GalleryManager() {
         }))) return;
 
         setMigrating(true);
-        setMigrationProgress({ message: 'Starting migration...', percentage: 0 });
+        setMigrationProgress({ message: 'Starting thumbnail generation…', percentage: 0 });
 
         try {
             let skip = 0;
@@ -480,201 +537,221 @@ export default function GalleryManager() {
                 }
             }
 
-            showNotification(true, 'Migration completed successfully!');
-            fetchImages(); // Refresh gallery
+            showNotification(true, 'Thumbnails generated');
+            fetchImages();
         } catch (error) {
             console.error('Migration failed:', error);
-            showNotification(false, `Migration failed: ${error.message}`);
+            showNotification(false, `Thumbnail generation failed: ${error.message}`);
         } finally {
             setMigrating(false);
             setMigrationProgress(null);
         }
     };
 
+    const pinnedCount = useMemo(() => images.filter((i) => i.isPinned).length, [images]);
+    const rawCount = useMemo(() => images.filter((i) => !i.thumbnail).length, [images]);
+
+    const visibleImages = useMemo(() => {
+        const q = searchQuery.trim().toLowerCase();
+        return images
+            .map((image, idx) => ({ image, idx }))
+            .filter(({ image }) => {
+                if (filterMode === 'pinned' && !image.isPinned) return false;
+                if (filterMode === 'raw' && image.thumbnail) return false;
+                if (q && !(image.description || '').toLowerCase().includes(q)) return false;
+                return true;
+            });
+    }, [images, searchQuery, filterMode]);
+    const canReorder = filterMode === 'all' && !searchQuery.trim();
+
     return (
-        <div className="space-y-12">
-            {/* Migration Section */}
-            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 md:p-8 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
-
-                <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-                    <div>
-                        <h2 className="text-sm font-mono text-cyan-400 uppercase tracking-widest mb-2 flex items-center gap-2">
-                            <RefreshCw size={14} className={migrating ? "animate-spin" : ""} />
-                            Optimization Protocol
-                        </h2>
-                        <p className="text-slate-400 text-sm max-w-md">
-                            Execute thumbnail generation sequence for legacy assets to enhance system performance.
-                        </p>
-                    </div>
-                    <button
-                        onClick={handleMigration}
-                        disabled={migrating}
-                        className="px-6 py-2 rounded bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/20 hover:border-cyan-500/50 transition-all font-bold text-xs uppercase tracking-wide disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                    >
-                        {migrating ? 'PROCESSING_BATCH...' : 'INITIATE_OPTIMIZATION'}
-                    </button>
-                </div>
-
-                {migrationProgress && (
-                    <div className="mt-8 p-4 bg-slate-950/50 rounded-lg border border-white/10 font-mono text-xs">
-                        <div className="flex justify-between items-end mb-2">
-                            <span className="text-cyan-400 uppercase tracking-wider">{migrationProgress.message}</span>
-                            <span className="text-slate-400">{migrationProgress.percentage}%</span>
-                        </div>
-                        {migrationProgress.percentage !== undefined && (
-                            <div className="h-1 bg-white/10 rounded-full overflow-hidden">
-                                <div
-                                    className="h-full bg-cyan-500 transition-all duration-300 ease-out shadow-[0_0_10px_rgba(6,182,212,0.5)]"
-                                    style={{ width: `${migrationProgress.percentage}%` }}
+        <div className="adm-sc-root space-y-6">
+            {editingImage && (
+                <div className="adm-overlay" role="dialog" aria-modal="true" aria-labelledby="gallery-edit-title">
+                    <form onSubmit={saveEditDialog} className="adm-dialog">
+                        <header className="adm-panel-head">
+                            <h3 id="gallery-edit-title" className="adm-panel-title">Edit photo caption</h3>
+                            <button
+                                type="button"
+                                onClick={() => setEditingImage(null)}
+                                className="adm-icon-btn"
+                                aria-label="Close edit dialog"
+                            >
+                                <FaXmark aria-hidden="true" />
+                            </button>
+                        </header>
+                        <div className="adm-panel-body space-y-4">
+                            <div className="adm-sc-photo-media rounded-[10px] border border-[var(--hairline)]">
+                                <Image
+                                    src={editingImage.thumbnail || editingImage.src}
+                                    alt={editingImage.description || 'Photo'}
+                                    fill
+                                    sizes="28rem"
+                                    unoptimized
+                                    className="object-cover"
                                 />
                             </div>
-                        )}
-                        {migrationProgress.processed && migrationProgress.total && (
-                            <div className="mt-2 text-slate-500 text-[10px] text-right">
-                                PROCESSED: {migrationProgress.processed} / {migrationProgress.total}
-                            </div>
-                        )}
-                    </div>
-                )}
-            </div>
-
-            {/* Upload Section */}
-            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 md:p-8 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-pink-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
-
-                <h2 className="text-sm font-mono text-pink-400 uppercase tracking-widest mb-8 flex items-center gap-4">
-                    Upload Interface
-                    <div className="h-px bg-pink-500/20 flex-grow" />
-                </h2>
-
-                <form onSubmit={handleSubmit} className="relative z-10 space-y-6">
-                    {/* Drop Zone */}
-                    <div
-                        className={`border-2 border-dashed rounded-xl p-12 text-center transition-all duration-300 group/drop
-                            ${dragActive
-                                ? 'border-pink-500 bg-pink-500/5'
-                                : 'border-white/10 hover:border-pink-500/30 hover:bg-slate-800/50'
-                            }
-                        `}
-                        onDragEnter={handleDrag}
-                        onDragLeave={handleDrag}
-                        onDragOver={handleDrag}
-                        onDrop={handleDrop}
-                    >
-                        <input
-                            type="file"
-                            id="file-upload"
-                            className="hidden"
-                            onChange={handleChange}
-                            accept="image/*"
-                            multiple
-                        />
-                        <label htmlFor="file-upload" className="cursor-pointer flex flex-col items-center gap-4">
-                            <div className={`p-4 rounded-full bg-pink-500/10 text-pink-400 transform transition-transform duration-500 group-hover/drop:scale-110 group-hover/drop:rotate-12`}>
-                                <Upload size={32} />
-                            </div>
-                            <div>
-                                <span className="block text-xl font-bold text-white mb-2">Initialize Upload Sequence</span>
-                                <span className="block text-sm text-slate-400 font-mono">Drag & drop or click to select visual assets (Multiple allowed)</span>
-                            </div>
-                        </label>
-                    </div>
-
-                    {/* Previews List */}
-                    {files.length > 0 && (
-                        <div className="space-y-4">
-                            <div className="flex justify-between items-end">
-                                <h3 className="text-white text-sm font-bold uppercase tracking-wider">
-                                    Selected Assets ({files.length})
-                                </h3>
-                                <button
-                                    type="button"
-                                    onClick={clearFiles}
-                                    className="text-xs text-red-400 hover:text-red-300 underline"
-                                >
-                                    Clear All
+                            <Field label="Caption" help="Shown when visitors inspect the photo in the gallery.">
+                                <textarea
+                                    value={editDescription}
+                                    onChange={(e) => setEditDescription(e.target.value)}
+                                    rows={3}
+                                    className="adm-input"
+                                    placeholder="Describe this photo…"
+                                    autoFocus
+                                />
+                            </Field>
+                            <div className="flex justify-end gap-2">
+                                <button type="button" onClick={() => setEditingImage(null)} className="adm-btn">
+                                    Cancel
+                                </button>
+                                <button type="submit" disabled={savingEdit} className="adm-btn adm-btn-primary">
+                                    {savingEdit ? <FaSpinner className="animate-spin" aria-hidden="true" /> : <FaFloppyDisk aria-hidden="true" />}
+                                    Save caption
                                 </button>
                             </div>
+                        </div>
+                    </form>
+                </div>
+            )}
 
-                            <div className="grid gap-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                                {files.map((fileObj, index) => (
-                                    <div key={fileObj.id} className="bg-slate-950/50 rounded-lg border border-white/10 p-4 flex gap-4 items-start">
-                                        {/* Thumbnail */}
-                                        <div className="w-24 h-24 shrink-0 bg-black/40 rounded border border-white/5 relative overflow-hidden flex items-center justify-center">
-                                            {fileObj.preview === 'HEIC_PLACEHOLDER' ? (
-                                                <div className="text-center p-2">
-                                                    <div className="text-pink-500 text-xs font-bold font-mono">HEIC</div>
+            <div className="adm-stats">
+                <Stat label="Photos" value={images.length} hint="Drag cards to reorder" />
+                <Stat label="Pinned" value={pinnedCount} hint="Shown first on /gallery" />
+                <Stat label="Queued to upload" value={files.length} hint={uploading ? 'Uploading batch…' : 'Ready in dropzone'} />
+                <Stat
+                    label="Missing thumbnails"
+                    value={rawCount}
+                    hint={rawCount > 0 ? 'Run thumbnail generator' : 'All thumbnails ready'}
+                />
+            </div>
+
+            <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
+                <Panel
+                    title="Upload photos"
+                    actions={
+                        files.length > 0 ? (
+                            <button type="button" onClick={clearFiles} className="adm-btn adm-btn-quiet">
+                                Clear queue ({files.length})
+                            </button>
+                        ) : null
+                    }
+                >
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div
+                            data-active={dragActive}
+                            className="adm-sc-drop"
+                            onDragEnter={handleDrag}
+                            onDragLeave={handleDrag}
+                            onDragOver={handleDrag}
+                            onDrop={handleDrop}
+                        >
+                            <input
+                                type="file"
+                                id="file-upload"
+                                className="sr-only"
+                                onChange={handleChange}
+                                accept="image/*,.heic,.heif"
+                                multiple
+                            />
+                            <label htmlFor="file-upload" className="flex cursor-pointer flex-col items-center gap-2">
+                                <FaUpload className="text-xl text-[var(--adm-accent-ink)]" aria-hidden="true" />
+                                <span className="text-sm font-semibold text-[var(--text-bright)]">
+                                    Drop photos here or click to browse
+                                </span>
+                                <span className="adm-help">
+                                    Supports JPEG, PNG, WebP and HEIC. Multiple files allowed.
+                                </span>
+                            </label>
+                        </div>
+
+                        {files.length > 0 && (
+                            <div className="space-y-4">
+                                <div className="max-h-96 space-y-3 overflow-y-auto">
+                                    {files.map((fileObj) => (
+                                        <div key={fileObj.id} className="adm-sc-item">
+                                            <div className="adm-sc-item-head">
+                                                <span className="min-w-0 flex-1 truncate font-mono text-xs text-[var(--text-bright)]">
+                                                    {fileObj.file.name}
+                                                </span>
+                                                <Badge>{(fileObj.file.size / 1024 / 1024).toFixed(2)} MB</Badge>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeFile(fileObj.id)}
+                                                    className="adm-icon-btn"
+                                                    title="Remove from queue"
+                                                    aria-label={`Remove ${fileObj.file.name}`}
+                                                >
+                                                    <FaXmark aria-hidden="true" />
+                                                </button>
+                                            </div>
+                                            <div className="adm-sc-item-body sm:flex-row sm:items-start">
+                                                <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-lg border border-[var(--hairline)] bg-[var(--bg-secondary)] flex items-center justify-center">
+                                                    {fileObj.preview === 'HEIC_PLACEHOLDER' ? (
+                                                        <span className="font-mono text-xs text-[var(--text-secondary)]">
+                                                            {fileObj.converting ? 'HEIC…' : 'HEIC'}
+                                                        </span>
+                                                    ) : (
+                                                        <Image
+                                                            src={fileObj.preview}
+                                                            alt={fileObj.file.name}
+                                                            fill
+                                                            className="object-contain"
+                                                        />
+                                                    )}
                                                 </div>
-                                            ) : (
-                                                <Image
-                                                    src={fileObj.preview}
-                                                    alt="Preview"
-                                                    fill
-                                                    className="object-contain"
-                                                />
-                                            )}
-                                        </div>
 
-                                        {/* Inputs */}
-                                        <div className="flex-1 space-y-2">
-                                            <div className="flex justify-between">
-                                                <span className="text-white text-xs font-mono truncate max-w-[200px]">{fileObj.file.name}</span>
-                                                <span className="text-slate-500 text-[10px] uppercase font-mono">{(fileObj.file.size / 1024 / 1024).toFixed(2)} MB</span>
-                                            </div>
-
-                                            <div className="relative">
-                                                <textarea
-                                                    value={fileObj.description || ''}
-                                                    onChange={(e) => updateFileDescription(fileObj.id, e.target.value)}
-                                                    className={`w-full bg-slate-900 border border-white/10 rounded-md p-2 ${aiEnabled ? 'pr-10' : ''} text-slate-200 text-xs focus:border-pink-500/50 outline-none transition-all placeholder:text-slate-700 font-mono resize-none`}
-                                                    placeholder="// Enter description (optional)..."
-                                                    rows={2}
-                                                />
-                                                {aiEnabled && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => generateCaption(fileObj.id, fileObj.file)}
-                                                        disabled={generating.has(fileObj.id)}
-                                                        className="absolute bottom-2 right-2 p-1.5 rounded-lg bg-pink-500/10 text-pink-400 hover:bg-pink-500 hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed group/ai"
-                                                        title="Generate Caption with AI"
-                                                    >
-                                                        {generating.has(fileObj.id) ? (
-                                                            <Loader2 size={12} className="animate-spin" />
-                                                        ) : (
-                                                            <Sparkles size={12} className="transform group-hover/ai:scale-110 transition-transform" />
+                                                <div className="min-w-0 flex-1 space-y-2">
+                                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                                        <label htmlFor={`caption-${fileObj.id}`} className="adm-label">
+                                                            Caption (optional)
+                                                        </label>
+                                                        {aiEnabled && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => generateCaption(fileObj.id, fileObj.file)}
+                                                                disabled={generating.has(fileObj.id)}
+                                                                className="adm-btn adm-btn-quiet"
+                                                            >
+                                                                {generating.has(fileObj.id) ? (
+                                                                    <FaSpinner className="animate-spin" aria-hidden="true" />
+                                                                ) : (
+                                                                    <FaWandMagicSparkles aria-hidden="true" />
+                                                                )}
+                                                                Generate caption
+                                                            </button>
                                                         )}
-                                                    </button>
-                                                )}
+                                                    </div>
+                                                    <textarea
+                                                        id={`caption-${fileObj.id}`}
+                                                        value={fileObj.description || ''}
+                                                        onChange={(e) => updateFileDescription(fileObj.id, e.target.value)}
+                                                        className="adm-input !min-h-14"
+                                                        placeholder="Describe this photo…"
+                                                        rows={2}
+                                                    />
+                                                </div>
                                             </div>
                                         </div>
+                                    ))}
+                                </div>
 
-                                        {/* Remove Action */}
-                                        <button
-                                            type="button"
-                                            onClick={() => removeFile(fileObj.id)}
-                                            className="text-slate-500 hover:text-red-400 transition-colors p-1"
-                                            title="Remove"
-                                        >
-                                            <X size={16} />
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* Upload Button & Progress */}
-                            <div className="flex flex-col gap-4 border-t border-white/10 pt-6">
                                 {uploading && uploadProgress && (
-                                    <div className="mb-2">
-                                        <div className="flex justify-between text-xs font-mono mb-1 text-pink-400">
-                                            <span>UPLOADING: {uploadProgress.filename}</span>
+                                    <div className="space-y-1.5">
+                                        <div className="flex justify-between font-mono text-xs text-[var(--text-secondary)]">
+                                            <span className="truncate">Uploading {uploadProgress.filename}</span>
                                             <span>{uploadProgress.current} / {uploadProgress.total}</span>
                                         </div>
-                                        <div className="h-1 bg-white/10 rounded-full overflow-hidden">
-                                            <div
-                                                className="h-full bg-pink-500 transition-all duration-300"
-                                                style={{ width: `${(uploadProgress.current / uploadProgress.total) * 100}%` }}
-                                            />
+                                        <div
+                                            className="adm-sc-progress"
+                                            role="progressbar"
+                                            aria-label="Photo upload progress"
+                                            aria-valuemin={0}
+                                            aria-valuemax={100}
+                                            aria-valuenow={Math.round((uploadProgress.current / uploadProgress.total) * 100)}
+                                            aria-valuetext={`Uploading photo ${uploadProgress.current} of ${uploadProgress.total}: ${uploadProgress.filename}`}
+                                        >
+                                            <div style={{ width: `${(uploadProgress.current / uploadProgress.total) * 100}%` }} />
                                         </div>
                                     </div>
                                 )}
@@ -683,193 +760,279 @@ export default function GalleryManager() {
                                     <button
                                         type="submit"
                                         disabled={uploading}
-                                        className="px-8 py-3 rounded bg-pink-600 hover:bg-pink-500 text-white font-bold transition-all shadow-[0_0_20px_rgba(236,72,153,0.3)] hover:shadow-[0_0_30px_rgba(236,72,153,0.5)] disabled:opacity-50 disabled:cursor-not-allowed text-xs uppercase tracking-widest flex items-center gap-2"
+                                        className="adm-btn adm-btn-primary"
                                     >
                                         {uploading ? (
                                             <>
-                                                <Loader2 className="animate-spin" size={14} />
-                                                TRANSMITTING BATCH...
+                                                <FaSpinner className="animate-spin" aria-hidden="true" />
+                                                Uploading batch…
                                             </>
                                         ) : (
                                             <>
-                                                COMMENCE_BATCH_UPLOAD <Upload size={14} />
+                                                <FaUpload aria-hidden="true" />
+                                                Upload {files.length} {files.length === 1 ? 'photo' : 'photos'}
                                             </>
                                         )}
                                     </button>
                                 </div>
                             </div>
-                        </div>
-                    )}
-                </form>
-            </div>
+                        )}
+                    </form>
+                </Panel>
 
-            {/* Gallery Grid */}
-            <div>
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-                    <h2 className="text-xl font-bold text-white flex items-center gap-3">
-                        <span className="w-2 h-8 bg-pink-500 rounded-full" />
-                        Database Content
-                        <span className="text-sm font-mono text-slate-400 font-normal">({images.length} items)</span>
-                    </h2>
+                <Panel title="Thumbnail optimization">
+                    <div className="space-y-4">
+                        <p className="adm-help">
+                            Generate compressed WebP thumbnails for older photos that were uploaded before automatic thumbnail creation.
+                        </p>
+                        <button
+                            type="button"
+                            onClick={handleMigration}
+                            disabled={migrating}
+                            className="adm-btn w-full"
+                        >
+                            <FaArrowsRotate className={migrating ? 'animate-spin' : ''} aria-hidden="true" />
+                            {migrating ? 'Generating thumbnails…' : 'Generate missing thumbnails'}
+                        </button>
 
-                    <div className="flex gap-3">
-                        {images.length > 0 && (
-                            <button
-                                onClick={selectAll}
-                                className="px-4 py-2 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-white/5 text-xs uppercase tracking-wide flex items-center gap-2 transition-all"
-                            >
-                                {selectedImages.size === images.length ? (
-                                    <>
-                                        <Square size={14} /> Deselect All
-                                    </>
-                                ) : (
-                                    <>
-                                        <CheckSquare size={14} /> Select All
-                                    </>
+                        {migrationProgress && (
+                            <div className="space-y-2 rounded-[10px] border border-[var(--hairline)] bg-[var(--bg-secondary)] p-3">
+                                <div className="flex justify-between font-mono text-xs">
+                                    <span className="text-[var(--text-primary)]">{migrationProgress.message}</span>
+                                    <span className="text-[var(--text-secondary)]">{migrationProgress.percentage}%</span>
+                                </div>
+                                {migrationProgress.percentage !== undefined && (
+                                    <div
+                                        className="adm-sc-progress"
+                                        role="progressbar"
+                                        aria-label="Thumbnail generation progress"
+                                        aria-valuemin={0}
+                                        aria-valuemax={100}
+                                        aria-valuenow={migrationProgress.percentage}
+                                        aria-valuetext={`${migrationProgress.percentage}% complete`}
+                                    >
+                                        <div style={{ width: `${migrationProgress.percentage}%` }} />
+                                    </div>
                                 )}
-                            </button>
-                        )}
-
-                        {selectedImages.size > 0 && (
-                            <button
-                                onClick={handleBulkDelete}
-                                disabled={deleting}
-                                className="px-4 py-2 rounded bg-red-500/20 hover:bg-red-500 hover:text-white text-red-400 border border-red-500/20 transition-all font-bold text-xs uppercase tracking-wide flex items-center gap-2"
-                            >
-                                {deleting ? <Loader2 className="animate-spin" size={14} /> : <Trash2 size={14} />}
-                                Delete Selected ({selectedImages.size})
-                            </button>
-                        )}
-                    </div>
-                </div>
-
-                {loading ? (
-                    <div className="flex justify-center py-20">
-                        <Loader2 className="animate-spin text-pink-500" size={40} />
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        {images.map((image, idx) => {
-                            const isSelected = selectedImages.has(image._id);
-                            const isBeingDragged = draggedItemIdx === idx;
-                            const isDragOver = dragOverItemIdx === idx;
-
-                            return (
-                                <div
-                                    key={image._id}
-                                    draggable
-                                    onDragStart={(e) => handleDragStartItem(e, idx)}
-                                    onDragEnter={(e) => handleDragEnterItem(e, idx)}
-                                    onDragEnd={handleDragEndItem}
-                                    onDragOver={handleDragOverItem}
-                                    className={`group relative bg-slate-900/50 backdrop-blur-xl rounded-xl border overflow-hidden transition-all
-                                        ${isSelected ? 'border-pink-500 ring-1 ring-pink-500' : 'border-white/5 hover:border-pink-500/30'}
-                                        ${isBeingDragged ? 'opacity-40 scale-95' : 'opacity-100 scale-100'}
-                                        ${isDragOver && !isBeingDragged ? 'border-cyan-400 bg-cyan-400/5 translate-y-[-8px]' : ''}
-                                        ${!isBeingDragged ? 'hover:translate-y-[-4px] hover:shadow-xl' : ''}
-                                    `}
-                                    onClick={() => toggleSelection(image._id)}
-                                >
-                                    <div className="aspect-video relative bg-slate-950 cursor-pointer">
-                                        <Image
-                                            src={image.thumbnail || image.src}
-                                            alt={image.description}
-                                            fill
-                                            sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 25vw"
-                                            unoptimized
-                                            className="object-cover transition-transform duration-700 group-hover:scale-105"
-                                        />
-
-                                        {/* Selection & Pin Overlays */}
-                                        <div className="absolute top-2 right-2 z-20 flex gap-2">
-                                            {/* Pin Button */}
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    togglePin(image._id, image.isPinned);
-                                                }}
-                                                className={`w-8 h-8 rounded-lg border flex items-center justify-center transition-all transform
-                                                    ${image.isPinned 
-                                                        ? 'bg-cyan-500 border-cyan-500 text-white opacity-100 scale-100' 
-                                                        : 'bg-black/50 border-white/20 text-white/50 opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100 hover:bg-black/80 hover:border-white'
-                                                    }
-                                                `}
-                                                title={image.isPinned ? "Unpin from top" : "Pin to top"}
-                                            >
-                                                <Pin size={14} className={image.isPinned ? "fill-current" : ""} />
-                                            </button>
-
-                                            {/* Selection Checkbox */}
-                                            <div className={`transition-all duration-200 transform
-                                                ${isSelected ? 'opacity-100 scale-100' : 'opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100'}
-                                            `}>
-                                                <div className={`w-8 h-8 rounded-lg border flex items-center justify-center
-                                                    ${isSelected ? 'bg-pink-500 border-pink-500 text-white' : 'bg-black/50 border-white/20 text-white/50 hover:bg-black/80 hover:border-white'}
-                                                `}>
-                                                    {isSelected && <Check size={14} />}
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-4 pointer-events-none">
-                                            <div className="flex justify-between items-end pointer-events-auto">
-                                                <div className="flex flex-col gap-1">
-                                                    <span className="text-[10px] font-mono text-slate-300 bg-slate-900/50 px-2 py-1 rounded backdrop-blur-sm border border-white/10 w-fit">
-                                                        {new Date(image.createdAt).toLocaleDateString()}
-                                                    </span>
-                                                    {image.isPinned && (
-                                                        <span className="text-[10px] font-bold text-cyan-400 flex items-center gap-1">
-                                                            <Pin size={10} className="fill-current" /> PINNED_PRIORITY
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleDelete(image._id);
-                                                    }}
-                                                    className="p-2 bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white rounded-lg transition-colors border border-red-500/20 backdrop-blur-md"
-                                                    title="Delete Asset"
-                                                >
-                                                    <Trash2 size={16} />
-                                                </button>
-                                            </div>
-                                        </div>
-                                        {!image.thumbnail && (
-                                            <div className="absolute top-2 left-2 px-2 py-1 bg-amber-500/90 text-black text-[10px] uppercase font-bold tracking-wider rounded">
-                                                Raw Asset
-                                            </div>
-                                        )}
-                                        {isSavingOrder && isBeingDragged && (
-                                            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center z-30">
-                                                <Loader2 className="animate-spin text-cyan-400 mb-2" size={24} />
-                                                <span className="text-[10px] font-mono text-cyan-400">SAVING_POSITION...</span>
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="p-4 border-t border-white/5 bg-white/[0.01]">
-                                        <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed" title={image.description}>
-                                            {image.description}
-                                        </p>
-                                    </div>
-                                </div>
-                            );
-                        })}
-
-                        {images.length === 0 && (
-                            <div className="col-span-full py-20 flex flex-col items-center justify-center border-2 border-dashed border-white/10 rounded-2xl bg-slate-900/30">
-                                <div className="p-4 rounded-full bg-white/5 mb-4">
-                                    <ImageIcon size={32} className="text-slate-500" />
-                                </div>
-                                <p className="text-slate-400 font-mono text-sm">NO_VISUAL_DATA_FOUND</p>
+                                {migrationProgress.processed && migrationProgress.total && (
+                                    <p className="adm-help text-right font-mono">
+                                        Processed {migrationProgress.processed} / {migrationProgress.total}
+                                    </p>
+                                )}
                             </div>
                         )}
                     </div>
-                )}
+                </Panel>
             </div>
 
-            {/* Toast Notification */}
-            <Toast notification={notification} />
+            <Panel
+                title={`Library (${visibleImages.length}${visibleImages.length !== images.length ? ` of ${images.length}` : ''})`}
+                actions={
+                    <div className="flex flex-wrap items-center gap-2">
+                        {isSavingOrder && <Badge tone="info">Saving order…</Badge>}
+                        {images.length > 0 && (
+                            <button type="button" onClick={selectAll} className="adm-btn">
+                                {selectedImages.size === images.length ? 'Deselect all' : 'Select all'}
+                            </button>
+                        )}
+                        {selectedImages.size > 0 && (
+                            <button
+                                type="button"
+                                onClick={handleBulkDelete}
+                                disabled={deleting}
+                                className="adm-btn adm-btn-danger"
+                            >
+                                {deleting ? <FaSpinner className="animate-spin" aria-hidden="true" /> : <FaTrash aria-hidden="true" />}
+                                Delete selected ({selectedImages.size})
+                            </button>
+                        )}
+                    </div>
+                }
+            >
+                <div className="space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div className="adm-tabs adm-sc-tabs border-b-0" role="tablist" aria-label="Filter photos">
+                            {[
+                                { id: 'all', label: `All (${images.length})` },
+                                { id: 'pinned', label: `Pinned (${pinnedCount})` },
+                                { id: 'raw', label: `Missing thumbnail (${rawCount})` },
+                            ].map((t) => (
+                                <button
+                                    key={t.id}
+                                    type="button"
+                                    role="tab"
+                                    aria-selected={filterMode === t.id}
+                                    onClick={() => setFilterMode(t.id)}
+                                    className="adm-tab"
+                                >
+                                    {t.label}
+                                </button>
+                            ))}
+                        </div>
+                        <div className="w-full sm:w-64">
+                            <input
+                                type="search"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                placeholder="Filter by caption…"
+                                aria-label="Filter photos by caption"
+                                className="adm-input"
+                            />
+                        </div>
+                    </div>
+
+                    {loading ? (
+                        <Loading label="Loading gallery photos" rows={4} />
+                    ) : visibleImages.length === 0 ? (
+                        <EmptyState
+                            title={images.length === 0 ? 'No photos in the gallery yet' : 'No photos match your filter'}
+                            description={
+                                images.length === 0
+                                    ? 'Drop photos into the upload panel above to populate your public gallery.'
+                                    : 'Clear the search or switch back to All photos.'
+                            }
+                        />
+                    ) : (
+                        <div className="adm-sc-gallery">
+                            {visibleImages.map(({ image, idx }) => {
+                                const isSelected = selectedImages.has(image._id);
+                                const isBeingDragged = draggedItemIdx === idx;
+                                const isDragOver = dragOverItemIdx === idx && !isBeingDragged;
+
+                                return (
+                                    <article
+                                        key={image._id}
+                                        onDragEnter={(e) => handleDragEnterItem(e, idx)}
+                                        onDragEnd={handleDragEndItem}
+                                        onDragOver={handleDragOverItem}
+                                        data-selected={isSelected}
+                                        data-dragging={isBeingDragged}
+                                        data-drag-over={isDragOver}
+                                        className="adm-sc-photo"
+                                    >
+                                        <button
+                                            type="button"
+                                            onClick={() => toggleSelection(image._id)}
+                                            aria-pressed={isSelected}
+                                            aria-label={`${isSelected ? 'Deselect' : 'Select'} ${image.description || 'photo'}`}
+                                            className="adm-sc-photo-media cursor-pointer border-0 p-0 text-left"
+                                        >
+                                            <Image
+                                                src={image.thumbnail || image.src}
+                                                alt={image.description || 'Gallery photo'}
+                                                fill
+                                                sizes="(max-width: 768px) 100vw, (max-width: 1280px) 33vw, 20vw"
+                                                unoptimized
+                                                className="object-cover"
+                                            />
+                                            <span className="absolute left-2 top-2 flex flex-wrap gap-1">
+                                                {image.isPinned && <Badge tone="info">Pinned</Badge>}
+                                                {!image.thumbnail && <Badge tone="warn">Raw</Badge>}
+                                            </span>
+                                        </button>
+
+                                        <div className="adm-sc-photo-foot">
+                                            <p
+                                                className="line-clamp-2 text-xs text-[var(--text-primary)]"
+                                                title={image.description}
+                                            >
+                                                {image.description || 'No description'}
+                                            </p>
+                                            <div className="flex flex-wrap items-center justify-between gap-1 pt-1">
+                                                <span className="adm-num adm-help">
+                                                    {image.createdAt ? new Date(image.createdAt).toLocaleDateString() : ''}
+                                                </span>
+                                                <div className="flex flex-wrap justify-end gap-0.5">
+                                                    <button
+                                                        type="button"
+                                                        draggable={canReorder}
+                                                        onDragStart={(e) => handleDragStartItem(e, idx)}
+                                                        disabled={!canReorder || isSavingOrder}
+                                                        className="adm-icon-btn adm-sc-drag"
+                                                        title={canReorder ? 'Drag to reorder' : 'Clear search and filters to reorder'}
+                                                        aria-label={
+                                                            canReorder
+                                                                ? `Drag ${image.description || 'photo'} to reorder`
+                                                                : 'Clear search and filters to reorder'
+                                                        }
+                                                    >
+                                                        <FaGripVertical aria-hidden="true" />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => moveImage(idx, -1)}
+                                                        disabled={!canReorder || idx === 0 || isSavingOrder}
+                                                        className="adm-icon-btn"
+                                                        title="Move photo up"
+                                                        aria-label={`Move ${image.description || 'photo'} up`}
+                                                    >
+                                                        <FaArrowUp aria-hidden="true" />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => moveImage(idx, 1)}
+                                                        disabled={!canReorder || idx === images.length - 1 || isSavingOrder}
+                                                        className="adm-icon-btn"
+                                                        title="Move photo down"
+                                                        aria-label={`Move ${image.description || 'photo'} down`}
+                                                    >
+                                                        <FaArrowDown aria-hidden="true" />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleSelection(image._id)}
+                                                        className="adm-icon-btn"
+                                                        aria-pressed={isSelected}
+                                                        title={isSelected ? 'Deselect photo' : 'Select photo'}
+                                                        aria-label={isSelected ? 'Deselect photo' : 'Select photo'}
+                                                    >
+                                                        <FaCheck
+                                                            className={isSelected ? 'text-[var(--adm-accent-ink)]' : 'opacity-40'}
+                                                            aria-hidden="true"
+                                                        />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => togglePin(image._id, image.isPinned)}
+                                                        className="adm-icon-btn"
+                                                        aria-pressed={!!image.isPinned}
+                                                        title={image.isPinned ? 'Unpin from top' : 'Pin to top'}
+                                                        aria-label={image.isPinned ? 'Unpin from top' : 'Pin to top'}
+                                                    >
+                                                        <FaThumbtack
+                                                            className={image.isPinned ? 'text-[var(--adm-accent-ink)]' : ''}
+                                                            aria-hidden="true"
+                                                        />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => openEditDialog(image)}
+                                                        className="adm-icon-btn"
+                                                        title="Edit caption"
+                                                        aria-label="Edit caption"
+                                                    >
+                                                        <FaPen aria-hidden="true" />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleDelete(image._id)}
+                                                        className="adm-icon-btn"
+                                                        title="Delete photo"
+                                                        aria-label="Delete photo"
+                                                    >
+                                                        <FaTrash aria-hidden="true" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </article>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+            </Panel>
+
         </div>
     );
 }

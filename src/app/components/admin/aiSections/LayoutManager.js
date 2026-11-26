@@ -8,7 +8,15 @@ import {
     arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, ChevronDown, ChevronRight, Trash2, Loader2, Save, Plus, Eye, EyeOff } from 'lucide-react';
+import {
+    FaChevronDown,
+    FaChevronRight,
+    FaFloppyDisk,
+    FaGripVertical,
+    FaPlus,
+    FaSpinner,
+    FaTrash,
+} from 'react-icons/fa6';
 import { Field, TextInput, TextArea, AccentPicker, newId } from '../aiPage/fields';
 import SectionBodyEditor from '../aiPage/SectionBodyEditor';
 import { DEFAULT_AI_PAGE, AI_SECTION_TYPES } from '@/lib/aiPageDefaults';
@@ -18,17 +26,17 @@ import {
     AI_SUBPAGE_THRESHOLD_MAX,
 } from '@/lib/aiSubPages';
 import { getJson, putJson } from './api';
+import { Badge, Loading, Panel } from '@/app/components/admin/ui';
 
 const TYPE_LABELS = {
     hero: 'Hero',
     skills: 'Skills',
     recommendations: 'Recommendations',
-    credits: 'Free Credits',
-    stats: 'Live Telemetry',
-    prompts: 'Prompt Library',
+    credits: 'Free credits',
+    stats: 'Live telemetry',
+    prompts: 'Prompt library',
 };
 
-// Types whose item content lives in the DB and is edited in the Content tab.
 const DB_BACKED = new Set(['skills', 'recommendations', 'credits', 'prompts']);
 
 function clone(obj) {
@@ -36,12 +44,6 @@ function clone(obj) {
     return JSON.parse(JSON.stringify(obj));
 }
 
-/**
- * The page skeleton editor — section order, visibility, and headings, plus the
- * hero/stats bodies. Persists to /api/ai/layout. Item content for the four
- * DB-backed sections is edited in the Content tab, so their body editors are
- * replaced with a pointer note here.
- */
 export default function LayoutManager({ notify }) {
     const [sections, setSections] = useState([]);
     const [threshold, setThreshold] = useState(String(DEFAULT_AI_PAGE.subPageThreshold ?? AI_SUBPAGE_THRESHOLD));
@@ -112,83 +114,89 @@ export default function LayoutManager({ notify }) {
             const subPageThreshold = clampThreshold(threshold);
             setThreshold(String(subPageThreshold));
             await putJson('/api/ai/layout', { sections, subPageThreshold });
-            notify?.(true, 'Layout saved.');
+            notify?.(true, 'Layout saved');
         } catch (e) {
-            notify?.(false, e.message || 'Save failed.');
+            notify?.(false, e.message || 'Save failed');
         } finally {
             setSaving(false);
         }
     };
 
     if (loading) {
-        return (
-            <div className="flex items-center gap-3 py-16 text-slate-400">
-                <Loader2 className="h-5 w-5 animate-spin" /> Loading layout…
-            </div>
-        );
+        return <Panel><Loading label="Loading AI hub layout" rows={5} /></Panel>;
     }
 
+    const enabledCount = sections.filter((s) => s.enabled !== false).length;
+
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="min-w-0">
-                    <label htmlFor="ai-subpage-threshold" className="block text-sm font-semibold text-white">
-                        Sub-page overflow threshold
-                    </label>
-                    <p className="mt-1 text-xs text-slate-400">
-                        When a section has more than this many items, the{' '}
-                        <span className="font-mono text-cyan-400">/ai</span> hub shows only this many and adds a{' '}
-                        <span className="font-mono text-cyan-400">See all →</span> link to its sub-page
-                        (e.g. <span className="font-mono text-cyan-400">/ai/skills</span>).
-                    </p>
-                </div>
-                <input
-                    id="ai-subpage-threshold"
-                    type="number"
-                    min={AI_SUBPAGE_THRESHOLD_MIN}
-                    max={AI_SUBPAGE_THRESHOLD_MAX}
-                    value={threshold}
-                    onChange={(e) => setThreshold(e.target.value)}
-                    onBlur={() => setThreshold(String(clampThreshold(threshold)))}
-                    className="w-full shrink-0 rounded-lg border border-white/10 bg-black/30 px-3 py-2 font-mono text-sm text-white outline-none transition-colors focus:border-cyan-400/50 sm:w-28"
-                />
+        <div className="adm-sc-split">
+            <div className="adm-sc-col">
+                <Panel
+                    title="Sections order & headings"
+                    actions={
+                        <div className="flex flex-wrap items-center gap-2">
+                            <Badge tone="ok">{enabledCount} / {sections.length} visible</Badge>
+                            <AddSectionMenu onAdd={addSection} />
+                        </div>
+                    }
+                >
+                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+                        <SortableContext items={sections.map((s) => s.id)} strategy={verticalListSortingStrategy}>
+                            <div className="space-y-3">
+                                {sections.map((section) => (
+                                    <SortableSection
+                                        key={section.id}
+                                        section={section}
+                                        open={openId === section.id}
+                                        onToggleOpen={() => setOpenId(openId === section.id ? null : section.id)}
+                                        onChange={(patch) => updateSection(section.id, patch)}
+                                        onChangeData={(data) => updateSectionData(section.id, data)}
+                                        onRemove={() => removeSection(section.id)}
+                                    />
+                                ))}
+                            </div>
+                        </SortableContext>
+                    </DndContext>
+                </Panel>
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-4">
-                <p className="font-mono text-xs text-slate-500">
-                    {sections.filter((s) => s.enabled !== false).length}/{sections.length} sections live · drag to reorder
-                </p>
-                <div className="flex items-center gap-3">
-                    <AddSectionMenu onAdd={addSection} />
+            <aside className="adm-sc-aside">
+                <Panel title="Publish layout" className="adm-sc-save">
+                    <p className="adm-help mb-4">
+                        Saves section ordering, visibility, titles and overflow threshold to the public /ai hub.
+                    </p>
                     <button
                         type="button"
                         onClick={save}
                         disabled={saving}
-                        className="flex items-center gap-2 rounded-xl border border-cyan-500/30 bg-cyan-500/15 px-5 py-2.5 font-mono text-xs uppercase tracking-wider text-cyan-300 transition-colors hover:bg-cyan-500/25 disabled:opacity-50"
+                        className="adm-btn adm-btn-primary w-full"
                     >
-                        {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                        Save layout
+                        {saving ? <FaSpinner className="animate-spin" aria-hidden="true" /> : <FaFloppyDisk aria-hidden="true" />}
+                        {saving ? 'Saving…' : 'Save layout'}
                     </button>
-                </div>
-            </div>
+                </Panel>
 
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-                <SortableContext items={sections.map((s) => s.id)} strategy={verticalListSortingStrategy}>
-                    <div className="space-y-3">
-                        {sections.map((section) => (
-                            <SortableSection
-                                key={section.id}
-                                section={section}
-                                open={openId === section.id}
-                                onToggleOpen={() => setOpenId(openId === section.id ? null : section.id)}
-                                onChange={(patch) => updateSection(section.id, patch)}
-                                onChangeData={(data) => updateSectionData(section.id, data)}
-                                onRemove={() => removeSection(section.id)}
-                            />
-                        ))}
+                <Panel title="Sub-page overflow">
+                    <div className="adm-field">
+                        <label htmlFor="ai-subpage-threshold" className="adm-label">
+                            Max items before overflow link
+                        </label>
+                        <input
+                            id="ai-subpage-threshold"
+                            type="number"
+                            min={AI_SUBPAGE_THRESHOLD_MIN}
+                            max={AI_SUBPAGE_THRESHOLD_MAX}
+                            value={threshold}
+                            onChange={(e) => setThreshold(e.target.value)}
+                            onBlur={() => setThreshold(String(clampThreshold(threshold)))}
+                            className="adm-input font-mono"
+                        />
+                        <p className="adm-help">
+                            When a section has more than this many items, <code className="adm-code">/ai</code> shows this many and links to its sub-page (such as <code className="adm-code">/ai/skills</code>).
+                        </p>
                     </div>
-                </SortableContext>
-            </DndContext>
+                </Panel>
+            </aside>
         </div>
     );
 }
@@ -200,29 +208,34 @@ function AddSectionMenu({ onAdd }) {
             <button
                 type="button"
                 onClick={() => setOpen((v) => !v)}
-                className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 font-mono text-xs uppercase tracking-wider text-slate-300 transition-colors hover:bg-white/10"
+                aria-expanded={open}
+                className="adm-btn"
             >
-                <Plus className="h-4 w-4" /> Add section
+                <FaPlus aria-hidden="true" /> Add section
             </button>
             {open && (
-                <div
-                    className="absolute right-0 z-20 mt-2 w-52 overflow-hidden rounded-xl border border-white/10 bg-[#0b0f19] shadow-2xl"
-                    onMouseLeave={() => setOpen(false)}
-                >
-                    {AI_SECTION_TYPES.map((type) => (
-                        <button
-                            key={type}
-                            type="button"
-                            onClick={() => {
-                                onAdd(type);
-                                setOpen(false);
-                            }}
-                            className="block w-full px-4 py-2.5 text-left text-sm text-slate-300 transition-colors hover:bg-cyan-500/10 hover:text-cyan-300"
-                        >
-                            {TYPE_LABELS[type] || type}
-                        </button>
-                    ))}
-                </div>
+                <>
+                    <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+                    <div
+                        className="adm-dialog absolute right-0 top-full z-20 mt-2 w-52 p-1"
+                        role="menu"
+                    >
+                        {AI_SECTION_TYPES.map((type) => (
+                            <button
+                                key={type}
+                                type="button"
+                                role="menuitem"
+                                onClick={() => {
+                                    onAdd(type);
+                                    setOpen(false);
+                                }}
+                                className="adm-row rounded-lg text-sm"
+                            >
+                                {TYPE_LABELS[type] || type}
+                            </button>
+                        ))}
+                    </div>
+                </>
             )}
         </div>
     );
@@ -238,48 +251,59 @@ function SortableSection({ section, open, onToggleOpen, onChange, onChangeData, 
         <div
             ref={setNodeRef}
             style={style}
-            className={`rounded-2xl border bg-white/[0.02] transition-colors ${enabled ? 'border-white/10' : 'border-white/5 opacity-60'}`}
+            className={`adm-sc-item ${enabled ? '' : 'opacity-65'}`}
         >
-            <div className="flex items-center gap-3 p-4">
+            <div className="adm-sc-item-head">
                 <button
                     type="button"
                     {...attributes}
                     {...listeners}
-                    className="cursor-grab touch-none text-slate-600 transition-colors hover:text-cyan-400 active:cursor-grabbing"
-                    title="Reorder"
+                    className="adm-icon-btn adm-sc-drag"
+                    title="Reorder section"
+                    aria-label={`Reorder ${section.title || section.type}`}
                 >
-                    <GripVertical className="h-5 w-5" />
-                </button>
-
-                <button type="button" onClick={onToggleOpen} className="flex flex-1 items-center gap-3 text-left">
-                    {open ? <ChevronDown className="h-4 w-4 text-slate-500" /> : <ChevronRight className="h-4 w-4 text-slate-500" />}
-                    <span className="rounded-md bg-white/5 px-2 py-0.5 font-mono text-[0.65rem] uppercase tracking-wider text-slate-400">
-                        {TYPE_LABELS[section.type] || section.type}
-                    </span>
-                    <span className="text-sm font-semibold text-white">{section.title || 'Untitled section'}</span>
+                    <FaGripVertical aria-hidden="true" />
                 </button>
 
                 <button
                     type="button"
-                    onClick={() => onChange({ enabled: !enabled })}
-                    className={`rounded-md p-2 transition-colors ${enabled ? 'text-cyan-400 hover:bg-cyan-500/10' : 'text-slate-600 hover:bg-white/5'}`}
-                    title={enabled ? 'Enabled — click to hide' : 'Hidden — click to show'}
+                    onClick={onToggleOpen}
+                    aria-expanded={open}
+                    className="flex min-w-0 flex-1 items-center gap-2.5 text-left"
                 >
-                    {enabled ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                    {open ? (
+                        <FaChevronDown className="shrink-0 text-xs text-[var(--text-secondary)]" aria-hidden="true" />
+                    ) : (
+                        <FaChevronRight className="shrink-0 text-xs text-[var(--text-secondary)]" aria-hidden="true" />
+                    )}
+                    <Badge>{TYPE_LABELS[section.type] || section.type}</Badge>
+                    <span className="truncate text-sm font-semibold text-[var(--text-bright)]">
+                        {section.title || 'Untitled section'}
+                    </span>
                 </button>
+
+                <button
+                    type="button"
+                    role="switch"
+                    aria-checked={enabled}
+                    aria-label={`Show ${section.title || section.type} section`}
+                    onClick={() => onChange({ enabled: !enabled })}
+                    className="adm-switch"
+                />
                 <button
                     type="button"
                     onClick={onRemove}
-                    className="rounded-md p-2 text-slate-600 transition-colors hover:bg-red-500/10 hover:text-red-400"
+                    className="adm-icon-btn"
                     title="Delete section"
+                    aria-label={`Delete ${section.title || section.type} section`}
                 >
-                    <Trash2 className="h-4 w-4" />
+                    <FaTrash aria-hidden="true" />
                 </button>
             </div>
 
             {open && (
-                <div className="space-y-5 border-t border-white/5 p-5">
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="adm-sc-item-body">
+                    <div className="adm-sc-fields">
                         <Field label="Eyebrow">
                             <TextInput value={section.eyebrow} onChange={(eyebrow) => onChange({ eyebrow })} />
                         </Field>
@@ -294,12 +318,10 @@ function SortableSection({ section, open, onToggleOpen, onChange, onChangeData, 
                         <TextArea value={section.subtitle} rows={2} onChange={(subtitle) => onChange({ subtitle })} />
                     </Field>
 
-                    <div className="border-t border-white/5 pt-4">
+                    <div className="border-t border-[var(--hairline)] pt-4">
                         {dbBacked ? (
-                            <div className="rounded-lg border border-purple-500/20 bg-purple-500/5 p-3 text-xs text-slate-300">
-                                Item content for this section is managed live in the{' '}
-                                <span className="font-mono text-purple-300">Content → {TYPE_LABELS[section.type]}</span> tab.
-                                This panel controls its heading, accent, order, and visibility.
+                            <div className="adm-notice adm-notice-info">
+                                Item content for this section is managed live in the <strong>Content → {TYPE_LABELS[section.type]}</strong> tab. This panel controls its heading, accent, order and visibility.
                             </div>
                         ) : (
                             <SectionBodyEditor type={section.type} data={section.data} onChange={onChangeData} />

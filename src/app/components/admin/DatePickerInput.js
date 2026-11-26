@@ -1,55 +1,12 @@
 "use client";
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Calendar as CalendarIcon, X, Clock } from 'lucide-react';
+import { FaCalendar as CalendarIcon, FaXmark as X, FaClock as Clock } from 'react-icons/fa6';
 
 const MONTHS = [
     'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
 ];
-
-const ACCENT_STYLES = {
-    cyan: {
-        border: 'border-cyan-500/40 focus:border-cyan-500',
-        ring: 'focus:ring-cyan-500/30',
-        text: 'text-cyan-400',
-        bg: 'bg-cyan-500/10 hover:bg-cyan-500/20',
-        badge: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
-        activeBtn: 'bg-cyan-500 text-black font-bold',
-    },
-    orange: {
-        border: 'border-orange-500/40 focus:border-orange-500',
-        ring: 'focus:ring-orange-500/30',
-        text: 'text-orange-400',
-        bg: 'bg-orange-500/10 hover:bg-orange-500/20',
-        badge: 'bg-orange-500/20 text-orange-300 border-orange-500/30',
-        activeBtn: 'bg-orange-500 text-black font-bold',
-    },
-    purple: {
-        border: 'border-purple-500/40 focus:border-purple-500',
-        ring: 'focus:ring-purple-500/30',
-        text: 'text-purple-400',
-        bg: 'bg-purple-500/10 hover:bg-purple-500/20',
-        badge: 'bg-purple-500/20 text-purple-300 border-purple-500/30',
-        activeBtn: 'bg-purple-500 text-white font-bold',
-    },
-    yellow: {
-        border: 'border-yellow-500/40 focus:border-yellow-500',
-        ring: 'focus:ring-yellow-500/30',
-        text: 'text-yellow-400',
-        bg: 'bg-yellow-500/10 hover:bg-yellow-500/20',
-        badge: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
-        activeBtn: 'bg-yellow-500 text-black font-bold',
-    },
-    green: {
-        border: 'border-green-500/40 focus:border-green-500',
-        ring: 'focus:ring-green-500/30',
-        text: 'text-green-400',
-        bg: 'bg-green-500/10 hover:bg-green-500/20',
-        badge: 'bg-green-500/20 text-green-300 border-green-500/30',
-        activeBtn: 'bg-green-500 text-black font-bold',
-    },
-};
 
 const parseRangeString = (val) => {
     if (!val || typeof val !== 'string') {
@@ -117,7 +74,6 @@ export default function DatePickerInput({
     value = '',
     onChange,
     mode = 'range', // 'range' | 'single'
-    accentColor = 'cyan',
     placeholder = '',
     required = false,
     className = '',
@@ -132,7 +88,6 @@ export default function DatePickerInput({
 
     const [popoverCoords, setPopoverCoords] = useState({ top: 0, left: 0, width: 340 });
 
-    const style = ACCENT_STYLES[accentColor] || ACCENT_STYLES.cyan;
     const currentYear = new Date().getFullYear();
     const yearsList = Array.from({ length: 35 }, (_, i) => String(currentYear + 5 - i));
 
@@ -157,7 +112,7 @@ export default function DatePickerInput({
         if (!inputRef.current) return;
         const rect = inputRef.current.getBoundingClientRect();
         const popoverWidth = Math.min(340, window.innerWidth - 32);
-        const popoverHeight = mode === 'range' ? 320 : 210;
+        const popoverHeight = mode === 'range' ? 340 : 260;
 
         let openUpward = position === 'up';
         if (position === 'auto') {
@@ -245,10 +200,11 @@ export default function DatePickerInput({
                 <button
                     type="button"
                     onClick={handleToggle}
-                    className={`absolute left-2.5 p-1 rounded-md text-slate-400 hover:${style.text} transition-colors z-10 flex items-center justify-center`}
+                    className="adm-icon-btn !absolute left-0.5 z-10"
                     title="Open Date Picker"
+                    aria-label="Open date picker"
                 >
-                    <CalendarIcon size={15} />
+                    <CalendarIcon size={14} />
                 </button>
                 <input
                     type="text"
@@ -257,14 +213,15 @@ export default function DatePickerInput({
                     onChange={(e) => onChange(e.target.value)}
                     placeholder={placeholder || (mode === 'range' ? 'e.g. Jun 2025 - Present' : 'e.g. July 2026')}
                     required={required}
-                    className={`w-full bg-slate-950/50 border border-white/10 rounded-xl py-2.5 pl-8 pr-7 text-slate-200 focus:outline-none transition-all placeholder:text-slate-600 text-xs sm:text-sm font-mono ${style.border} ${style.ring}`}
+                    className="adm-input !pl-11 !pr-11 font-mono"
                 />
                 {value && (
                     <button
                         type="button"
                         onClick={() => onChange('')}
-                        className="absolute right-2 text-slate-500 hover:text-slate-300 p-1"
+                        className="adm-icon-btn !absolute right-0.5"
                         title="Clear field"
+                        aria-label="Clear field"
                     >
                         <X size={13} />
                     </button>
@@ -281,19 +238,20 @@ export default function DatePickerInput({
                         left: `${popoverCoords.left}px`,
                         width: `${popoverCoords.width}px`,
                     }}
-                    className="z-[99999] bg-slate-900/95 border border-white/20 rounded-2xl shadow-[0_25px_60px_rgba(0,0,0,0.9)] backdrop-blur-2xl p-4 text-slate-200 animate-in fade-in zoom-in-95 duration-150"
+                    className="adm-dialog adm-root !max-w-none !overflow-visible z-[99999] p-4 text-sm animate-in fade-in zoom-in-95 duration-150"
                 >
-                    <div className="flex items-center justify-between border-b border-white/10 pb-2.5 mb-3">
+                    <div className="flex items-center justify-between border-b border-[var(--hairline)] pb-2.5 mb-3">
                         <div className="flex items-center gap-2">
-                            <CalendarIcon className={`w-4 h-4 ${style.text}`} />
-                            <span className="text-xs font-mono font-bold uppercase tracking-wider text-slate-300">
-                                {mode === 'range' ? 'Timeline Range Picker' : 'Select Date / Year'}
+                            <CalendarIcon className="w-4 h-4 text-[var(--accent-cyan)]" />
+                            <span className="text-sm font-semibold text-[var(--text-bright)]">
+                                {mode === 'range' ? 'Pick a date range' : 'Pick a date'}
                             </span>
                         </div>
                         <button
                             type="button"
                             onClick={() => setIsOpen(false)}
-                            className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors"
+                            className="adm-icon-btn"
+                            aria-label="Close date picker"
                         >
                             <X size={15} />
                         </button>
@@ -303,18 +261,19 @@ export default function DatePickerInput({
                         <div className="space-y-3">
                             {/* Start Section */}
                             <div>
-                                <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1 font-bold">
-                                    Start Period
+                                <label className="adm-label mb-1">
+                                    Start
                                 </label>
                                 <div className="grid grid-cols-2 gap-2">
                                     <select
+                                        aria-label="Start month"
                                         value={startMonth}
                                         onChange={(e) => {
                                             const m = e.target.value;
                                             setStartMonth(m);
                                             applyRangeSelection(m, startYear, endMonth, endYear, isPresent);
                                         }}
-                                        className="bg-slate-950 border border-white/10 rounded-lg p-2 text-xs font-mono text-slate-200 outline-none focus:border-cyan-500"
+                                        className="adm-input font-mono"
                                     >
                                         {MONTHS.map(m => (
                                             <option key={m} value={m}>{m}</option>
@@ -322,13 +281,14 @@ export default function DatePickerInput({
                                     </select>
 
                                     <select
+                                        aria-label="Start year"
                                         value={startYear}
                                         onChange={(e) => {
                                             const y = e.target.value;
                                             setStartYear(y);
                                             applyRangeSelection(startMonth, y, endMonth, endYear, isPresent);
                                         }}
-                                        className="bg-slate-950 border border-white/10 rounded-lg p-2 text-xs font-mono text-slate-200 outline-none focus:border-cyan-500"
+                                        className="adm-input font-mono"
                                     >
                                         {yearsList.map(y => (
                                             <option key={y} value={y}>{y}</option>
@@ -340,10 +300,10 @@ export default function DatePickerInput({
                             {/* End Section */}
                             <div>
                                 <div className="flex items-center justify-between mb-1">
-                                    <label className="block text-[10px] font-mono uppercase text-slate-400 font-bold">
-                                        End Period
+                                    <label className="adm-label">
+                                        End
                                     </label>
-                                    <label className="flex items-center gap-1.5 cursor-pointer text-[11px] font-mono text-slate-300 hover:text-white">
+                                    <label className="flex min-h-11 sm:min-h-0 items-center gap-1.5 cursor-pointer text-sm text-[var(--text-secondary)]">
                                         <input
                                             type="checkbox"
                                             checked={isPresent}
@@ -352,7 +312,7 @@ export default function DatePickerInput({
                                                 setIsPresent(pres);
                                                 applyRangeSelection(startMonth, startYear, endMonth, endYear, pres);
                                             }}
-                                            className="rounded border-white/20 bg-slate-950 text-cyan-500 focus:ring-0"
+                                            className="adm-check"
                                         />
                                         <span>Present / Ongoing</span>
                                     </label>
@@ -361,13 +321,14 @@ export default function DatePickerInput({
                                 {!isPresent ? (
                                     <div className="grid grid-cols-2 gap-2">
                                         <select
+                                            aria-label="End month"
                                             value={endMonth}
                                             onChange={(e) => {
                                                 const m = e.target.value;
                                                 setEndMonth(m);
                                                 applyRangeSelection(startMonth, startYear, m, endYear, isPresent);
                                             }}
-                                            className="bg-slate-950 border border-white/10 rounded-lg p-2 text-xs font-mono text-slate-200 outline-none focus:border-cyan-500"
+                                            className="adm-input font-mono"
                                         >
                                             {MONTHS.map(m => (
                                                 <option key={m} value={m}>{m}</option>
@@ -375,13 +336,14 @@ export default function DatePickerInput({
                                         </select>
 
                                         <select
+                                            aria-label="End year"
                                             value={endYear}
                                             onChange={(e) => {
                                                 const y = e.target.value;
                                                 setEndYear(y);
                                                 applyRangeSelection(startMonth, startYear, endMonth, y, isPresent);
                                             }}
-                                            className="bg-slate-950 border border-white/10 rounded-lg p-2 text-xs font-mono text-slate-200 outline-none focus:border-cyan-500"
+                                            className="adm-input font-mono"
                                         >
                                             {yearsList.map(y => (
                                                 <option key={y} value={y}>{y}</option>
@@ -389,14 +351,14 @@ export default function DatePickerInput({
                                         </select>
                                     </div>
                                 ) : (
-                                    <div className={`p-2 rounded-lg border border-dashed border-white/10 ${style.bg} ${style.text} text-xs font-mono font-bold flex items-center justify-center gap-2`}>
-                                        <Clock size={14} /> Currently Active (Present)
+                                    <div className="adm-notice adm-notice-info flex items-center justify-center gap-2">
+                                        <Clock size={14} /> Ongoing (present)
                                     </div>
                                 )}
                             </div>
 
                             {/* Quick Presets */}
-                            <div className="pt-2 border-t border-white/10 flex flex-wrap gap-1.5">
+                            <div className="pt-2 border-t border-[var(--hairline)] flex flex-wrap gap-1.5">
                                 <button
                                     type="button"
                                     onClick={() => {
@@ -407,7 +369,7 @@ export default function DatePickerInput({
                                         setIsPresent(true);
                                         applyRangeSelection(nowM, nowY, endMonth, endYear, true);
                                     }}
-                                    className="px-2 py-1 text-[10px] font-mono bg-white/5 hover:bg-white/10 rounded text-slate-300 transition-colors"
+                                    className="adm-btn !px-3 text-xs"
                                 >
                                     Current - Present
                                 </button>
@@ -422,7 +384,7 @@ export default function DatePickerInput({
                                         setIsPresent(false);
                                         applyRangeSelection('Jan', nowY, 'Dec', nowY, false);
                                     }}
-                                    className="px-2 py-1 text-[10px] font-mono bg-white/5 hover:bg-white/10 rounded text-slate-300 transition-colors"
+                                    className="adm-btn !px-3 text-xs"
                                 >
                                     Full Year {new Date().getFullYear()}
                                 </button>
@@ -432,18 +394,19 @@ export default function DatePickerInput({
                         /* Single Mode */
                         <div className="space-y-3">
                             <div>
-                                <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1 font-bold">
-                                    Month & Year
+                                <label className="adm-label mb-1">
+                                    Month and year
                                 </label>
                                 <div className="grid grid-cols-2 gap-2">
                                     <select
+                                        aria-label="Month"
                                         value={singleMonth}
                                         onChange={(e) => {
                                             const m = e.target.value;
                                             setSingleMonth(m);
                                             applySingleSelection(m, singleYear);
                                         }}
-                                        className="bg-slate-950 border border-white/10 rounded-lg p-2 text-xs font-mono text-slate-200 outline-none focus:border-cyan-500"
+                                        className="adm-input font-mono"
                                     >
                                         {MONTHS.map(m => (
                                             <option key={m} value={m}>{m}</option>
@@ -451,13 +414,14 @@ export default function DatePickerInput({
                                     </select>
 
                                     <select
+                                        aria-label="Year"
                                         value={singleYear}
                                         onChange={(e) => {
                                             const y = e.target.value;
                                             setSingleYear(y);
                                             applySingleSelection(singleMonth, y);
                                         }}
-                                        className="bg-slate-950 border border-white/10 rounded-lg p-2 text-xs font-mono text-slate-200 outline-none focus:border-cyan-500"
+                                        className="adm-input font-mono"
                                     >
                                         {yearsList.map(y => (
                                             <option key={y} value={y}>{y}</option>
@@ -467,7 +431,7 @@ export default function DatePickerInput({
                             </div>
 
                             {/* Quick Presets */}
-                            <div className="pt-2 border-t border-white/10 flex flex-wrap gap-1.5">
+                            <div className="pt-2 border-t border-[var(--hairline)] flex flex-wrap gap-1.5">
                                 <button
                                     type="button"
                                     onClick={() => {
@@ -477,7 +441,7 @@ export default function DatePickerInput({
                                         setSingleYear(nowY);
                                         applySingleSelection(nowM, nowY);
                                     }}
-                                    className="px-2 py-1 text-[10px] font-mono bg-white/5 hover:bg-white/10 rounded text-slate-300 transition-colors"
+                                    className="adm-btn !px-3 text-xs"
                                 >
                                     Current Month
                                 </button>
@@ -487,7 +451,7 @@ export default function DatePickerInput({
                                         const nowY = String(new Date().getFullYear());
                                         onChange(nowY);
                                     }}
-                                    className="px-2 py-1 text-[10px] font-mono bg-white/5 hover:bg-white/10 rounded text-slate-300 transition-colors"
+                                    className="adm-btn !px-3 text-xs"
                                 >
                                     Year Only ({new Date().getFullYear()})
                                 </button>
@@ -495,13 +459,13 @@ export default function DatePickerInput({
                         </div>
                     )}
 
-                    <div className="mt-3 pt-2 border-t border-white/10 flex justify-end">
+                    <div className="mt-3 pt-2 border-t border-[var(--hairline)] flex justify-end">
                         <button
                             type="button"
                             onClick={() => setIsOpen(false)}
-                            className={`w-full sm:w-auto px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${style.activeBtn}`}
+                            className="adm-btn adm-btn-primary w-full sm:w-auto"
                         >
-                            Confirm Selection
+                            Confirm selection
                         </button>
                     </div>
                 </div>,

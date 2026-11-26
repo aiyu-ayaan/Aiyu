@@ -93,12 +93,12 @@ export default function AdminShell({ children }) {
                 stages={stages}
             />
 
-            <div className={`flex min-h-screen flex-col transition-[padding] duration-300 ease-out ${collapsed ? "md:pl-[76px]" : "md:pl-[264px]"}`}>
+            <div className={`flex min-h-screen min-w-0 flex-col transition-[padding] duration-200 ease-out ${collapsed ? "md:pl-[76px]" : "md:pl-[264px]"}`}>
                 <AdminTopbar
                     onOpenMobile={() => setMobileOpen(true)}
                     onOpenSearch={() => setSearchOpen(true)}
                 />
-                <main className="flex-1">{children}</main>
+                <main className="min-w-0 flex-1">{children}</main>
             </div>
 
             <CommandPalette open={searchOpen} onClose={() => setSearchOpen(false)} />

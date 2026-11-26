@@ -1,16 +1,16 @@
-# Development database stack.
+# Optional PostgreSQL (+ pgAdmin) stack for migration / import testing.
 #
-# Brings up ONLY PostgreSQL (+ pgAdmin) so you can run the Next.js app and the
-# Prisma CLI directly on your host machine (npm run dev), pointing
-# DATABASE_URL at localhost:${POSTGRES_PORT}.
+# SQLite (data/aiyu.db) is the primary database and is created automatically by
+# aiyu-server — you do NOT need this file for normal development (`pnpm dev`).
+# Keep this only as an optional import source for `aiyu-server import-postgres`
+# or Postgres-to-SQLite migration testing (see development/docs/SQLITE_CUTOVER.md):
 #
-#   docker compose -f docker-compose-dev.yml up -d      # or: npm run db:up
-#   npx prisma migrate deploy                            # apply schema
-#   npm run db:seed                                      # populate sample data
-#   npm run dev
+#   docker compose -f docker-compose.dev.local.yml up -d      # or: pnpm db:up
+#   DATABASE_URL=postgresql://aiyu:aiyu@localhost:5432/aiyu \
+#     server/target/release/aiyu-server import-postgres
 #
-# Postgres is published to the host so Prisma/pgAdmin can reach it. pgAdmin is
-# optional — open http://localhost:${PGADMIN_PORT:-5050}.
+# Postgres is published to the host on localhost:${POSTGRES_PORT:-5432}.
+# pgAdmin is optional — open http://localhost:${PGADMIN_PORT:-5050}.
 
 services:
   postgres:

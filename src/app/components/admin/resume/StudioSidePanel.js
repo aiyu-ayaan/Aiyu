@@ -6,10 +6,20 @@
  */
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-    FaBriefcase, FaPalette, FaCodeBranch, FaPlus, FaSpinner,
-    FaServer, FaUserTie, FaGraduationCap, FaListCheck,
-    FaWandMagicSparkles, FaLightbulb, FaCheck, FaArrowRotateLeft,
-    FaPen, FaTrash,
+    FaArrowRotateLeft,
+    FaBriefcase,
+    FaCheck,
+    FaCodeBranch,
+    FaGraduationCap,
+    FaLightbulb,
+    FaListCheck,
+    FaPalette,
+    FaPen,
+    FaPlus,
+    FaServer,
+    FaTrash,
+    FaUserTie,
+    FaWandMagicSparkles,
 } from 'react-icons/fa6';
 import StudioAiPanel from './StudioAiPanel';
 import StudioIdeasPanel from './StudioIdeasPanel';
@@ -18,6 +28,7 @@ import {
     projectToLatex, deploymentToLatex, experienceToLatex,
     educationToLatex, skillsToLatex,
 } from '@/lib/resumeStudio';
+import { Badge, Loading } from '@/app/components/admin/ui';
 
 const TABS = [
     { id: 'portfolio', label: 'Items', icon: FaBriefcase },
@@ -29,44 +40,47 @@ const TABS = [
 
 function SectionLabel({ icon: Icon, children }) {
     return (
-        <h4 className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-500 mt-3 mb-1">
-            <Icon className="text-slate-600" /> {children}
-        </h4>
+        <h3 className="mt-3 mb-1.5 flex items-center gap-2 text-xs font-semibold text-[var(--text-secondary)]">
+            <Icon className="text-[var(--adm-hint)]" aria-hidden="true" />
+            <span>{children}</span>
+        </h3>
     );
 }
 
 function InsertRow({ title, subtitle, onInsert }) {
     return (
-        <div className="group flex items-center gap-2 rounded-lg border border-white/5 bg-white/[0.03] hover:border-cyan-500/30 p-2">
+        <div className="adm-sc-item flex items-center gap-2 p-2.5">
             <div className="min-w-0 flex-1">
-                <p className="text-xs text-slate-200 font-semibold truncate" title={title}>{title}</p>
-                {subtitle && <p className="text-[10px] text-slate-500 truncate">{subtitle}</p>}
+                <p className="truncate text-xs font-semibold text-[var(--text-bright)]" title={title}>{title}</p>
+                {subtitle && <p className="adm-help truncate">{subtitle}</p>}
             </div>
             <button
+                type="button"
                 onClick={onInsert}
-                title="Insert at cursor"
-                className="shrink-0 rounded-md border border-cyan-500/30 bg-cyan-500/10 p-1.5 text-cyan-300 opacity-70 group-hover:opacity-100 hover:border-cyan-400 transition-all"
+                title={`Insert ${title}`}
+                aria-label={`Insert ${title}`}
+                className="adm-icon-btn"
             >
-                <FaPlus className="text-[10px]" />
+                <FaPlus aria-hidden="true" />
             </button>
         </div>
     );
 }
 
 export default function StudioSidePanel({
-    mode = 'code',     // 'code' | 'visual'
-    onInsert,          // (latexBlock: string) => void
-    onApplyTemplate,   // (template) => void
-    onApplyTheme,      // (presetId) => void
-    currentLatex,      // () => string (for theme detection)
-    versions,          // [{ id, label, latex, createdAt, updatedAt }]
-    activeVersionId,   // id of the version currently switched to
-    onSaveVersion,     // () => void
-    onSwitchVersion,   // (version) => void
-    onUpdateVersion,   // (version) => void
-    onRenameVersion,   // (version) => void
-    onDeleteVersion,   // (version) => void
-    editorApi,         // { getValue, getSelection, replaceSelection, insertAtCursor }
+    mode = 'code',
+    onInsert,
+    onApplyTemplate,
+    onApplyTheme,
+    currentLatex,
+    versions,
+    activeVersionId,
+    onSaveVersion,
+    onSwitchVersion,
+    onUpdateVersion,
+    onRenameVersion,
+    onDeleteVersion,
+    editorApi,
     compileErrors,
     compileLog,
     ideas,
@@ -100,7 +114,6 @@ export default function StudioSidePanel({
         return () => { cancelled = true; };
     }, []);
 
-    // Re-detect the active theme when switching to the design tab.
     useEffect(() => {
         if (tab === 'design') setActiveTheme(detectThemePreset(currentLatex?.() || ''));
     }, [tab, currentLatex]);
@@ -111,31 +124,29 @@ export default function StudioSidePanel({
     );
 
     return (
-        <div className="w-72 shrink-0 hidden lg:flex flex-col rounded-xl border border-white/10 bg-slate-900/60 overflow-hidden">
-            {/* Tab bar */}
-            <div className="flex border-b border-white/10">
+        <section className="adm-sc-studio-pane" aria-label="Studio tools">
+            <div className="adm-tabs" role="tablist" aria-label="Studio tools">
                 {TABS.map(({ id, label, icon: Icon }) => (
                     <button
                         key={id}
+                        type="button"
+                        role="tab"
+                        aria-selected={tab === id}
                         onClick={() => setTab(id)}
-                        className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[10px] font-bold uppercase tracking-wider transition-colors ${
-                            tab === id
-                                ? 'text-cyan-300 bg-cyan-500/10 border-b-2 border-cyan-400'
-                                : 'text-slate-500 hover:text-slate-300'
-                        }`}
+                        className="adm-tab !px-2.5 text-xs"
                     >
-                        <Icon /> {label}
+                        <Icon aria-hidden="true" /> {label}
                     </button>
                 ))}
             </div>
 
-            <div className="flex-1 overflow-auto p-3 space-y-1.5">
+            <div className="flex-1 overflow-y-auto p-3 space-y-2">
                 {/* ── Portfolio ── */}
                 {tab === 'portfolio' && (loading ? (
-                    <div className="flex justify-center py-8 text-slate-500"><FaSpinner className="animate-spin" /></div>
+                    <Loading label="Loading portfolio items" rows={4} />
                 ) : (
                     <>
-                        <p className="text-[10px] text-slate-600">Click + to insert an item as LaTeX at the cursor.</p>
+                        <p className="adm-help">Click + to insert an item as a LaTeX block.</p>
 
                         <SectionLabel icon={FaBriefcase}>Projects ({projects.length})</SectionLabel>
                         {projects.map((p) => (
@@ -147,7 +158,7 @@ export default function StudioSidePanel({
                             />
                         ))}
 
-                        <SectionLabel icon={FaServer}>Hosted Apps ({deployments.length})</SectionLabel>
+                        <SectionLabel icon={FaServer}>Hosted apps ({deployments.length})</SectionLabel>
                         {deployments.map((d) => (
                             <InsertRow
                                 key={d._id}
@@ -193,42 +204,49 @@ export default function StudioSidePanel({
                 {/* ── Design ── */}
                 {tab === 'design' && (
                     <>
-                        <SectionLabel icon={FaPalette}>Color Themes</SectionLabel>
-                        <p className="text-[10px] text-slate-600 mb-1">Swaps only the marked theme block — your content is untouched.</p>
-                        {THEME_PRESETS.map((preset) => (
-                            <button
-                                key={preset.id}
-                                onClick={() => { onApplyTheme(preset.id); setActiveTheme(preset.id); }}
-                                className={`w-full flex items-center gap-3 rounded-lg border p-2 text-left transition-all ${
-                                    activeTheme === preset.id
-                                        ? 'border-cyan-400/60 bg-cyan-500/10'
-                                        : 'border-white/5 bg-white/[0.03] hover:border-white/20'
-                                }`}
-                            >
-                                <span className="flex shrink-0 -space-x-1">
-                                    {preset.swatch.map((c) => (
-                                        <span key={c} className="w-4 h-4 rounded-full border border-black/40" style={{ backgroundColor: c }} />
-                                    ))}
-                                </span>
-                                <span className="min-w-0">
-                                    <span className="block text-xs text-slate-200 font-semibold">{preset.name}</span>
-                                    <span className="block text-[10px] text-slate-500 truncate">{preset.description}</span>
-                                </span>
-                            </button>
-                        ))}
+                        <SectionLabel icon={FaPalette}>Colour themes</SectionLabel>
+                        <p className="adm-help">Swaps only the marked theme block — your content stays untouched.</p>
+                        <div className="space-y-2">
+                            {THEME_PRESETS.map((preset) => (
+                                <button
+                                    key={preset.id}
+                                    type="button"
+                                    aria-pressed={activeTheme === preset.id}
+                                    onClick={() => { onApplyTheme(preset.id); setActiveTheme(preset.id); }}
+                                    className="adm-sc-choice w-full items-center"
+                                >
+                                    <span className="flex shrink-0 -space-x-1" aria-hidden="true">
+                                        {preset.swatch.map((c) => (
+                                            <span
+                                                key={c}
+                                                className="h-4 w-4 rounded-full border border-[var(--hairline-strong)]"
+                                                style={{ backgroundColor: c }}
+                                            />
+                                        ))}
+                                    </span>
+                                    <span className="min-w-0 flex-1">
+                                        <span className="block text-xs font-semibold text-[var(--text-bright)]">{preset.name}</span>
+                                        <span className="adm-help block truncate">{preset.description}</span>
+                                    </span>
+                                </button>
+                            ))}
+                        </div>
 
-                        <SectionLabel icon={FaBriefcase}>Starter Templates</SectionLabel>
-                        <p className="text-[10px] text-amber-500/80 mb-1">⚠ Replaces the whole document.</p>
-                        {RESUME_TEMPLATES.map((tpl) => (
-                            <button
-                                key={tpl.id}
-                                onClick={() => onApplyTemplate(tpl)}
-                                className="w-full rounded-lg border border-white/5 bg-white/[0.03] hover:border-amber-500/40 p-2 text-left"
-                            >
-                                <span className="block text-xs text-slate-200 font-semibold">{tpl.name}</span>
-                                <span className="block text-[10px] text-slate-500">{tpl.description}</span>
-                            </button>
-                        ))}
+                        <SectionLabel icon={FaBriefcase}>Starter templates</SectionLabel>
+                        <p className="adm-help">Replaces the entire document.</p>
+                        <div className="space-y-2">
+                            {RESUME_TEMPLATES.map((tpl) => (
+                                <button
+                                    key={tpl.id}
+                                    type="button"
+                                    onClick={() => onApplyTemplate(tpl)}
+                                    className="adm-sc-choice w-full flex-col"
+                                >
+                                    <span className="block text-xs font-semibold text-[var(--text-bright)]">{tpl.name}</span>
+                                    <span className="adm-help block">{tpl.description}</span>
+                                </button>
+                            ))}
+                        </div>
                     </>
                 )}
 
@@ -255,57 +273,74 @@ export default function StudioSidePanel({
 
                 {/* ── Versions ── */}
                 {tab === 'versions' && (
-                    <>
+                    <div className="space-y-3">
                         <button
+                            type="button"
                             onClick={onSaveVersion}
-                            className="w-full flex items-center justify-center gap-2 rounded-lg border border-cyan-500/30 bg-cyan-500/10 py-2 text-[10px] font-bold uppercase tracking-wider text-cyan-300 hover:bg-cyan-500/20 hover:border-cyan-400/50 transition-all"
+                            className="adm-btn adm-btn-primary w-full"
                         >
-                            <FaPlus className="text-[9px]" /> Save current as version
+                            <FaPlus aria-hidden="true" /> Save current as version
                         </button>
 
                         {(versions || []).length === 0 ? (
-                            <p className="text-[11px] text-slate-600 mt-2">
-                                No versions yet. Save one, then switch between as many as you like — each keeps its own copy of the document.
+                            <p className="adm-help">
+                                No versions saved yet. Save one to snapshot your resume and switch back anytime.
                             </p>
                         ) : (
-                            <div className="space-y-1.5 mt-1">
+                            <div className="space-y-2">
                                 {(versions || []).map((v) => {
                                     const active = v.id === activeVersionId;
                                     return (
                                         <div
                                             key={v.id}
-                                            className={`rounded-lg border p-2 transition-all ${
-                                                active
-                                                    ? 'border-cyan-400/60 bg-cyan-500/10'
-                                                    : 'border-white/5 bg-white/[0.03] hover:border-white/20'
-                                            }`}
+                                            className="adm-sc-item p-3 space-y-2"
                                         >
-                                            <div className="flex items-center gap-1.5">
-                                                {active && (
-                                                    <span className="shrink-0 flex items-center gap-1 rounded bg-cyan-500/20 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider text-cyan-300">
-                                                        <FaCheck className="text-[7px]" /> current
-                                                    </span>
-                                                )}
-                                                <p className="min-w-0 flex-1 text-xs text-slate-200 font-semibold truncate" title={v.label}>{v.label}</p>
+                                            <div className="flex items-center justify-between gap-2">
+                                                <p className="min-w-0 flex-1 truncate text-xs font-semibold text-[var(--text-bright)]" title={v.label}>
+                                                    {v.label}
+                                                </p>
+                                                {active && <Badge tone="ok">Current</Badge>}
                                             </div>
-                                            <p className="text-[10px] text-slate-500 font-mono mt-0.5">
+                                            <p className="adm-num adm-help">
                                                 {new Date(v.updatedAt || v.createdAt).toLocaleString()}
                                             </p>
-                                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5">
+                                            <div className="flex flex-wrap items-center gap-1.5">
                                                 {active ? (
-                                                    <button onClick={() => onUpdateVersion(v)} className="flex items-center gap-1 text-[10px] uppercase font-bold text-emerald-400 hover:text-emerald-300" title="Save current document into this version">
-                                                        <FaCheck className="text-[8px]" /> Update
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => onUpdateVersion(v)}
+                                                        className="adm-btn !px-2.5 text-xs"
+                                                        title="Overwrite this version with current document"
+                                                    >
+                                                        <FaCheck aria-hidden="true" /> Update
                                                     </button>
                                                 ) : (
-                                                    <button onClick={() => onSwitchVersion(v)} className="flex items-center gap-1 text-[10px] uppercase font-bold text-cyan-400 hover:text-cyan-300" title="Load this version into the editor">
-                                                        <FaArrowRotateLeft className="text-[8px]" /> Switch
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => onSwitchVersion(v)}
+                                                        className="adm-btn !px-2.5 text-xs"
+                                                        title="Load this version into the editor"
+                                                    >
+                                                        <FaArrowRotateLeft aria-hidden="true" /> Switch
                                                     </button>
                                                 )}
-                                                <button onClick={() => onRenameVersion(v)} className="flex items-center gap-1 text-[10px] uppercase font-bold text-slate-400 hover:text-slate-200" title="Rename version">
-                                                    <FaPen className="text-[8px]" /> Rename
+                                                <button
+                                                    type="button"
+                                                    onClick={() => onRenameVersion(v)}
+                                                    className="adm-icon-btn"
+                                                    title="Rename version"
+                                                    aria-label={`Rename ${v.label}`}
+                                                >
+                                                    <FaPen aria-hidden="true" />
                                                 </button>
-                                                <button onClick={() => onDeleteVersion(v)} className="flex items-center gap-1 text-[10px] uppercase font-bold text-red-400 hover:text-red-300" title="Delete version">
-                                                    <FaTrash className="text-[8px]" /> Delete
+                                                <button
+                                                    type="button"
+                                                    onClick={() => onDeleteVersion(v)}
+                                                    className="adm-icon-btn"
+                                                    title="Delete version"
+                                                    aria-label={`Delete ${v.label}`}
+                                                >
+                                                    <FaTrash aria-hidden="true" />
                                                 </button>
                                             </div>
                                         </div>
@@ -313,9 +348,9 @@ export default function StudioSidePanel({
                                 })}
                             </div>
                         )}
-                    </>
+                    </div>
                 )}
             </div>
-        </div>
+        </section>
     );
 }
