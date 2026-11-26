@@ -60,10 +60,13 @@ const routeMeta: Plugin = {
     await writeFile(new URL('./dist/discovery.json', import.meta.url), JSON.stringify(await discoveryDocs()));
     // The admin icon picker's {title, slug} list (/api/admin/icons).
     const catalog = JSON.parse(await readFile(new URL('../node_modules/simple-icons/data/simple-icons.json', import.meta.url), 'utf8'));
-    const icons = (Array.isArray(catalog) ? catalog : catalog.icons).filter((i) => i.title && i.slug);
+    type Icon = { title?: string; slug?: string };
+    const icons: Icon[] = (Array.isArray(catalog) ? catalog : catalog.icons).filter((i: Icon) => i.title && i.slug);
     await writeFile(new URL('./dist/icons.json', import.meta.url), JSON.stringify(icons.map(({ title, slug }) => ({ title, slug }))));
   },
 };
+
+type Game = { slug: string; hidden?: boolean };
 
 // The /.well-known documents (src/lib/agentDiscovery.js, mcpConfig.js). They import through the `@/` alias, so load
 // them with Vite's SSR loader. The site URL is a placeholder the Rust server swaps for SITE_URL at startup.
@@ -99,7 +102,7 @@ async function discoveryDocs() {
       authMd: d.getAuthMarkdown(),
       apiDocs: d.getApiDocsMarkdown(),
       mcpDocs: d.getMcpDocsMarkdown(),
-      games: GAMES.filter((g) => !g.hidden).map((g) => g.slug),
+      games: GAMES.filter((g: Game) => !g.hidden).map((g: Game) => g.slug),
     };
   } finally {
     await server.close();
