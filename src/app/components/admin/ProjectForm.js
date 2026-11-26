@@ -1,35 +1,49 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, Save, Terminal, Code, Layers, Calendar, Link as LinkIcon, Image as ImageIcon, FileText, CheckCircle, Activity, Sparkles, Wand2, Upload, X, GitBranch, Lock, Unlock } from 'lucide-react';
+import Link from 'next/link';
+import {
+    FaArrowUpRightFromSquare,
+    FaCodeBranch,
+    FaFileArrowUp,
+    FaFloppyDisk,
+    FaImage,
+    FaLock,
+    FaLockOpen,
+    FaSpinner,
+    FaWandMagicSparkles,
+} from 'react-icons/fa6';
 import { PINNABLE_FIELDS } from '@/lib/projectSyncFields';
 import Toast from './Toast';
 import BlogLinkInput from './BlogLinkInput';
 import DatePickerInput from './DatePickerInput';
+import ProjectAppLinks from './ProjectAppLinks';
+import { Badge, Field, Panel } from './ui';
+import '@/app/styles/admin-projects.css';
 
-const getStatusState = (status) => {
+const getStatusMeta = (status) => {
     const safeStatus = String(status || '').trim().toLowerCase();
 
     if (safeStatus === 'done' || safeStatus === 'completed') {
         return {
-            panelClass: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-            dotClass: 'bg-emerald-500',
-            message: 'System Stable',
+            tone: 'ok',
+            label: 'Completed',
+            message: 'Stable and published',
         };
     }
 
     if (safeStatus === 'deferred' || safeStatus === 'deffered' || safeStatus === 'on hold') {
         return {
-            panelClass: 'bg-slate-500/10 text-slate-300 border-slate-500/20',
-            dotClass: 'bg-slate-400',
-            message: 'Deferred / On Hold',
+            tone: undefined,
+            label: 'Deferred',
+            message: 'On hold or archived',
         };
     }
 
     return {
-        panelClass: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-        dotClass: 'bg-amber-500 animate-pulse',
-        message: 'Work In Progress',
+        tone: 'warn',
+        label: 'In progress',
+        message: 'Active work in progress',
     };
 };
 
@@ -60,7 +74,7 @@ const ProjectForm = ({ initialData, isEdit = false }) => {
         if (initialData) {
             setFormData({
                 ...initialData,
-                techStack: initialData.techStack.join(', '),
+                techStack: Array.isArray(initialData.techStack) ? initialData.techStack.join(', ') : '',
             });
             setPinnedFields(Array.isArray(initialData.pinnedFields) ? initialData.pinnedFields : []);
         }
@@ -68,11 +82,11 @@ const ProjectForm = ({ initialData, isEdit = false }) => {
     }, [initialData]);
 
     const togglePinned = (field) => {
-        setPinnedFields((current) => (
+        setPinnedFields((current) =>
             current.includes(field)
                 ? current.filter((entry) => entry !== field)
                 : [...current, field]
-        ));
+        );
     };
 
     const checkAiConfig = async () => {
@@ -82,8 +96,8 @@ const ProjectForm = ({ initialData, isEdit = false }) => {
             if (data.success && data.data) {
                 setAiEnabled(data.data.enabled);
             }
-        } catch (error) {
-            console.error('Failed to fetch AI config:', error);
+        } catch (err) {
+            console.error('Failed to fetch AI config:', err);
         }
     };
 
@@ -114,32 +128,30 @@ const ProjectForm = ({ initialData, isEdit = false }) => {
                 body: JSON.stringify({
                     mode: apiMode,
                     prompt,
-                    context
-                })
+                    context,
+                }),
             });
 
             const data = await res.json();
 
             if (data.success) {
                 if (mode === 'name') {
-                    // Suggest project names (pick the first one as a simple implementation or allow user pick?)
-                    // For now, let's just use the first suggested name
-                    const names = data.data.split(',').map(n => n.trim());
-                    setFormData(prev => ({ ...prev, name: names[0] }));
-                    showNotification(true, 'Creative designation synthesized!');
+                    const names = data.data.split(',').map((n) => n.trim());
+                    setFormData((prev) => ({ ...prev, name: names[0] }));
+                    showNotification(true, 'Project name suggested');
                 } else if (mode === 'description') {
-                    setFormData(prev => ({ ...prev, description: data.data }));
-                    showNotification(true, 'Description payload optimized!');
+                    setFormData((prev) => ({ ...prev, description: data.data }));
+                    showNotification(true, 'Description refined');
                 } else if (mode === 'tech') {
-                    setFormData(prev => ({ ...prev, techStack: data.data }));
-                    showNotification(true, 'Technical specs suggested!');
+                    setFormData((prev) => ({ ...prev, techStack: data.data }));
+                    showNotification(true, 'Tech stack suggested');
                 }
             } else {
-                showNotification(false, data.error || 'AI synthesis failed');
+                showNotification(false, data.error || 'AI suggestion failed');
             }
-        } catch (error) {
-            console.error('AI Error:', error);
-            showNotification(false, 'AI uplink interrupted');
+        } catch (err) {
+            console.error('AI Error:', err);
+            showNotification(false, 'Could not reach the AI service');
         } finally {
             setAiGenerating(null);
         }
@@ -150,26 +162,26 @@ const ProjectForm = ({ initialData, isEdit = false }) => {
         if (!file) return;
 
         setUploadingFile(true);
-        const formData = new FormData();
-        formData.append('file', file);
+        const uploadData = new FormData();
+        uploadData.append('file', file);
 
         try {
             const res = await fetch('/api/upload', {
                 method: 'POST',
-                body: formData,
+                body: uploadData,
             });
 
             const data = await res.json();
 
             if (data.success) {
-                setFormData(prev => ({ ...prev, image: data.url }));
-                showNotification(true, 'Visual Asset Synchronized!');
+                setFormData((prev) => ({ ...prev, image: data.url }));
+                showNotification(true, 'Image uploaded');
             } else {
                 showNotification(false, data.error || 'Upload failed');
             }
-        } catch (error) {
-            console.error('Upload error:', error);
-            showNotification(false, 'High-frequency uplink failure');
+        } catch (err) {
+            console.error('Upload error:', err);
+            showNotification(false, 'Upload failed');
         } finally {
             setUploadingFile(false);
         }
@@ -190,14 +202,13 @@ const ProjectForm = ({ initialData, isEdit = false }) => {
         setLoading(true);
         setError('');
 
-        const techStack = formData.techStack.split(',').map((item) => item.trim()).filter(Boolean);
+        const techStack = formData.techStack
+            .split(',')
+            .map((item) => item.trim())
+            .filter(Boolean);
         const payload = { ...formData, techStack };
 
         if (isSynced) {
-            // Pin anything edited in this session on top of the toggles, then send
-            // the list explicitly so an unpin actually sticks (the API only
-            // auto-pins when pinnedFields is absent). A field you unpin AND edit
-            // stays pinned — the edit is the stronger signal.
             const edited = PINNABLE_FIELDS.filter((field) => {
                 const next = field === 'techStack' ? techStack : formData[field];
                 const previous = initialData?.[field];
@@ -219,349 +230,349 @@ const ProjectForm = ({ initialData, isEdit = false }) => {
             });
 
             if (response.ok) {
-                showNotification(true, isEdit ? 'Project Updated Successfully' : 'Project Created Successfully');
+                showNotification(true, isEdit ? 'Project saved' : 'Project created');
                 setTimeout(() => {
                     router.push('/admin/projects');
                     router.refresh();
-                }, 1500);
+                }, 1200);
             } else {
                 const data = await response.json();
                 setError(data.error || 'Something went wrong');
-                showNotification(false, data.error || 'Failed to save');
+                showNotification(false, data.error || 'Failed to save project');
             }
-        } catch (err) {
-            setError('An error occurred');
+        } catch {
+            setError('An error occurred while saving the project.');
             showNotification(false, 'An error occurred');
         } finally {
             setLoading(false);
         }
     };
 
-    const statusState = getStatusState(formData.status);
+    const statusMeta = getStatusMeta(formData.status);
     const isSynced = initialData?.source === 'github';
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-8">
-            {isSynced && (
-                <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-4">
-                    <p className="flex flex-wrap items-center gap-2 font-mono text-xs uppercase tracking-widest text-cyan-400">
-                        <GitBranch className="h-3.5 w-3.5" aria-hidden="true" />
-                        Synced from {initialData.repoFullName}
-                        {initialData.syncedAt && (
-                            <span className="text-slate-500">
-                                · last sync {new Date(initialData.syncedAt).toLocaleDateString()}
-                            </span>
-                        )}
-                    </p>
-                    <p className="mt-2 text-xs leading-relaxed text-slate-400">
-                        Editing a field below pins it, so future syncs keep your version.
-                        Unpin one to let GitHub refresh it again.
-                    </p>
-
-                    <div className="mt-3 flex flex-wrap gap-2">
-                        {PINNABLE_FIELDS.map((field) => {
-                            const pinned = pinnedFields.includes(field);
-                            return (
-                                <button
-                                    key={field}
-                                    type="button"
-                                    onClick={() => togglePinned(field)}
-                                    aria-pressed={pinned}
-                                    className={`inline-flex cursor-pointer items-center gap-1.5 rounded border px-2 py-1 font-mono text-[11px] transition-colors ${
-                                        pinned
-                                            ? 'border-cyan-500/40 bg-cyan-500/10 text-cyan-300'
-                                            : 'border-white/10 text-slate-500 hover:bg-white/5'
-                                    }`}
-                                >
-                                    {pinned
-                                        ? <Lock className="h-3 w-3" aria-hidden="true" />
-                                        : <Unlock className="h-3 w-3" aria-hidden="true" />}
-                                    {field}
-                                </button>
-                            );
-                        })}
+        <form onSubmit={handleSubmit} className="adm-prj-split">
+            <div className="adm-prj-stack">
+                {error && (
+                    <div role="alert" className="adm-notice adm-notice-error">
+                        {error}
                     </div>
-                </div>
-            )}
+                )}
 
-            {error && (
-                <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl flex items-center gap-3 font-mono text-sm">
-                    <Activity className="w-4 h-4" />
-                    ERROR: {error}
-                </div>
-            )}
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Main Info Column */}
-                <div className="lg:col-span-2 space-y-8">
-                    {/* Identity Module */}
-                    <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 md:p-8 relative group">
-                        <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
-                            <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-[100px] transition-opacity opacity-50 group-hover:opacity-100" />
+                {isSynced && (
+                    <Panel
+                        title="GitHub sync"
+                        actions={
+                            <Badge tone="info">
+                                <FaCodeBranch aria-hidden="true" /> {initialData.repoFullName || 'Synced'}
+                            </Badge>
+                        }
+                    >
+                        <p className="adm-help mb-3">
+                            Editing a field pins it so future repository syncs preserve your version. Unpin a field to allow GitHub to refresh it.
+                            {initialData.syncedAt && (
+                                <span className="ml-1 font-mono">
+                                    (Last synced {new Date(initialData.syncedAt).toLocaleDateString()})
+                                </span>
+                            )}
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                            {PINNABLE_FIELDS.map((field) => {
+                                const pinned = pinnedFields.includes(field);
+                                return (
+                                    <button
+                                        key={field}
+                                        type="button"
+                                        onClick={() => togglePinned(field)}
+                                        aria-pressed={pinned}
+                                        className="adm-prj-chip"
+                                    >
+                                        {pinned ? (
+                                            <FaLock aria-hidden="true" />
+                                        ) : (
+                                            <FaLockOpen aria-hidden="true" />
+                                        )}
+                                        <span>{field}</span>
+                                    </button>
+                                );
+                            })}
                         </div>
+                    </Panel>
+                )}
 
-                        <h2 className="text-sm font-mono text-cyan-400 uppercase tracking-widest mb-8 flex items-center gap-4 relative z-10">
-                            Project Identity
-                            <div className="h-px bg-cyan-500/20 grow" />
-                        </h2>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
-                            <div>
-                                <div className="flex justify-between items-center mb-2">
-                                    <label className="block text-xs font-mono uppercase tracking-wider text-slate-400">Project Designation</label>
+                <Panel title="Project identity">
+                    <div className="space-y-4">
+                        <div className="grid gap-4 md:grid-cols-3">
+                            <div className="adm-field md:col-span-1">
+                                <div className="flex min-h-5 items-center justify-between gap-2">
+                                    <label htmlFor="project-name" className="adm-label">
+                                        Project name
+                                    </label>
                                     {aiEnabled && (
                                         <button
                                             type="button"
                                             onClick={() => handleAiAction('name')}
                                             disabled={aiGenerating === 'name' || !formData.description}
-                                            className="flex items-center gap-1.5 px-3 py-1 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 rounded-lg border border-cyan-500/20 transition-all text-[10px] font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed group/ai"
-                                            title="Suggest cool project names from description"
+                                            className="adm-btn adm-btn-quiet -my-2 !px-2 text-xs"
                                         >
                                             {aiGenerating === 'name' ? (
-                                                <Loader2 className="w-3 h-3 animate-spin" />
+                                                <FaSpinner className="animate-spin" aria-hidden="true" />
                                             ) : (
-                                                <Sparkles className="w-3 h-3 group-hover/ai:rotate-12 transition-transform" />
+                                                <FaWandMagicSparkles aria-hidden="true" />
                                             )}
-                                            AI Name
+                                            Suggest
                                         </button>
                                     )}
                                 </div>
-                                <div className="relative group/input">
-                                    <Terminal className="absolute left-4 top-3.5 text-slate-400 group-focus-within/input:text-cyan-400 transition-colors" size={18} />
-                                    <input
-                                        type="text"
-                                        name="name"
-                                        value={formData.name}
-                                        onChange={handleChange}
-                                        className="w-full bg-slate-950/50 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-slate-200 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-600 font-bold"
-                                        required
-                                        placeholder="NEON_PROJECT_01"
-                                    />
-                                </div>
+                                <input
+                                    id="project-name"
+                                    type="text"
+                                    name="name"
+                                    value={formData.name}
+                                    onChange={handleChange}
+                                    className="adm-input"
+                                    required
+                                    placeholder="e.g. Portfolio CMS"
+                                />
                             </div>
-                            <div>
-                                <label className="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-2">Timeline / Year</label>
+
+                            <Field label="Category">
+                                <input
+                                    type="text"
+                                    name="projectType"
+                                    value={formData.projectType}
+                                    onChange={handleChange}
+                                    className="adm-input"
+                                    required
+                                    placeholder="Web app / CLI / Library"
+                                />
+                            </Field>
+
+                            <div className="adm-field">
+                                <label htmlFor="project-year" className="adm-label">
+                                    Timeline or year
+                                </label>
                                 <DatePickerInput
+                                    name="year"
                                     value={formData.year}
                                     onChange={(val) => setFormData((prev) => ({ ...prev, year: val }))}
                                     mode="single"
-                                    accentColor="cyan"
-                                    placeholder="2024"
+                                    placeholder="2025"
                                     required
                                 />
                             </div>
                         </div>
 
-                        <div className="mt-6 relative z-10">
-                            <div className="flex justify-between items-center mb-2">
-                                <label className="block text-xs font-mono uppercase tracking-wider text-slate-400">Description Payload</label>
+                        <div className="adm-field">
+                            <div className="flex min-h-5 items-center justify-between gap-2">
+                                <label htmlFor="project-description" className="adm-label">
+                                    Description
+                                </label>
                                 {aiEnabled && (
                                     <button
                                         type="button"
                                         onClick={() => handleAiAction('description')}
                                         disabled={aiGenerating === 'description' || !formData.description}
-                                        className="flex items-center gap-1.5 px-3 py-1 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 rounded-lg border border-cyan-500/20 transition-all text-[10px] font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed group/ai"
+                                        className="adm-btn adm-btn-quiet -my-2 !px-2 text-xs"
                                     >
                                         {aiGenerating === 'description' ? (
-                                            <Loader2 className="w-3 h-3 animate-spin" />
+                                            <FaSpinner className="animate-spin" aria-hidden="true" />
                                         ) : (
-                                            <Wand2 className="w-3 h-3 group-hover/ai:translate-x-0.5 transition-transform" />
+                                            <FaWandMagicSparkles aria-hidden="true" />
                                         )}
-                                        Refine Description
+                                        Refine
                                     </button>
                                 )}
                             </div>
-                            <div className="relative group/input">
-                                <FileText className="absolute left-4 top-3.5 text-slate-400 group-focus-within/input:text-cyan-400 transition-colors" size={18} />
-                                <textarea
-                                    name="description"
-                                    value={formData.description}
-                                    onChange={handleChange}
-                                    rows="4"
-                                    className="w-full bg-slate-950/50 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-slate-300 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all placeholder:text-slate-600 leading-relaxed text-sm resize-none"
-                                    required
-                                    placeholder="Brief project abstract..."
-                                />
-                            </div>
+                            <textarea
+                                id="project-description"
+                                name="description"
+                                value={formData.description}
+                                onChange={handleChange}
+                                rows="4"
+                                className="adm-input"
+                                required
+                                placeholder="Summarize what this project does and how it is built..."
+                            />
                         </div>
                     </div>
+                </Panel>
 
-                    {/* Technical Specs Module */}
-                    <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-4 md:p-8 relative group">
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
-
-                        <h2 className="text-sm font-mono text-purple-400 uppercase tracking-widest mb-8 flex items-center gap-4 relative z-10">
-                            Technical Specifications
-                            <div className="h-px bg-purple-500/20 grow" />
-                        </h2>
-
-                        <div className="space-y-6 relative z-10">
-                            <div>
-                                <div className="flex justify-between items-center mb-2">
-                                    <label className="block text-xs font-mono uppercase tracking-wider text-slate-400">Tech Stack (Comma Separated)</label>
+                <Panel title="Technical details and links">
+                    <div className="space-y-4">
+                        <div className="grid gap-4 md:grid-cols-2">
+                            <div className="adm-field">
+                                <div className="flex min-h-5 items-center justify-between gap-2">
+                                    <label htmlFor="project-techStack" className="adm-label">
+                                        Tech stack
+                                    </label>
                                     {aiEnabled && (
                                         <button
                                             type="button"
                                             onClick={() => handleAiAction('tech')}
                                             disabled={aiGenerating === 'tech' || !formData.description}
-                                            className="flex items-center gap-1.5 px-3 py-1 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 rounded-lg border border-purple-500/20 transition-all text-[10px] font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed group/ai"
+                                            className="adm-btn adm-btn-quiet -my-2 !px-2 text-xs"
                                         >
                                             {aiGenerating === 'tech' ? (
-                                                <Loader2 className="w-3 h-3 animate-spin" />
+                                                <FaSpinner className="animate-spin" aria-hidden="true" />
                                             ) : (
-                                                <Sparkles className="w-3 h-3 group-hover/ai:rotate-12 transition-transform" />
+                                                <FaWandMagicSparkles aria-hidden="true" />
                                             )}
-                                            AI Suggest
+                                            Suggest
                                         </button>
                                     )}
                                 </div>
-                                <div className="relative group/input">
-                                    <Code className="absolute left-4 top-3.5 text-slate-400 group-focus-within/input:text-purple-400 transition-colors" size={18} />
-                                    <input
-                                        type="text"
-                                        name="techStack"
-                                        value={formData.techStack}
-                                        onChange={handleChange}
-                                        className="w-full bg-slate-950/50 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-slate-200 focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/50 outline-none transition-all placeholder:text-slate-600 font-mono"
-                                        placeholder="React, Next.js, Tailwind, MongoDB"
-                                        required
-                                    />
-                                </div>
+                                <input
+                                    id="project-techStack"
+                                    type="text"
+                                    name="techStack"
+                                    value={formData.techStack}
+                                    onChange={handleChange}
+                                    className="adm-input font-mono"
+                                    placeholder="React, Next.js, Tailwind, PostgreSQL"
+                                    required
+                                />
+                                <p className="adm-help">Comma-separated list of languages, frameworks, and tools.</p>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
-                                    <label className="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-2">Project Category</label>
-                                    <div className="relative group/input">
-                                        <Layers className="absolute left-4 top-3.5 text-slate-400 group-focus-within/input:text-purple-400 transition-colors" size={18} />
-                                        <input
-                                            type="text"
-                                            name="projectType"
-                                            value={formData.projectType}
-                                            onChange={handleChange}
-                                            className="w-full bg-slate-950/50 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-slate-200 focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/50 outline-none transition-all placeholder:text-slate-600"
-                                            required
-                                            placeholder="Web App / Mobile App"
-                                        />
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-2">Repo / Live Link</label>
-                                    <div className="relative group/input">
-                                        <LinkIcon className="absolute left-4 top-3.5 text-slate-400 group-focus-within/input:text-purple-400 transition-colors" size={18} />
-                                        <input
-                                            type="url"
-                                            name="codeLink"
-                                            value={formData.codeLink}
-                                            onChange={handleChange}
-                                            className="w-full bg-slate-950/50 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-slate-200 focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/50 outline-none transition-all placeholder:text-slate-600 font-mono"
-                                            placeholder="https://github.com/..."
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                            <BlogLinkInput value={formData.blogLink} onChange={handleChange} />
+                            <Field label="Repository or live URL" help="Source repository or primary project link.">
+                                <input
+                                    type="url"
+                                    name="codeLink"
+                                    value={formData.codeLink}
+                                    onChange={handleChange}
+                                    className="adm-input font-mono"
+                                    placeholder="https://github.com/..."
+                                />
+                            </Field>
                         </div>
-                    </div>
-                </div>
 
-                {/* Sidebar Column */}
-                <div className="space-y-8">
-                    {/* Status Module */}
-                    <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-6 relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-[100px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
-                        <h2 className="text-sm font-mono text-emerald-400 uppercase tracking-widest mb-6 relative z-10">Development Status</h2>
-                        <div className="relative z-10 bg-slate-950/50 p-2 rounded-xl border border-white/10">
+                        <BlogLinkInput value={formData.blogLink} onChange={handleChange} />
+                    </div>
+                </Panel>
+            </div>
+
+            <aside className="adm-prj-stack adm-prj-side">
+                <Panel
+                    title="Publish"
+                    actions={<Badge tone={statusMeta.tone}>{statusMeta.label}</Badge>}
+                >
+                    <div className="space-y-4">
+                        <Field label="Development status" help={statusMeta.message}>
                             <select
                                 name="status"
                                 value={formData.status}
                                 onChange={handleChange}
-                                className="w-full bg-transparent border-none text-slate-200 outline-none p-2 font-mono"
+                                className="adm-input"
                             >
-                                <option value="Done" className="bg-slate-900 text-slate-200">Done (Completed)</option>
-                                <option value="In Progress" className="bg-slate-900 text-slate-200">In Progress (Active)</option>
-                                <option value="Deferred" className="bg-slate-900 text-slate-200">Deferred (On Hold)</option>
+                                <option value="Done">Done (Completed)</option>
+                                <option value="In Progress">In Progress (Active)</option>
+                                <option value="Deferred">Deferred (On Hold)</option>
                             </select>
-                        </div>
-                        <div className={`mt-4 flex items-center gap-2 text-xs font-mono uppercase tracking-wide justify-center p-2 rounded border ${statusState.panelClass}`}>
-                            <div className={`w-2 h-2 rounded-full ${statusState.dotClass}`} />
-                            {statusState.message}
-                        </div>
-                    </div>
+                        </Field>
 
-                    {/* Image Module */}
-                    <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-6 relative overflow-hidden group">
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-sm font-mono text-slate-400 uppercase tracking-widest">Visual Asset</h2>
-                            <label className={`cursor-pointer group/upload transition-all ${uploadingFile ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
-                                <input
-                                    type="file"
-                                    className="hidden"
-                                    accept="image/*,.heic,.heif"
-                                    onChange={handleFileUpload}
-                                    disabled={uploadingFile}
-                                />
-                                <div className="flex items-center gap-2 px-3 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 rounded-lg border border-cyan-500/20 transition-all text-[10px] font-bold uppercase tracking-wider">
-                                    {uploadingFile ? (
-                                        <Loader2 size={12} className="animate-spin" />
-                                    ) : (
-                                        <Upload size={12} className="group-hover/upload:scale-110 transition-transform" />
-                                    )}
-                                    {uploadingFile ? 'Uploading...' : 'Upload Asset'}
-                                </div>
-                            </label>
+                        <div className="flex flex-wrap gap-2">
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="adm-btn adm-btn-primary flex-1"
+                            >
+                                {loading ? (
+                                    <FaSpinner className="animate-spin" aria-hidden="true" />
+                                ) : (
+                                    <FaFloppyDisk aria-hidden="true" />
+                                )}
+                                {loading ? 'Saving...' : isEdit ? 'Save changes' : 'Create project'}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => router.back()}
+                                className="adm-btn"
+                            >
+                                Cancel
+                            </button>
                         </div>
-                        <div className="relative group/input mb-4">
-                            <ImageIcon className="absolute left-4 top-3.5 text-slate-400 group-focus-within/input:text-white transition-colors" size={18} />
+
+                        {(initialData?.slug || formData.codeLink) && (
+                            <div className="pt-3 border-t border-[var(--hairline)] flex flex-wrap gap-2">
+                                {initialData?.slug && (
+                                    <Link
+                                        href={`/projects/${initialData.slug}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="adm-btn flex-1"
+                                    >
+                                        View page <FaArrowUpRightFromSquare aria-hidden="true" className="text-xs" />
+                                    </Link>
+                                )}
+                                {formData.codeLink && (
+                                    <a
+                                        href={formData.codeLink}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="adm-btn flex-1"
+                                    >
+                                        Open repo <FaArrowUpRightFromSquare aria-hidden="true" className="text-xs" />
+                                    </a>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </Panel>
+
+                {isEdit && initialData?._id && <ProjectAppLinks project={initialData} />}
+
+                <Panel
+                    title="Cover image"
+                    actions={
+                        <label className="adm-btn cursor-pointer">
+                            {uploadingFile ? (
+                                <FaSpinner className="animate-spin" aria-hidden="true" />
+                            ) : (
+                                <FaFileArrowUp aria-hidden="true" />
+                            )}
+                            <span>{uploadingFile ? 'Uploading...' : 'Upload'}</span>
+                            <input
+                                type="file"
+                                className="sr-only"
+                                accept="image/*,.heic,.heif"
+                                onChange={handleFileUpload}
+                                disabled={uploadingFile}
+                            />
+                        </label>
+                    }
+                >
+                    <div className="space-y-3">
+                        <Field label="Image URL">
                             <input
                                 type="text"
                                 name="image"
                                 value={formData.image}
                                 onChange={handleChange}
-                                className="w-full bg-slate-950/50 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-slate-200 focus:border-white/30 focus:ring-1 focus:ring-white/10 outline-none transition-all placeholder:text-slate-600 font-mono text-xs"
-                                placeholder="IMAGE_URL"
+                                className="adm-input font-mono"
+                                placeholder="/uploads/... or https://..."
                             />
-                        </div>
-                        <div className="aspect-video w-full rounded-lg bg-slate-950/50 border border-white/10 flex items-center justify-center overflow-hidden relative group/preview">
+                        </Field>
+                        <div className="adm-prj-preview">
                             {formData.image ? (
-                                <img src={formData.image} alt="Preview" className="w-full h-full object-cover transition-transform group-hover/preview:scale-105" loading="lazy" decoding="async" />
+                                <img
+                                    src={formData.image}
+                                    alt="Project cover preview"
+                                    loading="lazy"
+                                    decoding="async"
+                                />
                             ) : (
-                                <div className="text-slate-600 flex flex-col items-center gap-2">
-                                    <ImageIcon size={24} />
-                                    <span className="text-[10px] font-mono uppercase">No Asset Signal</span>
-                                </div>
+                                <>
+                                    <FaImage aria-hidden="true" className="text-lg" />
+                                    <span>No image selected</span>
+                                </>
                             )}
                         </div>
                     </div>
-                </div>
-            </div>
+                </Panel>
+            </aside>
 
-            {/* Sticky Action Footer */}
-            <div className="sticky bottom-8 flex justify-end gap-4 pt-6 border border-white/5 bg-slate-900/90 backdrop-blur-lg p-4 rounded-xl shadow-2xl z-50 mt-12">
-                <button
-                    type="button"
-                    onClick={() => router.back()}
-                    className="px-6 py-2 rounded bg-white/5 hover:bg-white/10 text-slate-400 transition-colors text-sm font-medium"
-                >
-                    CANCEL
-                </button>
-                <button
-                    type="submit"
-                    disabled={loading}
-                    className="px-8 py-2 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-bold transition-all shadow-[0_0_20px_rgba(8,145,178,0.3)] hover:shadow-[0_0_30px_rgba(8,145,178,0.5)] disabled:opacity-50 disabled:cursor-not-allowed text-sm tracking-wide uppercase flex items-center gap-2"
-                >
-                    {loading ? (
-                        <>
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            UPDATING_SYSTEM...
-                        </>
-                    ) : (
-                        isEdit ? 'CONFIRM_UPDATE' : 'INITIALIZE_PROJECT'
-                    )}
-                </button>
-            </div>
-
-            {/* Toast Notification */}
             <Toast notification={notification} />
         </form>
     );

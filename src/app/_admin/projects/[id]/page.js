@@ -1,9 +1,11 @@
 "use client";
 import React, { useEffect, useState } from 'react';
-import ProjectForm from '@/app/components/admin/ProjectForm';
-import ProjectAppLinks from '@/app/components/admin/ProjectAppLinks';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import { FaArrowLeft } from 'react-icons/fa6';
+import ProjectForm from '@/app/components/admin/ProjectForm';
+import { Badge, EmptyState, Loading, PageHeader, Panel } from '@/app/components/admin/ui';
+import '@/app/styles/admin-projects.css';
 
 export default function EditProjectPage() {
     const { id } = useParams();
@@ -30,33 +32,41 @@ export default function EditProjectPage() {
         }
     }, [id]);
 
-    if (loading) return (
-        <div className="flex items-center justify-center min-h-screen">
-            <span className="font-mono text-cyan-400 animate-pulse">SEARCHING_DATABASE...</span>
-        </div>
-    );
-
-    if (!project) return (
-        <div className="flex items-center justify-center min-h-screen">
-            <span className="font-mono text-red-400">ERROR: PROJECT_NOT_FOUND</span>
-        </div>
-    );
-
     return (
-        <div className="p-4 md:p-8 max-w-7xl mx-auto min-h-screen">
-            <div className="mb-12">
-                <Link href="/admin/projects" className="text-cyan-400 hover:text-cyan-300 flex items-center gap-2 transition-colors mb-4 text-sm font-mono opacity-60 hover:opacity-100 uppercase tracking-widest">
-                    ← BACK_TO_PROJECT_DATABASE
-                </Link>
-                <div className="flex items-end gap-4">
-                    <h1 className="text-4xl font-bold text-white mb-2 tracking-tight">Modify Project</h1>
-                    <span className="font-mono text-xs text-slate-500 mb-4 pb-1">SEQ_ID: {project._id}</span>
-                </div>
-                <p className="text-slate-400">Update specific parameters and assets for this project module.</p>
-            </div>
+        <div className="adm-page">
+            <PageHeader
+                command="edit"
+                title={project?.name ? `Edit ${project.name}` : 'Edit project'}
+                description="Update details, tech stack, links, and cover image for this project."
+                actions={
+                    <>
+                        {project?._id && <Badge>{project._id}</Badge>}
+                        <Link href="/admin/projects" className="adm-btn">
+                            <FaArrowLeft aria-hidden="true" /> Back to projects
+                        </Link>
+                    </>
+                }
+            />
 
-            <ProjectAppLinks project={project} />
-            <ProjectForm initialData={project} isEdit={true} />
+            {loading ? (
+                <Panel>
+                    <Loading label="Loading project" rows={6} />
+                </Panel>
+            ) : !project ? (
+                <Panel flush>
+                    <EmptyState
+                        title="Project not found"
+                        description="This project may have been removed or the ID is invalid."
+                        action={
+                            <Link href="/admin/projects" className="adm-btn adm-btn-primary">
+                                Back to projects
+                            </Link>
+                        }
+                    />
+                </Panel>
+            ) : (
+                <ProjectForm initialData={project} isEdit={true} />
+            )}
         </div>
     );
 }

@@ -1,34 +1,34 @@
 "use client";
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { GitBranch, Lock, Search } from 'lucide-react';
+import {
+    FaArrowLeft,
+    FaArrowUpRightFromSquare,
+    FaCodeBranch,
+    FaFolder,
+    FaGripVertical,
+    FaLock,
+    FaMagnifyingGlass,
+    FaPen,
+    FaPlus,
+    FaTrash,
+} from 'react-icons/fa6';
 import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
+import { Badge, EmptyState, Loading, PageHeader, Panel, Stat } from '@/app/components/admin/ui';
+import '@/app/styles/admin-projects.css';
 
 const getStatusMeta = (status) => {
     const normalizedStatus = String(status || '').trim().toLowerCase();
 
     if (normalizedStatus === 'done' || normalizedStatus === 'completed') {
-        return {
-            label: 'Done',
-            badgeClass: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-            dotClass: 'bg-emerald-500',
-        };
+        return { label: 'Done', tone: 'ok', key: 'done' };
     }
 
     if (normalizedStatus === 'deferred' || normalizedStatus === 'deffered' || normalizedStatus === 'on hold') {
-        return {
-            label: 'Deferred',
-            badgeClass: 'bg-slate-500/10 text-slate-300 border-slate-500/20',
-            dotClass: 'bg-slate-400',
-        };
+        return { label: 'Deferred', tone: undefined, key: 'deferred' };
     }
 
-    return {
-        label: 'In Progress',
-        badgeClass: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-        dotClass: 'bg-amber-500',
-    };
+    return { label: 'In progress', tone: 'warn', key: 'in-progress' };
 };
 
 export default function AdminProjects() {
@@ -39,6 +39,7 @@ export default function AdminProjects() {
     const [draggedIndex, setDraggedIndex] = useState(null);
     const [dragOverIndex, setDragOverIndex] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [statusFilter, setStatusFilter] = useState('all');
 
     useEffect(() => {
         fetchProjects();
@@ -48,7 +49,7 @@ export default function AdminProjects() {
         try {
             const res = await fetch('/api/projects');
             const data = await res.json();
-            setProjects(data);
+            setProjects(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error('Failed to fetch projects', error);
         } finally {
@@ -57,19 +58,22 @@ export default function AdminProjects() {
     };
 
     const handleDelete = async (id) => {
-        if (!(await confirm({
-            title: 'Delete project?',
-            message: 'Are you sure you want to delete this project? This action cannot be undone.',
-            confirmText: 'Delete',
-            danger: true,
-        }))) return;
+        if (
+            !(await confirm({
+                title: 'Delete project?',
+                message: 'Are you sure you want to delete this project? This action cannot be undone.',
+                confirmText: 'Delete',
+                danger: true,
+            }))
+        )
+            return;
 
         try {
             const res = await fetch(`/api/projects/${id}`, {
                 method: 'DELETE',
             });
             if (res.ok) {
-                setProjects(projects.filter((p) => p._id !== id));
+                setProjects((prev) => prev.filter((p) => p._id !== id));
             } else {
                 toast.error('Failed to delete project');
             }
@@ -155,171 +159,276 @@ export default function AdminProjects() {
         setDragOverIndex(null);
     };
 
-    if (loading) return <div className="p-4 md:p-8 text-white">Loading...</div>;
+    const counts = useMemo(() => {
+        let done = 0;
+        let inProgress = 0;
+        let deferred = 0;
+        let synced = 0;
+        for (const p of projects) {
+            const meta = getStatusMeta(p.status);
+            if (meta.key === 'done') done++;
+            else if (meta.key === 'deferred') deferred++;
+            else inProgress++;
+            if (p.source === 'github') synced++;
+        }
+        return { total: projects.length, done, inProgress, deferred, synced };
+    }, [projects]);
 
-    const filteredProjects = projects.filter(p => 
-        (p.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
-        (p.projectType || '').toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredProjects = useMemo(() => {
+        const q = searchQuery.trim().toLowerCase();
+        return projects.filter((p) => {
+            const matchesSearch =
+                !q ||
+                (p.name || '').toLowerCase().includes(q) ||
+                (p.projectType || '').toLowerCase().includes(q) ||
+                (Array.isArray(p.techStack) ? p.techStack.join(' ') : '').toLowerCase().includes(q);
+            const matchesStatus = statusFilter === 'all' || getStatusMeta(p.status).key === statusFilter;
+            return matchesSearch && matchesStatus;
+        });
+    }, [projects, searchQuery, statusFilter]);
 
     return (
-        <div className="p-4 md:p-8 max-w-7xl mx-auto">
-            <div className="mb-8">
-                <Link href="/admin" className="text-cyan-400 hover:text-cyan-300 flex items-center gap-2 transition-colors mb-4 text-sm font-mono opacity-60 hover:opacity-100">
-                    ← BACK_TO_COMMAND_CENTER
-                </Link>
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
-                    <div>
-                        <h1 className="text-3xl md:text-4xl font-bold text-white mb-2 tracking-tight">Project Database</h1>
-                        <p className="text-slate-400">Manage, edit, and track your portfolio projects.</p>
-                        {isSavingOrder && (
-                            <p className="text-xs font-mono text-cyan-400 mt-2">SAVING_PROJECT_ORDER...</p>
-                        )}
-                    </div>
-                    <div className="flex flex-wrap items-center gap-3">
-                        {/* Repo sync lives on the GitHub dashboard next to the
-                            token and hidden-repo controls it depends on, but
-                            this is where you come looking for it. */}
-                        <Link
-                            href="/admin/github#repository-sync"
-                            className="px-5 py-3 rounded-lg border border-white/10 text-slate-300 font-mono text-sm tracking-wide transition-colors hover:bg-white/5 flex items-center gap-2"
-                        >
-                            <GitBranch className="w-4 h-4" aria-hidden="true" />
-                            SYNC_FROM_GITHUB
+        <div className="adm-page">
+            <PageHeader
+                command="ls"
+                title="Projects"
+                description="Manage, reorder, and publish portfolio projects."
+                actions={
+                    <>
+                        <Link href="/admin/github#repository-sync" className="adm-btn">
+                            <FaCodeBranch aria-hidden="true" /> Sync from GitHub
                         </Link>
-                        <Link href="/admin/projects/new" className="group relative px-6 py-3 rounded-lg overflow-hidden bg-cyan-500/10 border border-cyan-500/20 hover:border-cyan-500/50 transition-all hover:shadow-[0_0_20px_rgba(34,211,238,0.2)]">
-                            <div className="absolute inset-0 bg-linear-to-r from-transparent via-cyan-500/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700" />
-                            <span className="relative text-cyan-400 font-bold tracking-wide flex items-center gap-2">
-                                <span className="text-lg">+</span> INITIALIZE_PROJECT
-                            </span>
+                        <Link href="/admin/projects/new" className="adm-btn adm-btn-primary">
+                            <FaPlus aria-hidden="true" /> New project
                         </Link>
-                    </div>
-                </div>
+                    </>
+                }
+            />
+
+            <div className="adm-stats">
+                <Stat label="Total projects" value={counts.total} hint={`${counts.deferred} deferred`} />
+                <Stat label="Completed" value={counts.done} hint="Live in portfolio" />
+                <Stat label="In progress" value={counts.inProgress} hint="Active builds" />
+                <Stat label="Synced from GitHub" value={counts.synced} hint="Repository linked" />
             </div>
 
-            <div className="mb-6 relative max-w-2xl">
-                <div className="absolute -inset-1 bg-linear-to-r from-cyan-500 to-purple-600 rounded-2xl blur opacity-20 group-focus-within:opacity-40 transition duration-1000 group-focus-within:duration-200"></div>
-                <div className="relative group">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-cyan-400 transition-colors" size={18} />
-                    <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Search projects..."
-                        className="w-full bg-slate-900/80 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-slate-200 focus:outline-none focus:border-cyan-500/50 shadow-inner transition-all"
+            <Panel
+                title="All projects"
+                actions={
+                    <div className="flex items-center gap-2">
+                        {isSavingOrder && <Badge tone="info">Saving order...</Badge>}
+                        <Badge>{filteredProjects.length} shown</Badge>
+                    </div>
+                }
+                flush
+            >
+                <div className="adm-prj-toolbar">
+                    <div className="adm-prj-search">
+                        <FaMagnifyingGlass aria-hidden="true" className="adm-prj-search-icon" />
+                        <input
+                            type="search"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Search projects by name, category, or stack..."
+                            aria-label="Search projects"
+                            className="adm-input"
+                        />
+                    </div>
+                    <div role="group" aria-label="Filter projects by status" className="flex flex-wrap gap-1">
+                        {[
+                            ['all', 'All'],
+                            ['done', 'Done'],
+                            ['in-progress', 'In progress'],
+                            ['deferred', 'Deferred'],
+                        ].map(([key, label]) => (
+                            <button
+                                key={key}
+                                type="button"
+                                aria-pressed={statusFilter === key}
+                                onClick={() => setStatusFilter(key)}
+                                className="adm-tab"
+                            >
+                                {label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {loading ? (
+                    <Loading label="Loading projects" rows={5} />
+                ) : filteredProjects.length === 0 ? (
+                    <EmptyState
+                        title={projects.length === 0 ? 'No projects yet' : 'No matching projects'}
+                        description={
+                            projects.length === 0
+                                ? 'Create your first portfolio project or sync repositories from GitHub.'
+                                : 'Try adjusting your search query or status filter.'
+                        }
+                        action={
+                            projects.length === 0 ? (
+                                <Link href="/admin/projects/new" className="adm-btn adm-btn-primary">
+                                    <FaPlus aria-hidden="true" /> New project
+                                </Link>
+                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setSearchQuery('');
+                                        setStatusFilter('all');
+                                    }}
+                                    className="adm-btn"
+                                >
+                                    Clear filters
+                                </button>
+                            )
+                        }
                     />
-                </div>
-            </div>
-
-            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                        <thead className="bg-white/5 border-b border-white/10 text-xs uppercase tracking-wider text-slate-400 font-medium">
-                            <tr>
-                                <th className="px-6 py-5">Order</th>
-                                <th className="px-6 py-5">Project Name</th>
-                                <th className="px-6 py-5">Type / Category</th>
-                                <th className="px-6 py-5">Year</th>
-                                <th className="px-6 py-5">Status</th>
-                                <th className="px-6 py-5 text-right">Controls</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-white/10 text-sm">
-                            {filteredProjects.map((project, index) => {
-                                const statusMeta = getStatusMeta(project.status);
-                                const isDragging = draggedIndex === index;
-                                const isDragTarget = dragOverIndex === index && draggedIndex !== index;
-
-                                return (
-                                    <motion.tr
-                                        key={project._id}
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: index * 0.05 }}
-                                        onDragOver={(event) => handleDragOver(event, index)}
-                                        onDrop={(event) => handleDrop(event, index)}
-                                        className={`group transition-colors ${isDragTarget ? 'bg-cyan-500/5' : 'hover:bg-white/2'} ${isDragging ? 'opacity-50' : ''}`}
-                                    >
-                                        <td className="px-6 py-5 text-slate-500 font-mono">
-                                            <span className="inline-flex items-center gap-2">
-                                                <button
-                                                    type="button"
-                                                    draggable={!isSavingOrder}
-                                                    onDragStart={(event) => handleDragStart(event, index)}
-                                                    onDragEnd={handleDragEnd}
-                                                    disabled={isSavingOrder}
-                                                    title="Drag to reorder"
-                                                    className="text-slate-600 hover:text-cyan-400 transition-colors select-none disabled:opacity-40 disabled:cursor-not-allowed"
-                                                >
-                                                    ⋮⋮
-                                                </button>
-                                                <span>{index + 1}</span>
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-5 font-semibold text-slate-200 group-hover:text-cyan-400 transition-colors">
-                                            <span className="flex flex-wrap items-center gap-2">
-                                                {project.name}
-                                                {project.source === 'github' && (
-                                                    <span
-                                                        title={project.repoFullName || 'Synced from GitHub'}
-                                                        className="inline-flex items-center gap-1 rounded border border-cyan-500/30 bg-cyan-500/10 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide text-cyan-400"
-                                                    >
-                                                        <GitBranch className="w-3 h-3" aria-hidden="true" />
-                                                        synced
-                                                    </span>
-                                                )}
-                                                {project.pinnedFields?.length > 0 && (
-                                                    <span
-                                                        title={`Protected from sync: ${project.pinnedFields.join(', ')}`}
-                                                        className="inline-flex items-center gap-1 font-mono text-[10px] text-slate-500"
-                                                    >
-                                                        <Lock className="w-3 h-3" aria-hidden="true" />
-                                                        {project.pinnedFields.length}
-                                                    </span>
-                                                )}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-5 text-slate-400">{project.projectType}</td>
-                                        <td className="px-6 py-5 text-slate-500 font-mono">{project.year}</td>
-                                        <td className="px-6 py-5">
-                                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${statusMeta.badgeClass}`}>
-                                                <span className={`w-1.5 h-1.5 rounded-full ${statusMeta.dotClass}`} />
-                                                {statusMeta.label}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-5">
-                                            <div className="flex items-center justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
-                                                <span className="px-2 py-1 text-[10px] uppercase tracking-wider text-slate-500 border border-white/10 rounded">
-                                                    Drag Row
-                                                </span>
-                                                <Link
-                                                    href={`/admin/projects/${project._id}`}
-                                                    className="px-3 py-1.5 rounded hover:bg-cyan-500/20 text-cyan-400 transition-colors text-xs font-medium uppercase tracking-wider border border-transparent hover:border-cyan-500/30"
-                                                >
-                                                    Edit
-                                                </Link>
-                                                <button
-                                                    onClick={() => handleDelete(project._id)}
-                                                    className="px-3 py-1.5 rounded hover:bg-red-500/20 text-red-400 transition-colors text-xs font-medium uppercase tracking-wider border border-transparent hover:border-red-500/30"
-                                                >
-                                                    Delete
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </motion.tr>
-                                );
-                            })}
-                            {filteredProjects.length === 0 && !loading && (
+                ) : (
+                    <div className="adm-table-wrap">
+                        <table className="adm-table">
+                            <thead>
                                 <tr>
-                                    <td colSpan="6" className="px-6 py-12 text-center text-slate-500">
-                                        No projects found matching your search.
-                                    </td>
+                                    <th className="w-20">Order</th>
+                                    <th>Project</th>
+                                    <th>Category</th>
+                                    <th>Tech stack</th>
+                                    <th>Year</th>
+                                    <th>Status</th>
+                                    <th className="text-right">Actions</th>
                                 </tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+                            </thead>
+                            <tbody>
+                                {filteredProjects.map((project, index) => {
+                                    const statusMeta = getStatusMeta(project.status);
+                                    const isDragging = draggedIndex === index;
+                                    const isDragTarget = dragOverIndex === index && draggedIndex !== index;
+                                    const stack = Array.isArray(project.techStack) ? project.techStack : [];
+
+                                    return (
+                                        <tr
+                                            key={project._id}
+                                            onDragOver={(event) => handleDragOver(event, index)}
+                                            onDrop={(event) => handleDrop(event, index)}
+                                            className={`${isDragging ? 'adm-prj-row-dragging' : ''} ${
+                                                isDragTarget ? 'adm-prj-row-over' : ''
+                                            }`}
+                                        >
+                                            <td className="adm-num">
+                                                <div className="inline-flex items-center gap-1.5">
+                                                    <button
+                                                        type="button"
+                                                        draggable={!isSavingOrder}
+                                                        onDragStart={(event) => handleDragStart(event, index)}
+                                                        onDragEnd={handleDragEnd}
+                                                        disabled={isSavingOrder}
+                                                        aria-label={`Reorder ${project.name}`}
+                                                        title="Drag to reorder"
+                                                        className="adm-icon-btn adm-prj-drag"
+                                                    >
+                                                        <FaGripVertical aria-hidden="true" />
+                                                    </button>
+                                                    <span className="text-[var(--text-secondary)]">{index + 1}</span>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div className="flex items-center gap-3 min-w-0">
+                                                    <div className="adm-prj-thumb" aria-hidden="true">
+                                                        {project.image ? (
+                                                            <img src={project.image} alt="" loading="lazy" />
+                                                        ) : (
+                                                            <FaFolder />
+                                                        )}
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <div className="flex flex-wrap items-center gap-2">
+                                                            <Link
+                                                                href={`/admin/projects/${project._id}`}
+                                                                className="font-semibold text-[var(--text-bright)] hover:underline truncate"
+                                                            >
+                                                                {project.name}
+                                                            </Link>
+                                                            {project.source === 'github' && (
+                                                                <Badge
+                                                                    tone="info"
+                                                                    title={project.repoFullName || 'Synced from GitHub'}
+                                                                >
+                                                                    <FaCodeBranch aria-hidden="true" /> Synced
+                                                                </Badge>
+                                                            )}
+                                                            {project.pinnedFields?.length > 0 && (
+                                                                <Badge
+                                                                    title={`Pinned fields: ${project.pinnedFields.join(', ')}`}
+                                                                >
+                                                                    <FaLock aria-hidden="true" /> {project.pinnedFields.length}
+                                                                </Badge>
+                                                            )}
+                                                        </div>
+                                                        {project.slug && (
+                                                            <p className="adm-help font-mono truncate">
+                                                                /projects/{project.slug}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="text-[var(--text-secondary)]">
+                                                {project.projectType || '—'}
+                                            </td>
+                                            <td>
+                                                <div className="flex flex-wrap gap-1 max-w-xs">
+                                                    {stack.slice(0, 3).map((tech) => (
+                                                        <Badge key={tech}>{tech}</Badge>
+                                                    ))}
+                                                    {stack.length > 3 && <Badge>+{stack.length - 3}</Badge>}
+                                                </div>
+                                            </td>
+                                            <td className="adm-num text-[var(--text-secondary)]">
+                                                {project.year || '—'}
+                                            </td>
+                                            <td>
+                                                <Badge tone={statusMeta.tone}>{statusMeta.label}</Badge>
+                                            </td>
+                                            <td>
+                                                <div className="flex items-center justify-end gap-1">
+                                                    {project.codeLink && (
+                                                        <a
+                                                            href={project.codeLink}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="adm-icon-btn"
+                                                            aria-label={`Open repository for ${project.name}`}
+                                                            title="Open repository or live link"
+                                                        >
+                                                            <FaArrowUpRightFromSquare aria-hidden="true" />
+                                                        </a>
+                                                    )}
+                                                    <Link
+                                                        href={`/admin/projects/${project._id}`}
+                                                        className="adm-icon-btn"
+                                                        aria-label={`Edit ${project.name}`}
+                                                        title={`Edit ${project.name}`}
+                                                    >
+                                                        <FaPen aria-hidden="true" />
+                                                    </Link>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleDelete(project._id)}
+                                                        className="adm-icon-btn hover:!text-[var(--adm-error-ink)]"
+                                                        aria-label={`Delete ${project.name}`}
+                                                        title={`Delete ${project.name}`}
+                                                    >
+                                                        <FaTrash aria-hidden="true" />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </Panel>
         </div>
     );
 }
