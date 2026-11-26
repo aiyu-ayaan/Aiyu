@@ -4,7 +4,7 @@ Goal: run the whole site on a 1 GB VPS. Smallest possible size and memory, no da
 Target stack: axum (Rust) server + SQLite, Vite + React (TypeScript where practical) client, pnpm.
 Branch: `migrate/rust-vite`. Baseline and method: `development/docs/PERFORMANCE.md`.
 
-## ▶ RESUME HERE (handoff 2026-11-26)
+## ▶ RESUME HERE (updated 2026-11-27)
 
 Branch `migrate/rust-vite`. EVERY page is now served by Rust + Vite: all public pages, legal, `/desktop`, `/games`,
 and all `/admin` pages (`src/app/_admin/**/page.js`, routed by `web/src/routes/admin.tsx` through `import.meta.glob`;
@@ -17,8 +17,12 @@ Milestone 8 (API routes) IN PROGRESS.
 - Decided 2026-11-26 (user): port every integration to Rust, no Node sidecar.
 - Done: sitemap.xml, robots.txt, ads.txt, auth.md, /docs/api, /docs/mcp (byte-equal to Next apart from request-time
   `lastmod` values).
-- NEXT: integrations (Drive, import, uploads/sharp/HEIC, crons, MCP, AI generation, GitHub OAuth, sync and webhook, SEO
-  crawl and fix, contact form notifications, notification test, resume compile, storage) and the streamed restore.
+- NEXT, in this order: `/api/admin/ai/{config,models,validate-provider,text,generate}`, `/api/admin/health/analyze`,
+  `/api/admin/seo/{audit,crawl,fix,index}`, `/api/debug-groq` (ask the user whether it should exist), the search-engine
+  pings of `/api/internal/hooks`, then 5b/9 (SQLite) and 10 (cutover).
+- Done 2026-11-27: MCP (`writes/mcp.mjs` 83/83: every tool, resource and prompt; JSON carried as text differs only in
+  key order). Admin redesign finished. `pnpm dev` runs Vite, aiyu-server and `next dev` together; unused files removed.
+- Done: cron jobs (`CRON_RUNNER=rust`, `writes/crons.mjs`).
 - Done: contact form `POST`, notification service and test, link previews (`scripts/perf/outbound-parity.mjs` 18/18).
   Telegram delivery is checked by unit test only (its address is fixed). Rust refuses private addresses in
   `/api/og-preview`; Next (and `master`) fetch any address an anonymous caller names.
@@ -361,7 +365,7 @@ Each page: Rust data + head + Vite route + e2e passing through Rust, then the Ne
 - [x] `/api/legal/apps/[id]` (Rust)
 - [x] `/api/legal/apps/[id]/documents` (Rust)
 - [x] `/api/legal/documents/[id]` (Rust)
-- [ ] `/api/mcp`
+- [x] `/api/mcp` (Rust)
 - [x] `/api/og-preview` (Rust)
 - [x] `/api/projects` (Rust)
 - [x] `/api/projects/[id]` (Rust)

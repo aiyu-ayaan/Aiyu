@@ -23,6 +23,7 @@ bodies such as backups never sit in memory.
 | Crawler and agent files | `robots.txt`, `sitemap.xml`, `ads.txt`, `auth.md`, `/docs/api`, `/docs/mcp` |
 | Uploads and storage | `/api/upload`, `/api/uploads/{file}`, `/api/admin/{images/upload,icons,storage,storage/migrate,storage/unreferenced,migrate-gallery}`. HEIC needs the system `libheif1` (loaded at run time) |
 | Health, resume, misc | `/api/admin/{health/metrics,health/uptime,health/uptime/check,purge-cache,resume,resume/compile,resume/publish,ai/logs,system-prompt}` |
+| MCP | `/api/mcp` |
 | Backup | `GET /api/admin/export`: rows and files stream into the zip, about 10 MB of memory whatever the data size |
 | Restore, Google Drive | `/api/admin/import`, `/api/admin/gdrive/*`: everything goes through temporary files (`BACKUP_TMP_DIR`) |
 | Static | `/_app/*` and `/_next/static/*` with a one-year immutable cache |
@@ -62,6 +63,7 @@ SEO tools read through them) and queues search-engine pings. The call carries an
 | `uploads.rs`, `images.rs`, `heif.rs`, `storage.rs` | uploads, WebP conversion and thumbnails, HEIC through libheif, cleanup and migration of files |
 | `health.rs`, `misc.rs` | server metrics, uptime checks, cache purge, Resume Studio, AI log, system prompt |
 | `restore.rs`, `drive.rs` | restore of backups, Google Drive |
+| `mcp.rs` | the MCP endpoint: tools, resources, prompts |
 | `db.rs`, `export.rs` | database pool and ids, backup zip |
 
 `crypto.rs` and `session.rs` read values written by the Node code (encrypted DB fields, the `session` cookie).
@@ -110,7 +112,7 @@ node --env-file=.env scripts/perf/api-parity.mjs scripts/perf/api/batch1.txt
 # Sign-in and analytics
 node --env-file=.env scripts/perf/auth-parity.mjs
 # Writes: same response and same row changes
-node --env-file=.env scripts/perf/write-parity.mjs scripts/perf/writes/{site,content,blogs,legal,ai,admin,github,misc,crons}.mjs
+node --env-file=.env scripts/perf/write-parity.mjs scripts/perf/writes/{site,content,blogs,legal,ai,admin,github,misc,crons,mcp}.mjs   # mcp: PARITY_NEXT=<Next URL> if not :3100
 # Outgoing requests: contact form, notification channels, n8n webhook
 node --env-file=.env scripts/perf/outbound-parity.mjs
 # Uploads: the same files to both servers, stored pictures compared

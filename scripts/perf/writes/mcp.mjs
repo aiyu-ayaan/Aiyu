@@ -3,11 +3,11 @@ import { createHmac } from 'node:crypto';
 import { BEARER_HASH, PAST } from './_shared.mjs';
 
 const cases = [];
-const add = (models, method, path, name, rest = {}) => cases.push({ models, method, path, name, ...rest });
+const add = (models, method, path, name, rest = {}) => cases.push({ models, method, path, name, parseText: true, ...rest });
 
 const purgeNextCache = async (prefixes = ['db:mcpconfig', 'db:blogs', 'db:projects']) => {
     const key = createHmac('sha256', process.env.JWT_SECRET || '').update('internal:hooks').digest('hex');
-    await fetch('http://127.0.0.1:3100/api/internal/hooks', {
+    await fetch(`${process.env.PARITY_NEXT || 'http://127.0.0.1:3100'}/api/internal/hooks`, {
         method: 'POST',
         headers: { 'content-type': 'application/json', 'x-aiyu-internal': key },
         body: JSON.stringify({ prefixes }),
@@ -159,12 +159,7 @@ add(['mcpConfig', 'project', 'auditLog'], 'POST', '/api/mcp', 'tools/call create
     auth: 'bearer',
     setup: enableWrite,
     mask: ['ipAddress'],
-    // The JSON-RPC result has stringified text containing the newly created _id and timestamps; mask it by normalizing inside check and ignoring body text id difference.
-    ignore: ['result'],
-    check: (body, db) => {
-        const parsed = JSON.parse(body?.content?.[0]?.text || '{}');
-        return db.some((c) => c.model === 'project' && c.added?.name === 'MCP Project') && db.some((c) => c.model === 'auditLog' && c.added?.action === 'MCP_CREATE_PROJECT');
-    },
+    check: (body, db) => db.some((c) => c.model === 'project' && c.added?.name === 'MCP Project') && db.some((c) => c.model === 'auditLog' && c.added?.action === 'MCP_CREATE_PROJECT'),
     body: {
         jsonrpc: '2.0',
         id: 50,
@@ -186,10 +181,7 @@ add(['mcpConfig', 'project', 'auditLog'], 'POST', '/api/mcp', 'tools/call update
         });
     },
     mask: ['ipAddress'],
-    ignore: ['result'],
-    check: (body, db) => {
-        return db.some((c) => c.model === 'project' && c.changed === 'wp-mcp-proj' && c.to?.name === 'Updated via MCP');
-    },
+    check: (body, db) => db.some((c) => c.model === 'project' && c.changed === 'wp-mcp-proj' && c.to?.name === 'Updated via MCP'),
     body: { jsonrpc: '2.0', id: 51, method: 'tools/call', params: { name: 'update_project', arguments: { id: 'wp-mcp-proj', name: 'Updated via MCP' } } },
     expect: 200,
 });
@@ -219,6 +211,57 @@ add(['mcpConfig', 'project'], 'POST', '/api/mcp', 'tools/call write tool without
             arguments: { name: 'Anon', year: '2026', status: 'Live', projectType: 'OSS', description: 'No auth' },
         },
     },
+    expect: 200,
+});
+
+// ── every other write tool: a success, bad input and, where an id is taken, a missing one ──
+const dates = { createdAt: PAST, updatedAt: PAST };
+const call = (models, tool, name, args, setup) => add(['mcpConfig', ...models, 'auditLog'], 'POST', '/api/mcp', `tools/call ${tool}: ${name}`, {
+    auth: 'bearer',
+    mask: ['ipAddress'],
+    setup: async (p) => { await enableWrite(p); await setup?.(p); },
+    body: { jsonrpc: '2.0', id: 60, method: 'tools/call', params: { name: tool, arguments: args } },
+    expect: 200,
+});
+call(['blog'], 'create_blog_post', 'draft', { title: 'MCP Post: Hello, World!', content: '# Hi', tags: ['a', 'b'], imageAlt: 'alt' });
+call(['blog'], 'create_blog_post', 'published', { title: 'MCP Live', content: 'x', published: true, excerpt: 'e', image: '/x.png' });
+call(['blog'], 'create_blog_post', 'no content', { title: 'MCP' });
+call(['deployment'], 'create_deployment', 'full', { name: 'MCP App', appType: 'Web', hostingProvider: 'Self', description: 'D', hostedUrl: 'https://example.org', techStack: ['Rust'] });
+call(['deployment'], 'create_deployment', 'missing field', { name: 'MCP App' });
+
+const category = (p) => p.aiSkillCategory.create({ data: { id: 'wp-cat', label: 'C', displayOrder: -50, ...dates } });
+const aiKinds = [
+    { tool: 'ai_skill_category', model: 'aiSkillCategory', models: ['aiSkillCategory', 'aiSkill'], base: { label: 'L' }, fresh: { label: 'New' }, patch: { label: 'Renamed' } },
+    { tool: 'ai_skill', model: 'aiSkill', models: ['aiSkillCategory', 'aiSkill'], before: category, base: { categoryId: 'wp-cat', name: 'S' }, fresh: { categoryId: 'wp-cat', name: 'S2', url: '' }, patch: { name: 'R', url: 'https://example.org' } },
+    { tool: 'ai_recommendation', model: 'aiRecommendation', models: ['aiRecommendation'], base: { name: 'R' }, fresh: { name: 'R2', rating: 9, tags: ['a'] }, patch: { rating: 2 } },
+    { tool: 'ai_credit', model: 'aiCredit', models: ['aiCredit'], base: { name: 'C' }, fresh: { name: 'C2', noCard: false }, patch: { note: 'n' } },
+    { tool: 'ai_prompt', model: 'aiPrompt', models: ['aiPrompt'], base: { title: 'T', prompt: 'P' }, fresh: { title: 'T2', prompt: 'P2' }, patch: { role: 'r' } },
+];
+for (const k of aiKinds) {
+    const one = async (p) => { await k.before?.(p); await p[k.model].create({ data: { id: 'wp-1', ...k.base, ...dates } }); };
+    call(k.models, `create_${k.tool}`, 'success', k.fresh, k.before);
+    call(k.models, `create_${k.tool}`, 'nothing given', {});
+    call(k.models, `update_${k.tool}`, 'success', { id: 'wp-1', ...k.patch }, one);
+    call(k.models, `update_${k.tool}`, 'missing', { id: 'wp-none', ...k.patch });
+    call(k.models, `delete_${k.tool}`, 'success', { id: 'wp-1' }, one);
+    call(k.models, `delete_${k.tool}`, 'missing', { id: 'wp-none' });
+}
+call(['project'], 'update_project', 'missing', { id: 'wp-none', name: 'x' });
+call(['project'], 'delete_project', 'missing', { id: 'wp-none' });
+call(['project'], 'create_project', 'missing field', { name: 'x' });
+
+// A valid token is not enough while writing is switched off.
+add(['mcpConfig', 'project'], 'POST', '/api/mcp', 'write tool with writing switched off', {
+    auth: 'bearer',
+    setup: async (p) => { await enableWrite(p); await p.mcpConfig.update({ where: { id: 'wp-mcp' }, data: { data: { enabled: true, write: { enabled: false } }, updatedAt: PAST } }); await purgeNextCache(); },
+    body: { jsonrpc: '2.0', id: 61, method: 'tools/call', params: { name: 'create_project', arguments: { name: 'No', year: '2026', status: 'Live', projectType: 'OSS', description: 'No' } } },
+    expect: 200,
+});
+add(['mcpConfig', 'project'], 'POST', '/api/mcp', 'write tool with a wrong token', {
+    auth: 'anon',
+    headers: { authorization: 'Bearer wrong-token' },
+    setup: enableWrite,
+    body: { jsonrpc: '2.0', id: 62, method: 'tools/call', params: { name: 'delete_project', arguments: { id: 'x' } } },
     expect: 200,
 });
 

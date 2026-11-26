@@ -91,11 +91,12 @@ function normalizer(known, since) {
         if (typeof value === 'string') {
             if (/^[0-9a-f]{32}:([0-9a-f]{32})+$/.test(value)) return opened(value);
             if (/^\d{4}-\d\d-\d\dT[\d:.]+Z$/.test(value) && Date.parse(value) >= since) return '<now>';
-            if (/^c[0-9a-z]{24}$/.test(value) && !known.has(value)) {
-                if (!ids.has(value)) ids.set(value, `<new ${ids.size + 1}>`);
-                return ids.get(value);
-            }
-            return value;
+            // Also inside sentences, such as an audit log's `Created project "x" (<id>)`.
+            return value.replace(/\bc[0-9a-z]{24}\b/g, (id) => {
+                if (known.has(id)) return id;
+                if (!ids.has(id)) ids.set(id, `<new ${ids.size + 1}>`);
+                return ids.get(id);
+            });
         }
         if (Array.isArray(value)) return value.map(normalize);
         if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, normalize(v)]));
@@ -141,6 +142,8 @@ async function run(server, test, cookie) {
         let parsed = text;
         try { parsed = JSON.parse(text); } catch { /* not JSON */ }
         for (const key of test.ignore ?? []) if (parsed && typeof parsed === 'object') delete parsed[key];
+        // MCP replies carry JSON as text, where Prisma (schema order) and Postgres (column order) list keys differently.
+        if (test.parseText && typeof parsed === 'object') parsed = JSON.parse(text, (_key, v) => (typeof v === 'string' && /^[[{]\n/.test(v) ? JSON.parse(v) : v));
         const after = await snapshot(test.models);
         const normalize = normalizer(known, since);
         const db = changes(test.models, before, after);
