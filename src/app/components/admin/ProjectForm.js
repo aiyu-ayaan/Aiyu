@@ -14,7 +14,7 @@ import {
     FaWandMagicSparkles,
 } from 'react-icons/fa6';
 import { PINNABLE_FIELDS } from '@/lib/projectSyncFields';
-import Toast from './Toast';
+import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
 import BlogLinkInput from './BlogLinkInput';
 import DatePickerInput from './DatePickerInput';
 import ProjectAppLinks from './ProjectAppLinks';
@@ -49,6 +49,7 @@ const getStatusMeta = (status) => {
 
 const ProjectForm = ({ initialData, isEdit = false }) => {
     const router = useRouter();
+    const { toast } = useAdminFeedback();
     const [formData, setFormData] = useState({
         name: '',
         techStack: '',
@@ -62,7 +63,6 @@ const ProjectForm = ({ initialData, isEdit = false }) => {
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const [notification, setNotification] = useState(null);
     const [aiEnabled, setAiEnabled] = useState(false);
     const [aiGenerating, setAiGenerating] = useState(null); // 'name', 'description', 'tech'
     const [uploadingFile, setUploadingFile] = useState(false);
@@ -193,8 +193,11 @@ const ProjectForm = ({ initialData, isEdit = false }) => {
     };
 
     const showNotification = (success, message) => {
-        setNotification({ success, message });
-        setTimeout(() => setNotification(null), 3000);
+        if (success) {
+            toast.success(message);
+        } else {
+            toast.error(message);
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -573,7 +576,6 @@ const ProjectForm = ({ initialData, isEdit = false }) => {
                 </Panel>
             </aside>
 
-            <Toast notification={notification} />
         </form>
     );
 };

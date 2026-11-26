@@ -10,6 +10,7 @@ import {
     FaPlus,
     FaServer,
     FaTrash,
+    FaXmark,
 } from 'react-icons/fa6';
 import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
 import { Badge, EmptyState, Loading, PageHeader, Panel, Stat } from '@/app/components/admin/ui';
@@ -193,6 +194,16 @@ export default function AdminApps() {
 
     return (
         <div className="adm-page">
+            <nav
+                aria-label="Breadcrumb"
+                className="flex items-center gap-2 text-sm text-[var(--text-secondary)]"
+            >
+                <Link href="/admin/projects" className="adm-link inline-flex min-h-11 items-center">
+                    Projects
+                </Link>
+                <span aria-hidden="true">/</span>
+                <span aria-current="page">Apps</span>
+            </nav>
             <PageHeader
                 command="ls"
                 title="Apps"
@@ -230,8 +241,19 @@ export default function AdminApps() {
                             onChange={(e) => setSearchQuery(e.target.value)}
                             placeholder="Search apps by name, type, provider, or environment..."
                             aria-label="Search apps"
-                            className="adm-input"
+                            className="adm-input pr-12"
                         />
+                        {searchQuery && (
+                            <button
+                                type="button"
+                                onClick={() => setSearchQuery('')}
+                                className="adm-icon-btn absolute right-1 top-1/2 min-h-11 min-w-11 -translate-y-1/2"
+                                aria-label="Clear app search"
+                                title="Clear search"
+                            >
+                                <FaXmark aria-hidden="true" />
+                            </button>
+                        )}
                     </div>
                     <div role="group" aria-label="Filter apps by status" className="flex flex-wrap gap-1">
                         {[
@@ -284,126 +306,114 @@ export default function AdminApps() {
                         }
                     />
                 ) : (
-                    <div className="adm-table-wrap">
-                        <table className="adm-table">
-                            <thead>
-                                <tr>
-                                    <th className="w-20">Order</th>
-                                    <th>App</th>
-                                    <th>Type and provider</th>
-                                    <th>Environment</th>
-                                    <th>Status</th>
-                                    <th className="text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filteredDeployments.map((deployment, index) => {
-                                    const statusMeta = getStatusMeta(deployment.status);
-                                    const isDragging = draggedIndex === index;
-                                    const isDragTarget = dragOverIndex === index && draggedIndex !== index;
+                    <ul className="adm-list">
+                        {filteredDeployments.map((deployment, index) => {
+                            const statusMeta = getStatusMeta(deployment.status);
+                            const isDragging = draggedIndex === index;
+                            const isDragTarget = dragOverIndex === index && draggedIndex !== index;
 
-                                    return (
-                                        <tr
-                                            key={deployment._id}
-                                            onDragOver={(event) => handleDragOver(event, index)}
-                                            onDrop={(event) => handleDrop(event, index)}
-                                            className={`${isDragging ? 'adm-prj-row-dragging' : ''} ${
-                                                isDragTarget ? 'adm-prj-row-over' : ''
-                                            }`}
+                            return (
+                                <li
+                                    key={deployment._id}
+                                    onDragOver={(event) => handleDragOver(event, index)}
+                                    onDrop={(event) => handleDrop(event, index)}
+                                    className={`adm-row grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3 gap-y-2 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center ${
+                                        isDragging ? 'adm-prj-row-dragging' : ''
+                                    } ${isDragTarget ? 'adm-prj-row-over' : ''}`}
+                                >
+                                    <div className="row-span-2 inline-flex items-center gap-1.5 self-start sm:row-span-1">
+                                        <button
+                                            type="button"
+                                            draggable={!isSavingOrder}
+                                            onDragStart={(event) => handleDragStart(event, index)}
+                                            onDragEnd={handleDragEnd}
+                                            disabled={isSavingOrder}
+                                            aria-label={`Reorder ${deployment.name}`}
+                                            title="Drag to reorder"
+                                            className="adm-icon-btn adm-prj-drag min-h-11 min-w-11"
                                         >
-                                            <td className="adm-num">
-                                                <div className="inline-flex items-center gap-1.5">
-                                                    <button
-                                                        type="button"
-                                                        draggable={!isSavingOrder}
-                                                        onDragStart={(event) => handleDragStart(event, index)}
-                                                        onDragEnd={handleDragEnd}
-                                                        disabled={isSavingOrder}
-                                                        aria-label={`Reorder ${deployment.name}`}
-                                                        title="Drag to reorder"
-                                                        className="adm-icon-btn adm-prj-drag"
-                                                    >
-                                                        <FaGripVertical aria-hidden="true" />
-                                                    </button>
-                                                    <span className="text-[var(--text-secondary)]">{index + 1}</span>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <div className="flex items-center gap-3 min-w-0">
-                                                    <div className="adm-prj-thumb" aria-hidden="true">
-                                                        {deployment.image ? (
-                                                            <img src={deployment.image} alt="" loading="lazy" />
-                                                        ) : (
-                                                            <FaServer />
-                                                        )}
-                                                    </div>
-                                                    <div className="min-w-0">
-                                                        <Link
-                                                            href={`/admin/apps/${deployment._id}`}
-                                                            className="font-semibold text-[var(--text-bright)] hover:underline truncate block"
-                                                        >
-                                                            {deployment.name}
-                                                        </Link>
-                                                        <p className="adm-help font-mono truncate">
-                                                            {deployment.hostedUrl ||
-                                                                (deployment.slug ? `/apps/${deployment.slug}` : '—')}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <div className="text-[var(--text-primary)]">
-                                                    {deployment.appType || '—'}
-                                                </div>
-                                                {deployment.hostingProvider && (
-                                                    <div className="adm-help">{deployment.hostingProvider}</div>
+                                            <FaGripVertical aria-hidden="true" />
+                                        </button>
+                                        <span className="adm-num text-[var(--text-secondary)]">{index + 1}</span>
+                                    </div>
+                                    <div className="min-w-0">
+                                        <div className="flex min-w-0 items-center gap-3">
+                                            <div className="adm-prj-thumb" aria-hidden="true">
+                                                {deployment.image ? (
+                                                    <img src={deployment.image} alt="" loading="lazy" />
+                                                ) : (
+                                                    <FaServer />
                                                 )}
-                                            </td>
-                                            <td>
-                                                <Badge>{deployment.environment || 'Production'}</Badge>
-                                            </td>
-                                            <td>
-                                                <Badge tone={statusMeta.tone}>{statusMeta.label}</Badge>
-                                            </td>
-                                            <td>
-                                                <div className="flex items-center justify-end gap-1">
-                                                    {deployment.hostedUrl && (
-                                                        <a
-                                                            href={deployment.hostedUrl}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="adm-icon-btn"
-                                                            aria-label={`Open live URL for ${deployment.name}`}
-                                                            title="Open hosted URL"
-                                                        >
-                                                            <FaArrowUpRightFromSquare aria-hidden="true" />
-                                                        </a>
-                                                    )}
-                                                    <Link
-                                                        href={`/admin/apps/${deployment._id}`}
-                                                        className="adm-icon-btn"
-                                                        aria-label={`Edit ${deployment.name}`}
-                                                        title={`Edit ${deployment.name}`}
-                                                    >
-                                                        <FaPen aria-hidden="true" />
-                                                    </Link>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleDelete(deployment._id)}
-                                                        className="adm-icon-btn hover:!text-[var(--adm-error-ink)]"
-                                                        aria-label={`Delete ${deployment.name}`}
-                                                        title={`Delete ${deployment.name}`}
-                                                    >
-                                                        <FaTrash aria-hidden="true" />
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
+                                            </div>
+                                            <div className="min-w-0">
+                                                <Link
+                                                    href={`/admin/apps/${deployment._id}`}
+                                                    className="block truncate font-semibold text-[var(--text-bright)] hover:underline"
+                                                >
+                                                    {deployment.name}
+                                                </Link>
+                                                <p className="adm-help truncate font-mono">
+                                                    {deployment.hostedUrl ||
+                                                        (deployment.slug ? `/apps/${deployment.slug}` : '—')}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                                            <Badge title="App type">
+                                                <span className="sr-only">Type: </span>
+                                                {deployment.appType || 'Unspecified'}
+                                            </Badge>
+                                            {deployment.hostingProvider && (
+                                                <Badge title="Hosting provider">
+                                                    <span className="sr-only">Provider: </span>
+                                                    {deployment.hostingProvider}
+                                                </Badge>
+                                            )}
+                                            <Badge>
+                                                <span className="sr-only">Environment: </span>
+                                                {deployment.environment || 'Production'}
+                                            </Badge>
+                                            <Badge tone={statusMeta.tone}>
+                                                <span className="sr-only">Status: </span>
+                                                {statusMeta.label}
+                                            </Badge>
+                                        </div>
+                                    </div>
+                                    <div className="col-start-2 flex flex-wrap justify-end gap-1 sm:col-start-3 sm:flex-nowrap">
+                                        {deployment.hostedUrl && (
+                                            <a
+                                                href={deployment.hostedUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="adm-icon-btn min-h-11 min-w-11"
+                                                aria-label={`Open live URL for ${deployment.name}`}
+                                                title="Open hosted URL"
+                                            >
+                                                <FaArrowUpRightFromSquare aria-hidden="true" />
+                                            </a>
+                                        )}
+                                        <Link
+                                            href={`/admin/apps/${deployment._id}`}
+                                            className="adm-icon-btn min-h-11 min-w-11"
+                                            aria-label={`Edit ${deployment.name}`}
+                                            title={`Edit ${deployment.name}`}
+                                        >
+                                            <FaPen aria-hidden="true" />
+                                        </Link>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleDelete(deployment._id)}
+                                            className="adm-icon-btn min-h-11 min-w-11 hover:!text-[var(--adm-error-ink)]"
+                                            aria-label={`Delete ${deployment.name}`}
+                                            title={`Delete ${deployment.name}`}
+                                        >
+                                            <FaTrash aria-hidden="true" />
+                                        </button>
+                                    </div>
+                                </li>
+                            );
+                        })}
+                    </ul>
                 )}
             </Panel>
         </div>

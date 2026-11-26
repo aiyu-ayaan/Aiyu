@@ -14,7 +14,7 @@ Branch `migrate/rust-vite`. Visual + markup pass only — no logic, no fetch URL
 | `src/app/styles/admin.css` | Core `adm-*` class library — primitives, spacing, colour tokens |
 | `src/app/components/admin/ui/index.js` | React primitives: `PageHeader`, `Panel`, `Stat`, `Badge`, `EmptyState`, `Loading`, `Field` |
 | `src/app/components/admin/shell/AdminShell.js` | Sidebar + top bar |
-| `src/app/components/admin/feedback/AdminFeedbackProvider.js` | `confirm()` / `notify()` context |
+| `src/app/components/admin/feedback/AdminFeedbackProvider.js` | `confirm()` / `toast()` context |
 
 ### Per-group CSS extras (import in each page that needs them)
 
@@ -62,34 +62,35 @@ Branch `migrate/rust-vite`. Visual + markup pass only — no logic, no fetch URL
 
 ---
 
-## Group 2 — Projects & apps ⬜ not started
+## Group 2 — Projects & apps ✅ done
 
 | File | Lines | CSS import | `Toast` legacy | Status |
 |---|---|---|---|---|
-| `_admin/projects/page.js` | 434 | `admin-projects.css` ✅ | — | ⬜ not started |
-| `_admin/projects/[id]/page.js` | 72 | — | — | ⬜ not started |
-| `_admin/projects/new/page.js` | 25 | — | — | ⬜ not started |
-| `_admin/apps/page.js` | 411 | `admin-projects.css` ✅ | — | ⬜ not started |
-| `_admin/apps/[id]/page.js` | 73 | — | — | ⬜ not started |
-| `_admin/apps/new/page.js` | 36 | — | — | ⬜ not started |
-| `components/admin/ProjectForm.js` | 581 | — | — | ⬜ not started |
-| `components/admin/DeploymentForm.js` | 674 | — | — | ⬜ not started |
-| `components/admin/ProjectAppLinks.js` | 82 | — | — | ⬜ not started |
-| `components/admin/BlogLinkInput.js` | 258 | — | — | ⬜ not started |
+| `_admin/projects/page.js` | 434 | `admin-projects.css` ✅ | — | ✅ done |
+| `_admin/projects/[id]/page.js` | 72 | `admin-projects.css` ✅ | — | ✅ done |
+| `_admin/projects/new/page.js` | 25 | `admin-projects.css` ✅ | — | ✅ done |
+| `_admin/apps/page.js` | 411 | `admin-projects.css` ✅ | — | ✅ done |
+| `_admin/apps/[id]/page.js` | 73 | `admin-projects.css` ✅ | — | ✅ done |
+| `_admin/apps/new/page.js` | 36 | `admin-projects.css` ✅ | — | ✅ done |
+| `components/admin/ProjectForm.js` | 581 | `admin-projects.css` ✅ | `Toast` → shared feedback | ✅ done |
+| `components/admin/DeploymentForm.js` | 674 | `admin-projects.css` ✅ | `Toast` → shared feedback | ✅ done |
+| `components/admin/ProjectAppLinks.js` | 82 | inherited | — | ✅ done |
+| `components/admin/BlogLinkInput.js` | 258 | inherited | — | ✅ done |
 
-### projects/page.js — things to do
-- List view: `Panel flush` + `adm-list` / `adm-row`.
-- Filter/search bar: `adm-input` with `adm-btn` clear button.
-- Stat strip: `adm-stats` + `Stat`.
-- Drag-handle rows: add `adm-sc-drag` class to handles.
+### projects/page.js — complete
+- List view uses `Panel flush` + `adm-list` / `adm-row`.
+- Search includes an explicit clear control; stats use `adm-stats` + `Stat`.
+- Reorder handles use the projects-specific `adm-prj-drag` style and 44 px targets.
 
-### apps/page.js — things to do
-- Same pattern as projects. Apps are nested under projects; keep the breadcrumb row.
+### apps/page.js — complete
+- Uses the same responsive list, searchable filters, stats, and accessible reorder controls.
+- Breadcrumb links back to Projects.
 
-### ProjectForm.js / DeploymentForm.js — things to do
-- `adm-split` layout: main fields left, `adm-side` publish/meta right.
-- Image picker: `adm-sc-drop` drop zone + `adm-sc-gallery` thumbnail strip.
-- Link list: `adm-sc-item` card per link.
+### ProjectForm.js / DeploymentForm.js — complete
+- Main fields and publish/meta panels use the responsive `adm-prj-split` / `adm-prj-side` layout.
+- The data model has one cover-image URL, so the existing upload/URL control and single `adm-prj-preview` are retained instead of introducing a multi-image gallery.
+- `ProjectAppLinks` and `BlogLinkInput` use the shared `adm-list` / `adm-row` patterns.
+- Form feedback uses `useAdminFeedback().toast`; no local legacy `Toast` state remains.
 
 ---
 

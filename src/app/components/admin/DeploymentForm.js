@@ -13,7 +13,7 @@ import {
     FaSpinner,
     FaWandMagicSparkles,
 } from 'react-icons/fa6';
-import Toast from './Toast';
+import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
 import BlogLinkInput from './BlogLinkInput';
 import { Badge, Field, Panel } from './ui';
 import '@/app/styles/admin-projects.css';
@@ -54,6 +54,7 @@ const getStatusMeta = (status) => {
 
 export default function DeploymentForm({ initialData, isEdit = false, defaultProjectId = '' }) {
     const router = useRouter();
+    const { toast } = useAdminFeedback();
     const [formData, setFormData] = useState({
         name: '',
         appType: '',
@@ -71,7 +72,6 @@ export default function DeploymentForm({ initialData, isEdit = false, defaultPro
     const [legalApp, setLegalApp] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const [notification, setNotification] = useState(null);
     const [uploadingFile, setUploadingFile] = useState(false);
     const [aiEnabled, setAiEnabled] = useState(false);
     const [aiGenerating, setAiGenerating] = useState(null);
@@ -149,8 +149,11 @@ export default function DeploymentForm({ initialData, isEdit = false, defaultPro
     };
 
     const showNotification = (success, message) => {
-        setNotification({ success, message });
-        setTimeout(() => setNotification(null), 3000);
+        if (success) {
+            toast.success(message);
+        } else {
+            toast.error(message);
+        }
     };
 
     const handleChange = (event) => {
@@ -668,7 +671,6 @@ export default function DeploymentForm({ initialData, isEdit = false, defaultPro
                 </Panel>
             </aside>
 
-            <Toast notification={notification} />
         </form>
     );
 }

@@ -12,6 +12,7 @@ import {
     FaPen,
     FaPlus,
     FaTrash,
+    FaXmark,
 } from 'react-icons/fa6';
 import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
 import { Badge, EmptyState, Loading, PageHeader, Panel, Stat } from '@/app/components/admin/ui';
@@ -231,8 +232,19 @@ export default function AdminProjects() {
                             onChange={(e) => setSearchQuery(e.target.value)}
                             placeholder="Search projects by name, category, or stack..."
                             aria-label="Search projects"
-                            className="adm-input"
+                            className="adm-input pr-12"
                         />
+                        {searchQuery && (
+                            <button
+                                type="button"
+                                onClick={() => setSearchQuery('')}
+                                className="adm-icon-btn absolute right-1 top-1/2 min-h-11 min-w-11 -translate-y-1/2"
+                                aria-label="Clear project search"
+                                title="Clear search"
+                            >
+                                <FaXmark aria-hidden="true" />
+                            </button>
+                        )}
                     </div>
                     <div role="group" aria-label="Filter projects by status" className="flex flex-wrap gap-1">
                         {[
@@ -284,149 +296,133 @@ export default function AdminProjects() {
                         }
                     />
                 ) : (
-                    <div className="adm-table-wrap">
-                        <table className="adm-table">
-                            <thead>
-                                <tr>
-                                    <th className="w-20">Order</th>
-                                    <th>Project</th>
-                                    <th>Category</th>
-                                    <th>Tech stack</th>
-                                    <th>Year</th>
-                                    <th>Status</th>
-                                    <th className="text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filteredProjects.map((project, index) => {
-                                    const statusMeta = getStatusMeta(project.status);
-                                    const isDragging = draggedIndex === index;
-                                    const isDragTarget = dragOverIndex === index && draggedIndex !== index;
-                                    const stack = Array.isArray(project.techStack) ? project.techStack : [];
+                    <ul className="adm-list">
+                        {filteredProjects.map((project, index) => {
+                            const statusMeta = getStatusMeta(project.status);
+                            const isDragging = draggedIndex === index;
+                            const isDragTarget = dragOverIndex === index && draggedIndex !== index;
+                            const stack = Array.isArray(project.techStack) ? project.techStack : [];
 
-                                    return (
-                                        <tr
-                                            key={project._id}
-                                            onDragOver={(event) => handleDragOver(event, index)}
-                                            onDrop={(event) => handleDrop(event, index)}
-                                            className={`${isDragging ? 'adm-prj-row-dragging' : ''} ${
-                                                isDragTarget ? 'adm-prj-row-over' : ''
-                                            }`}
+                            return (
+                                <li
+                                    key={project._id}
+                                    onDragOver={(event) => handleDragOver(event, index)}
+                                    onDrop={(event) => handleDrop(event, index)}
+                                    className={`adm-row grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3 gap-y-2 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center ${
+                                        isDragging ? 'adm-prj-row-dragging' : ''
+                                    } ${isDragTarget ? 'adm-prj-row-over' : ''}`}
+                                >
+                                    <div className="row-span-2 inline-flex items-center gap-1.5 self-start sm:row-span-1">
+                                        <button
+                                            type="button"
+                                            draggable={!isSavingOrder}
+                                            onDragStart={(event) => handleDragStart(event, index)}
+                                            onDragEnd={handleDragEnd}
+                                            disabled={isSavingOrder}
+                                            aria-label={`Reorder ${project.name}`}
+                                            title="Drag to reorder"
+                                            className="adm-icon-btn adm-prj-drag min-h-11 min-w-11"
                                         >
-                                            <td className="adm-num">
-                                                <div className="inline-flex items-center gap-1.5">
-                                                    <button
-                                                        type="button"
-                                                        draggable={!isSavingOrder}
-                                                        onDragStart={(event) => handleDragStart(event, index)}
-                                                        onDragEnd={handleDragEnd}
-                                                        disabled={isSavingOrder}
-                                                        aria-label={`Reorder ${project.name}`}
-                                                        title="Drag to reorder"
-                                                        className="adm-icon-btn adm-prj-drag"
-                                                    >
-                                                        <FaGripVertical aria-hidden="true" />
-                                                    </button>
-                                                    <span className="text-[var(--text-secondary)]">{index + 1}</span>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <div className="flex items-center gap-3 min-w-0">
-                                                    <div className="adm-prj-thumb" aria-hidden="true">
-                                                        {project.image ? (
-                                                            <img src={project.image} alt="" loading="lazy" />
-                                                        ) : (
-                                                            <FaFolder />
-                                                        )}
-                                                    </div>
-                                                    <div className="min-w-0">
-                                                        <div className="flex flex-wrap items-center gap-2">
-                                                            <Link
-                                                                href={`/admin/projects/${project._id}`}
-                                                                className="font-semibold text-[var(--text-bright)] hover:underline truncate"
-                                                            >
-                                                                {project.name}
-                                                            </Link>
-                                                            {project.source === 'github' && (
-                                                                <Badge
-                                                                    tone="info"
-                                                                    title={project.repoFullName || 'Synced from GitHub'}
-                                                                >
-                                                                    <FaCodeBranch aria-hidden="true" /> Synced
-                                                                </Badge>
-                                                            )}
-                                                            {project.pinnedFields?.length > 0 && (
-                                                                <Badge
-                                                                    title={`Pinned fields: ${project.pinnedFields.join(', ')}`}
-                                                                >
-                                                                    <FaLock aria-hidden="true" /> {project.pinnedFields.length}
-                                                                </Badge>
-                                                            )}
-                                                        </div>
-                                                        {project.slug && (
-                                                            <p className="adm-help font-mono truncate">
-                                                                /projects/{project.slug}
-                                                            </p>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="text-[var(--text-secondary)]">
-                                                {project.projectType || '—'}
-                                            </td>
-                                            <td>
-                                                <div className="flex flex-wrap gap-1 max-w-xs">
-                                                    {stack.slice(0, 3).map((tech) => (
-                                                        <Badge key={tech}>{tech}</Badge>
-                                                    ))}
-                                                    {stack.length > 3 && <Badge>+{stack.length - 3}</Badge>}
-                                                </div>
-                                            </td>
-                                            <td className="adm-num text-[var(--text-secondary)]">
-                                                {project.year || '—'}
-                                            </td>
-                                            <td>
-                                                <Badge tone={statusMeta.tone}>{statusMeta.label}</Badge>
-                                            </td>
-                                            <td>
-                                                <div className="flex items-center justify-end gap-1">
-                                                    {project.codeLink && (
-                                                        <a
-                                                            href={project.codeLink}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="adm-icon-btn"
-                                                            aria-label={`Open repository for ${project.name}`}
-                                                            title="Open repository or live link"
-                                                        >
-                                                            <FaArrowUpRightFromSquare aria-hidden="true" />
-                                                        </a>
-                                                    )}
+                                            <FaGripVertical aria-hidden="true" />
+                                        </button>
+                                        <span className="adm-num text-[var(--text-secondary)]">{index + 1}</span>
+                                    </div>
+                                    <div className="min-w-0">
+                                        <div className="flex min-w-0 items-center gap-3">
+                                            <div className="adm-prj-thumb" aria-hidden="true">
+                                                {project.image ? (
+                                                    <img src={project.image} alt="" loading="lazy" />
+                                                ) : (
+                                                    <FaFolder />
+                                                )}
+                                            </div>
+                                            <div className="min-w-0">
+                                                <div className="flex flex-wrap items-center gap-2">
                                                     <Link
                                                         href={`/admin/projects/${project._id}`}
-                                                        className="adm-icon-btn"
-                                                        aria-label={`Edit ${project.name}`}
-                                                        title={`Edit ${project.name}`}
+                                                        className="truncate font-semibold text-[var(--text-bright)] hover:underline"
                                                     >
-                                                        <FaPen aria-hidden="true" />
+                                                        {project.name}
                                                     </Link>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleDelete(project._id)}
-                                                        className="adm-icon-btn hover:!text-[var(--adm-error-ink)]"
-                                                        aria-label={`Delete ${project.name}`}
-                                                        title={`Delete ${project.name}`}
-                                                    >
-                                                        <FaTrash aria-hidden="true" />
-                                                    </button>
+                                                    {project.source === 'github' && (
+                                                        <Badge
+                                                            tone="info"
+                                                            title={project.repoFullName || 'Synced from GitHub'}
+                                                        >
+                                                            <FaCodeBranch aria-hidden="true" /> Synced
+                                                        </Badge>
+                                                    )}
+                                                    {project.pinnedFields?.length > 0 && (
+                                                        <Badge
+                                                            title={`Pinned fields: ${project.pinnedFields.join(', ')}`}
+                                                        >
+                                                            <FaLock aria-hidden="true" /> {project.pinnedFields.length}
+                                                        </Badge>
+                                                    )}
                                                 </div>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
+                                                {project.slug && (
+                                                    <p className="adm-help truncate font-mono">
+                                                        /projects/{project.slug}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                                            <Badge title="Project category">
+                                                <span className="sr-only">Category: </span>
+                                                {project.projectType || 'Uncategorized'}
+                                            </Badge>
+                                            <Badge>
+                                                <span className="sr-only">Year: </span>
+                                                {project.year || 'No year'}
+                                            </Badge>
+                                            <Badge tone={statusMeta.tone}>
+                                                <span className="sr-only">Status: </span>
+                                                {statusMeta.label}
+                                            </Badge>
+                                            {stack.slice(0, 3).map((tech) => (
+                                                <Badge key={tech} title={`Tech stack: ${tech}`}>
+                                                    {tech}
+                                                </Badge>
+                                            ))}
+                                            {stack.length > 3 && <Badge title="Additional technologies">+{stack.length - 3}</Badge>}
+                                        </div>
+                                    </div>
+                                    <div className="col-start-2 flex flex-wrap justify-end gap-1 sm:col-start-3 sm:flex-nowrap">
+                                        {project.codeLink && (
+                                            <a
+                                                href={project.codeLink}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="adm-icon-btn min-h-11 min-w-11"
+                                                aria-label={`Open repository for ${project.name}`}
+                                                title="Open repository or live link"
+                                            >
+                                                <FaArrowUpRightFromSquare aria-hidden="true" />
+                                            </a>
+                                        )}
+                                        <Link
+                                            href={`/admin/projects/${project._id}`}
+                                            className="adm-icon-btn min-h-11 min-w-11"
+                                            aria-label={`Edit ${project.name}`}
+                                            title={`Edit ${project.name}`}
+                                        >
+                                            <FaPen aria-hidden="true" />
+                                        </Link>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleDelete(project._id)}
+                                            className="adm-icon-btn min-h-11 min-w-11 hover:!text-[var(--adm-error-ink)]"
+                                            aria-label={`Delete ${project.name}`}
+                                            title={`Delete ${project.name}`}
+                                        >
+                                            <FaTrash aria-hidden="true" />
+                                        </button>
+                                    </div>
+                                </li>
+                            );
+                        })}
+                    </ul>
                 )}
             </Panel>
         </div>
