@@ -106,7 +106,7 @@ impl Settings {
     fn configured(&self) -> bool {
         self.client_id.is_some() && self.client_secret.is_some()
     }
-    fn connected(&self) -> bool {
+    pub fn is_connected(&self) -> bool {
         self.refresh_token.is_some() || self.access_token.is_some()
     }
 }
@@ -406,7 +406,7 @@ pub async fn status(State(state): State<AppState>, headers: HeaderMap) -> Respon
         let config = pages::client_rows(&state.db, "Config", "LIMIT 1").await?;
         let updated = config.first().map_or(Value::Null, |c| c["updatedAt"].clone());
         Ok(json!({
-            "isConfigured": s.configured(), "isConnected": s.connected(), "user": s.user, "clientId": s.client_id,
+            "isConfigured": s.configured(), "isConnected": s.is_connected(), "user": s.user, "clientId": s.client_id,
             "retentionMonths": s.retention_months, "autoDeleteEnabled": s.auto_delete, "updatedAt": updated,
         }))
     }
@@ -422,7 +422,7 @@ pub async fn config(State(state): State<AppState>, headers: HeaderMap) -> Respon
     let result = settings(&state).await.map_err(DriveError::from).map(|s| {
         json!({
             "clientId": s.client_id.clone().unwrap_or_default(), "hasClientSecret": s.client_secret.is_some(),
-            "callbackUrl": callback_url(&headers), "isConfigured": s.configured(), "isConnected": s.connected(),
+            "callbackUrl": callback_url(&headers), "isConfigured": s.configured(), "isConnected": s.is_connected(),
             "retentionMonths": s.retention_months, "autoDeleteEnabled": s.auto_delete,
         })
     });

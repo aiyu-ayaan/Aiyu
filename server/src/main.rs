@@ -28,6 +28,9 @@ async fn run() -> anyhow::Result<()> {
     if state.web.is_none() {
         anyhow::bail!("web app not loaded (WEB_DIR must hold index.html, route-meta.json, ai-defaults.json, admin-routes.json)");
     }
+    if aiyu_server::cron_jobs::enabled() {
+        tokio::spawn(aiyu_server::cron_jobs::schedule(state.clone()));
+    }
     let app = router(state);
     // Nagle + delayed ACK added ~40 ms to every response on a kept-alive connection.
     let listener = tokio::net::TcpListener::bind(listen).await?.tap_io(|tcp| {

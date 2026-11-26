@@ -64,6 +64,9 @@ fi
 PUBLIC_PORT="${PORT:-3000}"
 NEXT_PORT="${NEXT_INTERNAL_PORT:-3001}"
 
+# One scheduler only: aiyu-server runs the cron jobs and Next, which sees the same variable, leaves its own off.
+export CRON_RUNNER="${CRON_RUNNER:-rust}"
+
 echo "[entrypoint] Starting Next.js server on 127.0.0.1:${NEXT_PORT}..."
 PORT="${NEXT_PORT}" HOSTNAME=127.0.0.1 AIYU_SERVER_URL="http://127.0.0.1:${PUBLIC_PORT}" node server.js &
 NEXT_PID=$!

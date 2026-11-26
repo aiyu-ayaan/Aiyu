@@ -90,6 +90,11 @@ const COLLECTIONS: &[Collection] = &[
 /// Without `collections=`, these stay out unless their legacy flag is `true`.
 const LEGACY_FLAGS: &[(&str, &str)] = &[("github", "includeGithub"), ("contactMessages", "includeContact"), ("aiLogs", "includeAiUsage")];
 
+/// Every collection a backup can hold.
+pub fn all_keys() -> Vec<&'static str> {
+    COLLECTIONS.iter().map(|c| c.key).collect()
+}
+
 pub fn selected_keys(query: &[(String, String)]) -> Vec<&'static str> {
     let get = |k: &str| query.iter().find(|(qk, _)| qk == k).map(|(_, v)| v.as_str());
     let explicit: Option<Vec<String>> = get("collections").map(|v| {

@@ -187,6 +187,8 @@ export async function ensureSystemCronJobs(timeZone = 'UTC') {
 }
 
 export async function initCronRunner() {
+    // aiyu-server runs the scheduler when CRON_RUNNER=rust: two schedulers would run every job twice.
+    if (process.env.CRON_RUNNER === 'rust') return;
     if (global.cronIntervalStarted) return;
     global.cronIntervalStarted = true;
 

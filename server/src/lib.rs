@@ -1,6 +1,7 @@
 pub mod admin_ai;
 pub mod admin_analytics;
 pub mod admin_blogs;
+pub mod admin_crons;
 pub mod admin_content;
 pub mod admin_legal;
 pub mod admin_security;
@@ -21,6 +22,8 @@ pub mod compat;
 pub mod config;
 pub mod contact;
 pub mod cron;
+pub mod cron_jobs;
+pub mod cron_template;
 pub mod db;
 pub mod crypto;
 pub mod drive;
@@ -184,6 +187,11 @@ fn limited_api(state: &AppState) -> Router<AppState> {
         .route("/api/admin/migrate-gallery", post(storage::gallery_thumbnails))
         .route("/api/admin/health/uptime/check", post(health::check_now))
         .route("/api/admin/purge-cache", post(misc::purge_cache))
+        .route("/api/admin/crons", post(admin_crons::create))
+        .route("/api/admin/crons/{id}", put(admin_crons::update).delete(admin_crons::delete))
+        .route("/api/admin/crons/{id}/run", post(admin_crons::run))
+        .route("/api/admin/crons/env", post(admin_crons::save_env))
+        .route("/api/admin/crons/preview", post(admin_crons::preview))
         .route("/api/admin/gdrive/config", post(drive::save_config))
         .route("/api/admin/gdrive/cron", post(drive::save_schedule))
         .route("/api/admin/gdrive/backup", post(drive::run_backup))
@@ -276,6 +284,9 @@ pub fn router(state: AppState) -> Router {
         .route("/api/admin/storage", get(storage::usage))
         .route("/api/admin/storage/migrate", get(storage::preview))
         .route("/api/admin/icons", get(uploads::icons))
+        .route("/api/admin/crons", get(admin_crons::list))
+        .route("/api/admin/crons/env", get(admin_crons::env))
+        .route("/api/admin/crons/logs", get(admin_crons::logs))
         .route("/api/admin/gdrive/status", get(drive::status))
         .route("/api/admin/gdrive/config", get(drive::config))
         .route("/api/admin/gdrive/cron", get(drive::schedules))
