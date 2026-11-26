@@ -16,7 +16,8 @@ bodies such as backups never sit in memory.
 | Site writes | `/api/about`, `/api/home`, `/api/header`, `/api/config`, `/api/themes/active`, `/api/ai/layout` |
 | Content writes | socials, themes, projects, deployments (and their reorder), gallery, blogs, legal apps and pages |
 | AI Hub writes | skill categories, skills, recommendations, credits, prompts, `/api/ai/seed` |
-| Contact messages | `GET` and `DELETE /api/contact/message` (the public `POST` is still Next) |
+| Contact form | `/api/contact/message`: the public `POST` (with notifications and the n8n webhook), the admin `GET` and `DELETE` |
+| Notifications, previews | `/api/admin/notifications/test`, `/api/og-preview` (public hosts only, unlike Next) |
 | Admin settings | `/api/admin/{ads,social,notifications}`, `seo/config`, `blogs/token`, `mcp/{config,token}`, `crons/timezone`, `health/targets`, `analytics`, `security/*` |
 | Crawler and agent files | `robots.txt`, `sitemap.xml`, `ads.txt`, `auth.md`, `/docs/api`, `/docs/mcp` |
 | Backup | `GET /api/admin/export`: rows and files stream into the zip, about 10 MB of memory whatever the data size |
@@ -52,6 +53,7 @@ SEO tools read through them) and queues search-engine pings. The call carries an
 | `write.rs`, `admin_site.rs`, `admin_content.rs`, `admin_blogs.rs`, `admin_legal.rs`, `admin_ai.rs` | writes |
 | `admin_settings.rs`, `admin_security.rs`, `admin_analytics.rs`, `seo.rs`, `geoip.rs`, `cron.rs` | admin settings, sessions and audit, analytics, SEO settings, IP places, cron schedules |
 | `site_files.rs` | robots.txt, sitemap.xml, ads.txt and the markdown documents |
+| `contact.rs`, `notify.rs`, `og.rs`, `net.rs` | contact form, notification channels, link previews, fetching of user-supplied URLs |
 | `db.rs`, `export.rs` | database pool and ids, backup zip |
 
 `crypto.rs` and `session.rs` read values written by the Node code (encrypted DB fields, the `session` cookie).
@@ -95,6 +97,8 @@ node --env-file=.env scripts/perf/api-parity.mjs scripts/perf/api/batch1.txt
 node --env-file=.env scripts/perf/auth-parity.mjs
 # Writes: same response and same row changes
 node --env-file=.env scripts/perf/write-parity.mjs scripts/perf/writes/{site,content,blogs,legal,ai,admin}.mjs
+# Outgoing requests: contact form, notification channels, n8n webhook
+node --env-file=.env scripts/perf/outbound-parity.mjs
 # Browser tests through Rust (headless)
 E2E_PORT=8080 pnpm exec playwright test e2e/admin-pages.spec.js e2e/site-pages.spec.js e2e/blogs.spec.js
 ```

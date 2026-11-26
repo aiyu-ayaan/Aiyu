@@ -19,6 +19,9 @@ Milestone 8 (API routes) IN PROGRESS.
   `lastmod` values).
 - NEXT: integrations (Drive, import, uploads/sharp/HEIC, crons, MCP, AI generation, GitHub OAuth, sync and webhook, SEO
   crawl and fix, contact form notifications, notification test, resume compile, storage) and the streamed restore.
+- Done: contact form `POST`, notification service and test, link previews (`scripts/perf/outbound-parity.mjs` 18/18).
+  Telegram delivery is checked by unit test only (its address is fixed). Rust refuses private addresses in
+  `/api/og-preview`; Next (and `master`) fetch any address an anonymous caller names.
 - Cutover also needs what Next's proxy and static serving still do for unported paths: `public/` files and uploads,
   `/v1` and `/v2` redirects, removed-page redirects, the `/admin` sign-in redirect, markdown negotiation on `/`.
 - Checked 2026-11-26: write parity 249/249, auth parity all equal, read parity batch1 42/42, batch2 32/32, blogs 22/22,
@@ -274,7 +277,7 @@ Each page: Rust data + head + Vite route + e2e passing through Rust, then the Ne
 - [x] `/api/admin/mcp/token` (Rust)
 - [ ] `/api/admin/migrate-gallery`
 - [x] `/api/admin/notifications` (Rust)
-- [ ] `/api/admin/notifications/test`
+- [x] `/api/admin/notifications/test` (Rust)
 - [ ] `/api/admin/purge-cache`
 - [ ] `/api/admin/resume`
 - [ ] `/api/admin/resume/compile`
@@ -314,7 +317,7 @@ Each page: Rust data + head + Vite route + e2e passing through Rust, then the Ne
 - [x] `/api/blogs` (Rust)
 - [x] `/api/blogs/[id]` (Rust)
 - [x] `/api/config` (Rust)
-- [~] `/api/contact/message` (GET and DELETE in Rust; the public POST and its notifications still Next)
+- [x] `/api/contact/message` (Rust)
 - [ ] `/api/debug-groq`
 - [x] `/api/deployments` (Rust)
 - [x] `/api/deployments/[id]` (Rust)
@@ -338,7 +341,7 @@ Each page: Rust data + head + Vite route + e2e passing through Rust, then the Ne
 - [x] `/api/legal/apps/[id]/documents` (Rust)
 - [x] `/api/legal/documents/[id]` (Rust)
 - [ ] `/api/mcp`
-- [ ] `/api/og-preview`
+- [x] `/api/og-preview` (Rust)
 - [x] `/api/projects` (Rust)
 - [x] `/api/projects/[id]` (Rust)
 - [x] `/api/projects/[id]/links` (Rust)

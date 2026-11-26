@@ -12,8 +12,12 @@ pub mod api;
 pub mod auth;
 pub mod legal;
 pub mod limit;
+pub mod net;
+pub mod notify;
+pub mod og;
 pub mod compat;
 pub mod config;
+pub mod contact;
 pub mod cron;
 pub mod db;
 pub mod crypto;
@@ -126,8 +130,9 @@ fn limited_api(state: &AppState) -> Router<AppState> {
         .route("/api/gallery", post(content::create_gallery_item).put(content::update_gallery).delete(content::delete_gallery_item))
         .route("/api/blogs", post(posts::create))
         .route("/api/blogs/{id}", put(posts::update).delete(posts::delete))
-        // POST (the public contact form, with its notifications) stays in Next.
-        .route("/api/contact/message", get(posts::messages).delete(posts::delete_message))
+        .route("/api/contact/message", get(posts::messages).delete(posts::delete_message).post(contact::submit))
+        .route("/api/admin/notifications/test", post(notify::test))
+        .route("/api/og-preview", get(og::og_preview))
         .route("/api/legal/apps", post(legal_admin::post_app))
         .route("/api/legal/apps/{id}", put(legal_admin::put_app).delete(legal_admin::remove_app))
         .route("/api/legal/apps/{id}/documents", post(legal_admin::post_document))

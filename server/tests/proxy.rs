@@ -149,7 +149,7 @@ async fn ported_writes_refuse_anonymous_callers() {
         ("DELETE", "/api/admin/blogs/token"), ("GET", "/api/admin/mcp/token"), ("POST", "/api/admin/mcp/token"),
         ("DELETE", "/api/admin/mcp/token"), ("GET", "/api/admin/crons/timezone"), ("POST", "/api/admin/crons/timezone"),
         ("GET", "/api/admin/health/targets"), ("POST", "/api/admin/health/targets"), ("DELETE", "/api/admin/health/targets?id=x"),
-        ("GET", "/api/admin/security/audit"), ("GET", "/api/admin/security/sessions"),
+        ("POST", "/api/admin/notifications/test"), ("GET", "/api/admin/security/audit"), ("GET", "/api/admin/security/sessions"),
         ("POST", "/api/admin/security/sessions/x/revoke"), ("GET", "/api/admin/analytics"), ("DELETE", "/api/admin/analytics"),
     ] {
         let mut req = Request::builder().method(method).uri(uri).header("content-type", "application/json").body(Body::from("{}")).unwrap();
