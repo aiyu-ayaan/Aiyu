@@ -6,6 +6,14 @@ Branch: `migrate/rust-vite`. Baseline and method: `development/docs/PERFORMANCE.
 
 ## ▶ RESUME HERE (updated 2026-11-27)
 
+Current plan (started 2026-11-27), one or more commits per stage, never pushed:
+1. DONE: Rust serves `public/`, `/uploads/*` and every old-address redirect (`server/src/site_static.rs`).
+2. NEXT: drop the Next proxy and `/api/internal/hooks`; delete the Next server code; tag `pg-baseline` locally.
+3. SQLite schema, embedded migrations, Postgres copy tool, then the queries module by module; seed in Rust.
+4. Docker, healthcheck, compose, CI, docs without a Node runtime or Prisma.
+
+Older notes:
+
 Branch `migrate/rust-vite`. EVERY page is now served by Rust + Vite: all public pages, legal, `/desktop`, `/games`,
 and all `/admin` pages (`src/app/_admin/**/page.js`, routed by `web/src/routes/admin.tsx` through `import.meta.glob`;
 Next ignores `_` folders). Next only serves `/api/*`, `/.well-known/*`, `/docs/*`, sitemap.xml/robots.txt, uploads.

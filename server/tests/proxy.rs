@@ -32,6 +32,7 @@ async fn app(trusted: &str) -> Router {
         jwt_secret: "s".into(),
         trusted_proxies: parse_trusted(trusted).unwrap(),
         uploads_dir: "/nonexistent".into(),
+        public_dir: "/nonexistent".into(),
         database_url: "postgres://localhost/none".into(),
         web_dir: "/nonexistent".into(),
     }).await.unwrap())
@@ -85,6 +86,7 @@ async fn upstream_down_is_bad_gateway() {
         jwt_secret: "s".into(),
         trusted_proxies: vec![],
         uploads_dir: "/nonexistent".into(),
+        public_dir: "/nonexistent".into(),
         database_url: "postgres://localhost/none".into(),
         web_dir: "/nonexistent".into(),
     }).await.unwrap());

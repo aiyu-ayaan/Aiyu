@@ -47,6 +47,7 @@ pub mod seo_admin;
 pub mod session;
 pub mod site_api;
 pub mod site_files;
+pub mod site_static;
 pub mod storage;
 pub mod uploads;
 pub mod web;
@@ -371,9 +372,11 @@ pub fn router(state: AppState) -> Router {
         .route("/.well-known/mcp/server-card.json", get(site_api::mcp_server_card))
         .merge(next_static)
         .merge(web_assets)
-        .fallback(proxy::forward)
+        .merge(site_static::uploads(&state))
+        .fallback(site_static::fallback)
         // A path Rust serves only for GET (pages, the legal catch-alls) still belongs to Next for other methods.
         .method_not_allowed_fallback(proxy::forward)
+        .layer(axum::middleware::from_fn(site_static::redirects))
         .layer(
             CompressionLayer::new().quality(tower_http::CompressionLevel::Precise(4)).br(true).gzip(true).compress_when(
                 // Already-compressed payloads (backup zips, images, fonts) only cost CPU to recompress.

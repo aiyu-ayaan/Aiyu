@@ -28,11 +28,11 @@ bodies such as backups never sit in memory.
 | MCP | `/api/mcp` |
 | Backup | `GET /api/admin/export`: rows and files stream into the zip, about 10 MB of memory whatever the data size |
 | Restore, Google Drive | `/api/admin/import`, `/api/admin/gdrive/*`: everything goes through temporary files (`BACKUP_TMP_DIR`) |
-| Static | `/_app/*` and `/_next/static/*` with a one-year immutable cache |
+| Static | `/_app/*` and `/_next/static/*` (one-year immutable cache), `public/` files, `/uploads/*` |
+| Old addresses | the `next.config.mjs` redirects, `/v1/*`, `/v2/*`, removed pages, trailing slashes (`src/site_static.rs`). Unlike Next, a target can never leave the site |
 
 Responses are compressed (brotli, gzip; zips, PDFs, fonts and video are skipped). The route list is `src/lib.rs`.
-Every `/api` route is served by Rust except `/api/internal/hooks`, which only Rust calls. Next still serves that, files
-under `public/`, and the old-address redirects of `src/proxy.js`.
+Every `/api` route is served by Rust except `/api/internal/hooks`, which only Rust calls. Next serves only that.
 
 ### Who may write
 
@@ -54,7 +54,7 @@ on Next to clear Next's in-memory caches. The call carries an HMAC of `JWT_SECRE
 
 | File | |
 |---|---|
-| `lib.rs`, `config.rs`, `proxy.rs`, `compat.rs` | routes, settings, upstream proxy, Next's page headers and redirects |
+| `lib.rs`, `config.rs`, `proxy.rs`, `compat.rs`, `site_static.rs` | routes, settings, upstream proxy, Next's page headers, static files and redirects |
 | `web.rs`, `pages.rs`, `legal.rs`, `ai.rs` | pages and their data |
 | `api.rs`, `site_api.rs`, `github.rs` | read APIs |
 | `auth.rs`, `session.rs`, `crypto.rs`, `limit.rs`, `analytics.rs` | sign-in, session cookie, encrypted fields, rate limits, tracking |
@@ -88,7 +88,8 @@ pnpm server:test
 |---|---|---|
 | `JWT_SECRET` | required | same value as the Next app |
 | `DATABASE_URL` | required | same Postgres as Next (Prisma's `?schema=` is ignored); pool of 3 |
-| `UPLOADS_DIR` | `public/uploads` | files added to backups |
+| `UPLOADS_DIR` | `public/uploads` | served at `/uploads/*`; files added to backups |
+| `PUBLIC_DIR` | `public` | static files served at the site root |
 | `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `GITHUB_ALLOWED_ID`, `GITHUB_OAUTH_CALLBACK_URL` | unset | GitHub sign-in, same as Next |
 | `BACKUP_TMP_DIR` | `.next/cache/backups` | scratch folder for backups and restores (must be on disk) |
 | `GOOGLE_API_BASE_URL` | unset | tests only: a local stand-in for Google (Drive and Indexing) |

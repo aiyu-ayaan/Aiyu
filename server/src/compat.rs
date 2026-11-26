@@ -70,7 +70,7 @@ pub fn markdown_page(path: &str) -> Option<String> {
     Some(format!("# {title}\n\n{description}\n\nCanonical path: {path}\n\n{}\n", sections.join("\n\n")))
 }
 
-fn accepts_markdown(headers: &HeaderMap) -> bool {
+pub fn accepts_markdown(headers: &HeaderMap) -> bool {
     headers
         .get(header::ACCEPT)
         .and_then(|v| v.to_str().ok())
@@ -110,35 +110,45 @@ pub async fn canonical_host(req: Request, next: Next) -> Response {
     }
 }
 
+/// CSP, HSTS and friends, as next.config.mjs sets them on public HTML.
+pub fn security_headers(h: &mut HeaderMap) {
+    h.insert(header::CONTENT_SECURITY_POLICY, HeaderValue::from_static(CSP));
+    h.insert(header::STRICT_TRANSPORT_SECURITY, HeaderValue::from_static("max-age=63072000; includeSubDomains; preload"));
+    h.insert(header::X_CONTENT_TYPE_OPTIONS, HeaderValue::from_static("nosniff"));
+    h.insert(header::X_FRAME_OPTIONS, HeaderValue::from_static("SAMEORIGIN"));
+    h.insert(header::REFERRER_POLICY, HeaderValue::from_static("strict-origin-when-cross-origin"));
+}
+
+/// The `Accept: text/markdown` variant of a public page, when it has one.
+pub fn markdown_response(path: &str) -> Option<Response> {
+    let md = markdown_page(path)?;
+    let tokens = md.split_whitespace().count().to_string();
+    let mut res = Response::new(Body::from(md));
+    let h = res.headers_mut();
+    h.insert(header::CONTENT_TYPE, HeaderValue::from_static("text/markdown; charset=utf-8"));
+    h.insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
+    h.insert(header::LINK, HeaderValue::from_static(AGENT_LINKS));
+    h.insert(header::VARY, HeaderValue::from_static("Accept"));
+    h.insert("x-markdown-tokens", HeaderValue::from_str(&tokens).unwrap_or(HeaderValue::from_static("0")));
+    Some(res)
+}
+
 /// Layer on the Vite page routes.
 pub async fn public_page(req: Request, next: Next) -> Response {
     if let Some(r) = canonical_redirect(&req) {
         return r;
     }
     let path = req.uri().path().to_string();
-    if accepts_markdown(req.headers()) {
-        if let Some(md) = markdown_page(&path) {
-            let tokens = md.split_whitespace().count().to_string();
-            let mut res = Response::new(Body::from(md));
-            let h = res.headers_mut();
-            h.insert(header::CONTENT_TYPE, HeaderValue::from_static("text/markdown; charset=utf-8"));
-            h.insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
-            h.insert(header::LINK, HeaderValue::from_static(AGENT_LINKS));
-            h.insert(header::VARY, HeaderValue::from_static("Accept"));
-            h.insert("x-markdown-tokens", HeaderValue::from_str(&tokens).unwrap_or(HeaderValue::from_static("0")));
-            return res;
-        }
+    if let Some(md) = accepts_markdown(req.headers()).then(|| markdown_response(&path)).flatten() {
+        return md;
     }
     let mut res = next.run(req).await;
     if is_public_html(&path) && res.status() != StatusCode::PERMANENT_REDIRECT {
         let h = res.headers_mut();
-        h.insert(header::CONTENT_SECURITY_POLICY, HeaderValue::from_static(CSP));
-        h.insert(header::STRICT_TRANSPORT_SECURITY, HeaderValue::from_static("max-age=63072000; includeSubDomains; preload"));
-        h.insert(header::X_CONTENT_TYPE_OPTIONS, HeaderValue::from_static("nosniff"));
-        h.insert(header::X_FRAME_OPTIONS, HeaderValue::from_static("SAMEORIGIN"));
-        h.insert(header::REFERRER_POLICY, HeaderValue::from_static("strict-origin-when-cross-origin"));
+        security_headers(h);
         if path == "/" {
             h.insert(header::LINK, HeaderValue::from_static(AGENT_LINKS));
+            h.append(header::VARY, HeaderValue::from_static("Accept"));
         }
     }
     res

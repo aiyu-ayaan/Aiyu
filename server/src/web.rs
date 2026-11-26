@@ -734,9 +734,9 @@ fn js_slice(text: &str, n: usize) -> String {
     String::from_utf16_lossy(&units)
 }
 
-/// Not a legal page: let Next answer (files, unported routes, its 404).
-async fn to_next(state: AppState, parts: Parts) -> Response {
-    crate::proxy::forward(State(state), Request::from_parts(parts, Body::empty())).await
+/// Not a legal page: a public file, else the fallback.
+async fn not_legal(state: AppState, parts: Parts) -> Response {
+    crate::site_static::fallback(State(state), Request::from_parts(parts, Body::empty())).await
 }
 
 /// Legal pages are served by Rust only after the database says so; RSC requests get the same empty reply as the
@@ -757,15 +757,15 @@ fn legal_guard(req: &Parts) -> Option<Response> {
 pub async fn legal_app(State(state): State<AppState>, Path(raw): Path<String>, req: Request) -> Response {
     let (parts, body) = req.into_parts();
     let (Some(web), Some(slug)) = (state.web.clone(), crate::legal::candidate(&raw)) else {
-        return crate::proxy::forward(State(state), Request::from_parts(parts, body)).await;
+        return crate::site_static::fallback(State(state), Request::from_parts(parts, body)).await;
     };
     let app = match crate::legal::public_app(&state.db, &slug).await {
         Ok(Some(a)) => a,
-        Ok(None) => return to_next(state, parts).await,
+        Ok(None) => return not_legal(state, parts).await,
         // The catch-all must never break other paths: on a database error, let Next answer.
         Err(err) => {
             tracing::warn!(error = %err, "legal lookup failed; passing to Next");
-            return to_next(state, parts).await;
+            return not_legal(state, parts).await;
         }
     };
     if let Some(r) = legal_guard(&parts) {
@@ -882,15 +882,15 @@ pub async fn legal_app(State(state): State<AppState>, Path(raw): Path<String>, r
 pub async fn legal_doc(State(state): State<AppState>, Path((raw_app, raw_doc)): Path<(String, String)>, req: Request) -> Response {
     let (parts, body) = req.into_parts();
     let (Some(web), Some(slug)) = (state.web.clone(), crate::legal::candidate(&raw_app)) else {
-        return crate::proxy::forward(State(state), Request::from_parts(parts, body)).await;
+        return crate::site_static::fallback(State(state), Request::from_parts(parts, body)).await;
     };
     let app = match crate::legal::public_app(&state.db, &slug).await {
         Ok(Some(a)) => a,
-        Ok(None) => return to_next(state, parts).await,
+        Ok(None) => return not_legal(state, parts).await,
         // The catch-all must never break other paths: on a database error, let Next answer.
         Err(err) => {
             tracing::warn!(error = %err, "legal lookup failed; passing to Next");
-            return to_next(state, parts).await;
+            return not_legal(state, parts).await;
         }
     };
     if let Some(r) = legal_guard(&parts) {

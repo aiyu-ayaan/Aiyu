@@ -248,6 +248,7 @@ mod tests {
             jwt_secret: "s".into(),
             trusted_proxies: vec![],
             uploads_dir: "u".into(),
+            public_dir: "p".into(),
             web_dir: "missing".into(),
             database_url: "postgres://localhost:1/x".into(),
         })
