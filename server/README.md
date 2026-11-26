@@ -5,6 +5,7 @@ Rust (axum) server that is replacing Next.js route by route. Plan and progress: 
 Today it sits in front of Next:
 - `GET /api/admin/export` (backup zip) is served by Rust: rows stream from Postgres and files from disk into
   the zip, so memory stays flat (about 10 MB) whatever the data size
+- signs the admin in and out (`/api/auth/login`, `/api/auth/logout`) and records `/api/analytics/track`
 - serves `/_next/static/*` from `.next/static` with a one-year immutable cache
 - compresses responses (brotli, gzip; skips zips, PDFs, fonts, video)
 - streams every other request to Next (`NEXT_UPSTREAM`) and back, so large bodies such as backups never sit in memory
@@ -26,6 +27,10 @@ pnpm server:test
 | `JWT_SECRET` | required | same value as the Next app |
 | `DATABASE_URL` | required | same Postgres as Next (Prisma's `?schema=` is ignored); pool of 3 |
 | `UPLOADS_DIR` | `public/uploads` | files added to backups |
+| `ADMIN_USERNAME`, `ADMIN_PASSWORD` | empty (login always fails) | password login; `$` is read by dotenv rules, which differ from Next's in `.env` files |
+| `GITHUB_AUTH_ENABLED` | `false` | `true` turns password login off |
+| `NODE_ENV` | unset | the session cookie is `Secure` unless this is `development` |
+| `ANALYTICS_SALT` | `AUTH_SECRET`, then a constant | visitor hash salt, same as Next |
 | `RUST_WORKERS` | `2` | tokio worker threads; fewer threads, less memory |
 | `RUST_LISTEN` | `0.0.0.0:8080` | |
 | `NEXT_UPSTREAM` | `http://127.0.0.1:3000` | Next server for unported routes |

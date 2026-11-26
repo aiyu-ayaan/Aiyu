@@ -11,13 +11,14 @@ use axum::{
 use chrono::{Datelike, NaiveDate, Utc};
 use serde_json::{Map, Value, json};
 use std::{
-    collections::{HashMap, VecDeque},
+    collections::HashMap,
     sync::{LazyLock, Mutex},
     time::{Duration, Instant},
 };
 
 use crate::{
     AppState,
+    limit::Reservation,
     api::{NO_STORE, PUBLIC_MEDIUM, PUBLIC_SHORT, truthy},
 };
 
@@ -71,66 +72,6 @@ fn cache_set(key: &str, value: &Value, ttl: Duration) {
 }
 
 // ── traffic control ────────────────────────────────────────────────────────────────────────────────────
-
-#[derive(Default)]
-struct Traffic {
-    requests: HashMap<String, VecDeque<Instant>>,
-    active: usize,
-}
-
-static TRAFFIC: LazyLock<Mutex<Traffic>> = LazyLock::new(|| Mutex::new(Traffic::default()));
-const MAX_TRACKED_CLIENTS: usize = 5000;
-
-struct Reservation {
-    ok: bool,
-    status: u16,
-    retry_after: Duration,
-    remaining: usize,
-    active: usize,
-}
-
-/// Releases the concurrency slot when the request ends, whatever path it takes.
-struct Slot;
-
-impl Drop for Slot {
-    fn drop(&mut self) {
-        let mut t = TRAFFIC.lock().unwrap_or_else(|e| e.into_inner());
-        t.active = t.active.saturating_sub(1);
-    }
-}
-
-/// `reserveRequestSlot('public:github-stats', client, ...)`.
-fn reserve(client: &str) -> (Reservation, Option<Slot>) {
-    let s = &*SETTINGS;
-    let now = Instant::now();
-    let mut t = TRAFFIC.lock().unwrap_or_else(|e| e.into_inner());
-    t.requests.retain(|_, hits| {
-        while hits.front().is_some_and(|h| now.duration_since(*h) >= s.window) {
-            hits.pop_front();
-        }
-        !hits.is_empty()
-    });
-    if t.requests.len() > MAX_TRACKED_CLIENTS {
-        let excess: Vec<String> = t.requests.keys().take(t.requests.len() - MAX_TRACKED_CLIENTS).cloned().collect();
-        for k in excess {
-            t.requests.remove(&k);
-        }
-    }
-    let active = t.active;
-    let hits = t.requests.get(client).map_or(0, VecDeque::len);
-    let retry_after = t.requests.get(client).and_then(|h| h.front()).map_or(s.window, |first| s.window.saturating_sub(now.duration_since(*first)));
-    if active >= s.max_concurrent {
-        let remaining = s.max_requests.saturating_sub(hits);
-        return (Reservation { ok: false, status: 503, retry_after: Duration::from_secs(1), remaining, active }, None);
-    }
-    if hits >= s.max_requests {
-        return (Reservation { ok: false, status: 429, retry_after, remaining: 0, active }, None);
-    }
-    t.requests.entry(client.to_string()).or_default().push_back(now);
-    t.active += 1;
-    let r = Reservation { ok: true, status: 200, retry_after: Duration::ZERO, remaining: s.max_requests.saturating_sub(hits + 1), active: t.active };
-    (r, Some(Slot))
-}
 
 /// `createTrafficHeaders`
 fn traffic_headers(r: &Reservation) -> Vec<(&'static str, String)> {
@@ -606,7 +547,7 @@ pub async fn stats(State(state): State<AppState>, req: axum::extract::Request) -
     }
 
     let client = crate::limit::client_ip(&state, &req.into_parts().0);
-    let (reservation, _slot) = reserve(&client);
+    let (reservation, _slot) = crate::limit::reserve("public:github-stats", &client, SETTINGS.max_requests, SETTINGS.window, SETTINGS.max_concurrent);
     if !reservation.ok {
         if let Some(data) = cache_get(&stale_key) {
             return hit(data, PUBLIC_SHORT, &stale_key, "stale-overload", traffic_headers(&reservation));

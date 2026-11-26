@@ -34,7 +34,7 @@ fn with_key(mut res: Response, key: &str) -> Response {
 }
 
 /// `String(v)` for the scalar values these handlers coerce.
-fn js_string(v: &Value) -> String {
+pub(crate) fn js_string(v: &Value) -> String {
     match v {
         Value::String(s) => s.clone(),
         Value::Null => "null".into(),

@@ -4,20 +4,26 @@ Goal: run the whole site on a 1 GB VPS. Smallest possible size and memory, no da
 Target stack: axum (Rust) server + SQLite, Vite + React (TypeScript where practical) client, pnpm.
 Branch: `migrate/rust-vite`. Baseline and method: `development/docs/PERFORMANCE.md`.
 
-## ▶ RESUME HERE (handoff 2026-11-24)
+## ▶ RESUME HERE (handoff 2026-11-26)
 
 Branch `migrate/rust-vite`. EVERY page is now served by Rust + Vite: all public pages, legal, `/desktop`, `/games`,
 and all `/admin` pages (`src/app/_admin/**/page.js`, routed by `web/src/routes/admin.tsx` through `import.meta.glob`;
 Next ignores `_` folders). Next only serves `/api/*`, `/.well-known/*`, `/docs/*`, sitemap.xml/robots.txt, uploads.
-Milestone 8 (API routes) IN PROGRESS. Order: public GETs -> auth (login/logout, exact cookie/JWT/Session/audit
-parity, 5-per-5-min limit) + analytics/track -> admin writes (each must invalidate Next's in-memory cache through a
+Milestone 8 (API routes) IN PROGRESS. Order: public GETs (done) -> auth + analytics/track (done 2026-11-26)
+-> NEXT: admin writes (each must invalidate Next's in-memory cache through a
 loopback endpoint with the export's HMAC internal key, and keep audit/autoPing/notification side effects) ->
 integrations (Drive, crons, MCP, AI, GitHub sync, sharp/HEIC: port or keep a small Node sidecar, user's call).
 Every group: `node --env-file=.env scripts/perf/api-parity.mjs --cookie-jar <jar> scripts/perf/api/<group>.txt`
 (Next on :3100 vs Rust on :8080, signed out and in) must be all-equal before commit.
+Auth and analytics: `node --env-file=.env scripts/perf/auth-parity.mjs` (local database only; needs Rust with
+`TRUSTED_PROXIES=127.0.0.1`). Every ported `/api` route that src/proxy.js rate limits (any POST/PUT/PATCH/DELETE,
+and a few listed paths) needs `.route_layer(api_limit())` in `server/src/lib.rs`; new rows need `db::new_id()` and
+explicit UTC timestamps (Prisma filled both).
 Build exports for Rust (web/vite.config.mts `routeMeta`): ai-defaults.json, themes.json, discovery.json (the
 /.well-known docs, rendered with a placeholder origin that Rust swaps for SITE_URL at startup).
-Known pre-existing issue (kept for parity, ask the user): GET /api/blogs/{id} returns unpublished drafts to anyone.
+Known pre-existing issues (kept for parity, ask the user): GET /api/blogs/{id} returns unpublished drafts to anyone.
+Analytics treats only `localhost` as its own host (Next's `request.url` never carries the public host), so views
+referred by the site itself are counted as `external`; fix: compare with SITE_URL's host (server/src/analytics.rs).
 Then 5b/9 (SQLite), then 10 (cutover: remove Next).
 Admin pages call `/api/*`, so they keep working while APIs move one by one.
 e2e: `e2e/site-pages.spec.js` (public), `e2e/admin-pages.spec.js` (every admin route, one login; needs ADMIN_PASSWORD).
@@ -275,11 +281,11 @@ Each page: Rust data + head + Vite route + e2e passing through Rust, then the Ne
 - [ ] `/api/ai/skills/categories/[id]`
 - [ ] `/api/ai/skills/items`
 - [ ] `/api/ai/skills/items/[id]`
-- [ ] `/api/analytics/track`
-- [ ] `/api/auth/github`
+- [x] `/api/analytics/track` (Rust)
+- [ ] `/api/auth/github` (Next; writes the same Session row and cookie)
 - [ ] `/api/auth/github/callback`
-- [ ] `/api/auth/login`
-- [ ] `/api/auth/logout`
+- [x] `/api/auth/login` (Rust)
+- [x] `/api/auth/logout` (Rust)
 - [~] `/api/blogs` (GET in Rust; writes still Next)
 - [~] `/api/blogs/[id]` (GET in Rust; writes still Next)
 - [~] `/api/config` (GET in Rust; writes still Next)

@@ -1,4 +1,5 @@
 pub mod ai;
+pub mod analytics;
 pub mod api;
 pub mod auth;
 pub mod legal;
@@ -18,7 +19,7 @@ pub mod web;
 use axum::{
     Router,
     http::{HeaderValue, header},
-    routing::get,
+    routing::{get, post},
 };
 use tower_http::{
     compression::{
@@ -81,6 +82,9 @@ impl AppState {
 
 /// Routes ported to Rust are added here; everything else streams through to Next (strangler fallback).
 pub fn router(state: AppState) -> Router {
+    // The /api rate limit Next's proxy applies, for the handlers served here that it covers.
+    let api_limit = || axum::middleware::from_fn_with_state(state.clone(), limit::api);
+
     // Hashed build assets never change: serve them from disk with a one-year immutable cache.
     let next_static = Router::new()
         .nest_service("/_next/static", ServeDir::new(state.config.next_dir.join("static")))
@@ -166,7 +170,10 @@ pub fn router(state: AppState) -> Router {
         .route("/api/themes/{id}", get(site_api::theme))
         .route("/api/desktop/widgets", get(site_api::desktop_widgets))
         .route("/api/desktop/source", get(site_api::desktop_source))
-        .route("/api/global-search", get(site_api::global_search))
+        .route("/api/global-search", get(site_api::global_search).route_layer(api_limit()))
+        .route("/api/auth/login", post(auth::login).route_layer(api_limit()))
+        .route("/api/auth/logout", post(auth::logout).route_layer(api_limit()))
+        .route("/api/analytics/track", post(analytics::track).route_layer(api_limit()))
         .route("/api/github/stats", get(github::stats))
         .route("/.well-known/api-catalog", get(site_api::api_catalog))
         .route("/.well-known/openapi.json", get(site_api::openapi))
