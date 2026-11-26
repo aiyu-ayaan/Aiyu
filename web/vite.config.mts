@@ -112,16 +112,42 @@ async function discoveryDocs() {
 const RUST = process.env.AIYU_SERVER_URL || 'http://127.0.0.1:8080';
 // Paths that stay the server's even when a browser asks for HTML.
 const SERVER_PATHS = /^\/(api|docs|\.well-known|_img|_next)(\/|\?|$)|^\/[^?]*\.[a-z0-9]+(\?|$)/i;
+const VITE_PATHS = /^\/(@|src\/|node_modules\/)/;
+const HEAD_TAGS = /<title>[\s\S]*?<\/title>|<script type="application\/ld\+json">[\s\S]*?<\/script>|<meta (?!charset|name="(?:viewport|theme-color)")[^>]*>|<link (?![^>]*\/_app\/)[^>]*>/g;
 
-// The first render needs the data the server puts in the page: take it from the server's own copy of that page.
-const devData: Plugin = {
-  name: 'aiyu:dev-data',
+// Page loads ask the server first, so dev keeps its status codes, redirects and sign-in gate, and the first render
+// gets the data the server puts in the page.
+const devPages: Plugin = {
+  name: 'aiyu:dev-pages',
   apply: 'serve',
-  async transformIndexHtml(html, { originalUrl = '/' }) {
-    const page = await (await fetch(RUST + originalUrl, { headers: { accept: 'text/html' } })).text();
-    const data = page.match(/<script id="__DATA__" type="application\/json">([\s\S]*?)<\/script>/)?.[1] ?? '{}';
-    const title = page.match(/<title>[\s\S]*?<\/title>/)?.[0] ?? '';
-    return html.replace('<!--app-head-->', () => title).replace('<!--app-data-->', () => data);
+  configureServer(server) {
+    server.middlewares.use((req, res, next) => {
+      const url = req.url ?? '/';
+      const navigation = (req.method === 'GET' || req.method === 'HEAD') && req.headers.accept?.includes('text/html') && !req.headers['x-aiyu-data'];
+      if (!navigation || VITE_PATHS.test(url) || SERVER_PATHS.test(url)) return next();
+      (async () => {
+        const headers: Record<string, string> = { accept: String(req.headers.accept), 'x-forwarded-for': req.socket.remoteAddress ?? '' };
+        for (const name of ['cookie', 'user-agent']) if (req.headers[name]) headers[name] = String(req.headers[name]);
+        const reply = await fetch(RUST + url, { method: req.method, headers, redirect: 'manual' });
+        const body = await reply.text();
+        res.statusCode = reply.status;
+        for (const name of ['location', 'content-type', 'cache-control']) {
+          // A redirect that names the server stays on this one.
+          const value = reply.headers.get(name)?.replace(RUST, '');
+          if (value) res.setHeader(name, value);
+        }
+        if (reply.headers.getSetCookie().length) res.setHeader('set-cookie', reply.headers.getSetCookie());
+        const data = body.match(/<script id="__DATA__" type="application\/json">([\s\S]*?)<\/script>/)?.[1];
+        // Anything that is not an app page (a redirect, the markdown variant) goes through as it is. An unknown path is
+        // Next's 404 page, which cannot load here: the app shows its own, with the same status.
+        if (data === undefined && reply.status !== 404) return res.end(body);
+        const template = await readFile(new URL('./index.html', import.meta.url), 'utf8');
+        // The server's head tags (title, metadata, structured data), without its links to the built assets.
+        const head = body.slice(0, body.indexOf('</head>')).match(HEAD_TAGS)?.join('') ?? '';
+        const page = await server.transformIndexHtml(url, template);
+        res.end(page.replace('<!--app-head-->', () => head).replace('<!--app-data-->', () => data ?? '{}'));
+      })().catch(next);
+    });
   },
 };
 
@@ -140,7 +166,7 @@ export default defineConfig(({ command }) => ({
   // Hashed assets live under /_app/ so the Rust server can cache them forever without touching Next's paths.
   // In dev the app owns the root, so Vite's own paths never collide with the proxy.
   base: command === 'build' ? '/_app/' : '/',
-  plugins: [jsxInJs, react(), tailwindcss(), prepaint, routeMeta, devData, noNext],
+  plugins: [jsxInJs, react(), tailwindcss(), prepaint, routeMeta, devPages, noNext],
   // Some dependencies read Node's `global` (webpack polyfilled it for Next).
   define: { global: 'globalThis' },
   resolve: {
@@ -178,12 +204,7 @@ export default defineConfig(({ command }) => ({
         target: RUST,
         changeOrigin: false,
         xfwd: true,
-        bypass(req) {
-          const url = req.url ?? '/';
-          if (/^\/(@|src\/|node_modules\/)/.test(url)) return url;
-          const navigation = req.headers.accept?.includes('text/html') && !req.headers['x-aiyu-data'];
-          return navigation && !SERVER_PATHS.test(url) ? '/index.html' : undefined;
-        },
+        bypass: (req) => (VITE_PATHS.test(req.url ?? '/') ? req.url : undefined),
       },
     },
   },
