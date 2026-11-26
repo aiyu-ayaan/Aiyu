@@ -453,9 +453,11 @@ export default function SecurityDashboard() {
                 {TABS.map((t) => (
                     <button
                         key={t.key}
+                        id={`security-tab-${t.key}`}
                         type="button"
                         role="tab"
                         aria-selected={tab === t.key}
+                        aria-controls="security-tabpanel"
                         onClick={() => setTab(t.key)}
                         className="adm-tab"
                     >
@@ -464,7 +466,14 @@ export default function SecurityDashboard() {
                 ))}
             </div>
 
-            {tab === 'sessions' ? <SessionsTab /> : <AuditTab />}
+            <div
+                id="security-tabpanel"
+                role="tabpanel"
+                aria-labelledby={`security-tab-${tab}`}
+                tabIndex={0}
+            >
+                {tab === 'sessions' ? <SessionsTab /> : <AuditTab />}
+            </div>
         </div>
     );
 }

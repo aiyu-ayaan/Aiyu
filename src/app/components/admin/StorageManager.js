@@ -27,7 +27,15 @@ function ConfirmDialog({ dialog, onClose, onConfirm, busy }) {
     }
 
     return (
-        <div className="adm-overlay" role="dialog" aria-modal="true" aria-labelledby="delete-unreferenced-title">
+        <div
+            className="adm-overlay"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-unreferenced-title"
+            onKeyDown={(event) => {
+                if (event.key === 'Escape' && !busy) onClose();
+            }}
+        >
             <div className="adm-dialog adm-dialog-framed max-w-lg">
                 <div className="adm-dialog-head">
                     <div>
@@ -110,7 +118,15 @@ function MigrationPreviewDialog({ open, onClose, onConfirm, data, busy }) {
     const totalBytes = candidates.reduce((sum, c) => sum + (c.sizeBytes || 0), 0);
 
     return (
-        <div className="adm-overlay" role="dialog" aria-modal="true" aria-labelledby="webp-migration-title">
+        <div
+            className="adm-overlay"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="webp-migration-title"
+            onKeyDown={(event) => {
+                if (event.key === 'Escape' && !busy) onClose();
+            }}
+        >
             <div className="adm-dialog adm-dialog-framed max-w-2xl">
                 <div className="adm-dialog-head">
                     <div>
@@ -462,39 +478,46 @@ export default function StorageManager() {
                                 description="Run a refresh to audit content tables."
                             />
                         ) : (
-                            <div className="adm-table-wrap">
-                                <table className="adm-table min-w-[38rem]">
-                                    <thead>
-                                        <tr>
-                                            <th>Section</th>
-                                            <th>Documents</th>
-                                            <th>Data size</th>
-                                            <th>Referenced uploads</th>
-                                            <th>Referenced upload size</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {sections.map((section) => (
-                                            <tr key={section.key}>
-                                                <td className="font-semibold text-[var(--text-bright)]">
-                                                    {section.label}
-                                                </td>
-                                                <td className="adm-num">{section.docCount}</td>
-                                                <td className="adm-num">{formatBytes(section.approximateBytes)}</td>
-                                                <td className="adm-num">{section.referencedUploadCount}</td>
-                                                <td className="adm-num">
+                            <ul className="adm-list">
+                                {sections.map((section) => (
+                                    <li
+                                        key={section.key}
+                                        className="adm-row flex-col items-stretch gap-2 sm:flex-row sm:items-center"
+                                    >
+                                        <h3 className="min-w-0 flex-1 font-semibold text-[var(--text-bright)]">
+                                            {section.label}
+                                        </h3>
+                                        <dl className="adm-facts grid w-full gap-2 sm:w-auto sm:min-w-[26rem] sm:grid-cols-2">
+                                            <div>
+                                                <dt>Documents</dt>
+                                                <dd className="adm-num">{section.docCount}</dd>
+                                            </div>
+                                            <div>
+                                                <dt>Data size</dt>
+                                                <dd className="adm-num">
+                                                    {formatBytes(section.approximateBytes)}
+                                                </dd>
+                                            </div>
+                                            <div>
+                                                <dt>Referenced uploads</dt>
+                                                <dd className="adm-num">{section.referencedUploadCount}</dd>
+                                            </div>
+                                            <div>
+                                                <dt>Upload size</dt>
+                                                <dd className="adm-num">
                                                     {formatBytes(section.referencedUploadBytes)}
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
+                                                </dd>
+                                            </div>
+                                        </dl>
+                                    </li>
+                                ))}
+                            </ul>
                         )}
                     </Panel>
 
                     <Panel
                         title="Unreferenced uploads"
+                        className="adm-danger"
                         actions={
                             unreferencedUploads.length > 0 ? (
                                 <button
@@ -516,67 +539,68 @@ export default function StorageManager() {
                                 description="Everything inside public/uploads is currently referenced by site content."
                             />
                         ) : (
-                            <div className="adm-table-wrap">
-                                <table className="adm-table min-w-[40rem]">
-                                    <thead>
-                                        <tr>
-                                            <th>Filename</th>
-                                            <th>Size</th>
-                                            <th>Type</th>
-                                            <th>Last modified</th>
-                                            <th className="text-right">Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {unreferencedUploads.map((upload) => (
-                                            <tr key={upload.filename}>
-                                                <td>
-                                                    <div className="flex items-center gap-3">
-                                                        {upload.filename.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-                                                            <img
-                                                                src={`/uploads/${upload.filename}`}
-                                                                alt=""
-                                                                className="h-8 w-8 shrink-0 rounded border border-[var(--hairline)] object-cover"
-                                                            />
-                                                        ) : (
-                                                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded border border-[var(--hairline)] bg-[var(--bg-secondary)]">
-                                                                <FaImage
-                                                                    aria-hidden="true"
-                                                                    className="text-[var(--adm-hint)]"
-                                                                />
-                                                            </div>
-                                                        )}
-                                                        <a
-                                                            href={`/uploads/${upload.filename}`}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="adm-link font-mono text-xs"
-                                                        >
-                                                            {upload.filename}
-                                                        </a>
+                            <ul className="adm-list">
+                                {unreferencedUploads.map((upload) => (
+                                    <li
+                                        key={upload.filename}
+                                        className="adm-row flex-wrap justify-between gap-3"
+                                    >
+                                        <div className="flex min-w-0 flex-1 items-start gap-3">
+                                            {upload.filename.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                                                <img
+                                                    src={`/uploads/${upload.filename}`}
+                                                    alt=""
+                                                    className="h-9 w-9 shrink-0 rounded border border-[var(--hairline)] object-cover"
+                                                />
+                                            ) : (
+                                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded border border-[var(--hairline)] bg-[var(--bg-secondary)]">
+                                                    <FaImage
+                                                        aria-hidden="true"
+                                                        className="text-[var(--adm-hint)]"
+                                                    />
+                                                </div>
+                                            )}
+                                            <div className="min-w-0 flex-1">
+                                                <a
+                                                    href={`/uploads/${upload.filename}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="adm-link break-all font-mono text-xs"
+                                                >
+                                                    {upload.filename}
+                                                </a>
+                                                <dl className="adm-facts mt-2">
+                                                    <div>
+                                                        <dt>Size</dt>
+                                                        <dd className="adm-num">{formatBytes(upload.sizeBytes)}</dd>
                                                     </div>
-                                                </td>
-                                                <td className="adm-num">{formatBytes(upload.sizeBytes)}</td>
-                                                <td>
-                                                    <Badge>{upload.isThumbnail ? 'Thumbnail' : 'Original'}</Badge>
-                                                </td>
-                                                <td className="adm-num text-xs text-[var(--text-secondary)]">
-                                                    {new Date(upload.lastModified).toLocaleString()}
-                                                </td>
-                                                <td className="text-right">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => openDeleteDialog([upload])}
-                                                        className="adm-btn adm-btn-danger"
-                                                    >
-                                                        <FaTrashCan aria-hidden="true" /> Delete
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
+                                                    <div>
+                                                        <dt>Type</dt>
+                                                        <dd>
+                                                            <Badge>
+                                                                {upload.isThumbnail ? 'Thumbnail' : 'Original'}
+                                                            </Badge>
+                                                        </dd>
+                                                    </div>
+                                                    <div>
+                                                        <dt>Last modified</dt>
+                                                        <dd className="adm-num text-xs">
+                                                            {new Date(upload.lastModified).toLocaleString()}
+                                                        </dd>
+                                                    </div>
+                                                </dl>
+                                            </div>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => openDeleteDialog([upload])}
+                                            className="adm-btn adm-btn-danger"
+                                        >
+                                            <FaTrashCan aria-hidden="true" /> Delete
+                                        </button>
+                                    </li>
+                                ))}
+                            </ul>
                         )}
                     </Panel>
                 </div>
@@ -632,6 +656,20 @@ export default function StorageManager() {
                                 ? 'Converting images'
                                 : 'Audit and convert to WebP'}
                         </button>
+
+                        {migrating && (
+                            <div className="mt-4 space-y-2" role="status" aria-live="polite">
+                                <p className="adm-help">Converting images and updating references…</p>
+                                <div
+                                    className="adm-sc-progress adm-sc-progress-indeterminate"
+                                    role="progressbar"
+                                    aria-label="WebP image migration"
+                                    aria-valuetext="Conversion in progress"
+                                >
+                                    <span />
+                                </div>
+                            </div>
+                        )}
 
                         {migrationResult && (
                             <div className="mt-4 space-y-3 border-t border-[var(--hairline)] pt-4">

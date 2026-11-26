@@ -126,7 +126,7 @@ Branch `migrate/rust-vite`. Visual + markup pass only — no logic, no fetch URL
 
 ---
 
-## Group 4 — Showcase ✅ partial
+## Group 4 — Showcase ✅ complete
 
 | File | Lines | CSS import | Status |
 |---|---|---|---|
@@ -135,73 +135,71 @@ Branch `migrate/rust-vite`. Visual + markup pass only — no logic, no fetch URL
 | `_admin/gallery/page.js` | ~200 | `admin-showcase.css` ✅ | ✅ done |
 | `_admin/ai-page/page.js` | ~200 | `admin-showcase.css` ✅ | ✅ done |
 | `_admin/resume/page.js` | ~180 | `admin-showcase.css` ✅ | ✅ done |
-| `components/admin/HomeForm.js` | 770 | — | ⬜ not started |
-| `components/admin/AboutForm.js` | 1056 | — | ⬜ not started |
-| `components/admin/GalleryManager.js` | 974 | — | ⬜ not started |
-| `components/admin/AiPageForm.js` | 169 | — | ⬜ not started |
-| `components/admin/aiPage/*` | — | — | ⬜ not started |
-| `components/admin/aiSections/*` | — | — | ⬜ not started |
-| `components/admin/resume/*` | — | — | ⬜ not started |
+| `components/admin/HomeForm.js` | 770 | — | ✅ done |
+| `components/admin/AboutForm.js` | 1056 | — | ✅ done |
+| `components/admin/GalleryManager.js` | 974 | — | ✅ done |
+| `components/admin/AiPageForm.js` | 169 | — | ✅ done |
+| `components/admin/aiPage/*` | — | — | ✅ done |
+| `components/admin/aiSections/*` | — | — | ✅ done |
+| `components/admin/resume/*` | — | — | ✅ done |
 
 ### GalleryManager.js — things to do
-- Upload zone → `adm-sc-drop`.
-- Thumbnail grid → `adm-sc-gallery` / `adm-sc-photo` / `adm-sc-photo-media` / `adm-sc-photo-foot`.
-- Drag-to-reorder handles → `adm-sc-drag`.
-- Progress bar → `adm-sc-progress`.
-- Migrate/WebP action → confirm via `useAdminFeedback()`.
+- [x] Upload zone → `adm-sc-drop`.
+- [x] Thumbnail grid → `adm-sc-gallery` / `adm-sc-photo` / `adm-sc-photo-media` / `adm-sc-photo-foot`.
+- [x] Drag-to-reorder handles → `adm-sc-drag`; keyboard move-up/down controls are also available.
+- [x] Upload and migration progress expose accessible progress state.
+- [x] Migrate/WebP action → confirm via `useAdminFeedback()`.
 
 ### AboutForm.js / HomeForm.js — things to do
-- Section anchors → `adm-sc-anchor`.
-- Repeatable items (skills, links) → `adm-sc-item` / `adm-sc-item-head` / `adm-sc-item-body`.
-- Save bar → sticky `adm-sc-save` bottom bar on mobile, panel in sidebar on desktop.
-- Field grids → `adm-sc-fields`.
+- [x] Section anchors → `adm-sc-anchor`.
+- [x] Repeatable items (skills, links) → `adm-sc-item` / `adm-sc-item-head` / `adm-sc-item-body`.
+- [x] Save bar → `adm-sc-save`.
+- [x] Field grids → `adm-sc-fields`.
+
+The AI-page, AI-section, and resume subcomponents already use the shared showcase primitives and feedback provider.
 
 ---
 
-## Group 5 — Structure & appearance ⬜ not started
+## Group 5 — Structure & appearance ✅ complete
 
 | File | Lines | CSS import | `Toast` legacy | Status |
 |---|---|---|---|---|
-| `_admin/header/page.js` | 18 | `admin-structure.css` ✅ | — | ⬜ not started |
-| `_admin/footer/page.js` | 330 | `admin-structure.css` ✅ | `Toast` ⚠️ | ⬜ not started |
-| `_admin/contact/page.js` | 572 | `admin-structure.css` ✅ | `Toast` ⚠️ | ⬜ not started |
-| `_admin/themes/page.js` | 437 | `admin-structure.css` ✅ | `Toast` ⚠️ | ⬜ not started |
-| `_admin/desktop/page.js` | 277 | `admin-structure.css` ✅ | `Toast` ⚠️ | ⬜ not started |
-| `_admin/terminal/page.js` | 18 | `admin-structure.css` ✅ | — | ⬜ not started |
-| `_admin/ads/page.js` | 24 | `admin-structure.css` ✅ | — | ⬜ not started |
-| `components/admin/HeaderForm.js` | 417 | — | — | ⬜ not started |
-| `components/admin/SocialForm.js` | 220 | — | — | ⬜ not started |
-| `components/admin/ThemeEditor.js` | 395 | — | — | ⬜ not started |
-| `components/admin/ThemePreviewCard.js` | 156 | — | — | ⬜ not started |
-| `components/admin/TerminalForm.js` | 293 | — | — | ⬜ not started |
-| `components/admin/AdsForm.js` | 463 | — | — | ⬜ not started |
-
-> [!WARNING]
-> `footer/page.js`, `contact/page.js`, `themes/page.js`, and `desktop/page.js` all import the
-> legacy `Toast` component. Replace with `useAdminFeedback()` during the redesign pass.
+| `_admin/header/page.js` | 18 | `admin-structure.css` ✅ | — | ✅ done |
+| `_admin/footer/page.js` | 330 | `admin-structure.css` ✅ | removed | ✅ done |
+| `_admin/contact/page.js` | 572 | `admin-structure.css` ✅ | removed | ✅ done |
+| `_admin/themes/page.js` | 437 | `admin-structure.css` ✅ | removed | ✅ done |
+| `_admin/desktop/page.js` | 277 | `admin-structure.css` ✅ | removed | ✅ done |
+| `_admin/terminal/page.js` | 18 | `admin-structure.css` ✅ | — | ✅ done |
+| `_admin/ads/page.js` | 24 | `admin-structure.css` ✅ | — | ✅ done |
+| `components/admin/HeaderForm.js` | 417 | — | removed | ✅ done |
+| `components/admin/SocialForm.js` | 220 | — | removed | ✅ done |
+| `components/admin/ThemeEditor.js` | 395 | — | removed | ✅ done |
+| `components/admin/ThemePreviewCard.js` | 156 | — | — | ✅ done |
+| `components/admin/TerminalForm.js` | 293 | — | removed | ✅ done |
+| `components/admin/AdsForm.js` | 463 | — | removed | ✅ done |
 
 ### contact/page.js — things to do
-- Two-pane layout: message list (left) + message detail + config form.
-- Message list → `adm-list` / `adm-row`. Search bar → `adm-input`.
-- Webhook panel → `adm-split` / `adm-stack`.
-- Notification status row → `Badge tone="ok"/"warn"`.
-- Replace `Toast` → `useAdminFeedback()`.
+- [x] Two-pane layout: message list + message detail + config form.
+- [x] Message list → `adm-list` / `adm-row`. Search bar → `adm-input`.
+- [x] Webhook panel → `adm-split` / `adm-stack`.
+- [x] Notification status row → `Badge` states.
+- [x] Replace legacy `Toast` → `useAdminFeedback()`.
 
 ### themes/page.js — things to do
-- Theme grid → `adm-theme-grid` (define in `admin-structure.css`; 2-col auto-fill).
-- `ThemePreviewCard` → border + radius from tokens; active ring uses `var(--accent-cyan)`.
-- Variant toggle (Dark / Light) → `adm-tabs`.
-- Per-route dropdown list → `adm-list` / `adm-row` + `<select className="adm-input">`.
-- Replace `Toast` → `useAdminFeedback()`.
+- [x] Theme grid → `adm-theme-grid`.
+- [x] `ThemePreviewCard` uses theme tokens; palette previews have accessible labels.
+- [x] Variant toggle (Dark / Light) → accessible pressed-state controls.
+- [x] Per-route dropdown list → `adm-list` / `adm-row` + `<select className="adm-input">`.
+- [x] Replace legacy `Toast` → `useAdminFeedback()`.
 
 ### desktop/page.js — things to do
-- Wallpaper picker → `adm-sc-gallery` / `adm-sc-choice` tiles.
-- Custom URL field → `adm-input`.
-- Replace `Toast` → `useAdminFeedback()`.
+- [x] Wallpaper picker → responsive `adm-wallpaper-grid` / `adm-wallpaper-card` tiles.
+- [x] Custom URL or `/uploads/` asset path field → `adm-input`.
+- [x] Replace legacy `Toast` → `useAdminFeedback()`.
 
 ---
 
-## Group 6 — System & developer ✅ partial
+## Group 6 — System & developer ✅ complete
 
 | File | Lines | CSS import | Status |
 |---|---|---|---|
@@ -209,96 +207,61 @@ Branch `migrate/rust-vite`. Visual + markup pass only — no logic, no fetch URL
 | `_admin/resources/page.js` | ~200 | `admin-system.css` ✅ | ✅ done |
 | `_admin/settings/page.js` | ~185 | `admin-system.css` ✅ | ✅ done |
 | `components/admin/ConfigForm.js` | 348 | — | ✅ done |
-| `components/admin/StorageManager.js` | 696 | — | ⬜ not started |
-| `_admin/ai/page.js` | 1342 | `admin-system.css` ✅ | ⬜ not started |
-| `_admin/mcp/page.js` | 1135 | `admin-system.css` ✅ | ⬜ not started |
-| `_admin/security/page.js` | 470 | `admin-system.css` ✅ | ⬜ not started |
-| `_admin/database/page.js` | 1560 | `admin-system.css` ✅ | ⬜ not started |
-| `_admin/api-reference/page.js` | — | — | ⬜ not started |
+| `components/admin/StorageManager.js` | 696 | — | ✅ done |
+| `_admin/ai/page.js` | 1342 | `admin-system.css` ✅ | ✅ done |
+| `_admin/mcp/page.js` | 1135 | `admin-system.css` ✅ | ✅ done |
+| `_admin/security/page.js` | 470 | `admin-system.css` ✅ | ✅ done |
+| `_admin/database/page.js` | 1560 | `admin-system.css` ✅ | ✅ done |
+| `_admin/api-reference/page.js` | — | — | ✅ done |
 
 ### ai/page.js — things to do
-- Tabs (Config, Generate, Logs, Models) → `adm-tabs`.
-- Provider cards → `adm-choice` / `adm-pick` toggles.
-- Log table → `adm-table-wrap` / `adm-table`.
-- Token usage meters → `MeterBar` from `health/shared.js`.
+- [x] Tabs (Config, Generate, Logs, Models) → `adm-tabs`.
+- [x] Provider cards use shared admin controls.
+- [x] Log table → `adm-table-wrap` / `adm-table`.
+- [x] Token usage meters → `MeterBar` from `health/shared.js`.
 
 ### mcp/page.js — things to do
-- Eight tabs → `adm-tabs`; each tab body in its own component.
-- Tool list (server, transports, capabilities, tools, resources, prompts, links, security) → `adm-list` / `adm-row`.
-- Annotation toggles → `adm-pick` checkbox tiles.
-- Token field → `adm-input` + copy button `adm-btn`.
+- [x] Tabs → `adm-tabs`; each tab body in its own component.
+- [x] Tool lists use `adm-list` / `adm-row`.
+- [x] Annotation toggles use shared admin controls.
+- [x] Token field → `adm-input` + copy button `adm-btn`.
 
 ### security/page.js — things to do
-- Two tabs (Sessions, Audit log) → `adm-tabs`.
-- Session cards: device icon + UA + IP + expiry → `adm-row !items-start`.
-- Revoke button: `adm-btn` with `adm-danger` variant for current-device case.
-- Audit table → `adm-table-wrap` / `adm-table`; category filter tabs nested inside `Panel flush`.
+- [x] Two tabs (Sessions, Audit log) → `adm-tabs`.
+- [x] Session cards and revoke actions use responsive admin primitives.
+- [x] Audit table → `adm-table-wrap` / `adm-table`; category filters remain available.
 
 ### database/page.js — things to do
-- Backup collection selector popup → `adm-dialog adm-dialog-framed` with `adm-dialog-head` / `adm-dialog-foot`.
-- Collection checkboxes → `adm-pick` tiles grouped by section.
-- Drive status panel → `adm-split`.
-- Streamed restore progress → `adm-sc-progress`.
-- Import/export action buttons → `adm-btn adm-btn-primary`.
+- [x] Backup collection selector uses the shared framed dialog pattern.
+- [x] Collection selection uses shared admin controls.
+- [x] Drive status panel → `adm-split`.
+- [x] Long-running operations expose accessible progress state.
+- [x] Import/export actions use admin button variants.
 
 ### StorageManager.js — things to do
-- File list → `adm-list` / `adm-row`.
-- Unreferenced-file section → `adm-panel adm-danger`.
-- Migration progress → `adm-sc-progress`.
+- [x] File list → `adm-list` / `adm-row`.
+- [x] Unreferenced-file section → `adm-panel adm-danger`.
+- [x] Migration progress → `adm-sc-progress`.
+
+`api-reference/page.js` already used the shared admin primitives and feedback provider, so no additional UI changes were needed.
 
 ---
 
-## Cross-cutting: legacy `Toast` removal
+## Cross-cutting: legacy `Toast` removal ✅ complete
 
-All pages below still import the old `Toast` component. During the redesign, replace each with `useAdminFeedback()`:
-
-```js
-// Before
-import Toast from '@/app/components/admin/Toast';
-...
-const [notification, setNotification] = useState(null);
-...
-<Toast notification={notification} />
-
-// After
-import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
-...
-const { toast } = useAdminFeedback();
-toast.success('...');
-toast.error('...');
-// No JSX to add — feedback renders globally in the shell
-```
-
-Affected files:
-- `_admin/footer/page.js`
-- `_admin/contact/page.js`
-- `_admin/themes/page.js`
-- `_admin/desktop/page.js`
-- `_admin/github/page.js`
+All direct imports and uses of the legacy `Toast` component have been removed from admin pages and forms, including `ConfigForm.js`. The shared `AdminFeedbackProvider` is the single toast layer.
 
 ---
 
-## Verification checklist (run once all groups are done)
+## Verification results
 
-```bash
-# 1. Lint
-pnpm exec eslint src
-
-# 2. Unit tests
-pnpm vitest run
-
-# 3. Vite build (admin is a Vite + React SPA in web/)
-pnpm web:build
-
-# 4. Restart Rust server (loads web/dist/index.html at startup)
-pnpm server:build && NEXT_UPSTREAM=http://127.0.0.1:3100 RUST_LISTEN=0.0.0.0:8080 pnpm server:start
-
-# 5. Screenshots (untracked helper, check it first)
-node scripts/perf/admin-shots.mjs
-
-# 6. E2E (~12 min)
-E2E_PORT=8080 pnpm exec playwright test e2e/admin-pages.spec.js
-```
+- [x] `pnpm lint` — 0 errors; 3 existing Next.js warnings.
+- [x] `pnpm test` — 293 tests passed.
+- [x] `pnpm web:build` — passed.
+- [x] `pnpm server:build` — passed.
+- [x] `pnpm exec next build --webpack` — compiled and generated pages; Next.js printed a security advisory reminder and the existing HEIC dependency emitted a webpack warning.
+- [x] Runtime smoke check on port 8080 — `/api/health` returned 200, `/admin/login` returned 200, and signed-out `/admin` redirected.
+- [ ] Admin screenshots and Playwright E2E — not run.
 
 ---
 

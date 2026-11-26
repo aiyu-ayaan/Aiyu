@@ -153,22 +153,39 @@ curl http://localhost/api/seed
 
 ---
 
-## 💻 Local Development (host + Dockerized Postgres)
+## 💻 Local Development (Rust/Vite app + Next.js upstream)
 
-Run Next.js and the Prisma CLI directly on your machine, with only PostgreSQL
-(and optional pgAdmin) in Docker:
+The full site and admin UI are served by the Rust server on port `8080`. Next.js
+runs as its upstream on port `3000`; starting only `pnpm dev` does not serve the
+complete app. PostgreSQL (and optional pgAdmin) runs in Docker:
 
 ```bash
-cp .env.example .env.local         # set DATABASE_URL to localhost
-pnpm install                        # postinstall runs `prisma generate`
-pnpm db:up                      # start Postgres + pgAdmin (docker-compose-dev.yml)
-pnpm exec prisma migrate deploy          # apply the schema
-pnpm db:seed                    # populate sample data (or curl /api/seed)
-pnpm dev                        # http://localhost:3000
+cp .env.example .env              # set DATABASE_URL to localhost
+pnpm install                      # postinstall runs `prisma generate`
+pnpm db:up                        # start Postgres + pgAdmin
+pnpm exec prisma migrate deploy   # apply the schema
+pnpm db:seed                      # optional sample data
 ```
 
-Useful scripts: `pnpm db:studio` (Prisma Studio), `pnpm db:down` (stop the
-dev database). pgAdmin is available at `http://localhost:5050`.
+Run the app in two terminals:
+
+```bash
+# Terminal 1: Next.js API/upstream
+pnpm dev                          # http://localhost:3000
+```
+
+```bash
+# Terminal 2: build the Vite UI and Rust server, then serve the full app
+pnpm web:build
+pnpm server:build
+NEXT_UPSTREAM=http://127.0.0.1:3000 RUST_LISTEN=0.0.0.0:8080 pnpm server:start
+```
+
+Open the site at `http://localhost:8080` and the admin panel at
+`http://localhost:8080/admin/login`. Re-run `pnpm web:build` and restart the
+Rust server after changing the Vite UI. Useful scripts: `pnpm db:studio`
+(Prisma Studio), `pnpm db:down` (stop the dev database), and `pnpm web:dev`
+(Vite asset development server). pgAdmin is available at `http://localhost:5050`.
 
 ---
 

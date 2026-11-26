@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { FaDownload, FaFileArrowUp, FaFloppyDisk, FaSpinner, FaWandMagicSparkles } from 'react-icons/fa6';
-import Toast from './Toast';
+import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
 import { Field, Loading, Panel } from './ui';
 import '@/app/styles/admin-system.css';
 
@@ -15,6 +15,7 @@ const PAGE_HEADERS = [
 
 const ConfigForm = () => {
     const router = useRouter();
+    const { toast } = useAdminFeedback();
     const [formData, setFormData] = useState({
         googleAnalyticsId: '',
         logoText: '< aiyu />',
@@ -34,7 +35,6 @@ const ConfigForm = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
-    const [notification, setNotification] = useState(null);
     const [aiEnabled, setAiEnabled] = useState(false);
     const [aiGenerating, setAiGenerating] = useState(null); // 'projects', 'blogs', 'gallery'
 
@@ -130,8 +130,7 @@ const ConfigForm = () => {
     };
 
     const showNotification = (success, message) => {
-        setNotification({ success, message });
-        setTimeout(() => setNotification(null), 3000);
+        toast(message, { success });
     };
 
     // Resume Handlers
@@ -341,7 +340,6 @@ const ConfigForm = () => {
                 </Panel>
             </aside>
 
-            <Toast notification={notification} />
         </form>
     );
 };

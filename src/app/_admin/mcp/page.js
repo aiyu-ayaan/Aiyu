@@ -885,7 +885,13 @@ function SecurityTab({ config, patch, flash, setError }) {
                                 Copy this token now — it will not be shown again.
                             </p>
                             <div className="flex flex-wrap items-center gap-2">
-                                <code className="adm-code flex-1 break-all">{newToken}</code>
+                                <input
+                                    type="text"
+                                    readOnly
+                                    aria-label="New MCP write token"
+                                    value={newToken}
+                                    className="adm-input min-w-0 flex-1 font-mono"
+                                />
                                 <button type="button" onClick={copy} className="adm-btn">
                                     <FaCopy aria-hidden="true" /> {copied ? 'Copied' : 'Copy'}
                                 </button>
@@ -1061,9 +1067,11 @@ export default function McpDashboard() {
                         {TABS.map((t) => (
                             <button
                                 key={t.key}
+                                id={`mcp-tab-${t.key}`}
                                 type="button"
                                 role="tab"
                                 aria-selected={tab === t.key}
+                                aria-controls="mcp-tabpanel"
                                 onClick={() => setTab(t.key)}
                                 className="adm-tab"
                             >
@@ -1073,7 +1081,13 @@ export default function McpDashboard() {
                     </div>
 
                     <div className={showPreview ? 'adm-split' : 'adm-stack'}>
-                        <div className="adm-stack">
+                        <div
+                            id="mcp-tabpanel"
+                            role="tabpanel"
+                            aria-labelledby={`mcp-tab-${tab}`}
+                            tabIndex={0}
+                            className="adm-stack"
+                        >
                             {tab === 'server' && <ServerTab config={config} patch={patch} />}
                             {tab === 'transports' && <TransportsTab config={config} patch={patch} />}
                             {tab === 'capabilities' && <CapabilitiesTab config={config} patch={patch} />}

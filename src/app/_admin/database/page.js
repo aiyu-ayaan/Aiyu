@@ -637,7 +637,7 @@ export default function DatabaseManager() {
 
             {message && (
                 <div
-                    role="alert"
+                    role={message.type === 'error' ? 'alert' : 'status'}
                     className={`adm-notice ${
                         message.type === 'error'
                             ? 'adm-notice-error'
@@ -646,7 +646,17 @@ export default function DatabaseManager() {
                             : 'adm-notice-info'
                     }`}
                 >
-                    {message.text}
+                    <p>{message.text}</p>
+                    {message.type === 'info' && (
+                        <div
+                            className="adm-sc-progress adm-sc-progress-indeterminate mt-3"
+                            role="progressbar"
+                            aria-label={message.text}
+                            aria-valuetext="Operation in progress"
+                        >
+                            <span />
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -1069,6 +1079,9 @@ export default function DatabaseManager() {
                     aria-modal="true"
                     aria-labelledby="gdrive-modal-title"
                     onClick={() => setShowGDriveModal(false)}
+                    onKeyDown={(event) => {
+                        if (event.key === 'Escape') setShowGDriveModal(false);
+                    }}
                 >
                     <div
                         className="adm-dialog adm-dialog-framed max-w-3xl"
@@ -1430,6 +1443,9 @@ export default function DatabaseManager() {
                     aria-modal="true"
                     aria-labelledby="export-modal-title"
                     onClick={() => setShowExportModal(false)}
+                    onKeyDown={(event) => {
+                        if (event.key === 'Escape') setShowExportModal(false);
+                    }}
                 >
                     <div
                         className="adm-dialog adm-dialog-framed max-w-2xl"
@@ -1529,7 +1545,7 @@ export default function DatabaseManager() {
                                         ? 'Google Drive must be connected first'
                                         : ''
                                 }
-                                className="adm-btn"
+                                className="adm-btn adm-btn-primary"
                             >
                                 <FaCloudArrowUp aria-hidden="true" /> Back up to Google Drive
                             </button>

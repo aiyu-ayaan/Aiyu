@@ -13,9 +13,17 @@ import {
     FaTrashCan,
 } from 'react-icons/fa6';
 import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
-import Toast from '@/app/components/admin/Toast';
 import { Badge, EmptyState, Field, Loading, PageHeader, Panel, Stat } from '@/app/components/admin/ui';
+import { MeterBar } from '@/app/_admin/health/shared';
+import '@/app/styles/admin-insights.css';
 import '@/app/styles/admin-system.css';
+
+const AI_TABS = [
+    { key: 'config', label: 'Config' },
+    { key: 'generate', label: 'Generate' },
+    { key: 'logs', label: 'Logs' },
+    { key: 'models', label: 'Models' },
+];
 
 const PROVIDER_TYPES = [
     { id: 'google', name: 'Google Gemini', defaultModel: 'gemini-2.0-flash-lite' },
@@ -110,7 +118,8 @@ const COMMON_MODELS = {
 };
 
 export default function AiConfigPage() {
-    const { confirm } = useAdminFeedback();
+    const { confirm, toast } = useAdminFeedback();
+    const [activeTab, setActiveTab] = useState('config');
     const [config, setConfig] = useState({
         enabled: false,
         systemInstruction: '',
@@ -153,7 +162,6 @@ export default function AiConfigPage() {
 
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [notification, setNotification] = useState(null);
 
     // Drag and Drop State
     const [draggedIndex, setDraggedIndex] = useState(null);
@@ -251,8 +259,8 @@ export default function AiConfigPage() {
     };
 
     const showNotification = (success, message) => {
-        setNotification({ success, message });
-        setTimeout(() => setNotification(null), 3000);
+        if (success) toast.success(message);
+        else toast.error(message);
     };
 
     const handleSave = async (e) => {
@@ -558,8 +566,34 @@ export default function AiConfigPage() {
                 }
             />
 
+            <div role="tablist" aria-label="AI configuration sections" className="adm-tabs">
+                {AI_TABS.map((tab) => (
+                    <button
+                        key={tab.key}
+                        id={`ai-tab-${tab.key}`}
+                        type="button"
+                        role="tab"
+                        aria-selected={activeTab === tab.key}
+                        aria-controls="ai-tabpanel"
+                        onClick={() => setActiveTab(tab.key)}
+                        className="adm-tab"
+                    >
+                        {tab.label}
+                    </button>
+                ))}
+            </div>
+
             <div className="adm-split">
                 <div className="adm-stack">
+                    <div
+                        id="ai-tabpanel"
+                        role="tabpanel"
+                        aria-labelledby={`ai-tab-${activeTab}`}
+                        tabIndex={0}
+                        className="adm-stack"
+                    >
+                    {activeTab === 'config' && (
+                        <div className="adm-stack">
                     {/* Gateway and status */}
                     <Panel
                         title="Gateway settings"
@@ -781,7 +815,11 @@ export default function AiConfigPage() {
                         </div>
                     </Panel>
 
+                        </div>
+                    )}
+
                     {/* Models */}
+                    {activeTab === 'models' && (
                     <Panel
                         title="Models"
                         actions={<Badge>{config.models.length} configured</Badge>}
@@ -1002,8 +1040,10 @@ export default function AiConfigPage() {
                             </div>
                         </div>
                     </Panel>
+                    )}
 
                     {/* Priority routing */}
+                    {activeTab === 'generate' && (
                     <div className="grid gap-6 lg:grid-cols-2">
                         <Panel title="Text fallback priority" flush>
                             <div className="border-b border-[var(--hairline)] px-4 py-2.5 sm:px-5">
@@ -1169,8 +1209,10 @@ export default function AiConfigPage() {
                             )}
                         </Panel>
                     </div>
+                    )}
 
                     {/* Global system instructions */}
+                    {activeTab === 'config' && (
                     <Panel title="Global system instructions">
                         <Field
                             label="Base system prompt"
@@ -1187,8 +1229,10 @@ export default function AiConfigPage() {
                             />
                         </Field>
                     </Panel>
+                    )}
 
                     {/* Telemetry */}
+                    {activeTab === 'logs' && (
                     <Panel
                         title="Recent generation history"
                         actions={
@@ -1267,6 +1311,8 @@ export default function AiConfigPage() {
                             </div>
                         )}
                     </Panel>
+                    )}
+                    </div>
                 </div>
 
                 <aside className="adm-stack adm-side">
@@ -1327,6 +1373,21 @@ export default function AiConfigPage() {
                                                 {statLine.output?.toLocaleString() || 0} out ·{' '}
                                                 {statLine.requests || 0} req
                                             </p>
+                                            <MeterBar
+                                                label={`${p.name} share of token usage`}
+                                                percent={
+                                                    overallTotalTokens > 0
+                                                        ? (statLine.total / overallTotalTokens) * 100
+                                                        : 0
+                                                }
+                                            />
+                                            <p className="adm-help">
+                                                {overallTotalTokens > 0
+                                                    ? `${Math.round(
+                                                          (statLine.total / overallTotalTokens) * 100
+                                                      )}% of total usage`
+                                                    : 'No token usage recorded'}
+                                            </p>
                                         </li>
                                     );
                                 })}
@@ -1336,7 +1397,6 @@ export default function AiConfigPage() {
                 </aside>
             </div>
 
-            <Toast notification={notification} />
         </div>
     );
 }

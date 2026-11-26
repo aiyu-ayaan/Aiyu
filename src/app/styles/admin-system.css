@@ -123,4 +123,45 @@
     color: var(--text-primary);
     overflow-wrap: anywhere;
   }
+
+  .adm-sc-progress {
+    position: relative;
+    width: 100%;
+    height: 0.5rem;
+    overflow: hidden;
+    border: 1px solid var(--hairline);
+    border-radius: 9999px;
+    background: var(--bg-primary);
+  }
+
+  .adm-sc-progress > span {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--accent-cyan);
+  }
+
+  .adm-sc-progress-indeterminate > span {
+    width: 36%;
+    animation: adm-system-progress 1.3s ease-in-out infinite;
+  }
+
+  @keyframes adm-system-progress {
+    from {
+      transform: translateX(-110%);
+    }
+
+    to {
+      transform: translateX(290%);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .adm-sc-progress-indeterminate > span {
+      animation: none;
+      width: 36%;
+      opacity: 0.65;
+    }
+  }
 }
