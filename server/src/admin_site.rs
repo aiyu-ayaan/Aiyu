@@ -130,7 +130,7 @@ pub async fn set_active_theme(State(state): State<AppState>, req: Request) -> Re
 }
 
 /// `Number(value)`
-fn number(value: &Value) -> f64 {
+pub(crate) fn number(value: &Value) -> f64 {
     match value {
         Value::Null => 0.0,
         Value::Bool(b) => f64::from(u8::from(*b)),

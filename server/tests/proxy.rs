@@ -138,7 +138,8 @@ async fn ported_writes_refuse_anonymous_callers() {
         ("POST", "/api/projects"), ("PATCH", "/api/projects/reorder"), ("DELETE", "/api/projects/x"), ("POST", "/api/deployments"),
         ("PUT", "/api/deployments/x"), ("POST", "/api/gallery"), ("DELETE", "/api/gallery?id=x"),
         ("POST", "/api/blogs"), ("PUT", "/api/blogs/x"), ("DELETE", "/api/blogs/x"), ("GET", "/api/contact/message"),
-        ("DELETE", "/api/contact/message?id=x"),
+        ("DELETE", "/api/contact/message?id=x"), ("POST", "/api/legal/apps"), ("PUT", "/api/legal/apps/x"), ("DELETE", "/api/legal/apps/x"),
+        ("POST", "/api/legal/apps/x/documents"), ("PUT", "/api/legal/documents/x"), ("DELETE", "/api/legal/documents/x"),
     ] {
         let mut req = Request::builder().method(method).uri(uri).header("content-type", "application/json").body(Body::from("{}")).unwrap();
         req.extensions_mut().insert(ConnectInfo::<SocketAddr>("127.0.0.1:5555".parse().unwrap()));

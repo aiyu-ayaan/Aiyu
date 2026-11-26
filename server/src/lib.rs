@@ -1,5 +1,6 @@
 pub mod admin_blogs;
 pub mod admin_content;
+pub mod admin_legal;
 pub mod admin_site;
 pub mod ai;
 pub mod analytics;
@@ -89,6 +90,7 @@ impl AppState {
 fn limited_api(state: &AppState) -> Router<AppState> {
     use admin_blogs as posts;
     use admin_content as content;
+    use admin_legal as legal_admin;
     use admin_site as site;
     Router::new()
         .route("/api/global-search", get(site_api::global_search))
@@ -116,6 +118,10 @@ fn limited_api(state: &AppState) -> Router<AppState> {
         .route("/api/blogs/{id}", put(posts::update).delete(posts::delete))
         // POST (the public contact form, with its notifications) stays in Next.
         .route("/api/contact/message", get(posts::messages).delete(posts::delete_message))
+        .route("/api/legal/apps", post(legal_admin::post_app))
+        .route("/api/legal/apps/{id}", put(legal_admin::put_app).delete(legal_admin::remove_app))
+        .route("/api/legal/apps/{id}/documents", post(legal_admin::post_document))
+        .route("/api/legal/documents/{id}", put(legal_admin::put_document).delete(legal_admin::remove_document))
         .route_layer(axum::middleware::from_fn_with_state(state.clone(), limit::api))
 }
 
